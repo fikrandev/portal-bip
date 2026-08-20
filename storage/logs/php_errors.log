@@ -1,0 +1,45 @@
+[08-Jun-2026 14:48:36 Asia/Makassar] PHP Warning:  session_regenerate_id(): Session ID cannot be regenerated after headers have already been sent in E:\xampp\mysql\data\portal-bip\core\Auth.php on line 51
+[08-Jun-2026 14:56:37 Asia/Makassar] Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'portal_bip.siswa' doesn't exist | SQL: SELECT COUNT(*) as total FROM siswa WHERE 1=1
+[09-Jun-2026 11:37:16 Asia/Makassar] PHP Fatal error:  Uncaught Error: Call to undefined method Middleware::checkCsrf() in E:\xampp\mysql\data\portal-bip\modules\pengaturan-sistem\controllers\SettingsController.php:151
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\core\Router.php(98): SettingsController::update()
+#1 E:\xampp\mysql\data\portal-bip\index.php(162): Router->dispatch()
+#2 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\modules\pengaturan-sistem\controllers\SettingsController.php on line 151
+[09-Jun-2026 11:56:42 Asia/Makassar] PHP Fatal error:  Uncaught Error: Call to undefined method Database::execute() in E:\xampp\mysql\data\portal-bip\modules\pengaturan-sistem\controllers\SettingsController.php:161
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\core\Router.php(98): SettingsController::update()
+#1 E:\xampp\mysql\data\portal-bip\index.php(162): Router->dispatch()
+#2 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\modules\pengaturan-sistem\controllers\SettingsController.php on line 161
+[09-Jun-2026 13:06:38 Asia/Makassar] PHP Fatal error:  Uncaught Error: Call to undefined method Database::execute() in E:\xampp\mysql\data\portal-bip\modules\pengaturan-sistem\controllers\SettingsController.php:161
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\core\Router.php(98): SettingsController::update()
+#1 E:\xampp\mysql\data\portal-bip\index.php(162): Router->dispatch()
+#2 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\modules\pengaturan-sistem\controllers\SettingsController.php on line 161
+[09-Jun-2026 13:07:21 Asia/Makassar] PHP Fatal error:  Uncaught Error: Call to undefined method Database::execute() in E:\xampp\mysql\data\portal-bip\modules\pengaturan-sistem\controllers\SettingsController.php:161
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\core\Router.php(98): SettingsController::update()
+#1 E:\xampp\mysql\data\portal-bip\index.php(162): Router->dispatch()
+#2 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\modules\pengaturan-sistem\controllers\SettingsController.php on line 161
+[10-Jun-2026 15:32:48 Asia/Makassar] Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'portal_bip.kelas' doesn't exist | SQL: SELECT id, nama_kelas FROM kelas WHERE is_active = 1 ORDER BY nama_kelas ASC
+[01-Jul-2026 09:56:09 Asia/Makassar] Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'portal_bip.pegawai' doesn't exist | SQL: SELECT COUNT(*) as total FROM pegawai WHERE 1=1
+[01-Jul-2026 10:36:46 Asia/Makassar] Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'portal_bip.master_unit_tugas' doesn't exist | SQL: SELECT * FROM master_unit_tugas ORDER BY nama ASC
+[01-Jul-2026 10:37:01 Asia/Makassar] Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'portal_bip.master_unit_tugas' doesn't exist | SQL: SELECT 1 FROM master_unit_tugas LIMIT 1
+[01-Jul-2026 10:37:01 Asia/Makassar] Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'portal_bip.master_jabatan' doesn't exist | SQL: SELECT 1 FROM master_jabatan LIMIT 1
+[01-Jul-2026 15:00:12 Asia/Makassar] PHP Fatal error:  Uncaught Error: Call to undefined method CSRF::input() in E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\views\penugasan\create.php:26
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\controllers\PegawaiController.php(417): include()
+#1 E:\xampp\mysql\data\portal-bip\core\Router.php(98): PegawaiController::createPenugasan()
+#2 E:\xampp\mysql\data\portal-bip\index.php(227): Router->dispatch()
+#3 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\views\penugasan\create.php on line 26
+[08-Jul-2026 14:12:32 Asia/Makassar] PHP Fatal error:  Uncaught Error: Call to undefined method CSRF::input() in E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\views\penugasan\create.php:26
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\controllers\PegawaiController.php(417): include()
+#1 E:\xampp\mysql\data\portal-bip\core\Router.php(98): PegawaiController::createPenugasan()
+#2 E:\xampp\mysql\data\portal-bip\index.php(227): Router->dispatch()
+#3 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\views\penugasan\create.php on line 26

@@ -1,0 +1,4 @@
+2026-06-08 14:52:53 - Login attempt: username=admin, password=Admin!, success=false, message=Username atau password salah.
+2026-06-08 14:53:28 - Login attempt: username=admin, password=admin123, success=false, message=Username atau password salah.
+2026-06-08 14:53:32 - Login attempt: username=admin, password=admin, success=false, message=Username atau password salah.
+2026-06-08 14:53:37 - Login attempt: username=admin, password=Admin, success=false, message=Username atau password salah.

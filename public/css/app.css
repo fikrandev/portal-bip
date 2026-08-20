@@ -1,0 +1,177 @@
+/* =====================================================
+   Portal BIP - Custom CSS
+   Animations, transitions, scrollbar, and utilities
+   ===================================================== */
+
+/* ── Animations ──────────────────────────────────── */
+
+@keyframes cardFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(16px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes float {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(10px, -15px) scale(1.02); }
+    66% { transform: translate(-8px, 8px) scale(0.98); }
+}
+
+@keyframes floatDelayed {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(-12px, 10px) scale(1.03); }
+    66% { transform: translate(8px, -12px) scale(0.97); }
+}
+
+@keyframes floatSlow {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(15px, -10px) scale(1.01); }
+}
+
+@keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
+/* ── Animation Classes ───────────────────────────── */
+
+.animate-slide-in {
+    animation: slideIn 0.3s ease-out;
+}
+
+.animate-float {
+    animation: float 8s ease-in-out infinite;
+}
+
+.animate-float-delayed {
+    animation: floatDelayed 10s ease-in-out infinite;
+    animation-delay: 2s;
+}
+
+.animate-float-slow {
+    animation: floatSlow 12s ease-in-out infinite;
+    animation-delay: 4s;
+}
+
+/* ── Custom Scrollbar ────────────────────────────── */
+
+.scrollbar-thin::-webkit-scrollbar {
+    width: 4px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 999px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+/* Main content scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f0f9ff;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #bae6fd;
+    border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #7dd3fc;
+}
+
+/* ── Line Clamp ──────────────────────────────────── */
+
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* ── Focus Styles (Accessibility) ────────────────── */
+/* Removed global focus-visible to avoid double borders on inputs */
+
+/* ── Smooth Page Transitions ─────────────────────── */
+
+.transition-page {
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+/* ── Card Hover Effects ──────────────────────────── */
+
+.module-card {
+    will-change: transform, box-shadow;
+}
+
+/* ── Table Responsive ────────────────────────────── */
+
+@media (max-width: 640px) {
+    table {
+        font-size: 0.8125rem;
+    }
+    
+    table th,
+    table td {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+}
+
+/* ── Print Styles ────────────────────────────────── */
+
+@media print {
+    #sidebar,
+    #sidebar-overlay,
+    header,
+    .flash-alert {
+        display: none !important;
+    }
+    
+    .lg\:ml-\[280px\] {
+        margin-left: 0 !important;
+    }
+}
+
+/* ── Selection Color ─────────────────────────────── */
+
+::selection {
+    background: #bae6fd;
+    color: #0c4a6e;
+}
+
+/* ── Global Cursor ───────────────────────────────── */
+button, 
+input[type="submit"], 
+input[type="button"], 
+input[type="reset"], 
+[role="button"] {
+    cursor: pointer !important;
+}

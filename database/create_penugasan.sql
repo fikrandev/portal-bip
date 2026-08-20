@@ -1,0 +1,22 @@
+CREATE TABLE IF NOT EXISTS `pegawai_penugasan` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `pegawai_id` bigint(20) UNSIGNED NOT NULL,
+  `no_sk` varchar(100) NOT NULL,
+  `tanggal_sk` date NOT NULL,
+  `unit_tugas_id` int(11) NOT NULL,
+  `jabatan_id` int(11) NOT NULL,
+  `tmt_mulai` date NOT NULL,
+  `tst_selesai` date DEFAULT NULL,
+  `file_sk` varchar(255) DEFAULT NULL,
+  `status` enum('Aktif','Tidak Aktif') NOT NULL DEFAULT 'Aktif',
+  `keterangan` text,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `pegawai_id` (`pegawai_id`),
+  KEY `unit_tugas_id` (`unit_tugas_id`),
+  KEY `jabatan_id` (`jabatan_id`),
+  CONSTRAINT `fk_penugasan_pegawai` FOREIGN KEY (`pegawai_id`) REFERENCES `pegawai` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_penugasan_unit` FOREIGN KEY (`unit_tugas_id`) REFERENCES `master_unit_tugas` (`id`),
+  CONSTRAINT `fk_penugasan_jabatan` FOREIGN KEY (`jabatan_id`) REFERENCES `master_jabatan` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
