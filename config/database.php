@@ -13,7 +13,7 @@ if (!defined('BASE_PATH')) {
 // ── Database Credentials ────────────────────────────
 define('DB_HOST', 'localhost');
 define('DB_PORT', '3306');
-define('DB_NAME', 'portal_bip');
+define('DB_NAME', 'db_portal_bip');
 define('DB_USER', 'root');
 define('DB_PASS', '');
 define('DB_CHARSET', 'utf8mb4');
