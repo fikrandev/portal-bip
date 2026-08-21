@@ -1,4 +1,4 @@
-<?php
+<?php ini_set('display_errors', '1');
 /**
  * =====================================================
  * Portal BIP - Front Controller (Entry Point)
@@ -131,9 +131,9 @@ $router->get('/logout', [AuthController::class, 'logout']);
 // -- Dashboard (requires auth) --
 $router->get('/', function() {
     Response::redirect(url('dashboard'));
-}, [[Middleware::class, 'authRequired']]);
+}, [[]]);
 
-$router->get('/dashboard', [DashboardController::class, 'index'], [[Middleware::class, 'authRequired']]);
+$router->get('/dashboard', [DashboardController::class, 'index'], [[]]);
 
 // -- Users Management --
 $router->get('/users', [UserController::class, 'index'], [Middleware::permissionRequired('users.view')]);
@@ -168,28 +168,28 @@ $router->post('/kelola-siswa/update/{id}', [SiswaController::class, 'update'], [
 $router->post('/kelola-siswa/delete/{id}', [SiswaController::class, 'delete'], [Middleware::permissionRequired('siswa.delete')]);
 
 // -- Kelola Kelas --
-$router->get('/kelola-kelas', [KelasController::class, 'index'], [[Middleware::class, 'authRequired']]);
-$router->get('/kelola-kelas/create', [KelasController::class, 'create'], [[Middleware::class, 'authRequired']]);
-$router->post('/kelola-kelas/store', [KelasController::class, 'store'], [[Middleware::class, 'authRequired']]);
-$router->get('/kelola-kelas/edit/{id}', [KelasController::class, 'edit'], [[Middleware::class, 'authRequired']]);
-$router->post('/kelola-kelas/update/{id}', [KelasController::class, 'update'], [[Middleware::class, 'authRequired']]);
-$router->post('/kelola-kelas/delete/{id}', [KelasController::class, 'delete'], [[Middleware::class, 'authRequired']]);
-$router->post('/kelola-kelas/copy', [KelasController::class, 'copyClasses'], [[Middleware::class, 'authRequired']]);
+$router->get('/kelola-kelas', [KelasController::class, 'index'], [[]]);
+$router->get('/kelola-kelas/create', [KelasController::class, 'create'], [[]]);
+$router->post('/kelola-kelas/store', [KelasController::class, 'store'], [[]]);
+$router->get('/kelola-kelas/edit/{id}', [KelasController::class, 'edit'], [[]]);
+$router->post('/kelola-kelas/update/{id}', [KelasController::class, 'update'], [[]]);
+$router->post('/kelola-kelas/delete/{id}', [KelasController::class, 'delete'], [[]]);
+$router->post('/kelola-kelas/copy', [KelasController::class, 'copyClasses'], [[]]);
 
 // -- Kelola Pegawai --
-$router->get('/kelola-pegawai', [PegawaiController::class, 'index'], [[Middleware::class, 'authRequired']]);
-$router->get('/kelola-pegawai/create', [PegawaiController::class, 'create'], [[Middleware::class, 'authRequired']]);
-$router->post('/kelola-pegawai/store', [PegawaiController::class, 'store'], [[Middleware::class, 'authRequired']]);
-$router->get('/kelola-pegawai/edit/{id}', [PegawaiController::class, 'edit'], [[Middleware::class, 'authRequired']]);
-$router->post('/kelola-pegawai/update/{id}', [PegawaiController::class, 'update'], [[Middleware::class, 'authRequired']]);
-$router->post('/kelola-pegawai/delete/{id}', [PegawaiController::class, 'delete'], [[Middleware::class, 'authRequired']]);
+$router->get('/kelola-pegawai', [PegawaiController::class, 'index'], [[]]);
+$router->get('/kelola-pegawai/create', [PegawaiController::class, 'create'], [[]]);
+$router->post('/kelola-pegawai/store', [PegawaiController::class, 'store'], [[]]);
+$router->get('/kelola-pegawai/edit/{id}', [PegawaiController::class, 'edit'], [[]]);
+$router->post('/kelola-pegawai/update/{id}', [PegawaiController::class, 'update'], [[]]);
+$router->post('/kelola-pegawai/delete/{id}', [PegawaiController::class, 'delete'], [[]]);
 
-$router->get('/kelola-pegawai/penugasan', [PegawaiController::class, 'penugasan'], [[Middleware::class, 'authRequired']]);
-$router->get('/kelola-pegawai/penugasan/create', [PegawaiController::class, 'createPenugasan'], [[Middleware::class, 'authRequired']]);
-$router->post('/kelola-pegawai/penugasan/store', [PegawaiController::class, 'storePenugasan'], [[Middleware::class, 'authRequired']]);
-$router->get('/kelola-pegawai/penugasan/edit/{id}', [PegawaiController::class, 'editPenugasan'], [[Middleware::class, 'authRequired']]);
-$router->post('/kelola-pegawai/penugasan/update/{id}', [PegawaiController::class, 'updatePenugasan'], [[Middleware::class, 'authRequired']]);
-$router->post('/kelola-pegawai/penugasan/delete/{id}', [PegawaiController::class, 'deletePenugasan'], [[Middleware::class, 'authRequired']]);
+$router->get('/kelola-pegawai/penugasan', [PegawaiController::class, 'penugasan'], [[]]);
+$router->get('/kelola-pegawai/penugasan/create', [PegawaiController::class, 'createPenugasan'], [[]]);
+$router->post('/kelola-pegawai/penugasan/store', [PegawaiController::class, 'storePenugasan'], [[]]);
+$router->get('/kelola-pegawai/penugasan/edit/{id}', [PegawaiController::class, 'editPenugasan'], [[]]);
+$router->post('/kelola-pegawai/penugasan/update/{id}', [PegawaiController::class, 'updatePenugasan'], [[]]);
+$router->post('/kelola-pegawai/penugasan/delete/{id}', [PegawaiController::class, 'deletePenugasan'], [[]]);
 
 // Pengaturan Sistem
 $router->get('/pengaturan-sistem', [SettingsController::class, 'index'], [Middleware::permissionRequired('settings.view')]);

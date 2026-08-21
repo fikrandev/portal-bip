@@ -43,3 +43,143 @@ Stack trace:
 #2 E:\xampp\mysql\data\portal-bip\index.php(227): Router->dispatch()
 #3 {main}
   thrown in E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\views\penugasan\create.php on line 26
+[20-Aug-2026 13:58:16 Asia/Makassar] PHP Fatal error:  Uncaught Error: Call to undefined method CSRF::input() in E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\views\penugasan\create.php:26
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\controllers\PegawaiController.php(417): include()
+#1 E:\xampp\mysql\data\portal-bip\core\Router.php(98): PegawaiController::createPenugasan()
+#2 E:\xampp\mysql\data\portal-bip\index.php(227): Router->dispatch()
+#3 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\views\penugasan\create.php on line 26
+[20-Aug-2026 14:15:49 Asia/Makassar] PHP Fatal error:  Uncaught Error: Call to undefined method CSRF::input() in E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\views\penugasan\create.php:27
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\controllers\PegawaiController.php(417): include()
+#1 E:\xampp\mysql\data\portal-bip\core\Router.php(98): PegawaiController::createPenugasan()
+#2 E:\xampp\mysql\data\portal-bip\index.php(227): Router->dispatch()
+#3 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\views\penugasan\create.php on line 27
+[20-Aug-2026 14:15:56 Asia/Makassar] PHP Fatal error:  Uncaught Error: Call to undefined method CSRF::input() in E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\views\penugasan\create.php:27
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\controllers\PegawaiController.php(417): include()
+#1 E:\xampp\mysql\data\portal-bip\core\Router.php(98): PegawaiController::createPenugasan()
+#2 E:\xampp\mysql\data\portal-bip\index.php(227): Router->dispatch()
+#3 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\views\penugasan\create.php on line 27
+[20-Aug-2026 14:15:57 Asia/Makassar] PHP Fatal error:  Uncaught Error: Call to undefined method CSRF::input() in E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\views\penugasan\create.php:27
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\controllers\PegawaiController.php(417): include()
+#1 E:\xampp\mysql\data\portal-bip\core\Router.php(98): PegawaiController::createPenugasan()
+#2 E:\xampp\mysql\data\portal-bip\index.php(227): Router->dispatch()
+#3 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\views\penugasan\create.php on line 27
+[20-Aug-2026 14:15:58 Asia/Makassar] PHP Fatal error:  Uncaught Error: Call to undefined method CSRF::input() in E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\views\penugasan\create.php:27
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\controllers\PegawaiController.php(417): include()
+#1 E:\xampp\mysql\data\portal-bip\core\Router.php(98): PegawaiController::createPenugasan()
+#2 E:\xampp\mysql\data\portal-bip\index.php(227): Router->dispatch()
+#3 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\views\penugasan\create.php on line 27
+[20-Aug-2026 14:15:58 Asia/Makassar] PHP Fatal error:  Uncaught Error: Call to undefined method CSRF::input() in E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\views\penugasan\create.php:27
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\controllers\PegawaiController.php(417): include()
+#1 E:\xampp\mysql\data\portal-bip\core\Router.php(98): PegawaiController::createPenugasan()
+#2 E:\xampp\mysql\data\portal-bip\index.php(227): Router->dispatch()
+#3 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\views\penugasan\create.php on line 27
+[20-Aug-2026 14:16:02 Asia/Makassar] PHP Fatal error:  Uncaught Error: Call to undefined method CSRF::input() in E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\views\penugasan\create.php:27
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\controllers\PegawaiController.php(417): include()
+#1 E:\xampp\mysql\data\portal-bip\core\Router.php(98): PegawaiController::createPenugasan()
+#2 E:\xampp\mysql\data\portal-bip\index.php(227): Router->dispatch()
+#3 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\views\penugasan\create.php on line 27
+[20-Aug-2026 14:18:35 Asia/Makassar] PHP Fatal error:  Uncaught Error: Call to undefined method CSRF::input() in E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\views\penugasan\create.php:27
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\controllers\PegawaiController.php(417): include()
+#1 E:\xampp\mysql\data\portal-bip\core\Router.php(98): PegawaiController::createPenugasan()
+#2 E:\xampp\mysql\data\portal-bip\index.php(227): Router->dispatch()
+#3 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\views\penugasan\create.php on line 27
+[20-Aug-2026 14:25:19 Asia/Makassar] PHP Fatal error:  Uncaught Error: Call to undefined method CSRF::input() in E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\views\penugasan\create.php:27
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\controllers\PegawaiController.php(417): include()
+#1 E:\xampp\mysql\data\portal-bip\core\Router.php(98): PegawaiController::createPenugasan()
+#2 E:\xampp\mysql\data\portal-bip\index.php(227): Router->dispatch()
+#3 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\views\penugasan\create.php on line 27
+[20-Aug-2026 14:33:13 Asia/Makassar] PHP Fatal error:  Uncaught Error: Call to undefined method CSRF::input() in E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\views\penugasan\create.php:27
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\controllers\PegawaiController.php(417): include()
+#1 E:\xampp\mysql\data\portal-bip\core\Router.php(98): PegawaiController::createPenugasan()
+#2 E:\xampp\mysql\data\portal-bip\index.php(227): Router->dispatch()
+#3 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\views\penugasan\create.php on line 27
+[20-Aug-2026 14:48:23 Asia/Makassar] PHP Fatal error:  Uncaught Error: Call to undefined function url() in E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\controllers\PegawaiController.php:406
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\debug.php(1): PegawaiController::createPenugasan()
+#1 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\controllers\PegawaiController.php on line 406
+[20-Aug-2026 14:56:08 Asia/Makassar] PHP Fatal error:  Uncaught Error: Call to undefined method CSRF::input() in E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\views\penugasan\create.php:27
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\controllers\PegawaiController.php(417): include()
+#1 E:\xampp\mysql\data\portal-bip\core\Router.php(98): PegawaiController::createPenugasan()
+#2 E:\xampp\mysql\data\portal-bip\index.php(227): Router->dispatch()
+#3 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\views\penugasan\create.php on line 27
+[20-Aug-2026 14:57:42 Asia/Makassar] PHP Fatal error:  Uncaught Error: Call to undefined method CSRF::input() in E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\views\penugasan\create.php:27
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\controllers\PegawaiController.php(417): include()
+#1 E:\xampp\mysql\data\portal-bip\core\Router.php(98): PegawaiController::createPenugasan()
+#2 E:\xampp\mysql\data\portal-bip\index.php(227): Router->dispatch()
+#3 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\views\penugasan\create.php on line 27
+[20-Aug-2026 15:00:29 Asia/Makassar] PHP Fatal error:  Uncaught Error: Call to undefined method CSRF::input() in E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\views\penugasan\create.php:27
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\controllers\PegawaiController.php(417): include()
+#1 E:\xampp\mysql\data\portal-bip\core\Router.php(98): PegawaiController::createPenugasan()
+#2 E:\xampp\mysql\data\portal-bip\index.php(227): Router->dispatch()
+#3 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\views\penugasan\create.php on line 27
+[20-Aug-2026 15:03:02 Asia/Makassar] PHP Warning:  require(core/functions.php): Failed to open stream: No such file or directory in E:\xampp\mysql\data\portal-bip\debug.php on line 1
+[20-Aug-2026 15:03:02 Asia/Makassar] PHP Fatal error:  Uncaught Error: Failed opening required 'core/functions.php' (include_path='E:\xampp\php\PEAR') in E:\xampp\mysql\data\portal-bip\debug.php:1
+Stack trace:
+#0 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\debug.php on line 1
+[20-Aug-2026 15:06:53 Asia/Makassar] PHP Warning:  require(core/functions.php): Failed to open stream: No such file or directory in E:\xampp\mysql\data\portal-bip\test_sidebar.php on line 1
+[20-Aug-2026 15:06:53 Asia/Makassar] PHP Fatal error:  Uncaught Error: Failed opening required 'core/functions.php' (include_path='E:\xampp\php\PEAR') in E:\xampp\mysql\data\portal-bip\test_sidebar.php:1
+Stack trace:
+#0 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\test_sidebar.php on line 1
+[20-Aug-2026 15:09:55 Asia/Makassar] PHP Fatal error:  Uncaught Error: Call to undefined method CSRF::input() in E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\views\penugasan\create.php:27
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\controllers\PegawaiController.php(417): include()
+#1 E:\xampp\mysql\data\portal-bip\core\Router.php(98): PegawaiController::createPenugasan()
+#2 E:\xampp\mysql\data\portal-bip\index.php(227): Router->dispatch()
+#3 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\views\penugasan\create.php on line 27
+[20-Aug-2026 15:10:44 Asia/Makassar] PHP Fatal error:  Uncaught Error: Call to undefined method CSRF::input() in E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\views\penugasan\create.php:27
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\controllers\PegawaiController.php(417): include()
+#1 E:\xampp\mysql\data\portal-bip\core\Router.php(98): PegawaiController::createPenugasan()
+#2 E:\xampp\mysql\data\portal-bip\index.php(227): Router->dispatch()
+#3 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\views\penugasan\create.php on line 27
+[20-Aug-2026 15:11:27 Asia/Makassar] PHP Fatal error:  Uncaught Error: Call to undefined method CSRF::input() in E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\views\penugasan\create.php:27
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\controllers\PegawaiController.php(417): include()
+#1 E:\xampp\mysql\data\portal-bip\core\Router.php(98): PegawaiController::createPenugasan()
+#2 E:\xampp\mysql\data\portal-bip\index.php(227): Router->dispatch()
+#3 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\views\penugasan\create.php on line 27
+[20-Aug-2026 15:11:39 Asia/Makassar] PHP Fatal error:  Uncaught Error: Call to undefined method CSRF::input() in E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\views\penugasan\create.php:27
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\controllers\PegawaiController.php(417): include()
+#1 E:\xampp\mysql\data\portal-bip\core\Router.php(98): PegawaiController::createPenugasan()
+#2 E:\xampp\mysql\data\portal-bip\index.php(227): Router->dispatch()
+#3 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\views\penugasan\create.php on line 27
+[20-Aug-2026 15:18:15 Asia/Makassar] PHP Fatal error:  Uncaught Error: Class "Request" not found in E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\controllers\PegawaiController.php:437
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\core\Router.php(98): PegawaiController::storePenugasan()
+#1 E:\xampp\mysql\data\portal-bip\index.php(227): Router->dispatch()
+#2 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\controllers\PegawaiController.php on line 437

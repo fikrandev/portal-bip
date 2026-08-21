@@ -15,7 +15,7 @@
                    id="username" 
                    name="username" 
                    value="<?= old('username') ?>"
-                   placeholder="Username / NIS"
+                   placeholder="Username"
                    required
                    autofocus
                    class="w-full pl-12 pr-4 py-3 bg-white border border-slate-300 rounded-[10px] text-slate-900 placeholder:text-slate-400 outline-none focus:outline-none focus:ring-0 hover:border-primary-500 focus:border-primary-500 transition-colors text-sm font-medium"
@@ -34,7 +34,7 @@
             <input type="password" 
                    id="password" 
                    name="password" 
-                   placeholder="Password / Tgl Lahir (DDMMYYYY)"
+                   placeholder="Password"
                    required
                    class="w-full pl-12 pr-4 py-3 bg-white border border-slate-300 rounded-[10px] text-slate-900 placeholder:text-slate-400 outline-none focus:outline-none focus:ring-0 hover:border-primary-500 focus:border-primary-500 transition-colors text-sm font-medium"
                    aria-label="Password">
