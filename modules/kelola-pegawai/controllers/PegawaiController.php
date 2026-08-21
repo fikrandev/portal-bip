@@ -424,22 +424,17 @@ class PegawaiController
     {
         if (!CSRF::validate()) { Response::withError(url('kelola-pegawai/penugasan'), 'Token tidak valid.'); return; }
         
-        // Basic validation
-        $rules = [
-            'pegawai_id' => 'required',
-            'no_sk' => 'required',
-            'tanggal_sk' => 'required',
-            'unit_tugas_id' => 'required',
-            'jabatan_id' => 'required',
-            'tmt_mulai' => 'required'
-        ];
-        
-        $errors = Request::validate($rules);
-        if (!empty($errors)) {
-            $_SESSION['validation_errors'] = $errors;
-            $_SESSION['old_input'] = $_POST;
-            header('Location: ' . url('kelola-pegawai/penugasan/create'));
-            exit;
+        $validator = Validator::make($_POST)
+            ->required('pegawai_id', 'Pegawai')
+            ->required('no_sk', 'Nomor SK')
+            ->required('tanggal_sk', 'Tanggal SK')
+            ->required('unit_tugas_id', 'Unit Tugas')
+            ->required('jabatan_id', 'Jabatan')
+            ->required('tmt_mulai', 'Tanggal Mulai Tugas');
+            
+        if ($validator->fails()) {
+            Response::backWithErrors($validator->errors(), $_POST);
+            return;
         }
 
         $db = Database::getInstance();
@@ -510,21 +505,17 @@ class PegawaiController
     {
         if (!CSRF::validate()) { Response::withError(url('kelola-pegawai/penugasan'), 'Token tidak valid.'); return; }
         
-        $rules = [
-            'pegawai_id' => 'required',
-            'no_sk' => 'required',
-            'tanggal_sk' => 'required',
-            'unit_tugas_id' => 'required',
-            'jabatan_id' => 'required',
-            'tmt_mulai' => 'required'
-        ];
-        
-        $errors = Request::validate($rules);
-        if (!empty($errors)) {
-            $_SESSION['validation_errors'] = $errors;
-            $_SESSION['old_input'] = $_POST;
-            header('Location: ' . url('kelola-pegawai/penugasan/edit/' . $id));
-            exit;
+        $validator = Validator::make($_POST)
+            ->required('pegawai_id', 'Pegawai')
+            ->required('no_sk', 'Nomor SK')
+            ->required('tanggal_sk', 'Tanggal SK')
+            ->required('unit_tugas_id', 'Unit Tugas')
+            ->required('jabatan_id', 'Jabatan')
+            ->required('tmt_mulai', 'Tanggal Mulai Tugas');
+            
+        if ($validator->fails()) {
+            Response::backWithErrors($validator->errors(), $_POST);
+            return;
         }
 
         $db = Database::getInstance();

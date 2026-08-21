@@ -5,7 +5,8 @@
 ?>
 
 <!-- Header Section -->
-<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+<div class="max-w-4xl mx-auto">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
     <div>
         <h1 class="text-2xl font-bold text-slate-800"><?= e($pageTitle) ?></h1>
         <p class="text-sm text-slate-500 mt-1">Tambahkan data penugasan atau SK baru untuk pegawai.</p>
@@ -18,12 +19,12 @@
             Kembali
         </a>
     </div>
-</div>
+    </div>
 
-<div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden max-w-3xl">
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
     <div class="p-6">
         <form action="<?= url('kelola-pegawai/penugasan/store') ?>" method="POST" enctype="multipart/form-data">
-            <?= CSRF::input() ?>
+            <?= CSRF::field() ?>
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 
@@ -132,4 +133,5 @@
             </div>
         </form>
     </div>
+</div>
 </div>
