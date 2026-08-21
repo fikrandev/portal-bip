@@ -104,7 +104,11 @@ INSERT INTO `modules` (`id`, `name`, `slug`, `description`, `module_group`, `ico
 
 (23, 'Kelola Buku Angkatan Siswa', 'kelola-buku-angkatan-siswa', 'Manajemen data dan profil buku angkatan siswa', 'Kesiswaan',
 '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" /></svg>',
-'#38BDF8', '/kelola-buku-angkatan-siswa', 22, 1);
+'#38BDF8', '/kelola-buku-angkatan-siswa', 22, 1),
+
+(24, 'Portal Guru (Mobile PWA)', 'portal-guru', 'Aplikasi mobile guru untuk presensi geolokasi, jurnal mengajar, dan manajemen kelas', 'Administrasi Guru',
+'<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 0 0 6 3.75v16.5a2.25 2.25 0 0 0 2.25 2.25h7.5A2.25 2.25 0 0 0 18 20.25V3.75a2.25 2.25 0 0 0-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" /></svg>',
+'#2563EB', '/mobile', 23, 1);
 
 -- =====================================================
 -- PERMISSIONS

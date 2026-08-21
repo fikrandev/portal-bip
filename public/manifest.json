@@ -1,0 +1,97 @@
+{
+  "id": "portal-guru-bip-app",
+  "name": "Portal Guru BIP - Presensi & Jurnal",
+  "short_name": "Portal Guru",
+  "description": "Aplikasi Resmi Guru Portal BIP untuk Presensi Geolokasi GPS, Jurnal Mengajar, Izin, Cuti, dan Amalan Harian.",
+  "start_url": "mobile?utm_source=pwa_installer",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "orientation": "portrait-primary",
+  "background_color": "#0f172a",
+  "theme_color": "#2563eb",
+  "lang": "id",
+  "dir": "ltr",
+  "categories": ["education", "productivity", "utilities"],
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "images/pwa/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "images/pwa/icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "images/pwa/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "images/pwa/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "images/pwa/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "images/pwa/screenshot-mobile.jpg",
+      "sizes": "1080x1920",
+      "type": "image/jpeg",
+      "form_factor": "narrow",
+      "label": "Tampilan Beranda Guru & Presensi GPS"
+    },
+    {
+      "src": "images/pwa/screenshot-wide.jpg",
+      "sizes": "1920x1080",
+      "type": "image/jpeg",
+      "form_factor": "wide",
+      "label": "Dashboard Manajemen Sekolah Portal BIP"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Absen Kehadiran GPS",
+      "short_name": "Absen GPS",
+      "description": "Check-in presensi dengan geolokasi dan kamera selfie",
+      "url": "mobile/absen",
+      "icons": [{ "src": "images/pwa/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Isi Jurnal Mengajar",
+      "short_name": "Jurnal",
+      "description": "Isi laporan harian jurnal mengajar kelas",
+      "url": "mobile/jurnal",
+      "icons": [{ "src": "images/pwa/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Izin & Cuti Guru",
+      "short_name": "Izin/Cuti",
+      "description": "Pengajuan izin dan cuti guru online",
+      "url": "mobile/izin",
+      "icons": [{ "src": "images/pwa/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Al-Qur'an & Dzikir",
+      "short_name": "Ibadah",
+      "description": "Baca Al-Qur'an dan amalan dzikir harian",
+      "url": "mobile/quran",
+      "icons": [{ "src": "images/pwa/icon-192.png", "sizes": "192x192" }]
+    }
+  ],
+  "launch_handler": {
+    "client_mode": ["navigate-existing", "auto"]
+  }
+}

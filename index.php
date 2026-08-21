@@ -120,6 +120,7 @@ require_once BASE_PATH . '/modules/kelola-siswa/controllers/SiswaController.php'
 require_once BASE_PATH . '/modules/kelola-kelas/controllers/KelasController.php';
 require_once BASE_PATH . '/modules/kelola-pegawai/controllers/PegawaiController.php';
 require_once BASE_PATH . '/modules/pengaturan-sistem/controllers/SettingsController.php';
+require_once BASE_PATH . '/modules/portal-guru/controllers/PortalGuruController.php';
 
 // ── Define Routes ───────────────────────────────────
 
@@ -216,7 +217,79 @@ $router->post('/pengaturan-sistem/update', [SettingsController::class, 'update']
 $router->post('/pengaturan-sistem/reset-data/process', [SettingsController::class, 'resetData'], [Middleware::permissionRequired('settings.update')]);
 $router->post('/pengaturan-sistem/reset', [SettingsController::class, 'resetData'], [Middleware::permissionRequired('settings.reset')]);
 
+// -- Portal Guru Mobile (PWA) --
+$router->get('/mobile', [PortalGuruController::class, 'beranda']);
+$router->get('/portal-guru', [PortalGuruController::class, 'beranda']);
+$router->get('/guru', [PortalGuruController::class, 'beranda']);
+$router->get('/mobile/absen', [PortalGuruController::class, 'absen']);
+$router->get('/mobile/jurnal', [PortalGuruController::class, 'jurnal']);
+$router->get('/mobile/kelas', [PortalGuruController::class, 'kelas']);
+$router->get('/mobile/absensi-kelas', [PortalGuruController::class, 'absensiKelas']);
+$router->get('/mobile/murid', [PortalGuruController::class, 'murid']);
+$router->get('/mobile/profil', [PortalGuruController::class, 'profil']);
+$router->get('/mobile/notifikasi', [PortalGuruController::class, 'notifikasi']);
+$router->get('/mobile/materi', [PortalGuruController::class, 'materi']);
+$router->get('/mobile/buat-tugas', [PortalGuruController::class, 'buatTugas']);
+$router->get('/mobile/pesan-kelas', [PortalGuruController::class, 'pesanKelas']);
+$router->get('/mobile/bank-soal', [PortalGuruController::class, 'bankSoal']);
+$router->get('/mobile/quran', [PortalGuruController::class, 'quran']);
+$router->get('/mobile/dzikir', [PortalGuruController::class, 'dzikir']);
+$router->get('/mobile/keterlambatan-siswa', [PortalGuruController::class, 'keterlambatanSiswa']);
+$router->get('/mobile/izin', [PortalGuruController::class, 'izin']);
+$router->get('/mobile/cuti', [PortalGuruController::class, 'cuti']);
+
+// -- PWA Manifest & Service Worker Routes --
+$router->get('/manifest.json', function() {
+    header('Content-Type: application/manifest+json; charset=utf-8');
+    header('Access-Control-Allow-Origin: *');
+    header('Cache-Control: public, max-age=300');
+    
+    $manifestPath = PUBLIC_PATH . '/manifest.json';
+    if (file_exists($manifestPath)) {
+        $content = file_get_contents($manifestPath);
+        $manifest = json_decode($content, true);
+        if (is_array($manifest)) {
+            $manifest['start_url'] = url('mobile?utm_source=pwa_installer');
+            $manifest['scope'] = url('') . '/';
+            $manifest['id'] = url('mobile');
+            if (!empty($manifest['icons'])) {
+                foreach ($manifest['icons'] as &$icon) {
+                    if (!str_starts_with($icon['src'], 'http')) {
+                        $icon['src'] = url('public/' . ltrim($icon['src'], '/'));
+                    }
+                }
+            }
+            if (!empty($manifest['screenshots'])) {
+                foreach ($manifest['screenshots'] as &$sc) {
+                    if (!str_starts_with($sc['src'], 'http')) {
+                        $sc['src'] = url('public/' . ltrim($sc['src'], '/'));
+                    }
+                }
+            }
+            echo json_encode($manifest, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+    }
+    readfile($manifestPath);
+    exit;
+});
+$router->get('/sw.js', function() {
+    header('Content-Type: application/javascript; charset=utf-8');
+    header('Service-Worker-Allowed: /');
+    header('Cache-Control: no-cache, no-store, must-revalidate');
+    readfile(PUBLIC_PATH . '/sw.js');
+    exit;
+});
+
+// -- Mobile Database Migration Route --
+$router->get('/mobile-migrate', function() {
+    require_once BASE_PATH . '/mobile-migrate/migrate.php';
+    exit;
+});
+
 // -- API Routes (JSON) --
+$router->get('/api/quran/surat', [PortalGuruController::class, 'apiSuratList']);
+$router->get('/api/quran/surat/{nomor}', [PortalGuruController::class, 'apiSuratDetail']);
 $router->get('/api/modules', function() {
     Middleware::authRequired();
     $modules = RBAC::getAccessibleModules();

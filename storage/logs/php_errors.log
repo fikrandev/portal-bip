@@ -43,3 +43,13 @@ Stack trace:
 #2 E:\xampp\mysql\data\portal-bip\index.php(227): Router->dispatch()
 #3 {main}
   thrown in E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\views\penugasan\create.php on line 26
+[20-Aug-2026 15:00:16 Asia/Makassar] PHP Fatal error:  Uncaught TypeError: Router::get(): Argument #2 ($handler) must be of type callable, array given, called in E:\xampp\htdocs\portal-bip\index.php on line 236 and defined in E:\xampp\htdocs\portal-bip\core\Router.php:27
+Stack trace:
+#0 E:\xampp\htdocs\portal-bip\index.php(236): Router->get('/mobile/dzikir', Array)
+#1 {main}
+  thrown in E:\xampp\htdocs\portal-bip\core\Router.php on line 27
+[20-Aug-2026 15:06:24 Asia/Makassar] PHP Fatal error:  Uncaught TypeError: Router::get(): Argument #2 ($handler) must be of type callable, array given, called in E:\xampp\htdocs\portal-bip\index.php on line 252 and defined in E:\xampp\htdocs\portal-bip\core\Router.php:27
+Stack trace:
+#0 E:\xampp\htdocs\portal-bip\index.php(252): Router->get('/api/quran/sura...', Array)
+#1 {main}
+  thrown in E:\xampp\htdocs\portal-bip\core\Router.php on line 27
