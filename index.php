@@ -25,6 +25,8 @@ require_once BASE_PATH . '/core/Middleware.php';
 require_once BASE_PATH . '/core/CSRF.php';
 require_once BASE_PATH . '/core/Validator.php';
 require_once BASE_PATH . '/core/Response.php';
+require_once BASE_PATH . '/core/ExcelHelper.php';
+require_once BASE_PATH . '/core/ModalHelper.php';
 
 // ── Global System Settings ──────────────────────────
 try {
@@ -178,19 +180,65 @@ $router->post('/kelola-kelas/delete/{id}', [KelasController::class, 'delete'], [
 $router->post('/kelola-kelas/copy', [KelasController::class, 'copyClasses'], [[]]);
 
 // -- Kelola Pegawai --
+$router->get('/kelola-pegawai/statistik', [PegawaiController::class, 'statistik'], [[]]);
 $router->get('/kelola-pegawai', [PegawaiController::class, 'index'], [[]]);
 $router->get('/kelola-pegawai/create', [PegawaiController::class, 'create'], [[]]);
 $router->post('/kelola-pegawai/store', [PegawaiController::class, 'store'], [[]]);
 $router->get('/kelola-pegawai/edit/{id}', [PegawaiController::class, 'edit'], [[]]);
 $router->post('/kelola-pegawai/update/{id}', [PegawaiController::class, 'update'], [[]]);
 $router->post('/kelola-pegawai/delete/{id}', [PegawaiController::class, 'delete'], [[]]);
+$router->get('/kelola-pegawai/export', [PegawaiController::class, 'export'], [[]]);
+$router->get('/kelola-pegawai/template', [PegawaiController::class, 'downloadTemplate'], [[]]);
+$router->post('/kelola-pegawai/import', [PegawaiController::class, 'import'], [[]]);
+$router->get('/kelola-pegawai/keluar', [PegawaiController::class, 'keluar'], [[]]);
+$router->get('/kelola-pegawai/cetak-cv/{id}', [PegawaiController::class, 'cetakCv'], [[]]);
 
+// -- Kelola Penugasan & Grup SK --
 $router->get('/kelola-pegawai/penugasan', [PegawaiController::class, 'penugasan'], [[]]);
-$router->get('/kelola-pegawai/penugasan/create', [PegawaiController::class, 'createPenugasan'], [[]]);
-$router->post('/kelola-pegawai/penugasan/store', [PegawaiController::class, 'storePenugasan'], [[]]);
-$router->get('/kelola-pegawai/penugasan/edit/{id}', [PegawaiController::class, 'editPenugasan'], [[]]);
-$router->post('/kelola-pegawai/penugasan/update/{id}', [PegawaiController::class, 'updatePenugasan'], [[]]);
-$router->post('/kelola-pegawai/penugasan/delete/{id}', [PegawaiController::class, 'deletePenugasan'], [[]]);
+$router->get('/kelola-pegawai/penugasan/grup/create', [PegawaiController::class, 'createGrup'], [[]]);
+$router->post('/kelola-pegawai/penugasan/grup/store', [PegawaiController::class, 'storeGrup'], [[]]);
+$router->get('/kelola-pegawai/penugasan/grup/edit/{id}', [PegawaiController::class, 'editGrup'], [[]]);
+$router->post('/kelola-pegawai/penugasan/grup/update/{id}', [PegawaiController::class, 'updateGrup'], [[]]);
+$router->post('/kelola-pegawai/penugasan/grup/delete/{id}', [PegawaiController::class, 'deleteGrup'], [[]]);
+$router->post('/kelola-pegawai/penugasan/grup/set-aktif/{id}', [PegawaiController::class, 'setAktifGrup'], [[]]);
+$router->post('/kelola-pegawai/penugasan/grup/salin/{id}', [PegawaiController::class, 'salinGrup'], [[]]);
+
+// Detail Anggota Penugasan dalam Grup
+$router->get('/kelola-pegawai/penugasan/grup/{id}', [PegawaiController::class, 'detailGrup'], [[]]);
+$router->get('/kelola-pegawai/penugasan/grup/{id}/cetak', [PegawaiController::class, 'cetakSkGrup'], [[]]);
+$router->post('/kelola-pegawai/penugasan/grup/{id}/update-sk-meta', [PegawaiController::class, 'updateSkMeta'], [[]]);
+$router->get('/kelola-pegawai/penugasan/grup/{id}/create', [PegawaiController::class, 'createPenugasanGrup'], [[]]);
+$router->post('/kelola-pegawai/penugasan/grup/{id}/store', [PegawaiController::class, 'storePenugasanGrup'], [[]]);
+$router->get('/kelola-pegawai/penugasan/detail/edit/{id}', [PegawaiController::class, 'editPenugasanGrup'], [[]]);
+$router->post('/kelola-pegawai/penugasan/detail/update/{id}', [PegawaiController::class, 'updatePenugasanGrup'], [[]]);
+$router->post('/kelola-pegawai/penugasan/detail/delete/{id}', [PegawaiController::class, 'deletePenugasanGrup'], [[]]);
+
+// -- Riwayat Karir Pegawai & Guru (Otomatis dari SK & Manual) --
+$router->get('/kelola-pegawai/karir', [PegawaiController::class, 'karir'], [[]]);
+$router->get('/kelola-pegawai/karir/create', [PegawaiController::class, 'createKarir'], [[]]);
+$router->post('/kelola-pegawai/karir/store', [PegawaiController::class, 'storeKarir'], [[]]);
+$router->get('/kelola-pegawai/karir/edit/{id}', [PegawaiController::class, 'editKarir'], [[]]);
+$router->post('/kelola-pegawai/karir/update/{id}', [PegawaiController::class, 'updateKarir'], [[]]);
+$router->post('/kelola-pegawai/karir/delete/{id}', [PegawaiController::class, 'deleteKarir'], [[]]);
+$router->get('/kelola-pegawai/karir/pegawai/{id}', [PegawaiController::class, 'timelinePegawai'], [[]]);
+
+// -- Prestasi & Penghargaan Pegawai / Guru --
+$router->get('/kelola-pegawai/prestasi', [PegawaiController::class, 'prestasi'], [[]]);
+$router->get('/kelola-pegawai/prestasi/create', [PegawaiController::class, 'createPrestasi'], [[]]);
+$router->post('/kelola-pegawai/prestasi/store', [PegawaiController::class, 'storePrestasi'], [[]]);
+$router->get('/kelola-pegawai/prestasi/edit/{id}', [PegawaiController::class, 'editPrestasi'], [[]]);
+$router->post('/kelola-pegawai/prestasi/update/{id}', [PegawaiController::class, 'updatePrestasi'], [[]]);
+$router->post('/kelola-pegawai/prestasi/delete/{id}', [PegawaiController::class, 'deletePrestasi'], [[]]);
+$router->get('/kelola-pegawai/prestasi/pegawai/{id}', [PegawaiController::class, 'prestasiPegawai'], [[]]);
+
+// -- Riwayat Pelatihan, Diklat & Workshop Pegawai / Guru --
+$router->get('/kelola-pegawai/pelatihan', [PegawaiController::class, 'pelatihan'], [[]]);
+$router->get('/kelola-pegawai/pelatihan/create', [PegawaiController::class, 'createPelatihan'], [[]]);
+$router->post('/kelola-pegawai/pelatihan/store', [PegawaiController::class, 'storePelatihan'], [[]]);
+$router->get('/kelola-pegawai/pelatihan/edit/{id}', [PegawaiController::class, 'editPelatihan'], [[]]);
+$router->post('/kelola-pegawai/pelatihan/update/{id}', [PegawaiController::class, 'updatePelatihan'], [[]]);
+$router->post('/kelola-pegawai/pelatihan/delete/{id}', [PegawaiController::class, 'deletePelatihan'], [[]]);
+$router->get('/kelola-pegawai/pelatihan/pegawai/{id}', [PegawaiController::class, 'pelatihanPegawai'], [[]]);
 
 // Pengaturan Sistem
 $router->get('/pengaturan-sistem', [SettingsController::class, 'index'], [Middleware::permissionRequired('settings.view')]);
@@ -281,7 +329,11 @@ $router->get('/sw.js', function() {
     exit;
 });
 
-// -- Mobile Database Migration Route --
+// -- Database Migration Routes --
+$router->get('/desktop-migrate', function() {
+    require_once BASE_PATH . '/desktop-migrate/migrate.php';
+    exit;
+});
 $router->get('/mobile-migrate', function() {
     require_once BASE_PATH . '/mobile-migrate/migrate.php';
     exit;

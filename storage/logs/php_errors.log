@@ -53,3 +53,17 @@ Stack trace:
 #0 E:\xampp\htdocs\portal-bip\index.php(252): Router->get('/api/quran/sura...', Array)
 #1 {main}
   thrown in E:\xampp\htdocs\portal-bip\core\Router.php on line 27
+[21-Aug-2026 16:44:23 Asia/Makassar] Database Connection Error: SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[21-Aug-2026 16:44:30 Asia/Makassar] Database Connection Error: SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[21-Aug-2026 16:59:10 Asia/Makassar] PHP Fatal error:  Uncaught Error: Unknown named parameter $id in E:\xampp\htdocs\portal-bip\core\Router.php:98
+Stack trace:
+#0 E:\xampp\htdocs\portal-bip\index.php(320): Router->dispatch()
+#1 {main}
+  thrown in E:\xampp\htdocs\portal-bip\core\Router.php on line 98
+[21-Aug-2026 17:02:05 Asia/Makassar] PHP Fatal error:  Uncaught Error: Call to undefined function e() in E:\xampp\htdocs\portal-bip\templates\partials\header.php:9
+Stack trace:
+#0 E:\xampp\htdocs\portal-bip\templates\errors\404.php(2): include()
+#1 E:\xampp\htdocs\portal-bip\core\Router.php(105): include('E:\\xampp\\htdocs...')
+#2 C:\Users\ASUS\.gemini\antigravity-ide\brain\6671dca5-9c66-4b7a-9b48-f82e63c542eb\scratch\test_route_dispatch.php(29): Router->dispatch()
+#3 {main}
+  thrown in E:\xampp\htdocs\portal-bip\templates\partials\header.php on line 9

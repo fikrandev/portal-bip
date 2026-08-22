@@ -10,7 +10,8 @@
                 Data Pribadi
             </h2>
             
-            <div class="grid grid-cols-1 gap-5 mb-5">
+            <!-- Semua Input 1 Kolom Vertikal Rapi -->
+            <div class="grid grid-cols-1 gap-5">
                 <div>
                     <label class="block text-sm font-semibold text-primary-800 mb-1.5">Foto Pegawai</label>
                     <div class="flex items-center gap-4">
@@ -23,28 +24,43 @@
                         </div>
                     </div>
                 </div>
+
                 <div>
                     <label class="block text-sm font-semibold text-primary-800 mb-1.5">Nama Lengkap <span class="text-rose-500">*</span></label>
                     <input type="text" name="nama" value="<?= old('nama') ?>" required class="w-full px-4 py-2 bg-white border border-slate-300 rounded-[10px] text-slate-900 focus:border-primary-500 transition-colors text-sm">
                 </div>
-            </div>
-            
-            <div class="grid grid-cols-1 gap-5 mb-5">
+
                 <div>
                     <label class="block text-sm font-semibold text-primary-800 mb-1.5">Gelar</label>
-                    <input type="text" name="gelar" value="<?= old('gelar') ?>" class="w-full px-4 py-2 bg-white border border-slate-300 rounded-[10px] text-slate-900 focus:border-primary-500 transition-colors text-sm">
+                    <input type="text" name="gelar" value="<?= old('gelar') ?>" placeholder="Contoh: S.Pd, M.Kom" class="w-full px-4 py-2 bg-white border border-slate-300 rounded-[10px] text-slate-900 focus:border-primary-500 transition-colors text-sm">
                 </div>
+
                 <div>
                     <label class="block text-sm font-semibold text-primary-800 mb-1.5">NIY (Nomor Induk Yayasan)</label>
                     <input type="text" name="niy" value="<?= old('niy') ?>" class="w-full px-4 py-2 bg-white border border-slate-300 rounded-[10px] text-slate-900 focus:border-primary-500 transition-colors text-sm">
                 </div>
+
                 <div>
                     <label class="block text-sm font-semibold text-primary-800 mb-1.5">NIK KTP</label>
-                    <input type="text" name="nik" value="<?= old('nik') ?>" class="w-full px-4 py-2 bg-white border border-slate-300 rounded-[10px] text-slate-900 focus:border-primary-500 transition-colors text-sm">
+                    <input type="text" name="nik" value="<?= old('nik') ?>" placeholder="16 digit NIK" class="w-full px-4 py-2 bg-white border border-slate-300 rounded-[10px] text-slate-900 focus:border-primary-500 transition-colors text-sm">
                 </div>
-            </div>
 
-            <div class="grid grid-cols-1 gap-5 mb-5">
+                <!-- Field Baru: NPWP, Email, No WhatsApp -->
+                <div>
+                    <label class="block text-sm font-semibold text-primary-800 mb-1.5">NPWP</label>
+                    <input type="text" name="npwp" value="<?= old('npwp') ?>" placeholder="Nomor Pokok Wajib Pajak" class="w-full px-4 py-2 bg-white border border-slate-300 rounded-[10px] text-slate-900 focus:border-primary-500 transition-colors text-sm">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-primary-800 mb-1.5">Email</label>
+                    <input type="email" name="email" value="<?= old('email') ?>" placeholder="nama@email.com" class="w-full px-4 py-2 bg-white border border-slate-300 rounded-[10px] text-slate-900 focus:border-primary-500 transition-colors text-sm">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-primary-800 mb-1.5">No. WhatsApp</label>
+                    <input type="text" name="no_wa" value="<?= old('no_wa') ?>" placeholder="08xxxxxxxxxx" class="w-full px-4 py-2 bg-white border border-slate-300 rounded-[10px] text-slate-900 focus:border-primary-500 transition-colors text-sm">
+                </div>
+
                 <div>
                     <label class="block text-sm font-semibold text-primary-800 mb-1.5">Jenis Kelamin <span class="text-rose-500">*</span></label>
                     <select name="jenis_kelamin" required class="w-full px-4 py-2 bg-white border border-slate-300 rounded-[10px] text-slate-900 focus:border-primary-500 transition-colors text-sm">
@@ -52,6 +68,7 @@
                         <option value="P" <?= old('jenis_kelamin') === 'P' ? 'selected' : '' ?>>Perempuan</option>
                     </select>
                 </div>
+
                 <div>
                     <label class="block text-sm font-semibold text-primary-800 mb-1.5">Status Menikah</label>
                     <select name="status_nikah" class="w-full px-4 py-2 bg-white border border-slate-300 rounded-[10px] text-slate-900 focus:border-primary-500 transition-colors text-sm">
@@ -62,88 +79,35 @@
                         <option value="Cerai Mati" <?= old('status_nikah') === 'Cerai Mati' ? 'selected' : '' ?>>Cerai Mati</option>
                     </select>
                 </div>
+
                 <div>
                     <label class="block text-sm font-semibold text-primary-800 mb-1.5">Tempat Lahir</label>
                     <input type="text" name="tempat_lahir" value="<?= old('tempat_lahir') ?>" class="w-full px-4 py-2 bg-white border border-slate-300 rounded-[10px] text-slate-900 focus:border-primary-500 transition-colors text-sm">
                 </div>
+
                 <div>
                     <label class="block text-sm font-semibold text-primary-800 mb-1.5">Tanggal Lahir</label>
                     <input type="date" name="tanggal_lahir" value="<?= old('tanggal_lahir') ?>" class="w-full px-4 py-2 bg-white border border-slate-300 rounded-[10px] text-slate-900 focus:border-primary-500 transition-colors text-sm">
                 </div>
-            </div>
-            
-            <div class="grid grid-cols-1 gap-5">
+
                 <div>
                     <label class="block text-sm font-semibold text-primary-800 mb-1.5">Nama Ibu Kandung</label>
                     <input type="text" name="nama_ibu" value="<?= old('nama_ibu') ?>" class="w-full px-4 py-2 bg-white border border-slate-300 rounded-[10px] text-slate-900 focus:border-primary-500 transition-colors text-sm">
                 </div>
-                <div class="flex items-center mt-6">
+
+                <div>
+                    <label class="block text-sm font-semibold text-primary-800 mb-1.5">
+                        Tanggal Masuk Kerja <span class="text-rose-500">*</span>
+                    </label>
+                    <input type="date" name="tanggal_masuk" value="<?= old('tanggal_masuk', date('Y-m-d')) ?>" required class="w-full px-4 py-2 bg-white border border-slate-300 rounded-[10px] text-slate-900 focus:border-primary-500 transition-colors text-sm">
+                    <p class="text-xs text-slate-400 mt-1">Tanggal pertama kali mulai bekerja di yayasan / sekolah (dasar perhitungan masa kerja).</p>
+                </div>
+
+                <div class="pt-2">
                     <label class="inline-flex items-center gap-2 cursor-pointer">
                         <input type="checkbox" name="is_active" value="1" checked class="rounded border-primary-300 text-primary-500 focus:ring-0 focus:ring-transparent">
                         <span class="text-sm font-medium text-primary-800">Pegawai Aktif</span>
                     </label>
-                </div>
-            </div>
-        </div>
-
-        <!-- Data Penugasan -->
-        <div class="bg-white rounded-2xl border border-primary-100/60 shadow-sm p-6 sm:p-8 mb-6">
-            <h2 class="text-lg font-bold text-primary-900 mb-6 flex items-center gap-2">
-                <svg class="w-5 h-5 text-primary-500" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 0 0 .75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 0 0-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0 1 12 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 0 1-.673-.38m0 0A2.18 2.18 0 0 1 3 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 0 1 3.413-.387m7.5 0V5.25A2.25 2.25 0 0 0 13.5 3h-3a2.25 2.25 0 0 0-2.25 2.25v.894m7.5 0a48.667 48.667 0 0 0-7.5 0M12 12.75h.008v.008H12v-.008Z"/></svg>
-                Penugasan & Status
-            </h2>
-            
-            <div class="grid grid-cols-1 gap-5 mb-5">
-                <div>
-                    <label class="block text-sm font-semibold text-primary-800 mb-1.5">Unit Tugas</label>
-                    <select name="unit_tugas" class="w-full px-4 py-2 bg-white border border-slate-300 rounded-[10px] text-slate-900 focus:border-primary-500 transition-colors text-sm">
-                        <option value="">Pilih Unit Tugas</option>
-                        <?php foreach($unitTugasList ?? [] as $u): ?>
-                            <option value="<?= e($u['nama']) ?>" <?= old('unit_tugas') === $u['nama'] ? 'selected' : '' ?>><?= e($u['nama']) ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm font-semibold text-primary-800 mb-1.5">Jabatan</label>
-                    <select name="jabatan" class="w-full px-4 py-2 bg-white border border-slate-300 rounded-[10px] text-slate-900 focus:border-primary-500 transition-colors text-sm">
-                        <option value="">Pilih Jabatan</option>
-                        <?php foreach($jabatanList ?? [] as $j): ?>
-                            <option value="<?= e($j['nama']) ?>" <?= old('jabatan') === $j['nama'] ? 'selected' : '' ?>><?= e($j['nama']) ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm font-semibold text-primary-800 mb-1.5">Terhitung Mulai Tanggal (TMT)</label>
-                    <input type="date" name="tmt" value="<?= old('tmt') ?>" class="w-full px-4 py-2 bg-white border border-slate-300 rounded-[10px] text-slate-900 focus:border-primary-500 transition-colors text-sm">
-                </div>
-            </div>
-            
-            <div class="grid grid-cols-1 gap-5">
-                <div>
-                    <label class="block text-sm font-semibold text-primary-800 mb-1.5">Status Kerja</label>
-                    <select name="status_kerja" class="w-full px-4 py-2 bg-white border border-slate-300 rounded-[10px] text-slate-900 focus:border-primary-500 transition-colors text-sm">
-                        <option value="">Pilih Status Kerja</option>
-                        <?php foreach($statusKerjaList ?? [] as $sk): ?>
-                            <option value="<?= e($sk['nama']) ?>" <?= old('status_kerja') === $sk['nama'] ? 'selected' : '' ?>><?= e($sk['nama']) ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm font-semibold text-primary-800 mb-1.5">Jenis Pegawai</label>
-                    <select name="jenis_pegawai" class="w-full px-4 py-2 bg-white border border-slate-300 rounded-[10px] text-slate-900 focus:border-primary-500 transition-colors text-sm">
-                        <option value="">Pilih Jenis Pegawai</option>
-                        <?php foreach($jenisPegawaiList ?? [] as $jp): ?>
-                            <option value="<?= e($jp['nama']) ?>" <?= old('jenis_pegawai') === $jp['nama'] ? 'selected' : '' ?>><?= e($jp['nama']) ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm font-semibold text-primary-800 mb-1.5">Status Dapodik</label>
-                    <select name="status_dapodik" class="w-full px-4 py-2 bg-white border border-slate-300 rounded-[10px] text-slate-900 focus:border-primary-500 transition-colors text-sm">
-                        <option value="">Pilih</option>
-                        <option value="Sudah Masuk" <?= old('status_dapodik') === 'Sudah Masuk' ? 'selected' : '' ?>>Sudah Masuk</option>
-                        <option value="Belum Masuk" <?= old('status_dapodik') === 'Belum Masuk' ? 'selected' : '' ?>>Belum Masuk</option>
-                    </select>
                 </div>
             </div>
         </div>
@@ -159,20 +123,18 @@
                 <!-- KTP -->
                 <div>
                     <h3 class="text-sm font-bold text-primary-700 border-b border-primary-100 pb-2 mb-4">Sesuai KTP</h3>
-                    <div class="space-y-4">
+                    <div class="grid grid-cols-1 gap-4">
                         <div>
                             <label class="block text-xs font-semibold text-primary-800 mb-1">Alamat Lengkap</label>
                             <textarea name="alamat_ktp" rows="2" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-primary-500 text-sm"><?= old('alamat_ktp') ?></textarea>
                         </div>
-                        <div class="grid grid-cols-1 gap-3">
-                            <div>
-                                <label class="block text-xs font-semibold text-primary-800 mb-1">Kelurahan / Desa</label>
-                                <input type="text" name="kel_ktp" value="<?= old('kel_ktp') ?>" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-primary-500 text-sm">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-primary-800 mb-1">Kecamatan</label>
-                                <input type="text" name="kec_ktp" value="<?= old('kec_ktp') ?>" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-primary-500 text-sm">
-                            </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-primary-800 mb-1">Kelurahan / Desa</label>
+                            <input type="text" name="kel_ktp" value="<?= old('kel_ktp') ?>" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-primary-500 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-primary-800 mb-1">Kecamatan</label>
+                            <input type="text" name="kec_ktp" value="<?= old('kec_ktp') ?>" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-primary-500 text-sm">
                         </div>
                         <div>
                             <label class="block text-xs font-semibold text-primary-800 mb-1">Kabupaten / Kota</label>
@@ -187,20 +149,18 @@
                         <h3 class="text-sm font-bold text-primary-700">Domisili Sekarang</h3>
                         <button type="button" id="btn-copy-ktp" class="text-xs text-primary-600 hover:text-primary-800 font-medium">Sama dengan KTP</button>
                     </div>
-                    <div class="space-y-4">
+                    <div class="grid grid-cols-1 gap-4">
                         <div>
                             <label class="block text-xs font-semibold text-primary-800 mb-1">Alamat Lengkap</label>
                             <textarea name="alamat_domisili" id="alamat_domisili" rows="2" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-primary-500 text-sm"><?= old('alamat_domisili') ?></textarea>
                         </div>
-                        <div class="grid grid-cols-1 gap-3">
-                            <div>
-                                <label class="block text-xs font-semibold text-primary-800 mb-1">Kelurahan / Desa</label>
-                                <input type="text" name="kel_domisili" id="kel_domisili" value="<?= old('kel_domisili') ?>" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-primary-500 text-sm">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-primary-800 mb-1">Kecamatan</label>
-                                <input type="text" name="kec_domisili" id="kec_domisili" value="<?= old('kec_domisili') ?>" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-primary-500 text-sm">
-                            </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-primary-800 mb-1">Kelurahan / Desa</label>
+                            <input type="text" name="kel_domisili" id="kel_domisili" value="<?= old('kel_domisili') ?>" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-primary-500 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-primary-800 mb-1">Kecamatan</label>
+                            <input type="text" name="kec_domisili" id="kec_domisili" value="<?= old('kec_domisili') ?>" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-primary-500 text-sm">
                         </div>
                         <div>
                             <label class="block text-xs font-semibold text-primary-800 mb-1">Kabupaten / Kota</label>
@@ -208,6 +168,206 @@
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Kontak Darurat (2 Kontak) -->
+        <div class="bg-white rounded-2xl border border-primary-100/60 shadow-sm p-6 sm:p-8 mb-6">
+            <h2 class="text-lg font-bold text-primary-900 mb-4 flex items-center gap-2">
+                <svg class="w-5 h-5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 0 0 2.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 0 1-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 0 0-1.091-.852H4.5A2.25 2.25 0 0 0 2.25 4.5v2.25Z" />
+                </svg>
+                Kontak Darurat (Emergency Contact)
+            </h2>
+            <p class="text-xs text-slate-500 mb-6">Daftarkan 2 kontak keluarga/kerabat yang dapat dihubungi saat keadaan mendesak.</p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Kontak Darurat 1 -->
+                <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                    <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider mb-3 flex items-center gap-2">
+                        <span class="w-5 h-5 rounded-full bg-primary-600 text-white flex items-center justify-center text-[10px] font-bold">1</span>
+                        Kontak Darurat 1
+                    </h3>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Nama Lengkap</label>
+                            <input type="text" name="kontak_darurat_1_nama" value="<?= old('kontak_darurat_1_nama') ?>" placeholder="Nama kerabat/keluarga" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-primary-500 text-xs">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Hubungan</label>
+                            <input type="text" name="kontak_darurat_1_hubungan" value="<?= old('kontak_darurat_1_hubungan') ?>" placeholder="Contoh: Suami / Istri / Ayah / Ibu / Kakak" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-primary-500 text-xs">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">No. HP / WhatsApp</label>
+                            <input type="text" name="kontak_darurat_1_no_hp" value="<?= old('kontak_darurat_1_no_hp') ?>" placeholder="08xxxxxxxxxx" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-primary-500 text-xs">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Kontak Darurat 2 -->
+                <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                    <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider mb-3 flex items-center gap-2">
+                        <span class="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px] font-bold">2</span>
+                        Kontak Darurat 2
+                    </h3>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Nama Lengkap</label>
+                            <input type="text" name="kontak_darurat_2_nama" value="<?= old('kontak_darurat_2_nama') ?>" placeholder="Nama kerabat/keluarga" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-primary-500 text-xs">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Hubungan</label>
+                            <input type="text" name="kontak_darurat_2_hubungan" value="<?= old('kontak_darurat_2_hubungan') ?>" placeholder="Contoh: Saudara Kandung / Paman / Kerabat" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-primary-500 text-xs">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">No. HP / WhatsApp</label>
+                            <input type="text" name="kontak_darurat_2_no_hp" value="<?= old('kontak_darurat_2_no_hp') ?>" placeholder="08xxxxxxxxxx" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-primary-500 text-xs">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Susunan Anggota Keluarga -->
+        <div class="bg-white rounded-2xl border border-primary-100/60 shadow-sm p-6 sm:p-8 mb-6">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h2 class="text-lg font-bold text-primary-900 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
+                        </svg>
+                        Susunan Anggota Keluarga
+                    </h2>
+                    <p class="text-xs text-slate-500 mt-0.5">Data pasangan (suami/istri), anak-anak, atau orang tua pegawai.</p>
+                </div>
+                <button type="button" id="btn-add-keluarga" class="px-4 py-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-xl text-xs font-bold transition-colors">
+                    + Tambah Anggota Keluarga
+                </button>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-xs">
+                    <thead>
+                        <tr class="border-b border-slate-200 bg-slate-50">
+                            <th class="text-left py-2.5 px-2 font-bold text-slate-700 w-32">Hubungan</th>
+                            <th class="text-left py-2.5 px-2 font-bold text-slate-700">Nama Lengkap</th>
+                            <th class="text-left py-2.5 px-2 font-bold text-slate-700 w-20">L/P</th>
+                            <th class="text-left py-2.5 px-2 font-bold text-slate-700">Tempat & Tgl Lahir</th>
+                            <th class="text-left py-2.5 px-2 font-bold text-slate-700 w-24">Pendidikan</th>
+                            <th class="text-left py-2.5 px-2 font-bold text-slate-700">Pekerjaan</th>
+                            <th class="text-left py-2.5 px-2 font-bold text-slate-700 w-28">No. HP</th>
+                            <th class="text-center py-2.5 px-2 font-bold text-slate-700 w-10">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="keluarga-list" class="divide-y divide-slate-100">
+                        <!-- Default Blank Row -->
+                        <tr class="hover:bg-slate-50/60">
+                            <td class="p-2">
+                                <select name="keluarga_hubungan[]" class="w-full px-2 py-1.5 bg-white border border-slate-300 rounded text-xs">
+                                    <option value="Suami">Suami</option>
+                                    <option value="Istri">Istri</option>
+                                    <option value="Anak">Anak</option>
+                                    <option value="Ayah">Ayah</option>
+                                    <option value="Ibu">Ibu</option>
+                                    <option value="Mertua">Mertua</option>
+                                    <option value="Saudara Kandung">Saudara Kandung</option>
+                                </select>
+                            </td>
+                            <td class="p-2"><input type="text" name="keluarga_nama[]" placeholder="Nama lengkap" class="w-full px-2 py-1.5 bg-white border border-slate-300 rounded text-xs"></td>
+                            <td class="p-2">
+                                <select name="keluarga_jk[]" class="w-full px-2 py-1.5 bg-white border border-slate-300 rounded text-xs">
+                                    <option value="L">L</option>
+                                    <option value="P">P</option>
+                                </select>
+                            </td>
+                            <td class="p-2">
+                                <div class="grid grid-cols-2 gap-1">
+                                    <input type="text" name="keluarga_tempat_lahir[]" placeholder="Tempat" class="w-full px-2 py-1.5 bg-white border border-slate-300 rounded text-xs">
+                                    <input type="date" name="keluarga_tgl_lahir[]" class="w-full px-2 py-1.5 bg-white border border-slate-300 rounded text-xs">
+                                </div>
+                            </td>
+                            <td class="p-2">
+                                <select name="keluarga_pendidikan[]" class="w-full px-2 py-1.5 bg-white border border-slate-300 rounded text-xs">
+                                    <option value="">-</option>
+                                    <option value="Belum Sekolah">Belum Sekolah</option>
+                                    <option value="SD">SD</option>
+                                    <option value="SMP">SMP</option>
+                                    <option value="SMA/SMK">SMA/SMK</option>
+                                    <option value="Diploma">Diploma</option>
+                                    <option value="S1">S1</option>
+                                    <option value="S2">S2</option>
+                                    <option value="S3">S3</option>
+                                </select>
+                            </td>
+                            <td class="p-2"><input type="text" name="keluarga_pekerjaan[]" placeholder="Pekerjaan" class="w-full px-2 py-1.5 bg-white border border-slate-300 rounded text-xs"></td>
+                            <td class="p-2"><input type="text" name="keluarga_no_hp[]" placeholder="08xxx" class="w-full px-2 py-1.5 bg-white border border-slate-300 rounded text-xs"></td>
+                            <td class="p-2 text-center">
+                                <button type="button" onclick="this.closest('tr').remove()" class="text-rose-500 hover:text-rose-700 p-1">✕</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Keahlian & Keterampilan Pegawai (Skill) -->
+        <div class="bg-white rounded-2xl border border-primary-100/60 shadow-sm p-6 sm:p-8 mb-6">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h2 class="text-lg font-bold text-primary-900 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z" />
+                        </svg>
+                        Keahlian & Keterampilan (Skill & Competencies)
+                    </h2>
+                    <p class="text-xs text-slate-500 mt-0.5">Kompetensi khusus, keahlian IT, pedagogik, bahasa, dsb yang akan tercantum pada CV.</p>
+                </div>
+                <button type="button" id="btn-add-skill" class="px-4 py-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-xl text-xs font-bold transition-colors">
+                    + Tambah Keahlian / Skill
+                </button>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-xs">
+                    <thead>
+                        <tr class="border-b border-slate-200 bg-slate-50">
+                            <th class="text-left py-2.5 px-2 font-bold text-slate-700">Nama Skill / Keahlian</th>
+                            <th class="text-left py-2.5 px-2 font-bold text-slate-700 w-44">Kategori</th>
+                            <th class="text-left py-2.5 px-2 font-bold text-slate-700 w-32">Tingkat Penguasaan</th>
+                            <th class="text-left py-2.5 px-2 font-bold text-slate-700">Keterangan / Portofolio Singkat</th>
+                            <th class="text-center py-2.5 px-2 font-bold text-slate-700 w-10">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="skill-list" class="divide-y divide-slate-100">
+                        <!-- Default Blank Row -->
+                        <tr class="hover:bg-slate-50/60">
+                            <td class="p-2"><input type="text" name="skill_nama[]" placeholder="Contoh: Kurikulum Merdeka / Desain Canva / Microsoft Excel" class="w-full px-2 py-1.5 bg-white border border-slate-300 rounded text-xs font-medium"></td>
+                            <td class="p-2">
+                                <select name="skill_kategori[]" class="w-full px-2 py-1.5 bg-white border border-slate-300 rounded text-xs">
+                                    <option value="Pedagogik & Pembelajaran">Pedagogik & Pembelajaran</option>
+                                    <option value="IT & Teknologi">IT & Teknologi</option>
+                                    <option value="Bahasa & Komunikasi">Bahasa & Komunikasi</option>
+                                    <option value="Kepemimpinan & Manajemen">Kepemimpinan & Manajemen</option>
+                                    <option value="Keagamaan & Al-Qur'an">Keagamaan & Al-Qur'an</option>
+                                    <option value="Seni & Olahraga">Seni & Olahraga</option>
+                                    <option value="Lainnya">Lainnya</option>
+                                </select>
+                            </td>
+                            <td class="p-2">
+                                <select name="skill_tingkat[]" class="w-full px-2 py-1.5 bg-white border border-slate-300 rounded text-xs font-semibold text-indigo-700">
+                                    <option value="Pemula">Pemula</option>
+                                    <option value="Menengah" selected>Menengah</option>
+                                    <option value="Mahir">Mahir</option>
+                                    <option value="Ahli">Ahli / Pakar</option>
+                                </select>
+                            </td>
+                            <td class="p-2"><input type="text" name="skill_deskripsi[]" placeholder="Catatan singkat / sertifikasi pendukung" class="w-full px-2 py-1.5 bg-white border border-slate-300 rounded text-xs"></td>
+                            <td class="p-2 text-center">
+                                <button type="button" onclick="this.closest('tr').remove()" class="text-rose-500 hover:text-rose-700 p-1">✕</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
 
@@ -294,42 +454,117 @@ document.getElementById('btn-copy-ktp').addEventListener('click', function() {
 document.getElementById('btn-add-pendidikan').addEventListener('click', function() {
     const tbody = document.getElementById('pendidikan-list');
     const tr = document.createElement('tr');
-    tr.className = 'border-b border-slate-100 hover:bg-slate-50/50 transition-colors group';
+    tr.className = 'border-b border-slate-100';
     tr.innerHTML = `
-        <td class="p-4 align-top">
-            <select name="pendidikan_jenjang[]" required class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm focus:border-primary-500 transition-colors">
+        <td class="py-2 pr-2">
+            <select name="pendidikan_jenjang[]" class="w-full px-2 py-1.5 bg-white border border-slate-300 rounded text-sm">
                 <option value="">Pilih</option>
-                <option value="SD/Sederajat">SD/Sederajat</option>
-                <option value="SMP/Sederajat">SMP/Sederajat</option>
-                <option value="SMA/Sederajat">SMA/Sederajat</option>
-                <option value="D1/D2/D3">D1/D2/D3</option>
-                <option value="D4/S1">D4/S1</option>
+                <option value="SD">SD/Sederajat</option>
+                <option value="SMP">SMP/Sederajat</option>
+                <option value="SMA">SMA/Sederajat</option>
+                <option value="D1">D1</option>
+                <option value="D2">D2</option>
+                <option value="D3">D3</option>
+                <option value="D4">D4</option>
+                <option value="S1">S1</option>
                 <option value="S2">S2</option>
                 <option value="S3">S3</option>
             </select>
         </td>
-        <td class="p-4 align-top">
-            <input type="text" name="pendidikan_institusi[]" required class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm focus:border-primary-500 transition-colors">
-        </td>
-        <td class="p-4 align-top">
-            <input type="text" name="pendidikan_jurusan[]" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm focus:border-primary-500 transition-colors">
-        </td>
-        <td class="p-4 align-top">
-            <input type="number" name="pendidikan_tahun[]" required min="1950" max="${new Date().getFullYear()}" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm focus:border-primary-500 transition-colors">
-        </td>
-        <td class="p-4 align-top text-center">
-            <button type="button" class="btn-remove-pendidikan text-rose-400 hover:text-rose-600 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
-            </button>
+        <td class="py-2 pr-2"><input type="text" name="pendidikan_institusi[]" class="w-full px-2 py-1.5 bg-white border border-slate-300 rounded text-sm"></td>
+        <td class="py-2 pr-2"><input type="text" name="pendidikan_jurusan[]" class="w-full px-2 py-1.5 bg-white border border-slate-300 rounded text-sm"></td>
+        <td class="py-2 pr-2"><input type="text" name="pendidikan_tahun[]" class="w-full px-2 py-1.5 bg-white border border-slate-300 rounded text-sm text-center"></td>
+        <td class="py-2 text-center">
+            <button type="button" onclick="this.closest('tr').remove()" class="text-rose-500 hover:text-rose-700 p-1"><svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg></button>
         </td>
     `;
     tbody.appendChild(tr);
 });
 
-document.getElementById('pendidikan-list').addEventListener('click', function(e) {
-    if (e.target.closest('.btn-remove-pendidikan')) {
-        e.target.closest('tr').remove();
-    }
+// Repeater Anggota Keluarga
+document.getElementById('btn-add-keluarga').addEventListener('click', function() {
+    const tbody = document.getElementById('keluarga-list');
+    const tr = document.createElement('tr');
+    tr.className = 'hover:bg-slate-50/60';
+    tr.innerHTML = `
+        <td class="p-2">
+            <select name="keluarga_hubungan[]" class="w-full px-2 py-1.5 bg-white border border-slate-300 rounded text-xs">
+                <option value="Suami">Suami</option>
+                <option value="Istri">Istri</option>
+                <option value="Anak">Anak</option>
+                <option value="Ayah">Ayah</option>
+                <option value="Ibu">Ibu</option>
+                <option value="Mertua">Mertua</option>
+                <option value="Saudara Kandung">Saudara Kandung</option>
+            </select>
+        </td>
+        <td class="p-2"><input type="text" name="keluarga_nama[]" placeholder="Nama lengkap" class="w-full px-2 py-1.5 bg-white border border-slate-300 rounded text-xs"></td>
+        <td class="p-2">
+            <select name="keluarga_jk[]" class="w-full px-2 py-1.5 bg-white border border-slate-300 rounded text-xs">
+                <option value="L">L</option>
+                <option value="P">P</option>
+            </select>
+        </td>
+        <td class="p-2">
+            <div class="grid grid-cols-2 gap-1">
+                <input type="text" name="keluarga_tempat_lahir[]" placeholder="Tempat" class="w-full px-2 py-1.5 bg-white border border-slate-300 rounded text-xs">
+                <input type="date" name="keluarga_tgl_lahir[]" class="w-full px-2 py-1.5 bg-white border border-slate-300 rounded text-xs">
+            </div>
+        </td>
+        <td class="p-2">
+            <select name="keluarga_pendidikan[]" class="w-full px-2 py-1.5 bg-white border border-slate-300 rounded text-xs">
+                <option value="">-</option>
+                <option value="Belum Sekolah">Belum Sekolah</option>
+                <option value="SD">SD</option>
+                <option value="SMP">SMP</option>
+                <option value="SMA/SMK">SMA/SMK</option>
+                <option value="Diploma">Diploma</option>
+                <option value="S1">S1</option>
+                <option value="S2">S2</option>
+                <option value="S3">S3</option>
+            </select>
+        </td>
+        <td class="p-2"><input type="text" name="keluarga_pekerjaan[]" placeholder="Pekerjaan" class="w-full px-2 py-1.5 bg-white border border-slate-300 rounded text-xs"></td>
+        <td class="p-2"><input type="text" name="keluarga_no_hp[]" placeholder="08xxx" class="w-full px-2 py-1.5 bg-white border border-slate-300 rounded text-xs"></td>
+        <td class="p-2 text-center">
+            <button type="button" onclick="this.closest('tr').remove()" class="text-rose-500 hover:text-rose-700 p-1">✕</button>
+        </td>
+    `;
+    tbody.appendChild(tr);
+});
+
+// Repeater Keahlian / Skill
+document.getElementById('btn-add-skill').addEventListener('click', function() {
+    const tbody = document.getElementById('skill-list');
+    const tr = document.createElement('tr');
+    tr.className = 'hover:bg-slate-50/60';
+    tr.innerHTML = `
+        <td class="p-2"><input type="text" name="skill_nama[]" placeholder="Nama skill / keahlian" class="w-full px-2 py-1.5 bg-white border border-slate-300 rounded text-xs font-medium"></td>
+        <td class="p-2">
+            <select name="skill_kategori[]" class="w-full px-2 py-1.5 bg-white border border-slate-300 rounded text-xs">
+                <option value="Pedagogik & Pembelajaran">Pedagogik & Pembelajaran</option>
+                <option value="IT & Teknologi">IT & Teknologi</option>
+                <option value="Bahasa & Komunikasi">Bahasa & Komunikasi</option>
+                <option value="Kepemimpinan & Manajemen">Kepemimpinan & Manajemen</option>
+                <option value="Keagamaan & Al-Qur'an">Keagamaan & Al-Qur'an</option>
+                <option value="Seni & Olahraga">Seni & Olahraga</option>
+                <option value="Lainnya">Lainnya</option>
+            </select>
+        </td>
+        <td class="p-2">
+            <select name="skill_tingkat[]" class="w-full px-2 py-1.5 bg-white border border-slate-300 rounded text-xs font-semibold text-indigo-700">
+                <option value="Pemula">Pemula</option>
+                <option value="Menengah" selected>Menengah</option>
+                <option value="Mahir">Mahir</option>
+                <option value="Ahli">Ahli / Pakar</option>
+            </select>
+        </td>
+        <td class="p-2"><input type="text" name="skill_deskripsi[]" placeholder="Catatan singkat" class="w-full px-2 py-1.5 bg-white border border-slate-300 rounded text-xs"></td>
+        <td class="p-2 text-center">
+            <button type="button" onclick="this.closest('tr').remove()" class="text-rose-500 hover:text-rose-700 p-1">✕</button>
+        </td>
+    `;
+    tbody.appendChild(tr);
 });
 </script>
 

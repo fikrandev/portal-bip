@@ -94,8 +94,8 @@ class Router
                     }
                 }
 
-                // Call handler
-                call_user_func_array($route['handler'], $params);
+                // Call handler with positional arguments
+                call_user_func_array($route['handler'], array_values($params));
                 return;
             }
         }
