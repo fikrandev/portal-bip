@@ -5,7 +5,7 @@
  */
 ?>
 <aside id="sidebar" 
-       class="fixed top-0 left-0 z-40 w-[280px] h-screen transition-transform -translate-x-full lg:translate-x-0 bg-primary-900 border-r border-primary-800 flex flex-col"
+       class="fixed top-0 left-0 z-50 w-[280px] h-screen transition-transform duration-300 ease-in-out -translate-x-full lg:translate-x-0 bg-primary-900 border-r border-primary-800 flex flex-col"
        aria-label="Sidebar Pengaturan">
     
     <!-- Sidebar Header -->

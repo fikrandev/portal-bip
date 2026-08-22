@@ -201,6 +201,7 @@ $router->get('/kelola-pegawai/penugasan/grup/edit/{id}', [PegawaiController::cla
 $router->post('/kelola-pegawai/penugasan/grup/update/{id}', [PegawaiController::class, 'updateGrup'], [[]]);
 $router->post('/kelola-pegawai/penugasan/grup/delete/{id}', [PegawaiController::class, 'deleteGrup'], [[]]);
 $router->post('/kelola-pegawai/penugasan/grup/set-aktif/{id}', [PegawaiController::class, 'setAktifGrup'], [[]]);
+$router->post('/kelola-pegawai/penugasan/grup/toggle-aktif/{id}', [PegawaiController::class, 'toggleAktifGrup'], [[]]);
 $router->post('/kelola-pegawai/penugasan/grup/salin/{id}', [PegawaiController::class, 'salinGrup'], [[]]);
 
 // Detail Anggota Penugasan dalam Grup
@@ -342,6 +343,7 @@ $router->get('/mobile-migrate', function() {
 // -- API Routes (JSON) --
 $router->get('/api/quran/surat', [PortalGuruController::class, 'apiSuratList']);
 $router->get('/api/quran/surat/{nomor}', [PortalGuruController::class, 'apiSuratDetail']);
+$router->get('/api/quran/page/{page}', [PortalGuruController::class, 'apiPageDetail']);
 $router->get('/api/modules', function() {
     Middleware::authRequired();
     $modules = RBAC::getAccessibleModules();

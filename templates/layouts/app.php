@@ -19,13 +19,19 @@
         $hideSidebar = $hideSidebar ?? false;
         $customSidebar = $customSidebar ?? null;
         
-        if (!$hideSidebar) {
+        if (!$hideSidebar): ?>
+            <!-- Global Mobile Sidebar Overlay -->
+            <div id="sidebar-overlay" 
+                 class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-40 hidden lg:hidden transition-opacity duration-300 cursor-pointer"
+                 onclick="toggleSidebar()"
+                 aria-hidden="true"></div>
+            <?php
             if ($customSidebar && file_exists($customSidebar)) {
                 include $customSidebar;
             } else {
                 include TEMPLATES_PATH . '/partials/sidebar.php';
             }
-        }
+        endif;
     ?>
 
     <!-- Main Content Area -->

@@ -66,11 +66,13 @@ class PegawaiController
             });
         }
 
-        // Active Penugasan Group
-        $activeGrup = $db->find("SELECT * FROM penugasan_grup WHERE is_active = 1 LIMIT 1");
+        // Active Penugasan Groups (Multi-Active Groups: Yayasan, PAUD, SD, SMP, SMA, etc.)
+        $activeGrups = $db->findAll("SELECT id FROM penugasan_grup WHERE is_active = 1");
         $assignedPegawaiIds = [];
-        if ($activeGrup) {
-            $assignedRows = $db->findAll("SELECT DISTINCT pegawai_id FROM pegawai_penugasan WHERE grup_id = ? AND status = 'Aktif'", [$activeGrup['id']]);
+        if (!empty($activeGrups)) {
+            $activeGrupIds = array_column($activeGrups, 'id');
+            $placeholders = implode(',', array_fill(0, count($activeGrupIds), '?'));
+            $assignedRows = $db->findAll("SELECT DISTINCT pegawai_id FROM pegawai_penugasan WHERE grup_id IN ($placeholders) AND status = 'Aktif'", $activeGrupIds);
             $assignedPegawaiIds = array_column($assignedRows, 'pegawai_id');
         }
 
@@ -711,31 +713,56 @@ class PegawaiController
     // =========================================================================
 
     /**
-     * Sinkronisasi data penugasan dari grup aktif ke tabel pegawai
+     * Sinkronisasi data penugasan dari SEMUA grup aktif ke tabel pegawai (Multi-Aktif: Yayasan, PAUD, SD, SMP, SMA, dll.)
      */
-    private static function syncGroupToPegawai(int $grupId): void
+    private static function syncAllActiveGroupsToPegawai(): void
     {
         $db = Database::getInstance();
+        
+        // Ambil seluruh penugasan pegawai berstatus 'Aktif' dari SEMUA grup penugasan yang aktif
         $assignments = $db->findAll("
-            SELECT pp.pegawai_id, pp.tmt_mulai, mut.nama AS nama_unit, mj.nama AS nama_jabatan
+            SELECT pp.pegawai_id, pp.tmt_mulai, mut.nama AS nama_unit, mj.nama AS nama_jabatan, pg.nama_grup, pg.id as grup_id
             FROM pegawai_penugasan pp
+            JOIN penugasan_grup pg ON pg.id = pp.grup_id
             LEFT JOIN master_unit_tugas mut ON mut.id = pp.unit_tugas_id
             LEFT JOIN master_jabatan mj ON mj.id = pp.jabatan_id
-            WHERE pp.grup_id = ? AND pp.status = 'Aktif'
-        ", [$grupId]);
+            WHERE pg.is_active = 1 AND pp.status = 'Aktif'
+            ORDER BY pg.id ASC, pp.id ASC
+        ");
 
-        // Reset semua unit_tugas dan jabatan pegawai terlebih dahulu
-        $db->query("UPDATE pegawai SET unit_tugas = NULL, jabatan = NULL WHERE 1=1");
-
-        // Terapkan penugasan dari grup aktif
+        // Map penugasan per pegawai ID
+        $pegawaiMap = [];
         foreach ($assignments as $a) {
-            if (!empty($a['pegawai_id'])) {
+            $pId = (int)$a['pegawai_id'];
+            if (!$pId) continue;
+            // Jika ada multi penugasan, simpan penugasan yang valid
+            $pegawaiMap[$pId] = [
+                'unit_tugas' => $a['nama_unit'] ?? null,
+                'jabatan' => $a['nama_jabatan'] ?? null,
+            ];
+        }
+
+        // Terapkan ke tabel pegawai
+        $allPegawai = $db->findAll("SELECT id FROM pegawai");
+        foreach ($allPegawai as $p) {
+            $pId = (int)$p['id'];
+            if (isset($pegawaiMap[$pId])) {
                 $db->update('pegawai', [
-                    'unit_tugas' => $a['nama_unit'] ?? null,
-                    'jabatan' => $a['nama_jabatan'] ?? null
-                ], 'id = ?', [$a['pegawai_id']]);
+                    'unit_tugas' => $pegawaiMap[$pId]['unit_tugas'],
+                    'jabatan' => $pegawaiMap[$pId]['jabatan']
+                ], 'id = ?', [$pId]);
+            } else {
+                $db->update('pegawai', [
+                    'unit_tugas' => null,
+                    'jabatan' => null
+                ], 'id = ?', [$pId]);
             }
         }
+    }
+
+    private static function syncGroupToPegawai(int $grupId = 0): void
+    {
+        self::syncAllActiveGroupsToPegawai();
     }
 
     /**
@@ -770,7 +797,14 @@ class PegawaiController
             ORDER BY pg.is_active DESC, pg.created_at DESC
         ";
         $grupList = $db->findAll($sql, $params);
-        $activeGrup = $db->find("SELECT * FROM penugasan_grup WHERE is_active = 1 LIMIT 1");
+        $activeGrups = $db->findAll("
+            SELECT pg.*, COUNT(pp.id) as total_pegawai
+            FROM penugasan_grup pg
+            LEFT JOIN pegawai_penugasan pp ON pp.grup_id = pg.id
+            WHERE pg.is_active = 1
+            GROUP BY pg.id
+            ORDER BY pg.nama_grup ASC
+        ");
 
         ob_start();
         include MODULES_PATH . '/kelola-pegawai/views/penugasan/index.php';
@@ -809,11 +843,6 @@ class PegawaiController
 
         $db = Database::getInstance();
         $isActive = !empty($_POST['is_active']) ? 1 : 0;
-
-        if ($isActive) {
-            // Nonaktifkan semua grup lain karena hanya 1 grup yang boleh aktif
-            $db->query("UPDATE penugasan_grup SET is_active = 0");
-        }
 
         // Upload Berkas Kop Surat jika ada
         $file_kop = null;
@@ -917,11 +946,6 @@ class PegawaiController
 
         $isActive = !empty($_POST['is_active']) ? 1 : 0;
 
-        if ($isActive) {
-            // Nonaktifkan semua grup lain
-            $db->query("UPDATE penugasan_grup SET is_active = 0");
-        }
-
         // Upload Berkas Kop Surat jika ada
         $file_kop = $grup['file_kop'];
         if (!empty($_POST['hapus_file_kop']) && $_POST['hapus_file_kop'] == '1') {
@@ -981,9 +1005,7 @@ class PegawaiController
             'keterangan' => trim($_POST['keterangan'] ?? '')
         ], 'id = ?', [$id]);
 
-        if ($isActive) {
-            self::syncGroupToPegawai((int)$id);
-        }
+        self::syncAllActiveGroupsToPegawai();
 
         Response::withSuccess(url('kelola-pegawai/penugasan'), 'Grup penugasan berhasil diperbarui.');
     }
@@ -1112,7 +1134,7 @@ class PegawaiController
         Response::withSuccess(url('kelola-pegawai/penugasan/grup/' . $id . '/cetak'), 'Pengaturan SK berhasil diperbarui.');
     }
 
-    public static function setAktifGrup(string $id): void
+    public static function toggleAktifGrup(string $id): void
     {
         if (!CSRF::validate()) { Response::withError(url('kelola-pegawai/penugasan'), 'Token tidak valid.'); return; }
 
@@ -1123,16 +1145,20 @@ class PegawaiController
             return;
         }
 
-        // 1. Nonaktifkan semua grup lain (Hanya 1 grup yang aktif)
-        $db->query("UPDATE penugasan_grup SET is_active = 0");
+        $newStatus = $grup['is_active'] ? 0 : 1;
+        $db->update('penugasan_grup', ['is_active' => $newStatus], 'id = ?', [$id]);
 
-        // 2. Aktifkan grup ini
-        $db->update('penugasan_grup', ['is_active' => 1], 'id = ?', [$id]);
+        self::syncAllActiveGroupsToPegawai();
 
-        // 3. Sinkronisasikan jabatan dan unit tugas di tabel pegawai
-        self::syncGroupToPegawai((int)$id);
+        $msg = $newStatus 
+            ? "Grup '{$grup['nama_grup']}' berhasil diaktifkan! Grup ini kini aktif bersama grup unit lainnya."
+            : "Grup '{$grup['nama_grup']}' berhasil dinonaktifkan.";
+        Response::withSuccess(url('kelola-pegawai/penugasan'), $msg);
+    }
 
-        Response::withSuccess(url('kelola-pegawai/penugasan'), "Grup '{$grup['nama_grup']}' berhasil diaktifkan! Data jabatan dan unit tugas pegawai telah disinkronkan.");
+    public static function setAktifGrup(string $id): void
+    {
+        self::toggleAktifGrup($id);
     }
 
     public static function salinGrup(string $id): void
@@ -1203,9 +1229,9 @@ class PegawaiController
             $db->delete('pegawai_penugasan', 'grup_id = ?', [$id]);
             $db->delete('penugasan_grup', 'id = ?', [$id]);
 
-            // Jika yang dihapus grup aktif, bersihkan jabatan di pegawai
+            // Jika yang dihapus grup aktif, sinkronkan ulang seluruh grup aktif yang tersisa
             if ($grup['is_active']) {
-                $db->query("UPDATE pegawai SET unit_tugas = NULL, jabatan = NULL WHERE 1=1");
+                self::syncAllActiveGroupsToPegawai();
             }
         }
 
@@ -1361,16 +1387,9 @@ class PegawaiController
         // Sinkronisasi otomatis ke riwayat karir pegawai
         self::syncPenugasanToKarir((int)$newPenugasanId);
 
-        // Jika grup ini sedang aktif dan penugasan aktif, sinkronkan ke pegawai
-        if ($grup['is_active'] && $status === 'Aktif') {
-            $unit = $db->find("SELECT nama FROM master_unit_tugas WHERE id = ?", [$_POST['unit_tugas_id']]);
-            $jabatan = $db->find("SELECT nama FROM master_jabatan WHERE id = ?", [$_POST['jabatan_id']]);
-            if ($unit && $jabatan) {
-                $db->update('pegawai', [
-                    'unit_tugas' => $unit['nama'],
-                    'jabatan' => $jabatan['nama']
-                ], 'id = ?', [$_POST['pegawai_id']]);
-            }
+        // Jika grup ini sedang aktif, sinkronkan ke pegawai
+        if ($grup['is_active']) {
+            self::syncAllActiveGroupsToPegawai();
         }
 
         Response::withSuccess(url('kelola-pegawai/penugasan/grup/' . $id), 'Pegawai berhasil ditambahkan ke dalam grup penugasan.');
@@ -1466,7 +1485,7 @@ class PegawaiController
         // Jika grup ini aktif, sinkronkan ke pegawai
         $grup = $db->find("SELECT is_active FROM penugasan_grup WHERE id = ?", [$grupId]);
         if ($grup && $grup['is_active']) {
-            self::syncGroupToPegawai((int)$grupId);
+            self::syncAllActiveGroupsToPegawai();
         }
 
         Response::withSuccess(url('kelola-pegawai/penugasan/grup/' . $grupId), 'Penugasan pegawai berhasil diperbarui.');
@@ -1496,7 +1515,7 @@ class PegawaiController
         // Jika grup ini aktif, perbarui status pegawai
         $grup = $db->find("SELECT is_active FROM penugasan_grup WHERE id = ?", [$grupId]);
         if ($grup && $grup['is_active']) {
-            self::syncGroupToPegawai((int)$grupId);
+            self::syncAllActiveGroupsToPegawai();
         }
 
         Response::withSuccess(url('kelola-pegawai/penugasan/grup/' . $grupId), 'Penugasan pegawai berhasil dihapus dari grup.');

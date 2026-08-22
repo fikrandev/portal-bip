@@ -415,6 +415,50 @@ class PortalGuruController
     }
 
     /**
+     * Quran API Proxy: Mushaf Page Detail (Pages 1 to 604)
+     */
+    public static function apiPageDetail($page): void
+    {
+        header('Content-Type: application/json; charset=utf-8');
+        header('Access-Control-Allow-Origin: *');
+
+        $page = (int)$page;
+        if ($page < 1 || $page > 604) {
+            Response::json(['code' => 400, 'message' => 'Nomor halaman tidak valid (1-604)']);
+            return;
+        }
+
+        $cacheDir = BASE_PATH . '/storage/cache/quran/pages';
+        if (!is_dir($cacheDir)) {
+            @mkdir($cacheDir, 0777, true);
+        }
+        $cacheFile = $cacheDir . '/page_' . $page . '.json';
+
+        if (file_exists($cacheFile) && (time() - filemtime($cacheFile) < 86400 * 90)) {
+            readfile($cacheFile);
+            exit;
+        }
+
+        $url = "https://api.alquran.cloud/v1/page/{$page}/quran-uthmani";
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 8);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)');
+        $res = curl_exec($ch);
+        $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($code === 200 && $res) {
+            @file_put_contents($cacheFile, $res);
+            echo $res;
+            exit;
+        }
+
+        Response::json(['code' => 500, 'message' => "Gagal memuat data halaman $page"]);
+    }
+
+    /**
      * Pencatatan Keterlambatan Siswa
      */
     public static function keterlambatanSiswa(): void

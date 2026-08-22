@@ -27,8 +27,15 @@
             Cetak SK Penugasan
         </a>
 
-        <?php if (!$grup['is_active']): ?>
-        <form method="POST" action="<?= url('kelola-pegawai/penugasan/grup/set-aktif/' . $grup['id']) ?>" onsubmit="AppNotif.confirm(event, this, 'Aktifkan Grup Ini', 'Jabatan dan unit tugas semua pegawai di sistem akan langsung mengikuti grup ini.');">
+        <?php if ($grup['is_active']): ?>
+        <form method="POST" action="<?= url('kelola-pegawai/penugasan/grup/toggle-aktif/' . $grup['id']) ?>" onsubmit="AppNotif.confirm(event, this, 'Nonaktifkan Grup', 'Nonaktifkan grup ini? Data jabatan pegawai akan disesuaikan dengan grup aktif lainnya.');">
+            <?= CSRF::field() ?>
+            <button type="submit" class="px-4 py-2.5 bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-700 text-sm font-bold rounded-xl border border-slate-200 hover:border-rose-200 transition-all flex items-center gap-1.5">
+                <span>🛑 Nonaktifkan Grup</span>
+            </button>
+        </form>
+        <?php else: ?>
+        <form method="POST" action="<?= url('kelola-pegawai/penugasan/grup/toggle-aktif/' . $grup['id']) ?>" onsubmit="AppNotif.confirm(event, this, 'Aktifkan Grup Ini', 'Aktifkan grup ini? Grup ini akan berjalan aktif bersamaan dengan grup unit aktif lainnya.');">
             <?= CSRF::field() ?>
             <button type="submit" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-xl shadow-lg shadow-emerald-600/20 transition-all flex items-center gap-1.5">
                 <span>⚡ Aktifkan Grup</span>

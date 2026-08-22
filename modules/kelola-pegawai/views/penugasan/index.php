@@ -1,6 +1,6 @@
 <?php
 /**
- * Grup Penugasan Pegawai - List View
+ * Grup Penugasan Pegawai - List View (Mendukung Multi-Aktif: Yayasan, PAUD, SD, SMP, SMA, dll.)
  */
 ?>
 
@@ -8,7 +8,7 @@
 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
     <div>
         <h1 class="text-2xl font-bold text-slate-800"><?= e($pageTitle) ?></h1>
-        <p class="text-sm text-slate-500 mt-1">Kelola grup/periode SK pembagian tugas dan jabatan pegawai.</p>
+        <p class="text-sm text-slate-500 mt-1">Kelola grup/periode SK pembagian tugas dan jabatan pegawai (bisa aktif lebih dari 5 grup unit bersamaan).</p>
     </div>
     <div class="flex flex-wrap items-center gap-3">
         <a href="<?= url('kelola-pegawai') ?>" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 hover:text-primary-600 transition-all shadow-sm">
@@ -26,32 +26,53 @@
     </div>
 </div>
 
-<?php if ($activeGrup): ?>
-<!-- Banner Grup Aktif -->
-<div class="mb-6 p-5 rounded-3xl bg-gradient-to-r from-emerald-600 to-teal-700 text-white shadow-xl shadow-emerald-600/20 relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-4">
-    <div class="relative z-10 flex items-center gap-4">
-        <div class="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-2xl shrink-0">
-            ⚡
-        </div>
-        <div>
-            <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-white/20 text-white mb-1">
-                <span class="w-2 h-2 rounded-full bg-emerald-300 animate-pulse"></span>
-                GRUP AKTIF SAAT INI
+<?php if (!empty($activeGrups)): ?>
+<!-- Banner Multi-Grup Aktif -->
+<div class="mb-6 p-6 rounded-3xl bg-gradient-to-br from-emerald-600 via-teal-700 to-slate-900 text-white shadow-xl shadow-emerald-600/20 relative overflow-hidden">
+    <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-4 mb-4">
+        <div class="flex items-center gap-3.5">
+            <div class="w-12 h-12 rounded-2xl bg-white/15 backdrop-blur-md flex items-center justify-center text-2xl shrink-0 shadow-inner">
+                ⚡
             </div>
-            <h2 class="text-xl font-bold text-white"><?= e($activeGrup['nama_grup']) ?></h2>
-            <p class="text-xs text-emerald-100 mt-0.5">
-                SK: <?= e($activeGrup['no_sk'] ?: '-') ?> | TMT: <?= !empty($activeGrup['tmt_mulai']) ? date('d M Y', strtotime($activeGrup['tmt_mulai'])) : '-' ?>
-                | Seluruh jabatan di data pegawai mengikuti grup ini.
-            </p>
+            <div>
+                <div class="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[11px] font-extrabold bg-emerald-400 text-emerald-950 mb-1 shadow-sm">
+                    <span class="w-2 h-2 rounded-full bg-emerald-950 animate-ping"></span>
+                    <?= count($activeGrups) ?> GRUP PENUGASAN AKTIF BERSAMAAN
+                </div>
+                <h2 class="text-lg font-bold text-white">Status Penugasan Berjalan di Seluruh Unit</h2>
+                <p class="text-xs text-emerald-100/90 mt-0.5">
+                    Grup unit (Yayasan, PAUD, SD, SMP, SMA, dll.) berjalan aktif secara paralel untuk penetapan jabatan dan cetak SK.
+                </p>
+            </div>
         </div>
     </div>
-    <div class="relative z-10 flex items-center gap-2 shrink-0">
-        <a href="<?= url('kelola-pegawai/penugasan/grup/' . $activeGrup['id'] . '/cetak') ?>" target="_blank" class="px-4 py-2.5 bg-amber-400 hover:bg-amber-300 text-amber-950 text-xs font-bold rounded-xl shadow transition-all flex items-center gap-1.5">
-            <span>🖨️ Cetak SK</span>
-        </a>
-        <a href="<?= url('kelola-pegawai/penugasan/grup/' . $activeGrup['id']) ?>" class="px-5 py-2.5 bg-white text-emerald-800 hover:bg-emerald-50 text-xs font-bold rounded-xl shadow transition-all">
-            Kelola Anggota Penugasan →
-        </a>
+
+    <!-- Grid Pill Grup Aktif -->
+    <div class="relative z-10 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+        <?php foreach ($activeGrups as $ag): ?>
+            <div class="bg-white/10 backdrop-blur-md border border-white/15 hover:bg-white/15 rounded-2xl p-3.5 transition-all flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between gap-2 mb-1.5">
+                        <span class="px-2 py-0.5 rounded-md bg-emerald-400/20 text-emerald-300 font-bold text-[10px] uppercase">
+                            AKTIF
+                        </span>
+                        <span class="text-[10px] font-mono text-emerald-200">
+                            <?= (int)$ag['total_pegawai'] ?> Staf
+                        </span>
+                    </div>
+                    <h3 class="font-bold text-white text-xs leading-snug line-clamp-2"><?= e($ag['nama_grup']) ?></h3>
+                    <p class="text-[10.5px] text-emerald-100/70 font-mono mt-1 truncate">SK: <?= e($ag['no_sk'] ?: '-') ?></p>
+                </div>
+                <div class="mt-3 pt-2.5 border-t border-white/10 flex items-center justify-between gap-2">
+                    <a href="<?= url('kelola-pegawai/penugasan/grup/' . $ag['id']) ?>" class="text-[11px] font-bold text-white hover:text-emerald-300 flex items-center gap-1 transition-colors">
+                        Kelola →
+                    </a>
+                    <a href="<?= url('kelola-pegawai/penugasan/grup/' . $ag['id'] . '/cetak') ?>" target="_blank" class="text-[11px] font-bold text-amber-300 hover:text-amber-200" title="Cetak SK">
+                        🖨️ SK
+                    </a>
+                </div>
+            </div>
+        <?php endforeach; ?>
     </div>
 </div>
 <?php endif; ?>
@@ -89,7 +110,7 @@
         📂
     </div>
     <h3 class="text-base font-bold text-slate-800 mb-1">Belum Ada Grup Penugasan</h3>
-    <p class="text-xs text-slate-500 max-w-md mx-auto mb-5">Buat grup penugasan seperti "Pembagian Tugas 2026/2027 Ganjil" untuk mulai menugaskan pegawai.</p>
+    <p class="text-xs text-slate-500 max-w-md mx-auto mb-5">Buat grup penugasan seperti "Pembagian Tugas 2026/2027 Unit SD" untuk mulai menugaskan pegawai.</p>
     <a href="<?= url('kelola-pegawai/penugasan/grup/create') ?>" class="inline-flex items-center gap-2 px-5 py-2.5 bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold rounded-xl shadow-lg shadow-primary-600/20 transition-all">
         Buat Grup Penugasan Baru
     </a>
@@ -97,16 +118,16 @@
 <?php else: ?>
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
     <?php foreach ($grupList as $g): ?>
-    <div class="bg-white rounded-3xl border <?= $g['is_active'] ? 'border-emerald-300 ring-2 ring-emerald-500/20 shadow-lg shadow-emerald-500/10' : 'border-slate-200/80 shadow-sm hover:shadow-md' ?> p-6 flex flex-col justify-between transition-all">
+    <div class="bg-white rounded-3xl border <?= $g['is_active'] ? 'border-emerald-400 ring-2 ring-emerald-500/20 shadow-lg shadow-emerald-500/10' : 'border-slate-200/80 shadow-sm hover:shadow-md' ?> p-6 flex flex-col justify-between transition-all">
         
         <div>
             <!-- Header Grup -->
             <div class="flex items-start justify-between gap-3 mb-4">
-                <div>
-                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold <?= $g['is_active'] ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600' ?>">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold <?= $g['is_active'] ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-slate-100 text-slate-600 border border-slate-200' ?>">
                         <?= $g['is_active'] ? '● AKTIF' : 'NONAKTIF' ?>
                     </span>
-                    <span class="inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold bg-primary-50 text-primary-700 ml-1">
+                    <span class="inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold bg-primary-50 text-primary-700 border border-primary-100">
                         <?= e($g['semester']) ?>
                     </span>
                 </div>
@@ -156,7 +177,7 @@
         <div class="pt-4 border-t border-slate-100 flex flex-col gap-3">
             <div class="flex items-center justify-between text-xs">
                 <span class="text-slate-500">Anggota Pegawai:</span>
-                <span class="font-bold text-primary-700 bg-primary-50 px-2.5 py-0.5 rounded-full font-mono">
+                <span class="font-bold text-primary-700 bg-primary-50 px-2.5 py-0.5 rounded-full font-mono border border-primary-100">
                     <?= (int)$g['total_pegawai'] ?> Orang
                 </span>
             </div>
@@ -170,11 +191,20 @@
                     <span>🖨️ SK</span>
                 </a>
 
-                <?php if (!$g['is_active']): ?>
-                <form method="POST" action="<?= url('kelola-pegawai/penugasan/grup/set-aktif/' . $g['id']) ?>" class="shrink-0" onsubmit="AppNotif.confirm(event, this, 'Aktifkan Grup Penugasan', 'Aktifkan grup ini? Jabatan dan unit tugas semua pegawai akan diperbarui mengikuti grup ini.');">
+                <?php if ($g['is_active']): ?>
+                <!-- Tombol Nonaktifkan -->
+                <form method="POST" action="<?= url('kelola-pegawai/penugasan/grup/toggle-aktif/' . $g['id']) ?>" class="shrink-0" onsubmit="AppNotif.confirm(event, this, 'Nonaktifkan Grup', 'Nonaktifkan grup ini? Data jabatan pegawai akan disesuaikan dengan grup aktif lainnya.');">
+                    <?= CSRF::field() ?>
+                    <button type="submit" class="px-3 py-2 bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-700 text-xs font-bold rounded-xl border border-slate-200 hover:border-rose-200 transition-all flex items-center gap-1" title="Nonaktifkan Grup">
+                        <span>🛑 Nonaktif</span>
+                    </button>
+                </form>
+                <?php else: ?>
+                <!-- Tombol Aktifkan -->
+                <form method="POST" action="<?= url('kelola-pegawai/penugasan/grup/toggle-aktif/' . $g['id']) ?>" class="shrink-0" onsubmit="AppNotif.confirm(event, this, 'Aktifkan Grup Penugasan', 'Aktifkan grup ini? Grup ini akan berjalan aktif bersamaan dengan grup unit aktif lainnya (Yayasan, PAUD, SD, SMP, SMA).');">
                     <?= CSRF::field() ?>
                     <button type="submit" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow transition-all flex items-center gap-1" title="Aktifkan Grup Ini">
-                        <span>⚡ Aktif</span>
+                        <span>⚡ Aktifkan</span>
                     </button>
                 </form>
                 <?php endif; ?>

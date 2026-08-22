@@ -12,12 +12,6 @@ $currentPath = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $systemModules = ['dashboard', 'kelola-pengguna', 'kelola-peran', 'manajemen-modul'];
 ?>
 
-<!-- Mobile Overlay -->
-<div id="sidebar-overlay" 
-     class="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 hidden lg:hidden transition-opacity duration-300"
-     onclick="toggleSidebar()"
-     aria-hidden="true"></div>
-
 <!-- Sidebar -->
 <aside id="sidebar" 
        class="fixed top-0 left-0 z-50 h-full w-[280px] transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col"

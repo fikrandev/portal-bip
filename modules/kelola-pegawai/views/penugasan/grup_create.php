@@ -130,12 +130,12 @@
                 <textarea name="keterangan" rows="3" placeholder="Keterangan opsional mengenai grup penugasan ini..." class="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-slate-900 focus:border-primary-500 transition-colors text-sm"><?= old('keterangan') ?></textarea>
             </div>
 
-            <div class="p-4 rounded-2xl bg-amber-50 border border-amber-200">
+            <div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-200">
                 <label class="inline-flex items-start gap-3 cursor-pointer">
-                    <input type="checkbox" name="is_active" value="1" class="mt-1 rounded border-amber-400 text-amber-600 focus:ring-0">
+                    <input type="checkbox" name="is_active" value="1" class="mt-1 rounded border-emerald-400 text-emerald-600 focus:ring-0">
                     <div>
-                        <span class="text-sm font-bold text-amber-950">Jadikan Grup Aktif Saat Ini</span>
-                        <p class="text-xs text-amber-700 mt-0.5">Jika dicentang, grup ini akan menjadi satu-satunya grup aktif dan jabatan pegawai di sistem akan langsung mengikuti grup ini.</p>
+                        <span class="text-sm font-bold text-emerald-950">Jadikan Grup Aktif Saat Ini</span>
+                        <p class="text-xs text-emerald-700 mt-0.5">Jika dicentang, grup ini akan aktif bersamaan dengan grup unit aktif lainnya (Yayasan, PAUD, SD, SMP, SMA, dll.) dan jabatan pegawai di sistem akan mengikuti penugasan grup ini.</p>
                     </div>
                 </label>
             </div>
