@@ -23,7 +23,16 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
+        @font-face {
+            font-family: 'Uthmani';
+            src: url('https://cdn.qurancdn.com/assets/fonts/quran/hafs/uthmanic/KFGQPC_Uthmanic_Script_HAFS_Regular.woff2') format('woff2'),
+                 url('https://cdn.qurancdn.com/assets/fonts/quran/hafs/uthmanic/KFGQPC_Uthmanic_Script_HAFS_Regular.woff') format('woff');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
         .font-arabic { font-family: 'Amiri', 'Traditional Arabic', 'Scheherazade New', serif; }
+        .font-quran { font-family: 'Uthmani', 'Amiri', 'Traditional Arabic', serif; }
     </style>
     
     <!-- Tailwind CSS 4 -->

@@ -321,8 +321,8 @@
             </div>
 
             <!-- Bismillah Header (Used in Mode 1 & 3) -->
-            <div id="reader-bismillah-box" class="py-2 text-center">
-                <p class="font-arabic text-2xl sm:text-3xl text-emerald-950 font-bold leading-relaxed">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</p>
+            <div id="reader-bismillah-box" class="py-3 text-center">
+                <p class="font-quran text-3xl sm:text-4xl text-emerald-950 font-normal leading-relaxed">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</p>
             </div>
         </div>
 
@@ -351,9 +351,9 @@
                 </div>
 
                 <!-- Page Flowing Content Mount -->
-                <div id="mushaf-page-body" class="text-right font-arabic text-slate-950 leading-[2.9] select-none min-h-[350px]" 
+                <div id="mushaf-page-body" class="text-right font-quran text-slate-950 leading-loose select-none min-h-[400px]" 
                      dir="rtl" 
-                     style="font-size: 24px; text-align: justify; text-align-last: center;">
+                     style="font-size: 26px; text-align: justify; text-align-last: center; text-justify: inter-word;">
                     <!-- Dynamically populated per page -->
                 </div>
 
@@ -949,7 +949,7 @@
 
                     <!-- Arabic Text -->
                     <div class="pt-1">
-                        <p class="font-arabic text-right text-slate-950 font-bold leading-loose tracking-wide arabic-text" style="font-size: ${arabicFontSize}px;">
+                        <p class="font-quran text-right text-slate-950 font-normal leading-[2.5] tracking-wide arabic-text" style="font-size: ${arabicFontSize + 4}px;">
                             ${teksArab}
                         </p>
                     </div>
@@ -1108,7 +1108,7 @@
                 if (surahNum !== 1 && surahNum !== 9) {
                     html += `
                         <div class="text-center py-2 mb-2 border-b border-amber-900/10">
-                            <p class="font-arabic text-2xl text-emerald-950 font-bold">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</p>
+                            <p class="font-quran text-3xl text-emerald-950 font-normal">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</p>
                         </div>
                     `;
                 }
@@ -1281,9 +1281,9 @@
                             <span>👁️ Ketuk untuk Menampilkan Ayat</span>
                         </div>
 
-                        <p class="font-arabic text-right text-slate-950 font-bold leading-loose tracking-wide hafalan-arabic-content" 
+                        <p class="font-quran text-right text-slate-950 font-normal leading-[2.5] tracking-wide hafalan-arabic-content" 
                            id="hafalan-arabic-${noAyat}" 
-                           style="font-size: ${arabicFontSize + 1}px;">
+                           style="font-size: ${arabicFontSize + 5}px;">
                             <span class="hafalan-clue-word text-emerald-800">${firstWords}</span>
                             <span class="hafalan-rest-words">${remainingWords ? ' ' + remainingWords : ''}</span>
                         </p>
