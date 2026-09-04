@@ -109,6 +109,14 @@ class Database
     }
 
     /**
+     * Get last inserted ID
+     */
+    public function lastInsertId(?string $name = null): string
+    {
+        return $this->pdo->lastInsertId($name);
+    }
+
+    /**
      * Update rows
      * 
      * @param string $table      Table name

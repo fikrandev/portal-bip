@@ -27,6 +27,7 @@ require_once BASE_PATH . '/core/Validator.php';
 require_once BASE_PATH . '/core/Response.php';
 require_once BASE_PATH . '/core/ExcelHelper.php';
 require_once BASE_PATH . '/core/ModalHelper.php';
+require_once BASE_PATH . '/core/DropdownHelper.php';
 
 // ── Global System Settings ──────────────────────────
 try {
@@ -82,8 +83,8 @@ function asset(string $path): string {
 /**
  * Get old input value (for form repopulation)
  */
-function old(string $field, string $default = ''): string {
-    return Response::oldInput($field, $default);
+function old(string $field, mixed $default = ''): string {
+    return Response::oldInput($field, (string)($default ?? ''));
 }
 
 /**
@@ -123,6 +124,8 @@ require_once BASE_PATH . '/modules/kelola-kelas/controllers/KelasController.php'
 require_once BASE_PATH . '/modules/kelola-pegawai/controllers/PegawaiController.php';
 require_once BASE_PATH . '/modules/pengaturan-sistem/controllers/SettingsController.php';
 require_once BASE_PATH . '/modules/portal-guru/controllers/PortalGuruController.php';
+require_once BASE_PATH . '/modules/kelola-perangkat-pembelajaran/controllers/PerangkatController.php';
+require_once BASE_PATH . '/modules/kelola-perangkat-pembelajaran/controllers/JadwalController.php';
 
 // ── Define Routes ───────────────────────────────────
 
@@ -130,6 +133,9 @@ require_once BASE_PATH . '/modules/portal-guru/controllers/PortalGuruController.
 $router->get('/login', [AuthController::class, 'showLogin'], [[Middleware::class, 'guestOnly']]);
 $router->post('/login', [AuthController::class, 'login']);
 $router->get('/logout', [AuthController::class, 'logout']);
+
+// -- Public Routes --
+$router->get('/validasi-kartu/{id}', [SiswaController::class, 'validasiKartu']);
 
 // -- Dashboard (requires auth) --
 $router->get('/', function() {
@@ -163,12 +169,49 @@ $router->post('/modules-manager/update/{id}', [ModuleController::class, 'update'
 $router->post('/modules-manager/delete/{id}', [ModuleController::class, 'delete'], [Middleware::permissionRequired('modules.delete')]);
 
 // -- Kelola Siswa --
+$router->get('/kelola-siswa/statistik', [SiswaController::class, 'statistik'], [Middleware::permissionRequired('siswa.view')]);
 $router->get('/kelola-siswa', [SiswaController::class, 'index'], [Middleware::permissionRequired('siswa.view')]);
 $router->get('/kelola-siswa/create', [SiswaController::class, 'create'], [Middleware::permissionRequired('siswa.create')]);
 $router->post('/kelola-siswa/store', [SiswaController::class, 'store'], [Middleware::permissionRequired('siswa.create')]);
+$router->get('/kelola-siswa/detail/{id}', [SiswaController::class, 'detail'], [Middleware::permissionRequired('siswa.view')]);
 $router->get('/kelola-siswa/edit/{id}', [SiswaController::class, 'edit'], [Middleware::permissionRequired('siswa.update')]);
 $router->post('/kelola-siswa/update/{id}', [SiswaController::class, 'update'], [Middleware::permissionRequired('siswa.update')]);
 $router->post('/kelola-siswa/delete/{id}', [SiswaController::class, 'delete'], [Middleware::permissionRequired('siswa.delete')]);
+$router->get('/kelola-siswa/cetak/{id}', [SiswaController::class, 'cetak'], [Middleware::permissionRequired('siswa.view')]);
+$router->post('/kelola-siswa/sync', [SiswaController::class, 'syncJurnal'], [Middleware::permissionRequired('siswa.create')]);
+$router->post('/kelola-siswa/sync-dapodik', [SiswaController::class, 'syncDapodikOnline'], [Middleware::permissionRequired('siswa.create')]);
+$router->get('/kelola-siswa/export', [SiswaController::class, 'export'], [Middleware::permissionRequired('siswa.view')]);
+$router->get('/kelola-siswa/foto', [SiswaController::class, 'foto'], [Middleware::permissionRequired('siswa.view')]);
+$router->post('/kelola-siswa/upload-foto', [SiswaController::class, 'uploadFoto'], [Middleware::permissionRequired('siswa.update')]);
+$router->post('/kelola-siswa/upload-foto-zip', [SiswaController::class, 'uploadFotoZip'], [Middleware::permissionRequired('siswa.update')]);
+$router->get('/kelola-siswa/cetak-kartu-massal', [SiswaController::class, 'cetakKartuMassal'], [Middleware::permissionRequired('siswa.view')]);
+$router->get('/kelola-siswa/cetak-kartu/{id}', [SiswaController::class, 'cetakKartu'], [Middleware::permissionRequired('siswa.view')]);
+$router->post('/kelola-siswa/upload-template-kartu', [SiswaController::class, 'uploadTemplateKartu'], [Middleware::permissionRequired('siswa.update')]);
+
+// Buku Induk Siswa
+$router->get('/kelola-siswa/buku-induk', [SiswaController::class, 'bukuInduk'], [Middleware::permissionRequired('siswa.view')]);
+$router->get('/kelola-siswa/buku-induk/export', [SiswaController::class, 'exportBukuInduk'], [Middleware::permissionRequired('siswa.view')]);
+$router->get('/kelola-siswa/buku-induk/{id}', [SiswaController::class, 'detailBukuInduk'], [Middleware::permissionRequired('siswa.view')]);
+$router->get('/kelola-siswa/buku-induk/{id}/cetak', [SiswaController::class, 'cetakBukuInduk'], [Middleware::permissionRequired('siswa.view')]);
+
+// Prestasi Siswa
+$router->get('/kelola-siswa/prestasi', [SiswaController::class, 'prestasi'], [Middleware::permissionRequired('siswa.view')]);
+$router->get('/kelola-siswa/prestasi/create', [SiswaController::class, 'createPrestasi'], [Middleware::permissionRequired('siswa.create')]);
+$router->post('/kelola-siswa/prestasi/store', [SiswaController::class, 'storePrestasi'], [Middleware::permissionRequired('siswa.create')]);
+$router->get('/kelola-siswa/prestasi/edit/{id}', [SiswaController::class, 'editPrestasi'], [Middleware::permissionRequired('siswa.update')]);
+$router->post('/kelola-siswa/prestasi/update/{id}', [SiswaController::class, 'updatePrestasi'], [Middleware::permissionRequired('siswa.update')]);
+$router->post('/kelola-siswa/prestasi/delete/{id}', [SiswaController::class, 'deletePrestasi'], [Middleware::permissionRequired('siswa.delete')]);
+$router->get('/kelola-siswa/prestasi/siswa/{id}', [SiswaController::class, 'timelinePrestasiSiswa'], [Middleware::permissionRequired('siswa.view')]);
+
+// Siswa Keluar & Mutasi
+$router->get('/kelola-siswa/keluar', [SiswaController::class, 'siswaKeluar'], [Middleware::permissionRequired('siswa.view')]);
+$router->get('/kelola-siswa/keluar/create', [SiswaController::class, 'createSiswaKeluar'], [Middleware::permissionRequired('siswa.create')]);
+$router->post('/kelola-siswa/keluar/store', [SiswaController::class, 'storeSiswaKeluar'], [Middleware::permissionRequired('siswa.create')]);
+$router->get('/kelola-siswa/keluar/edit/{id}', [SiswaController::class, 'editSiswaKeluar'], [Middleware::permissionRequired('siswa.update')]);
+$router->post('/kelola-siswa/keluar/update/{id}', [SiswaController::class, 'updateSiswaKeluar'], [Middleware::permissionRequired('siswa.update')]);
+$router->post('/kelola-siswa/keluar/delete/{id}', [SiswaController::class, 'deleteSiswaKeluar'], [Middleware::permissionRequired('siswa.delete')]);
+$router->post('/kelola-siswa/keluar/reaktivasi/{id}', [SiswaController::class, 'reaktivasiSiswa'], [Middleware::permissionRequired('siswa.update')]);
+$router->get('/kelola-siswa/keluar/cetak/{id}', [SiswaController::class, 'cetakSuratPindah'], [Middleware::permissionRequired('siswa.view')]);
 
 // -- Kelola Kelas --
 $router->get('/kelola-kelas', [KelasController::class, 'index'], [[]]);
@@ -178,6 +221,7 @@ $router->get('/kelola-kelas/edit/{id}', [KelasController::class, 'edit'], [[]]);
 $router->post('/kelola-kelas/update/{id}', [KelasController::class, 'update'], [[]]);
 $router->post('/kelola-kelas/delete/{id}', [KelasController::class, 'delete'], [[]]);
 $router->post('/kelola-kelas/copy', [KelasController::class, 'copyClasses'], [[]]);
+$router->post('/kelola-kelas/sync-dapodik', [KelasController::class, 'syncDapodikOnline'], [[]]);
 
 // -- Kelola Pegawai --
 $router->get('/kelola-pegawai/statistik', [PegawaiController::class, 'statistik'], [[]]);
@@ -214,6 +258,11 @@ $router->get('/kelola-pegawai/penugasan/detail/edit/{id}', [PegawaiController::c
 $router->post('/kelola-pegawai/penugasan/detail/update/{id}', [PegawaiController::class, 'updatePenugasanGrup'], [[]]);
 $router->post('/kelola-pegawai/penugasan/detail/delete/{id}', [PegawaiController::class, 'deletePenugasanGrup'], [[]]);
 
+// Aliases for Penugasan member actions
+$router->get('/kelola-pegawai/penugasan/{id}/edit', [PegawaiController::class, 'editPenugasanGrup'], [[]]);
+$router->post('/kelola-pegawai/penugasan/{id}/update', [PegawaiController::class, 'updatePenugasanGrup'], [[]]);
+$router->post('/kelola-pegawai/penugasan/{id}/delete', [PegawaiController::class, 'deletePenugasanGrup'], [[]]);
+
 // -- Riwayat Karir Pegawai & Guru (Otomatis dari SK & Manual) --
 $router->get('/kelola-pegawai/karir', [PegawaiController::class, 'karir'], [[]]);
 $router->get('/kelola-pegawai/karir/create', [PegawaiController::class, 'createKarir'], [[]]);
@@ -241,6 +290,128 @@ $router->post('/kelola-pegawai/pelatihan/update/{id}', [PegawaiController::class
 $router->post('/kelola-pegawai/pelatihan/delete/{id}', [PegawaiController::class, 'deletePelatihan'], [[]]);
 $router->get('/kelola-pegawai/pelatihan/pegawai/{id}', [PegawaiController::class, 'pelatihanPegawai'], [[]]);
 
+// -- Kelola Perangkat Pembelajaran --
+$router->get('/kelola-perangkat-pembelajaran', [PerangkatController::class, 'dashboard'], [[]]);
+$router->get('/kelola-perangkat-pembelajaran/dashboard', [PerangkatController::class, 'dashboard'], [[]]);
+$router->get('/kelola-rpp', function() {
+    Response::redirect(url('kelola-perangkat-pembelajaran'));
+});
+
+// Jadwal Pelajaran & Auto-Generator
+$router->get('/kelola-perangkat-pembelajaran/jadwal', [JadwalController::class, 'index'], [[]]);
+$router->get('/kelola-perangkat-pembelajaran/jadwal/create', [JadwalController::class, 'create'], [[]]);
+$router->post('/kelola-perangkat-pembelajaran/jadwal/store', [JadwalController::class, 'store'], [[]]);
+$router->get('/kelola-perangkat-pembelajaran/jadwal/edit/{id}', [JadwalController::class, 'edit'], [[]]);
+$router->post('/kelola-perangkat-pembelajaran/jadwal/update/{id}', [JadwalController::class, 'update'], [[]]);
+$router->post('/kelola-perangkat-pembelajaran/jadwal/delete/{id}', [JadwalController::class, 'delete'], [[]]);
+$router->post('/kelola-perangkat-pembelajaran/jadwal/set-active/{id}', [JadwalController::class, 'setActive'], [[]]);
+$router->get('/kelola-perangkat-pembelajaran/jadwal/pengaturan-jp/{id}', [JadwalController::class, 'pengaturanJp'], [[]]);
+$router->post('/kelola-perangkat-pembelajaran/jadwal/pengaturan-jp/{id}', [JadwalController::class, 'simpanPengaturanJp'], [[]]);
+$router->post('/kelola-perangkat-pembelajaran/jadwal/slot-add/{id}', [JadwalController::class, 'tambahSlotKhusus'], [[]]);
+$router->post('/kelola-perangkat-pembelajaran/jadwal/slot-delete/{id}/{slotId}', [JadwalController::class, 'hapusSlotWaktu'], [[]]);
+$router->post('/kelola-perangkat-pembelajaran/jadwal/slot-edit/{id}/{slotId}', [JadwalController::class, 'editSlotWaktu'], [[]]);
+$router->post('/kelola-perangkat-pembelajaran/jadwal/slot-sync-day/{id}/{hari}', [JadwalController::class, 'syncHari'], [[]]);
+$router->get('/kelola-perangkat-pembelajaran/jadwal/generate/{id}', [JadwalController::class, 'generate'], [[]]);
+$router->post('/kelola-perangkat-pembelajaran/jadwal/run-generate/{id}', [JadwalController::class, 'runGenerate'], [[]]);
+$router->get('/kelola-perangkat-pembelajaran/jadwal/matriks/{id}', [JadwalController::class, 'matriks'], [[]]);
+$router->get('/kelola-perangkat-pembelajaran/jadwal/cetak-kelas/{id}', [JadwalController::class, 'cetakKelas'], [[]]);
+$router->get('/kelola-perangkat-pembelajaran/jadwal/cetak-guru/{id}', [JadwalController::class, 'cetakGuru'], [[]]);
+$router->get('/kelola-perangkat-pembelajaran/jadwal/export/{id}', [JadwalController::class, 'export'], [[]]);
+
+// Kalender Pendidikan (Kaldik)
+$router->get('/kelola-perangkat-pembelajaran/kaldik', [PerangkatController::class, 'kaldik'], [[]]);
+$router->get('/kelola-perangkat-pembelajaran/kaldik/create', [PerangkatController::class, 'createKaldik'], [[]]);
+$router->post('/kelola-perangkat-pembelajaran/kaldik/store', [PerangkatController::class, 'storeKaldik'], [[]]);
+$router->get('/kelola-perangkat-pembelajaran/kaldik/edit/{id}', [PerangkatController::class, 'editKaldik'], [[]]);
+$router->post('/kelola-perangkat-pembelajaran/kaldik/update/{id}', [PerangkatController::class, 'updateKaldik'], [[]]);
+$router->get('/kelola-perangkat-pembelajaran/kaldik/detail/{id}', [PerangkatController::class, 'detailKaldik'], [[]]);
+$router->get('/kelola-perangkat-pembelajaran/kaldik/cetak/{id}', [PerangkatController::class, 'cetakKaldik'], [[]]);
+$router->post('/kelola-perangkat-pembelajaran/kaldik/toggle-active/{id}', [PerangkatController::class, 'toggleActiveKaldik'], [[]]);
+$router->post('/kelola-perangkat-pembelajaran/kaldik/agenda/add/{id}', [PerangkatController::class, 'addKaldikAgenda'], [[]]);
+$router->post('/kelola-perangkat-pembelajaran/kaldik/agenda/delete/{id}', [PerangkatController::class, 'deleteKaldikAgenda'], [[]]);
+
+// Rincian Hari Efektif (HEB & HES Auto-Generated)
+$router->get('/kelola-perangkat-pembelajaran/rincian-hari-efektif', [PerangkatController::class, 'rincianHariEfektif'], [[]]);
+$router->get('/kelola-perangkat-pembelajaran/rincian-hari-efektif/cetak', [PerangkatController::class, 'cetakRincianHariEfektif'], [[]]);
+
+// Hari Efektif Sekolah (HES)
+$router->get('/kelola-perangkat-pembelajaran/hes', [PerangkatController::class, 'hes'], [[]]);
+$router->get('/kelola-perangkat-pembelajaran/hes/create', [PerangkatController::class, 'createHes'], [[]]);
+$router->post('/kelola-perangkat-pembelajaran/hes/store', [PerangkatController::class, 'storeHes'], [[]]);
+$router->get('/kelola-perangkat-pembelajaran/hes/edit/{id}', [PerangkatController::class, 'editHes'], [[]]);
+$router->post('/kelola-perangkat-pembelajaran/hes/update/{id}', [PerangkatController::class, 'updateHes'], [[]]);
+$router->get('/kelola-perangkat-pembelajaran/hes/detail/{id}', [PerangkatController::class, 'detailHes'], [[]]);
+$router->get('/kelola-perangkat-pembelajaran/hes/cetak/{id}', [PerangkatController::class, 'cetakHes'], [[]]);
+
+// Hari Efektif Belajar (HEB)
+$router->get('/kelola-perangkat-pembelajaran/heb', [PerangkatController::class, 'heb'], [[]]);
+$router->get('/kelola-perangkat-pembelajaran/heb/create', [PerangkatController::class, 'createHeb'], [[]]);
+$router->post('/kelola-perangkat-pembelajaran/heb/store', [PerangkatController::class, 'storeHeb'], [[]]);
+$router->get('/kelola-perangkat-pembelajaran/heb/edit/{id}', [PerangkatController::class, 'editHeb'], [[]]);
+$router->post('/kelola-perangkat-pembelajaran/heb/update/{id}', [PerangkatController::class, 'updateHeb'], [[]]);
+$router->get('/kelola-perangkat-pembelajaran/heb/detail/{id}', [PerangkatController::class, 'detailHeb'], [[]]);
+$router->get('/kelola-perangkat-pembelajaran/heb/cetak/{id}', [PerangkatController::class, 'cetakHeb'], [[]]);
+
+// Capaian Pembelajaran & Alur Tujuan Pembelajaran (CP & ATP)
+$router->get('/kelola-perangkat-pembelajaran/cpatp', [PerangkatController::class, 'cpatp'], [[]]);
+$router->get('/kelola-perangkat-pembelajaran/cpatp/ajax-penugasan/{guruId}', [PerangkatController::class, 'getPenugasanAjax'], [[]]);
+$router->get('/kelola-perangkat-pembelajaran/cpatp/ajax-jadwal/{guruId}', [PerangkatController::class, 'getJadwalHariAjax'], [[]]);
+$router->get('/kelola-perangkat-pembelajaran/cpatp/group/create', [PerangkatController::class, 'createCpatpGroup'], [[]]);
+$router->post('/kelola-perangkat-pembelajaran/cpatp/group/store', [PerangkatController::class, 'storeCpatpGroup'], [[]]);
+$router->post('/kelola-perangkat-pembelajaran/cpatp/group/delete/{id}', [PerangkatController::class, 'deleteCpatpGroup'], [[]]);
+$router->get('/kelola-perangkat-pembelajaran/cpatp/group/{id}', [PerangkatController::class, 'cpatpDetailGroup'], [[]]);
+$router->get('/kelola-perangkat-pembelajaran/cpatp/create/{groupId}', [PerangkatController::class, 'createCpatp'], [[]]);
+$router->post('/kelola-perangkat-pembelajaran/cpatp/store/{groupId}', [PerangkatController::class, 'storeCpatp'], [[]]);
+$router->get('/kelola-perangkat-pembelajaran/cpatp/edit/{id}', [PerangkatController::class, 'editCpatp'], [[]]);
+$router->post('/kelola-perangkat-pembelajaran/cpatp/update/{id}', [PerangkatController::class, 'updateCpatp'], [[]]);
+$router->get('/kelola-perangkat-pembelajaran/cpatp/detail/{id}', [PerangkatController::class, 'detailCpatp'], [[]]);
+$router->get('/kelola-perangkat-pembelajaran/cpatp/cetak/{id}', [PerangkatController::class, 'cetakCpatp'], [[]]);
+$router->post('/kelola-perangkat-pembelajaran/cpatp/delete/{id}', [PerangkatController::class, 'deleteCpatp'], [[]]);
+
+// Program Tahunan (Prota)
+$router->get('/kelola-perangkat-pembelajaran/prota', [PerangkatController::class, 'prota'], [[]]);
+$router->get('/kelola-perangkat-pembelajaran/prota/create', [PerangkatController::class, 'createProta'], [[]]);
+$router->post('/kelola-perangkat-pembelajaran/prota/store', [PerangkatController::class, 'storeProta'], [[]]);
+$router->get('/kelola-perangkat-pembelajaran/prota/edit/{id}', [PerangkatController::class, 'editProta'], [[]]);
+$router->post('/kelola-perangkat-pembelajaran/prota/update/{id}', [PerangkatController::class, 'updateProta'], [[]]);
+$router->get('/kelola-perangkat-pembelajaran/prota/detail/{id}', [PerangkatController::class, 'detailProta'], [[]]);
+$router->get('/kelola-perangkat-pembelajaran/prota/cetak/{id}', [PerangkatController::class, 'cetakProta'], [[]]);
+
+// Program Semester (Prosem)
+$router->get('/kelola-perangkat-pembelajaran/prosem', [PerangkatController::class, 'prosem'], [[]]);
+$router->get('/kelola-perangkat-pembelajaran/prosem/group/create', [PerangkatController::class, 'createProsemGroup'], [[]]);
+$router->post('/kelola-perangkat-pembelajaran/prosem/group/store', [PerangkatController::class, 'storeProsemGroup'], [[]]);
+$router->post('/kelola-perangkat-pembelajaran/prosem/group/delete/{id}', [PerangkatController::class, 'deleteProsemGroup'], [[]]);
+$router->get('/kelola-perangkat-pembelajaran/prosem/group/{id}', [PerangkatController::class, 'prosemDetailGroup'], [[]]);
+$router->post('/kelola-perangkat-pembelajaran/prosem/group/{id}/sync', [PerangkatController::class, 'syncProsemFromCpatp'], [[]]);
+$router->get('/kelola-perangkat-pembelajaran/prosem/group/{id}/cetak-semua', [PerangkatController::class, 'cetakSemuaProsemGroup'], [[]]);
+$router->get('/kelola-perangkat-pembelajaran/prosem/create', [PerangkatController::class, 'createProsem'], [[]]);
+$router->get('/kelola-perangkat-pembelajaran/prosem/create/{groupId}', [PerangkatController::class, 'createProsem'], [[]]);
+$router->post('/kelola-perangkat-pembelajaran/prosem/store', [PerangkatController::class, 'storeProsem'], [[]]);
+$router->post('/kelola-perangkat-pembelajaran/prosem/store/{groupId}', [PerangkatController::class, 'storeProsem'], [[]]);
+$router->get('/kelola-perangkat-pembelajaran/prosem/edit/{id}', [PerangkatController::class, 'editProsem'], [[]]);
+$router->post('/kelola-perangkat-pembelajaran/prosem/update/{id}', [PerangkatController::class, 'updateProsem'], [[]]);
+$router->get('/kelola-perangkat-pembelajaran/prosem/detail/{id}', [PerangkatController::class, 'detailProsem'], [[]]);
+$router->get('/kelola-perangkat-pembelajaran/prosem/cetak/{id}', [PerangkatController::class, 'cetakProsem'], [[]]);
+$router->post('/kelola-perangkat-pembelajaran/prosem/delete/{id}', [PerangkatController::class, 'deleteProsem'], [[]]);
+
+// RPP / Modul Ajar
+$router->get('/kelola-perangkat-pembelajaran/rpp', [PerangkatController::class, 'rpp'], [[]]);
+$router->get('/kelola-perangkat-pembelajaran/rpp/create', [PerangkatController::class, 'createRpp'], [[]]);
+$router->post('/kelola-perangkat-pembelajaran/rpp/store', [PerangkatController::class, 'storeRpp'], [[]]);
+$router->get('/kelola-perangkat-pembelajaran/rpp/edit/{id}', [PerangkatController::class, 'editRpp'], [[]]);
+$router->post('/kelola-perangkat-pembelajaran/rpp/update/{id}', [PerangkatController::class, 'updateRpp'], [[]]);
+$router->get('/kelola-perangkat-pembelajaran/rpp/detail/{id}', [PerangkatController::class, 'detailRpp'], [[]]);
+$router->get('/kelola-perangkat-pembelajaran/rpp/cetak/{id}', [PerangkatController::class, 'cetakRpp'], [[]]);
+
+// Pusat Verifikasi & Lifecycle Actions
+$router->get('/kelola-perangkat-pembelajaran/verifikasi', [PerangkatController::class, 'verifikasi'], [[]]);
+$router->post('/kelola-perangkat-pembelajaran/approve/{id}', [PerangkatController::class, 'approve'], [[]]);
+$router->post('/kelola-perangkat-pembelajaran/reject/{id}', [PerangkatController::class, 'reject'], [[]]);
+$router->post('/kelola-perangkat-pembelajaran/submit/{id}', [PerangkatController::class, 'submitReview'], [[]]);
+$router->post('/kelola-perangkat-pembelajaran/draft/{id}', [PerangkatController::class, 'draft'], [[]]);
+$router->post('/kelola-perangkat-pembelajaran/delete/{id}', [PerangkatController::class, 'delete'], [[]]);
+
 // Pengaturan Sistem
 $router->get('/pengaturan-sistem', [SettingsController::class, 'index'], [Middleware::permissionRequired('settings.view')]);
 $router->get('/pengaturan-sistem/identitas', [SettingsController::class, 'identitas'], [Middleware::permissionRequired('settings.view')]);
@@ -260,6 +431,14 @@ $router->post('/pengaturan-sistem/master-pegawai/status-kerja/store', [SettingsC
 $router->post('/pengaturan-sistem/master-pegawai/status-kerja/delete/{id}', [SettingsController::class, 'deleteStatusKerja'], [Middleware::permissionRequired('settings.delete')]);
 $router->post('/pengaturan-sistem/master-pegawai/jenis-pegawai/store', [SettingsController::class, 'storeJenisPegawai'], [Middleware::permissionRequired('settings.update')]);
 $router->post('/pengaturan-sistem/master-pegawai/jenis-pegawai/delete/{id}', [SettingsController::class, 'deleteJenisPegawai'], [Middleware::permissionRequired('settings.delete')]);
+
+$router->get('/pengaturan-sistem/master-pembelajaran', [SettingsController::class, 'masterPembelajaran'], [Middleware::permissionRequired('settings.view')]);
+$router->post('/pengaturan-sistem/master-pembelajaran/store', [SettingsController::class, 'storeMataPelajaran'], [Middleware::permissionRequired('settings.update')]);
+$router->post('/pengaturan-sistem/master-pembelajaran/update/{id}', [SettingsController::class, 'updateMataPelajaran'], [Middleware::permissionRequired('settings.update')]);
+$router->post('/pengaturan-sistem/master-pembelajaran/toggle-aktif/{id}', [SettingsController::class, 'toggleAktifMataPelajaran'], [Middleware::permissionRequired('settings.update')]);
+$router->post('/pengaturan-sistem/master-pembelajaran/delete/{id}', [SettingsController::class, 'deleteMataPelajaran'], [Middleware::permissionRequired('settings.delete')]);
+$router->post('/pengaturan-sistem/master-pembelajaran/bulk-delete', [SettingsController::class, 'bulkDeleteMataPelajaran'], [Middleware::permissionRequired('settings.delete')]);
+$router->post('/pengaturan-sistem/master-pembelajaran/delete-all', [SettingsController::class, 'deleteAllMataPelajaran'], [Middleware::permissionRequired('settings.delete')]);
 
 $router->get('/pengaturan-sistem/reset-data', [SettingsController::class, 'resetDataView'], [Middleware::permissionRequired('settings.view')]);
 $router->post('/pengaturan-sistem/update', [SettingsController::class, 'update'], [Middleware::permissionRequired('settings.update')]);

@@ -207,4 +207,101 @@ class KelasController
 
         Response::withSuccess(url('kelola-kelas') . '?ta=' . $to_ta, "Berhasil menyalin {$copiedCount} kelas.");
     }
+
+    public static function syncDapodikOnline(): void
+    {
+        if (!CSRF::validate()) {
+            Response::withError(url('kelola-kelas'), 'Token keamanan tidak valid.');
+            return;
+        }
+
+        $serverUrl = trim($_POST['dapodik_url'] ?? '');
+        $token = trim($_POST['dapodik_token'] ?? '');
+        $npsn = trim($_POST['dapodik_npsn'] ?? '');
+        $ta_id = (int)($_POST['tahun_akademik_id'] ?? 0);
+
+        if (empty($token) || empty($npsn) || empty($ta_id)) {
+            Response::withError(url('kelola-kelas'), 'Token Web Service, NPSN, dan Tahun Ajaran wajib diisi.');
+            return;
+        }
+
+        $apiUrl = rtrim($serverUrl, '/') . "/WebService/getRombonganBelajar?npsn=" . urlencode($npsn);
+
+        $ch = curl_init($apiUrl);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            "Authorization: Bearer {$token}",
+            "Accept: application/json"
+        ]);
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlError = curl_error($ch);
+        curl_close($ch);
+
+        if ($curlError) {
+            Response::withError(url('kelola-kelas'), "Gagal terhubung ke server Dapodik: {$curlError}");
+            return;
+        }
+
+        $data = json_decode($response, true);
+        if (!$data || (isset($data['success']) && $data['success'] === false)) {
+            $msg = $data['message'] ?? 'Respon server Dapodik tidak valid atau akses ditolak.';
+            Response::withError(url('kelola-kelas'), "Dapodik Error: {$msg}");
+            return;
+        }
+
+        $rows = $data['rows'] ?? $data['data'] ?? [];
+        if (empty($rows)) {
+            Response::withError(url('kelola-kelas'), 'Tidak ada data rombongan belajar yang ditemukan pada respon Dapodik.');
+            return;
+        }
+
+        try {
+            $db = Database::getInstance();
+            $pdo = $db->getConnection();
+
+            // Tambahkan kolom tingkat jika belum ada
+            try {
+                $pdo->exec("ALTER TABLE `kelas` ADD COLUMN IF NOT EXISTS `tingkat` VARCHAR(10) DEFAULT NULL AFTER `nama_kelas`");
+            } catch (Exception $e) {
+                // Abaikan exception
+            }
+
+            $imported = 0;
+            foreach ($rows as $r) {
+                // Opsional: kita bisa filter hanya jenis_rombel = 1 (Kelas)
+                $jenisRombel = (int)($r['jenis_rombel'] ?? 1);
+                if ($jenisRombel !== 1) continue;
+
+                $kelasName = trim($r['nama'] ?? $r['nama_rombel'] ?? '');
+                if (empty($kelasName)) continue;
+
+                $tingkat = '';
+                if (preg_match('/^([1-9]|1[0-2]|IX|IV|V?I{0,3})\b/i', $kelasName, $matches)) {
+                    $tingkat = strtoupper($matches[1]);
+                }
+
+                $exist = $db->find("SELECT id FROM kelas WHERE nama_kelas = ? AND tahun_akademik_id = ?", [$kelasName, $ta_id]);
+                if ($exist) {
+                    // Update tingkat
+                    $db->update('kelas', ['tingkat' => $tingkat, 'is_active' => 1], 'id = ?', [$exist['id']]);
+                } else {
+                    // Insert
+                    $db->insert('kelas', [
+                        'tahun_akademik_id' => $ta_id,
+                        'nama_kelas' => $kelasName,
+                        'tingkat' => $tingkat,
+                        'is_active' => 1
+                    ]);
+                }
+                $imported++;
+            }
+
+            Response::withSuccess(url('kelola-kelas') . '?ta=' . $ta_id, "Berhasil menarik $imported kelas dari Dapodik.");
+        } catch (Exception $e) {
+            Response::withError(url('kelola-kelas'), 'Terjadi kesalahan database: ' . $e->getMessage());
+        }
+    }
 }

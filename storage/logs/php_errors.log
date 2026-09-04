@@ -98,3 +98,641 @@ Stack trace:
 [22-Aug-2026 12:05:23 Asia/Makassar] PHP Warning:  session_start(): Session cannot be started after headers have already been sent in E:\xampp\htdocs\portal-bip\config\session.php on line 31
 [22-Aug-2026 12:05:23 Asia/Makassar] PHP Warning:  Cannot modify header information - headers already sent by (output started at E:\xampp\htdocs\portal-bip\config\app.php:30) in E:\xampp\htdocs\portal-bip\modules\portal-guru\controllers\PortalGuruController.php on line 422
 [22-Aug-2026 12:05:23 Asia/Makassar] PHP Warning:  Cannot modify header information - headers already sent by (output started at E:\xampp\htdocs\portal-bip\config\app.php:30) in E:\xampp\htdocs\portal-bip\modules\portal-guru\controllers\PortalGuruController.php on line 423
+[27-Aug-2026 12:06:12 Asia/Makassar] Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'db_portal_bip.penugasan_grup' doesn't exist | SQL: 
+            SELECT pg.*, 
+                   COUNT(pp.id) as total_pegawai,
+                   SUM(CASE WHEN pp.status = 'Aktif' THEN 1 ELSE 0 END) as total_aktif
+            FROM penugasan_grup pg
+            LEFT JOIN pegawai_penugasan pp ON pp.grup_id = pg.id
+            WHERE 1=1
+            GROUP BY pg.id
+            ORDER BY pg.is_active DESC, pg.created_at DESC
+        
+[27-Aug-2026 12:06:12 Asia/Makassar] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'db_portal_bip.penugasan_grup' doesn't exist in E:\xampp\mysql\data\portal-bip\core\Database.php:66
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\core\Database.php(66): PDO->prepare('\r\n            S...')
+#1 E:\xampp\mysql\data\portal-bip\core\Database.php(90): Database->query('\r\n            S...', Array)
+#2 E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\controllers\PegawaiController.php(799): Database->findAll('\r\n            S...', Array)
+#3 E:\xampp\mysql\data\portal-bip\core\Router.php(98): PegawaiController::penugasan()
+#4 E:\xampp\mysql\data\portal-bip\index.php(354): Router->dispatch()
+#5 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\core\Database.php on line 66
+[27-Aug-2026 12:06:14 Asia/Makassar] Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'db_portal_bip.penugasan_grup' doesn't exist | SQL: 
+            SELECT pg.*, 
+                   COUNT(pp.id) as total_pegawai,
+                   SUM(CASE WHEN pp.status = 'Aktif' THEN 1 ELSE 0 END) as total_aktif
+            FROM penugasan_grup pg
+            LEFT JOIN pegawai_penugasan pp ON pp.grup_id = pg.id
+            WHERE 1=1
+            GROUP BY pg.id
+            ORDER BY pg.is_active DESC, pg.created_at DESC
+        
+[27-Aug-2026 12:06:14 Asia/Makassar] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'db_portal_bip.penugasan_grup' doesn't exist in E:\xampp\mysql\data\portal-bip\core\Database.php:66
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\core\Database.php(66): PDO->prepare('\r\n            S...')
+#1 E:\xampp\mysql\data\portal-bip\core\Database.php(90): Database->query('\r\n            S...', Array)
+#2 E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\controllers\PegawaiController.php(799): Database->findAll('\r\n            S...', Array)
+#3 E:\xampp\mysql\data\portal-bip\core\Router.php(98): PegawaiController::penugasan()
+#4 E:\xampp\mysql\data\portal-bip\index.php(354): Router->dispatch()
+#5 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\core\Database.php on line 66
+[27-Aug-2026 14:17:33 Asia/Makassar] PHP Fatal error:  Uncaught TypeError: old(): Argument #2 ($default) must be of type string, null given, called in E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\views\edit.php on line 80 and defined in E:\xampp\mysql\data\portal-bip\index.php:85
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\views\edit.php(80): old('status_nikah', NULL)
+#1 E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\controllers\PegawaiController.php(565): include('E:\\xampp\\mysql\\...')
+#2 E:\xampp\mysql\data\portal-bip\core\Router.php(98): PegawaiController::edit('2')
+#3 E:\xampp\mysql\data\portal-bip\index.php(354): Router->dispatch()
+#4 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\index.php on line 85
+[27-Aug-2026 14:17:40 Asia/Makassar] PHP Fatal error:  Uncaught TypeError: old(): Argument #2 ($default) must be of type string, null given, called in E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\views\edit.php on line 80 and defined in E:\xampp\mysql\data\portal-bip\index.php:85
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\views\edit.php(80): old('status_nikah', NULL)
+#1 E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\controllers\PegawaiController.php(565): include('E:\\xampp\\mysql\\...')
+#2 E:\xampp\mysql\data\portal-bip\core\Router.php(98): PegawaiController::edit('3')
+#3 E:\xampp\mysql\data\portal-bip\index.php(354): Router->dispatch()
+#4 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\index.php on line 85
+[27-Aug-2026 14:32:58 Asia/Makassar] PHP Fatal error:  Uncaught Error: Call to undefined method Database::lastInsertId() in E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\controllers\PegawaiController.php:937
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\core\Router.php(98): PegawaiController::storeGrup()
+#1 E:\xampp\mysql\data\portal-bip\index.php(354): Router->dispatch()
+#2 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\controllers\PegawaiController.php on line 937
+[27-Aug-2026 14:52:01 Asia/Makassar] PHP Fatal error:  Uncaught TypeError: old(): Argument #2 ($default) must be of type string, null given, called in E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\views\edit.php on line 212 and defined in E:\xampp\mysql\data\portal-bip\index.php:85
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\views\edit.php(212): old('status_nikah', NULL)
+#1 E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\controllers\PegawaiController.php(576): include('E:\\xampp\\mysql\\...')
+#2 E:\xampp\mysql\data\portal-bip\core\Router.php(98): PegawaiController::edit('2')
+#3 E:\xampp\mysql\data\portal-bip\index.php(354): Router->dispatch()
+#4 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\index.php on line 85
+[27-Aug-2026 14:52:07 Asia/Makassar] PHP Fatal error:  Uncaught TypeError: old(): Argument #2 ($default) must be of type string, null given, called in E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\views\edit.php on line 212 and defined in E:\xampp\mysql\data\portal-bip\index.php:85
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\views\edit.php(212): old('status_nikah', NULL)
+#1 E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\controllers\PegawaiController.php(576): include('E:\\xampp\\mysql\\...')
+#2 E:\xampp\mysql\data\portal-bip\core\Router.php(98): PegawaiController::edit('2')
+#3 E:\xampp\mysql\data\portal-bip\index.php(354): Router->dispatch()
+#4 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\index.php on line 85
+[27-Aug-2026 14:53:45 Asia/Makassar] PHP Fatal error:  Uncaught TypeError: old(): Argument #2 ($default) must be of type string, null given, called in E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\views\edit.php on line 199 and defined in E:\xampp\mysql\data\portal-bip\index.php:85
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\views\edit.php(199): old('status_nikah', NULL)
+#1 E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\controllers\PegawaiController.php(576): include('E:\\xampp\\mysql\\...')
+#2 E:\xampp\mysql\data\portal-bip\core\Router.php(98): PegawaiController::edit('2')
+#3 E:\xampp\mysql\data\portal-bip\index.php(354): Router->dispatch()
+#4 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\index.php on line 85
+[27-Aug-2026 14:54:21 Asia/Makassar] PHP Warning:  require_once(e:/xampp/mysql/data/portal-bip/core/Session.php): Failed to open stream: No such file or directory in C:\Users\BINA INSAN PALU\.gemini\antigravity-ide\brain\347a1d3b-318a-4a57-9889-6d2fc24879f2\scratch\test_edit_full.php on line 13
+[27-Aug-2026 14:54:21 Asia/Makassar] PHP Fatal error:  Uncaught Error: Failed opening required 'e:/xampp/mysql/data/portal-bip/core/Session.php' (include_path='E:\xampp\php\PEAR') in C:\Users\BINA INSAN PALU\.gemini\antigravity-ide\brain\347a1d3b-318a-4a57-9889-6d2fc24879f2\scratch\test_edit_full.php:13
+Stack trace:
+#0 {main}
+  thrown in C:\Users\BINA INSAN PALU\.gemini\antigravity-ide\brain\347a1d3b-318a-4a57-9889-6d2fc24879f2\scratch\test_edit_full.php on line 13
+[27-Aug-2026 14:54:43 Asia/Makassar] PHP Warning:  ini_set(): Session ini settings cannot be changed when a session is active in E:\xampp\mysql\data\portal-bip\config\session.php on line 14
+[27-Aug-2026 14:54:43 Asia/Makassar] PHP Warning:  ini_set(): Session ini settings cannot be changed when a session is active in E:\xampp\mysql\data\portal-bip\config\session.php on line 15
+[27-Aug-2026 14:54:43 Asia/Makassar] PHP Warning:  ini_set(): Session ini settings cannot be changed when a session is active in E:\xampp\mysql\data\portal-bip\config\session.php on line 16
+[27-Aug-2026 14:54:43 Asia/Makassar] PHP Warning:  ini_set(): Session ini settings cannot be changed when a session is active in E:\xampp\mysql\data\portal-bip\config\session.php on line 18
+[27-Aug-2026 14:54:43 Asia/Makassar] PHP Warning:  ini_set(): Session ini settings cannot be changed when a session is active in E:\xampp\mysql\data\portal-bip\config\session.php on line 19
+[27-Aug-2026 14:54:43 Asia/Makassar] PHP Warning:  session_name(): Session name cannot be changed when a session is active in E:\xampp\mysql\data\portal-bip\config\session.php on line 27
+[27-Aug-2026 14:54:43 Asia/Makassar] PHP Fatal error:  Uncaught TypeError: old(): Argument #2 ($default) must be of type string, null given, called in E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\views\edit.php on line 199 and defined in E:\xampp\mysql\data\portal-bip\index.php:85
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\views\edit.php(199): old('status_nikah', NULL)
+#1 E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\controllers\PegawaiController.php(576): include('E:\\xampp\\mysql\\...')
+#2 E:\xampp\mysql\data\portal-bip\core\Router.php(98): PegawaiController::edit('2')
+#3 E:\xampp\mysql\data\portal-bip\index.php(354): Router->dispatch()
+#4 C:\Users\BINA INSAN PALU\.gemini\antigravity-ide\brain\347a1d3b-318a-4a57-9889-6d2fc24879f2\scratch\simulate_request.php(17): require_once('E:\\xampp\\mysql\\...')
+#5 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\index.php on line 85
+[27-Aug-2026 14:55:03 Asia/Makassar] PHP Warning:  ini_set(): Session ini settings cannot be changed when a session is active in E:\xampp\mysql\data\portal-bip\config\session.php on line 14
+[27-Aug-2026 14:55:03 Asia/Makassar] PHP Warning:  ini_set(): Session ini settings cannot be changed when a session is active in E:\xampp\mysql\data\portal-bip\config\session.php on line 15
+[27-Aug-2026 14:55:03 Asia/Makassar] PHP Warning:  ini_set(): Session ini settings cannot be changed when a session is active in E:\xampp\mysql\data\portal-bip\config\session.php on line 16
+[27-Aug-2026 14:55:03 Asia/Makassar] PHP Warning:  ini_set(): Session ini settings cannot be changed when a session is active in E:\xampp\mysql\data\portal-bip\config\session.php on line 18
+[27-Aug-2026 14:55:03 Asia/Makassar] PHP Warning:  ini_set(): Session ini settings cannot be changed when a session is active in E:\xampp\mysql\data\portal-bip\config\session.php on line 19
+[27-Aug-2026 14:55:03 Asia/Makassar] PHP Warning:  session_name(): Session name cannot be changed when a session is active in E:\xampp\mysql\data\portal-bip\config\session.php on line 27
+[27-Aug-2026 14:59:10 Asia/Makassar] PHP Warning:  session_start(): Session cannot be started after headers have already been sent in C:\Users\BINA INSAN PALU\.gemini\antigravity-ide\brain\347a1d3b-318a-4a57-9889-6d2fc24879f2\scratch\test_update_pegawai.php on line 17
+[27-Aug-2026 14:59:10 Asia/Makassar] PHP Fatal error:  Uncaught Error: Call to undefined function url() in E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\controllers\PegawaiController.php:728
+Stack trace:
+#0 C:\Users\BINA INSAN PALU\.gemini\antigravity-ide\brain\347a1d3b-318a-4a57-9889-6d2fc24879f2\scratch\test_update_pegawai.php(48): PegawaiController::update('2')
+#1 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\modules\kelola-pegawai\controllers\PegawaiController.php on line 728
+[27-Aug-2026 14:59:16 Asia/Makassar] PHP Warning:  ini_set(): Session ini settings cannot be changed when a session is active in E:\xampp\mysql\data\portal-bip\config\session.php on line 14
+[27-Aug-2026 14:59:16 Asia/Makassar] PHP Warning:  ini_set(): Session ini settings cannot be changed when a session is active in E:\xampp\mysql\data\portal-bip\config\session.php on line 15
+[27-Aug-2026 14:59:16 Asia/Makassar] PHP Warning:  ini_set(): Session ini settings cannot be changed when a session is active in E:\xampp\mysql\data\portal-bip\config\session.php on line 16
+[27-Aug-2026 14:59:16 Asia/Makassar] PHP Warning:  ini_set(): Session ini settings cannot be changed when a session is active in E:\xampp\mysql\data\portal-bip\config\session.php on line 18
+[27-Aug-2026 14:59:16 Asia/Makassar] PHP Warning:  ini_set(): Session ini settings cannot be changed when a session is active in E:\xampp\mysql\data\portal-bip\config\session.php on line 19
+[27-Aug-2026 14:59:16 Asia/Makassar] PHP Warning:  session_name(): Session name cannot be changed when a session is active in E:\xampp\mysql\data\portal-bip\config\session.php on line 27
+[27-Aug-2026 15:00:46 Asia/Makassar] PHP Warning:  ini_set(): Session ini settings cannot be changed when a session is active in E:\xampp\mysql\data\portal-bip\config\session.php on line 14
+[27-Aug-2026 15:00:46 Asia/Makassar] PHP Warning:  ini_set(): Session ini settings cannot be changed when a session is active in E:\xampp\mysql\data\portal-bip\config\session.php on line 15
+[27-Aug-2026 15:00:46 Asia/Makassar] PHP Warning:  ini_set(): Session ini settings cannot be changed when a session is active in E:\xampp\mysql\data\portal-bip\config\session.php on line 16
+[27-Aug-2026 15:00:46 Asia/Makassar] PHP Warning:  ini_set(): Session ini settings cannot be changed when a session is active in E:\xampp\mysql\data\portal-bip\config\session.php on line 18
+[27-Aug-2026 15:00:46 Asia/Makassar] PHP Warning:  ini_set(): Session ini settings cannot be changed when a session is active in E:\xampp\mysql\data\portal-bip\config\session.php on line 19
+[27-Aug-2026 15:00:46 Asia/Makassar] PHP Warning:  session_name(): Session name cannot be changed when a session is active in E:\xampp\mysql\data\portal-bip\config\session.php on line 27
+[27-Aug-2026 15:02:49 Asia/Makassar] PHP Warning:  ini_set(): Session ini settings cannot be changed when a session is active in E:\xampp\mysql\data\portal-bip\config\session.php on line 14
+[27-Aug-2026 15:02:49 Asia/Makassar] PHP Warning:  ini_set(): Session ini settings cannot be changed when a session is active in E:\xampp\mysql\data\portal-bip\config\session.php on line 15
+[27-Aug-2026 15:02:49 Asia/Makassar] PHP Warning:  ini_set(): Session ini settings cannot be changed when a session is active in E:\xampp\mysql\data\portal-bip\config\session.php on line 16
+[27-Aug-2026 15:02:49 Asia/Makassar] PHP Warning:  ini_set(): Session ini settings cannot be changed when a session is active in E:\xampp\mysql\data\portal-bip\config\session.php on line 18
+[27-Aug-2026 15:02:49 Asia/Makassar] PHP Warning:  ini_set(): Session ini settings cannot be changed when a session is active in E:\xampp\mysql\data\portal-bip\config\session.php on line 19
+[27-Aug-2026 15:02:49 Asia/Makassar] PHP Warning:  session_name(): Session name cannot be changed when a session is active in E:\xampp\mysql\data\portal-bip\config\session.php on line 27
+[28-Aug-2026 10:41:29 Asia/Makassar] Database Connection Error: SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[28-Aug-2026 11:01:02 Asia/Makassar] Query Error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'status' in 'where clause' | SQL: SELECT * FROM tahun_akademik WHERE status = 'Aktif' LIMIT 1
+[28-Aug-2026 11:01:02 Asia/Makassar] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'status' in 'where clause' in E:\xampp\mysql\data\portal-bip\core\Database.php:66
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\core\Database.php(66): PDO->prepare('SELECT * FROM t...')
+#1 E:\xampp\mysql\data\portal-bip\core\Database.php(80): Database->query('SELECT * FROM t...', Array)
+#2 E:\xampp\mysql\data\portal-bip\scratch\test_seed.php(11): Database->find('SELECT * FROM t...')
+#3 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\core\Database.php on line 66
+[28-Aug-2026 11:01:08 Asia/Makassar] Query Error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'status' in 'where clause' | SQL: SELECT * FROM users WHERE status = 'active' LIMIT 1
+[28-Aug-2026 11:01:08 Asia/Makassar] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'status' in 'where clause' in E:\xampp\mysql\data\portal-bip\core\Database.php:66
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\core\Database.php(66): PDO->prepare('SELECT * FROM u...')
+#1 E:\xampp\mysql\data\portal-bip\core\Database.php(80): Database->query('SELECT * FROM u...', Array)
+#2 E:\xampp\mysql\data\portal-bip\scratch\test_seed.php(14): Database->find('SELECT * FROM u...')
+#3 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\core\Database.php on line 66
+[28-Aug-2026 11:01:16 Asia/Makassar] PHP Warning:  Undefined array key "name" in E:\xampp\mysql\data\portal-bip\scratch\test_seed.php on line 16
+[28-Aug-2026 11:01:16 Asia/Makassar] PHP Fatal error:  Uncaught Error: Call to undefined method PerangkatModel::getByTipe() in E:\xampp\mysql\data\portal-bip\scratch\test_seed.php:22
+Stack trace:
+#0 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\scratch\test_seed.php on line 22
+[28-Aug-2026 11:01:57 Asia/Makassar] PHP Fatal error:  Uncaught Error: Class "Auth" not found in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\models\PerangkatModel.php:227
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\scratch\test_seed.php(41): PerangkatModel::create(Array)
+#1 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\models\PerangkatModel.php on line 227
+[28-Aug-2026 11:02:19 Asia/Makassar] PHP Warning:  Undefined array key "by_tipe" in E:\xampp\mysql\data\portal-bip\scratch\verify_lifecycle.php on line 16
+[28-Aug-2026 11:07:41 Asia/Makassar] PHP Fatal error:  Uncaught TypeError: Router::get(): Argument #2 ($handler) must be of type callable, array given, called in E:\xampp\mysql\data\portal-bip\index.php on line 253 and defined in E:\xampp\mysql\data\portal-bip\core\Router.php:27
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\index.php(253): Router->get('/kelola-perangk...', Array, Array)
+#1 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\core\Router.php on line 27
+[28-Aug-2026 11:08:47 Asia/Makassar] PHP Warning:  Constant BASE_PATH already defined in E:\xampp\mysql\data\portal-bip\index.php on line 12
+[28-Aug-2026 11:08:47 Asia/Makassar] PHP Warning:  Cannot modify header information - headers already sent by (output started at E:\xampp\mysql\data\portal-bip\index.php:12) in E:\xampp\mysql\data\portal-bip\index.php on line 54
+[28-Aug-2026 11:08:47 Asia/Makassar] PHP Warning:  Cannot modify header information - headers already sent by (output started at E:\xampp\mysql\data\portal-bip\index.php:12) in E:\xampp\mysql\data\portal-bip\index.php on line 55
+[28-Aug-2026 11:08:47 Asia/Makassar] PHP Warning:  Cannot modify header information - headers already sent by (output started at E:\xampp\mysql\data\portal-bip\index.php:12) in E:\xampp\mysql\data\portal-bip\index.php on line 56
+[28-Aug-2026 11:08:47 Asia/Makassar] PHP Warning:  Cannot modify header information - headers already sent by (output started at E:\xampp\mysql\data\portal-bip\index.php:12) in E:\xampp\mysql\data\portal-bip\index.php on line 57
+[28-Aug-2026 11:26:57 Asia/Makassar] PHP Warning:  Undefined array key "bg_soft" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\kaldik\index.php on line 32
+[28-Aug-2026 11:26:57 Asia/Makassar] PHP Warning:  Undefined array key "bg_soft" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\kaldik\index.php on line 32
+[28-Aug-2026 11:26:57 Asia/Makassar] PHP Warning:  Undefined array key "bg_soft" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\kaldik\index.php on line 32
+[28-Aug-2026 11:26:57 Asia/Makassar] PHP Warning:  Undefined array key "bg_soft" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\kaldik\index.php on line 32
+[28-Aug-2026 11:27:16 Asia/Makassar] PHP Warning:  Undefined array key "bg_soft" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\dashboard\index.php on line 139
+[28-Aug-2026 11:27:16 Asia/Makassar] PHP Warning:  Undefined array key "bg_soft" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\dashboard\index.php on line 139
+[28-Aug-2026 11:27:16 Asia/Makassar] PHP Warning:  Undefined array key "bg_soft" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\dashboard\index.php on line 139
+[28-Aug-2026 11:27:16 Asia/Makassar] PHP Warning:  Undefined array key "bg_soft" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\dashboard\index.php on line 139
+[30-Aug-2026 10:06:17 Asia/Makassar] PHP Warning:  ini_set(): Session ini settings cannot be changed after headers have already been sent in E:\xampp\mysql\data\portal-bip\config\session.php on line 14
+[30-Aug-2026 10:06:17 Asia/Makassar] PHP Warning:  ini_set(): Session ini settings cannot be changed after headers have already been sent in E:\xampp\mysql\data\portal-bip\config\session.php on line 15
+[30-Aug-2026 10:06:17 Asia/Makassar] PHP Warning:  ini_set(): Session ini settings cannot be changed after headers have already been sent in E:\xampp\mysql\data\portal-bip\config\session.php on line 16
+[30-Aug-2026 10:06:17 Asia/Makassar] PHP Warning:  ini_set(): Session ini settings cannot be changed after headers have already been sent in E:\xampp\mysql\data\portal-bip\config\session.php on line 18
+[30-Aug-2026 10:06:17 Asia/Makassar] PHP Warning:  ini_set(): Session ini settings cannot be changed after headers have already been sent in E:\xampp\mysql\data\portal-bip\config\session.php on line 19
+[30-Aug-2026 10:06:17 Asia/Makassar] PHP Warning:  session_name(): Session name cannot be changed after headers have already been sent in E:\xampp\mysql\data\portal-bip\config\session.php on line 27
+[30-Aug-2026 10:06:17 Asia/Makassar] PHP Warning:  session_start(): Session cannot be started after headers have already been sent in E:\xampp\mysql\data\portal-bip\config\session.php on line 31
+[30-Aug-2026 10:06:17 Asia/Makassar] PHP Warning:  require(core/functions.php): Failed to open stream: No such file or directory in E:\xampp\mysql\data\portal-bip\test_all_sidebars.php on line 16
+[30-Aug-2026 10:06:17 Asia/Makassar] PHP Fatal error:  Uncaught Error: Failed opening required 'core/functions.php' (include_path='E:\xampp\php\PEAR') in E:\xampp\mysql\data\portal-bip\test_all_sidebars.php:16
+Stack trace:
+#0 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\test_all_sidebars.php on line 16
+[30-Aug-2026 10:06:25 Asia/Makassar] PHP Fatal error:  Uncaught TypeError: Auth::login(): Argument #1 ($username) must be of type string, array given, called in E:\xampp\mysql\data\portal-bip\test_all_sidebars.php on line 29 and defined in E:\xampp\mysql\data\portal-bip\core\Auth.php:19
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\test_all_sidebars.php(29): Auth::login(Array)
+#1 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\core\Auth.php on line 19
+[30-Aug-2026 10:06:34 Asia/Makassar] PHP Fatal error:  Cannot redeclare renderSettingsMenu() (previously declared in E:\xampp\mysql\data\portal-bip\modules\pengaturan-sistem\views\sidebar.php:45) in E:\xampp\mysql\data\portal-bip\templates\partials\sidebar_settings.php on line 51
+[30-Aug-2026 10:34:47 Asia/Makassar] Query Error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'p.nama_lengkap' in 'field list' | SQL: 
+            SELECT 
+                m.id as penugasan_mengajar_id,
+                m.pegawai_id,
+                p.nama_lengkap as nama_guru,
+                m.mata_pelajaran,
+                m.nama_kelas,
+                m.kelas_id,
+                m.jumlah_jp
+            FROM pegawai_penugasan_mengajar m
+            JOIN pegawai p ON m.pegawai_id = p.id
+            WHERE 1=1 AND m.jumlah_jp > 0 AND m.nama_kelas IS NOT NULL AND m.nama_kelas != ''
+            ORDER BY m.jumlah_jp DESC, m.nama_kelas ASC
+        
+[30-Aug-2026 10:34:47 Asia/Makassar] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'p.nama_lengkap' in 'field list' in E:\xampp\mysql\data\portal-bip\core\Database.php:66
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\core\Database.php(66): PDO->prepare('\n            SE...')
+#1 E:\xampp\mysql\data\portal-bip\core\Database.php(90): Database->query('\n            SE...', Array)
+#2 E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\models\JadwalGeneratorEngine.php(244): Database->findAll('\n            SE...', Array)
+#3 E:\xampp\mysql\data\portal-bip\test_jadwal.php(55): JadwalGeneratorEngine->generate()
+#4 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\core\Database.php on line 66
+[30-Aug-2026 10:35:29 Asia/Makassar] PHP Warning:  Undefined array key "REQUEST_URI" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\sidebar.php on line 5
+[30-Aug-2026 10:38:31 Asia/Makassar] Query Error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'unit' in 'field list' | SQL: SELECT DISTINCT unit FROM siswa WHERE unit IS NOT NULL AND unit != ''
+[30-Aug-2026 10:38:31 Asia/Makassar] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'unit' in 'field list' in E:\xampp\mysql\data\portal-bip\core\Database.php:66
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\core\Database.php(66): PDO->prepare('SELECT DISTINCT...')
+#1 E:\xampp\mysql\data\portal-bip\core\Database.php(90): Database->query('SELECT DISTINCT...', Array)
+#2 E:\xampp\mysql\data\portal-bip\check_unit_siswa.php(16): Database->findAll('SELECT DISTINCT...')
+#3 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\core\Database.php on line 66
+[30-Aug-2026 14:05:11 Asia/Makassar] PHP Warning:  Undefined array key "REQUEST_URI" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\sidebar.php on line 5
+[30-Aug-2026 14:05:12 Asia/Makassar] PHP Fatal error:  Uncaught Error: Class "RBAC" not found in E:\xampp\mysql\data\portal-bip\templates\partials\sidebar.php:8
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\test_sidebar_merged.php(40): include()
+#1 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\templates\partials\sidebar.php on line 8
+[30-Aug-2026 14:05:23 Asia/Makassar] PHP Warning:  Undefined array key "REQUEST_URI" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\sidebar.php on line 5
+[30-Aug-2026 14:05:23 Asia/Makassar] PHP Fatal error:  Uncaught Error: Class "Auth" not found in E:\xampp\mysql\data\portal-bip\core\RBAC.php:113
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\templates\partials\sidebar.php(8): RBAC::getAccessibleModules()
+#1 E:\xampp\mysql\data\portal-bip\test_sidebar_merged.php(41): include('E:\\xampp\\mysql\\...')
+#2 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\core\RBAC.php on line 113
+[30-Aug-2026 14:11:41 Asia/Makassar] Query Error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'unit_kerja' in 'field list' | SQL: SELECT id, nama, jabatan, unit_kerja FROM pegawai WHERE jabatan LIKE '%kepala%' OR jabatan LIKE '%sekolah%'
+[30-Aug-2026 14:11:41 Asia/Makassar] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'unit_kerja' in 'field list' in E:\xampp\mysql\data\portal-bip\core\Database.php:66
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\core\Database.php(66): PDO->prepare('SELECT id, nama...')
+#1 E:\xampp\mysql\data\portal-bip\core\Database.php(90): Database->query('SELECT id, nama...', Array)
+#2 E:\xampp\mysql\data\portal-bip\check_ks.php(8): Database->findAll('SELECT id, nama...')
+#3 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\core\Database.php on line 66
+[31-Aug-2026 09:23:30 Asia/Makassar] PHP Warning:  Undefined array key "text" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\index.php on line 120
+[31-Aug-2026 09:24:20 Asia/Makassar] PHP Fatal error:  Uncaught Error: Class "CSRF" not found in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\index.php:177
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\test_cpatp_clean.php(41): include()
+#1 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\index.php on line 177
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 09:41:45 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 50
+[31-Aug-2026 11:20:23 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 51
+[31-Aug-2026 11:20:23 Asia/Makassar] PHP Fatal error:  Uncaught TypeError: e(): Argument #1 ($value) must be of type string, null given, called in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 51 and defined in E:\xampp\mysql\data\portal-bip\index.php:65
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php(51): e(NULL)
+#1 E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\controllers\PerangkatController.php(26): include('E:\\xampp\\mysql\\...')
+#2 E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\controllers\PerangkatController.php(1060): PerangkatController::view('cpatp/create', Array, 'Buat Dokumen CP...', Array)
+#3 E:\xampp\mysql\data\portal-bip\core\Router.php(98): PerangkatController::createCpatp()
+#4 E:\xampp\mysql\data\portal-bip\index.php(508): Router->dispatch()
+#5 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\index.php on line 65
+[31-Aug-2026 11:20:27 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 51
+[31-Aug-2026 11:20:27 Asia/Makassar] PHP Fatal error:  Uncaught TypeError: e(): Argument #1 ($value) must be of type string, null given, called in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 51 and defined in E:\xampp\mysql\data\portal-bip\index.php:65
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php(51): e(NULL)
+#1 E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\controllers\PerangkatController.php(26): include('E:\\xampp\\mysql\\...')
+#2 E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\controllers\PerangkatController.php(1060): PerangkatController::view('cpatp/create', Array, 'Buat Dokumen CP...', Array)
+#3 E:\xampp\mysql\data\portal-bip\core\Router.php(98): PerangkatController::createCpatp()
+#4 E:\xampp\mysql\data\portal-bip\index.php(508): Router->dispatch()
+#5 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\index.php on line 65
+[31-Aug-2026 11:20:27 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 51
+[31-Aug-2026 11:20:27 Asia/Makassar] PHP Fatal error:  Uncaught TypeError: e(): Argument #1 ($value) must be of type string, null given, called in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 51 and defined in E:\xampp\mysql\data\portal-bip\index.php:65
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php(51): e(NULL)
+#1 E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\controllers\PerangkatController.php(26): include('E:\\xampp\\mysql\\...')
+#2 E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\controllers\PerangkatController.php(1060): PerangkatController::view('cpatp/create', Array, 'Buat Dokumen CP...', Array)
+#3 E:\xampp\mysql\data\portal-bip\core\Router.php(98): PerangkatController::createCpatp()
+#4 E:\xampp\mysql\data\portal-bip\index.php(508): Router->dispatch()
+#5 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\index.php on line 65
+[31-Aug-2026 11:20:28 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 51
+[31-Aug-2026 11:20:28 Asia/Makassar] PHP Fatal error:  Uncaught TypeError: e(): Argument #1 ($value) must be of type string, null given, called in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 51 and defined in E:\xampp\mysql\data\portal-bip\index.php:65
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php(51): e(NULL)
+#1 E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\controllers\PerangkatController.php(26): include('E:\\xampp\\mysql\\...')
+#2 E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\controllers\PerangkatController.php(1060): PerangkatController::view('cpatp/create', Array, 'Buat Dokumen CP...', Array)
+#3 E:\xampp\mysql\data\portal-bip\core\Router.php(98): PerangkatController::createCpatp()
+#4 E:\xampp\mysql\data\portal-bip\index.php(508): Router->dispatch()
+#5 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\index.php on line 65
+[31-Aug-2026 11:20:30 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 51
+[31-Aug-2026 11:20:30 Asia/Makassar] PHP Fatal error:  Uncaught TypeError: e(): Argument #1 ($value) must be of type string, null given, called in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 51 and defined in E:\xampp\mysql\data\portal-bip\index.php:65
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php(51): e(NULL)
+#1 E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\controllers\PerangkatController.php(26): include('E:\\xampp\\mysql\\...')
+#2 E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\controllers\PerangkatController.php(1060): PerangkatController::view('cpatp/create', Array, 'Buat Dokumen CP...', Array)
+#3 E:\xampp\mysql\data\portal-bip\core\Router.php(98): PerangkatController::createCpatp()
+#4 E:\xampp\mysql\data\portal-bip\index.php(508): Router->dispatch()
+#5 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\index.php on line 65
+[31-Aug-2026 11:22:12 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 51
+[31-Aug-2026 11:22:12 Asia/Makassar] PHP Fatal error:  Uncaught TypeError: e(): Argument #1 ($value) must be of type string, null given, called in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 51 and defined in E:\xampp\mysql\data\portal-bip\index.php:65
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php(51): e(NULL)
+#1 E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\controllers\PerangkatController.php(26): include('E:\\xampp\\mysql\\...')
+#2 E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\controllers\PerangkatController.php(1060): PerangkatController::view('cpatp/create', Array, 'Buat Dokumen CP...', Array)
+#3 E:\xampp\mysql\data\portal-bip\core\Router.php(98): PerangkatController::createCpatp()
+#4 E:\xampp\mysql\data\portal-bip\index.php(508): Router->dispatch()
+#5 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\index.php on line 65
+[31-Aug-2026 11:22:35 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 51
+[31-Aug-2026 11:22:35 Asia/Makassar] PHP Fatal error:  Uncaught TypeError: e(): Argument #1 ($value) must be of type string, null given, called in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 51 and defined in E:\xampp\mysql\data\portal-bip\index.php:65
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php(51): e(NULL)
+#1 E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\controllers\PerangkatController.php(26): include('E:\\xampp\\mysql\\...')
+#2 E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\controllers\PerangkatController.php(1060): PerangkatController::view('cpatp/create', Array, 'Buat Dokumen CP...', Array)
+#3 E:\xampp\mysql\data\portal-bip\core\Router.php(98): PerangkatController::createCpatp()
+#4 E:\xampp\mysql\data\portal-bip\index.php(508): Router->dispatch()
+#5 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\index.php on line 65
+[31-Aug-2026 11:23:00 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 51
+[31-Aug-2026 11:23:00 Asia/Makassar] PHP Fatal error:  Uncaught TypeError: e(): Argument #1 ($value) must be of type string, null given, called in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php on line 51 and defined in E:\xampp\mysql\data\portal-bip\index.php:65
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\create.php(51): e(NULL)
+#1 E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\controllers\PerangkatController.php(26): include('E:\\xampp\\mysql\\...')
+#2 E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\controllers\PerangkatController.php(1060): PerangkatController::view('cpatp/create', Array, 'Buat Dokumen CP...', Array)
+#3 E:\xampp\mysql\data\portal-bip\core\Router.php(98): PerangkatController::createCpatp()
+#4 E:\xampp\mysql\data\portal-bip\index.php(508): Router->dispatch()
+#5 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\index.php on line 65
+[31-Aug-2026 11:23:25 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\index.php on line 61
+[31-Aug-2026 11:23:25 Asia/Makassar] PHP Fatal error:  Uncaught TypeError: e(): Argument #1 ($value) must be of type string, null given, called in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\index.php on line 61 and defined in E:\xampp\mysql\data\portal-bip\index.php:65
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\index.php(61): e(NULL)
+#1 E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\controllers\PerangkatController.php(26): include('E:\\xampp\\mysql\\...')
+#2 E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\controllers\PerangkatController.php(1038): PerangkatController::view('cpatp/index', Array, 'Capaian Pembela...', Array)
+#3 E:\xampp\mysql\data\portal-bip\core\Router.php(98): PerangkatController::cpatp()
+#4 E:\xampp\mysql\data\portal-bip\index.php(508): Router->dispatch()
+#5 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\index.php on line 65
+[31-Aug-2026 11:23:27 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\index.php on line 61
+[31-Aug-2026 11:23:27 Asia/Makassar] PHP Fatal error:  Uncaught TypeError: e(): Argument #1 ($value) must be of type string, null given, called in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\index.php on line 61 and defined in E:\xampp\mysql\data\portal-bip\index.php:65
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\index.php(61): e(NULL)
+#1 E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\controllers\PerangkatController.php(26): include('E:\\xampp\\mysql\\...')
+#2 E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\controllers\PerangkatController.php(1038): PerangkatController::view('cpatp/index', Array, 'Capaian Pembela...', Array)
+#3 E:\xampp\mysql\data\portal-bip\core\Router.php(98): PerangkatController::cpatp()
+#4 E:\xampp\mysql\data\portal-bip\index.php(508): Router->dispatch()
+#5 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\index.php on line 65
+[31-Aug-2026 11:23:32 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\index.php on line 61
+[31-Aug-2026 11:23:32 Asia/Makassar] PHP Fatal error:  Uncaught TypeError: e(): Argument #1 ($value) must be of type string, null given, called in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\index.php on line 61 and defined in E:\xampp\mysql\data\portal-bip\index.php:65
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\index.php(61): e(NULL)
+#1 E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\controllers\PerangkatController.php(26): include('E:\\xampp\\mysql\\...')
+#2 E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\controllers\PerangkatController.php(1038): PerangkatController::view('cpatp/index', Array, 'Capaian Pembela...', Array)
+#3 E:\xampp\mysql\data\portal-bip\core\Router.php(98): PerangkatController::cpatp()
+#4 E:\xampp\mysql\data\portal-bip\index.php(508): Router->dispatch()
+#5 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\index.php on line 65
+[31-Aug-2026 11:31:18 Asia/Makassar] PHP Fatal error:  Cannot redeclare PerangkatController::getGuruPenugasanMap() in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\controllers\PerangkatController.php on line 992
+[31-Aug-2026 11:32:23 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\index.php on line 61
+[31-Aug-2026 11:32:23 Asia/Makassar] PHP Fatal error:  Uncaught TypeError: e(): Argument #1 ($value) must be of type string, null given, called in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\index.php on line 61 and defined in E:\xampp\mysql\data\portal-bip\index.php:65
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\index.php(61): e(NULL)
+#1 E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\controllers\PerangkatController.php(26): include('E:\\xampp\\mysql\\...')
+#2 E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\controllers\PerangkatController.php(1040): PerangkatController::view('cpatp/index', Array, 'Capaian Pembela...', Array)
+#3 E:\xampp\mysql\data\portal-bip\core\Router.php(98): PerangkatController::cpatp()
+#4 E:\xampp\mysql\data\portal-bip\index.php(508): Router->dispatch()
+#5 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\index.php on line 65
+[31-Aug-2026 11:34:42 Asia/Makassar] PHP Warning:  Undefined array key "nama_lengkap" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\index.php on line 61
+[31-Aug-2026 11:34:42 Asia/Makassar] PHP Fatal error:  Uncaught TypeError: e(): Argument #1 ($value) must be of type string, null given, called in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\index.php on line 61 and defined in E:\xampp\mysql\data\portal-bip\index.php:65
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\cpatp\index.php(61): e(NULL)
+#1 E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\controllers\PerangkatController.php(26): include('E:\\xampp\\mysql\\...')
+#2 E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\controllers\PerangkatController.php(1040): PerangkatController::view('cpatp/index', Array, 'Capaian Pembela...', Array)
+#3 E:\xampp\mysql\data\portal-bip\core\Router.php(98): PerangkatController::cpatp()
+#4 E:\xampp\mysql\data\portal-bip\index.php(508): Router->dispatch()
+#5 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\index.php on line 65
+[01-Sep-2026 08:45:16 Asia/Makassar] PHP Fatal error:  Uncaught ArgumentCountError: Too few arguments to function SiswaController::cetakKartu(), 0 passed in E:\xampp\mysql\data\portal-bip\core\Router.php on line 98 and exactly 1 expected in E:\xampp\mysql\data\portal-bip\modules\kelola-siswa\controllers\SiswaController.php:1782
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\core\Router.php(98): SiswaController::cetakKartu()
+#1 E:\xampp\mysql\data\portal-bip\index.php(518): Router->dispatch()
+#2 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\modules\kelola-siswa\controllers\SiswaController.php on line 1782
+[01-Sep-2026 08:46:50 Asia/Makassar] PHP Fatal error:  Uncaught ArgumentCountError: Too few arguments to function SiswaController::cetakKartu(), 0 passed in E:\xampp\mysql\data\portal-bip\core\Router.php on line 98 and exactly 1 expected in E:\xampp\mysql\data\portal-bip\modules\kelola-siswa\controllers\SiswaController.php:1782
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\core\Router.php(98): SiswaController::cetakKartu()
+#1 E:\xampp\mysql\data\portal-bip\index.php(518): Router->dispatch()
+#2 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\modules\kelola-siswa\controllers\SiswaController.php on line 1782
+[02-Sep-2026 10:11:38 Asia/Makassar] Query Error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'ppm.tingkat_kelas' in 'field list' | SQL: SELECT DISTINCT ppm.tingkat_kelas as kelas, ppm.mata_pelajaran 
+                FROM pegawai_penugasan_mengajar ppm
+                JOIN pegawai_penugasan pp ON pp.id = ppm.penugasan_id
+                JOIN penugasan_grup pg ON pg.id = pp.grup_id
+                WHERE pp.pegawai_id = ? AND pg.is_active = 1
+                ORDER BY ppm.tingkat_kelas, ppm.mata_pelajaran
+[02-Sep-2026 10:11:38 Asia/Makassar] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'ppm.tingkat_kelas' in 'field list' in E:\xampp\mysql\data\portal-bip\core\Database.php:66
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\core\Database.php(66): PDO->prepare('SELECT DISTINCT...')
+#1 E:\xampp\mysql\data\portal-bip\core\Database.php(90): Database->query('SELECT DISTINCT...', Array)
+#2 E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\controllers\PerangkatController.php(1062): Database->findAll('SELECT DISTINCT...', Array)
+#3 E:\xampp\mysql\data\portal-bip\core\Router.php(98): PerangkatController::getPenugasanAjax(128)
+#4 E:\xampp\mysql\data\portal-bip\index.php(523): Router->dispatch()
+#5 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\core\Database.php on line 66
+[02-Sep-2026 14:58:39 Asia/Makassar] Query Error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'nama' in 'field list' | SQL: SELECT nama, semester, tanggal_mulai, tanggal_selesai FROM tahun_akademik WHERE is_active = 1 LIMIT 1
+[02-Sep-2026 14:58:39 Asia/Makassar] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'nama' in 'field list' in E:\xampp\mysql\data\portal-bip\core\Database.php:66
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\core\Database.php(66): PDO->prepare('SELECT nama, se...')
+#1 E:\xampp\mysql\data\portal-bip\core\Database.php(80): Database->query('SELECT nama, se...', Array)
+#2 E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\controllers\PerangkatController.php(1080): Database->find('SELECT nama, se...')
+#3 E:\xampp\mysql\data\portal-bip\core\Router.php(98): PerangkatController::getJadwalHariAjax(128)
+#4 E:\xampp\mysql\data\portal-bip\index.php(524): Router->dispatch()
+#5 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\core\Database.php on line 66
+[02-Sep-2026 15:20:01 Asia/Makassar] Query Error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'nama' in 'field list' | SQL: SELECT nama, semester, tanggal_mulai, tanggal_selesai FROM tahun_akademik WHERE is_active = 1 LIMIT 1
+[02-Sep-2026 15:20:01 Asia/Makassar] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'nama' in 'field list' in E:\xampp\mysql\data\portal-bip\core\Database.php:66
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\core\Database.php(66): PDO->prepare('SELECT nama, se...')
+#1 E:\xampp\mysql\data\portal-bip\core\Database.php(80): Database->query('SELECT nama, se...', Array)
+#2 E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\controllers\PerangkatController.php(1080): Database->find('SELECT nama, se...')
+#3 E:\xampp\mysql\data\portal-bip\core\Router.php(98): PerangkatController::getJadwalHariAjax(128)
+#4 E:\xampp\mysql\data\portal-bip\index.php(524): Router->dispatch()
+#5 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\core\Database.php on line 66
+[02-Sep-2026 15:20:09 Asia/Makassar] Query Error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'nama' in 'field list' | SQL: SELECT nama, semester, tanggal_mulai, tanggal_selesai FROM tahun_akademik WHERE is_active = 1 LIMIT 1
+[02-Sep-2026 15:20:09 Asia/Makassar] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'nama' in 'field list' in E:\xampp\mysql\data\portal-bip\core\Database.php:66
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\core\Database.php(66): PDO->prepare('SELECT nama, se...')
+#1 E:\xampp\mysql\data\portal-bip\core\Database.php(80): Database->query('SELECT nama, se...', Array)
+#2 E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\controllers\PerangkatController.php(1080): Database->find('SELECT nama, se...')
+#3 E:\xampp\mysql\data\portal-bip\core\Router.php(98): PerangkatController::getJadwalHariAjax(128)
+#4 E:\xampp\mysql\data\portal-bip\index.php(524): Router->dispatch()
+#5 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\core\Database.php on line 66
+[02-Sep-2026 15:24:12 Asia/Makassar] PHP Warning:  ini_set(): Session ini settings cannot be changed when a session is active in E:\xampp\mysql\data\portal-bip\config\session.php on line 14
+[02-Sep-2026 15:24:12 Asia/Makassar] PHP Warning:  ini_set(): Session ini settings cannot be changed after headers have already been sent in E:\xampp\mysql\data\portal-bip\config\session.php on line 15
+[02-Sep-2026 15:24:12 Asia/Makassar] PHP Warning:  ini_set(): Session ini settings cannot be changed after headers have already been sent in E:\xampp\mysql\data\portal-bip\config\session.php on line 16
+[02-Sep-2026 15:24:12 Asia/Makassar] PHP Warning:  ini_set(): Session ini settings cannot be changed when a session is active in E:\xampp\mysql\data\portal-bip\config\session.php on line 18
+[02-Sep-2026 15:24:12 Asia/Makassar] PHP Warning:  ini_set(): Session ini settings cannot be changed when a session is active in E:\xampp\mysql\data\portal-bip\config\session.php on line 19
+[02-Sep-2026 15:24:12 Asia/Makassar] PHP Warning:  session_name(): Session name cannot be changed when a session is active in E:\xampp\mysql\data\portal-bip\config\session.php on line 27
+[02-Sep-2026 15:24:12 Asia/Makassar] PHP Warning:  Cannot modify header information - headers already sent by (output started at E:\xampp\mysql\data\portal-bip\config\session.php:14) in E:\xampp\mysql\data\portal-bip\index.php on line 55
+[02-Sep-2026 15:24:12 Asia/Makassar] PHP Warning:  Cannot modify header information - headers already sent by (output started at E:\xampp\mysql\data\portal-bip\config\session.php:14) in E:\xampp\mysql\data\portal-bip\index.php on line 56
+[02-Sep-2026 15:24:12 Asia/Makassar] PHP Warning:  Cannot modify header information - headers already sent by (output started at E:\xampp\mysql\data\portal-bip\config\session.php:14) in E:\xampp\mysql\data\portal-bip\index.php on line 57
+[02-Sep-2026 15:24:12 Asia/Makassar] PHP Warning:  Cannot modify header information - headers already sent by (output started at E:\xampp\mysql\data\portal-bip\config\session.php:14) in E:\xampp\mysql\data\portal-bip\index.php on line 58
+[02-Sep-2026 15:24:12 Asia/Makassar] Query Error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'nama' in 'field list' | SQL: SELECT nama, semester, tanggal_mulai, tanggal_selesai FROM tahun_akademik WHERE is_active = 1 LIMIT 1
+[02-Sep-2026 15:24:12 Asia/Makassar] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'nama' in 'field list' in E:\xampp\mysql\data\portal-bip\core\Database.php:66
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\core\Database.php(66): PDO->prepare('SELECT nama, se...')
+#1 E:\xampp\mysql\data\portal-bip\core\Database.php(80): Database->query('SELECT nama, se...', Array)
+#2 E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\controllers\PerangkatController.php(1080): Database->find('SELECT nama, se...')
+#3 E:\xampp\mysql\data\portal-bip\core\Router.php(98): PerangkatController::getJadwalHariAjax(10)
+#4 E:\xampp\mysql\data\portal-bip\index.php(524): Router->dispatch()
+#5 E:\xampp\mysql\data\portal-bip\test_ajax.php(10): require_once('E:\\xampp\\mysql\\...')
+#6 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\core\Database.php on line 66
+[02-Sep-2026 15:39:11 Asia/Makassar] Query Error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'unit' in 'field list' | SQL: SELECT unit FROM pegawai WHERE id = ?
+[02-Sep-2026 15:39:11 Asia/Makassar] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'unit' in 'field list' in E:\xampp\mysql\data\portal-bip\core\Database.php:66
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\core\Database.php(66): PDO->prepare('SELECT unit FRO...')
+#1 E:\xampp\mysql\data\portal-bip\core\Database.php(80): Database->query('SELECT unit FRO...', Array)
+#2 E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\controllers\PerangkatController.php(1085): Database->find('SELECT unit FRO...', Array)
+#3 E:\xampp\mysql\data\portal-bip\core\Router.php(98): PerangkatController::getJadwalHariAjax(128)
+#4 E:\xampp\mysql\data\portal-bip\index.php(524): Router->dispatch()
+#5 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\core\Database.php on line 66
+[02-Sep-2026 15:40:32 Asia/Makassar] Query Error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'unit' in 'field list' | SQL: SELECT unit FROM pegawai WHERE id = ?
+[02-Sep-2026 15:40:32 Asia/Makassar] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'unit' in 'field list' in E:\xampp\mysql\data\portal-bip\core\Database.php:66
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\core\Database.php(66): PDO->prepare('SELECT unit FRO...')
+#1 E:\xampp\mysql\data\portal-bip\core\Database.php(80): Database->query('SELECT unit FRO...', Array)
+#2 E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\controllers\PerangkatController.php(1085): Database->find('SELECT unit FRO...', Array)
+#3 E:\xampp\mysql\data\portal-bip\core\Router.php(98): PerangkatController::getJadwalHariAjax(128)
+#4 E:\xampp\mysql\data\portal-bip\index.php(524): Router->dispatch()
+#5 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\core\Database.php on line 66
+[02-Sep-2026 21:09:57 Asia/Makassar] Query Error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'unit' in 'field list' | SQL: SELECT unit FROM pegawai WHERE id = ?
+[02-Sep-2026 21:09:57 Asia/Makassar] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'unit' in 'field list' in E:\xampp\mysql\data\portal-bip\core\Database.php:66
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\core\Database.php(66): PDO->prepare('SELECT unit FRO...')
+#1 E:\xampp\mysql\data\portal-bip\core\Database.php(80): Database->query('SELECT unit FRO...', Array)
+#2 E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\controllers\PerangkatController.php(1085): Database->find('SELECT unit FRO...', Array)
+#3 E:\xampp\mysql\data\portal-bip\scratch\test_ajax_jadwal.php(19): PerangkatController::getJadwalHariAjax(128)
+#4 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\core\Database.php on line 66
+[02-Sep-2026 21:17:09 Asia/Makassar] PHP Warning:  Cannot modify header information - headers already sent by (output started at E:\xampp\mysql\data\portal-bip\scratch\test_ajax_penugasan.php:12) in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\controllers\PerangkatController.php on line 1063
+[02-Sep-2026 21:22:08 Asia/Makassar] PHP Warning:  Cannot modify header information - headers already sent by (output started at E:\xampp\mysql\data\portal-bip\scratch\test_ajax_jadwal.php:18) in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\controllers\PerangkatController.php on line 1106
+[03-Sep-2026 14:55:50 Asia/Makassar] PHP Fatal error:  Uncaught Error: Class "Auth" not found in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\controllers\PerangkatController.php:2176
+Stack trace:
+#0 C:\Users\BINA INSAN PALU\.gemini\antigravity-ide\brain\681e6382-96f9-4668-948e-9d0e8459b417\scratch\test_prosem.php(41): PerangkatController::executeGenerateProsemFromCpatp(16, 10)
+#1 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\controllers\PerangkatController.php on line 2176
+[03-Sep-2026 14:56:15 Asia/Makassar] PHP Fatal error:  Uncaught Error: Call to undefined method PerangkatController::getUnitProfile() in C:\Users\BINA INSAN PALU\.gemini\antigravity-ide\brain\681e6382-96f9-4668-948e-9d0e8459b417\scratch\test_print_prosem.php:20
+Stack trace:
+#0 {main}
+  thrown in C:\Users\BINA INSAN PALU\.gemini\antigravity-ide\brain\681e6382-96f9-4668-948e-9d0e8459b417\scratch\test_print_prosem.php on line 20
+[03-Sep-2026 15:18:00 Asia/Makassar] PHP Warning:  Undefined variable $group in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\prosem\cetak_semua.php on line 17
+[03-Sep-2026 15:18:00 Asia/Makassar] PHP Warning:  Trying to access array offset on value of type null in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\prosem\cetak_semua.php on line 17
+[04-Sep-2026 08:09:42 Asia/Makassar] Database Connection Error: SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it

@@ -97,7 +97,10 @@ $migrations = [
             `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             INDEX (`user_id`),
-            INDEX (`tanggal`)
+            INDEX (`tanggal`),
+            KEY `idx_abs_user_tanggal` (`user_id`, `tanggal`),
+            KEY `idx_abs_tanggal_status` (`tanggal`, `status_kehadiran`),
+            KEY `idx_abs_status` (`status_kehadiran`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     ",
 
@@ -120,7 +123,10 @@ $migrations = [
             `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             INDEX (`guru_id`),
             INDEX (`tanggal`),
-            INDEX (`kelas`)
+            INDEX (`kelas`),
+            KEY `idx_jm_guru_tanggal` (`guru_id`, `tanggal`),
+            KEY `idx_jm_tanggal_kelas` (`tanggal`, `kelas`),
+            KEY `idx_jm_status` (`status`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     ",
 
@@ -138,7 +144,9 @@ $migrations = [
             `waktu_presensi` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             INDEX (`guru_id`),
             INDEX (`tanggal`),
-            INDEX (`kelas`)
+            INDEX (`kelas`),
+            KEY `idx_pk_tanggal_kelas` (`tanggal`, `kelas`),
+            KEY `idx_pk_guru_tanggal` (`guru_id`, `tanggal`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     ",
 
@@ -153,7 +161,10 @@ $migrations = [
             `catatan` VARCHAR(255) NULL,
             `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             INDEX (`presensi_kelas_id`),
-            INDEX (`siswa_id`)
+            INDEX (`siswa_id`),
+            KEY `idx_pkd_presensi_status` (`presensi_kelas_id`, `status`),
+            KEY `idx_pkd_siswa_status` (`siswa_id`, `status`),
+            KEY `idx_pkd_status` (`status`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     ",
 
@@ -183,7 +194,8 @@ $migrations = [
             `tadabbur_notes` TEXT NULL,
             `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            UNIQUE KEY `unique_guru_tanggal` (`guru_id`, `tanggal`)
+            UNIQUE KEY `unique_guru_tanggal` (`guru_id`, `tanggal`),
+            KEY `idx_mig_tanggal` (`tanggal`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     ",
 
@@ -206,7 +218,10 @@ $migrations = [
             `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             INDEX (`guru_pencatat_id`),
             INDEX (`tanggal`),
-            INDEX (`kelas`)
+            INDEX (`kelas`),
+            KEY `idx_ks_tanggal_kelas` (`tanggal`, `kelas`),
+            KEY `idx_ks_nisn` (`nisn`),
+            KEY `idx_ks_status` (`status`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     ",
 
@@ -234,7 +249,9 @@ $migrations = [
             `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             INDEX (`guru_id`),
             INDEX (`tanggal_mulai`),
-            INDEX (`status`)
+            INDEX (`status`),
+            KEY `idx_izin_guru_status` (`guru_id`, `status`),
+            KEY `idx_izin_tanggal` (`tanggal_mulai`, `tanggal_selesai`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     ",
 
@@ -258,8 +275,9 @@ $migrations = [
             `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             INDEX (`guru_id`),
-            INDEX (`tanggal_mulai`),
-            INDEX (`status`)
+            INDEX (`status`),
+            KEY `idx_cuti_guru_status` (`guru_id`, `status`),
+            KEY `idx_cuti_tanggal` (`tanggal_mulai`, `tanggal_selesai`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     ",
 
@@ -302,6 +320,70 @@ foreach ($migrations as $tableName => $sql) {
         $results[$tableName] = ['status' => 'success', 'msg' => 'Tabel berhasil dibuat / diverifikasi'];
     } catch (PDOException $e) {
         $results[$tableName] = ['status' => 'error', 'msg' => $e->getMessage()];
+    }
+}
+
+// Optimalisasi Database Indexing (B-Tree & Composite Indexes) untuk Mobile Tables
+$mobileIndexes = [
+    'absensi_pegawai' => [
+        'idx_abs_user_tanggal' => '(`user_id`, `tanggal`)',
+        'idx_abs_tanggal_status' => '(`tanggal`, `status_kehadiran`)',
+        'idx_abs_status' => '(`status_kehadiran`)'
+    ],
+    'presensi_kelas' => [
+        'idx_pk_tanggal_kelas' => '(`tanggal`, `kelas`)',
+        'idx_pk_guru_tanggal' => '(`guru_id`, `tanggal`)'
+    ],
+    'presensi_kelas_detail' => [
+        'idx_pkd_presensi_status' => '(`presensi_kelas_id`, `status`)',
+        'idx_pkd_siswa_status' => '(`siswa_id`, `status`)',
+        'idx_pkd_status' => '(`status`)'
+    ],
+    'jurnal_mengajar' => [
+        'idx_jm_guru_tanggal' => '(`guru_id`, `tanggal`)',
+        'idx_jm_tanggal_kelas' => '(`tanggal`, `kelas`)',
+        'idx_jm_status' => '(`status`)'
+    ],
+    'keterlambatan_siswa' => [
+        'idx_ks_tanggal_kelas' => '(`tanggal`, `kelas`)',
+        'idx_ks_nisn' => '(`nisn`)',
+        'idx_ks_status' => '(`status`)'
+    ],
+    'mutabaah_ibadah_guru' => [
+        'idx_mig_tanggal' => '(`tanggal`)'
+    ],
+    'cuti_guru' => [
+        'idx_cuti_guru_status' => '(`guru_id`, `status`)',
+        'idx_cuti_tanggal' => '(`tanggal_mulai`, `tanggal_selesai`)'
+    ],
+    'izin_guru' => [
+        'idx_izin_guru_status' => '(`guru_id`, `status`)',
+        'idx_izin_tanggal' => '(`tanggal_mulai`, `tanggal_selesai`)'
+    ]
+];
+
+foreach ($mobileIndexes as $tblName => $indexes) {
+    try {
+        $existingIdx = [];
+        $stmtIdx = $pdo->query("SHOW INDEX FROM `{$tblName}`");
+        while ($idxRow = $stmtIdx->fetch()) {
+            $existingIdx[$idxRow['Key_name']] = true;
+        }
+
+        foreach ($indexes as $idxName => $colDef) {
+            if (!isset($existingIdx[$idxName])) {
+                $pdo->exec("ALTER TABLE `{$tblName}` ADD INDEX `{$idxName}` {$colDef}");
+                $results["{$tblName}.{$idxName}"] = [
+                    'status' => 'success',
+                    'msg' => "Indeks `{$idxName}` berhasil dioptimasi."
+                ];
+            }
+        }
+    } catch (PDOException $e) {
+        $results["{$tblName}.indexes"] = [
+            'status' => 'warn',
+            'msg' => $e->getMessage()
+        ];
     }
 }
 

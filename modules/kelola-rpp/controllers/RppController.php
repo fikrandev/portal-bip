@@ -1,15 +1,13 @@
 <?php
+/**
+ * RppController (Legacy Redirect to Perangkat Pembelajaran)
+ */
+require_once BASE_PATH . '/modules/kelola-perangkat-pembelajaran/controllers/PerangkatController.php';
 
 class RppController
 {
     public static function index(): void
     {
-        $pageTitle = 'Kelola RPP';
-        $breadcrumbs = [['label' => 'Kelola RPP']];
-        
-        ob_start();
-        include MODULES_PATH . '/kelola-rpp/views/index.php';
-        $content = ob_get_clean();
-        include TEMPLATES_PATH . '/layouts/app.php';
+        Response::redirect(url('kelola-perangkat-pembelajaran'));
     }
 }

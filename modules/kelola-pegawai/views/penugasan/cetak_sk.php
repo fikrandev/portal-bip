@@ -495,7 +495,7 @@ $penandatanganNip = !empty($grup['penandatangan_nip']) ? $grup['penandatangan_ni
                             <th class="p-2 text-center w-10">NO</th>
                             <th class="p-2 text-left">NAMA PEGAWAI & GELAR</th>
                             <th class="p-2 text-center w-40">NIY / NIP</th>
-                            <th class="p-2 text-left">JABATAN PENUGASAN</th>
+                            <th class="p-2 text-left">JABATAN & RINCIAN PENUGASAN</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-300">
@@ -508,15 +508,37 @@ $penandatanganNip = !empty($grup['penandatangan_nip']) ? $grup['penandatangan_ni
                         <?php else: ?>
                             <?php $no = 1; foreach ($penugasan as $row): ?>
                                 <tr>
-                                    <td class="p-2 text-center"><?= $no++ ?></td>
-                                    <td class="p-2 font-semibold">
+                                    <td class="p-2 text-center align-top"><?= $no++ ?></td>
+                                    <td class="p-2 font-semibold align-top">
                                         <?= e($row['nama_pegawai']) ?><?= !empty($row['gelar']) ? ', ' . e($row['gelar']) : '' ?>
                                     </td>
-                                    <td class="p-2 text-center text-[10.5pt]">
+                                    <td class="p-2 text-center text-[10.5pt] align-top">
                                         <?= e($row['niy'] ?: ($row['nik'] ?: '-')) ?>
                                     </td>
-                                    <td class="p-2 font-bold">
-                                        <?= e($row['nama_jabatan'] ?? '-') ?>
+                                    <td class="p-2 align-top">
+                                        <div class="font-bold">
+                                            <?= e($row['nama_jabatan'] ?? '-') ?>
+                                            <?php if (!empty($row['wali_kelas_nama'])): ?>
+                                                <span class="font-bold text-black">(<?= e($row['wali_kelas_nama']) ?>)</span>
+                                            <?php endif; ?>
+                                        </div>
+                                        <?php if (!empty($tugasMengajarMap[$row['id']])): ?>
+                                            <div class="mt-1 text-[10pt] text-slate-800 space-y-0.5 font-normal">
+                                                <?php foreach ($tugasMengajarMap[$row['id']] as $tm): ?>
+                                                    <div class="flex items-start gap-1">
+                                                        <span class="text-slate-500">•</span>
+                                                        <span><strong><?= e($tm['mata_pelajaran']) ?></strong> (<?= e($tm['nama_kelas']) ?>: <?= (int)$tm['jumlah_jp'] ?> JP)</span>
+                                                    </div>
+                                                <?php endforeach; ?>
+                                                <div class="font-bold text-[9.5pt] text-black mt-1">
+                                                    Total Beban: <?= (int)($row['total_jp'] ?? 0) ?> JP / Minggu
+                                                </div>
+                                            </div>
+                                        <?php elseif (!empty($row['mapel_ajar_summary'])): ?>
+                                            <div class="mt-0.5 text-[9.5pt] text-slate-700 font-normal">
+                                                <?= e($row['mapel_ajar_summary']) ?> (<?= (int)$row['total_jp'] ?> JP)
+                                            </div>
+                                        <?php endif; ?>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>

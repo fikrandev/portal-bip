@@ -18,70 +18,114 @@ $currentBaseUrl = $isKeluar ? 'kelola-pegawai/keluar' : 'kelola-pegawai';
     </div>
 <?php endif; ?>
 
-<!-- Action Bar & Filters -->
-<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-    <form method="GET" action="<?= url($currentBaseUrl) ?>" class="flex flex-col sm:flex-row gap-3 flex-1">
-        <div class="relative flex-1 max-w-sm">
-            <input type="text" name="search" value="<?= e($search) ?>" placeholder="Cari nama pegawai..."
-                   class="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-300 rounded-[10px] text-slate-900 placeholder:text-slate-400 outline-none focus:outline-none focus:ring-0 hover:border-primary-500 focus:border-primary-500 transition-colors text-sm font-medium">
-            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"/></svg>
-        </div>
-        
-        <select name="unit_tugas" class="w-full sm:w-auto px-4 py-2.5 bg-white border border-slate-300 rounded-[10px] text-slate-900 outline-none focus:border-primary-500 transition-colors text-sm font-medium">
-            <option value="">Semua Unit Tugas</option>
-            <?php foreach ($unitTugasList as $u): ?>
-                <option value="<?= e($u['unit_tugas']) ?>" <?= $filterUnit === $u['unit_tugas'] ? 'selected' : '' ?>><?= e($u['unit_tugas']) ?></option>
-            <?php endforeach; ?>
-        </select>
-        
-        <select name="jabatan" class="w-full sm:w-auto px-4 py-2.5 bg-white border border-slate-300 rounded-[10px] text-slate-900 outline-none focus:border-primary-500 transition-colors text-sm font-medium">
-            <option value="">Semua Jabatan</option>
-            <?php foreach ($jabatanList as $j): ?>
-                <option value="<?= e($j['jabatan']) ?>" <?= $filterJabatan === $j['jabatan'] ? 'selected' : '' ?>><?= e($j['jabatan']) ?></option>
-            <?php endforeach; ?>
-        </select>
+<?php 
+    $exportQs = http_build_query([
+        'search' => $search ?? '',
+        'unit_tugas' => $filterUnit ?? '',
+        'jabatan' => $filterJabatan ?? '',
+        'status_pegawai' => $filterStatusPegawai ?? ''
+    ]);
+?>
 
-        <button type="submit" class="w-full sm:w-auto px-6 py-2.5 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-full shadow-lg shadow-primary-600/30 focus:outline-none transition-all duration-200 text-sm tracking-wide">Filter</button>
-        <?php if ($search || $filterUnit || $filterJabatan): ?>
-            <a href="<?= url($currentBaseUrl) ?>" class="w-full sm:w-auto px-6 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-full transition-all duration-200 text-sm text-center">Reset</a>
-        <?php endif; ?>
-    </form>
-    
-    <?php 
-        $exportQs = http_build_query([
-            'search' => $search ?? '',
-            'unit_tugas' => $filterUnit ?? '',
-            'jabatan' => $filterJabatan ?? ''
-        ]);
-    ?>
-    <div class="flex flex-wrap items-center gap-2.5 shrink-0">
+<!-- Header Section & Action Buttons (Sudut Kanan Atas) -->
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+    <div>
+        <h1 class="text-2xl font-extrabold text-primary-950 tracking-tight flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-white shadow-lg shadow-primary-500/20">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
+                </svg>
+            </div>
+            <span>Data Pegawai & Guru</span>
+        </h1>
+        <p class="text-slate-500 text-sm mt-1">
+            Total <?= number_format($total ?? count($pegawai)) ?> data guru & staf Yayasan Bina Insan Palu.
+        </p>
+    </div>
+
+    <!-- Sudut Kanan Atas: Action Buttons -->
+    <div class="flex flex-wrap items-center gap-2.5">
         <!-- Tombol Export Excel -->
         <a href="<?= url('kelola-pegawai/export' . ($exportQs ? '?' . $exportQs : '')) ?>" 
-           class="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-full shadow-lg shadow-emerald-600/20 transition-all text-sm"
-           title="Export Seluruh Data Pegawai ke Excel/CSV">
+           class="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl shadow-sm hover:shadow-md transition-all text-sm"
+           title="Export Seluruh Data Pegawai ke Excel (.xls)">
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
             </svg>
-            Export Excel
+            <span>Export Excel</span>
         </a>
 
         <!-- Tombol Import Excel -->
         <button type="button" 
                 onclick="ModalHelper.open('modal-import-pegawai')"
-                class="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-full shadow-lg shadow-amber-600/20 transition-all text-sm"
-                title="Import Data Pegawai dari Excel/CSV">
+                class="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-xl shadow-sm hover:shadow-md transition-all text-sm"
+                title="Import Data Pegawai dari Excel (.xlsx / .xls)">
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
             </svg>
-            Import Excel
+            <span>Import Excel</span>
         </button>
 
         <!-- Tombol Tambah Pegawai -->
-        <a href="<?= url('kelola-pegawai/create') ?>" class="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white font-semibold rounded-full shadow-lg shadow-primary-500/25 transition-all text-sm">
-            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
-            Tambah Pegawai
+        <a href="<?= url('kelola-pegawai/create') ?>" class="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white font-bold rounded-xl shadow-lg shadow-primary-500/25 transition-all text-sm">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+            <span>+ Tambah Pegawai</span>
         </a>
     </div>
+</div>
+
+<!-- Filter & Search Section (Di Bawahnya Sebelah Kiri) -->
+<div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs mb-6">
+    <form method="GET" action="<?= url($currentBaseUrl) ?>" class="flex flex-wrap items-center gap-3">
+        <!-- Search Input -->
+        <div class="relative flex-1 min-w-[240px] max-w-sm">
+            <input type="text" name="search" value="<?= e($search) ?>" placeholder="Cari nama pegawai atau NIY..."
+                   class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 outline-none focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 focus:bg-white transition-all text-sm font-medium">
+            <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"/></svg>
+        </div>
+        
+        <!-- Unit Tugas Dropdown -->
+        <div class="w-full sm:w-auto min-w-[180px]">
+            <select name="unit_tugas" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 outline-none focus:border-primary-500 focus:bg-white transition-colors text-sm font-medium">
+                <option value="">Semua Unit Tugas</option>
+                <?php foreach ($unitTugasList as $u): ?>
+                    <option value="<?= e($u['unit_tugas']) ?>" <?= $filterUnit === $u['unit_tugas'] ? 'selected' : '' ?>><?= e($u['unit_tugas']) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        
+        <!-- Jabatan Dropdown -->
+        <div class="w-full sm:w-auto min-w-[180px]">
+            <select name="jabatan" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 outline-none focus:border-primary-500 focus:bg-white transition-colors text-sm font-medium">
+                <option value="">Semua Jabatan</option>
+                <?php foreach ($jabatanList as $j): ?>
+                    <option value="<?= e($j['jabatan']) ?>" <?= $filterJabatan === $j['jabatan'] ? 'selected' : '' ?>><?= e($j['jabatan']) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+
+        <!-- Status Pegawai Dropdown -->
+        <div class="w-full sm:w-auto min-w-[180px]">
+            <select name="status_pegawai" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 outline-none focus:border-primary-500 focus:bg-white transition-colors text-sm font-medium">
+                <option value="">Semua Status Pegawai</option>
+                <option value="Tetap" <?= ($filterStatusPegawai ?? '') === 'Tetap' ? 'selected' : '' ?>>Tetap</option>
+                <option value="Kontrak" <?= ($filterStatusPegawai ?? '') === 'Kontrak' ? 'selected' : '' ?>>Kontrak</option>
+                <option value="Training" <?= ($filterStatusPegawai ?? '') === 'Training' ? 'selected' : '' ?>>Training</option>
+            </select>
+        </div>
+
+        <!-- Button Filter & Reset -->
+        <div class="flex items-center gap-2">
+            <button type="submit" class="px-5 py-2.5 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-xl shadow-sm focus:outline-none transition-all duration-200 text-sm">
+                Filter
+            </button>
+            <?php if ($search || $filterUnit || $filterJabatan || !empty($filterStatusPegawai)): ?>
+                <a href="<?= url($currentBaseUrl) ?>" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl transition-all duration-200 text-sm text-center" title="Reset Filter">
+                    Reset
+                </a>
+            <?php endif; ?>
+        </div>
+    </form>
 </div>
 
 <!-- Data Table -->
@@ -96,13 +140,14 @@ $currentBaseUrl = $isKeluar ? 'kelola-pegawai/keluar' : 'kelola-pegawai';
                     <th class="px-6 py-3.5 text-left font-semibold text-primary-800">Nama Lengkap</th>
                     <th class="px-6 py-3.5 text-left font-semibold text-primary-800">Unit Tugas</th>
                     <th class="px-6 py-3.5 text-left font-semibold text-primary-800">Jabatan</th>
+                    <th class="px-6 py-3.5 text-center font-semibold text-primary-800">Status Pegawai</th>
                     <th class="px-6 py-3.5 text-left font-semibold text-primary-800">Masa Kerja</th>
                     <th class="px-6 py-3.5 text-center font-semibold text-primary-800">Aksi</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-primary-50">
                 <?php if (empty($pegawai)): ?>
-                <tr><td colspan="8" class="px-6 py-12 text-center text-slate-400">
+                <tr><td colspan="9" class="px-6 py-12 text-center text-slate-400">
                     <div class="inline-flex flex-col items-center">
                         <svg class="w-12 h-12 text-primary-200 mb-3" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"/></svg>
                         <p class="font-medium text-primary-900 mb-1">Belum ada data pegawai</p>
@@ -165,6 +210,21 @@ $currentBaseUrl = $isKeluar ? 'kelola-pegawai/keluar' : 'kelola-pegawai';
                     </td>
                     <td class="px-6 py-4 text-slate-600"><?= e($p['unit_tugas'] ?? '-') ?></td>
                     <td class="px-6 py-4 text-slate-600"><?= e($p['jabatan'] ?? '-') ?></td>
+                    <td class="px-6 py-4 text-center">
+                        <?php 
+                        $sp = $p['status_pegawai'] ?? ($p['status_kerja'] ?? 'Tetap');
+                        if (empty($sp)) $sp = 'Tetap';
+                        $badgeClass = match(strtolower($sp)) {
+                            'tetap' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                            'kontrak' => 'bg-amber-50 text-amber-700 border-amber-200',
+                            'training' => 'bg-indigo-50 text-indigo-700 border-indigo-200',
+                            default => 'bg-slate-50 text-slate-700 border-slate-200'
+                        };
+                        ?>
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold border <?= $badgeClass ?>">
+                            <?= e(ucfirst($sp)) ?>
+                        </span>
+                    </td>
                     <td class="px-6 py-4 text-slate-600">
                         <div class="font-semibold text-slate-800"><?= $masaKerja ?></div>
                         <?php if (!empty($tglMasuk)): ?>
@@ -223,18 +283,19 @@ $currentBaseUrl = $isKeluar ? 'kelola-pegawai/keluar' : 'kelola-pegawai';
 <!-- Modal Import Data Pegawai (Reusable Helper) -->
 <?= ModalHelper::importModal([
     'id' => 'modal-import-pegawai',
-    'title' => 'Import Data Pegawai',
-    'subtitle' => 'Unggah file Excel / CSV data pegawai untuk menambahkan pegawai secara massal.',
+    'title' => 'Import Data Pegawai (Excel)',
+    'subtitle' => 'Unggah file spreadsheet Excel (.xlsx / .xls) untuk menambahkan data pegawai secara massal.',
     'action' => url('kelola-pegawai/import'),
     'templateUrl' => url('kelola-pegawai/template'),
-    'templateName' => 'Template_Import_Pegawai.csv',
+    'templateName' => 'Template_Import_Pegawai.xls',
     'instructions' => [
-        'Gunakan file template resmi yang telah disiapkan dengan menekan tombol Download di atas.',
-        'Kolom "Nama Lengkap" wajib diisi pada setiap baris data.',
-        'Format tanggal lahir: YYYY-MM-DD (Contoh: 1990-05-12).',
+        'Gunakan file template resmi Excel (.xls) yang telah disiapkan dengan menekan tombol Download di atas.',
+        'Kolom "Nama Lengkap" wajib diisi pada setiap baris pegawai.',
+        'Kolom "Status Pegawai" dapat diisi dengan: Tetap, Kontrak, atau Training.',
+        'Format tanggal lahir & masuk kerja: YYYY-MM-DD (Contoh: 1990-05-12) atau format tanggal standar Excel.',
         'Format jenis kelamin: L (Laki-laki) atau P (Perempuan).',
-        'Field NPWP, Email, No. WhatsApp, Gelar, NIY, NIK, dan Alamat opsional namun disarankan diisi lengkap.'
+        'Field NPWP, Email, No. WhatsApp, Gelar, NIY, NIK, Unit Tugas, Jabatan, dan Alamat opsional namun disarankan diisi lengkap.'
     ],
-    'acceptedFormats' => '.csv, .xls, .xlsx',
+    'acceptedFormats' => '.xlsx, .xls, .csv',
     'maxFileSizeMb' => 10
 ]) ?>

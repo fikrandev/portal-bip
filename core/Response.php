@@ -98,13 +98,13 @@ class Response
     /**
      * Get and clear old input
      */
-    public static function oldInput(string $field, string $default = ''): string
+    public static function oldInput(string $field, mixed $default = ''): string
     {
-        $value = $_SESSION['old_input'][$field] ?? $default;
+        $value = $_SESSION['old_input'][$field] ?? ($default ?? '');
         if (isset($_SESSION['old_input'][$field])) {
             // Don't unset individual fields; clear all at once
         }
-        return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+        return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
     }
 
     /**

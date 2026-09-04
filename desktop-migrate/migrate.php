@@ -106,7 +106,7 @@ $tables = [
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     ",
 
-    // Data Pegawai (dengan NPWP, Email, No. WA)
+    // Data Pegawai (dengan NPWP, Email, No. WA & Indeks Komprehensif)
     'pegawai' => "
         CREATE TABLE IF NOT EXISTS `pegawai` (
             `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -126,6 +126,7 @@ $tables = [
             `unit_tugas` VARCHAR(100) DEFAULT NULL,
             `jabatan` VARCHAR(100) DEFAULT NULL,
             `status_kerja` VARCHAR(50) DEFAULT NULL,
+            `status_pegawai` VARCHAR(50) DEFAULT 'Tetap',
             `jenis_pegawai` VARCHAR(50) DEFAULT NULL,
             `status_dapodik` VARCHAR(50) DEFAULT NULL,
             `tanggal_masuk` DATE DEFAULT NULL,
@@ -138,10 +139,28 @@ $tables = [
             `kab_kota_domisili` VARCHAR(100) DEFAULT NULL,
             `kec_domisili` VARCHAR(100) DEFAULT NULL,
             `kel_domisili` VARCHAR(100) DEFAULT NULL,
+            `kontak_darurat_1_nama` VARCHAR(100) DEFAULT NULL,
+            `kontak_darurat_1_hubungan` VARCHAR(50) DEFAULT NULL,
+            `kontak_darurat_1_no_hp` VARCHAR(30) DEFAULT NULL,
+            `kontak_darurat_2_nama` VARCHAR(100) DEFAULT NULL,
+            `kontak_darurat_2_hubungan` VARCHAR(50) DEFAULT NULL,
+            `kontak_darurat_2_no_hp` VARCHAR(30) DEFAULT NULL,
             `is_active` TINYINT(1) NOT NULL DEFAULT 1,
             `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            PRIMARY KEY (`id`)
+            PRIMARY KEY (`id`),
+            KEY `idx_pegawai_nama` (`nama`),
+            KEY `idx_pegawai_niy` (`niy`),
+            KEY `idx_pegawai_nik` (`nik`),
+            KEY `idx_pegawai_unit_tugas` (`unit_tugas`),
+            KEY `idx_pegawai_jabatan` (`jabatan`),
+            KEY `idx_pegawai_status_pegawai` (`status_pegawai`),
+            KEY `idx_pegawai_status_kerja` (`status_kerja`),
+            KEY `idx_pegawai_is_active` (`is_active`),
+            KEY `idx_pegawai_active_nama` (`is_active`, `nama`),
+            KEY `idx_pegawai_active_unit` (`is_active`, `unit_tugas`),
+            KEY `idx_pegawai_tanggal_masuk` (`tanggal_masuk`),
+            KEY `idx_pegawai_tmt` (`tmt`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     ",
 
@@ -333,8 +352,12 @@ $tables = [
             `id` INT AUTO_INCREMENT PRIMARY KEY,
             `tahun` VARCHAR(20) NOT NULL,
             `semester` ENUM('Ganjil','Genap') NOT NULL,
+            `tanggal_mulai` DATE DEFAULT NULL,
+            `tanggal_selesai` DATE DEFAULT NULL,
             `is_active` TINYINT(1) NOT NULL DEFAULT 0,
-            `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP
+            `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+            KEY `idx_ta_active` (`is_active`),
+            KEY `idx_ta_tanggal` (`tanggal_mulai`, `tanggal_selesai`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     ",
 
@@ -347,7 +370,10 @@ $tables = [
             `is_active` TINYINT(1) NOT NULL DEFAULT 1,
             `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            PRIMARY KEY (`id`)
+            PRIMARY KEY (`id`),
+            KEY `idx_kelas_ta_active` (`tahun_akademik_id`, `is_active`),
+            KEY `idx_kelas_nama` (`nama_kelas`),
+            KEY `idx_kelas_is_active` (`is_active`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     ",
 
@@ -357,21 +383,80 @@ $tables = [
             `nis` VARCHAR(30) DEFAULT NULL,
             `nisn` VARCHAR(30) DEFAULT NULL,
             `nik` VARCHAR(50) DEFAULT NULL,
-            `nama_lengkap` VARCHAR(150) NOT NULL,
+            `nama` VARCHAR(150) NOT NULL,
+            `nama_lengkap` VARCHAR(150) DEFAULT NULL,
             `nama_panggilan` VARCHAR(50) DEFAULT NULL,
             `jenis_kelamin` ENUM('L','P') NOT NULL DEFAULT 'L',
             `tempat_lahir` VARCHAR(100) DEFAULT NULL,
             `tanggal_lahir` DATE DEFAULT NULL,
+            `kelas` VARCHAR(50) DEFAULT NULL,
             `kelas_id` BIGINT UNSIGNED DEFAULT NULL,
             `nama_ayah` VARCHAR(100) DEFAULT NULL,
             `nama_ibu` VARCHAR(100) DEFAULT NULL,
             `no_hp_ortu` VARCHAR(30) DEFAULT NULL,
+            `telepon` VARCHAR(30) DEFAULT NULL,
+            `email` VARCHAR(150) DEFAULT NULL,
             `alamat` TEXT DEFAULT NULL,
             `foto` VARCHAR(255) DEFAULT NULL,
             `is_active` TINYINT(1) NOT NULL DEFAULT 1,
             `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            PRIMARY KEY (`id`)
+            PRIMARY KEY (`id`),
+            UNIQUE KEY `uk_siswa_nis` (`nis`),
+            KEY `idx_siswa_nama` (`nama`),
+            KEY `idx_siswa_kelas` (`kelas`),
+            KEY `idx_siswa_kelas_id` (`kelas_id`),
+            KEY `idx_siswa_is_active` (`is_active`),
+            KEY `idx_siswa_active_nama` (`is_active`, `nama`),
+            KEY `idx_siswa_active_kelas` (`is_active`, `kelas`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    ",
+
+    // Modul Kelola Perangkat Pembelajaran (Kaldik, HES, HEB, Prota, Prosem, RPP/Modul Ajar)
+    'perangkat_pembelajaran' => "
+        CREATE TABLE IF NOT EXISTS `perangkat_pembelajaran` (
+            `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            `tahun_akademik_id` INT NOT NULL,
+            `semester` ENUM('Ganjil','Genap') NOT NULL DEFAULT 'Ganjil',
+            `guru_id` BIGINT UNSIGNED DEFAULT NULL,
+            `guru_nama` VARCHAR(150) NOT NULL,
+            `guru_nip` VARCHAR(50) DEFAULT NULL,
+            `tipe` ENUM('kaldik','hes','heb','prota','prosem','rpp') NOT NULL,
+            `judul` VARCHAR(255) NOT NULL,
+            `mata_pelajaran` VARCHAR(100) DEFAULT NULL,
+            `tingkat_kelas` VARCHAR(50) DEFAULT NULL,
+            `fase` VARCHAR(20) DEFAULT NULL,
+            `alokasi_waktu` VARCHAR(100) DEFAULT NULL,
+            `konten_json` LONGTEXT DEFAULT NULL,
+            `file_lampiran` VARCHAR(255) DEFAULT NULL,
+            `status` ENUM('draft','diajukan','disetujui','ditolak') NOT NULL DEFAULT 'draft',
+            `catatan_revisi` TEXT DEFAULT NULL,
+            `approved_by` BIGINT UNSIGNED DEFAULT NULL,
+            `approved_at` DATETIME DEFAULT NULL,
+            `created_by` BIGINT UNSIGNED NOT NULL,
+            `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (`id`),
+            KEY `idx_perangkat_tipe` (`tipe`),
+            KEY `idx_perangkat_status` (`status`),
+            KEY `idx_perangkat_ta_smt` (`tahun_akademik_id`, `semester`),
+            KEY `idx_perangkat_guru` (`guru_id`),
+            KEY `idx_perangkat_created_by` (`created_by`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    ",
+
+    'perangkat_approval_logs' => "
+        CREATE TABLE IF NOT EXISTS `perangkat_approval_logs` (
+            `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            `perangkat_id` BIGINT UNSIGNED NOT NULL,
+            `user_id` BIGINT UNSIGNED NOT NULL,
+            `user_nama` VARCHAR(150) NOT NULL,
+            `aksi` ENUM('ajukan','setujui','tolak','revisi','draft') NOT NULL,
+            `catatan` TEXT DEFAULT NULL,
+            `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (`id`),
+            KEY `idx_pal_perangkat` (`perangkat_id`),
+            KEY `idx_pal_user` (`user_id`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     "
 ];
@@ -418,6 +503,11 @@ try {
     if (!in_array('no_wa', $existingCols)) {
         $pdo->exec("ALTER TABLE `pegawai` ADD COLUMN `no_wa` VARCHAR(30) DEFAULT NULL AFTER `email`");
         $results[] = ['type' => 'alter', 'name' => 'pegawai.no_wa', 'status' => 'OK', 'message' => 'Kolom `no_wa` berhasil ditambahkan.'];
+    }
+    if (!in_array('status_pegawai', $existingCols)) {
+        $pdo->exec("ALTER TABLE `pegawai` ADD COLUMN `status_pegawai` VARCHAR(50) DEFAULT 'Tetap' AFTER `status_nikah`");
+        $pdo->exec("UPDATE `pegawai` SET `status_pegawai` = `status_kerja` WHERE `status_kerja` IS NOT NULL AND `status_kerja` != ''");
+        $results[] = ['type' => 'alter', 'name' => 'pegawai.status_pegawai', 'status' => 'OK', 'message' => 'Kolom `status_pegawai` berhasil ditambahkan.'];
     }
     if (!in_array('tanggal_masuk', $existingCols)) {
         $pdo->exec("ALTER TABLE `pegawai` ADD COLUMN `tanggal_masuk` DATE DEFAULT NULL AFTER `status_dapodik`");
@@ -491,6 +581,17 @@ try {
         $results[] = ['type' => 'alter', 'name' => 'penugasan_grup.mengingat', 'status' => 'OK', 'message' => 'Kolom `mengingat` berhasil ditambahkan.'];
     }
 
+    // Pastikan kolom grup_id ada pada pegawai_penugasan
+    $existingPenugasanCols = [];
+    $stmtPenugasanCols = $pdo->query("SHOW COLUMNS FROM `pegawai_penugasan`");
+    while ($row = $stmtPenugasanCols->fetch()) {
+        $existingPenugasanCols[] = $row['Field'];
+    }
+    if (!in_array('grup_id', $existingPenugasanCols)) {
+        $pdo->exec("ALTER TABLE `pegawai_penugasan` ADD COLUMN `grup_id` INT DEFAULT NULL AFTER `id`");
+        $results[] = ['type' => 'alter', 'name' => 'pegawai_penugasan.grup_id', 'status' => 'OK', 'message' => 'Kolom `grup_id` berhasil ditambahkan pada pegawai_penugasan.'];
+    }
+
     // Update kota penetapan default ke Palu
     $pdo->exec("UPDATE `penugasan_grup` SET `kota_sk` = 'Palu' WHERE `kota_sk` = 'Makassar' OR `kota_sk` IS NULL OR `kota_sk` = ''");
 
@@ -533,7 +634,90 @@ try {
     $results[] = ['type' => 'alter', 'name' => 'pegawai_columns', 'status' => 'WARN', 'message' => $e->getMessage()];
 }
 
-// 7. Seed Master Data Default Jika Kosong
+// 7. Optimalisasi Database Indexing (B-Tree & Composite Indexes)
+$desktopIndexes = [
+    'pegawai' => [
+        'idx_pegawai_nama' => '(`nama`)',
+        'idx_pegawai_niy' => '(`niy`)',
+        'idx_pegawai_nik' => '(`nik`)',
+        'idx_pegawai_unit_tugas' => '(`unit_tugas`)',
+        'idx_pegawai_jabatan' => '(`jabatan`)',
+        'idx_pegawai_status_pegawai' => '(`status_pegawai`)',
+        'idx_pegawai_status_kerja' => '(`status_kerja`)',
+        'idx_pegawai_is_active' => '(`is_active`)',
+        'idx_pegawai_active_nama' => '(`is_active`, `nama`)',
+        'idx_pegawai_active_unit' => '(`is_active`, `unit_tugas`)',
+        'idx_pegawai_tanggal_masuk' => '(`tanggal_masuk`)',
+        'idx_pegawai_tmt' => '(`tmt`)'
+    ],
+    'siswa' => [
+        'idx_siswa_nama' => '(`nama`)',
+        'idx_siswa_kelas' => '(`kelas`)',
+        'idx_siswa_is_active' => '(`is_active`)',
+        'idx_siswa_active_nama' => '(`is_active`, `nama`)',
+        'idx_siswa_active_kelas' => '(`is_active`, `kelas`)'
+    ],
+    'kelas' => [
+        'idx_kelas_ta_active' => '(`tahun_akademik_id`, `is_active`)',
+        'idx_kelas_nama' => '(`nama_kelas`)',
+        'idx_kelas_is_active' => '(`is_active`)'
+    ],
+    'tahun_akademik' => [
+        'idx_ta_active' => '(`is_active`)',
+        'idx_ta_tanggal' => '(`tanggal_mulai`, `tanggal_selesai`)'
+    ],
+    'penugasan_grup' => [
+        'idx_pg_ta_active' => '(`tahun_akademik_id`, `is_active`)',
+        'idx_pg_tanggal_sk' => '(`tanggal_sk`)'
+    ],
+    'pegawai_penugasan' => [
+        'idx_pp_grup_status' => '(`grup_id`, `status`)',
+        'idx_pp_pegawai_status' => '(`pegawai_id`, `status`)'
+    ],
+    'pegawai_karir' => [
+        'idx_pk_pegawai_status' => '(`pegawai_id`, `status`)',
+        'idx_pk_tmt' => '(`tmt_mulai`)'
+    ],
+    'pegawai_prestasi' => [
+        'idx_pprestasi_tahun' => '(`tahun`)',
+        'idx_pprestasi_tingkat' => '(`tingkat`)'
+    ],
+    'pegawai_pelatihan' => [
+        'idx_ppelatihan_tahun' => '(`tahun`)',
+        'idx_ppelatihan_tanggal' => '(`tanggal_mulai`)'
+    ]
+];
+
+foreach ($desktopIndexes as $tblName => $indexes) {
+    try {
+        $existingIdx = [];
+        $stmtIdx = $pdo->query("SHOW INDEX FROM `{$tblName}`");
+        while ($idxRow = $stmtIdx->fetch()) {
+            $existingIdx[$idxRow['Key_name']] = true;
+        }
+
+        foreach ($indexes as $idxName => $colDef) {
+            if (!isset($existingIdx[$idxName])) {
+                $pdo->exec("ALTER TABLE `{$tblName}` ADD INDEX `{$idxName}` {$colDef}");
+                $results[] = [
+                    'type' => 'index',
+                    'name' => "{$tblName}.{$idxName}",
+                    'status' => 'OK',
+                    'message' => "Indeks `{$idxName}` berhasil dioptimasi."
+                ];
+            }
+        }
+    } catch (PDOException $e) {
+        $results[] = [
+            'type' => 'index',
+            'name' => $tblName,
+            'status' => 'WARN',
+            'message' => $e->getMessage()
+        ];
+    }
+}
+
+// 8. Seed Master Data Default Jika Kosong
 $masterSeeds = [
     'master_unit_tugas' => [
         ['nama' => 'PAUD'],
@@ -585,6 +769,42 @@ foreach ($masterSeeds as $table => $rows) {
             'message' => $e->getMessage()
         ];
     }
+}
+
+// 9. Sinkronisasi Modul & Permissions Kelola Perangkat Pembelajaran
+try {
+    $iconPerangkat = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" /></svg>';
+    
+    // Periksa apakah tabel modules ada
+    $checkMod = $pdo->query("SHOW TABLES LIKE 'modules'")->fetch();
+    if ($checkMod) {
+        $stmtMod = $pdo->prepare("
+            UPDATE `modules` 
+            SET `name` = 'Kelola Perangkat Pembelajaran',
+                `slug` = 'kelola-perangkat-pembelajaran',
+                `description` = 'Manajemen Perangkat Pembelajaran Guru (Kaldik, HES, HEB, Prota, Prosem, Modul Ajar/RPP, dan Verifikasi)',
+                `route` = '/kelola-perangkat-pembelajaran',
+                `icon_svg` = :icon,
+                `color` = '#10B981',
+                `module_group` = 'Administrasi Guru'
+            WHERE `id` = 9 OR `slug` = 'kelola-rpp' OR `slug` = 'kelola-perangkat-pembelajaran'
+        ");
+        $stmtMod->execute([':icon' => $iconPerangkat]);
+
+        $results[] = [
+            'type' => 'module',
+            'name' => 'modules.perangkat_pembelajaran',
+            'status' => 'OK',
+            'message' => 'Modul Kelola Perangkat Pembelajaran berhasil diperbarui.'
+        ];
+    }
+} catch (PDOException $e) {
+    $results[] = [
+        'type' => 'module',
+        'name' => 'modules.perangkat_pembelajaran',
+        'status' => 'WARN',
+        'message' => $e->getMessage()
+    ];
 }
 
 $executionTime = round((microtime(true) - $startTime) * 1000, 2);

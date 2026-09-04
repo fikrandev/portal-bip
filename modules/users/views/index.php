@@ -1,32 +1,51 @@
 <?php /** Users List View */ ?>
 
-<!-- Page Header -->
+<!-- Page Header & Action Buttons (Sudut Kanan Atas) -->
 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
     <div>
-        <p class="text-sm text-slate-500">Total <?= $total ?> pengguna terdaftar</p>
+        <h1 class="text-2xl font-extrabold text-primary-950 tracking-tight flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-white shadow-lg shadow-primary-500/20">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
+                </svg>
+            </div>
+            <span>Kelola Pengguna</span>
+        </h1>
+        <p class="text-sm text-slate-500 mt-1">Total <?= $total ?> pengguna terdaftar di sistem portal.</p>
     </div>
     <?php if (RBAC::hasPermission('users.create')): ?>
-    <a href="<?= url('users/create') ?>" id="btn-add-user"
-       class="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white font-semibold rounded-full shadow-lg shadow-primary-500/25 hover:shadow-xl transition-all duration-200 text-sm">
-        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
-        </svg>
-        Tambah Pengguna
-    </a>
+    <div class="flex items-center gap-2.5">
+        <a href="<?= url('users/create') ?>" id="btn-add-user"
+           class="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white font-bold rounded-xl shadow-lg shadow-primary-500/25 transition-all text-sm">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+            </svg>
+            <span>+ Tambah Pengguna</span>
+        </a>
+    </div>
     <?php endif; ?>
 </div>
 
-<!-- Search -->
-<div class="mb-6">
-    <form method="GET" action="<?= url('users') ?>" class="flex gap-3">
-        <div class="relative flex-1 max-w-md">
+<!-- Search & Filter Controls (Di Bawahnya Sebelah Kiri) -->
+<div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs mb-6">
+    <form method="GET" action="<?= url('users') ?>" class="flex flex-wrap items-center gap-3">
+        <div class="relative flex-1 min-w-[240px] max-w-md">
             <input type="text" name="search" value="<?= e($search) ?>" placeholder="Cari nama, email, atau username..."
-                   class="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-300 rounded-[10px] text-slate-900 placeholder:text-slate-400 outline-none focus:outline-none focus:ring-0 hover:border-primary-500 focus:border-primary-500 transition-colors text-sm font-medium">
-            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                   class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 outline-none focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 focus:bg-white transition-all text-sm font-medium">
+            <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"/>
             </svg>
         </div>
-        <button type="submit" class="w-full sm:w-auto px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-full shadow-lg shadow-primary-600/30 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transform active:scale-[0.98] transition-all duration-200 text-sm tracking-wide">Cari</button>
+        <div class="flex items-center gap-2">
+            <button type="submit" class="px-5 py-2.5 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-xl shadow-sm focus:outline-none transition-all duration-200 text-sm">
+                Cari
+            </button>
+            <?php if ($search): ?>
+                <a href="<?= url('users') ?>" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl transition-all duration-200 text-sm" title="Reset Filter">
+                    Reset
+                </a>
+            <?php endif; ?>
+        </div>
     </form>
 </div>
 

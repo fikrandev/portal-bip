@@ -48,19 +48,21 @@
             <ul class="space-y-1">
                 <?php
                 // Function to render menu items
-                function renderSettingsMenu($label, $url, $icon, $isActive = false) {
-                    $activeClass = $isActive 
-                        ? 'bg-primary-800/80 text-white font-medium shadow-sm border border-primary-700/50' 
-                        : 'text-primary-200 hover:bg-primary-800/50 hover:text-white border border-transparent';
-                    
-                    $iconClass = $isActive ? 'text-primary-400' : 'text-primary-400 group-hover:text-primary-300';
-                    
-                    echo "<li>
-                        <a href=\"$url\" class=\"flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group $activeClass\">
-                            <div class=\"$iconClass transition-colors\">$icon</div>
-                            <span class=\"text-sm\">$label</span>
-                        </a>
-                    </li>";
+                if (!function_exists('renderSettingsMenu')) {
+                    function renderSettingsMenu($label, $url, $icon, $isActive = false) {
+                        $activeClass = $isActive 
+                            ? 'bg-primary-800/80 text-white font-medium shadow-sm border border-primary-700/50' 
+                            : 'text-primary-200 hover:bg-primary-800/50 hover:text-white border border-transparent';
+                        
+                        $iconClass = $isActive ? 'text-primary-400' : 'text-primary-400 group-hover:text-primary-300';
+                        
+                        echo "<li>
+                            <a href=\"$url\" class=\"flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group $activeClass\">
+                                <div class=\"$iconClass transition-colors\">$icon</div>
+                                <span class=\"text-sm\">$label</span>
+                            </a>
+                        </li>";
+                    }
                 }
 
                 // Get current URL for active state
@@ -92,5 +94,16 @@
                 ?>
             </ul>
         </div>
+    </div>
+
+    <!-- Sidebar Footer -->
+    <div class="p-4 border-t border-primary-800/50 bg-primary-950/20">
+        <a href="<?= url('dashboard') ?>" 
+           class="flex items-center gap-3 px-3 py-2 rounded-2xl text-xs font-semibold text-primary-300 hover:text-white hover:bg-white/10 transition-colors">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+            </svg>
+            <span>Kembali ke Portal Utama</span>
+        </a>
     </div>
 </aside>

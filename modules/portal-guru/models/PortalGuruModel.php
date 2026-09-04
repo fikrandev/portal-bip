@@ -15,9 +15,7 @@ class PortalGuruModel
         try {
             if (class_exists('Database')) {
                 $db = Database::getInstance();
-                $stmt = $db->prepare("SELECT * FROM users WHERE id = ? LIMIT 1");
-                $stmt->execute([$userId]);
-                $user = $stmt->fetch();
+                $user = $db->find("SELECT * FROM users WHERE id = ?", [$userId]);
                 if ($user) {
                     return [
                         'id' => $user['id'],

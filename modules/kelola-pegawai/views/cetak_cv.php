@@ -437,8 +437,8 @@ if (!empty($pegawai['tanggal_lahir'])) {
                     <p class="font-extrabold text-indigo-900 uppercase text-[11pt]"><?= e($pegawai['jabatan'] ?: 'Guru / Staf') ?></p>
                 </div>
                 <div class="mt-1">
-                    <span class="text-slate-600 font-bold block text-[9.5pt]">IKATAN STATUS KERJA:</span>
-                    <p class="font-semibold text-slate-800"><?= e($pegawai['status_kerja'] ?: 'Pegawai Tetap') ?> (<?= e($pegawai['jenis_pegawai'] ?: 'Pendidik') ?>)</p>
+                    <span class="text-slate-600 font-bold block text-[9.5pt]">STATUS KEPEGAWAIAN:</span>
+                    <p class="font-semibold text-slate-800"><?= e($pegawai['status_pegawai'] ?? ($pegawai['status_kerja'] ?: 'Tetap')) ?> (<?= e($pegawai['jenis_pegawai'] ?: 'Pendidik') ?>)</p>
                 </div>
                 <div class="mt-1">
                     <span class="text-slate-600 font-bold block text-[9.5pt]">STATUS DAPODIK:</span>

@@ -45,53 +45,65 @@ class PegawaiController
                 $where .= " AND (status_dapodik IS NULL OR status_dapodik = '' OR status_dapodik = 'Belum Terdaftar')";
             }
         }
-
-        // Ambil semua pegawai aktif untuk kalkulasi
-        $pegawaiRows = $db->findAll("SELECT * FROM pegawai WHERE {$where}", $params);
-
-        // Filter Masa Kerja in-memory jika ada
         if (!empty($filterMasaKerja)) {
-            $pegawaiRows = array_filter($pegawaiRows, function($p) use ($filterMasaKerja) {
-                $tgl = !empty($p['tanggal_masuk']) ? $p['tanggal_masuk'] : (!empty($p['tmt']) ? $p['tmt'] : null);
-                if (!$tgl) return false;
-                $diff = (new DateTime($tgl))->diff(new DateTime());
-                if ($diff->invert == 1) return false;
-                $years = $diff->y;
-                if ($filterMasaKerja === '<1') return $years < 1;
-                if ($filterMasaKerja === '1-3') return $years >= 1 && $years < 3;
-                if ($filterMasaKerja === '3-5') return $years >= 3 && $years < 5;
-                if ($filterMasaKerja === '5-10') return $years >= 5 && $years <= 10;
-                if ($filterMasaKerja === '>10') return $years > 10;
-                return true;
-            });
+            if ($filterMasaKerja === '<1') {
+                $where .= " AND ((tanggal_masuk IS NOT NULL AND TIMESTAMPDIFF(YEAR, tanggal_masuk, CURDATE()) < 1) OR (tanggal_masuk IS NULL AND tmt IS NOT NULL AND TIMESTAMPDIFF(YEAR, tmt, CURDATE()) < 1) OR (tanggal_masuk IS NULL AND tmt IS NULL))";
+            } elseif ($filterMasaKerja === '1-3') {
+                $where .= " AND ((tanggal_masuk IS NOT NULL AND TIMESTAMPDIFF(YEAR, tanggal_masuk, CURDATE()) >= 1 AND TIMESTAMPDIFF(YEAR, tanggal_masuk, CURDATE()) < 3) OR (tanggal_masuk IS NULL AND tmt IS NOT NULL AND TIMESTAMPDIFF(YEAR, tmt, CURDATE()) >= 1 AND TIMESTAMPDIFF(YEAR, tmt, CURDATE()) < 3))";
+            } elseif ($filterMasaKerja === '3-5') {
+                $where .= " AND ((tanggal_masuk IS NOT NULL AND TIMESTAMPDIFF(YEAR, tanggal_masuk, CURDATE()) >= 3 AND TIMESTAMPDIFF(YEAR, tanggal_masuk, CURDATE()) < 5) OR (tanggal_masuk IS NULL AND tmt IS NOT NULL AND TIMESTAMPDIFF(YEAR, tmt, CURDATE()) >= 3 AND TIMESTAMPDIFF(YEAR, tmt, CURDATE()) < 5))";
+            } elseif ($filterMasaKerja === '5-10') {
+                $where .= " AND ((tanggal_masuk IS NOT NULL AND TIMESTAMPDIFF(YEAR, tanggal_masuk, CURDATE()) >= 5 AND TIMESTAMPDIFF(YEAR, tanggal_masuk, CURDATE()) <= 10) OR (tanggal_masuk IS NULL AND tmt IS NOT NULL AND TIMESTAMPDIFF(YEAR, tmt, CURDATE()) >= 5 AND TIMESTAMPDIFF(YEAR, tmt, CURDATE()) <= 10))";
+            } elseif ($filterMasaKerja === '>10') {
+                $where .= " AND ((tanggal_masuk IS NOT NULL AND TIMESTAMPDIFF(YEAR, tanggal_masuk, CURDATE()) > 10) OR (tanggal_masuk IS NULL AND tmt IS NOT NULL AND TIMESTAMPDIFF(YEAR, tmt, CURDATE()) > 10))";
+            }
         }
 
-        // Active Penugasan Groups (Multi-Active Groups: Yayasan, PAUD, SD, SMP, SMA, etc.)
-        $activeGrups = $db->findAll("SELECT id FROM penugasan_grup WHERE is_active = 1");
-        $assignedPegawaiIds = [];
-        if (!empty($activeGrups)) {
-            $activeGrupIds = array_column($activeGrups, 'id');
-            $placeholders = implode(',', array_fill(0, count($activeGrupIds), '?'));
-            $assignedRows = $db->findAll("SELECT DISTINCT pegawai_id FROM pegawai_penugasan WHERE grup_id IN ($placeholders) AND status = 'Aktif'", $activeGrupIds);
-            $assignedPegawaiIds = array_column($assignedRows, 'pegawai_id');
-        }
+        // 1. Single Fast SQL Aggregation for KPI Numbers and Chart Buckets
+        $kpiRow = $db->find("
+            SELECT 
+                COUNT(1) as total_aktif,
+                SUM(CASE WHEN jenis_kelamin = 'P' THEN 1 ELSE 0 END) as wanita_aktif,
+                SUM(CASE WHEN jenis_kelamin = 'L' OR jenis_kelamin IS NULL THEN 1 ELSE 0 END) as pria_aktif,
+                SUM(CASE WHEN jenis_pegawai LIKE '%Guru%' OR jabatan LIKE '%Guru%' THEN 1 ELSE 0 END) as total_guru,
+                SUM(CASE WHEN status_dapodik IS NOT NULL AND status_dapodik != '' AND status_dapodik != 'Belum Terdaftar' THEN 1 ELSE 0 END) as dapodik_sudah,
+                -- Masa Kerja Ranges
+                SUM(CASE WHEN (tanggal_masuk IS NOT NULL AND TIMESTAMPDIFF(YEAR, tanggal_masuk, CURDATE()) < 1) OR (tanggal_masuk IS NULL AND tmt IS NOT NULL AND TIMESTAMPDIFF(YEAR, tmt, CURDATE()) < 1) OR (tanggal_masuk IS NULL AND tmt IS NULL) THEN 1 ELSE 0 END) as masa_lt_1,
+                SUM(CASE WHEN (tanggal_masuk IS NOT NULL AND TIMESTAMPDIFF(YEAR, tanggal_masuk, CURDATE()) >= 1 AND TIMESTAMPDIFF(YEAR, tanggal_masuk, CURDATE()) < 3) OR (tanggal_masuk IS NULL AND tmt IS NOT NULL AND TIMESTAMPDIFF(YEAR, tmt, CURDATE()) >= 1 AND TIMESTAMPDIFF(YEAR, tmt, CURDATE()) < 3) THEN 1 ELSE 0 END) as masa_1_3,
+                SUM(CASE WHEN (tanggal_masuk IS NOT NULL AND TIMESTAMPDIFF(YEAR, tanggal_masuk, CURDATE()) >= 3 AND TIMESTAMPDIFF(YEAR, tanggal_masuk, CURDATE()) < 5) OR (tanggal_masuk IS NULL AND tmt IS NOT NULL AND TIMESTAMPDIFF(YEAR, tmt, CURDATE()) >= 3 AND TIMESTAMPDIFF(YEAR, tmt, CURDATE()) < 5) THEN 1 ELSE 0 END) as masa_3_5,
+                SUM(CASE WHEN (tanggal_masuk IS NOT NULL AND TIMESTAMPDIFF(YEAR, tanggal_masuk, CURDATE()) >= 5 AND TIMESTAMPDIFF(YEAR, tanggal_masuk, CURDATE()) <= 10) OR (tanggal_masuk IS NULL AND tmt IS NOT NULL AND TIMESTAMPDIFF(YEAR, tmt, CURDATE()) >= 5 AND TIMESTAMPDIFF(YEAR, tmt, CURDATE()) <= 10) THEN 1 ELSE 0 END) as masa_5_10,
+                SUM(CASE WHEN (tanggal_masuk IS NOT NULL AND TIMESTAMPDIFF(YEAR, tanggal_masuk, CURDATE()) > 10) OR (tanggal_masuk IS NULL AND tmt IS NOT NULL AND TIMESTAMPDIFF(YEAR, tmt, CURDATE()) > 10) THEN 1 ELSE 0 END) as masa_gt_10,
+                -- Usia Ranges
+                SUM(CASE WHEN tanggal_lahir IS NOT NULL AND TIMESTAMPDIFF(YEAR, tanggal_lahir, CURDATE()) < 25 THEN 1 ELSE 0 END) as usia_lt_25,
+                SUM(CASE WHEN tanggal_lahir IS NOT NULL AND TIMESTAMPDIFF(YEAR, tanggal_lahir, CURDATE()) >= 25 AND TIMESTAMPDIFF(YEAR, tanggal_lahir, CURDATE()) <= 35 THEN 1 ELSE 0 END) as usia_25_35,
+                SUM(CASE WHEN tanggal_lahir IS NOT NULL AND TIMESTAMPDIFF(YEAR, tanggal_lahir, CURDATE()) >= 36 AND TIMESTAMPDIFF(YEAR, tanggal_lahir, CURDATE()) <= 45 THEN 1 ELSE 0 END) as usia_36_45,
+                SUM(CASE WHEN tanggal_lahir IS NOT NULL AND TIMESTAMPDIFF(YEAR, tanggal_lahir, CURDATE()) >= 46 AND TIMESTAMPDIFF(YEAR, tanggal_lahir, CURDATE()) <= 55 THEN 1 ELSE 0 END) as usia_46_55,
+                SUM(CASE WHEN tanggal_lahir IS NOT NULL AND TIMESTAMPDIFF(YEAR, tanggal_lahir, CURDATE()) > 55 THEN 1 ELSE 0 END) as usia_gt_55
+            FROM pegawai
+            WHERE {$where}
+        ", $params);
 
-        // KPI Numbers
-        $totalAktif = count($pegawaiRows);
-        $priaAktif = count(array_filter($pegawaiRows, fn($p) => ($p['jenis_kelamin'] ?? 'L') === 'L'));
-        $wanitaAktif = count(array_filter($pegawaiRows, fn($p) => ($p['jenis_kelamin'] ?? 'L') === 'P'));
-        
-        $totalGuru = count(array_filter($pegawaiRows, fn($p) => stripos($p['jenis_pegawai'] ?? '', 'Guru') !== false || stripos($p['jabatan'] ?? '', 'Guru') !== false));
+        $totalAktif = intval($kpiRow['total_aktif'] ?? 0);
+        $priaAktif = intval($kpiRow['pria_aktif'] ?? 0);
+        $wanitaAktif = intval($kpiRow['wanita_aktif'] ?? 0);
+        $totalGuru = intval($kpiRow['total_guru'] ?? 0);
         $totalTendik = max(0, $totalAktif - $totalGuru);
-
-        $totalDitugaskan = count(array_filter($pegawaiRows, fn($p) => in_array($p['id'], $assignedPegawaiIds)));
-        $totalBelumDitugaskan = max(0, $totalAktif - $totalDitugaskan);
-
-        $dapodikSudah = count(array_filter($pegawaiRows, fn($p) => !empty($p['status_dapodik']) && $p['status_dapodik'] !== 'Belum Terdaftar'));
+        $dapodikSudah = intval($kpiRow['dapodik_sudah'] ?? 0);
         $dapodikBelum = max(0, $totalAktif - $dapodikSudah);
 
-        $totalPrestasi = $db->find("SELECT COUNT(*) as c FROM pegawai_prestasi")['c'] ?? 0;
-        $totalPelatihan = $db->find("SELECT COUNT(*) as c FROM pegawai_pelatihan")['c'] ?? 0;
+        // Penugasan Aktif
+        $totalDitugaskan = $db->find("
+            SELECT COUNT(DISTINCT pp.pegawai_id) as total
+            FROM pegawai_penugasan pp
+            JOIN penugasan_grup pg ON pp.grup_id = pg.id
+            JOIN pegawai p ON pp.pegawai_id = p.id
+            WHERE pg.is_active = 1 AND pp.status = 'Aktif' AND p.is_active = 1
+        ")['total'] ?? 0;
+        $totalDitugaskan = intval($totalDitugaskan);
+        $totalBelumDitugaskan = max(0, $totalAktif - $totalDitugaskan);
+
+        $totalPrestasi = $db->find("SELECT COUNT(1) as c FROM pegawai_prestasi")['c'] ?? 0;
+        $totalPelatihan = $db->find("SELECT COUNT(1) as c FROM pegawai_pelatihan")['c'] ?? 0;
         $totalJP = $db->find("SELECT COALESCE(SUM(jumlah_jam), 0) as s FROM pegawai_pelatihan")['s'] ?? 0;
 
         $kpi = [
@@ -104,79 +116,70 @@ class PegawaiController
             'total_belum_ditugaskan' => $totalBelumDitugaskan,
             'dapodik_sudah' => $dapodikSudah,
             'dapodik_belum' => $dapodikBelum,
-            'total_prestasi' => $totalPrestasi,
-            'total_pelatihan' => $totalPelatihan,
-            'total_jp' => $totalJP
+            'total_prestasi' => intval($totalPrestasi),
+            'total_pelatihan' => intval($totalPelatihan),
+            'total_jp' => intval($totalJP)
         ];
 
-        // Chart Data Calculations
-        // 1. Unit Tugas
-        $unitCounts = [];
-        foreach ($pegawaiRows as $p) {
-            $u = !empty($p['unit_tugas']) ? $p['unit_tugas'] : 'Belum Ditentukan';
-            $unitCounts[$u] = ($unitCounts[$u] ?? 0) + 1;
-        }
-        arsort($unitCounts);
+        // 2. Chart Grouping Calculations directly in SQL
+        $unitRows = $db->findAll("
+            SELECT COALESCE(NULLIF(unit_tugas, ''), 'Belum Ditentukan') as unit_name, COUNT(1) as total 
+            FROM pegawai 
+            WHERE {$where} 
+            GROUP BY unit_name 
+            ORDER BY total DESC
+        ", $params);
+        $unitCounts = !empty($unitRows) ? array_column($unitRows, 'total', 'unit_name') : [];
 
-        // 2. Status Kerja
-        $statusCounts = [];
-        foreach ($pegawaiRows as $p) {
-            $sk = !empty($p['status_kerja']) ? $p['status_kerja'] : 'Lainnya';
-            $statusCounts[$sk] = ($statusCounts[$sk] ?? 0) + 1;
-        }
+        $statusRows = $db->findAll("
+            SELECT COALESCE(NULLIF(status_pegawai, ''), NULLIF(status_kerja, ''), 'Lainnya') as status_name, COUNT(1) as total 
+            FROM pegawai 
+            WHERE {$where} 
+            GROUP BY status_name 
+            ORDER BY total DESC
+        ", $params);
+        $statusCounts = !empty($statusRows) ? array_column($statusRows, 'total', 'status_name') : [];
 
-        // 3. Masa Kerja Range
-        $masaCounts = [0, 0, 0, 0, 0]; // <1, 1-3, 3-5, 5-10, >10
-        foreach ($pegawaiRows as $p) {
-            $tgl = !empty($p['tanggal_masuk']) ? $p['tanggal_masuk'] : (!empty($p['tmt']) ? $p['tmt'] : null);
-            if ($tgl) {
-                $diff = (new DateTime($tgl))->diff(new DateTime());
-                $y = $diff->y;
-                if ($y < 1) $masaCounts[0]++;
-                elseif ($y < 3) $masaCounts[1]++;
-                elseif ($y < 5) $masaCounts[2]++;
-                elseif ($y <= 10) $masaCounts[3]++;
-                else $masaCounts[4]++;
-            } else {
-                $masaCounts[0]++;
-            }
-        }
+        $masaCounts = [
+            intval($kpiRow['masa_lt_1'] ?? 0),
+            intval($kpiRow['masa_1_3'] ?? 0),
+            intval($kpiRow['masa_3_5'] ?? 0),
+            intval($kpiRow['masa_5_10'] ?? 0),
+            intval($kpiRow['masa_gt_10'] ?? 0)
+        ];
 
-        // 4. Usia Pegawai Range
-        $usiaCounts = [0, 0, 0, 0, 0]; // <25, 25-35, 36-45, 46-55, >55
-        foreach ($pegawaiRows as $p) {
-            if (!empty($p['tanggal_lahir'])) {
-                $age = (new DateTime($p['tanggal_lahir']))->diff(new DateTime())->y;
-                if ($age < 25) $usiaCounts[0]++;
-                elseif ($age <= 35) $usiaCounts[1]++;
-                elseif ($age <= 45) $usiaCounts[2]++;
-                elseif ($age <= 55) $usiaCounts[3]++;
-                else $usiaCounts[4]++;
-            }
-        }
+        $usiaCounts = [
+            intval($kpiRow['usia_lt_25'] ?? 0),
+            intval($kpiRow['usia_25_35'] ?? 0),
+            intval($kpiRow['usia_36_45'] ?? 0),
+            intval($kpiRow['usia_46_55'] ?? 0),
+            intval($kpiRow['usia_gt_55'] ?? 0)
+        ];
 
-        // 5. Pendidikan Terakhir
+        // Pendidikan Terakhir
         $pendidikanCounts = ['SMA/SMK' => 0, 'D3' => 0, 'S1' => 0, 'S2' => 0, 'S3' => 0];
         $allPendidikan = $db->findAll("
-            SELECT pp.jenjang 
+            SELECT pp.jenjang, COUNT(1) as total
             FROM pegawai_pendidikan pp
             JOIN pegawai p ON pp.pegawai_id = p.id
             WHERE p.is_active = 1
+            GROUP BY pp.jenjang
         ");
         foreach ($allPendidikan as $pend) {
             $j = strtoupper(trim($pend['jenjang']));
+            $cnt = intval($pend['total']);
             if (isset($pendidikanCounts[$j])) {
-                $pendidikanCounts[$j]++;
+                $pendidikanCounts[$j] += $cnt;
             } elseif (stripos($j, 'S1') !== false || stripos($j, 'Sarjana') !== false) {
-                $pendidikanCounts['S1']++;
+                $pendidikanCounts['S1'] += $cnt;
             } elseif (stripos($j, 'S2') !== false || stripos($j, 'Magister') !== false) {
-                $pendidikanCounts['S2']++;
+                $pendidikanCounts['S2'] += $cnt;
             } elseif (stripos($j, 'S3') !== false || stripos($j, 'Doktor') !== false) {
-                $pendidikanCounts['S3']++;
+                $pendidikanCounts['S3'] += $cnt;
             } elseif (stripos($j, 'D3') !== false || stripos($j, 'Diploma') !== false) {
-                $pendidikanCounts['D3']++;
+                $pendidikanCounts['D3'] += $cnt;
             } else {
-                $pendidikanCounts['SMA/SMK']++;
+                $pendidikanCounts['SMA/SMK'] += $cnt;
             }
         }
 
@@ -244,6 +247,7 @@ class PegawaiController
         $search = trim($_GET['search'] ?? '');
         $filterUnit = trim($_GET['unit_tugas'] ?? '');
         $filterJabatan = trim($_GET['jabatan'] ?? '');
+        $filterStatusPegawai = trim($_GET['status_pegawai'] ?? '');
         
         try {
             $where = '1=1';
@@ -261,13 +265,24 @@ class PegawaiController
                 $where .= " AND jabatan = ?";
                 $params[] = $filterJabatan;
             }
+            if ($filterStatusPegawai) {
+                $where .= " AND (status_pegawai = ? OR status_kerja = ?)";
+                $params[] = $filterStatusPegawai;
+                $params[] = $filterStatusPegawai;
+            }
             
-            $total = $db->find("SELECT COUNT(*) as total FROM pegawai WHERE {$where}", $params)['total'] ?? 0;
-            $pegawai = $db->findAll("SELECT * FROM pegawai WHERE {$where} ORDER BY nama ASC LIMIT {$limit} OFFSET {$offset}", $params);
+            $total = $db->find("SELECT COUNT(1) as total FROM pegawai WHERE {$where}", $params)['total'] ?? 0;
+            $pegawai = $db->findAll("SELECT id, foto, niy, nik, npwp, email, no_wa, nama, gelar, jenis_kelamin, status_nikah, tempat_lahir, tanggal_lahir, nama_ibu, unit_tugas, jabatan, status_kerja, status_pegawai, jenis_pegawai, status_dapodik, tanggal_masuk, tmt, is_active FROM pegawai WHERE {$where} ORDER BY nama ASC LIMIT {$limit} OFFSET {$offset}", $params);
             
-            // Get unique unit_tugas and jabatan for filter dropdowns
-            $unitTugasList = $db->findAll("SELECT DISTINCT unit_tugas FROM pegawai WHERE unit_tugas IS NOT NULL AND unit_tugas != '' ORDER BY unit_tugas ASC");
-            $jabatanList = $db->findAll("SELECT DISTINCT jabatan FROM pegawai WHERE jabatan IS NOT NULL AND jabatan != '' ORDER BY jabatan ASC");
+            // Fast lookup from master tables with fallback to distinct scan
+            $unitTugasList = $db->findAll("SELECT nama AS unit_tugas FROM master_unit_tugas ORDER BY nama ASC");
+            if (empty($unitTugasList)) {
+                $unitTugasList = $db->findAll("SELECT DISTINCT unit_tugas FROM pegawai WHERE unit_tugas IS NOT NULL AND unit_tugas != '' ORDER BY unit_tugas ASC");
+            }
+            $jabatanList = $db->findAll("SELECT nama AS jabatan FROM master_jabatan ORDER BY nama ASC");
+            if (empty($jabatanList)) {
+                $jabatanList = $db->findAll("SELECT DISTINCT jabatan FROM pegawai WHERE jabatan IS NOT NULL AND jabatan != '' ORDER BY jabatan ASC");
+            }
             
         } catch (Exception $e) {
             // Create tables if they don't exist
@@ -354,6 +369,7 @@ class PegawaiController
         $search = trim($_GET['search'] ?? '');
         $filterUnit = trim($_GET['unit_tugas'] ?? '');
         $filterJabatan = trim($_GET['jabatan'] ?? '');
+        $filterStatusPegawai = trim($_GET['status_pegawai'] ?? '');
         
         $where = 'is_active = 0';
         $params = [];
@@ -369,6 +385,11 @@ class PegawaiController
         if ($filterJabatan) {
             $where .= " AND jabatan = ?";
             $params[] = $filterJabatan;
+        }
+        if ($filterStatusPegawai) {
+            $where .= " AND (status_pegawai = ? OR status_kerja = ?)";
+            $params[] = $filterStatusPegawai;
+            $params[] = $filterStatusPegawai;
         }
         
         $total = $db->find("SELECT COUNT(*) as total FROM pegawai WHERE {$where}", $params)['total'] ?? 0;
@@ -389,6 +410,12 @@ class PegawaiController
 
     public static function create(): void
     {
+        $db = Database::getInstance();
+        $unitList = $db->findAll("SELECT DISTINCT nama FROM master_unit_tugas ORDER BY nama ASC");
+        $jabatanList = $db->findAll("SELECT DISTINCT nama FROM master_jabatan ORDER BY nama ASC");
+        $statusKerjaList = $db->findAll("SELECT DISTINCT nama FROM master_status_kerja ORDER BY nama ASC");
+        $jenisPegawaiList = $db->findAll("SELECT DISTINCT nama FROM master_jenis_pegawai ORDER BY nama ASC");
+
         $pageTitle = 'Tambah Data Pegawai';
         $breadcrumbs = [['label' => 'Kelola Pegawai', 'url' => url('kelola-pegawai')], ['label' => 'Tambah Pegawai']];
         
@@ -444,7 +471,8 @@ class PegawaiController
                 'nama_ibu' => trim($_POST['nama_ibu'] ?? ''),
                 'unit_tugas' => trim($_POST['unit_tugas'] ?? ''),
                 'jabatan' => trim($_POST['jabatan'] ?? ''),
-                'status_kerja' => trim($_POST['status_kerja'] ?? ''),
+                'status_kerja' => trim($_POST['status_pegawai'] ?? ($_POST['status_kerja'] ?? 'Tetap')),
+                'status_pegawai' => trim($_POST['status_pegawai'] ?? ($_POST['status_kerja'] ?? 'Tetap')),
                 'jenis_pegawai' => trim($_POST['jenis_pegawai'] ?? ''),
                 'status_dapodik' => trim($_POST['status_dapodik'] ?? ''),
                 'tanggal_masuk' => !empty($_POST['tanggal_masuk']) ? $_POST['tanggal_masuk'] : (!empty($_POST['tmt']) ? $_POST['tmt'] : null),
@@ -536,6 +564,23 @@ class PegawaiController
         $prestasiList = $db->findAll("SELECT * FROM pegawai_prestasi WHERE pegawai_id = ? ORDER BY tahun DESC, id DESC", [$id]);
         $pelatihanList = $db->findAll("SELECT * FROM pegawai_pelatihan WHERE pegawai_id = ? ORDER BY tahun DESC, tanggal_mulai DESC, id DESC", [$id]);
         
+        $activePenugasan = $db->find("
+            SELECT pp.*, pg.nama_grup, pg.no_sk, pg.tanggal_sk,
+                   mut.nama as nama_unit, mj.nama as nama_jabatan
+            FROM pegawai_penugasan pp
+            JOIN penugasan_grup pg ON pp.grup_id = pg.id
+            LEFT JOIN master_unit_tugas mut ON pp.unit_tugas_id = mut.id
+            LEFT JOIN master_jabatan mj ON pp.jabatan_id = mj.id
+            WHERE pp.pegawai_id = ? AND pg.is_active = 1 AND pp.status = 'Aktif'
+            ORDER BY pp.id DESC
+            LIMIT 1
+        ", [$id]);
+
+        $unitList = $db->findAll("SELECT DISTINCT nama FROM master_unit_tugas ORDER BY nama ASC");
+        $jabatanList = $db->findAll("SELECT DISTINCT nama FROM master_jabatan ORDER BY nama ASC");
+        $statusKerjaList = $db->findAll("SELECT DISTINCT nama FROM master_status_kerja ORDER BY nama ASC");
+        $jenisPegawaiList = $db->findAll("SELECT DISTINCT nama FROM master_jenis_pegawai ORDER BY nama ASC");
+
         $pageTitle = 'Edit Data Pegawai';
         $breadcrumbs = [['label' => 'Kelola Pegawai', 'url' => url('kelola-pegawai')], ['label' => 'Edit Pegawai']];
         
@@ -548,7 +593,7 @@ class PegawaiController
 
     public static function update(string $id): void
     {
-        if (!CSRF::validate()) { Response::withError(url('kelola-pegawai'), 'Token tidak valid.'); return; }
+        if (!CSRF::validate()) { Response::withError(url('kelola-pegawai/edit/' . $id), 'Token tidak valid.'); return; }
         
         $validator = Validator::make($_POST)
             ->required('nama', 'Nama Lengkap');
@@ -615,7 +660,15 @@ class PegawaiController
             // If penugasan fields are provided in POST (e.g. API or other caller), update them; otherwise preserve existing
             if (isset($_POST['unit_tugas'])) $updateData['unit_tugas'] = trim($_POST['unit_tugas']);
             if (isset($_POST['jabatan'])) $updateData['jabatan'] = trim($_POST['jabatan']);
-            if (isset($_POST['status_kerja'])) $updateData['status_kerja'] = trim($_POST['status_kerja']);
+            if (isset($_POST['status_pegawai'])) {
+                $st = trim($_POST['status_pegawai']);
+                $updateData['status_pegawai'] = $st;
+                $updateData['status_kerja'] = $st;
+            } elseif (isset($_POST['status_kerja'])) {
+                $st = trim($_POST['status_kerja']);
+                $updateData['status_pegawai'] = $st;
+                $updateData['status_kerja'] = $st;
+            }
             if (isset($_POST['jenis_pegawai'])) $updateData['jenis_pegawai'] = trim($_POST['jenis_pegawai']);
             if (isset($_POST['status_dapodik'])) $updateData['status_dapodik'] = trim($_POST['status_dapodik']);
             if (isset($_POST['tanggal_masuk'])) {
@@ -630,7 +683,31 @@ class PegawaiController
 
             $db->update('pegawai', $updateData, 'id = ?', [$id]);
 
-            // Recreate Riwayat Pendidikan
+            // Sinkronisasi dengan Penugasan Aktif jika unit_tugas atau jabatan diubah
+            if (!empty($_POST['unit_tugas']) || !empty($_POST['jabatan'])) {
+                $activePenugasan = $db->find("
+                    SELECT pp.id 
+                    FROM pegawai_penugasan pp
+                    JOIN penugasan_grup pg ON pp.grup_id = pg.id
+                    WHERE pp.pegawai_id = ? AND pg.is_active = 1 AND pp.status = 'Aktif'
+                    ORDER BY pp.id DESC LIMIT 1
+                ", [$id]);
+
+                if ($activePenugasan) {
+                    $updatePp = [];
+                    if (!empty($_POST['unit_tugas'])) {
+                        $uRow = $db->find("SELECT id FROM master_unit_tugas WHERE nama = ?", [trim($_POST['unit_tugas'])]);
+                        if ($uRow) $updatePp['unit_tugas_id'] = $uRow['id'];
+                    }
+                    if (!empty($_POST['jabatan'])) {
+                        $jRow = $db->find("SELECT id FROM master_jabatan WHERE nama = ?", [trim($_POST['jabatan'])]);
+                        if ($jRow) $updatePp['jabatan_id'] = $jRow['id'];
+                    }
+                    if (!empty($updatePp)) {
+                        $db->update('pegawai_penugasan', $updatePp, 'id = ?', [$activePenugasan['id']]);
+                    }
+                }
+            }
             $db->delete('pegawai_pendidikan', 'pegawai_id = ?', [$id]);
             
             if (!empty($_POST['pendidikan_jenjang']) && is_array($_POST['pendidikan_jenjang'])) {
@@ -684,10 +761,12 @@ class PegawaiController
             }
 
             $db->commit();
-            Response::withSuccess(url('kelola-pegawai'), 'Data pegawai berhasil diperbarui.');
+            $activeTab = !empty($_POST['active_tab']) ? '?tab=' . urlencode($_POST['active_tab']) : '';
+            Response::withSuccess(url('kelola-pegawai/edit/' . $id . $activeTab), 'Data pegawai berhasil diperbarui.');
         } catch (Exception $e) {
             $db->rollback();
-            Response::withError(url('kelola-pegawai'), 'Terjadi kesalahan: ' . $e->getMessage());
+            $activeTab = !empty($_POST['active_tab']) ? '?tab=' . urlencode($_POST['active_tab']) : '';
+            Response::withError(url('kelola-pegawai/edit/' . $id . $activeTab), 'Terjadi kesalahan: ' . $e->getMessage());
         }
     }
 
@@ -874,7 +953,7 @@ class PegawaiController
             }
         }
 
-        $db->insert('penugasan_grup', [
+        $grupId = $db->insert('penugasan_grup', [
             'nama_grup' => trim($_POST['nama_grup']),
             'semester' => $_POST['semester'] ?? 'Ganjil',
             'no_sk' => trim($_POST['no_sk'] ?? ''),
@@ -892,8 +971,6 @@ class PegawaiController
             'is_active' => $isActive,
             'keterangan' => trim($_POST['keterangan'] ?? '')
         ]);
-
-        $grupId = $db->lastInsertId();
 
         if ($isActive) {
             self::syncGroupToPegawai($grupId);
@@ -1015,6 +1092,7 @@ class PegawaiController
      */
     public static function cetakSkGrup(string $id): void
     {
+        self::ensurePenugasanMengajarTable();
         $db = Database::getInstance();
         $grup = $db->find("SELECT * FROM penugasan_grup WHERE id = ?", [$id]);
         if (!$grup) {
@@ -1035,6 +1113,18 @@ class PegawaiController
             WHERE pp.grup_id = ?
             ORDER BY mut.nama ASC, mj.nama ASC, p.nama ASC
         ", [$id]);
+
+        // Ambil data rincian tugas mengajar guru (mapel, kelas, JP)
+        $teachingRows = $db->findAll("
+            SELECT * FROM pegawai_penugasan_mengajar 
+            WHERE grup_id = ? 
+            ORDER BY nama_kelas ASC, mata_pelajaran ASC
+        ", [$id]);
+
+        $tugasMengajarMap = [];
+        foreach ($teachingRows as $tr) {
+            $tugasMengajarMap[$tr['penugasan_id']][] = $tr;
+        }
 
         // Ambil pengaturan sistem untuk identitas kop surat
         $settingsRows = $db->query("SELECT setting_key, setting_value FROM settings")->fetchAll();
@@ -1161,8 +1251,233 @@ class PegawaiController
         self::toggleAktifGrup($id);
     }
 
+    public static function ensurePenugasanMengajarTable(): void
+    {
+        $db = Database::getInstance();
+        $db->getConnection()->exec("
+            CREATE TABLE IF NOT EXISTS `pegawai_penugasan_mengajar` (
+                `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                `penugasan_id` INT NOT NULL,
+                `grup_id` INT DEFAULT NULL,
+                `pegawai_id` BIGINT UNSIGNED NOT NULL,
+                `mata_pelajaran` VARCHAR(150) NOT NULL,
+                `kelas_id` BIGINT UNSIGNED DEFAULT NULL,
+                `nama_kelas` VARCHAR(100) NOT NULL,
+                `jumlah_jp` INT NOT NULL DEFAULT 2,
+                `keterangan` VARCHAR(255) DEFAULT NULL,
+                `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                INDEX (`penugasan_id`),
+                INDEX (`grup_id`),
+                INDEX (`pegawai_id`),
+                INDEX (`mata_pelajaran`),
+                INDEX (`nama_kelas`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
+
+        try {
+            $cols = $db->findAll("SHOW COLUMNS FROM `pegawai_penugasan` LIKE 'is_guru'");
+            if (empty($cols)) {
+                $db->getConnection()->exec("ALTER TABLE `pegawai_penugasan` ADD COLUMN `is_guru` TINYINT(1) NOT NULL DEFAULT 0 AFTER `status`");
+            }
+            $colsJp = $db->findAll("SHOW COLUMNS FROM `pegawai_penugasan` LIKE 'total_jp'");
+            if (empty($colsJp)) {
+                $db->getConnection()->exec("ALTER TABLE `pegawai_penugasan` ADD COLUMN `total_jp` INT NOT NULL DEFAULT 0 AFTER `is_guru`");
+            }
+            $colsSummary = $db->findAll("SHOW COLUMNS FROM `pegawai_penugasan` LIKE 'mapel_ajar_summary'");
+            if (empty($colsSummary)) {
+                $db->getConnection()->exec("ALTER TABLE `pegawai_penugasan` ADD COLUMN `mapel_ajar_summary` TEXT DEFAULT NULL AFTER `total_jp`");
+            }
+            $colsWali = $db->findAll("SHOW COLUMNS FROM `pegawai_penugasan` LIKE 'wali_kelas_nama'");
+            if (empty($colsWali)) {
+                $db->getConnection()->exec("ALTER TABLE `pegawai_penugasan` ADD COLUMN `wali_kelas_nama` VARCHAR(100) DEFAULT NULL AFTER `jabatan_id`");
+            }
+        } catch (Exception $e) {
+            // Silently continue if column already exists
+        }
+    }
+
+    public static function getMasterMataPelajaran(?string $unit = null): array
+    {
+        $db = Database::getInstance();
+        self::ensurePenugasanMengajarTable();
+        if (class_exists('SettingsController')) {
+            SettingsController::ensureMasterPembelajaranTable();
+        }
+
+        try {
+            $where = "is_active = 1";
+            $params = [];
+            if ($unit && $unit !== 'Semua Unit' && $unit !== 'semua' && $unit !== 'Yayasan') {
+                $where .= " AND (unit = ? OR unit = 'Semua Unit')";
+                $params[] = $unit;
+            }
+            $rows = $db->findAll("SELECT * FROM master_mata_pelajaran WHERE {$where} ORDER BY urutan ASC, nama_mapel ASC", $params);
+            if (!empty($rows)) {
+                return $rows;
+            }
+        } catch (Exception $e) {}
+
+        // Fallback default list
+        $defaults = [
+            'Al-Qur\'an Hadits', 'Aqidah Akhlak', 'Fiqih', 'Sejarah Kebudayaan Islam (SKI)',
+            'Bahasa Arab', 'Tahfidz Al-Qur\'an', 'Pendidikan Agama Islam & Budi Pekerti',
+            'Pendidikan Pancasila & Kewarganegaraan (PPKn)', 'Bahasa Indonesia', 'Bahasa Inggris',
+            'Matematika', 'Ilmu Pengetahuan Alam (IPA)', 'Ilmu Pengetahuan Sosial (IPS)',
+            'Biologi', 'Fisika', 'Kimia', 'Ekonomi', 'Geografi', 'Sosiologi', 'Sejarah',
+            'Informatika / TIK', 'Pendidikan Jasmani, Olahraga, & Kesehatan (PJOK)',
+            'Seni Budaya & Prakarya (SBdP)', 'Prakarya & Kewirausahaan', 'Bimbingan Konseling (BK)',
+            'Tematik / Guru Kelas', 'Muatan Lokal / Bahasa Daerah'
+        ];
+        return array_map(fn($m) => ['id' => null, 'kode_mapel' => '', 'nama_mapel' => $m, 'unit' => 'Semua Unit', 'kelompok' => 'Umum'], $defaults);
+    }
+
+    /**
+     * Ambil seluruh daftar kelas yang ada dari data siswa riil dan master kelas,
+     * dikelompokkan dengan unit/jenjang masing-masing (SD, SMP, SMA, PAUD)
+     */
+    public static function getKelasListWithUnit(): array
+    {
+        $db = Database::getInstance();
+        $list = [];
+        $addedNames = [];
+
+        // 1. Ambil dari master kelas jika ada
+        try {
+            $masterKelas = $db->findAll("SELECT id, nama_kelas, tahun_akademik_id FROM kelas WHERE is_active = 1 ORDER BY nama_kelas ASC");
+            foreach ($masterKelas as $mk) {
+                $nama = trim($mk['nama_kelas']);
+                if ($nama && !isset($addedNames[strtolower($nama)])) {
+                    $unit = self::detectUnitFromKelasName($nama);
+                    $list[] = [
+                        'id' => $mk['id'],
+                        'nama_kelas' => $nama,
+                        'unit' => $unit,
+                        'label' => $nama
+                    ];
+                    $addedNames[strtolower($nama)] = true;
+                }
+            }
+        } catch (Exception $e) {}
+
+        // 2. Ambil dari data siswa yang memiliki penempatan kelas
+        try {
+            $siswaKelas = $db->findAll("
+                SELECT DISTINCT jenjang, kelas 
+                FROM siswa 
+                WHERE kelas IS NOT NULL AND kelas != '' 
+                ORDER BY jenjang ASC, kelas ASC
+            ");
+            foreach ($siswaKelas as $sk) {
+                $rawKelas = trim($sk['kelas']);
+                if (!$rawKelas) continue;
+
+                $formattedNama = (stripos($rawKelas, 'kelas') === false && stripos($rawKelas, 'tk') === false && stripos($rawKelas, 'paud') === false && stripos($rawKelas, 'kb') === false)
+                    ? 'Kelas ' . $rawKelas 
+                    : $rawKelas;
+
+                $jenjang = strtoupper(trim($sk['jenjang'] ?? ''));
+                $unit = !empty($jenjang) ? $jenjang : self::detectUnitFromKelasName($formattedNama);
+
+                if (!isset($addedNames[strtolower($formattedNama)])) {
+                    $list[] = [
+                        'id' => null,
+                        'nama_kelas' => $formattedNama,
+                        'unit' => $unit,
+                        'label' => $formattedNama
+                    ];
+                    $addedNames[strtolower($formattedNama)] = true;
+                }
+            }
+        } catch (Exception $e) {}
+
+        // 3. Fallback jika data kelas dan siswa masih kosong
+        if (empty($list)) {
+            $defaults = [
+                ['PAUD A', 'PAUD'], ['PAUD B', 'PAUD'], ['TK A', 'PAUD'], ['TK B', 'PAUD'],
+                ['Kelas 1A', 'SD'], ['Kelas 1B', 'SD'], ['Kelas 2A', 'SD'], ['Kelas 2B', 'SD'],
+                ['Kelas 3A', 'SD'], ['Kelas 3B', 'SD'], ['Kelas 4A', 'SD'], ['Kelas 4B', 'SD'],
+                ['Kelas 5A', 'SD'], ['Kelas 5B', 'SD'], ['Kelas 6A', 'SD'], ['Kelas 6B', 'SD'],
+                ['Kelas 7A', 'SMP'], ['Kelas 7B', 'SMP'], ['Kelas 7C', 'SMP'],
+                ['Kelas 8A', 'SMP'], ['Kelas 8B', 'SMP'], ['Kelas 8C', 'SMP'],
+                ['Kelas 9A', 'SMP'], ['Kelas 9B', 'SMP'], ['Kelas 9C', 'SMP'],
+                ['Kelas 10 IPA', 'SMA'], ['Kelas 10 IPS', 'SMA'],
+                ['Kelas 11 IPA', 'SMA'], ['Kelas 11 IPS', 'SMA'],
+                ['Kelas 12 IPA', 'SMA'], ['Kelas 12 IPS', 'SMA']
+            ];
+            foreach ($defaults as $def) {
+                $list[] = [
+                    'id' => null,
+                    'nama_kelas' => $def[0],
+                    'unit' => $def[1],
+                    'label' => $def[0]
+                ];
+            }
+        }
+
+        // Urutkan berdasarkan unit dan nama kelas
+        usort($list, function($a, $b) {
+            $unitOrder = ['PAUD' => 1, 'TK' => 1, 'SD' => 2, 'SMP' => 3, 'SMA' => 4];
+            $uA = $unitOrder[$a['unit']] ?? 9;
+            $uB = $unitOrder[$b['unit']] ?? 9;
+            if ($uA !== $uB) return $uA - $uB;
+            return strnatcasecmp($a['nama_kelas'], $b['nama_kelas']);
+        });
+
+        return $list;
+    }
+
+    private static function detectUnitFromKelasName(string $namaKelas): string
+    {
+        $upper = strtoupper($namaKelas);
+        if (strpos($upper, 'TK') !== false || strpos($upper, 'PAUD') !== false || strpos($upper, 'KB') !== false || strpos($upper, 'RA') !== false) {
+            return 'PAUD';
+        }
+        if (preg_match('/\b(10|11|12|X|XI|XII|MIPA|IPS)\b/i', $namaKelas)) {
+            return 'SMA';
+        }
+        if (preg_match('/\b(7|8|9|VII|VIII|IX)\b/i', $namaKelas)) {
+            return 'SMP';
+        }
+        if (preg_match('/\b(1|2|3|4|5|6|I|II|III|IV|V|VI)\b/i', $namaKelas)) {
+            return 'SD';
+        }
+        return 'Semua Unit';
+    }
+
+    /**
+     * Helper: Ambil seluruh rincian beban tugas mengajar guru (Mapel, Kelas, JP) dari grup penugasan aktif
+     * Siap digunakan oleh Jurnal Mengajar Guru & Administrasi Perangkat Pembelajaran
+     */
+    public static function getGuruTugasMengajar(int $pegawaiId, ?int $grupId = null): array
+    {
+        self::ensurePenugasanMengajarTable();
+        $db = Database::getInstance();
+        
+        if ($grupId) {
+            return $db->findAll("
+                SELECT ppm.*, pp.no_sk, pp.tmt_mulai, pg.nama_grup, pg.semester
+                FROM pegawai_penugasan_mengajar ppm
+                JOIN pegawai_penugasan pp ON ppm.penugasan_id = pp.id
+                JOIN penugasan_grup pg ON ppm.grup_id = pg.id
+                WHERE ppm.pegawai_id = ? AND ppm.grup_id = ? AND pp.status = 'Aktif'
+                ORDER BY ppm.nama_kelas ASC, ppm.mata_pelajaran ASC
+            ", [$pegawaiId, $grupId]);
+        }
+        
+        return $db->findAll("
+            SELECT ppm.*, pp.no_sk, pp.tmt_mulai, pg.nama_grup, pg.semester
+            FROM pegawai_penugasan_mengajar ppm
+            JOIN pegawai_penugasan pp ON ppm.penugasan_id = pp.id
+            JOIN penugasan_grup pg ON ppm.grup_id = pg.id
+            WHERE ppm.pegawai_id = ? AND pg.is_active = 1 AND pp.status = 'Aktif'
+            ORDER BY pg.nama_grup ASC, ppm.nama_kelas ASC, ppm.mata_pelajaran ASC
+        ", [$pegawaiId]);
+    }
+
     public static function salinGrup(string $id): void
     {
+        self::ensurePenugasanMengajarTable();
         if (!CSRF::validate()) { Response::withError(url('kelola-pegawai/penugasan'), 'Token tidak valid.'); return; }
 
         $db = Database::getInstance();
@@ -1175,35 +1490,61 @@ class PegawaiController
         $namaBaru = trim($_POST['nama_grup_baru'] ?? ('Salinan ' . $sourceGrup['nama_grup']));
 
         // Buat grup baru (default tidak aktif)
-        $db->insert('penugasan_grup', [
+        $newGrupId = $db->insert('penugasan_grup', [
             'nama_grup' => $namaBaru,
             'semester' => $sourceGrup['semester'],
             'no_sk' => $sourceGrup['no_sk'],
             'tanggal_sk' => $sourceGrup['tanggal_sk'],
             'tmt_mulai' => $sourceGrup['tmt_mulai'],
             'tst_selesai' => $sourceGrup['tst_selesai'],
+            'penandatangan_nama' => $sourceGrup['penandatangan_nama'] ?? null,
+            'penandatangan_jabatan' => $sourceGrup['penandatangan_jabatan'] ?? null,
+            'penandatangan_nip' => $sourceGrup['penandatangan_nip'] ?? null,
+            'kota_sk' => $sourceGrup['kota_sk'] ?? 'Palu',
+            'file_kop' => $sourceGrup['file_kop'] ?? null,
+            'file_footer' => $sourceGrup['file_footer'] ?? null,
+            'menimbang' => $sourceGrup['menimbang'] ?? null,
+            'mengingat' => $sourceGrup['mengingat'] ?? null,
             'is_active' => 0,
             'keterangan' => 'Disalin dari ' . $sourceGrup['nama_grup']
         ]);
-        $newGrupId = $db->lastInsertId();
 
         // Salin seluruh data pegawai_penugasan
         $oldItems = $db->findAll("SELECT * FROM pegawai_penugasan WHERE grup_id = ?", [$id]);
         foreach ($oldItems as $item) {
-            $db->insert('pegawai_penugasan', [
+            $insertedPenugasanId = $db->insert('pegawai_penugasan', [
                 'grup_id' => $newGrupId,
                 'pegawai_id' => $item['pegawai_id'],
                 'no_sk' => $item['no_sk'],
                 'tanggal_sk' => $item['tanggal_sk'],
                 'unit_tugas_id' => $item['unit_tugas_id'],
                 'jabatan_id' => $item['jabatan_id'],
+                'wali_kelas_nama' => $item['wali_kelas_nama'] ?? null,
                 'tmt_mulai' => $item['tmt_mulai'],
                 'tst_selesai' => $item['tst_selesai'],
                 'file_sk' => $item['file_sk'],
                 'status' => $item['status'],
+                'is_guru' => $item['is_guru'] ?? 0,
+                'total_jp' => $item['total_jp'] ?? 0,
+                'mapel_ajar_summary' => $item['mapel_ajar_summary'] ?? null,
                 'keterangan' => $item['keterangan']
             ]);
-            $insertedPenugasanId = $db->lastInsertId();
+
+            // Salin rincian tugas mengajar
+            $oldTeaching = $db->findAll("SELECT * FROM pegawai_penugasan_mengajar WHERE penugasan_id = ?", [$item['id']]);
+            foreach ($oldTeaching as $ot) {
+                $db->insert('pegawai_penugasan_mengajar', [
+                    'penugasan_id' => $insertedPenugasanId,
+                    'grup_id' => $newGrupId,
+                    'pegawai_id' => $ot['pegawai_id'],
+                    'mata_pelajaran' => $ot['mata_pelajaran'],
+                    'kelas_id' => $ot['kelas_id'] ?? null,
+                    'nama_kelas' => $ot['nama_kelas'],
+                    'jumlah_jp' => $ot['jumlah_jp'],
+                    'keterangan' => $ot['keterangan'] ?? null
+                ]);
+            }
+
             self::syncPenugasanToKarir((int)$insertedPenugasanId);
         }
 
@@ -1212,6 +1553,7 @@ class PegawaiController
 
     public static function deleteGrup(string $id): void
     {
+        self::ensurePenugasanMengajarTable();
         if (!CSRF::validate()) { Response::withError(url('kelola-pegawai/penugasan'), 'Token tidak valid.'); return; }
 
         $db = Database::getInstance();
@@ -1226,6 +1568,7 @@ class PegawaiController
             }
 
             $db->query("DELETE FROM pegawai_karir WHERE penugasan_id IN (SELECT id FROM pegawai_penugasan WHERE grup_id = ?) AND is_otomatis = 1", [$id]);
+            $db->query("DELETE FROM pegawai_penugasan_mengajar WHERE grup_id = ?", [$id]);
             $db->delete('pegawai_penugasan', 'grup_id = ?', [$id]);
             $db->delete('penugasan_grup', 'id = ?', [$id]);
 
@@ -1247,6 +1590,7 @@ class PegawaiController
      */
     public static function detailGrup(string $id): void
     {
+        self::ensurePenugasanMengajarTable();
         $db = Database::getInstance();
         $grup = $db->find("SELECT * FROM penugasan_grup WHERE id = ?", [$id]);
         if (!$grup) {
@@ -1285,6 +1629,18 @@ class PegawaiController
         $unitTugasList = $db->findAll("SELECT * FROM master_unit_tugas ORDER BY nama ASC");
         $allGroups = $db->findAll("SELECT id, nama_grup FROM penugasan_grup WHERE id != ? ORDER BY created_at DESC", [$id]);
 
+        // Ambil data rincian tugas mengajar guru (mapel, kelas, JP)
+        $teachingRows = $db->findAll("
+            SELECT * FROM pegawai_penugasan_mengajar 
+            WHERE grup_id = ? 
+            ORDER BY nama_kelas ASC, mata_pelajaran ASC
+        ", [$id]);
+
+        $tugasMengajarMap = [];
+        foreach ($teachingRows as $tr) {
+            $tugasMengajarMap[$tr['penugasan_id']][] = $tr;
+        }
+
         $pageTitle = 'Penugasan: ' . $grup['nama_grup'];
         $breadcrumbs = [
             ['label' => 'Kelola Pegawai', 'url' => url('kelola-pegawai')],
@@ -1301,6 +1657,7 @@ class PegawaiController
 
     public static function createPenugasanGrup(string $id): void
     {
+        self::ensurePenugasanMengajarTable();
         $db = Database::getInstance();
         $grup = $db->find("SELECT * FROM penugasan_grup WHERE id = ?", [$id]);
         if (!$grup) {
@@ -1320,6 +1677,9 @@ class PegawaiController
         $unitTugasList = $db->findAll("SELECT * FROM master_unit_tugas ORDER BY nama ASC");
         $jabatanList = $db->findAll("SELECT * FROM master_jabatan ORDER BY nama ASC");
 
+        $kelasListWithUnit = self::getKelasListWithUnit();
+        $masterMapel = self::getMasterMataPelajaran();
+
         ob_start();
         include MODULES_PATH . '/kelola-pegawai/views/penugasan/create.php';
         $content = ob_get_clean();
@@ -1329,6 +1689,7 @@ class PegawaiController
 
     public static function storePenugasanGrup(string $id): void
     {
+        self::ensurePenugasanMengajarTable();
         if (!CSRF::validate()) { Response::withError(url('kelola-pegawai/penugasan/grup/' . $id), 'Token tidak valid.'); return; }
 
         $validator = Validator::make($_POST)
@@ -1368,21 +1729,82 @@ class PegawaiController
         $tmt_mulai = !empty($_POST['tmt_mulai']) ? $_POST['tmt_mulai'] : ($grup['tmt_mulai'] ?? date('Y-m-d'));
         $tst_selesai = !empty($_POST['tst_selesai']) ? $_POST['tst_selesai'] : ($grup['tst_selesai'] ?? null);
         $status = $_POST['status'] ?? 'Aktif';
+        $waliKelasNama = trim($_POST['wali_kelas_nama'] ?? '');
 
-        $db->insert('pegawai_penugasan', [
+        // Proses Beban Tugas Mengajar (Mapel, Kelas, JP)
+        $isGuru = !empty($_POST['is_guru']) ? 1 : 0;
+        $mapelNames = $_POST['mapel_nama'] ?? [];
+        $mapelKelas = $_POST['mapel_kelas'] ?? [];
+        $mapelJp = $_POST['mapel_jp'] ?? [];
+        $mapelKet = $_POST['mapel_keterangan'] ?? [];
+
+        $teachingItems = [];
+        $totalJp = 0;
+        $summaryParts = [];
+
+        if ($isGuru && is_array($mapelNames)) {
+            foreach ($mapelNames as $idx => $mName) {
+                $mName = trim($mName);
+                $rawKelas = $mapelKelas[$idx] ?? [];
+                $classList = is_array($rawKelas) ? $rawKelas : (!empty($rawKelas) ? explode(',', $rawKelas) : []);
+                $classList = array_values(array_filter(array_map('trim', $classList)));
+                $mJp = max(1, intval($mapelJp[$idx] ?? 2));
+                $mKeterangan = trim($mapelKet[$idx] ?? '');
+
+                if ($mName !== '' && !empty($classList)) {
+                    foreach ($classList as $kName) {
+                        $teachingItems[] = [
+                            'mata_pelajaran' => $mName,
+                            'nama_kelas' => $kName,
+                            'jumlah_jp' => $mJp,
+                            'keterangan' => $mKeterangan
+                        ];
+                        $totalJp += $mJp;
+                    }
+                    $joinedClasses = implode(', ', $classList);
+                    $subTotalJp = $mJp * count($classList);
+                    $summaryParts[] = "{$mName} ({$joinedClasses}: {$subTotalJp} JP)";
+                }
+            }
+        }
+
+        $mapelSummary = !empty($summaryParts) ? implode(', ', $summaryParts) : null;
+        if (empty($teachingItems)) {
+            $isGuru = 0;
+            $totalJp = 0;
+            $mapelSummary = null;
+        }
+
+        $newPenugasanId = $db->insert('pegawai_penugasan', [
             'grup_id' => $id,
             'pegawai_id' => $_POST['pegawai_id'],
             'no_sk' => $no_sk,
             'tanggal_sk' => $tanggal_sk,
             'unit_tugas_id' => $_POST['unit_tugas_id'],
             'jabatan_id' => $_POST['jabatan_id'],
+            'wali_kelas_nama' => !empty($waliKelasNama) ? $waliKelasNama : null,
             'tmt_mulai' => $tmt_mulai,
             'tst_selesai' => $tst_selesai,
             'file_sk' => $file_sk,
             'status' => $status,
+            'is_guru' => $isGuru,
+            'total_jp' => $totalJp,
+            'mapel_ajar_summary' => $mapelSummary,
             'keterangan' => trim($_POST['keterangan'] ?? '')
         ]);
-        $newPenugasanId = $db->lastInsertId();
+
+        // Simpan baris detail tugas mengajar
+        foreach ($teachingItems as $ti) {
+            $db->insert('pegawai_penugasan_mengajar', [
+                'penugasan_id' => $newPenugasanId,
+                'grup_id' => $id,
+                'pegawai_id' => $_POST['pegawai_id'],
+                'mata_pelajaran' => $ti['mata_pelajaran'],
+                'nama_kelas' => $ti['nama_kelas'],
+                'jumlah_jp' => $ti['jumlah_jp'],
+                'keterangan' => $ti['keterangan']
+            ]);
+        }
 
         // Sinkronisasi otomatis ke riwayat karir pegawai
         self::syncPenugasanToKarir((int)$newPenugasanId);
@@ -1397,6 +1819,7 @@ class PegawaiController
 
     public static function editPenugasanGrup(string $id): void
     {
+        self::ensurePenugasanMengajarTable();
         $db = Database::getInstance();
         $penugasan = $db->find("SELECT * FROM pegawai_penugasan WHERE id = ?", [$id]);
         if (!$penugasan) {
@@ -1419,6 +1842,26 @@ class PegawaiController
         $unitTugasList = $db->findAll("SELECT * FROM master_unit_tugas ORDER BY nama ASC");
         $jabatanList = $db->findAll("SELECT * FROM master_jabatan ORDER BY nama ASC");
 
+        $kelasListWithUnit = self::getKelasListWithUnit();
+        $masterMapel = self::getMasterMataPelajaran();
+
+        $rawTugasMengajar = $db->findAll("SELECT * FROM pegawai_penugasan_mengajar WHERE penugasan_id = ? ORDER BY id ASC", [$id]);
+        $tugasMengajar = [];
+        foreach ($rawTugasMengajar as $tm) {
+            $k = $tm['mata_pelajaran'] . '___' . $tm['jumlah_jp'] . '___' . ($tm['keterangan'] ?? '');
+            if (!isset($tugasMengajar[$k])) {
+                $tugasMengajar[$k] = [
+                    'mata_pelajaran' => $tm['mata_pelajaran'],
+                    'nama_kelas' => [$tm['nama_kelas']],
+                    'jumlah_jp' => (int)$tm['jumlah_jp'],
+                    'keterangan' => $tm['keterangan'] ?? ''
+                ];
+            } else {
+                $tugasMengajar[$k]['nama_kelas'][] = $tm['nama_kelas'];
+            }
+        }
+        $tugasMengajar = array_values($tugasMengajar);
+
         ob_start();
         include MODULES_PATH . '/kelola-pegawai/views/penugasan/edit.php';
         $content = ob_get_clean();
@@ -1428,6 +1871,7 @@ class PegawaiController
 
     public static function updatePenugasanGrup(string $id): void
     {
+        self::ensurePenugasanMengajarTable();
         $db = Database::getInstance();
         $penugasan = $db->find("SELECT * FROM pegawai_penugasan WHERE id = ?", [$id]);
         if (!$penugasan) {
@@ -1465,6 +1909,51 @@ class PegawaiController
 
         $status = $_POST['status'] ?? 'Aktif';
         $tmt_mulai = !empty($_POST['tmt_mulai']) ? $_POST['tmt_mulai'] : $penugasan['tmt_mulai'];
+        $waliKelasNama = trim($_POST['wali_kelas_nama'] ?? '');
+
+        // Proses Beban Tugas Mengajar (Mapel, Kelas, JP)
+        $isGuru = !empty($_POST['is_guru']) ? 1 : 0;
+        $mapelNames = $_POST['mapel_nama'] ?? [];
+        $mapelKelas = $_POST['mapel_kelas'] ?? [];
+        $mapelJp = $_POST['mapel_jp'] ?? [];
+        $mapelKet = $_POST['mapel_keterangan'] ?? [];
+
+        $teachingItems = [];
+        $totalJp = 0;
+        $summaryParts = [];
+
+        if ($isGuru && is_array($mapelNames)) {
+            foreach ($mapelNames as $idx => $mName) {
+                $mName = trim($mName);
+                $rawKelas = $mapelKelas[$idx] ?? [];
+                $classList = is_array($rawKelas) ? $rawKelas : (!empty($rawKelas) ? explode(',', $rawKelas) : []);
+                $classList = array_values(array_filter(array_map('trim', $classList)));
+                $mJp = max(1, intval($mapelJp[$idx] ?? 2));
+                $mKeterangan = trim($mapelKet[$idx] ?? '');
+
+                if ($mName !== '' && !empty($classList)) {
+                    foreach ($classList as $kName) {
+                        $teachingItems[] = [
+                            'mata_pelajaran' => $mName,
+                            'nama_kelas' => $kName,
+                            'jumlah_jp' => $mJp,
+                            'keterangan' => $mKeterangan
+                        ];
+                        $totalJp += $mJp;
+                    }
+                    $joinedClasses = implode(', ', $classList);
+                    $subTotalJp = $mJp * count($classList);
+                    $summaryParts[] = "{$mName} ({$joinedClasses}: {$subTotalJp} JP)";
+                }
+            }
+        }
+
+        $mapelSummary = !empty($summaryParts) ? implode(', ', $summaryParts) : null;
+        if (empty($teachingItems)) {
+            $isGuru = 0;
+            $totalJp = 0;
+            $mapelSummary = null;
+        }
 
         $db->update('pegawai_penugasan', [
             'pegawai_id' => $_POST['pegawai_id'],
@@ -1472,12 +1961,30 @@ class PegawaiController
             'tanggal_sk' => !empty($_POST['tanggal_sk']) ? $_POST['tanggal_sk'] : null,
             'unit_tugas_id' => $_POST['unit_tugas_id'],
             'jabatan_id' => $_POST['jabatan_id'],
+            'wali_kelas_nama' => !empty($waliKelasNama) ? $waliKelasNama : null,
             'tmt_mulai' => $tmt_mulai,
             'tst_selesai' => empty($_POST['tst_selesai']) ? null : $_POST['tst_selesai'],
             'file_sk' => $file_sk,
             'status' => $status,
+            'is_guru' => $isGuru,
+            'total_jp' => $totalJp,
+            'mapel_ajar_summary' => $mapelSummary,
             'keterangan' => trim($_POST['keterangan'] ?? '')
         ], 'id = ?', [$id]);
+
+        // Perbarui baris detail tugas mengajar
+        $db->delete('pegawai_penugasan_mengajar', 'penugasan_id = ?', [$id]);
+        foreach ($teachingItems as $ti) {
+            $db->insert('pegawai_penugasan_mengajar', [
+                'penugasan_id' => $id,
+                'grup_id' => $grupId,
+                'pegawai_id' => $_POST['pegawai_id'],
+                'mata_pelajaran' => $ti['mata_pelajaran'],
+                'nama_kelas' => $ti['nama_kelas'],
+                'jumlah_jp' => $ti['jumlah_jp'],
+                'keterangan' => $ti['keterangan']
+            ]);
+        }
 
         // Sinkronisasi otomatis ke riwayat karir pegawai
         self::syncPenugasanToKarir((int)$id);
@@ -1493,6 +2000,7 @@ class PegawaiController
 
     public static function deletePenugasanGrup(string $id): void
     {
+        self::ensurePenugasanMengajarTable();
         $db = Database::getInstance();
         $penugasan = $db->find("SELECT * FROM pegawai_penugasan WHERE id = ?", [$id]);
         if (!$penugasan) {
@@ -1509,7 +2017,7 @@ class PegawaiController
 
         // Hapus dari riwayat karir otomatis
         $db->delete('pegawai_karir', 'penugasan_id = ? AND is_otomatis = 1', [$id]);
-
+        $db->delete('pegawai_penugasan_mengajar', 'penugasan_id = ?', [$id]);
         $db->delete('pegawai_penugasan', 'id = ?', [$id]);
 
         // Jika grup ini aktif, perbarui status pegawai
@@ -1562,6 +2070,7 @@ class PegawaiController
             'Gelar',
             'Jenis Kelamin',
             'Status Menikah',
+            'Status Pegawai',
             'Tempat Lahir',
             'Tanggal Lahir',
             'Nama Ibu Kandung',
@@ -1582,7 +2091,7 @@ class PegawaiController
             'Kelurahan Domisili',
             'Kecamatan Domisili',
             'Kab/Kota Domisili',
-            'Status Pegawai'
+            'Status'
         ];
 
         $rows = [];
@@ -1609,6 +2118,7 @@ class PegawaiController
                 'gelar' => $p['gelar'] ?? '',
                 'jenis_kelamin' => ($p['jenis_kelamin'] === 'P') ? 'Perempuan' : 'Laki-laki',
                 'status_nikah' => $p['status_nikah'] ?? '',
+                'status_pegawai' => $p['status_pegawai'] ?? ($p['status_kerja'] ?? 'Tetap'),
                 'tempat_lahir' => $p['tempat_lahir'] ?? '',
                 'tanggal_lahir' => $p['tanggal_lahir'] ?? '',
                 'nama_ibu' => $p['nama_ibu'] ?? '',
@@ -1616,7 +2126,7 @@ class PegawaiController
                 'no_wa' => $p['no_wa'] ? "'" . $p['no_wa'] : '',
                 'unit_tugas' => $p['unit_tugas'] ?? '',
                 'jabatan' => $p['jabatan'] ?? '',
-                'status_kerja' => $p['status_kerja'] ?? '',
+                'status_kerja' => $p['status_kerja'] ?? ($p['status_pegawai'] ?? 'Tetap'),
                 'jenis_pegawai' => $p['jenis_pegawai'] ?? '',
                 'status_dapodik' => $p['status_dapodik'] ?? '',
                 'tanggal_masuk' => $tglMasuk,
@@ -1633,11 +2143,11 @@ class PegawaiController
             ];
         }
 
-        ExcelHelper::exportCSV('Data_Pegawai_' . date('Ymd_His') . '.csv', $headers, $rows);
+        ExcelHelper::exportXLS('Data_Pegawai_' . date('Ymd_His') . '.xls', $headers, $rows, 'Data Pegawai');
     }
 
     /**
-     * Download Excel/CSV Import Template for Pegawai
+     * Download Excel Import Template for Pegawai (.xls)
      */
     public static function downloadTemplate(): void
     {
@@ -1651,9 +2161,13 @@ class PegawaiController
             'No WhatsApp',
             'Jenis Kelamin (L/P)',
             'Status Menikah',
+            'Status Pegawai (Tetap/Kontrak/Training)',
             'Tempat Lahir',
             'Tanggal Lahir (YYYY-MM-DD)',
             'Nama Ibu Kandung',
+            'Tanggal Masuk Kerja (YYYY-MM-DD)',
+            'Unit Tugas',
+            'Jabatan',
             'Alamat KTP',
             'Kelurahan KTP',
             'Kecamatan KTP',
@@ -1675,9 +2189,13 @@ class PegawaiController
                 '081234567890',
                 'L',
                 'Menikah',
+                'Tetap',
                 'Palu',
                 '1990-05-12',
                 'Siti Aminah',
+                '2018-07-15',
+                'SMA',
+                'Guru Mapel',
                 'Jl. Sam Ratulangi No. 10',
                 'Besusu Barat',
                 'Palu Timur',
@@ -1697,9 +2215,13 @@ class PegawaiController
                 '081298765432',
                 'P',
                 'Belum Menikah',
+                'Kontrak',
                 'Donggala',
                 '1992-08-15',
                 'Fatimah',
+                '2021-01-10',
+                'SMP',
+                'Wali Kelas',
                 'Jl. Diponegoro No. 45',
                 'Lere',
                 'Palu Barat',
@@ -1708,14 +2230,40 @@ class PegawaiController
                 'Lere',
                 'Palu Barat',
                 'Kota Palu'
+            ],
+            [
+                'Rizky Pratama',
+                'S.Kom',
+                'NIY-003',
+                '7201012304950003',
+                '87.654.321.0-003.000',
+                'rizky.pratama@example.com',
+                '085241009988',
+                'L',
+                'Belum Menikah',
+                'Training',
+                'Palu',
+                '1995-04-23',
+                'Aisyah',
+                '2026-02-01',
+                'Yayasan',
+                'Staf IT',
+                'Jl. Veteran No. 12',
+                'Tondo',
+                'Mantikulore',
+                'Kota Palu',
+                'Jl. Veteran No. 12',
+                'Tondo',
+                'Mantikulore',
+                'Kota Palu'
             ]
         ];
 
-        ExcelHelper::downloadTemplate('Template_Import_Pegawai.csv', $headers, $sampleRows);
+        ExcelHelper::downloadTemplate('Template_Import_Pegawai.xls', $headers, $sampleRows, 'Template Import Pegawai');
     }
 
     /**
-     * Import Pegawai Data from uploaded Excel/CSV file
+     * Import Pegawai Data from uploaded Excel (.xlsx / .xls) or CSV file
      */
     public static function import(): void
     {
@@ -1725,7 +2273,7 @@ class PegawaiController
         }
 
         if (!isset($_FILES['file_import']) || $_FILES['file_import']['error'] !== UPLOAD_ERR_OK) {
-            Response::withError(url('kelola-pegawai'), 'Silakan pilih file spreadsheet yang valid untuk diimport.');
+            Response::withError(url('kelola-pegawai'), 'Silakan pilih file Excel (.xlsx / .xls) atau CSV yang valid untuk diimport.');
             return;
         }
 
@@ -1734,13 +2282,31 @@ class PegawaiController
             $rows = $parsed['rows'] ?? [];
 
             if (empty($rows)) {
-                Response::withError(url('kelola-pegawai'), 'File spreadsheet kosong atau format data tidak dapat dibaca.');
+                Response::withError(url('kelola-pegawai'), 'File Excel kosong atau format data tidak dapat dibaca.');
                 return;
             }
 
             $db = Database::getInstance();
             $successCount = 0;
             $skippedCount = 0;
+
+            // Helper to parse dates from Excel (numeric serial or text)
+            $parseDate = function($rawVal): ?string {
+                if (empty($rawVal)) return null;
+                $val = trim((string)$rawVal);
+                if ($val === '' || $val === '-' || $val === '0') return null;
+                // If Excel numeric serial date (e.g. 1000 to 100000)
+                if (is_numeric($val) && intval($val) > 1000 && intval($val) < 100000) {
+                    $unix = (intval($val) - 25569) * 86400;
+                    return gmdate('Y-m-d', $unix);
+                }
+                // Handle DD/MM/YYYY or DD-MM-YYYY
+                if (preg_match('/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/', $val, $m)) {
+                    return sprintf('%04d-%02d-%02d', $m[3], $m[2], $m[1]);
+                }
+                $t = strtotime($val);
+                return $t ? date('Y-m-d', $t) : null;
+            };
 
             foreach ($rows as $row) {
                 // Map columns loosely based on normalized keys
@@ -1772,14 +2338,22 @@ class PegawaiController
 
                 // Status Nikah
                 $status_nikah = $mapped['statusmenikah'] ?? $mapped['statusnikah'] ?? $mapped['statuspernikahan'] ?? 'Belum Menikah';
-                $tempat_lahir = $mapped['tempatlahir'] ?? '';
-                $tanggal_lahir = $mapped['tanggallahiryyyymmdd'] ?? $mapped['tanggallahir'] ?? $mapped['tgllahir'] ?? null;
-                if (!empty($tanggal_lahir)) {
-                    $time = strtotime($tanggal_lahir);
-                    $tanggal_lahir = $time ? date('Y-m-d', $time) : null;
-                } else {
-                    $tanggal_lahir = null;
+
+                // Status Pegawai
+                $statusPegawaiRaw = $mapped['statuspegawaitetapkontraktraining'] ?? $mapped['statuspegawai'] ?? $mapped['statuskerja'] ?? 'Tetap';
+                $status_pegawai = 'Tetap';
+                if (stripos($statusPegawaiRaw, 'kontrak') !== false) {
+                    $status_pegawai = 'Kontrak';
+                } elseif (stripos($statusPegawaiRaw, 'train') !== false) {
+                    $status_pegawai = 'Training';
                 }
+
+                $tempat_lahir = $mapped['tempatlahir'] ?? '';
+                $tanggal_lahir = $parseDate($mapped['tanggallahiryyyymmdd'] ?? $mapped['tanggallahir'] ?? $mapped['tgllahir'] ?? null);
+                $tanggal_masuk = $parseDate($mapped['tanggalmasukkerjayyyymmdd'] ?? $mapped['tanggalmasukkerja'] ?? $mapped['tanggalmasuk'] ?? $mapped['tmt'] ?? null);
+
+                $unit_tugas = $mapped['unittugas'] ?? $mapped['unit'] ?? null;
+                $jabatan = $mapped['jabatan'] ?? $mapped['posisi'] ?? null;
 
                 $nama_ibu = $mapped['namaibukandung'] ?? $mapped['namaibu'] ?? '';
                 $alamat_ktp = $mapped['alamatktp'] ?? '';
@@ -1802,6 +2376,12 @@ class PegawaiController
                     'no_wa' => !empty($no_wa) ? $no_wa : null,
                     'jenis_kelamin' => $jenis_kelamin,
                     'status_nikah' => !empty($status_nikah) ? $status_nikah : null,
+                    'status_pegawai' => $status_pegawai,
+                    'status_kerja' => $status_pegawai,
+                    'unit_tugas' => !empty($unit_tugas) ? $unit_tugas : null,
+                    'jabatan' => !empty($jabatan) ? $jabatan : null,
+                    'tanggal_masuk' => $tanggal_masuk,
+                    'tmt' => $tanggal_masuk,
                     'tempat_lahir' => !empty($tempat_lahir) ? $tempat_lahir : null,
                     'tanggal_lahir' => $tanggal_lahir,
                     'nama_ibu' => !empty($nama_ibu) ? $nama_ibu : null,
@@ -1820,7 +2400,7 @@ class PegawaiController
             }
 
             if ($successCount > 0) {
-                $msg = "Berhasil mengimport {$successCount} data pegawai.";
+                $msg = "Berhasil mengimport {$successCount} data pegawai dari file Excel.";
                 if ($skippedCount > 0) {
                     $msg .= " ({$skippedCount} baris kosong dilewati).";
                 }
