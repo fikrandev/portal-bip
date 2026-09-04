@@ -110,12 +110,20 @@ class Router
      */
     private function getRequestUri(): string
     {
-        $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+        $uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
         $uri = rawurldecode($uri);
 
-        // Strip base path
-        if ($this->basePath && strpos($uri, $this->basePath) === 0) {
+        // Normalize backslashes
+        $uri = str_replace('\\', '/', $uri);
+
+        // Strip base path (e.g. /portal-bip)
+        if ($this->basePath !== '' && strpos($uri, $this->basePath) === 0) {
             $uri = substr($uri, strlen($this->basePath));
+        }
+
+        // Strip /index.php if present in URI
+        if (strpos($uri, '/index.php') === 0) {
+            $uri = substr($uri, 10);
         }
 
         $uri = '/' . trim($uri, '/');

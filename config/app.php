@@ -17,10 +17,18 @@ define('APP_DESCRIPTION', 'Portal Manajemen Informasi Terpadu');
 define('APP_TIMEZONE', 'Asia/Makassar');
 
 // ── URL Configuration ────────────────────────────────
-// Auto-detect base URL
-$protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+// Auto-detect base URL (supports direct domain, subdirectory, HTTP, HTTPS, and reverse proxies)
+$isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+    || (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https')
+    || (!empty($_SERVER['HTTP_X_FORWARDED_SSL']) && $_SERVER['HTTP_X_FORWARDED_SSL'] === 'on')
+    || (!empty($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443);
+
+$protocol = $isHttps ? 'https' : 'http';
 $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-$scriptDir = dirname($_SERVER['SCRIPT_NAME']);
+$scriptDir = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? ''));
+if ($scriptDir === '/' || $scriptDir === '.') {
+    $scriptDir = '';
+}
 $baseUrl = rtrim($protocol . '://' . $host . $scriptDir, '/');
 define('BASE_URL', $baseUrl);
 

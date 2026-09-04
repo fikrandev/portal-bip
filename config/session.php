@@ -18,8 +18,13 @@ ini_set('session.cookie_samesite', 'Strict');
 ini_set('session.gc_maxlifetime', 7200); // 2 hours
 ini_set('session.cookie_lifetime', 0);   // Until browser close
 
-// HTTPS only in production
-if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
+// HTTPS only in production (supports reverse proxy & Cloudflare)
+$isSecure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+    || (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https')
+    || (!empty($_SERVER['HTTP_X_FORWARDED_SSL']) && $_SERVER['HTTP_X_FORWARDED_SSL'] === 'on')
+    || (!empty($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443);
+
+if ($isSecure) {
     ini_set('session.cookie_secure', '1');
 }
 

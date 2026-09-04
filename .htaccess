@@ -3,7 +3,7 @@
 
 <IfModule mod_rewrite.c>
     RewriteEngine On
-    RewriteBase /portal-bip/
+    # RewriteBase is intentionally omitted so it adapts automatically to root or any subfolder
 
     # Skip rewriting for real files and directories
     RewriteCond %{REQUEST_FILENAME} !-f
@@ -14,18 +14,19 @@
 </IfModule>
 
 # Security: Deny access to sensitive files
-<FilesMatch "\.(php|sql|log|md)$">
+<FilesMatch "\.(php|sql|log|md|env.*)$">
     # Allow only index.php
 </FilesMatch>
 
-# Deny access to hidden files and directories
+# Deny access to hidden files and directories (like .git, .env)
 <IfModule mod_rewrite.c>
     RewriteRule (^|/)\.(?!well-known) - [F]
 </IfModule>
 
-# Deny access to sensitive directories
+# Deny access to sensitive directories (while keeping storage/uploads accessible)
 <IfModule mod_rewrite.c>
-    RewriteRule ^(core|config|database|storage|templates)/ - [F,L]
+    RewriteRule ^(core|config|database|templates)/ - [F,L]
+    RewriteRule ^storage/(logs|cache)/ - [F,L]
 </IfModule>
 
 # Enable Gzip Compression

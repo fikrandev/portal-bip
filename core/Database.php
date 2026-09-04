@@ -25,7 +25,24 @@ class Database
             $this->pdo = new PDO($dsn, DB_USER, DB_PASS, DB_OPTIONS);
         } catch (PDOException $e) {
             error_log('Database Connection Error: ' . $e->getMessage());
-            die('Koneksi database gagal. Silakan hubungi administrator.');
+            $errorMsg = htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
+            die("
+                <div style='font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif; max-width: 650px; margin: 50px auto; padding: 28px; border: 1px solid #fca5a5; background: #fff5f5; border-radius: 16px; color: #991b1b; box-shadow: 0 10px 25px rgba(0,0,0,0.05);'>
+                    <h3 style='margin-top: 0; font-size: 18px; color: #b91c1c;'>⚠️ Koneksi Database MySQL Gagal</h3>
+                    <p style='font-size: 14px; line-height: 1.5;'>Portal BIP tidak dapat terhubung ke server database MySQL.</p>
+                    <div style='background: #ffffff; padding: 14px; border-radius: 10px; border: 1px solid #fecaca; font-family: monospace; font-size: 12px; word-break: break-all; margin: 14px 0; color: #b91c1c;'>
+                        <strong>Detail Error:</strong><br>{$errorMsg}
+                    </div>
+                    <div style='font-size: 13px; line-height: 1.6; color: #7f1d1d; background: #fee2e2; padding: 14px; border-radius: 10px;'>
+                        <strong>Langkah Pemeriksaan di Server VPS:</strong>
+                        <ol style='margin: 6px 0 0 18px; padding: 0;'>
+                            <li>Pastikan service MySQL / MariaDB sudah berjalan (<code>sudo systemctl status mysql</code>).</li>
+                            <li>Buka file <strong>config/database.php</strong> atau <strong>.env</strong>, pastikan <code>DB_NAME</code>, <code>DB_USER</code>, dan <code>DB_PASS</code> sudah sesuai.</li>
+                            <li>Pastikan database sudah di-import di server VPS.</li>
+                        </ol>
+                    </div>
+                </div>
+            ");
         }
     }
 

@@ -1,0 +1,80 @@
+# ==============================================================================
+# Portal BIP - Nginx Server Block Configuration Template
+# ==============================================================================
+# CARA PEMASANGAN DI VPS (Ubuntu / Debian):
+# 1. Salin isi file ini ke konfigurasi Nginx:
+#    sudo nano /etc/nginx/sites-available/portal-bip
+# 2. Ganti 'your-domain.com' dengan domain atau IP VPS Anda.
+# 3. Ganti '/var/www/portal-bip' dengan folder tempat Anda meletakkan script ini.
+# 4. Pastikan versi PHP-FPM sesuai (contoh: php8.2-fpm, php8.1-fpm, atau php8.3-fpm):
+#    Cek versi PHP di VPS: php -v
+# 5. Aktifkan konfigurasi:
+#    sudo ln -s /etc/nginx/sites-available/portal-bip /etc/nginx/sites-enabled/
+# 6. Uji konfigurasi:
+#    sudo nginx -t
+# 7. Reload Nginx:
+#    sudo systemctl reload nginx
+# ==============================================================================
+
+server {
+    listen 80;
+    listen [::]:80;
+    
+    # Ganti dengan domain Anda atau IP VPS Anda
+    server_name your-domain.com www.your-domain.com;
+
+    # Folder utama aplikasi Portal BIP di VPS
+    root /var/www/portal-bip;
+    index index.php index.html index.htm;
+
+    charset utf-8;
+
+    # Batas ukuran upload (foto siswa, file zip, lampiran prosem/modul ajar)
+    client_max_body_size 100M;
+
+    # File log Nginx
+    access_log /var/log/nginx/portal-bip_access.log;
+    error_log  /var/log/nginx/portal-bip_error.log;
+
+    # Routing Utama: Menangani URL ramah (friendly URL) tanpa .htaccess
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    # Eksekusi script PHP melalui PHP-FPM
+    location ~ \.php$ {
+        include snippets/fastcgi-php.conf;
+        
+        # SESUAIKAN DENGAN VERSI PHP DI VPS ANDA:
+        # Jika PHP 8.2: unix:/var/run/php/php8.2-fpm.sock;
+        # Jika PHP 8.1: unix:/var/run/php/php8.1-fpm.sock;
+        # Jika PHP 8.3: unix:/var/run/php/php8.3-fpm.sock;
+        fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;
+        
+        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+        include fastcgi_params;
+        fastcgi_read_timeout 300;
+        fastcgi_buffer_size 128k;
+        fastcgi_buffers 4 256k;
+        fastcgi_busy_buffers_size 256k;
+    }
+
+    # Keamanan: Blokir akses langsung ke folder sensitif
+    location ~ ^/(config|core|database|storage/logs|storage/cache|templates)/ {
+        deny all;
+        return 404;
+    }
+
+    # Keamanan: Blokir akses ke file tersembunyi (.env, .git, .htaccess, dll)
+    location ~ /\.(?!well-known).* {
+        deny all;
+        return 404;
+    }
+
+    # Browser cache untuk file asset statis (gambar, css, js)
+    location ~* \.(jpg|jpeg|png|gif|ico|css|js|svg|webp|woff|woff2|ttf|eot)$ {
+        expires 30d;
+        add_header Cache-Control "public, no-transform";
+        try_files $uri =404;
+    }
+}

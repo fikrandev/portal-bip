@@ -105,9 +105,9 @@ function getError(string $field): string {
 
 // ── Initialize Router ───────────────────────────────
 // Determine base path from URL (for subdirectory installs like /portal-bip)
-$scriptName = $_SERVER['SCRIPT_NAME'];
+$scriptName = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '');
 $basePath = dirname($scriptName);
-if ($basePath === '\\' || $basePath === '/') {
+if ($basePath === '\\' || $basePath === '/' || $basePath === '.') {
     $basePath = '';
 }
 
