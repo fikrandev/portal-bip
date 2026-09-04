@@ -15,10 +15,9 @@
     <?php
         $favIconRaw = defined('SYS_APP_FAVICON') && !empty(SYS_APP_FAVICON) ? url(ltrim(SYS_APP_FAVICON, '/')) : url('pwa-icon.png');
     ?>
-    <link rel="apple-touch-icon" href="<?= url('pwa-icon.png') ?>">
-    <link rel="apple-touch-icon" sizes="180x180" href="<?= url('pwa-icon.png') ?>">
-    <link rel="icon" type="image/png" sizes="192x192" href="<?= url('pwa-icon.png') ?>">
-    <link rel="icon" type="image/png" sizes="512x512" href="<?= url('pwa-icon.png') ?>">
+    <link rel="apple-touch-icon" sizes="180x180" href="<?= asset('images/pwa/apple-touch-icon.png') ?>">
+    <link rel="icon" type="image/png" sizes="192x192" href="<?= asset('images/pwa/icon-192.png') ?>">
+    <link rel="icon" type="image/png" sizes="512x512" href="<?= asset('images/pwa/icon-512.png') ?>">
     <link rel="shortcut icon" href="<?= $favIconRaw ?>">
     
     <!-- Google Fonts: Inter & Amiri (Arabic Calligraphy) -->

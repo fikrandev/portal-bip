@@ -3,42 +3,27 @@
  * Enables PWA offline capabilities, pre-caching, WebAPK installation compliance, and background sync.
  */
 
-const CACHE_NAME = 'portal-guru-pwa-v2';
+const CACHE_NAME = 'portal-guru-pwa-v3';
 const STATIC_ASSETS = [
-  './',
   './mobile',
   './mobile/absen',
   './mobile/jurnal',
   './mobile/kelas',
   './mobile/murid',
   './mobile/profil',
-  './mobile/izin',
-  './mobile/cuti',
-  './mobile/quran',
-  './mobile/dzikir',
-  './mobile/keterlambatan-siswa',
-  './mobile/absensi-kelas',
-  './mobile/buat-tugas',
   './manifest.json',
   './public/manifest.json',
   './public/images/pwa/icon-192.png',
   './public/images/pwa/icon-512.png',
+  './public/images/pwa/icon-maskable-192.png',
+  './public/images/pwa/icon-maskable-512.png',
   './public/images/pwa/apple-touch-icon.png',
-  './public/images/pwa/screenshot-mobile.jpg',
-  './public/images/pwa/screenshot-wide.jpg',
-  './public/images/mobile/teacher_rina.jpg',
-  './public/images/mobile/calendar_3d.jpg',
   './public/css/mobile/app-animations.css',
   './public/js/mobile/android-ui.js',
   './public/js/mobile/mobile-api.js',
   './public/js/mobile/lazy-load.js',
   './public/js/pwa.js',
-  './public/js/mobile/mobile-app.js',
-  'https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4',
-  'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap',
-  'https://unpkg.com/lucide@latest/dist/umd/lucide.js',
-  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
-  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
+  './public/js/mobile/mobile-app.js'
 ];
 
 // Install Event - Pre-cache critical core shell

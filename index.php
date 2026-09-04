@@ -468,43 +468,20 @@ $router->get('/mobile/cuti', [PortalGuruController::class, 'cuti']);
 
 // -- PWA Dynamic Icon Route (Always Sync with Favicon from Pengaturan Sistem) --
 $router->get('/pwa-icon.png', function() {
-    $faviconSetting = defined('SYS_APP_FAVICON') ? SYS_APP_FAVICON : '';
-    $filePath = !empty($faviconSetting) ? BASE_PATH . '/' . ltrim($faviconSetting, '/') : '';
-    
-    if (!empty($filePath) && file_exists($filePath)) {
-        $ext = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
-        if ($ext === 'png') {
-            header('Content-Type: image/png');
-            header('Cache-Control: public, max-age=86400');
-            readfile($filePath);
-            exit;
-        } elseif ($ext === 'ico') {
-            $content = file_get_contents($filePath);
-            $pngPos = strpos($content, "\x89PNG\r\n\x1a\n");
-            if ($pngPos !== false) {
-                header('Content-Type: image/png');
-                header('Cache-Control: public, max-age=86400');
-                echo substr($content, $pngPos);
-                exit;
-            }
-            header('Content-Type: image/x-icon');
-            header('Cache-Control: public, max-age=86400');
-            readfile($filePath);
-            exit;
-        } elseif ($ext === 'svg') {
-            header('Content-Type: image/svg+xml');
-            header('Cache-Control: public, max-age=86400');
-            readfile($filePath);
-            exit;
-        }
-    }
-    
-    // Fallback to static PWA icon
-    $fallback = PUBLIC_PATH . '/images/pwa/icon-192.png';
-    if (file_exists($fallback)) {
+    $pwaIcon512 = PUBLIC_PATH . '/images/pwa/icon-512.png';
+    if (file_exists($pwaIcon512)) {
         header('Content-Type: image/png');
         header('Cache-Control: public, max-age=86400');
-        readfile($fallback);
+        readfile($pwaIcon512);
+        exit;
+    }
+    
+    $faviconSetting = defined('SYS_APP_FAVICON') ? SYS_APP_FAVICON : '';
+    $filePath = !empty($faviconSetting) ? BASE_PATH . '/' . ltrim($faviconSetting, '/') : '';
+    if (!empty($filePath) && file_exists($filePath)) {
+        header('Content-Type: image/png');
+        header('Cache-Control: public, max-age=86400');
+        readfile($filePath);
         exit;
     }
     http_response_code(404);
@@ -515,7 +492,7 @@ $router->get('/pwa-icon.png', function() {
 $router->get('/manifest.json', function() {
     header('Content-Type: application/manifest+json; charset=utf-8');
     header('Access-Control-Allow-Origin: *');
-    header('Cache-Control: public, max-age=300');
+    header('Cache-Control: no-cache, no-store, must-revalidate');
     
     $manifestPath = PUBLIC_PATH . '/manifest.json';
     if (file_exists($manifestPath)) {
@@ -524,42 +501,46 @@ $router->get('/manifest.json', function() {
         if (is_array($manifest)) {
             $manifest['name'] = (defined('SYS_APP_NAME') && SYS_APP_NAME ? SYS_APP_NAME : 'Portal BIP') . ' - Portal Guru';
             $manifest['short_name'] = 'Portal Guru';
-            $manifest['start_url'] = url('mobile?utm_source=pwa_installer');
+            $manifest['start_url'] = url('mobile?utm_source=pwa');
             $manifest['scope'] = rtrim(url(''), '/') . '/';
-            $manifest['id'] = url('mobile');
+            $manifest['id'] = 'portal-guru-bip-app';
 
-            // Icon from Pengaturan Sistem (Favicon)
-            $iconUrl = url('pwa-icon.png');
+            // High-resolution exact icons
             $manifest['icons'] = [
                 [
-                    'src' => $iconUrl,
+                    'src' => asset('images/pwa/icon-192.png'),
                     'sizes' => '192x192',
                     'type' => 'image/png',
                     'purpose' => 'any'
                 ],
                 [
-                    'src' => $iconUrl,
-                    'sizes' => '512x512',
-                    'type' => 'image/png',
-                    'purpose' => 'any'
-                ],
-                [
-                    'src' => $iconUrl,
+                    'src' => asset('images/pwa/icon-maskable-192.png'),
                     'sizes' => '192x192',
                     'type' => 'image/png',
                     'purpose' => 'maskable'
                 ],
                 [
-                    'src' => $iconUrl,
+                    'src' => asset('images/pwa/icon-512.png'),
+                    'sizes' => '512x512',
+                    'type' => 'image/png',
+                    'purpose' => 'any'
+                ],
+                [
+                    'src' => asset('images/pwa/icon-maskable-512.png'),
                     'sizes' => '512x512',
                     'type' => 'image/png',
                     'purpose' => 'maskable'
+                ],
+                [
+                    'src' => asset('images/pwa/apple-touch-icon.png'),
+                    'sizes' => '180x180',
+                    'type' => 'image/png'
                 ]
             ];
 
             if (!empty($manifest['shortcuts'])) {
                 foreach ($manifest['shortcuts'] as &$sc) {
-                    $sc['icons'] = [[ 'src' => $iconUrl, 'sizes' => '192x192', 'type' => 'image/png' ]];
+                    $sc['icons'] = [[ 'src' => asset('images/pwa/icon-192.png'), 'sizes' => '192x192', 'type' => 'image/png' ]];
                 }
             }
 

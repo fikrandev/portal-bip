@@ -119,6 +119,25 @@ $systemModules = ['dashboard', 'kelola-pengguna', 'kelola-peran', 'manajemen-mod
                             <?php endif; ?>
                         </a>
                     </li>
+                    <li>
+                        <a href="<?= url('mobile') ?>" 
+                           target="_blank"
+                           id="nav-portal-guru-mobile"
+                           class="group flex items-center gap-3 px-3 py-2.5 rounded-full text-sm font-medium transition-all duration-200 text-emerald-200 hover:bg-emerald-500/20 hover:text-white border border-emerald-500/30">
+                            <span class="flex items-center justify-center w-8 h-8 rounded-2xl bg-emerald-500/20 group-hover:bg-emerald-500/30 transition-colors">
+                                <svg class="w-5 h-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 0 0 6 3.75v16.5a2.25 2.25 0 0 0 2.25 2.25h7.5A2.25 2.25 0 0 0 18 20.25V3.75a2.25 2.25 0 0 0-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" />
+                                </svg>
+                            </span>
+                            <div class="flex flex-col min-w-0">
+                                <span class="truncate font-semibold text-white flex items-center gap-1.5">
+                                    Portal Guru
+                                    <span class="px-1.5 py-0.2 rounded-full text-[9px] bg-emerald-500/30 text-emerald-200 border border-emerald-400/40">Mobile</span>
+                                </span>
+                                <span class="text-[10px] text-emerald-300/80 truncate">Presensi, Jurnal & Ibadah</span>
+                            </div>
+                        </a>
+                    </li>
                 </ul>
             <?php endif; ?>
             

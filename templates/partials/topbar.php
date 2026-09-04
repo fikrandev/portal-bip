@@ -51,6 +51,19 @@
         <!-- Right: Search + Actions + User -->
         <div class="flex items-center gap-2 sm:gap-3">
             
+            <!-- Portal Guru Mobile Shortcut Button -->
+            <a href="<?= url('mobile') ?>" 
+               target="_blank"
+               class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/80 transition-all duration-200 text-xs sm:text-sm font-semibold shadow-sm hover:shadow"
+               aria-label="Portal Guru Mobile"
+               title="Buka Portal Mobile Guru (PWA)">
+                <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 0 0 6 3.75v16.5a2.25 2.25 0 0 0 2.25 2.25h7.5A2.25 2.25 0 0 0 18 20.25V3.75a2.25 2.25 0 0 0-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" />
+                </svg>
+                <span class="hidden sm:inline">📱 Portal Guru</span>
+                <span class="sm:hidden">📱 Mobile</span>
+            </a>
+
             <?php if (!($hideSidebar ?? false)): ?>
             <!-- Back to Portal Button (Desktop) -->
             <a href="<?= url('dashboard') ?>" 
@@ -112,6 +125,15 @@
                         <p class="text-xs text-primary-500 mt-0.5"><?= e(Auth::user()['email'] ?? '') ?></p>
                     </div>
                     <div class="py-1">
+                        <a href="<?= url('mobile') ?>" 
+                           target="_blank"
+                           class="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition-colors" 
+                           role="menuitem">
+                            <svg class="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 0 0 6 3.75v16.5a2.25 2.25 0 0 0 2.25 2.25h7.5A2.25 2.25 0 0 0 18 20.25V3.75a2.25 2.25 0 0 0-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3"/>
+                            </svg>
+                            Portal Mobile Guru
+                        </a>
                         <a href="<?= url('logout') ?>" 
                            id="btn-logout-dropdown"
                            class="flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors" 

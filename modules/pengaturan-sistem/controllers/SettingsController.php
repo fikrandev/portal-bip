@@ -592,29 +592,9 @@ class SettingsController
                         $db->query("INSERT INTO settings (setting_key, setting_value) VALUES ('app_favicon', ?)", [$val]);
                     }
 
-                    // Sinkronkan juga ke icon installer PWA agar otomatis diperbarui
+                    // Sinkronkan juga ke icon installer PWA agar otomatis diperbarui dengan resolusi presisi
                     try {
-                        $pwaDir = BASE_PATH . '/public/images/pwa/';
-                        if (!is_dir($pwaDir)) @mkdir($pwaDir, 0777, true);
-                        $savedFile = $uploadDir . $filename;
-                        if ($ext === 'png') {
-                            @copy($savedFile, $pwaDir . 'icon-192.png');
-                            @copy($savedFile, $pwaDir . 'icon-512.png');
-                            @copy($savedFile, $pwaDir . 'icon-maskable-192.png');
-                            @copy($savedFile, $pwaDir . 'icon-maskable-512.png');
-                            @copy($savedFile, $pwaDir . 'apple-touch-icon.png');
-                        } elseif ($ext === 'ico') {
-                            $rawIco = @file_get_contents($savedFile);
-                            $pngPos = strpos($rawIco, "\x89PNG\r\n\x1a\n");
-                            if ($pngPos !== false) {
-                                $extractedPng = substr($rawIco, $pngPos);
-                                @file_put_contents($pwaDir . 'icon-192.png', $extractedPng);
-                                @file_put_contents($pwaDir . 'icon-512.png', $extractedPng);
-                                @file_put_contents($pwaDir . 'icon-maskable-192.png', $extractedPng);
-                                @file_put_contents($pwaDir . 'icon-maskable-512.png', $extractedPng);
-                                @file_put_contents($pwaDir . 'apple-touch-icon.png', $extractedPng);
-                            }
-                        }
+                        self::syncFaviconToPwa($uploadDir . $filename);
                     } catch (\Exception $e) {}
                 }
             }
@@ -960,6 +940,73 @@ class SettingsController
             $db->query("DELETE FROM master_mata_pelajaran");
             Response::withSuccess(url('pengaturan-sistem/master-pembelajaran'), 'Seluruh data master mata pelajaran berhasil dihapus.');
         }
+    }
+
+    /**
+     * Resample and sync favicon image to all standard PWA WebAPK icons
+     */
+    private static function syncFaviconToPwa(string $sourceFile): void
+    {
+        if (!file_exists($sourceFile)) return;
+        
+        $pngData = null;
+        $ext = strtolower(pathinfo($sourceFile, PATHINFO_EXTENSION));
+        if ($ext === 'png') {
+            $pngData = file_get_contents($sourceFile);
+        } elseif ($ext === 'ico') {
+            $raw = file_get_contents($sourceFile);
+            $pos = strpos($raw, "\x89PNG\r\n\x1a\n");
+            if ($pos !== false) {
+                $pngData = substr($raw, $pos);
+            }
+        }
+        
+        if (!$pngData) return;
+        
+        $srcImg = @imagecreatefromstring($pngData);
+        if (!$srcImg) return;
+        
+        $pwaDir = BASE_PATH . '/public/images/pwa/';
+        if (!is_dir($pwaDir)) @mkdir($pwaDir, 0777, true);
+        
+        $makeIcon = function($size, $isMaskable, $destPath) use ($srcImg) {
+            $dst = imagecreatetruecolor($size, $size);
+            if ($isMaskable) {
+                $bg = imagecolorallocate($dst, 255, 255, 255);
+                imagefilledrectangle($dst, 0, 0, $size, $size, $bg);
+                $inner = (int)($size * 0.80);
+                $offset = (int)(($size - $inner) / 2);
+                imagealphablending($dst, true);
+                imagecopyresampled($dst, $srcImg, $offset, $offset, 0, 0, $inner, $inner, imagesx($srcImg), imagesy($srcImg));
+            } else {
+                imagealphablending($dst, false);
+                imagesavealpha($dst, true);
+                $transparent = imagecolorallocatealpha($dst, 255, 255, 255, 127);
+                imagefilledrectangle($dst, 0, 0, $size, $size, $transparent);
+                imagealphablending($dst, true);
+                imagecopyresampled($dst, $srcImg, 0, 0, 0, 0, $size, $size, imagesx($srcImg), imagesy($srcImg));
+                imagealphablending($dst, false);
+                imagesavealpha($dst, true);
+            }
+            imagepng($dst, $destPath, 9);
+            imagedestroy($dst);
+        };
+        
+        // Public directory icons
+        $makeIcon(192, false, $pwaDir . 'icon-192.png');
+        $makeIcon(512, false, $pwaDir . 'icon-512.png');
+        $makeIcon(192, true, $pwaDir . 'icon-maskable-192.png');
+        $makeIcon(512, true, $pwaDir . 'icon-maskable-512.png');
+        $makeIcon(180, false, $pwaDir . 'apple-touch-icon.png');
+        $makeIcon(512, false, $pwaDir . 'pwa-icon.png');
+        
+        // Root directory icons for direct static Nginx access
+        $makeIcon(192, false, BASE_PATH . '/icon-192.png');
+        $makeIcon(512, false, BASE_PATH . '/icon-512.png');
+        $makeIcon(512, false, BASE_PATH . '/pwa-icon.png');
+        $makeIcon(180, false, BASE_PATH . '/apple-touch-icon.png');
+        
+        imagedestroy($srcImg);
     }
 }
 
