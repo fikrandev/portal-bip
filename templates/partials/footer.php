@@ -9,10 +9,11 @@
     <script src="<?= asset('js/notif.js') ?>"></script>
     <script src="<?= asset('js/modal-helper.js') ?>"></script>
     <script src="<?= asset('js/searchable-select.js') ?>"></script>
-    
     <?php if (isset($extraJs)): ?>
         <?= $extraJs ?>
     <?php endif; ?>
+    
+    <?php include TEMPLATES_PATH . '/partials/loading_modal.php'; ?>
     
 </body>
 </html>

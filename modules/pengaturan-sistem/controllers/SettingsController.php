@@ -591,6 +591,31 @@ class SettingsController
                     } else {
                         $db->query("INSERT INTO settings (setting_key, setting_value) VALUES ('app_favicon', ?)", [$val]);
                     }
+
+                    // Sinkronkan juga ke icon installer PWA agar otomatis diperbarui
+                    try {
+                        $pwaDir = BASE_PATH . '/public/images/pwa/';
+                        if (!is_dir($pwaDir)) @mkdir($pwaDir, 0777, true);
+                        $savedFile = $uploadDir . $filename;
+                        if ($ext === 'png') {
+                            @copy($savedFile, $pwaDir . 'icon-192.png');
+                            @copy($savedFile, $pwaDir . 'icon-512.png');
+                            @copy($savedFile, $pwaDir . 'icon-maskable-192.png');
+                            @copy($savedFile, $pwaDir . 'icon-maskable-512.png');
+                            @copy($savedFile, $pwaDir . 'apple-touch-icon.png');
+                        } elseif ($ext === 'ico') {
+                            $rawIco = @file_get_contents($savedFile);
+                            $pngPos = strpos($rawIco, "\x89PNG\r\n\x1a\n");
+                            if ($pngPos !== false) {
+                                $extractedPng = substr($rawIco, $pngPos);
+                                @file_put_contents($pwaDir . 'icon-192.png', $extractedPng);
+                                @file_put_contents($pwaDir . 'icon-512.png', $extractedPng);
+                                @file_put_contents($pwaDir . 'icon-maskable-192.png', $extractedPng);
+                                @file_put_contents($pwaDir . 'icon-maskable-512.png', $extractedPng);
+                                @file_put_contents($pwaDir . 'apple-touch-icon.png', $extractedPng);
+                            }
+                        }
+                    } catch (\Exception $e) {}
                 }
             }
         }

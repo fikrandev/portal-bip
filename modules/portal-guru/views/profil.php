@@ -49,7 +49,10 @@
     <div class="bg-gradient-to-br from-blue-700 via-indigo-700 to-blue-800 rounded-3xl p-5 text-white shadow-xl shadow-blue-600/20 space-y-4">
         <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
-                <img src="<?= asset('images/pwa/icon-192.png') ?>" alt="App Icon" loading="lazy" class="w-12 h-12 rounded-2xl shadow-md border-2 border-white/30 shrink-0">
+                <?php 
+                    $pwaInstallerIcon = !empty(SYS_APP_FAVICON) ? url(ltrim(SYS_APP_FAVICON, '/')) : url('pwa-icon.png');
+                ?>
+                <img src="<?= $pwaInstallerIcon ?>" alt="App Icon" loading="lazy" class="w-12 h-12 rounded-2xl shadow-md border-2 border-white/30 shrink-0 bg-white/90 p-1 object-contain">
                 <div>
                     <h4 class="font-bold text-sm leading-tight">Aplikasi PWA & WebAPK</h4>
                     <p class="text-xs text-blue-100 mt-0.5">Paket Resmi Portal Guru BIP</p>

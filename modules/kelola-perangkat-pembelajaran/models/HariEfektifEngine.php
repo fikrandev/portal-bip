@@ -7,6 +7,15 @@
  * for a specific Teacher, Subject, and Class.
  */
 
+if (!defined('CAL_GREGORIAN')) {
+    define('CAL_GREGORIAN', 0);
+}
+if (!function_exists('cal_days_in_month')) {
+    function cal_days_in_month($calendar, $month, $year) {
+        return (int)date('t', mktime(0, 0, 0, (int)$month, 1, (int)$year));
+    }
+}
+
 class HariEfektifEngine
 {
     private Database $db;
@@ -201,7 +210,7 @@ class HariEfektifEngine
 
         foreach ($monthNumbers as $mNum) {
             $mName = $monthNames[$mNum];
-            $daysInMonth = cal_days_in_month(CAL_GREGORIAN, $mNum, $targetYear);
+            $daysInMonth = (int)date('t', mktime(0, 0, 0, (int)$mNum, 1, (int)$targetYear));
 
             $hesCount = 0;
             $hebDaysCount = 0;

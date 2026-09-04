@@ -466,6 +466,51 @@ $router->get('/mobile/keterlambatan-siswa', [PortalGuruController::class, 'keter
 $router->get('/mobile/izin', [PortalGuruController::class, 'izin']);
 $router->get('/mobile/cuti', [PortalGuruController::class, 'cuti']);
 
+// -- PWA Dynamic Icon Route (Always Sync with Favicon from Pengaturan Sistem) --
+$router->get('/pwa-icon.png', function() {
+    $faviconSetting = defined('SYS_APP_FAVICON') ? SYS_APP_FAVICON : '';
+    $filePath = !empty($faviconSetting) ? BASE_PATH . '/' . ltrim($faviconSetting, '/') : '';
+    
+    if (!empty($filePath) && file_exists($filePath)) {
+        $ext = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+        if ($ext === 'png') {
+            header('Content-Type: image/png');
+            header('Cache-Control: public, max-age=86400');
+            readfile($filePath);
+            exit;
+        } elseif ($ext === 'ico') {
+            $content = file_get_contents($filePath);
+            $pngPos = strpos($content, "\x89PNG\r\n\x1a\n");
+            if ($pngPos !== false) {
+                header('Content-Type: image/png');
+                header('Cache-Control: public, max-age=86400');
+                echo substr($content, $pngPos);
+                exit;
+            }
+            header('Content-Type: image/x-icon');
+            header('Cache-Control: public, max-age=86400');
+            readfile($filePath);
+            exit;
+        } elseif ($ext === 'svg') {
+            header('Content-Type: image/svg+xml');
+            header('Cache-Control: public, max-age=86400');
+            readfile($filePath);
+            exit;
+        }
+    }
+    
+    // Fallback to static PWA icon
+    $fallback = PUBLIC_PATH . '/images/pwa/icon-192.png';
+    if (file_exists($fallback)) {
+        header('Content-Type: image/png');
+        header('Cache-Control: public, max-age=86400');
+        readfile($fallback);
+        exit;
+    }
+    http_response_code(404);
+    exit;
+});
+
 // -- PWA Manifest & Service Worker Routes --
 $router->get('/manifest.json', function() {
     header('Content-Type: application/manifest+json; charset=utf-8');
@@ -477,16 +522,47 @@ $router->get('/manifest.json', function() {
         $content = file_get_contents($manifestPath);
         $manifest = json_decode($content, true);
         if (is_array($manifest)) {
+            $manifest['name'] = (defined('SYS_APP_NAME') && SYS_APP_NAME ? SYS_APP_NAME : 'Portal BIP') . ' - Portal Guru';
+            $manifest['short_name'] = 'Portal Guru';
             $manifest['start_url'] = url('mobile?utm_source=pwa_installer');
-            $manifest['scope'] = url('') . '/';
+            $manifest['scope'] = rtrim(url(''), '/') . '/';
             $manifest['id'] = url('mobile');
-            if (!empty($manifest['icons'])) {
-                foreach ($manifest['icons'] as &$icon) {
-                    if (!str_starts_with($icon['src'], 'http')) {
-                        $icon['src'] = url('public/' . ltrim($icon['src'], '/'));
-                    }
+
+            // Icon from Pengaturan Sistem (Favicon)
+            $iconUrl = url('pwa-icon.png');
+            $manifest['icons'] = [
+                [
+                    'src' => $iconUrl,
+                    'sizes' => '192x192',
+                    'type' => 'image/png',
+                    'purpose' => 'any'
+                ],
+                [
+                    'src' => $iconUrl,
+                    'sizes' => '512x512',
+                    'type' => 'image/png',
+                    'purpose' => 'any'
+                ],
+                [
+                    'src' => $iconUrl,
+                    'sizes' => '192x192',
+                    'type' => 'image/png',
+                    'purpose' => 'maskable'
+                ],
+                [
+                    'src' => $iconUrl,
+                    'sizes' => '512x512',
+                    'type' => 'image/png',
+                    'purpose' => 'maskable'
+                ]
+            ];
+
+            if (!empty($manifest['shortcuts'])) {
+                foreach ($manifest['shortcuts'] as &$sc) {
+                    $sc['icons'] = [[ 'src' => $iconUrl, 'sizes' => '192x192', 'type' => 'image/png' ]];
                 }
             }
+
             if (!empty($manifest['screenshots'])) {
                 foreach ($manifest['screenshots'] as &$sc) {
                     if (!str_starts_with($sc['src'], 'http')) {

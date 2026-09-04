@@ -419,7 +419,7 @@
                 </button>
             </div>
 
-            <form method="POST" action="<?= url('kelola-siswa/sync-dapodik') ?>" class="space-y-4">
+            <form method="POST" action="<?= url('kelola-siswa/sync-dapodik') ?>" data-loading-text="Menyinkronkan Dapodik..." data-loading-sub="Sedang menarik data & memperbarui database dari server Dapodik..." class="space-y-4">
                 <?= CSRF::field() ?>
                 <input type="hidden" name="tahun_akademik_id" value="<?= $filterTa ?>">
 

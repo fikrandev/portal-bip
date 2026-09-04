@@ -770,15 +770,44 @@ class SiswaController
             $db = Database::getInstance();
             $pdo = $db->getConnection();
 
-            // Tambahkan kolom tingkat jika belum ada
+            // Pastikan kolom-kolom tabel siswa berukuran memadai untuk data Dapodik
             try {
-                $pdo->exec("ALTER TABLE `siswa` ADD COLUMN IF NOT EXISTS `tingkat` VARCHAR(10) DEFAULT NULL AFTER `kelas`");
-            } catch (Exception $e) {
-                // Abaikan exception
+                $hasTingkat = $pdo->query("SHOW COLUMNS FROM `siswa` LIKE 'tingkat'")->fetch();
+                if (!$hasTingkat) {
+                    $pdo->exec("ALTER TABLE `siswa` ADD COLUMN `tingkat` VARCHAR(50) DEFAULT NULL AFTER `kelas`");
+                }
+            } catch (\Exception $e) {}
+
+            $alterQueries = [
+                "ALTER TABLE `siswa` MODIFY `kelas` VARCHAR(100) DEFAULT NULL",
+                "ALTER TABLE `siswa` MODIFY `tingkat` VARCHAR(50) DEFAULT NULL",
+                "ALTER TABLE `siswa` MODIFY `tahun_ajaran` VARCHAR(50) DEFAULT NULL",
+                "ALTER TABLE `siswa` MODIFY `semester` VARCHAR(50) DEFAULT 'Ganjil'",
+                "ALTER TABLE `siswa` MODIFY `telepon` VARCHAR(50) DEFAULT NULL",
+                "ALTER TABLE `siswa` MODIFY `no_hp` VARCHAR(50) DEFAULT NULL",
+                "ALTER TABLE `siswa` MODIFY `no_registrasi_akta` VARCHAR(100) DEFAULT NULL",
+                "ALTER TABLE `siswa` MODIFY `kebutuhan_khusus` VARCHAR(100) DEFAULT NULL",
+                "ALTER TABLE `siswa` MODIFY `tahun_lahir_ayah` VARCHAR(10) DEFAULT NULL",
+                "ALTER TABLE `siswa` MODIFY `tahun_lahir_ibu` VARCHAR(10) DEFAULT NULL",
+                "ALTER TABLE `siswa` MODIFY `asal_sekolah` VARCHAR(255) DEFAULT NULL",
+                "ALTER TABLE `siswa` MODIFY `tinggi_badan` VARCHAR(20) DEFAULT NULL",
+                "ALTER TABLE `siswa` MODIFY `berat_badan` VARCHAR(20) DEFAULT NULL"
+            ];
+            foreach ($alterQueries as $alterSql) {
+                try {
+                    $pdo->exec($alterSql);
+                } catch (\Exception $e) {}
             }
 
+            $safeStr = function($val, int $len = 255) {
+                if ($val === null || $val === '') return null;
+                return mb_substr(trim((string)$val), 0, $len);
+            };
+
+            $pdo->beginTransaction();
+
             // Replace existing data for the selected jenjang and academic year
-            $deleteStmt = $pdo->prepare("DELETE FROM `siswa` WHERE UPPER(jenjang) = ? AND tahun_akademik_id = ?");
+            $deleteStmt = $pdo->prepare("DELETE FROM `siswa` WHERE UPPER(jenjang) = ? AND (tahun_akademik_id = ? OR tahun_akademik_id = 0)");
             $deleteStmt->execute([$jenjang, $taId]);
 
             $insertStmt = $pdo->prepare("
@@ -818,89 +847,118 @@ class SiswaController
                 $tgl = !empty($r['tanggal_lahir']) ? $r['tanggal_lahir'] : null;
                 $umur = 0;
                 if (!empty($tgl)) {
-                    $birth = new DateTime($tgl);
-                    $today = new DateTime('today');
-                    $umur = $birth->diff($today)->y;
+                    try {
+                        $birth = new DateTime($tgl);
+                        $today = new DateTime('today');
+                        $umur = $birth->diff($today)->y;
+                    } catch (\Exception $e) {
+                        $umur = 0;
+                    }
                 }
 
-                $nama = $r['nama'] ?? $r['nama_lengkap'] ?? '';
+                $nama = trim($r['nama'] ?? $r['nama_lengkap'] ?? '');
                 $idSiswa = $r['peserta_didik_id'] ?? ('SISWA-' . ($r['nisn'] ?: $r['nipd'] ?: rand(100000, 999999)));
 
                 $kelasName = trim($r['nama_rombel'] ?? $r['kelas'] ?? '');
                 $tingkat = '';
-                if (preg_match('/^([1-9]|1[0-2]|IX|IV|V?I{0,3})\b/i', $kelasName, $matches)) {
+                if (preg_match('/(?:kelas\s*|^)([1-9]|1[0-2]|IX|IV|V?I{0,3})\b/i', $kelasName, $matches)) {
                     $tingkat = strtoupper($matches[1]);
+                } elseif (preg_match('/\b([1-9]|1[0-2])\b/', $kelasName, $matches)) {
+                    $tingkat = $matches[1];
+                }
+
+                // Parse tahun lahir ayah & ibu secara aman
+                $thnAyah = null;
+                if (!empty($r['tahun_lahir_ayah'])) {
+                    if (preg_match('/\b(19\d\d|20\d\d)\b/', (string)$r['tahun_lahir_ayah'], $m)) {
+                        $thnAyah = $m[1];
+                    } else {
+                        $thnAyah = $safeStr($r['tahun_lahir_ayah'], 10);
+                    }
+                }
+                $thnIbu = null;
+                if (!empty($r['tahun_lahir_ibu'])) {
+                    if (preg_match('/\b(19\d\d|20\d\d)\b/', (string)$r['tahun_lahir_ibu'], $m)) {
+                        $thnIbu = $m[1];
+                    } else {
+                        $thnIbu = $safeStr($r['tahun_lahir_ibu'], 10);
+                    }
                 }
 
                 $insertStmt->execute([
-                    'id_siswa' => $idSiswa,
+                    'id_siswa' => $safeStr($idSiswa, 50),
                     'tahun_akademik_id' => $taId,
-                    'nis' => $r['nipd'] ?? $r['nis'] ?? '',
-                    'nisn' => $r['nisn'] ?? '',
-                    'nama_lengkap' => $nama,
-                    'nama' => $nama,
-                    'tempat_lahir' => $r['tempat_lahir'] ?? null,
+                    'nis' => $safeStr($r['nipd'] ?? $r['nis'] ?? '', 20) ?? '',
+                    'nisn' => $safeStr($r['nisn'] ?? '', 30) ?? '',
+                    'nama_lengkap' => $safeStr($nama, 150) ?? '',
+                    'nama' => $safeStr($nama, 100) ?? '',
+                    'tempat_lahir' => $safeStr($r['tempat_lahir'] ?? null, 100),
                     'tgl_lahir' => $tgl,
                     'tanggal_lahir' => $tgl,
                     'umur' => $umur,
                     'jenis_kelamin' => $jk,
-                    'no_nik' => $r['nik'] ?? $r['no_nik'] ?? null,
-                    'no_kk' => $r['no_kk'] ?? null,
-                    'no_registrasi_akta' => $r['no_registrasi_akta'] ?? null,
-                    'kebutuhan_khusus' => $r['kebutuhan_khusus'] ?? null,
+                    'no_nik' => $safeStr($r['nik'] ?? $r['no_nik'] ?? null, 20),
+                    'no_kk' => $safeStr($r['no_kk'] ?? null, 20),
+                    'no_registrasi_akta' => $safeStr($r['no_registrasi_akta'] ?? null, 100),
+                    'kebutuhan_khusus' => $safeStr($r['kebutuhan_khusus'] ?? null, 100),
                     'anak_ke' => (int)($r['anak_ke'] ?? 1),
-                    'alergi' => $r['alergi'] ?? null,
-                    'nama_alergi' => $r['nama_alergi'] ?? null,
-                    'tinggi_badan' => $r['tinggi_badan'] ?? null,
-                    'berat_badan' => $r['berat_badan'] ?? null,
-                    'asal_sekolah' => $r['asal_sekolah'] ?? null,
+                    'alergi' => $safeStr($r['alergi'] ?? null, 50),
+                    'nama_alergi' => $safeStr($r['nama_alergi'] ?? null, 100),
+                    'tinggi_badan' => $safeStr($r['tinggi_badan'] ?? null, 20),
+                    'berat_badan' => $safeStr($r['berat_badan'] ?? null, 20),
+                    'asal_sekolah' => $safeStr($r['asal_sekolah'] ?? null, 255),
                     'alamat_sekolah' => $r['alamat_sekolah'] ?? null,
-                    'jenjang' => $jenjang,
-                    'kelas' => $kelasName,
-                    'tingkat' => $tingkat,
-                    'tahun_ajaran' => $r['tahun_ajaran'] ?? '2026/2027',
-                    'semester' => $r['semester'] ?? 'Ganjil',
+                    'jenjang' => $safeStr($jenjang, 50),
+                    'kelas' => $safeStr($kelasName, 100),
+                    'tingkat' => $safeStr($tingkat, 50),
+                    'tahun_ajaran' => $safeStr($r['tahun_ajaran'] ?? '2026/2027', 50),
+                    'semester' => $safeStr($r['semester'] ?? 'Ganjil', 50),
                     'dapodik' => 'Sudah',
                     'alamat' => $r['alamat_jalan'] ?? $r['alamat'] ?? null,
-                    'rt' => $r['rt'] ?? null,
-                    'rw' => $r['rw'] ?? null,
-                    'dusun' => $r['nama_dusun'] ?? $r['dusun'] ?? null,
-                    'kelurahan' => $r['desa_kelurahan'] ?? $r['kelurahan'] ?? null,
-                    'kecamatan' => $r['kecamatan'] ?? null,
-                    'kota' => $r['kabupaten_kota'] ?? $r['kota'] ?? 'Kota Palu',
-                    'provinsi' => $r['provinsi'] ?? 'Sulawesi Tengah',
-                    'kode_pos' => $r['kode_pos'] ?? null,
-                    'lintang' => $r['lintang'] ?? null,
-                    'bujur' => $r['bujur'] ?? null,
-                    'tempat_tinggal' => $r['tempat_tinggal'] ?? null,
-                    'moda_transportasi' => $r['moda_transportasi'] ?? null,
-                    'no_hp' => $r['nomor_telepon_seluler'] ?? $r['no_hp'] ?? null,
-                    'telepon' => $r['nomor_telepon_rumah'] ?? $r['telepon'] ?? null,
-                    'email' => $r['email'] ?? null,
-                    'nama_ayah' => $r['nama_ayah'] ?? null,
-                    'nik_ayah' => $r['nik_ayah'] ?? null,
-                    'tahun_lahir_ayah' => $r['tahun_lahir_ayah'] ?? null,
-                    'pendidikan_ayah' => $r['pendidikan_ayah'] ?? null,
-                    'pekerjaan_ayah' => $r['pekerjaan_ayah'] ?? null,
-                    'kantor_ayah' => $r['kantor_ayah'] ?? null,
-                    'jabatan_ayah' => $r['jabatan_ayah'] ?? null,
-                    'penghasilan_ayah' => $r['penghasilan_ayah'] ?? null,
-                    'kebutuhan_khusus_ayah' => $r['kebutuhan_khusus_ayah'] ?? null,
-                    'nama_ibu' => $r['nama_ibu_kandung'] ?? $r['nama_ibu'] ?? null,
-                    'nik_ibu' => $r['nik_ibu'] ?? null,
-                    'tahun_lahir_ibu' => $r['tahun_lahir_ibu'] ?? null,
-                    'pendidikan_ibu' => $r['pendidikan_ibu'] ?? null,
-                    'pekerjaan_ibu' => $r['pekerjaan_ibu'] ?? null,
-                    'kantor_ibu' => $r['kantor_ibu'] ?? null,
-                    'jabatan_ibu' => $r['jabatan_ibu'] ?? null,
-                    'penghasilan_ibu' => $r['penghasilan_ibu'] ?? null,
-                    'kebutuhan_khusus_ibu' => $r['kebutuhan_khusus_ibu'] ?? null,
+                    'rt' => $safeStr($r['rt'] ?? null, 10),
+                    'rw' => $safeStr($r['rw'] ?? null, 10),
+                    'dusun' => $safeStr($r['nama_dusun'] ?? $r['dusun'] ?? null, 100),
+                    'kelurahan' => $safeStr($r['desa_kelurahan'] ?? $r['kelurahan'] ?? null, 100),
+                    'kecamatan' => $safeStr($r['kecamatan'] ?? null, 100),
+                    'kota' => $safeStr($r['kabupaten_kota'] ?? $r['kota'] ?? 'Kota Palu', 100),
+                    'provinsi' => $safeStr($r['provinsi'] ?? 'Sulawesi Tengah', 100),
+                    'kode_pos' => $safeStr($r['kode_pos'] ?? null, 10),
+                    'lintang' => $safeStr($r['lintang'] ?? null, 50),
+                    'bujur' => $safeStr($r['bujur'] ?? null, 50),
+                    'tempat_tinggal' => $safeStr($r['tempat_tinggal'] ?? null, 100),
+                    'moda_transportasi' => $safeStr($r['moda_transportasi'] ?? null, 100),
+                    'no_hp' => $safeStr($r['nomor_telepon_seluler'] ?? $r['no_hp'] ?? null, 50),
+                    'telepon' => $safeStr($r['nomor_telepon_rumah'] ?? $r['telepon'] ?? null, 50),
+                    'email' => $safeStr($r['email'] ?? null, 150),
+                    'nama_ayah' => $safeStr($r['nama_ayah'] ?? null, 150),
+                    'nik_ayah' => $safeStr($r['nik_ayah'] ?? null, 20),
+                    'tahun_lahir_ayah' => $thnAyah,
+                    'pendidikan_ayah' => $safeStr($r['pendidikan_ayah'] ?? null, 100),
+                    'pekerjaan_ayah' => $safeStr($r['pekerjaan_ayah'] ?? null, 100),
+                    'kantor_ayah' => $safeStr($r['kantor_ayah'] ?? null, 150),
+                    'jabatan_ayah' => $safeStr($r['jabatan_ayah'] ?? null, 100),
+                    'penghasilan_ayah' => $safeStr($r['penghasilan_ayah'] ?? null, 50),
+                    'kebutuhan_khusus_ayah' => $safeStr($r['kebutuhan_khusus_ayah'] ?? null, 50),
+                    'nama_ibu' => $safeStr($r['nama_ibu_kandung'] ?? $r['nama_ibu'] ?? null, 150),
+                    'nik_ibu' => $safeStr($r['nik_ibu'] ?? null, 20),
+                    'tahun_lahir_ibu' => $thnIbu,
+                    'pendidikan_ibu' => $safeStr($r['pendidikan_ibu'] ?? null, 100),
+                    'pekerjaan_ibu' => $safeStr($r['pekerjaan_ibu'] ?? null, 100),
+                    'kantor_ibu' => $safeStr($r['kantor_ibu'] ?? null, 150),
+                    'jabatan_ibu' => $safeStr($r['jabatan_ibu'] ?? null, 100),
+                    'penghasilan_ibu' => $safeStr($r['penghasilan_ibu'] ?? null, 50),
+                    'kebutuhan_khusus_ibu' => $safeStr($r['kebutuhan_khusus_ibu'] ?? null, 50),
                 ]);
                 $imported++;
             }
 
+            $pdo->commit();
+
             Response::withSuccess(url('kelola-siswa'), "Berhasil menarik dan menyinkronkan {$imported} data peserta didik dari Dapodik Online.");
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
+            if (isset($pdo) && $pdo instanceof \PDO && $pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
             Response::withError(url('kelola-siswa'), 'Gagal menyimpan data dari Dapodik: ' . $e->getMessage());
         }
     }
@@ -1907,12 +1965,12 @@ class SiswaController
     {
         $db = Database::getInstance();
         
-        // Find by NISN or ID Siswa
+        // Find by NISN, ID Siswa, or NIS
         $siswa = $db->find("
-            SELECT id, id_siswa, nisn, nama_lengkap, jenjang, kelas, is_active 
+            SELECT id, id_siswa, nis, nisn, nama_lengkap, nama, jenjang, kelas, tingkat, tahun_ajaran, semester, dapodik, is_active, updated_at 
             FROM siswa 
-            WHERE nisn = ? OR id_siswa = ?
-        ", [$identifier, $identifier]);
+            WHERE nisn = ? OR id_siswa = ? OR nis = ?
+        ", [$identifier, $identifier, $identifier]);
 
         if (!$siswa) {
             http_response_code(404);
