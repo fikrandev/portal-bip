@@ -1,250 +1,489 @@
 <?php
 /**
- * RPP / Modul Ajar - Detail View
+ * Detail In-App Preview - RPP / Modul Ajar (JSIT Format)
  */
-$profilPancasila = $konten['profil_pancasila'] ?? [];
-
-$statusBadge = [
-    'draft' => ['label' => 'Draft', 'class' => 'bg-slate-100 text-slate-700 border-slate-300'],
-    'diajukan' => ['label' => 'Menunggu Verifikasi', 'class' => 'bg-amber-100 text-amber-800 border-amber-300'],
-    'disetujui' => ['label' => 'Disetujui / Sah', 'class' => 'bg-emerald-100 text-emerald-800 border-emerald-300'],
-    'ditolak' => ['label' => 'Perlu Revisi', 'class' => 'bg-rose-100 text-rose-800 border-rose-300']
-][$item['status']] ?? ['label' => ucfirst($item['status']), 'class' => 'bg-slate-100 text-slate-700 border-slate-300'];
+$konten = !empty($item['konten_json']) ? json_decode($item['konten_json'], true) : [];
+$groupId = $konten['rpp_group_id'] ?? 0;
+$kktpRows = $konten['kktp_rows'] ?? [];
 ?>
 <div class="max-w-5xl mx-auto space-y-6">
-    
-    <!-- Top Action Bar -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm">
-        <div class="space-y-1">
+    <!-- Header & Actions -->
+    <div class="space-y-3">
+        <div>
             <div class="flex items-center gap-2">
-                <span class="px-2.5 py-0.5 rounded-full text-xs font-bold border <?= $statusBadge['class'] ?>">
-                    <?= $statusBadge['label'] ?>
+                <span class="px-3 py-1 rounded-xl text-xs font-black bg-teal-50 text-teal-700 border border-teal-200">
+                    Dokumen RPP & Modul Ajar (JSIT)
                 </span>
-                <span class="text-xs text-slate-400"><?= e($item['mata_pelajaran']) ?> • <?= e($item['tingkat_kelas']) ?></span>
+                <?php
+                $statusBadges = [
+                    'draft' => 'bg-slate-100 text-slate-600 border-slate-200',
+                    'diajukan' => 'bg-amber-50 text-amber-700 border-amber-200 animate-pulse',
+                    'disetujui' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                    'ditolak' => 'bg-rose-50 text-rose-700 border-rose-200'
+                ];
+                $statusLabels = [
+                    'draft' => 'Draft',
+                    'diajukan' => 'Menunggu Verifikasi',
+                    'disetujui' => 'Disetujui',
+                    'ditolak' => 'Perlu Revisi'
+                ];
+                $st = $item['status'] ?? 'draft';
+                ?>
+                <span class="px-2.5 py-1 rounded-xl text-xs font-bold border <?= $statusBadges[$st] ?? $statusBadges['draft'] ?>">
+                    <?= $statusLabels[$st] ?? ucfirst($st) ?>
+                </span>
             </div>
-            <h1 class="text-xl sm:text-2xl font-extrabold text-slate-800 tracking-tight"><?= e($item['judul']) ?></h1>
-            <p class="text-xs text-slate-500">Guru Pengampu: <strong class="text-slate-700"><?= e($item['guru_nama']) ?></strong> <?= !empty($item['guru_nip']) ? '(' . e($item['guru_nip']) . ')' : '' ?></p>
+            <h1 class="text-xl sm:text-2xl font-bold text-slate-800 tracking-tight mt-1.5">
+                <?= e($item['judul']) ?>
+            </h1>
+            <p class="text-xs sm:text-sm text-slate-500 mt-0.5">
+                Penyusun: <strong><?= e($item['guru_nama'] ?: 'Guru Mapel') ?></strong> • NIP: <?= e($item['guru_nip'] ?: '-') ?>
+            </p>
         </div>
 
-        <div class="flex flex-wrap items-center gap-2">
-            <a href="<?= url('kelola-perangkat-pembelajaran/rpp') ?>" class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-colors">
-                ← Kembali
+        <div class="flex items-center gap-2 flex-wrap justify-end">
+            <a href="<?= ($groupId > 0) ? url("kelola-perangkat-pembelajaran/rpp/group/{$groupId}") : url('kelola-perangkat-pembelajaran/rpp') ?>" class="px-4 py-2 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors">
+                &larr; Kembali
             </a>
-            <a href="<?= url("kelola-perangkat-pembelajaran/rpp/cetak/{$item['id']}") ?>" target="_blank" class="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-semibold shadow-sm transition-colors flex items-center gap-1.5">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0 1 10.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0 .229 2.523a1.125 1.125 0 0 1-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0 0 21 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 0 0-1.913-.247M6.34 18H5.25A2.25 2.25 0 0 1 3 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 0 1 1.913-.247m10.5 0a48.536 48.536 0 0 0-10.5 0m10.5 0V3.75A2.25 2.25 0 0 0 16.5 1.5h-9A2.25 2.25 0 0 0 5.25 3.75v3.536m10.5 0A22.5 22.5 0 0 0 12 7.5a22.5 22.5 0 0 0-3.75-.214" /></svg>
-                Cetak RPP
+            <a href="<?= url("kelola-perangkat-pembelajaran/rpp/edit/{$item['id']}") ?>" class="px-4 py-2 rounded-2xl bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold text-xs border border-amber-200 transition-colors">
+                ✏️ Edit RPP
             </a>
-            <a href="<?= url("kelola-perangkat-pembelajaran/rpp/edit/{$item['id']}") ?>" class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold shadow-sm transition-colors flex items-center gap-1.5">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" /></svg>
-                Edit Dokumen
+            <a href="<?= url("kelola-perangkat-pembelajaran/rpp/cetak/{$item['id']}") ?>" target="_blank" class="px-4 py-2 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-500/20 transition-all">
+                🖨️ Cetak Portrait A4
             </a>
         </div>
     </div>
 
-    <!-- Reviewer Action Hub -->
-    <?php if ($can_approve && $item['status'] === 'diajukan'): ?>
-        <div class="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-3xl p-6 shadow-sm">
-            <h3 class="text-sm font-bold text-amber-950 flex items-center gap-2 mb-2">
-                <span>🛡️</span> Aksi Verifikasi RPP / Modul Ajar
+    <!-- PREVIEW DOKUMEN JSIT -->
+    <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-10 space-y-8 text-slate-800">
+        
+        <!-- KOP DOKUMEN (dari Pengaturan Sistem) -->
+        <?php
+        $namaSekolah = $unitProfile['nama_lembaga'] ?? 'SD ISLAM TERPADU BINA INSAN PALU';
+        $logoSekolah = !empty($unitProfile['logo_url']) ? url($unitProfile['logo_url']) : url('public/assets/images/logo.png');
+        ?>
+        <div class="text-center pb-6 border-b-2 border-slate-800">
+            <div class="flex items-center justify-center gap-4 mb-2">
+                <img src="<?= $logoSekolah ?>" alt="Logo Sekolah" class="h-16 w-auto object-contain" onerror="this.style.display='none'">
+                <div class="text-left">
+                    <h2 class="text-base font-black tracking-wider uppercase text-slate-900"><?= e($namaSekolah) ?></h2>
+                    <p class="text-xs text-slate-500">Jaringan Sekolah Islam Terpadu (JSIT) Indonesia</p>
+                </div>
+            </div>
+            <h3 class="text-sm sm:text-base font-black uppercase tracking-wide text-slate-900 mt-2">
+                RENCANA PELAKSANAAN PEMBELAJARAN
             </h3>
-            <p class="text-xs text-amber-800 mb-4">Sebagai verifikator (Kepala Sekolah / Kurikulum), Anda dapat menyetujui modul ajar ini atau memberikan catatan perbaikan sintaks pembelajaran.</p>
+            <p class="text-xs font-bold text-slate-600">
+                Tahun Ajaran <?= e($item['nama_tahun'] ?? '2025/2026') ?> <?= e($item['semester'] ?? '') ?>
+            </p>
+        </div>
 
-            <div class="flex flex-wrap items-center gap-3">
-                <form method="POST" action="<?= url("kelola-perangkat-pembelajaran/approve/{$item['id']}") ?>">
-                    <?= CSRF::field() ?>
-                    <input type="hidden" name="catatan" value="RPP / Modul Ajar telah diperiksa dan disetujui.">
-                    <button type="submit" onclick="return confirm('Apakah Anda yakin ingin menyetujui dokumen ini?')" class="px-5 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition-all flex items-center gap-1.5">
-                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>
-                        Setujui RPP (Approve)
-                    </button>
-                </form>
-
-                <button type="button" onclick="document.getElementById('modal-tolak-rpp').classList.remove('hidden')" class="px-5 py-2.5 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-md shadow-rose-600/20 transition-all flex items-center gap-1.5">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
-                    Tolak / Minta Revisi
-                </button>
+        <!-- IDENTITAS TABEL -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3 text-xs bg-slate-50/70 p-4 rounded-2xl border border-slate-200">
+            <div class="flex justify-between py-1 border-b border-slate-200/60">
+                <span class="font-bold text-slate-600">Nama Guru Mapel:</span>
+                <span class="font-bold text-slate-900"><?= e($item['guru_nama'] ?: '-') ?></span>
+            </div>
+            <div class="flex justify-between py-1 border-b border-slate-200/60">
+                <span class="font-bold text-slate-600">Model Pembelajaran:</span>
+                <span class="font-bold text-slate-900"><?= e($konten['model_pembelajaran'] ?? 'Problem Based Learning') ?></span>
+            </div>
+            <div class="flex justify-between py-1 border-b border-slate-200/60">
+                <span class="font-bold text-slate-600">Mata Pelajaran:</span>
+                <span class="font-bold text-slate-900"><?= e($item['mata_pelajaran']) ?></span>
+            </div>
+            <div class="flex justify-between py-1 border-b border-slate-200/60">
+                <span class="font-bold text-slate-600">Alokasi Waktu:</span>
+                <span class="font-bold text-slate-900"><?= e($item['alokasi_waktu'] ?: '2 x 35 Menit') ?></span>
+            </div>
+            <div class="flex justify-between py-1 border-b border-slate-200/60">
+                <span class="font-bold text-slate-600">Semester / Fase:</span>
+                <span class="font-bold text-slate-900"><?= e($item['semester']) ?> / Fase <?= e($item['fase'] ?: 'B') ?></span>
+            </div>
+            <div class="flex justify-between py-1 border-b border-slate-200/60">
+                <span class="font-bold text-slate-600">Waktu Pelaksanaan:</span>
+                <span class="font-bold text-slate-900"><?= e($konten['waktu_pelaksanaan'] ?? '-') ?></span>
+            </div>
+            <div class="flex justify-between py-1 sm:col-span-2">
+                <span class="font-bold text-slate-600">Kelas / Rombel:</span>
+                <span class="font-bold text-slate-900"><?= e($item['tingkat_kelas']) ?></span>
             </div>
         </div>
-    <?php endif; ?>
 
-    <!-- Modal Catatan Tolak -->
-    <div id="modal-tolak-rpp" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
-            <h3 class="text-base font-bold text-slate-800">Catatan Perbaikan Modul Ajar</h3>
-            <p class="text-xs text-slate-500">Tuliskan arahan revisi tujuan pembelajaran atau langkah kegiatan.</p>
-            
-            <form method="POST" action="<?= url("kelola-perangkat-pembelajaran/reject/{$item['id']}") ?>" class="space-y-4">
-                <?= CSRF::field() ?>
-                <textarea name="catatan_revisi" rows="4" required placeholder="Contoh: Mohon perbaiki pertanyaan pemantik dan lengkapi rubrik asesmen formatif..." class="w-full px-4 py-3 rounded-2xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-rose-500 focus:outline-none bg-slate-50"></textarea>
-                
-                <div class="flex items-center justify-end gap-2 pt-2">
-                    <button type="button" onclick="document.getElementById('modal-tolak-rpp').classList.add('hidden')" class="px-4 py-2 rounded-xl bg-slate-100 text-slate-600 text-xs font-semibold">
-                        Batal
-                    </button>
-                    <button type="submit" class="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-colors">
-                        Kirim Catatan & Tolak
-                    </button>
+        <!-- CAPAIAN PEMBELAJARAN (CP) -->
+        <div class="space-y-2">
+            <div class="bg-yellow-300 text-slate-900 px-4 py-2 rounded-xl font-black text-xs uppercase tracking-wider border border-yellow-400">
+                Capaian Pembelajaran (CP)
+            </div>
+            <div class="p-4 rounded-2xl bg-amber-50/30 border border-amber-200 text-xs leading-relaxed text-slate-800">
+                <?= nl2br(e($konten['cp_text'] ?? ($konten['cp'] ?? 'Belum ada uraian CP.'))) ?>
+            </div>
+        </div>
+
+        <!-- TUJUAN PEMBELAJARAN (3 RANAH) -->
+        <div class="space-y-2">
+            <div class="bg-yellow-300 text-slate-900 px-4 py-2 rounded-xl font-black text-xs uppercase tracking-wider border border-yellow-400">
+                Tujuan Pembelajaran (3 Ranah)
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div class="p-3.5 rounded-2xl border border-slate-200 bg-slate-50/50">
+                    <div class="font-bold text-amber-900 text-xs uppercase mb-1 flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-amber-500"></span> 1. Attitude / Sikap
+                    </div>
+                    <p class="text-xs text-slate-700 leading-relaxed"><?= nl2br(e($konten['tp_attitude'] ?? '-')) ?></p>
                 </div>
-            </form>
+                <div class="p-3.5 rounded-2xl border border-slate-200 bg-slate-50/50">
+                    <div class="font-bold text-blue-900 text-xs uppercase mb-1 flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-blue-500"></span> 2. Skill / Keterampilan
+                    </div>
+                    <p class="text-xs text-slate-700 leading-relaxed"><?= nl2br(e($konten['tp_skill'] ?? '-')) ?></p>
+                </div>
+                <div class="p-3.5 rounded-2xl border border-slate-200 bg-slate-50/50">
+                    <div class="font-bold text-emerald-900 text-xs uppercase mb-1 flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span> 3. Knowledge / Pengetahuan
+                    </div>
+                    <p class="text-xs text-slate-700 leading-relaxed"><?= nl2br(e($konten['tp_knowledge'] ?? ($konten['tujuan_pembelajaran'] ?? '-'))) ?></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- KATA KUNCI & PERTANYAAN PEMANTIK -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="space-y-2">
+                <div class="bg-yellow-300 text-slate-900 px-4 py-2 rounded-xl font-black text-xs uppercase tracking-wider border border-yellow-400">
+                    Kata Kunci / Konten
+                </div>
+                <div class="p-3.5 rounded-2xl border border-slate-200 bg-slate-50/50 text-xs text-slate-800">
+                    <?= e($konten['kata_kunci'] ?? '-') ?>
+                </div>
+            </div>
+            <div class="space-y-2">
+                <div class="bg-yellow-300 text-slate-900 px-4 py-2 rounded-xl font-black text-xs uppercase tracking-wider border border-yellow-400">
+                    Pertanyaan Pemantik
+                </div>
+                <div class="p-3.5 rounded-2xl border border-slate-200 bg-slate-50/50 text-xs text-slate-800">
+                    <?= nl2br(e($konten['pertanyaan_pemantik'] ?? '-')) ?>
+                </div>
+            </div>
+        </div>
+
+        <!-- PENGETAHUAN PENDUKUNG & ASESMEN DIAGNOSIS KOGNITIF -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="space-y-2">
+                <div class="bg-yellow-300 text-slate-900 px-4 py-2 rounded-xl font-black text-xs uppercase tracking-wider border border-yellow-400">
+                    Pengetahuan Pendukung
+                </div>
+                <div class="p-3.5 rounded-2xl border border-slate-200 bg-slate-50/50 text-xs text-slate-800">
+                    <?= nl2br(e($konten['pengetahuan_pendukung'] ?? '-')) ?>
+                </div>
+            </div>
+            <div class="space-y-2">
+                <div class="bg-yellow-300 text-slate-900 px-4 py-2 rounded-xl font-black text-xs uppercase tracking-wider border border-yellow-400">
+                    Asesmen Diagnosis Kognitif
+                </div>
+                <div class="p-3.5 rounded-2xl border border-slate-200 bg-slate-50/50 text-xs text-slate-800">
+                    <?= nl2br(e($konten['asesmen_diagnosis'] ?? ($konten['asesmen_diagnostik'] ?? '-'))) ?>
+                </div>
+            </div>
+        </div>
+
+        <!-- KKTP TABLE -->
+        <div class="space-y-2">
+            <div class="bg-yellow-300 text-slate-900 px-4 py-2 rounded-xl font-black text-xs uppercase tracking-wider border border-yellow-400">
+                Kriteria Ketercapaian Tujuan Pembelajaran (KKTP)
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-xs text-left border-collapse border border-slate-200 rounded-2xl overflow-hidden">
+                    <thead class="bg-slate-100 font-bold text-slate-700">
+                        <tr>
+                            <th class="py-2.5 px-3 w-12 text-center border border-slate-200">No</th>
+                            <th class="py-2.5 px-3 border border-slate-200">KKTP / Indikator</th>
+                            <th class="py-2.5 px-3 w-64 border border-slate-200">Alokasi Waktu / Pertemuan</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        <?php if (empty($kktpRows)): ?>
+                            <tr>
+                                <td colspan="3" class="py-3 px-3 text-center text-slate-400">Belum ada baris KKTP.</td>
+                            </tr>
+                        <?php else: ?>
+                            <?php foreach ($kktpRows as $idx => $kr): ?>
+                                <tr>
+                                    <td class="py-2.5 px-3 text-center border border-slate-200 text-slate-500"><?= $idx + 1 ?></td>
+                                    <td class="py-2.5 px-3 border border-slate-200 font-medium"><?= e($kr['indikator'] ?? ($kr['kktp'] ?? '-')) ?></td>
+                                    <td class="py-2.5 px-3 border border-slate-200 font-semibold text-slate-700"><?= e($kr['waktu'] ?? ($kr['pekan'] ?? '-')) ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- MEDIA, SARANA, METODE & SUMBER BELAJAR -->
+        <div class="space-y-2">
+            <div class="bg-yellow-300 text-slate-900 px-4 py-2 rounded-xl font-black text-xs uppercase tracking-wider border border-yellow-400">
+                Media, Sarana, Metode & Sumber Belajar
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+                <div class="p-3 rounded-xl border border-slate-200 bg-slate-50/50">
+                    <span class="font-bold text-slate-500 uppercase text-[10px] block mb-1">Media:</span>
+                    <span class="text-slate-800 font-medium"><?= nl2br(e($konten['media'] ?? '-')) ?></span>
+                </div>
+                <div class="p-3 rounded-xl border border-slate-200 bg-slate-50/50">
+                    <span class="font-bold text-slate-500 uppercase text-[10px] block mb-1">Sarana:</span>
+                    <span class="text-slate-800 font-medium"><?= nl2br(e($konten['sarana'] ?? ($konten['sarana_prasarana'] ?? '-'))) ?></span>
+                </div>
+                <div class="p-3 rounded-xl border border-slate-200 bg-slate-50/50">
+                    <span class="font-bold text-slate-500 uppercase text-[10px] block mb-1">Metode:</span>
+                    <span class="text-slate-800 font-medium"><?= nl2br(e($konten['metode'] ?? '-')) ?></span>
+                </div>
+                <div class="p-3 rounded-xl border border-slate-200 bg-slate-50/50">
+                    <span class="font-bold text-slate-500 uppercase text-[10px] block mb-1">Sumber Belajar:</span>
+                    <span class="text-slate-800 font-medium"><?= nl2br(e($konten['sumber_belajar'] ?? '-')) ?></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- PELAKSANAAN PEMBELAJARAN PENDEKATAN TERPADU -->
+        <div class="space-y-2">
+            <div class="bg-yellow-300 text-slate-900 px-4 py-2 rounded-xl font-black text-xs uppercase tracking-wider border border-yellow-400">
+                Pelaksanaan Pembelajaran Pendekatan TERPADU (JSIT)
+            </div>
+            <div class="space-y-3 text-xs">
+                <!-- Opener -->
+                <div class="p-3.5 rounded-2xl border border-slate-200 bg-slate-50/60">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="font-bold text-teal-900 uppercase">1. Pembukaan (Opener)</span>
+                        <span class="font-bold px-2 py-0.5 rounded bg-teal-100 text-teal-800"><?= e($konten['opener_waktu'] ?? '10 Menit') ?></span>
+                    </div>
+                    <p class="text-slate-700 leading-relaxed"><?= nl2br(e($konten['opener_kegiatan'] ?? ($konten['kegiatan_pendahuluan'] ?? '-'))) ?></p>
+                </div>
+
+                <!-- Telaah -->
+                <div class="p-3.5 rounded-2xl border border-slate-200 bg-slate-50/60">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="font-bold text-teal-900 uppercase">2. Telaah</span>
+                        <span class="font-bold px-2 py-0.5 rounded bg-teal-100 text-teal-800"><?= e($konten['telaah_waktu'] ?? '20 Menit') ?></span>
+                    </div>
+                    <p class="text-slate-700 leading-relaxed"><?= nl2br(e($konten['telaah_kegiatan'] ?? '-')) ?></p>
+                </div>
+
+                <!-- Eksplorasi -->
+                <div class="p-3.5 rounded-2xl border border-slate-200 bg-slate-50/60">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="font-bold text-teal-900 uppercase">3. Eksplorasi</span>
+                        <span class="font-bold px-2 py-0.5 rounded bg-teal-100 text-teal-800"><?= e($konten['eksplorasi_waktu'] ?? '20 Menit') ?></span>
+                    </div>
+                    <p class="text-slate-700 leading-relaxed"><?= nl2br(e($konten['eksplorasi_kegiatan'] ?? '-')) ?></p>
+                </div>
+
+                <!-- Rumuskan -->
+                <div class="p-3.5 rounded-2xl border border-slate-200 bg-slate-50/60">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="font-bold text-teal-900 uppercase">4. Rumuskan</span>
+                        <span class="font-bold px-2 py-0.5 rounded bg-teal-100 text-teal-800"><?= e($konten['rumuskan_waktu'] ?? '20 Menit') ?></span>
+                    </div>
+                    <p class="text-slate-700 leading-relaxed"><?= nl2br(e($konten['rumuskan_kegiatan'] ?? '-')) ?></p>
+                </div>
+
+                <!-- Presentasikan -->
+                <div class="p-3.5 rounded-2xl border border-slate-200 bg-slate-50/60">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="font-bold text-teal-900 uppercase">5. Presentasikan</span>
+                        <span class="font-bold px-2 py-0.5 rounded bg-teal-100 text-teal-800"><?= e($konten['presentasikan_waktu'] ?? '20 Menit') ?></span>
+                    </div>
+                    <p class="text-slate-700 leading-relaxed"><?= nl2br(e($konten['presentasikan_kegiatan'] ?? '-')) ?></p>
+                </div>
+
+                <!-- Aplikasikan -->
+                <div class="p-3.5 rounded-2xl border border-slate-200 bg-slate-50/60">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="font-bold text-teal-900 uppercase">6. Aplikasikan</span>
+                        <span class="font-bold px-2 py-0.5 rounded bg-teal-100 text-teal-800"><?= e($konten['aplikasikan_waktu'] ?? '10 Menit') ?></span>
+                    </div>
+                    <p class="text-slate-700 leading-relaxed"><?= nl2br(e($konten['aplikasikan_kegiatan'] ?? '-')) ?></p>
+                </div>
+
+                <!-- Kaitkan & Simpulkan -->
+                <div class="p-3.5 rounded-2xl border border-slate-200 bg-slate-50/60">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="font-bold text-teal-900 uppercase">7. Kaitkan dan Simpulkan</span>
+                        <span class="font-bold px-2 py-0.5 rounded bg-teal-100 text-teal-800"><?= e($konten['kaitkan_waktu'] ?? '2 Menit') ?></span>
+                    </div>
+                    <p class="text-slate-700 leading-relaxed"><?= nl2br(e($konten['kaitkan_kegiatan'] ?? '-')) ?></p>
+                </div>
+
+                <!-- Duniawi & Ukhrowi -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div class="p-3.5 rounded-2xl border border-slate-200 bg-slate-50/60">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="font-bold text-teal-900 uppercase">8. Duniawi</span>
+                            <span class="font-bold px-2 py-0.5 rounded bg-teal-100 text-teal-800"><?= e($konten['duniawi_waktu'] ?? '2 Menit') ?></span>
+                        </div>
+                        <p class="text-slate-700 leading-relaxed"><?= nl2br(e($konten['duniawi_kegiatan'] ?? '-')) ?></p>
+                    </div>
+                    <div class="p-3.5 rounded-2xl border border-slate-200 bg-slate-50/60">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="font-bold text-teal-900 uppercase">9. Ukhrowi</span>
+                            <span class="font-bold px-2 py-0.5 rounded bg-teal-100 text-teal-800"><?= e($konten['ukhrowi_waktu'] ?? '3 Menit') ?></span>
+                        </div>
+                        <p class="text-slate-700 leading-relaxed"><?= nl2br(e($konten['ukhrowi_kegiatan'] ?? '-')) ?></p>
+                    </div>
+                </div>
+
+                <!-- Closure -->
+                <div class="p-3.5 rounded-2xl border border-slate-200 bg-slate-50/60">
+                    <span class="font-bold text-teal-900 uppercase block mb-2">10. Closure / Penutup</span>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div class="p-2.5 rounded-xl bg-white border border-slate-200">
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="font-bold text-slate-700">Refleksi</span>
+                                <span class="text-[10px] font-bold text-slate-500"><?= e($konten['refleksi_waktu'] ?? '2 Menit') ?></span>
+                            </div>
+                            <p class="text-slate-600"><?= nl2br(e($konten['refleksi_kegiatan'] ?? '-')) ?></p>
+                        </div>
+                        <div class="p-2.5 rounded-xl bg-white border border-slate-200">
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="font-bold text-slate-700">Kegiatan Penutup</span>
+                                <span class="text-[10px] font-bold text-slate-500"><?= e($konten['penutup_waktu'] ?? '2 Menit') ?></span>
+                            </div>
+                            <p class="text-slate-600"><?= nl2br(e($konten['penutup_kegiatan'] ?? ($konten['kegiatan_penutup'] ?? '-'))) ?></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PENILAIAN TERPADU -->
+        <div class="space-y-2">
+            <div class="bg-yellow-300 text-slate-900 px-4 py-2 rounded-xl font-black text-xs uppercase tracking-wider border border-yellow-400">
+                Penilaian Terpadu (AfL, AaL, AoL)
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-xs text-left border-collapse border border-slate-200 rounded-2xl overflow-hidden">
+                    <thead class="bg-slate-100 font-bold text-slate-700">
+                        <tr>
+                            <th class="py-2.5 px-3 border border-slate-200 w-28">Ranah</th>
+                            <th class="py-2.5 px-3 border border-slate-200">Tujuan Pembelajaran</th>
+                            <th class="py-2.5 px-3 border border-slate-200">Assessment for Learning (AfL)</th>
+                            <th class="py-2.5 px-3 border border-slate-200">Assessment as Learning (AaL)</th>
+                            <th class="py-2.5 px-3 border border-slate-200">Assessment of Learning (AoL)</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        <tr>
+                            <td class="py-2.5 px-3 border border-slate-200 font-bold text-amber-900 bg-amber-50/40">Sikap / Attitude</td>
+                            <td class="py-2.5 px-3 border border-slate-200"><?= e($konten['penilaian_sikap_tp'] ?? '-') ?></td>
+                            <td class="py-2.5 px-3 border border-slate-200"><?= e($konten['penilaian_sikap_afl'] ?? ($konten['asesmen_formatif'] ?? '-')) ?></td>
+                            <td class="py-2.5 px-3 border border-slate-200"><?= e($konten['penilaian_sikap_aal'] ?? '-') ?></td>
+                            <td class="py-2.5 px-3 border border-slate-200"><?= e($konten['penilaian_sikap_aol'] ?? '-') ?></td>
+                        </tr>
+                        <tr>
+                            <td class="py-2.5 px-3 border border-slate-200 font-bold text-blue-900 bg-blue-50/40">Keterampilan / Skill</td>
+                            <td class="py-2.5 px-3 border border-slate-200"><?= e($konten['penilaian_skill_tp'] ?? '-') ?></td>
+                            <td class="py-2.5 px-3 border border-slate-200"><?= e($konten['penilaian_skill_afl'] ?? '-') ?></td>
+                            <td class="py-2.5 px-3 border border-slate-200"><?= e($konten['penilaian_skill_aal'] ?? '-') ?></td>
+                            <td class="py-2.5 px-3 border border-slate-200"><?= e($konten['penilaian_skill_aol'] ?? '-') ?></td>
+                        </tr>
+                        <tr>
+                            <td class="py-2.5 px-3 border border-slate-200 font-bold text-emerald-900 bg-emerald-50/40">Pengetahuan / Knowledge</td>
+                            <td class="py-2.5 px-3 border border-slate-200"><?= e($konten['penilaian_knowledge_tp'] ?? '-') ?></td>
+                            <td class="py-2.5 px-3 border border-slate-200"><?= e($konten['penilaian_knowledge_afl'] ?? '-') ?></td>
+                            <td class="py-2.5 px-3 border border-slate-200"><?= e($konten['penilaian_knowledge_aal'] ?? '-') ?></td>
+                            <td class="py-2.5 px-3 border border-slate-200"><?= e($konten['penilaian_knowledge_aol'] ?? ($konten['asesmen_sumatif'] ?? '-')) ?></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- PENERAPAN INTROFLEX -->
+        <div class="space-y-2">
+            <div class="bg-yellow-300 text-slate-900 px-4 py-2 rounded-xl font-black text-xs uppercase tracking-wider border border-yellow-400">
+                Penerapan Framework INTROFLEX (JSIT)
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+                <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50">
+                    <span class="font-bold text-slate-700 block mb-1">1. Individualisasi</span>
+                    <p class="text-slate-600 leading-relaxed"><?= nl2br(e($konten['introflex_individualisasi'] ?? '-')) ?></p>
+                </div>
+                <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50">
+                    <span class="font-bold text-slate-700 block mb-1">2. Interaksi</span>
+                    <p class="text-slate-600 leading-relaxed"><?= nl2br(e($konten['introflex_interaksi'] ?? '-')) ?></p>
+                </div>
+                <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50">
+                    <span class="font-bold text-slate-700 block mb-1">3. Observasi</span>
+                    <p class="text-slate-600 leading-relaxed"><?= nl2br(e($konten['introflex_observasi'] ?? '-')) ?></p>
+                </div>
+                <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50">
+                    <span class="font-bold text-slate-700 block mb-1">4. Refleksi</span>
+                    <p class="text-slate-600 leading-relaxed"><?= nl2br(e($konten['introflex_refleksi'] ?? ($konten['refleksi_guru_siswa'] ?? '-'))) ?></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- TANDA TANGAN PENGESAHAN (3 KOLOM) -->
+        <?php
+        // Kepala Sekolah dari Pengaturan Sistem
+        $ksNama = $unitProfile['kepala_sekolah']['nama'] ?? $konten['kepala_sekolah_nama'] ?? 'Kepala Sekolah';
+        $ksNip = $unitProfile['kepala_sekolah']['nip'] ?? $konten['kepala_sekolah_nip'] ?? '-';
+        
+        // Pemeriksa = siapa yang approve RPP ini, fallback ke user login sekarang
+        $loggedInUser = (class_exists('Auth') && Auth::name() && Auth::name() !== 'Guest') ? Auth::name() : '';
+        $rawPemeriksa = $konten['pemeriksa_nama'] ?? '';
+        if ($rawPemeriksa === 'Tim Kurikulum SDIT Bina Insan' || $rawPemeriksa === 'Tim Kurikulum') {
+            $rawPemeriksa = '';
+        }
+        $pemeriksaNama = !empty($approverName) ? $approverName : (!empty($rawPemeriksa) ? $rawPemeriksa : (!empty($loggedInUser) ? $loggedInUser : 'Belum Diperiksa'));
+        $pemeriksaNip = $approverNip ?? $konten['pemeriksa_nip'] ?? '-';
+        ?>
+        <div class="grid grid-cols-3 gap-6 pt-6 border-t border-slate-200 text-center text-xs">
+            <div>
+                <p class="text-slate-600">Menyetujui,</p>
+                <p class="font-bold text-slate-900 mt-0.5">Kepala Sekolah</p>
+                <div class="h-20"></div>
+                <p class="font-bold text-slate-900 underline"><?= e($ksNama) ?></p>
+                <p class="text-slate-500 text-[10px]">NIP: <?= e($ksNip) ?></p>
+            </div>
+            <div>
+                <p class="text-slate-600">Diperiksa oleh,</p>
+                <p class="font-bold text-slate-900 mt-0.5">Pemeriksa RPP / Kurikulum</p>
+                <div class="h-20"></div>
+                <p class="font-bold text-slate-900 underline"><?= e($pemeriksaNama) ?></p>
+                <p class="text-slate-500 text-[10px]">NIP: <?= e($pemeriksaNip) ?></p>
+            </div>
+            <div>
+                <p class="text-slate-600">Palu, <?= date('d F Y', strtotime($item['created_at'])) ?></p>
+                <p class="font-bold text-slate-900 mt-0.5">Guru Mata Pelajaran</p>
+                <div class="h-20"></div>
+                <p class="font-bold text-slate-900 underline"><?= e($item['guru_nama'] ?: 'Guru Mapel') ?></p>
+                <p class="text-slate-500 text-[10px]">NIP: <?= e($item['guru_nip'] ?: '-') ?></p>
+            </div>
         </div>
     </div>
 
-    <!-- I. Informasi Umum Modul Card -->
-    <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm space-y-4">
-        <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-3 flex items-center gap-2">
-            <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span> I. Informasi Umum
-        </h3>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
-            <div class="p-3 rounded-2xl bg-slate-50 border border-slate-100">
-                <span class="text-slate-400 font-semibold block mb-0.5">Model Pembelajaran:</span>
-                <span class="font-bold text-slate-800"><?= e($konten['model_pembelajaran'] ?? 'Problem Based Learning') ?></span>
-            </div>
-            <div class="p-3 rounded-2xl bg-slate-50 border border-slate-100">
-                <span class="text-slate-400 font-semibold block mb-0.5">Alokasi Waktu:</span>
-                <span class="font-bold text-slate-800"><?= e($item['alokasi_waktu'] ?? '2 JP') ?> (Pertemuan ke-<?= e($konten['pertemuan_ke'] ?? '1') ?>)</span>
-            </div>
-            <div class="p-3 rounded-2xl bg-slate-50 border border-slate-100">
-                <span class="text-slate-400 font-semibold block mb-0.5">Sarana & Media:</span>
-                <span class="font-bold text-slate-800"><?= e($konten['sarana_prasarana'] ?? '-') ?></span>
-            </div>
-        </div>
-
-        <?php if (!empty($profilPancasila)): ?>
-            <div class="pt-2">
-                <span class="text-xs font-semibold text-slate-700 block mb-2">Profil Pelajar Pancasila:</span>
-                <div class="flex flex-wrap gap-2">
-                    <?php foreach ($profilPancasila as $p3): ?>
-                        <span class="px-3 py-1 rounded-full bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold flex items-center gap-1.5">
-                            <span>✨</span> <?= e($p3) ?>
-                        </span>
-                    <?php endforeach; ?>
-                </div>
-            </div>
-        <?php endif; ?>
-    </div>
-
-    <!-- II. Komponen Inti Card -->
-    <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm space-y-4">
-        <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-3 flex items-center gap-2">
-            <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> II. Komponen Inti
-        </h3>
-
-        <div class="space-y-4 text-xs leading-relaxed">
-            <div class="p-4 rounded-2xl bg-amber-50/50 border border-amber-200/70">
-                <h4 class="font-bold text-amber-950 uppercase text-[11px] mb-1">A. Tujuan Pembelajaran (TP):</h4>
-                <p class="text-slate-700 whitespace-pre-line font-medium"><?= e($konten['tujuan_pembelajaran'] ?? '-') ?></p>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200/80">
-                    <h4 class="font-bold text-slate-800 uppercase text-[11px] mb-1">B. Pemahaman Bermakna:</h4>
-                    <p class="text-slate-600 whitespace-pre-line"><?= e($konten['pemahaman_bermakna'] ?? '-') ?></p>
-                </div>
-                <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200/80">
-                    <h4 class="font-bold text-slate-800 uppercase text-[11px] mb-1">C. Pertanyaan Pemantik:</h4>
-                    <p class="text-slate-600 whitespace-pre-line"><?= e($konten['pertanyaan_pemantik'] ?? '-') ?></p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- III. Kegiatan Pembelajaran Card -->
-    <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm space-y-4">
-        <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-3 flex items-center gap-2">
-            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> III. Langkah-Langkah Kegiatan Pembelajaran
-        </h3>
-
-        <div class="space-y-3 text-xs leading-relaxed">
-            <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200">
-                <div class="flex items-center justify-between mb-2">
-                    <h4 class="font-bold text-slate-800 uppercase">1. Kegiatan Pendahuluan</h4>
-                    <span class="px-2.5 py-0.5 rounded-lg bg-blue-100 text-blue-800 font-bold font-mono text-[11px]"><?= e($konten['waktu_pendahuluan'] ?? '15 Menit') ?></span>
-                </div>
-                <p class="text-slate-700 whitespace-pre-line"><?= e($konten['kegiatan_pendahuluan'] ?? '-') ?></p>
-            </div>
-
-            <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200">
-                <div class="flex items-center justify-between mb-2">
-                    <h4 class="font-bold text-slate-800 uppercase">2. Kegiatan Inti</h4>
-                    <span class="px-2.5 py-0.5 rounded-lg bg-emerald-100 text-emerald-800 font-bold font-mono text-[11px]"><?= e($konten['waktu_inti'] ?? '60 Menit') ?></span>
-                </div>
-                <p class="text-slate-700 whitespace-pre-line"><?= e($konten['kegiatan_inti'] ?? '-') ?></p>
-            </div>
-
-            <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200">
-                <div class="flex items-center justify-between mb-2">
-                    <h4 class="font-bold text-slate-800 uppercase">3. Kegiatan Penutup</h4>
-                    <span class="px-2.5 py-0.5 rounded-lg bg-amber-100 text-amber-800 font-bold font-mono text-[11px]"><?= e($konten['waktu_penutup'] ?? '15 Menit') ?></span>
-                </div>
-                <p class="text-slate-700 whitespace-pre-line"><?= e($konten['kegiatan_penutup'] ?? '-') ?></p>
-            </div>
-        </div>
-    </div>
-
-    <!-- IV. Asesmen & Evaluasi Card -->
-    <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm space-y-4">
-        <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-3 flex items-center gap-2">
-            <span class="w-2.5 h-2.5 rounded-full bg-cyan-500"></span> IV. Asesmen, Pengayaan & Remedial
-        </h3>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-            <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200">
-                <h4 class="font-bold text-slate-800 uppercase text-[11px] mb-1">Asesmen Formatif:</h4>
-                <p class="text-slate-600 whitespace-pre-line"><?= e($konten['asesmen_formatif'] ?? '-') ?></p>
-            </div>
-            <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200">
-                <h4 class="font-bold text-slate-800 uppercase text-[11px] mb-1">Asesmen Sumatif:</h4>
-                <p class="text-slate-600 whitespace-pre-line"><?= e($konten['asesmen_sumatif'] ?? '-') ?></p>
-            </div>
-            <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200">
-                <h4 class="font-bold text-slate-800 uppercase text-[11px] mb-1">Pengayaan:</h4>
-                <p class="text-slate-600 whitespace-pre-line"><?= e($konten['pengayaan'] ?? '-') ?></p>
-            </div>
-            <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200">
-                <h4 class="font-bold text-slate-800 uppercase text-[11px] mb-1">Remedial:</h4>
-                <p class="text-slate-600 whitespace-pre-line"><?= e($konten['remedial'] ?? '-') ?></p>
-            </div>
-        </div>
-
-        <?php if (!empty($item['file_lampiran'])): ?>
-            <div class="pt-4 border-t border-slate-100 flex items-center justify-between">
-                <div class="flex items-center gap-2 text-xs text-slate-600">
-                    <span class="text-base">📎</span>
-                    <span>Berkas Lampiran LKPD / Modul:</span>
-                </div>
-                <a href="<?= url($item['file_lampiran']) ?>" target="_blank" class="px-4 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold transition-colors">
-                    Unduh File Lampiran
-                </a>
-            </div>
-        <?php endif; ?>
-    </div>
-
-    <!-- Riwayat Log Verifikasi -->
+    <!-- LOG STATUS & APPROVAL CARD -->
     <?php if (!empty($logs)): ?>
-        <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm space-y-4">
+        <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 space-y-4">
             <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                <span>🕒</span> Riwayat Aktivitas & Pengesahan
+                <span class="w-2.5 h-2.5 rounded-full bg-teal-600"></span> Riwayat Status & Catatan Verifikasi
             </h3>
             <div class="space-y-3">
-                <?php foreach ($logs as $l): ?>
-                    <div class="flex items-start gap-3 p-3 rounded-2xl bg-slate-50 border border-slate-100 text-xs">
-                        <span class="text-base">
-                            <?= $l['aksi'] === 'setujui' ? '✅' : ($l['aksi'] === 'tolak' ? '❌' : ($l['aksi'] === 'ajukan' ? '📤' : '📝')) ?>
-                        </span>
-                        <div class="flex-1">
-                            <div class="flex items-center justify-between">
-                                <span class="font-bold text-slate-800"><?= e($l['user_nama']) ?> (<?= strtoupper($l['aksi']) ?>)</span>
-                                <span class="text-[10px] text-slate-400"><?= date('d M Y H:i', strtotime($l['created_at'])) ?></span>
-                            </div>
-                            <?php if (!empty($l['catatan'])): ?>
-                                <p class="text-slate-600 mt-1"><?= e($l['catatan']) ?></p>
+                <?php foreach ($logs as $log): ?>
+                    <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 flex items-start justify-between gap-4 text-xs">
+                        <div>
+                            <span class="font-bold text-slate-800"><?= e($log['user_nama']) ?></span>
+                            <span class="text-slate-500">mengubah status menjadi:</span>
+                            <span class="font-bold text-teal-700 uppercase"><?= e($log['aksi'] ?? '-') ?></span>
+                            <?php if (!empty($log['catatan'])): ?>
+                                <p class="text-slate-600 mt-1 italic">"<?= e($log['catatan']) ?>"</p>
                             <?php endif; ?>
                         </div>
+                        <span class="text-[11px] text-slate-400 whitespace-nowrap"><?= date('d M Y, H:i', strtotime($log['created_at'])) ?></span>
                     </div>
                 <?php endforeach; ?>
             </div>
         </div>
     <?php endif; ?>
-
 </div>

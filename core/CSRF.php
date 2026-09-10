@@ -39,12 +39,24 @@ class CSRF
 
     /**
      * Validate the submitted CSRF token
+     * 
+     * @param bool $regenerate Whether to regenerate token after successful validation (default: true)
      */
-    public static function validate(): bool
+    public static function validate(bool $regenerate = true): bool
     {
         $submittedToken = $_POST[CSRF_TOKEN_NAME] 
             ?? $_SERVER['HTTP_X_CSRF_TOKEN'] 
             ?? '';
+
+        if (empty($submittedToken)) {
+            $rawInput = file_get_contents('php://input');
+            if (!empty($rawInput)) {
+                $json = json_decode($rawInput, true);
+                if (is_array($json) && !empty($json[CSRF_TOKEN_NAME])) {
+                    $submittedToken = $json[CSRF_TOKEN_NAME];
+                }
+            }
+        }
 
         if (empty($submittedToken) || empty($_SESSION[CSRF_TOKEN_NAME])) {
             return false;
@@ -52,10 +64,19 @@ class CSRF
 
         $valid = hash_equals($_SESSION[CSRF_TOKEN_NAME], $submittedToken);
 
-        // Regenerate token after validation (single-use)
-        self::regenerate();
+        if ($valid && $regenerate) {
+            self::regenerate();
+        }
 
         return $valid;
+    }
+
+    /**
+     * Check CSRF token without regenerating it (ideal for AJAX / autosave)
+     */
+    public static function check(): bool
+    {
+        return self::validate(false);
     }
 
     /**

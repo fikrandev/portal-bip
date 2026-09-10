@@ -17,10 +17,14 @@
             
             <!-- Center Brand / Pulse Icon -->
             <div class="absolute inset-0 flex items-center justify-center">
-                <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-primary-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-primary-500/30">
-                    <svg class="w-4 h-4 text-white animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
+                <div class="w-8 h-8 rounded-full bg-white flex items-center justify-center text-primary-600 shadow-md shadow-primary-500/30 overflow-hidden">
+                    <?php if (defined('SYS_APP_FAVICON') && SYS_APP_FAVICON): ?>
+                        <img src="<?= url(ltrim(SYS_APP_FAVICON, '/')) ?>" alt="Loading" class="w-5 h-5 object-contain animate-pulse">
+                    <?php else: ?>
+                        <svg class="w-4 h-4 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>

@@ -2,38 +2,55 @@
 /**
  * Pusat Verifikasi / Approval Hub View
  */
-$currentTab = $_GET['tab'] ?? 'pending';
+$currentTab = $tab ?? ($_GET['tab'] ?? 'pending');
+$currentTipe = $filter_tipe ?? ($_GET['tipe'] ?? 'semua');
 ?>
 <div class="space-y-6">
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-            <h1 class="text-xl sm:text-2xl font-bold text-slate-800 tracking-tight">Pusat Verifikasi RPP / Modul Ajar</h1>
-            <p class="text-xs sm:text-sm text-slate-500">Pusat peninjauan, pengesahan, dan pemberian catatan perbaikan RPP / Modul Ajar guru</p>
+            <h1 class="text-xl sm:text-2xl font-bold text-slate-800 tracking-tight">Pusat Verifikasi Perangkat Pembelajaran</h1>
+            <p class="text-xs sm:text-sm text-slate-500">Pusat peninjauan, pengesahan, dan pemberian catatan perbaikan perangkat pembelajaran guru</p>
         </div>
         <div class="flex items-center gap-2">
             <span class="px-3.5 py-1.5 rounded-2xl bg-amber-100 text-amber-900 border border-amber-300 font-extrabold text-xs flex items-center gap-1.5">
                 <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
-                <?= count($pending_items ?? []) ?> RPP Menunggu Persetujuan
+                <?= $pendingTotalCount ?? 0 ?> Dokumen Menunggu Persetujuan
             </span>
         </div>
     </div>
 
     <!-- Tabs Navigation -->
     <div class="flex items-center gap-2 border-b border-slate-200">
-        <a href="<?= url('kelola-perangkat-pembelajaran/verifikasi?tab=pending') ?>" class="px-5 py-2.5 font-bold text-xs border-b-2 transition-all flex items-center gap-2 <?= $currentTab === 'pending' ? 'border-amber-600 text-amber-700 bg-amber-50/50 rounded-t-2xl' : 'border-transparent text-slate-500 hover:text-slate-700' ?>">
-            <span>📥</span> Menunggu Review (<?= count($pending_items ?? []) ?>)
+        <a href="<?= url('kelola-perangkat-pembelajaran/verifikasi?tab=pending&tipe=' . e($currentTipe)) ?>" class="px-5 py-2.5 font-bold text-xs border-b-2 transition-all flex items-center gap-2 <?= ($currentTab === 'pending' || $currentTab === 'diajukan') ? 'border-amber-600 text-amber-700 bg-amber-50/50 rounded-t-2xl' : 'border-transparent text-slate-500 hover:text-slate-700' ?>">
+            <span>📥</span> Menunggu Review (<?= $pendingTotalCount ?? 0 ?>)
         </a>
-        <a href="<?= url('kelola-perangkat-pembelajaran/verifikasi?tab=history') ?>" class="px-5 py-2.5 font-bold text-xs border-b-2 transition-all flex items-center gap-2 <?= $currentTab === 'history' ? 'border-emerald-600 text-emerald-700 bg-emerald-50/50 rounded-t-2xl' : 'border-transparent text-slate-500 hover:text-slate-700' ?>">
+        <a href="<?= url('kelola-perangkat-pembelajaran/verifikasi?tab=history&tipe=' . e($currentTipe)) ?>" class="px-5 py-2.5 font-bold text-xs border-b-2 transition-all flex items-center gap-2 <?= $currentTab === 'history' ? 'border-emerald-600 text-emerald-700 bg-emerald-50/50 rounded-t-2xl' : 'border-transparent text-slate-500 hover:text-slate-700' ?>">
             <span>✅</span> Riwayat Keputusan
+        </a>
+        <a href="<?= url('kelola-perangkat-pembelajaran/verifikasi?tab=semua&tipe=' . e($currentTipe)) ?>" class="px-5 py-2.5 font-bold text-xs border-b-2 transition-all flex items-center gap-2 <?= $currentTab === 'semua' ? 'border-indigo-600 text-indigo-700 bg-indigo-50/50 rounded-t-2xl' : 'border-transparent text-slate-500 hover:text-slate-700' ?>">
+            <span>📋</span> Semua Dokumen
         </a>
     </div>
 
     <!-- Filters Bar -->
     <div class="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-sm">
-        <form method="GET" action="<?= url('kelola-perangkat-pembelajaran/verifikasi') ?>" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <form method="GET" action="<?= url('kelola-perangkat-pembelajaran/verifikasi') ?>" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <input type="hidden" name="tab" value="<?= e($currentTab) ?>">
-            <input type="hidden" name="tipe" value="rpp">
+
+            <div>
+                <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Jenis Dokumen</label>
+                <select name="tipe" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs bg-slate-50 focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                    <option value="semua" <?= $currentTipe === 'semua' ? 'selected' : '' ?>>Semua Jenis Dokumen</option>
+                    <option value="rpp" <?= $currentTipe === 'rpp' ? 'selected' : '' ?>>RPP & Modul Ajar</option>
+                    <option value="prota" <?= $currentTipe === 'prota' ? 'selected' : '' ?>>Program Tahunan (Prota)</option>
+                    <option value="prosem" <?= $currentTipe === 'prosem' ? 'selected' : '' ?>>Program Semester (Prosem)</option>
+                    <option value="cpatp" <?= $currentTipe === 'cpatp' ? 'selected' : '' ?>>CP & ATP</option>
+                    <option value="kaldik" <?= $currentTipe === 'kaldik' ? 'selected' : '' ?>>Kalender Pendidikan</option>
+                    <option value="hes" <?= $currentTipe === 'hes' ? 'selected' : '' ?>>Hari Efektif Sekolah (HES)</option>
+                    <option value="heb" <?= $currentTipe === 'heb' ? 'selected' : '' ?>>Hari Efektif Belajar (HEB)</option>
+                </select>
+            </div>
 
             <div>
                 <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Tahun Ajaran</label>
@@ -59,7 +76,7 @@ $currentTab = $_GET['tab'] ?? 'pending';
             <div>
                 <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Pencarian Modul / Guru</label>
                 <div class="flex items-center gap-2">
-                    <input type="text" name="search" value="<?= e($search ?? '') ?>" placeholder="Cari judul RPP / nama guru..." class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs bg-slate-50 focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                    <input type="text" name="search" value="<?= e($search ?? '') ?>" placeholder="Cari judul / nama guru..." class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs bg-slate-50 focus:ring-2 focus:ring-amber-500 focus:outline-none">
                     <button type="submit" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-xl text-xs transition-colors">
                         Filter
                     </button>
@@ -70,7 +87,7 @@ $currentTab = $_GET['tab'] ?? 'pending';
 
     <!-- Content Table -->
     <?php
-    $displayItems = ($currentTab === 'history') ? ($history_items ?? []) : ($pending_items ?? []);
+    $displayItems = $items ?? [];
     ?>
     <div class="bg-white rounded-3xl border border-slate-200/80 shadow-sm overflow-hidden">
         <div class="overflow-x-auto">
@@ -91,7 +108,7 @@ $currentTab = $_GET['tab'] ?? 'pending';
                                 <div class="flex flex-col items-center justify-center gap-2">
                                     <span class="text-3xl">🎉</span>
                                     <p class="text-sm font-semibold text-slate-600">Tidak ada pengajuan dokumen pada daftar ini</p>
-                                    <p class="text-xs text-slate-400">Semua pengajuan perangkat pembelajaran telah diproses.</p>
+                                    <p class="text-xs text-slate-400">Semua pengajuan perangkat pembelajaran telah diproses atau tidak cocok dengan filter.</p>
                                 </div>
                             </td>
                         </tr>
@@ -104,6 +121,7 @@ $currentTab = $_GET['tab'] ?? 'pending';
                                 'heb' => ['label' => 'HEB', 'class' => 'bg-cyan-100 text-cyan-800'],
                                 'prota' => ['label' => 'Prota', 'class' => 'bg-indigo-100 text-indigo-800'],
                                 'prosem' => ['label' => 'Prosem', 'class' => 'bg-purple-100 text-purple-800'],
+                                'cpatp' => ['label' => 'CP & ATP', 'class' => 'bg-amber-100 text-amber-800'],
                                 'rpp' => ['label' => 'RPP / Modul', 'class' => 'bg-rose-100 text-rose-800']
                             ][$row['tipe']] ?? ['label' => strtoupper($row['tipe']), 'class' => 'bg-slate-100 text-slate-700'];
 
@@ -115,6 +133,9 @@ $currentTab = $_GET['tab'] ?? 'pending';
                             ][$row['status']] ?? ['label' => ucfirst($row['status']), 'class' => 'bg-slate-100 text-slate-700 border-slate-200'];
 
                             $detailUrl = url("kelola-perangkat-pembelajaran/{$row['tipe']}/detail/{$row['id']}");
+                            if ($row['tipe'] === 'cpatp') {
+                                $detailUrl = url("kelola-perangkat-pembelajaran/cpatp/detail/{$row['id']}");
+                            }
                             ?>
                             <tr class="hover:bg-slate-50/70 transition-colors">
                                 <td class="py-3.5 px-4">
@@ -122,6 +143,9 @@ $currentTab = $_GET['tab'] ?? 'pending';
                                         <span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase <?= $tipeBadge['class'] ?>">
                                             <?= $tipeBadge['label'] ?>
                                         </span>
+                                        <?php if (!empty($row['unit'])): ?>
+                                            <span class="text-[10px] font-bold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded"><?= e($row['unit']) ?></span>
+                                        <?php endif; ?>
                                         <?php if (!empty($row['mata_pelajaran'])): ?>
                                             <span class="text-[11px] text-slate-500 font-semibold">• <?= e($row['mata_pelajaran']) ?></span>
                                         <?php endif; ?>
@@ -174,6 +198,21 @@ $currentTab = $_GET['tab'] ?? 'pending';
                 </tbody>
             </table>
         </div>
+
+        <?php if (($totalPages ?? 1) > 1): ?>
+            <div class="px-6 py-4 border-t border-slate-200 bg-slate-50/50 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <p class="text-xs text-slate-500">
+                    Menampilkan halaman <span class="font-bold text-slate-700"><?= $page ?></span> dari <span class="font-bold text-slate-700"><?= $totalPages ?></span> (Total <?= $total ?> dokumen)
+                </p>
+                <div class="flex items-center gap-1">
+                    <?php for ($p = 1; $p <= $totalPages; $p++): ?>
+                        <a href="<?= url("kelola-perangkat-pembelajaran/verifikasi?tab=" . e($currentTab) . "&tipe=" . e($currentTipe) . "&page={$p}") ?>" class="w-8 h-8 rounded-xl font-bold text-xs flex items-center justify-center transition-colors <?= $p === $page ? 'bg-amber-600 text-white' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100' ?>">
+                            <?= $p ?>
+                        </a>
+                    <?php endfor; ?>
+                </div>
+            </div>
+        <?php endif; ?>
     </div>
 </div>
 

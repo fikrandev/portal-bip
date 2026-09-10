@@ -1,62 +1,92 @@
 <?php
 /**
  * Prota - Edit View
+ * Form Edit Matriks TP, ATP, JML JP, SMT, & Penilaian Harian
  */
-$materiRows = $konten['materi_rows'] ?? [];
-$totalSmt1 = $konten['total_jp_smt1'] ?? 0;
-$totalSmt2 = $konten['total_jp_smt2'] ?? 0;
-$totalTahun = $konten['total_jp_tahun'] ?? ($totalSmt1 + $totalSmt2);
+$selectedUnit = old('unit', $item['unit'] ?? 'SD');
+$protaRows = $konten['prota_rows'] ?? [];
+
+// Fallback jika data lama format materi_list
+if (empty($protaRows) && !empty($konten['materi_list'])) {
+    $legacyList = $konten['materi_list'];
+    $rNo = 1;
+    foreach ($legacyList as $l) {
+        $jp1 = (int)($l['jp_smt1'] ?? 0);
+        $jp2 = (int)($l['jp_smt2'] ?? 0);
+        $smt = ($jp2 > 0 && $jp1 == 0) ? 2 : 1;
+        $atpJp = $smt == 1 ? ($jp1 ?: 2) : ($jp2 ?: 2);
+
+        $protaRows[] = [
+            'no' => $rNo++,
+            'tp' => $l['cp_kd'] ?: $l['materi_pokok'],
+            'atp_list' => [
+                ['atp' => $l['materi_pokok'], 'jp' => $atpJp]
+            ],
+            'penilaian_harian' => [
+                'label' => 'Penilaian Harian',
+                'jp' => 4
+            ],
+            'semester' => $smt
+        ];
+    }
+}
+
+if (empty($protaRows)) {
+    $protaRows[] = [
+        'no' => 1,
+        'tp' => '',
+        'atp_list' => [
+            ['atp' => '', 'jp' => 2]
+        ],
+        'penilaian_harian' => [
+            'label' => 'Penilaian Harian',
+            'jp' => 4
+        ],
+        'semester' => 1
+    ];
+}
+
+$targetGroupId = $konten['prota_group_id'] ?? null;
 ?>
-<div class="max-w-5xl mx-auto space-y-6">
+<div class="max-w-6xl mx-auto space-y-6">
     <div class="flex items-center justify-between">
         <div>
             <h1 class="text-xl sm:text-2xl font-bold text-slate-800 tracking-tight">Edit Program Tahunan (Prota)</h1>
-            <p class="text-xs sm:text-sm text-slate-500">Perbarui rincian pemetaan materi dan alokasi JP per semester</p>
+            <p class="text-xs sm:text-sm text-slate-500">Perbarui alokasi waktu dan pemetaan TP & ATP per semester</p>
         </div>
-        <a href="<?= url('kelola-perangkat-pembelajaran/prota') ?>" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-colors">
-            ← Kembali
+        <a href="<?= $targetGroupId ? url("kelola-perangkat-pembelajaran/prota/group/{$targetGroupId}") : url('kelola-perangkat-pembelajaran/prota') ?>" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-colors">
+            &larr; Kembali
         </a>
     </div>
 
-    <?php if ($item['status'] === 'ditolak'): ?>
-        <div class="p-4 rounded-2xl bg-rose-50 border border-rose-200 flex items-start gap-3">
-            <div class="text-rose-600 text-xl font-bold">⚠️</div>
-            <div>
-                <h4 class="text-xs font-bold text-rose-900">Dokumen Memerlukan Revisi</h4>
-                <p class="text-xs text-rose-700 mt-0.5">Catatan Verifikator: <?= e($item['catatan_revisi'] ?? 'Lakukan perbaikan sesuai arahan.') ?></p>
-            </div>
-        </div>
-    <?php endif; ?>
-
-    <form method="POST" action="<?= url("kelola-perangkat-pembelajaran/prota/update/{$item['id']}") ?>" enctype="multipart/form-data" class="space-y-6">
+    <form method="POST" action="<?= url("kelola-perangkat-pembelajaran/prota/update/{$item['id']}") ?>" class="space-y-6" id="protaForm">
         <?= CSRF::field() ?>
 
-        <!-- Identitas Utama & Unit Selector -->
+        <!-- Identitas Dokumen & Guru Picker -->
         <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm space-y-5">
             <h2 class="text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-3 flex items-center gap-2">
-                <span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span> Identitas & Unit Prota
+                <span class="w-2.5 h-2.5 rounded-full bg-indigo-600"></span> 1. Identitas Guru & Sekolah
             </h2>
 
-            <!-- Searchable Live Search Guru Picker (At Atas) -->
+            <!-- Searchable Live Search Guru Picker -->
             <?php
             $picker_label = 'Guru Pengampu / Penyusun Prota';
             $picker_accent = 'indigo';
-            $selected_guru_id = old('guru_id', $item['guru_id'] ?? null);
-            $selected_guru_nama = old('guru_nama', $item['guru_nama'] ?? null);
-            $selected_guru_nip = old('guru_nip', $item['guru_nip'] ?? null);
+            $selected_guru_id = old('guru_id', $item['guru_id']);
+            $selected_guru_nama = old('guru_nama', $item['guru_nama']);
+            $selected_guru_nip = old('guru_nip', $item['guru_nip']);
             include BASE_PATH . '/modules/kelola-perangkat-pembelajaran/views/partials/guru_picker.php';
             ?>
 
             <!-- Visual Unit Selector -->
             <div class="pt-2">
-                <?php $selectedUnit = old('unit', $item['unit'] ?? 'SD'); ?>
                 <label class="block text-xs font-semibold text-slate-700 mb-2">Pilih Unit Satuan Pendidikan <span class="text-rose-500">*</span></label>
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     <?php foreach ($unit_list as $uKey => $uInfo): 
                         $isChecked = ($selectedUnit === $uKey);
                     ?>
                         <label class="relative flex flex-col items-center justify-center p-4 rounded-2xl border-2 cursor-pointer transition-all hover:border-indigo-400 hover:bg-slate-50/80 unit-card <?= $isChecked ? 'border-indigo-600 bg-indigo-50/40 ring-2 ring-indigo-500/20 shadow-sm' : 'border-slate-200 bg-white' ?>">
-                            <input type="radio" name="unit" value="<?= $uKey ?>" <?= $isChecked ? 'checked' : '' ?> class="sr-only unit-radio" onchange="updateUnitSelection(this)">
+                            <input type="radio" name="unit" value="<?= $uKey ?>" <?= $isChecked ? 'checked' : '' ?> class="sr-only unit-radio">
                             <div class="w-10 h-10 rounded-xl flex items-center justify-center text-2xl mb-1.5 <?= $uInfo['bg_soft'] ?>">
                                 <?= $uInfo['icon'] ?>
                             </div>
@@ -73,33 +103,30 @@ $totalTahun = $konten['total_jp_tahun'] ?? ($totalSmt1 + $totalSmt2);
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-1">
                 <div class="lg:col-span-3">
                     <label class="block text-xs font-semibold text-slate-700 mb-1">Judul Dokumen Prota <span class="text-rose-500">*</span></label>
-                    <input type="text" name="judul" required value="<?= e($item['judul']) ?>" class="w-full px-4 py-2.5 rounded-2xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-slate-50/50">
+                    <input type="text" name="judul" required value="<?= old('judul', $item['judul']) ?>" class="w-full px-4 py-2.5 rounded-2xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-slate-50/50">
                 </div>
 
                 <div>
                     <label class="block text-xs font-semibold text-slate-700 mb-1">Mata Pelajaran <span class="text-rose-500">*</span></label>
-                    <input type="text" name="mata_pelajaran" required value="<?= e($item['mata_pelajaran']) ?>" class="w-full px-4 py-2.5 rounded-2xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-slate-50/50">
+                    <input type="text" name="mata_pelajaran" required value="<?= old('mata_pelajaran', $item['mata_pelajaran']) ?>" class="w-full px-4 py-2.5 rounded-2xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-slate-50/50">
                 </div>
 
                 <div>
                     <label class="block text-xs font-semibold text-slate-700 mb-1">Tingkat / Kelas <span class="text-rose-500">*</span></label>
-                    <input type="text" name="tingkat_kelas" required value="<?= e($item['tingkat_kelas']) ?>" class="w-full px-4 py-2.5 rounded-2xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-slate-50/50">
+                    <input type="text" name="tingkat_kelas" required value="<?= old('tingkat_kelas', $item['tingkat_kelas']) ?>" class="w-full px-4 py-2.5 rounded-2xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-slate-50/50">
                 </div>
 
                 <div>
                     <label class="block text-xs font-semibold text-slate-700 mb-1">Fase Kurikulum</label>
                     <select name="fase" class="w-full px-4 py-2.5 rounded-2xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-slate-50/50">
-                        <option value="">Pilih Fase (Opsional)</option>
-                        <option value="A (SD 1-2)" <?= $item['fase'] === 'A (SD 1-2)' ? 'selected' : '' ?>>Fase A (SD Kelas 1-2)</option>
-                        <option value="B (SD 3-4)" <?= $item['fase'] === 'B (SD 3-4)' ? 'selected' : '' ?>>Fase B (SD Kelas 3-4)</option>
-                        <option value="C (SD 5-6)" <?= $item['fase'] === 'C (SD 5-6)' ? 'selected' : '' ?>>Fase C (SD Kelas 5-6)</option>
-                        <option value="D (SMP 7-9)" <?= $item['fase'] === 'D (SMP 7-9)' ? 'selected' : '' ?>>Fase D (SMP Kelas 7-9)</option>
-                        <option value="E (SMA 10)" <?= $item['fase'] === 'E (SMA 10)' ? 'selected' : '' ?>>Fase E (SMA Kelas 10)</option>
-                        <option value="F (SMA 11-12)" <?= $item['fase'] === 'F (SMA 11-12)' ? 'selected' : '' ?>>Fase F (SMA Kelas 11-12)</option>
+                        <option value="">Pilih Fase</option>
+                        <?php foreach (['A (SD 1-2)', 'B (SD 3-4)', 'C (SD 5-6)', 'D (SMP 7-9)', 'E (SMA 10)', 'F (SMA 11-12)'] as $f): ?>
+                            <option value="<?= $f ?>" <?= ($item['fase'] === $f) ? 'selected' : '' ?>><?= $f ?></option>
+                        <?php endforeach; ?>
                     </select>
                 </div>
 
-                <div class="sm:col-span-2 lg:col-span-2">
+                <div class="sm:col-span-2 lg:col-span-3">
                     <label class="block text-xs font-semibold text-slate-700 mb-1">Tahun Ajaran <span class="text-rose-500">*</span></label>
                     <select name="tahun_akademik_id" required class="w-full px-4 py-2.5 rounded-2xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-slate-50/50">
                         <?php foreach ($ta_list as $ta): ?>
@@ -108,195 +135,293 @@ $totalTahun = $konten['total_jp_tahun'] ?? ($totalSmt1 + $totalSmt2);
                     </select>
                 </div>
             </div>
-
-            <div>
-                <label class="block text-xs font-semibold text-slate-700 mb-1">Capaian Pembelajaran (CP) Umum</label>
-                <textarea name="capaian_umum" rows="2" class="w-full px-4 py-2.5 rounded-2xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-slate-50/50"><?= e($konten['capaian_umum'] ?? '') ?></textarea>
-            </div>
         </div>
 
-        <!-- Tabel Materi & Alokasi Waktu Dinamis -->
-        <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm space-y-4">
-            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <!-- Tabel Matriks TP, ATP, JML JP, SMT Sesuai Format Kurikulum Merdeka -->
+        <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm space-y-5">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
                 <div>
                     <h2 class="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                        <span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span> Pemetaan Materi & Alokasi Waktu
+                        <span class="w-2.5 h-2.5 rounded-full bg-indigo-600"></span> 2. Matriks Program Tahunan (TP, ATP, JP, SMT)
                     </h2>
-                    <p class="text-[11px] text-slate-400 mt-0.5">Tambahkan baris bab/topik materi dan isikan alokasi JP per semester</p>
+                    <p class="text-[11px] text-slate-500 mt-0.5">Sesuai format resmi Kurikulum Merdeka: Kolom NO, TP, ATP, JML JP, SMT, dan baris Penilaian Harian</p>
                 </div>
-                <button type="button" onclick="tambahBarisMateri()" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold transition-colors">
-                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
-                    Tambah Materi
+                <button type="button" onclick="addTpBlock()" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs border border-indigo-200 transition-colors self-start sm:self-auto">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+                    <span>+ Tambah Lingkup Materi / TP</span>
                 </button>
             </div>
 
-            <div class="overflow-x-auto">
-                <table class="w-full text-left text-xs" id="tabel-prota">
-                    <thead>
-                        <tr class="bg-slate-50 text-slate-500 uppercase tracking-wider text-[10px] border-b border-slate-200">
-                            <th class="py-2.5 px-3 w-10 text-center">No</th>
-                            <th class="py-2.5 px-3 w-1/4 font-bold">Capaian / Elemen (CP/KD)</th>
-                            <th class="py-2.5 px-3 w-1/3 font-bold">Materi Pokok / Bab / Topik</th>
-                            <th class="py-2.5 px-3 text-center w-24">JP Smt 1</th>
-                            <th class="py-2.5 px-3 text-center w-24">JP Smt 2</th>
-                            <th class="py-2.5 px-3">Keterangan</th>
-                            <th class="py-2.5 px-2 text-center w-10">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-100 font-medium" id="prota-body">
-                        <?php foreach ($materiRows as $i => $m): ?>
-                            <tr class="prota-row">
-                                <td class="py-2 px-2 text-center text-slate-400"><?= $i + 1 ?></td>
-                                <td class="py-2 px-2">
-                                    <input type="text" name="cp_kd[]" value="<?= e($m['cp_kd'] ?? '') ?>" placeholder="CP / Elemen..." class="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs bg-slate-50 focus:outline-none focus:ring-1 focus:ring-indigo-500">
-                                </td>
-                                <td class="py-2 px-2">
-                                    <input type="text" name="materi_pokok[]" value="<?= e($m['materi_pokok'] ?? '') ?>" required placeholder="Materi pokok..." class="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 bg-slate-50 focus:outline-none focus:ring-1 focus:ring-indigo-500">
-                                </td>
-                                <td class="py-2 px-2 text-center">
-                                    <input type="number" name="jp_smt1[]" value="<?= (int)($m['jp_smt1'] ?? 0) ?>" min="0" oninput="hitungProta()" class="jp1-input w-20 px-2 py-1.5 rounded-xl border border-slate-200 text-xs text-center font-bold focus:outline-none focus:ring-1 focus:ring-indigo-500">
-                                </td>
-                                <td class="py-2 px-2 text-center">
-                                    <input type="number" name="jp_smt2[]" value="<?= (int)($m['jp_smt2'] ?? 0) ?>" min="0" oninput="hitungProta()" class="jp2-input w-20 px-2 py-1.5 rounded-xl border border-slate-200 text-xs text-center font-bold focus:outline-none focus:ring-1 focus:ring-indigo-500">
-                                </td>
-                                <td class="py-2 px-2">
-                                    <input type="text" name="materi_ket[]" value="<?= e($m['keterangan'] ?? '') ?>" placeholder="Keterangan..." class="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs bg-slate-50 focus:outline-none focus:ring-1 focus:ring-indigo-500">
-                                </td>
-                                <td class="py-2 px-2 text-center">
-                                    <button type="button" onclick="hapusBarisMateri(this)" class="p-1 text-slate-400 hover:text-rose-500 transition-colors" title="Hapus Baris">
-                                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg>
-                                    </button>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                    <tfoot>
-                        <tr class="bg-indigo-50/70 font-extrabold text-indigo-950 border-t-2 border-indigo-600">
-                            <td colspan="3" class="py-3 px-4 text-right uppercase tracking-wider text-xs">Total Alokasi Waktu:</td>
-                            <td class="py-3 px-3 text-center text-sm font-mono text-indigo-900" id="sum-jp1"><?= $totalSmt1 ?> JP</td>
-                            <td class="py-3 px-3 text-center text-sm font-mono text-indigo-900" id="sum-jp2"><?= $totalSmt2 ?> JP</td>
-                            <td colspan="2" class="py-3 px-4 text-xs font-bold text-indigo-800" id="sum-jptotal">Total 1 Tahun: <?= $totalTahun ?> JP</td>
-                        </tr>
-                    </tfoot>
-                </table>
-            </div>
-        </div>
-
-        <!-- Berkas Lampiran Tambahan -->
-        <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm space-y-4">
-            <h2 class="text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-3 flex items-center gap-2">
-                <span class="w-2.5 h-2.5 rounded-full bg-cyan-500"></span> Berkas Lampiran
-            </h2>
-            <div>
-                <?php if (!empty($item['file_lampiran'])): ?>
-                    <div class="mb-3 p-3 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between">
-                        <div class="flex items-center gap-2 text-xs text-slate-700">
-                            <span>📄 Berkas saat ini:</span>
-                            <a href="<?= url($item['file_lampiran']) ?>" target="_blank" class="font-bold text-indigo-600 hover:underline">Unduh Berkas Tersimpan</a>
+            <!-- TP Container -->
+            <div id="tpContainer" class="space-y-4">
+                <?php foreach ($protaRows as $tpIdx => $tpItem): 
+                    $smtVal = (int)($tpItem['semester'] ?? 1);
+                    $atpArr = $tpItem['atp_list'] ?? [];
+                    if (empty($atpArr)) {
+                        $atpArr[] = ['atp' => '', 'jp' => 2];
+                    }
+                    $ph = $tpItem['penilaian_harian'] ?? ['label' => 'Penilaian Harian', 'jp' => 4];
+                ?>
+                <div class="tp-block rounded-2xl border-2 border-slate-200/80 p-4 bg-slate-50/40 space-y-3" data-tp-idx="<?= $tpIdx ?>">
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2">
+                            <span class="w-7 h-7 rounded-xl bg-indigo-600 text-white font-black text-xs flex items-center justify-center tp-number"><?= ($tpIdx + 1) ?></span>
+                            <span class="text-xs font-bold text-slate-800 uppercase">Tujuan Pembelajaran (TP)</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <div class="flex items-center gap-1.5">
+                                <label class="text-[11px] font-bold text-slate-600">Semester:</label>
+                                <select name="prota_rows[<?= $tpIdx ?>][semester]" onchange="calculateTotals()" class="px-2.5 py-1 rounded-xl border border-slate-200 text-xs font-bold bg-white text-indigo-700">
+                                    <option value="1" <?= ($smtVal === 1) ? 'selected' : '' ?>>Semester 1 (Ganjil)</option>
+                                    <option value="2" <?= ($smtVal === 2) ? 'selected' : '' ?>>Semester 2 (Genap)</option>
+                                </select>
+                            </div>
+                            <button type="button" onclick="removeTpBlock(this)" class="p-1 rounded-lg text-rose-400 hover:text-rose-600 hover:bg-rose-50 transition-colors" title="Hapus Blok TP">
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                            </button>
                         </div>
                     </div>
-                <?php endif; ?>
-                <label class="block text-xs font-semibold text-slate-700 mb-1">Ganti Berkas (Opsional)</label>
-                <input type="file" name="file_lampiran" accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png" class="w-full text-xs text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer">
-            </div>
-        </div>
 
-        <!-- Submit Buttons -->
-        <div class="flex items-center justify-end gap-3 pt-4">
-            <button type="submit" name="draft" value="1" class="px-5 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors">
-                Simpan Perubahan
-            </button>
-            <button type="submit" name="ajukan" value="1" class="px-6 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-lg shadow-indigo-500/20 transition-all flex items-center gap-2">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5" /></svg>
-                Simpan & Ajukan Ulang
-            </button>
+                    <!-- TP Input -->
+                    <div>
+                        <textarea name="prota_rows[<?= $tpIdx ?>][tp]" rows="2" placeholder="Tuliskan Tujuan Pembelajaran utama..." class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-indigo-500 bg-white" required><?= e($tpItem['tp']) ?></textarea>
+                    </div>
+
+                    <!-- Sub Table ATP -->
+                    <div class="space-y-2 bg-white rounded-xl p-3 border border-slate-200/80">
+                        <div class="flex items-center justify-between text-[11px] font-bold text-slate-600 border-b border-slate-100 pb-1.5">
+                            <span>Alur Tujuan Pembelajaran (ATP / Sub-Materi)</span>
+                            <span class="w-20 text-center">JML JP</span>
+                        </div>
+                        <div class="atp-list space-y-2" data-tp-idx="<?= $tpIdx ?>">
+                            <?php foreach ($atpArr as $aIdx => $a): ?>
+                            <div class="atp-row flex items-center gap-2">
+                                <input type="text" name="prota_rows[<?= $tpIdx ?>][atp_list][<?= $aIdx ?>][atp]" value="<?= e($a['atp']) ?>" placeholder="Tuliskan butir capaian ATP..." class="flex-1 px-3 py-1.5 rounded-lg border border-slate-200 text-xs bg-slate-50/50 focus:bg-white" required>
+                                <input type="number" name="prota_rows[<?= $tpIdx ?>][atp_list][<?= $aIdx ?>][jp]" value="<?= (int)($a['jp'] ?? 2) ?>" min="1" onchange="calculateTotals()" class="w-20 px-3 py-1.5 rounded-lg border border-slate-200 text-xs text-center font-bold bg-slate-50/50 focus:bg-white atp-jp" required>
+                                <button type="button" onclick="removeAtpRow(this)" class="p-1 text-slate-300 hover:text-rose-500">
+                                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                                </button>
+                            </div>
+                            <?php endforeach; ?>
+                        </div>
+                        <div class="pt-1">
+                            <button type="button" onclick="addAtpRow(this, <?= $tpIdx ?>)" class="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 inline-flex items-center gap-1">
+                                <span>+ Tambah Butir ATP</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Penilaian Harian Row -->
+                    <div class="flex items-center justify-between p-2.5 rounded-xl bg-amber-50/60 border border-amber-200/60 text-xs">
+                        <div class="flex items-center gap-2 flex-1">
+                            <span class="font-bold text-amber-800">📝 Baris Asesmen:</span>
+                            <input type="text" name="prota_rows[<?= $tpIdx ?>][ph_label]" value="<?= e($ph['label'] ?? 'Penilaian Harian') ?>" class="px-2.5 py-1 rounded-lg border border-amber-200 text-xs bg-white text-slate-800 font-semibold w-56">
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[11px] font-bold text-amber-900">Alokasi JP:</span>
+                            <input type="number" name="prota_rows[<?= $tpIdx ?>][ph_jp]" value="<?= (int)($ph['jp'] ?? 4) ?>" min="0" onchange="calculateTotals()" class="w-16 px-2.5 py-1 rounded-lg border border-amber-300 text-xs text-center font-black bg-white text-amber-900 ph-jp">
+                            <span class="text-[11px] text-amber-700 font-bold">JP</span>
+                        </div>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+            </div>
+
+            <!-- Rekapitulasi Alokasi JP Bar -->
+            <div class="p-4 rounded-2xl bg-indigo-900 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <span class="text-2xl">📊</span>
+                    <div>
+                        <h3 class="font-bold text-xs uppercase tracking-wider text-indigo-200">Rekapitulasi Total Alokasi Jam Pelajaran (JP)</h3>
+                        <p class="text-[11px] text-indigo-300">Dihitung otomatis dari seluruh butir ATP & Penilaian Harian</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4 text-xs">
+                    <div class="text-center px-3 py-1.5 rounded-xl bg-indigo-800/80 border border-indigo-700">
+                        <div class="text-[10px] text-indigo-300 uppercase font-bold">Semester 1</div>
+                        <div class="text-sm font-black text-white" id="rekapSmt1">0 JP</div>
+                    </div>
+                    <div class="text-center px-3 py-1.5 rounded-xl bg-indigo-800/80 border border-indigo-700">
+                        <div class="text-[10px] text-indigo-300 uppercase font-bold">Semester 2</div>
+                        <div class="text-sm font-black text-white" id="rekapSmt2">0 JP</div>
+                    </div>
+                    <div class="text-center px-4 py-1.5 rounded-xl bg-emerald-500 text-white shadow-sm font-black">
+                        <div class="text-[10px] text-emerald-100 uppercase">Total 1 Tahun</div>
+                        <div class="text-base" id="rekapTotal">0 JP</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+                <a href="<?= $targetGroupId ? url("kelola-perangkat-pembelajaran/prota/group/{$targetGroupId}") : url('kelola-perangkat-pembelajaran/prota') ?>" class="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-colors">
+                    Batal
+                </a>
+                <button type="submit" name="simpan" value="draft" class="px-5 py-2.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-xs transition-colors">
+                    Simpan Perubahan
+                </button>
+                <button type="submit" name="ajukan" value="1" class="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-500/20 transition-all flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+                    <span>Simpan & Ajukan Verifikasi</span>
+                </button>
+            </div>
         </div>
     </form>
 </div>
 
 <script>
-function tambahBarisMateri() {
-    const tbody = document.getElementById('prota-body');
-    const tr = document.createElement('tr');
-    tr.className = 'prota-row';
-    const no = tbody.querySelectorAll('.prota-row').length + 1;
-    tr.innerHTML = `
-        <td class="py-2 px-2 text-center text-slate-400">${no}</td>
-        <td class="py-2 px-2">
-            <input type="text" name="cp_kd[]" placeholder="CP / Elemen..." class="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs bg-slate-50 focus:outline-none focus:ring-1 focus:ring-indigo-500">
-        </td>
-        <td class="py-2 px-2">
-            <input type="text" name="materi_pokok[]" required placeholder="Materi pokok..." class="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 bg-slate-50 focus:outline-none focus:ring-1 focus:ring-indigo-500">
-        </td>
-        <td class="py-2 px-2 text-center">
-            <input type="number" name="jp_smt1[]" value="0" min="0" oninput="hitungProta()" class="jp1-input w-20 px-2 py-1.5 rounded-xl border border-slate-200 text-xs text-center font-bold focus:outline-none focus:ring-1 focus:ring-indigo-500">
-        </td>
-        <td class="py-2 px-2 text-center">
-            <input type="number" name="jp_smt2[]" value="0" min="0" oninput="hitungProta()" class="jp2-input w-20 px-2 py-1.5 rounded-xl border border-slate-200 text-xs text-center font-bold focus:outline-none focus:ring-1 focus:ring-indigo-500">
-        </td>
-        <td class="py-2 px-2">
-            <input type="text" name="materi_ket[]" placeholder="Keterangan..." class="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs bg-slate-50 focus:outline-none focus:ring-1 focus:ring-indigo-500">
-        </td>
-        <td class="py-2 px-2 text-center">
-            <button type="button" onclick="hapusBarisMateri(this)" class="p-1 text-slate-400 hover:text-rose-500 transition-colors" title="Hapus Baris">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg>
-            </button>
-        </td>
+let tpCount = <?= count($protaRows) ?>;
+
+function addTpBlock() {
+    const container = document.getElementById('tpContainer');
+    const idx = tpCount++;
+
+    const div = document.createElement('div');
+    div.className = 'tp-block rounded-2xl border-2 border-slate-200/80 p-4 bg-slate-50/40 space-y-3';
+    div.setAttribute('data-tp-idx', idx);
+
+    div.innerHTML = `
+        <div class="flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2">
+                <span class="w-7 h-7 rounded-xl bg-indigo-600 text-white font-black text-xs flex items-center justify-center tp-number">${container.children.length + 1}</span>
+                <span class="text-xs font-bold text-slate-800 uppercase">Tujuan Pembelajaran (TP)</span>
+            </div>
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-1.5">
+                    <label class="text-[11px] font-bold text-slate-600">Semester:</label>
+                    <select name="prota_rows[${idx}][semester]" onchange="calculateTotals()" class="px-2.5 py-1 rounded-xl border border-slate-200 text-xs font-bold bg-white text-indigo-700">
+                        <option value="1">Semester 1 (Ganjil)</option>
+                        <option value="2">Semester 2 (Genap)</option>
+                    </select>
+                </div>
+                <button type="button" onclick="removeTpBlock(this)" class="p-1 rounded-lg text-rose-400 hover:text-rose-600 hover:bg-rose-50 transition-colors" title="Hapus Blok TP">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+        </div>
+
+        <div>
+            <textarea name="prota_rows[${idx}][tp]" rows="2" placeholder="Tuliskan Tujuan Pembelajaran utama..." class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-indigo-500 bg-white" required></textarea>
+        </div>
+
+        <div class="space-y-2 bg-white rounded-xl p-3 border border-slate-200/80">
+            <div class="flex items-center justify-between text-[11px] font-bold text-slate-600 border-b border-slate-100 pb-1.5">
+                <span>Alur Tujuan Pembelajaran (ATP / Sub-Materi)</span>
+                <span class="w-20 text-center">JML JP</span>
+            </div>
+            <div class="atp-list space-y-2" data-tp-idx="${idx}">
+                <div class="atp-row flex items-center gap-2">
+                    <input type="text" name="prota_rows[${idx}][atp_list][0][atp]" placeholder="Tuliskan butir capaian ATP..." class="flex-1 px-3 py-1.5 rounded-lg border border-slate-200 text-xs bg-slate-50/50 focus:bg-white" required>
+                    <input type="number" name="prota_rows[${idx}][atp_list][0][jp]" value="2" min="1" onchange="calculateTotals()" class="w-20 px-3 py-1.5 rounded-lg border border-slate-200 text-xs text-center font-bold bg-slate-50/50 focus:bg-white atp-jp" required>
+                    <button type="button" onclick="removeAtpRow(this)" class="p-1 text-slate-300 hover:text-rose-500">
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="pt-1">
+                <button type="button" onclick="addAtpRow(this, ${idx})" class="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 inline-flex items-center gap-1">
+                    <span>+ Tambah Butir ATP</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="flex items-center justify-between p-2.5 rounded-xl bg-amber-50/60 border border-amber-200/60 text-xs">
+            <div class="flex items-center gap-2 flex-1">
+                <span class="font-bold text-amber-800">📝 Baris Asesmen:</span>
+                <input type="text" name="prota_rows[${idx}][ph_label]" value="Penilaian Harian" class="px-2.5 py-1 rounded-lg border border-amber-200 text-xs bg-white text-slate-800 font-semibold w-56">
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="text-[11px] font-bold text-amber-900">Alokasi JP:</span>
+                <input type="number" name="prota_rows[${idx}][ph_jp]" value="4" min="0" onchange="calculateTotals()" class="w-16 px-2.5 py-1 rounded-lg border border-amber-300 text-xs text-center font-black bg-white text-amber-900 ph-jp">
+                <span class="text-[11px] text-amber-700 font-bold">JP</span>
+            </div>
+        </div>
     `;
-    tbody.appendChild(tr);
-    hitungProta();
+
+    container.appendChild(div);
+    renumberTpBlocks();
+    calculateTotals();
 }
 
-function hapusBarisMateri(btn) {
-    const row = btn.closest('tr');
-    if (document.querySelectorAll('.prota-row').length > 1) {
-        row.remove();
-        hitungProta();
+function removeTpBlock(btn) {
+    const block = btn.closest('.tp-block');
+    const container = document.getElementById('tpContainer');
+    if (container.children.length > 1) {
+        block.remove();
+        renumberTpBlocks();
+        calculateTotals();
     } else {
-        alert('Minimal harus ada 1 baris materi.');
+        alert('Minimal harus ada 1 blok Tujuan Pembelajaran (TP).');
     }
 }
 
-function hitungProta() {
-    const rows = document.querySelectorAll('.prota-row');
-    let sumJP1 = 0;
-    let sumJP2 = 0;
-
-    rows.forEach(r => {
-        const jp1 = parseInt(r.querySelector('.jp1-input').value) || 0;
-        const jp2 = parseInt(r.querySelector('.jp2-input').value) || 0;
-        sumJP1 += jp1;
-        sumJP2 += jp2;
+function renumberTpBlocks() {
+    const blocks = document.querySelectorAll('.tp-block');
+    blocks.forEach((b, i) => {
+        const numSpan = b.querySelector('.tp-number');
+        if (numSpan) numSpan.textContent = (i + 1);
     });
-
-    const sumTotal = sumJP1 + sumJP2;
-    document.getElementById('sum-jp1').innerText = sumJP1 + ' JP';
-    document.getElementById('sum-jp2').innerText = sumJP2 + ' JP';
-    document.getElementById('sum-jptotal').innerText = 'Total 1 Tahun: ' + sumTotal + ' JP';
 }
 
-function updateUnitSelection(radio) {
-    document.querySelectorAll('.unit-card').forEach(card => {
-        card.classList.remove('border-indigo-600', 'bg-indigo-50/40', 'ring-2', 'ring-indigo-500/20', 'shadow-sm');
-        card.classList.add('border-slate-200', 'bg-white');
-        const indicator = card.querySelector('.unit-check-indicator');
-        if (indicator) {
-            indicator.classList.add('hidden');
-            indicator.classList.remove('block');
-        }
-    });
+function addAtpRow(btn, tpIdx) {
+    const list = btn.closest('.space-y-2').querySelector('.atp-list');
+    const rowIdx = list.children.length;
 
-    const selectedCard = radio.closest('.unit-card');
-    if (selectedCard) {
-        selectedCard.classList.remove('border-slate-200', 'bg-white');
-        selectedCard.classList.add('border-indigo-600', 'bg-indigo-50/40', 'ring-2', 'ring-indigo-500/20', 'shadow-sm');
-        const indicator = selectedCard.querySelector('.unit-check-indicator');
-        if (indicator) {
-            indicator.classList.remove('hidden');
-            indicator.classList.add('block');
-        }
+    const row = document.createElement('div');
+    row.className = 'atp-row flex items-center gap-2';
+    row.innerHTML = `
+        <input type="text" name="prota_rows[${tpIdx}][atp_list][${rowIdx}][atp]" placeholder="Tuliskan butir capaian ATP..." class="flex-1 px-3 py-1.5 rounded-lg border border-slate-200 text-xs bg-slate-50/50 focus:bg-white" required>
+        <input type="number" name="prota_rows[${tpIdx}][atp_list][${rowIdx}][jp]" value="2" min="1" onchange="calculateTotals()" class="w-20 px-3 py-1.5 rounded-lg border border-slate-200 text-xs text-center font-bold bg-slate-50/50 focus:bg-white atp-jp" required>
+        <button type="button" onclick="removeAtpRow(this)" class="p-1 text-slate-300 hover:text-rose-500">
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
+    `;
+    list.appendChild(row);
+    calculateTotals();
+}
+
+function removeAtpRow(btn) {
+    const row = btn.closest('.atp-row');
+    const list = row.closest('.atp-list');
+    if (list.children.length > 1) {
+        row.remove();
+        calculateTotals();
+    } else {
+        alert('Setiap TP minimal memiliki 1 butir ATP.');
     }
 }
 
-document.addEventListener('DOMContentLoaded', hitungProta);
+function calculateTotals() {
+    let smt1 = 0;
+    let smt2 = 0;
+
+    document.querySelectorAll('.tp-block').forEach(block => {
+        const smtSelect = block.querySelector('select[name$="[semester]"]');
+        const smt = smtSelect ? parseInt(smtSelect.value, 10) : 1;
+
+        let blockJp = 0;
+        block.querySelectorAll('.atp-jp').forEach(inp => {
+            blockJp += parseInt(inp.value, 10) || 0;
+        });
+
+        const phInp = block.querySelector('.ph-jp');
+        if (phInp) {
+            blockJp += parseInt(phInp.value, 10) || 0;
+        }
+
+        if (smt === 1) {
+            smt1 += blockJp;
+        } else {
+            smt2 += blockJp;
+        }
+    });
+
+    const total = smt1 + smt2;
+    document.getElementById('rekapSmt1').textContent = smt1 + ' JP';
+    document.getElementById('rekapSmt2').textContent = smt2 + ' JP';
+    document.getElementById('rekapTotal').textContent = total + ' JP';
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    calculateTotals();
+});
 </script>

@@ -4,14 +4,26 @@
  */
 $currentUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
-// Fetch pending count for verifikasi badge
+// Fetch pending count for verifikasi badge (for active tahun akademik)
 $dbPending = Database::getInstance();
 $pendingCount = 0;
 try {
-    $pRes = $dbPending->find("SELECT COUNT(*) as total FROM perangkat_pembelajaran WHERE status = 'diajukan'");
+    $pRes = $dbPending->find("
+        SELECT COUNT(*) as total 
+        FROM perangkat_pembelajaran p
+        LEFT JOIN tahun_akademik ta ON p.tahun_akademik_id = ta.id
+        WHERE p.status = 'diajukan' AND (ta.is_active = 1 OR p.tahun_akademik_id IS NULL)
+    ");
     $pendingCount = (int) ($pRes['total'] ?? 0);
 } catch (Exception $e) {
     $pendingCount = 0;
+}
+
+$sbLogo = '';
+if (defined('SYS_APP_FAVICON') && !empty(SYS_APP_FAVICON)) {
+    $sbLogo = url(ltrim(SYS_APP_FAVICON, '/'));
+} elseif (defined('SYS_APP_LOGO') && !empty(SYS_APP_LOGO)) {
+    $sbLogo = url(ltrim(SYS_APP_LOGO, '/'));
 }
 ?>
 <aside id="sidebar" 
@@ -21,14 +33,20 @@ try {
     <!-- Sidebar Header -->
     <div class="h-16 flex items-center px-6 border-b border-primary-800/50 bg-primary-950/30">
         <div class="flex items-center gap-3">
-            <div class="w-8 h-8 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/20 text-white font-bold">
-                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
-                </svg>
-            </div>
-            <div>
-                <h1 class="text-white font-bold text-base tracking-tight leading-tight">Perangkat Ajar</h1>
-                <p class="text-emerald-300 text-xs">Administrasi Guru & KBM</p>
+            <?php if ($sbLogo): ?>
+                <div class="w-9 h-9 rounded-2xl bg-white p-1 flex items-center justify-center shadow-md shadow-black/20 shrink-0">
+                    <img src="<?= $sbLogo ?>" alt="Logo Sekolah" class="max-w-full max-h-full object-contain">
+                </div>
+            <?php else: ?>
+                <div class="w-8 h-8 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/20 text-white font-bold shrink-0">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
+                    </svg>
+                </div>
+            <?php endif; ?>
+            <div class="min-w-0">
+                <h1 class="text-white font-bold text-base tracking-tight leading-tight truncate">Perangkat Ajar</h1>
+                <p class="text-emerald-300 text-xs truncate">Administrasi Guru & KBM</p>
             </div>
         </div>
         
@@ -161,8 +179,17 @@ try {
 
     <!-- Sidebar Footer -->
     <div class="p-4 border-t border-primary-800/50 bg-primary-950/20 space-y-2">
+        <a href="<?= url('mobile') ?>" 
+           target="_blank"
+           class="flex items-center gap-2.5 px-3 py-2 rounded-2xl text-xs font-semibold text-emerald-300 hover:text-white bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 transition-all">
+            <svg class="w-4 h-4 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 0 0 6 3.75v16.5a2.25 2.25 0 0 0 2.25 2.25h7.5A2.25 2.25 0 0 0 18 20.25V3.75a2.25 2.25 0 0 0-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" />
+            </svg>
+            <span>📱 Portal Guru (Mobile)</span>
+        </a>
+
         <a href="<?= url('dashboard') ?>" 
-           class="flex items-center gap-3 px-3 py-2 rounded-2xl text-xs font-semibold text-primary-300 hover:text-white hover:bg-white/10 transition-colors">
+           class="flex items-center gap-2.5 px-3 py-2 rounded-2xl text-xs font-semibold text-primary-300 hover:text-white hover:bg-white/10 transition-colors">
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
             </svg>

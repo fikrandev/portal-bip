@@ -5,7 +5,7 @@
  */
 ?>
 
-<header class="sticky top-0 z-30 bg-white/80 backdrop-blur-lg border-b border-primary-100/60" role="banner">
+<header class="sticky top-0 z-40 bg-white border-b border-slate-200/90 shadow-sm" role="banner">
     <div class="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
         
         <!-- Left: Mobile menu + Page title -->
@@ -51,7 +51,12 @@
         <!-- Right: Search + Actions + User -->
         <div class="flex items-center gap-2 sm:gap-3">
             
-            <!-- Portal Guru Mobile Shortcut Button -->
+            <?php 
+            $currPath = trim(parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH), '/');
+            $isDashboard = ($currPath === 'dashboard' || $currPath === '' || str_ends_with($currPath, '/dashboard'));
+            if ($isDashboard): 
+            ?>
+            <!-- Portal Guru Mobile Shortcut Button (Hanya tampil di Dashboard Portal Utama) -->
             <a href="<?= url('mobile') ?>" 
                target="_blank"
                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/80 transition-all duration-200 text-xs sm:text-sm font-semibold shadow-sm hover:shadow"
@@ -62,17 +67,6 @@
                 </svg>
                 <span class="hidden sm:inline">📱 Portal Guru</span>
                 <span class="sm:hidden">📱 Mobile</span>
-            </a>
-
-            <?php if (!($hideSidebar ?? false)): ?>
-            <!-- Back to Portal Button (Desktop) -->
-            <a href="<?= url('dashboard') ?>" 
-               class="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary-50 text-primary-700 hover:bg-primary-100 transition-colors text-sm font-medium mr-2"
-               aria-label="Kembali ke Portal">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"/>
-                </svg>
-                Kembali ke Portal
             </a>
             <?php endif; ?>
             

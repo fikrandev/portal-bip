@@ -10,6 +10,13 @@ $currentPath = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
 // Group system modules vs feature modules
 $systemModules = ['dashboard', 'kelola-pengguna', 'kelola-peran', 'manajemen-modul'];
+
+$sbLogo = '';
+if (defined('SYS_APP_FAVICON') && !empty(SYS_APP_FAVICON)) {
+    $sbLogo = url(ltrim(SYS_APP_FAVICON, '/'));
+} elseif (defined('SYS_APP_LOGO') && !empty(SYS_APP_LOGO)) {
+    $sbLogo = url(ltrim(SYS_APP_LOGO, '/'));
+}
 ?>
 
 <!-- Sidebar -->
@@ -26,12 +33,12 @@ $systemModules = ['dashboard', 'kelola-pengguna', 'kelola-peran', 'manajemen-mod
         
         <!-- Logo & Brand -->
         <div class="flex items-center gap-3 px-6 py-5 border-b border-white/10">
-            <?php if (defined('SYS_APP_LOGO') && SYS_APP_LOGO): ?>
-            <div class="flex items-center justify-center w-10 h-10 rounded-2xl bg-white p-1 backdrop-blur-sm">
-                <img src="<?= url(ltrim(SYS_APP_LOGO, '/')) ?>" alt="Logo" class="max-w-full max-h-full object-contain">
+            <?php if ($sbLogo): ?>
+            <div class="flex items-center justify-center w-10 h-10 rounded-2xl bg-white p-1 backdrop-blur-sm shadow-md shadow-black/20 shrink-0">
+                <img src="<?= $sbLogo ?>" alt="Logo Sekolah" class="max-w-full max-h-full object-contain">
             </div>
             <?php else: ?>
-            <div class="flex items-center justify-center w-10 h-10 rounded-2xl bg-white/15 backdrop-blur-sm">
+            <div class="flex items-center justify-center w-10 h-10 rounded-2xl bg-white/15 backdrop-blur-sm shrink-0">
                 <svg class="w-6 h-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M6.429 9.75 2.25 12l4.179 2.25m0-4.5 5.571 3 5.571-3m-11.142 0L2.25 7.5 12 2.25l9.75 5.25-4.179 2.25m0 0L21.75 12l-4.179 2.25m0 0 4.179 2.25L12 21.75 2.25 16.5l4.179-2.25m11.142 0-5.571 3-5.571-3"/>
                 </svg>
@@ -309,8 +316,18 @@ $systemModules = ['dashboard', 'kelola-pengguna', 'kelola-peran', 'manajemen-mod
         </nav>
 
         <!-- Sidebar Footer -->
-        <div class="px-4 py-4 border-t border-white/10">
-            <div class="mb-3 px-3 py-2 rounded-xl bg-white/5 border border-white/10">
+        <div class="px-4 py-4 border-t border-white/10 space-y-2">
+            <!-- Portal Guru Mobile Shortcut Button -->
+            <a href="<?= url('mobile') ?>" 
+               target="_blank"
+               class="flex items-center gap-2.5 px-3 py-2 rounded-2xl text-xs font-semibold text-emerald-300 hover:text-white bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 transition-all">
+                <svg class="w-4 h-4 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 0 0 6 3.75v16.5a2.25 2.25 0 0 0 2.25 2.25h7.5A2.25 2.25 0 0 0 18 20.25V3.75a2.25 2.25 0 0 0-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" />
+                </svg>
+                <span>📱 Portal Guru (Mobile)</span>
+            </a>
+
+            <div class="px-3 py-2 rounded-xl bg-white/5 border border-white/10">
                 <p class="text-[10px] text-primary-400 font-semibold uppercase tracking-wider mb-1">Tahun Ajaran Aktif</p>
                 <p class="text-xs text-white font-medium truncate flex items-center gap-2">
                     <span class="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>

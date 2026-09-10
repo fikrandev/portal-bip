@@ -736,3 +736,181 @@ Stack trace:
 [03-Sep-2026 15:18:00 Asia/Makassar] PHP Warning:  Undefined variable $group in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\prosem\cetak_semua.php on line 17
 [03-Sep-2026 15:18:00 Asia/Makassar] PHP Warning:  Trying to access array offset on value of type null in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\prosem\cetak_semua.php on line 17
 [04-Sep-2026 08:09:42 Asia/Makassar] Database Connection Error: SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[05-Sep-2026 23:04:40 Asia/Makassar] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'p.display_name' in 'field list' in C:\Users\BINA INSAN PALU\.gemini\antigravity-ide\brain\fbe3e350-0bf2-4b83-8346-5a9ce5343193\scratch\test_rbac_workflow.php:29
+Stack trace:
+#0 C:\Users\BINA INSAN PALU\.gemini\antigravity-ide\brain\fbe3e350-0bf2-4b83-8346-5a9ce5343193\scratch\test_rbac_workflow.php(29): PDO->prepare('SELECT p.name, ...')
+#1 {main}
+  thrown in C:\Users\BINA INSAN PALU\.gemini\antigravity-ide\brain\fbe3e350-0bf2-4b83-8346-5a9ce5343193\scratch\test_rbac_workflow.php on line 29
+[05-Sep-2026 23:04:46 Asia/Makassar] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'display_name' in 'field list' in C:\Users\BINA INSAN PALU\.gemini\antigravity-ide\brain\fbe3e350-0bf2-4b83-8346-5a9ce5343193\scratch\test_rbac_workflow.php:55
+Stack trace:
+#0 C:\Users\BINA INSAN PALU\.gemini\antigravity-ide\brain\fbe3e350-0bf2-4b83-8346-5a9ce5343193\scratch\test_rbac_workflow.php(55): PDO->exec('INSERT INTO rol...')
+#1 {main}
+  thrown in C:\Users\BINA INSAN PALU\.gemini\antigravity-ide\brain\fbe3e350-0bf2-4b83-8346-5a9ce5343193\scratch\test_rbac_workflow.php on line 55
+[05-Sep-2026 23:15:28 Asia/Makassar] Query Error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'jenis' in 'field list' | SQL: SELECT DISTINCT jenis, COUNT(*) as count FROM perangkat_pembelajaran GROUP BY jenis
+[05-Sep-2026 23:15:28 Asia/Makassar] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'jenis' in 'field list' in E:\xampp\mysql\data\portal-bip\core\Database.php:83
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\core\Database.php(83): PDO->prepare('SELECT DISTINCT...')
+#1 E:\xampp\mysql\data\portal-bip\core\Database.php(107): Database->query('SELECT DISTINCT...', Array)
+#2 C:\Users\BINA INSAN PALU\.gemini\antigravity-ide\brain\fbe3e350-0bf2-4b83-8346-5a9ce5343193\scratch\inspect_prota_2.php(16): Database->findAll('SELECT DISTINCT...')
+#3 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\core\Database.php on line 83
+[05-Sep-2026 23:43:08 Asia/Makassar] PHP Fatal error:  Uncaught Error: Call to undefined method PerangkatModel::getUnitProfile() in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\prota\cetak.php:50
+Stack trace:
+#0 C:\Users\BINA INSAN PALU\.gemini\antigravity-ide\brain\fbe3e350-0bf2-4b83-8346-5a9ce5343193\scratch\test_prota_workflow.php(72): include()
+#1 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\prota\cetak.php on line 50
+[05-Sep-2026 23:43:54 Asia/Makassar] PHP Fatal error:  Uncaught Error: Call to undefined method PerangkatModel::getUnitProfile() in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\prota\cetak.php:50
+Stack trace:
+#0 C:\Users\BINA INSAN PALU\.gemini\antigravity-ide\brain\fbe3e350-0bf2-4b83-8346-5a9ce5343193\scratch\test_prota_workflow.php(72): include()
+#1 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\prota\cetak.php on line 50
+[05-Sep-2026 23:44:18 Asia/Makassar] PHP Fatal error:  Uncaught Error: Call to undefined function e() in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\prota\cetak.php:61
+Stack trace:
+#0 C:\Users\BINA INSAN PALU\.gemini\antigravity-ide\brain\fbe3e350-0bf2-4b83-8346-5a9ce5343193\scratch\test_prota_workflow.php(72): include()
+#1 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\prota\cetak.php on line 61
+[05-Sep-2026 23:48:13 Asia/Makassar] PHP Parse error:  syntax error, unexpected identifier "an" in E:\xampp\mysql\data\portal-bip\modules\kelola-quran-siswa\controllers\QuranSiswaController.php on line 7
+[05-Sep-2026 23:48:21 Asia/Makassar] PHP Parse error:  syntax error, unexpected identifier "an" in E:\xampp\mysql\data\portal-bip\modules\kelola-quran-siswa\controllers\QuranSiswaController.php on line 7
+[05-Sep-2026 23:56:01 Asia/Makassar] PHP Fatal error:  Uncaught Error: Call to undefined function url() in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\prota\cetak.php:193
+Stack trace:
+#0 C:\Users\BINA INSAN PALU\.gemini\antigravity-ide\brain\fbe3e350-0bf2-4b83-8346-5a9ce5343193\scratch\test_prota_workflow.php(78): include()
+#1 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\prota\cetak.php on line 193
+[07-Sep-2026 11:56:51 Asia/Makassar] PHP Fatal error:  Uncaught Error: Call to undefined function e() in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\rpp\cetak.php:16
+Stack trace:
+#0 C:\Users\BINA INSAN PALU\.gemini\antigravity-ide\brain\fbe3e350-0bf2-4b83-8346-5a9ce5343193\scratch\test_rpp_workflow.php(83): include()
+#1 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\rpp\cetak.php on line 16
+[07-Sep-2026 12:35:59 Asia/Makassar] PHP Warning:  Undefined array key "status_to" in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\rpp\detail.php on line 460
+[07-Sep-2026 12:35:59 Asia/Makassar] PHP Fatal error:  Uncaught TypeError: e(): Argument #1 ($value) must be of type string, null given, called in E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\rpp\detail.php on line 460 and defined in E:\xampp\mysql\data\portal-bip\index.php:65
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\views\rpp\detail.php(460): e(NULL)
+#1 E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\controllers\PerangkatController.php(26): include('E:\\xampp\\mysql\\...')
+#2 E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\controllers\PerangkatController.php(3745): PerangkatController::view('rpp/detail', Array, 'Detail RPP / Mo...', Array)
+#3 E:\xampp\mysql\data\portal-bip\core\Router.php(98): PerangkatController::detailRpp(32)
+#4 E:\xampp\mysql\data\portal-bip\index.php(638): Router->dispatch()
+#5 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\index.php on line 65
+[07-Sep-2026 14:19:09 Asia/Makassar] Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'db_portal_bip.perangkat_logs' doesn't exist | SQL: SELECT user_nama FROM perangkat_logs WHERE perangkat_id = ? AND aksi = 'setujui' ORDER BY id DESC LIMIT 1
+[07-Sep-2026 14:19:09 Asia/Makassar] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'db_portal_bip.perangkat_logs' doesn't exist in E:\xampp\mysql\data\portal-bip\core\Database.php:83
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\core\Database.php(83): PDO->prepare('SELECT user_nam...')
+#1 E:\xampp\mysql\data\portal-bip\core\Database.php(97): Database->query('SELECT user_nam...', Array)
+#2 E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\controllers\PerangkatController.php(3790): Database->find('SELECT user_nam...', Array)
+#3 E:\xampp\mysql\data\portal-bip\core\Router.php(98): PerangkatController::cetakRpp(32)
+#4 E:\xampp\mysql\data\portal-bip\index.php(638): Router->dispatch()
+#5 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\core\Database.php on line 83
+[07-Sep-2026 14:59:55 Asia/Makassar] Query Error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'nip' in 'field list' | SQL: SELECT full_name, nip FROM users WHERE id = ?
+[07-Sep-2026 14:59:55 Asia/Makassar] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'nip' in 'field list' in E:\xampp\mysql\data\portal-bip\core\Database.php:83
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\core\Database.php(83): PDO->prepare('SELECT full_nam...')
+#1 E:\xampp\mysql\data\portal-bip\core\Database.php(97): Database->query('SELECT full_nam...', Array)
+#2 E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\controllers\PerangkatController.php(3745): Database->find('SELECT full_nam...', Array)
+#3 E:\xampp\mysql\data\portal-bip\core\Router.php(98): PerangkatController::detailRpp(6)
+#4 E:\xampp\mysql\data\portal-bip\index.php(638): Router->dispatch()
+#5 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\core\Database.php on line 83
+[08-Sep-2026 09:57:15 Asia/Makassar] PHP Fatal error:  Uncaught TypeError: e(): Argument #1 ($value) must be of type string, null given, called in E:\xampp\mysql\data\portal-bip\modules\kelola-nilai\views\rekap.php on line 34 and defined in E:\xampp\mysql\data\portal-bip\index.php:65
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\modules\kelola-nilai\views\rekap.php(34): e(NULL)
+#1 E:\xampp\mysql\data\portal-bip\modules\kelola-nilai\controllers\NilaiController.php(257): include('E:\\xampp\\mysql\\...')
+#2 E:\xampp\mysql\data\portal-bip\core\Router.php(98): NilaiController::rekap()
+#3 E:\xampp\mysql\data\portal-bip\index.php(644): Router->dispatch()
+#4 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\index.php on line 65
+[08-Sep-2026 13:04:40 Asia/Makassar] PHP Fatal error:  Uncaught Error: Call to undefined method CSRF::verify() in E:\xampp\mysql\data\portal-bip\modules\kelola-nilai\controllers\NilaiController.php:109
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\core\Router.php(98): NilaiController::groupStore()
+#1 E:\xampp\mysql\data\portal-bip\index.php(644): Router->dispatch()
+#2 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\modules\kelola-nilai\controllers\NilaiController.php on line 109
+[09-Sep-2026 00:09:52 Asia/Makassar] PHP Fatal error:  Uncaught Error: Call to undefined method CSRF::verify() in E:\xampp\mysql\data\portal-bip\modules\kelola-nilai\controllers\NilaiController.php:109
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\core\Router.php(98): NilaiController::groupStore()
+#1 E:\xampp\mysql\data\portal-bip\index.php(646): Router->dispatch()
+#2 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\modules\kelola-nilai\controllers\NilaiController.php on line 109
+[09-Sep-2026 00:21:25 Asia/Makassar] PHP Fatal error:  Uncaught Error: Call to undefined function flash() in E:\xampp\mysql\data\portal-bip\modules\kelola-nilai\controllers\NilaiController.php:151
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\core\Router.php(98): NilaiController::groupStore()
+#1 E:\xampp\mysql\data\portal-bip\index.php(646): Router->dispatch()
+#2 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\modules\kelola-nilai\controllers\NilaiController.php on line 151
+[09-Sep-2026 00:21:42 Asia/Makassar] PHP Fatal error:  Uncaught Error: Call to undefined function flash() in E:\xampp\mysql\data\portal-bip\modules\kelola-nilai\controllers\NilaiController.php:151
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\core\Router.php(98): NilaiController::groupStore()
+#1 E:\xampp\mysql\data\portal-bip\index.php(646): Router->dispatch()
+#2 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\modules\kelola-nilai\controllers\NilaiController.php on line 151
+[09-Sep-2026 00:22:00 Asia/Makassar] PHP Fatal error:  Uncaught Error: Call to undefined function flash() in E:\xampp\mysql\data\portal-bip\modules\kelola-nilai\controllers\NilaiController.php:151
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\core\Router.php(98): NilaiController::groupStore()
+#1 E:\xampp\mysql\data\portal-bip\index.php(646): Router->dispatch()
+#2 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\modules\kelola-nilai\controllers\NilaiController.php on line 151
+[09-Sep-2026 08:43:55 Asia/Makassar] PHP Fatal error:  Uncaught TypeError: e(): Argument #1 ($value) must be of type string, null given, called in E:\xampp\mysql\data\portal-bip\modules\kelola-nilai\views\group_list.php on line 47 and defined in E:\xampp\mysql\data\portal-bip\index.php:65
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\modules\kelola-nilai\views\group_list.php(47): e(NULL)
+#1 E:\xampp\mysql\data\portal-bip\modules\kelola-nilai\controllers\NilaiController.php(46): include('E:\\xampp\\mysql\\...')
+#2 E:\xampp\mysql\data\portal-bip\core\Router.php(98): NilaiController::groupList()
+#3 E:\xampp\mysql\data\portal-bip\index.php(646): Router->dispatch()
+#4 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\index.php on line 65
+[09-Sep-2026 08:47:31 Asia/Makassar] PHP Warning:  Undefined array key "REQUEST_URI" in E:\xampp\mysql\data\portal-bip\modules\kelola-nilai\views\sidebar.php on line 5
+[09-Sep-2026 08:48:12 Asia/Makassar] PHP Warning:  Undefined array key "REQUEST_URI" in E:\xampp\mysql\data\portal-bip\modules\kelola-nilai\views\sidebar.php on line 5
+[09-Sep-2026 08:57:26 Asia/Makassar] Query Error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'tingkat' in 'field list' | SQL: SELECT id, nama_kelas, tingkat, unit FROM kelas LIMIT 20
+[09-Sep-2026 08:57:26 Asia/Makassar] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'tingkat' in 'field list' in E:\xampp\mysql\data\portal-bip\core\Database.php:83
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\core\Database.php(83): PDO->prepare('SELECT id, nama...')
+#1 E:\xampp\mysql\data\portal-bip\scratch\inspect_siswa.php(8): Database->query('SELECT id, nama...')
+#2 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\core\Database.php on line 83
+[09-Sep-2026 08:57:44 Asia/Makassar] Query Error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'unit' in 'field list' | SQL: SELECT id, nama_kelas, unit FROM kelas LIMIT 30
+[09-Sep-2026 08:57:44 Asia/Makassar] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'unit' in 'field list' in E:\xampp\mysql\data\portal-bip\core\Database.php:83
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\core\Database.php(83): PDO->prepare('SELECT id, nama...')
+#1 E:\xampp\mysql\data\portal-bip\scratch\inspect_siswa.php(8): Database->query('SELECT id, nama...')
+#2 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\core\Database.php on line 83
+[09-Sep-2026 08:59:43 Asia/Makassar] PHP Fatal error:  Cannot redeclare gradeClass() (previously declared in E:\xampp\mysql\data\portal-bip\modules\kelola-nilai\views\cetak_nilai.php:301) in E:\xampp\mysql\data\portal-bip\modules\kelola-nilai\views\cetak_nilai.php on line 301
+[09-Sep-2026 09:05:12 Asia/Makassar] PHP Warning:  session_start(): Session cannot be started after headers have already been sent in C:\Users\BINA INSAN PALU\.gemini\antigravity-ide\brain\9241784f-d9af-498d-9d11-93898ff5b402\scratch\test_render.php on line 13
+[09-Sep-2026 09:45:51 Asia/Makassar] PHP Warning:  ini_set(): Session ini settings cannot be changed after headers have already been sent in E:\xampp\mysql\data\portal-bip\config\session.php on line 14
+[09-Sep-2026 09:45:51 Asia/Makassar] PHP Warning:  ini_set(): Session ini settings cannot be changed after headers have already been sent in E:\xampp\mysql\data\portal-bip\config\session.php on line 15
+[09-Sep-2026 09:45:51 Asia/Makassar] PHP Warning:  ini_set(): Session ini settings cannot be changed after headers have already been sent in E:\xampp\mysql\data\portal-bip\config\session.php on line 16
+[09-Sep-2026 09:45:51 Asia/Makassar] PHP Warning:  ini_set(): Session ini settings cannot be changed after headers have already been sent in E:\xampp\mysql\data\portal-bip\config\session.php on line 18
+[09-Sep-2026 09:45:51 Asia/Makassar] PHP Warning:  ini_set(): Session ini settings cannot be changed after headers have already been sent in E:\xampp\mysql\data\portal-bip\config\session.php on line 19
+[09-Sep-2026 09:45:51 Asia/Makassar] PHP Warning:  session_name(): Session name cannot be changed after headers have already been sent in E:\xampp\mysql\data\portal-bip\config\session.php on line 32
+[09-Sep-2026 09:45:51 Asia/Makassar] PHP Warning:  session_start(): Session cannot be started after headers have already been sent in E:\xampp\mysql\data\portal-bip\config\session.php on line 36
+[09-Sep-2026 09:57:09 Asia/Makassar] PHP Warning:  ini_set(): Session ini settings cannot be changed after headers have already been sent in E:\xampp\mysql\data\portal-bip\config\session.php on line 14
+[09-Sep-2026 09:57:09 Asia/Makassar] PHP Warning:  ini_set(): Session ini settings cannot be changed after headers have already been sent in E:\xampp\mysql\data\portal-bip\config\session.php on line 15
+[09-Sep-2026 09:57:09 Asia/Makassar] PHP Warning:  ini_set(): Session ini settings cannot be changed after headers have already been sent in E:\xampp\mysql\data\portal-bip\config\session.php on line 16
+[09-Sep-2026 09:57:09 Asia/Makassar] PHP Warning:  ini_set(): Session ini settings cannot be changed after headers have already been sent in E:\xampp\mysql\data\portal-bip\config\session.php on line 18
+[09-Sep-2026 09:57:09 Asia/Makassar] PHP Warning:  ini_set(): Session ini settings cannot be changed after headers have already been sent in E:\xampp\mysql\data\portal-bip\config\session.php on line 19
+[09-Sep-2026 09:57:09 Asia/Makassar] PHP Warning:  session_name(): Session name cannot be changed after headers have already been sent in E:\xampp\mysql\data\portal-bip\config\session.php on line 32
+[09-Sep-2026 09:57:09 Asia/Makassar] PHP Warning:  session_start(): Session cannot be started after headers have already been sent in E:\xampp\mysql\data\portal-bip\config\session.php on line 36
+[09-Sep-2026 10:02:18 Asia/Makassar] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'nip' in 'field list' in C:\Users\BINA INSAN PALU\.gemini\antigravity-ide\brain\9241784f-d9af-498d-9d11-93898ff5b402\scratch\check_teachers.php:8
+Stack trace:
+#0 C:\Users\BINA INSAN PALU\.gemini\antigravity-ide\brain\9241784f-d9af-498d-9d11-93898ff5b402\scratch\check_teachers.php(8): PDO->query('SELECT id, nip,...')
+#1 {main}
+  thrown in C:\Users\BINA INSAN PALU\.gemini\antigravity-ide\brain\9241784f-d9af-498d-9d11-93898ff5b402\scratch\check_teachers.php on line 8
+[10-Sep-2026 08:20:36 Asia/Makassar] PHP Fatal error:  Uncaught Error: Call to undefined function e() in E:\xampp\mysql\data\portal-bip\templates\partials\header.php:9
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\templates\layouts\app.php(8): include()
+#1 E:\xampp\mysql\data\portal-bip\modules\kelola-quran-siswa\controllers\QuranSiswaController.php(64): include('E:\\xampp\\mysql\\...')
+#2 C:\Users\BINA INSAN PALU\.gemini\antigravity-ide\brain\929671e0-c53d-4698-8626-2fff89faf0ae\scratch\test_full_render.php(32): QuranSiswaController::index()
+#3 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\templates\partials\header.php on line 9
+[10-Sep-2026 08:20:46 Asia/Makassar] PHP Fatal error:  Uncaught Error: Call to undefined function url() in E:\xampp\mysql\data\portal-bip\modules\kelola-quran-siswa\controllers\QuranSiswaController.php:20
+Stack trace:
+#0 C:\Users\BINA INSAN PALU\.gemini\antigravity-ide\brain\929671e0-c53d-4698-8626-2fff89faf0ae\scratch\test_full_render.php(33): QuranSiswaController::index()
+#1 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\modules\kelola-quran-siswa\controllers\QuranSiswaController.php on line 20
+[10-Sep-2026 08:20:53 Asia/Makassar] PHP Warning:  Undefined array key "REQUEST_URI" in E:\xampp\mysql\data\portal-bip\templates\partials\sidebar.php on line 9
+[10-Sep-2026 08:20:53 Asia/Makassar] PHP Fatal error:  Uncaught Error: Undefined constant "SYS_TAHUN_AKADEMIK_NAME" in E:\xampp\mysql\data\portal-bip\templates\partials\sidebar.php:334
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\templates\layouts\app.php(32): include()
+#1 E:\xampp\mysql\data\portal-bip\modules\kelola-quran-siswa\controllers\QuranSiswaController.php(64): include('E:\\xampp\\mysql\\...')
+#2 C:\Users\BINA INSAN PALU\.gemini\antigravity-ide\brain\929671e0-c53d-4698-8626-2fff89faf0ae\scratch\test_full_render.php(36): QuranSiswaController::index()
+#3 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\templates\partials\sidebar.php on line 334

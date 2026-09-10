@@ -2,6 +2,12 @@
 /**
  * Sidebar Khusus Kelola Kelas
  */
+$sbLogo = '';
+if (defined('SYS_APP_FAVICON') && !empty(SYS_APP_FAVICON)) {
+    $sbLogo = url(ltrim(SYS_APP_FAVICON, '/'));
+} elseif (defined('SYS_APP_LOGO') && !empty(SYS_APP_LOGO)) {
+    $sbLogo = url(ltrim(SYS_APP_LOGO, '/'));
+}
 ?>
 <aside id="sidebar" 
        class="fixed top-0 left-0 z-50 w-[280px] h-screen transition-transform duration-300 ease-in-out -translate-x-full lg:translate-x-0 bg-primary-900 border-r border-primary-800 flex flex-col"
@@ -10,14 +16,20 @@
     <!-- Sidebar Header -->
     <div class="h-16 flex items-center px-6 border-b border-primary-800/50 bg-primary-950/30">
         <div class="flex items-center gap-3">
-            <div class="w-8 h-8 rounded-2xl bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center shadow-lg shadow-primary-500/20">
-                <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Z" />
-                </svg>
-            </div>
-            <div>
-                <h1 class="text-white font-bold text-lg tracking-tight">Kelola Kelas</h1>
-                <p class="text-primary-300 text-xs">Modul Portal BIP</p>
+            <?php if ($sbLogo): ?>
+                <div class="w-9 h-9 rounded-2xl bg-white p-1 flex items-center justify-center shadow-md shadow-black/20 shrink-0">
+                    <img src="<?= $sbLogo ?>" alt="Logo Sekolah" class="max-w-full max-h-full object-contain">
+                </div>
+            <?php else: ?>
+                <div class="w-8 h-8 rounded-2xl bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center shadow-lg shadow-primary-500/20 shrink-0">
+                    <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Z" />
+                    </svg>
+                </div>
+            <?php endif; ?>
+            <div class="min-w-0">
+                <h1 class="text-white font-bold text-lg tracking-tight truncate">Kelola Kelas</h1>
+                <p class="text-primary-300 text-xs truncate">Modul Portal BIP</p>
             </div>
         </div>
         

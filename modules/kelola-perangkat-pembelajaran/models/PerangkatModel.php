@@ -266,7 +266,7 @@ class PerangkatModel
         $where = ['1=1'];
         $params = [];
 
-        if (!empty($filters['tipe'])) {
+        if (!empty($filters['tipe']) && $filters['tipe'] !== 'semua') {
             $where[] = 'p.tipe = ?';
             $params[] = $filters['tipe'];
         }
@@ -282,8 +282,16 @@ class PerangkatModel
         }
 
         if (!empty($filters['status'])) {
-            $where[] = 'p.status = ?';
-            $params[] = $filters['status'];
+            if (is_array($filters['status'])) {
+                $placeholders = implode(',', array_fill(0, count($filters['status']), '?'));
+                $where[] = "p.status IN ($placeholders)";
+                foreach ($filters['status'] as $st) {
+                    $params[] = $st;
+                }
+            } else {
+                $where[] = 'p.status = ?';
+                $params[] = $filters['status'];
+            }
         }
 
         if (!empty($filters['tahun_akademik_id'])) {
@@ -357,7 +365,7 @@ class PerangkatModel
         $where = ['1=1'];
         $params = [];
 
-        if (!empty($filters['tipe'])) {
+        if (!empty($filters['tipe']) && $filters['tipe'] !== 'semua') {
             $where[] = 'p.tipe = ?';
             $params[] = $filters['tipe'];
         }
@@ -373,8 +381,16 @@ class PerangkatModel
         }
 
         if (!empty($filters['status'])) {
-            $where[] = 'p.status = ?';
-            $params[] = $filters['status'];
+            if (is_array($filters['status'])) {
+                $placeholders = implode(',', array_fill(0, count($filters['status']), '?'));
+                $where[] = "p.status IN ($placeholders)";
+                foreach ($filters['status'] as $st) {
+                    $params[] = $st;
+                }
+            } else {
+                $where[] = 'p.status = ?';
+                $params[] = $filters['status'];
+            }
         }
 
         if (!empty($filters['tahun_akademik_id'])) {
@@ -628,7 +644,7 @@ class PerangkatModel
     }
 
     /**
-     * Check if user can approve/reject
+     * Check if user can approve/reject (Controlled via 'perangkat.approve' in Kelola Peran)
      */
     public static function canApprove(): bool
     {
@@ -636,18 +652,14 @@ class PerangkatModel
             return false;
         }
 
-        if (Auth::isSuperAdmin()) return true;
-        
-        $roles = Auth::roles();
-        foreach ($roles as $r) {
-            $rLower = strtolower($r);
-            if (strpos($rLower, 'admin') !== false || 
-                strpos($rLower, 'kepala sekolah') !== false || 
-                strpos($rLower, 'kurikulum') !== false ||
-                strpos($rLower, 'waka') !== false) {
-                return true;
-            }
+        if (Auth::isSuperAdmin()) {
+            return true;
         }
+
+        if (class_exists('RBAC') && RBAC::hasPermission('perangkat.approve')) {
+            return true;
+        }
+        
         return false;
     }
 

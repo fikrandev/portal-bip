@@ -2,6 +2,12 @@
 /**
  * Sidebar Khusus Kelola Siswa - Portal BIP
  */
+$sbLogo = '';
+if (defined('SYS_APP_FAVICON') && !empty(SYS_APP_FAVICON)) {
+    $sbLogo = url(ltrim(SYS_APP_FAVICON, '/'));
+} elseif (defined('SYS_APP_LOGO') && !empty(SYS_APP_LOGO)) {
+    $sbLogo = url(ltrim(SYS_APP_LOGO, '/'));
+}
 ?>
 <aside id="sidebar" 
        class="fixed top-0 left-0 z-50 w-[280px] h-screen transition-transform duration-300 ease-in-out -translate-x-full lg:translate-x-0 bg-primary-900 border-r border-primary-800 flex flex-col"
@@ -10,14 +16,20 @@
     <!-- Sidebar Header -->
     <div class="h-16 flex items-center px-6 border-b border-primary-800/50 bg-primary-950/30">
         <div class="flex items-center gap-3">
-            <div class="w-8 h-8 rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-500/20 text-white font-bold text-sm">
-                <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.438 60.438 0 0 0-.491 6.347A48.62 48.62 0 0 1 12 20.904a48.62 48.62 0 0 1 8.232-4.41 60.46 60.46 0 0 0-.491-6.347m-15.482 0a50.636 50.636 0 0 0-2.658-.813A59.906 59.906 0 0 1 12 3.493a59.903 59.903 0 0 1 10.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.717 50.717 0 0 1 12 13.489a50.702 50.702 0 0 1 7.74-3.342M6.75 15a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v-3.675A55.378 55.378 0 0 1 12 8.443m-7.007 11.55A5.981 5.981 0 0 0 6.75 15.75v-1.5" />
-                </svg>
-            </div>
-            <div>
-                <h1 class="text-white font-bold text-base tracking-tight">Kelola Siswa</h1>
-                <p class="text-primary-300 text-[11px]">Dapodik & Database BIP</p>
+            <?php if ($sbLogo): ?>
+                <div class="w-9 h-9 rounded-2xl bg-white p-1 flex items-center justify-center shadow-md shadow-black/20 shrink-0">
+                    <img src="<?= $sbLogo ?>" alt="Logo Sekolah" class="max-w-full max-h-full object-contain">
+                </div>
+            <?php else: ?>
+                <div class="w-8 h-8 rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-500/20 text-white font-bold text-sm shrink-0">
+                    <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.438 60.438 0 0 0-.491 6.347A48.62 48.62 0 0 1 12 20.904a48.62 48.62 0 0 1 8.232-4.41 60.46 60.46 0 0 0-.491-6.347m-15.482 0a50.636 50.636 0 0 0-2.658-.813A59.906 59.906 0 0 1 12 3.493a59.903 59.903 0 0 1 10.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.717 50.717 0 0 1 12 13.489a50.702 50.702 0 0 1 7.74-3.342M6.75 15a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v-3.675A55.378 55.378 0 0 1 12 8.443m-7.007 11.55A5.981 5.981 0 0 0 6.75 15.75v-1.5" />
+                    </svg>
+                </div>
+            <?php endif; ?>
+            <div class="min-w-0">
+                <h1 class="text-white font-bold text-base tracking-tight truncate">Kelola Siswa</h1>
+                <p class="text-primary-300 text-[11px] truncate">Dapodik & Database BIP</p>
             </div>
         </div>
         

@@ -1,19 +1,24 @@
 <?php
 /**
- * Prota - Index View with Unit Filtering & Badges
+ * Prota - Index View with Wadah Grup & Filter Unit
  */
 ?>
 <div class="space-y-6">
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-            <h1 class="text-xl sm:text-2xl font-bold text-slate-800 tracking-tight">Program Tahunan (Prota)</h1>
-            <p class="text-xs sm:text-sm text-slate-500">Pemetaan Capaian Pembelajaran & alokasi waktu tahunan Semester 1 dan 2 per unit</p>
+            <div class="flex items-center gap-2">
+                <span class="px-3 py-1 rounded-xl text-xs font-black bg-indigo-50 text-indigo-700 border border-indigo-200">
+                    Wadah Dokumen Program Tahunan
+                </span>
+            </div>
+            <h1 class="text-xl sm:text-2xl font-bold text-slate-800 tracking-tight mt-1.5">Program Tahunan (Prota)</h1>
+            <p class="text-xs sm:text-sm text-slate-500">Kumpulan Program Tahunan yang dihimpun dari Program Semester (Prosem) Ganjil & Genap per Guru & Mata Pelajaran</p>
         </div>
         <div class="flex items-center gap-3">
-            <a href="<?= url('kelola-perangkat-pembelajaran/prota/create') ?>" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs sm:text-sm shadow-md shadow-indigo-500/20 transition-all">
+            <a href="<?= url('kelola-perangkat-pembelajaran/prota/group/create') ?>" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm shadow-md shadow-indigo-500/20 transition-all">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
-                Buat Prota Baru
+                <span>+ Buat Grup Prota Baru</span>
             </a>
         </div>
     </div>
@@ -61,7 +66,7 @@
             <div>
                 <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Pencarian</label>
                 <div class="flex items-center gap-2">
-                    <input type="text" name="search" value="<?= e($search) ?>" placeholder="Cari mapel / judul Prota..." class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs bg-slate-50 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    <input type="text" name="search" value="<?= e($search) ?>" placeholder="Cari judul wadah Prota..." class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs bg-slate-50 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
                     <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-xs transition-colors">
                         Cari
                     </button>
@@ -70,90 +75,79 @@
         </form>
     </div>
 
-    <!-- Data Table -->
+    <!-- Data Table Card -->
     <div class="bg-white rounded-3xl border border-slate-200/80 shadow-sm overflow-hidden">
         <div class="overflow-x-auto">
-            <table class="w-full text-left text-xs">
-                <thead>
-                    <tr class="bg-slate-50 text-slate-500 uppercase tracking-wider text-[10px] border-b border-slate-200">
-                        <th class="py-3.5 px-4 font-bold">Unit</th>
-                        <th class="py-3.5 px-4 font-bold">Judul & Mata Pelajaran</th>
-                        <th class="py-3.5 px-4 font-bold">Tingkat / Fase</th>
-                        <th class="py-3.5 px-4 font-bold">Total Alokasi JP</th>
-                        <th class="py-3.5 px-4 font-bold">Penyusun / Guru</th>
-                        <th class="py-3.5 px-4 font-bold">Status</th>
-                        <th class="py-3.5 px-4 font-bold text-right">Aksi</th>
+            <table class="w-full text-left text-xs border-collapse">
+                <thead class="bg-slate-50/80 text-slate-600 font-bold border-b border-slate-200/80">
+                    <tr>
+                        <th class="py-3.5 px-4 w-12 text-center">No</th>
+                        <th class="py-3.5 px-4">Unit Sekolah</th>
+                        <th class="py-3.5 px-4">Judul Dokumen / Wadah</th>
+                        <th class="py-3.5 px-4">Tahun Ajaran</th>
+                        <th class="py-3.5 px-4 text-center">Isi Dokumen Prota</th>
+                        <th class="py-3.5 px-4 text-center">Status</th>
+                        <th class="py-3.5 px-4 text-right">Aksi</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
                     <?php if (empty($items)): ?>
                         <tr>
                             <td colspan="7" class="py-12 text-center text-slate-400">
-                                <div class="flex flex-col items-center justify-center gap-2">
-                                    <span class="text-3xl">📑</span>
-                                    <p class="text-sm font-semibold text-slate-600">Belum ada data Program Tahunan (Prota) <?= !empty($filter_unit) ? "untuk Unit {$filter_unit}" : '' ?></p>
-                                    <p class="text-xs text-slate-400">Klik tombol "Buat Prota Baru" di atas untuk menambahkan data.</p>
+                                <div class="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center mx-auto mb-2 text-indigo-400">
+                                    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" /></svg>
                                 </div>
+                                Belum ada data Grup Program Tahunan (Prota) <?= !empty($filter_unit) ? "untuk Unit {$filter_unit}" : '' ?>.<br>
+                                <span class="text-xs text-indigo-600 font-semibold">Klik "+ Buat Grup Prota Baru" untuk membuat wadah dan menyusun dari Program Semester.</span>
                             </td>
                         </tr>
                     <?php else: ?>
-                        <?php foreach ($items as $row): ?>
+                        <?php foreach ($items as $idx => $row): ?>
                             <?php
                             $rowUnit = $row['unit'] ?? 'SD';
                             $uBadge = $unit_list[$rowUnit]['badge'] ?? 'bg-slate-100 text-slate-700 border-slate-300';
                             $uIcon = $unit_list[$rowUnit]['icon'] ?? '🏫';
-
-                            $statusBadge = [
-                                'draft' => ['label' => 'Draft', 'class' => 'bg-slate-100 text-slate-600 border-slate-200'],
-                                'diajukan' => ['label' => 'Menunggu Review', 'class' => 'bg-amber-100 text-amber-800 border-amber-300'],
-                                'disetujui' => ['label' => 'Disetujui', 'class' => 'bg-emerald-100 text-emerald-800 border-emerald-300'],
-                                'ditolak' => ['label' => 'Perlu Revisi', 'class' => 'bg-rose-100 text-rose-800 border-rose-300']
-                            ][$row['status']] ?? ['label' => ucfirst($row['status']), 'class' => 'bg-slate-100 text-slate-700 border-slate-200'];
                             ?>
-                            <tr class="hover:bg-slate-50/70 transition-colors">
-                                <td class="py-3.5 px-4 whitespace-nowrap">
+                            <tr class="hover:bg-indigo-50/20 transition-colors">
+                                <td class="py-3.5 px-4 text-center font-bold text-slate-400">
+                                    <?= ($page - 1) * 15 + ($idx + 1) ?>
+                                </td>
+                                <td class="py-3.5 px-4">
                                     <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-bold border <?= $uBadge ?>">
                                         <span><?= $uIcon ?></span>
-                                        <span><?= e($rowUnit) ?></span>
+                                        <span>Unit <?= e($rowUnit) ?></span>
                                     </span>
                                 </td>
                                 <td class="py-3.5 px-4">
-                                    <div class="font-bold text-slate-800"><?= e($row['judul']) ?></div>
-                                    <div class="text-[11px] text-indigo-700 font-bold"><?= e($row['mata_pelajaran']) ?></div>
-                                </td>
-                                <td class="py-3.5 px-4 whitespace-nowrap">
-                                    <div class="font-semibold text-slate-800"><?= e($row['tingkat_kelas']) ?></div>
-                                    <div class="text-[10px] text-slate-400"><?= !empty($row['fase']) ? 'Fase ' . e($row['fase']) : '1 Tahun Penuh' ?></div>
-                                </td>
-                                <td class="py-3.5 px-4 whitespace-nowrap">
-                                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-indigo-50 text-indigo-800 font-extrabold text-xs">
-                                        <?= e($row['alokasi_waktu'] ?? '0 JP') ?>
-                                    </span>
+                                    <div class="font-bold text-slate-900 leading-snug">
+                                        <a href="<?= url("kelola-perangkat-pembelajaran/prota/group/{$row['id']}") ?>" class="hover:text-indigo-600 transition-colors">
+                                            <?= e($row['judul'] ?: 'Kumpulan Program Tahunan') ?>
+                                        </a>
+                                    </div>
+                                    <div class="text-[11px] font-semibold text-slate-400 mt-0.5">
+                                        Wadah Dokumen Program Tahunan (Prota)
+                                    </div>
                                 </td>
                                 <td class="py-3.5 px-4">
-                                    <div class="font-semibold text-slate-700"><?= e($row['guru_nama']) ?></div>
-                                    <div class="text-[10px] text-slate-400"><?= !empty($row['guru_nip']) ? 'NIP: ' . e($row['guru_nip']) : 'Staff/Guru' ?></div>
+                                    <div class="font-bold text-slate-800"><?= e($row['nama_tahun']) ?></div>
+                                    <div class="text-[11px] text-slate-500">1 Tahun Ajaran Penuh (Smt 1 & 2)</div>
                                 </td>
-                                <td class="py-3.5 px-4 whitespace-nowrap">
-                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border <?= $statusBadge['class'] ?>">
-                                        <span class="w-1.5 h-1.5 rounded-full <?= $row['status'] === 'disetujui' ? 'bg-emerald-500' : ($row['status'] === 'diajukan' ? 'bg-amber-500' : ($row['status'] === 'ditolak' ? 'bg-rose-500' : 'bg-slate-400')) ?>"></span>
-                                        <?= $statusBadge['label'] ?>
+                                <td class="py-3.5 px-4 text-center">
+                                    <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                        <?= (int)($row['doc_count'] ?? 0) ?> Dokumen Prota
                                     </span>
                                 </td>
-                                <td class="py-3.5 px-4 text-right whitespace-nowrap">
+                                <td class="py-3.5 px-4 text-center">
+                                    <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-700">Wadah Dokumen</span>
+                                </td>
+                                <td class="py-3.5 px-4 text-right">
                                     <div class="flex items-center justify-end gap-1.5">
-                                        <a href="<?= url("kelola-perangkat-pembelajaran/prota/detail/{$row['id']}") ?>" class="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors" title="Lihat Detail">
-                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg>
+                                        <a href="<?= url("kelola-perangkat-pembelajaran/prota/group/{$row['id']}") ?>" title="Buka Grup" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold transition-colors">
+                                            Buka <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" /></svg>
                                         </a>
-                                        <a href="<?= url("kelola-perangkat-pembelajaran/prota/edit/{$row['id']}") ?>" class="p-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 transition-colors" title="Edit Prota">
-                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" /></svg>
-                                        </a>
-                                        <a href="<?= url("kelola-perangkat-pembelajaran/prota/cetak/{$row['id']}") ?>" target="_blank" class="p-1.5 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-700 transition-colors" title="Cetak Dokumen">
-                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0 1 10.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0 .229 2.523a1.125 1.125 0 0 1-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0 0 21 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 0 0-1.913-.247M6.34 18H5.25A2.25 2.25 0 0 1 3 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 0 1 1.913-.247m10.5 0a48.536 48.536 0 0 0-10.5 0m10.5 0V3.75A2.25 2.25 0 0 0 16.5 1.5h-9A2.25 2.25 0 0 0 5.25 3.75v3.536m10.5 0A22.5 22.5 0 0 0 12 7.5a22.5 22.5 0 0 0-3.75-.214" /></svg>
-                                        </a>
-                                        <form method="POST" action="<?= url("kelola-perangkat-pembelajaran/delete/{$row['id']}") ?>" onsubmit="return confirm('Apakah Anda yakin ingin menghapus dokumen Prota ini?');" class="inline">
+                                        <form method="POST" action="<?= url("kelola-perangkat-pembelajaran/prota/group/delete/{$row['id']}") ?>" onsubmit="return confirm('Hapus wadah grup ini beserta seluruh dokumen Program Tahunan di dalamnya?');" class="inline">
                                             <?= CSRF::field() ?>
-                                            <button type="submit" class="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 transition-colors" title="Hapus Dokumen">
+                                            <button type="submit" title="Hapus Grup" class="p-1.5 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-700 transition-colors">
                                                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg>
                                             </button>
                                         </form>

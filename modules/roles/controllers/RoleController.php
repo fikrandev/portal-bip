@@ -26,7 +26,7 @@ class RoleController
         $pageTitle = 'Tambah Peran';
         $breadcrumbs = [['label' => 'Kelola Peran', 'url' => url('roles')], ['label' => 'Tambah']];
         $db = Database::getInstance();
-        $permissions = $db->findAll("SELECT p.*, m.name as module_name FROM permissions p LEFT JOIN modules m ON p.module_id = m.id ORDER BY m.sort_order, p.id");
+        $permissions = $db->findAll("SELECT p.*, m.name as module_name, m.slug as module_slug, m.icon_svg, m.color FROM permissions p LEFT JOIN modules m ON p.module_id = m.id ORDER BY m.sort_order, m.id, p.id");
         
         ob_start();
         include MODULES_PATH . '/roles/views/create.php';
@@ -55,6 +55,7 @@ class RoleController
                     $db->insert('role_permissions', ['role_id' => $roleId, 'permission_id' => $permId]);
                 }
             }
+            RBAC::clearCache();
             $db->commit();
             Response::withSuccess(url('roles'), 'Peran berhasil ditambahkan.');
         } catch (Exception $e) {
@@ -69,9 +70,9 @@ class RoleController
         $role = $db->find("SELECT * FROM roles WHERE id = ?", [$id]);
         if (!$role) { Response::withError(url('roles'), 'Peran tidak ditemukan.'); return; }
         
-        $pageTitle = 'Edit Peran';
+        $pageTitle = 'Edit Peran: ' . $role['name'];
         $breadcrumbs = [['label' => 'Kelola Peran', 'url' => url('roles')], ['label' => 'Edit']];
-        $permissions = $db->findAll("SELECT p.*, m.name as module_name FROM permissions p LEFT JOIN modules m ON p.module_id = m.id ORDER BY m.sort_order, p.id");
+        $permissions = $db->findAll("SELECT p.*, m.name as module_name, m.slug as module_slug, m.icon_svg, m.color FROM permissions p LEFT JOIN modules m ON p.module_id = m.id ORDER BY m.sort_order, m.id, p.id");
         $rolePermIds = array_column($db->findAll("SELECT permission_id FROM role_permissions WHERE role_id = ?", [$id]), 'permission_id');
         
         ob_start();

@@ -1,179 +1,480 @@
 <?php
 /**
- * RPP / Modul Ajar - Cetak / Print View Layout (Standard Kemendikbud)
+ * Cetak Dokumen RPP / Modul Ajar (JSIT SDIT Bina Insan Palu)
+ * Layout: Portrait A4 Sesuai 100% Format Standar Sekolah
  */
-$profilPancasila = $konten['profil_pancasila'] ?? [];
+$konten = !empty($item['konten_json']) ? json_decode($item['konten_json'], true) : [];
+$kktpRows = $konten['kktp_rows'] ?? [];
+$tahunAjaran = $item['nama_tahun'] ?? '2025/2026';
+$semesterLabel = ($item['semester'] === 'Ganjil') ? 'I (Ganjil)' : 'II (Genap)';
 ?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cetak Modul Ajar / RPP - <?= e($item['judul']) ?></title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <title>RPP - <?= e($item['mata_pelajaran']) ?> - <?= e($item['tingkat_kelas']) ?></title>
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        @page {
+            size: A4 portrait;
+            margin: 10mm 12mm 12mm 12mm;
+        }
+        * {
+            box-sizing: border-box;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+        body {
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 11pt;
+            line-height: 1.35;
+            color: #000;
+            background: #fff;
+            margin: 0;
+            padding: 0;
+        }
+        .rpp-container {
+            width: 100%;
+            max-width: 210mm;
+            margin: 0 auto;
+        }
+        /* Kop Header */
+        .kop-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            text-align: center;
+            padding-bottom: 8px;
+            margin-bottom: 12px;
+            border-bottom: 2.5px solid #000;
+        }
+        .kop-logo {
+            width: 65px;
+            height: auto;
+            object-fit: contain;
+        }
+        .kop-title {
+            text-align: center;
+        }
+        .kop-title h1 {
+            font-size: 13pt;
+            font-weight: bold;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .kop-title h2 {
+            font-size: 12pt;
+            font-weight: bold;
+            margin: 2px 0 0 0;
+            text-transform: uppercase;
+        }
+        .kop-title h3 {
+            font-size: 11pt;
+            font-weight: bold;
+            margin: 2px 0 0 0;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+            font-size: 10.5pt;
+        }
+        table.bordered, table.bordered th, table.bordered td {
+            border: 1px solid #000;
+        }
+        table.identitas-table td {
+            padding: 3px 6px;
+            vertical-align: top;
+        }
+        .bg-yellow {
+            background-color: #ffff00 !important;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .bg-yellow-header {
+            background-color: #ffff00 !important;
+            font-weight: bold;
+            padding: 4px 8px;
+            border: 1px solid #000;
+            text-align: center;
+            font-size: 10.5pt;
+        }
+        .table-cell-pad {
+            padding: 5px 8px;
+            vertical-align: top;
+        }
+        .text-center { text-align: center; }
+        .text-bold { font-weight: bold; }
+        
+        /* Floating print button for browser preview */
         @media print {
             .no-print { display: none !important; }
-            body { background: white !important; font-size: 11pt; color: #000; }
-            .print-page { padding: 0 !important; margin: 0 !important; max-width: 100% !important; border: none !important; }
-            @page { size: A4 portrait; margin: 1.5cm; }
+            body { padding: 0; }
+        }
+        @media screen {
+            body {
+                background: #e2e8f0;
+                padding: 20px;
+            }
+            .rpp-container {
+                background: #fff;
+                padding: 20mm 15mm;
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+                border-radius: 4px;
+            }
+            .print-btn-bar {
+                position: fixed;
+                top: 15px;
+                right: 20px;
+                z-index: 999;
+                display: flex;
+                gap: 10px;
+            }
+            .print-btn {
+                background: #0d9488;
+                color: #fff;
+                padding: 10px 18px;
+                border: none;
+                border-radius: 8px;
+                font-weight: bold;
+                font-size: 13px;
+                cursor: pointer;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+            }
+            .print-btn:hover { background: #0f766e; }
         }
     </style>
 </head>
-<body class="bg-slate-100 min-h-screen p-4 sm:p-8">
+<body>
 
-    <!-- Print Action Bar -->
-    <div class="no-print max-w-4xl mx-auto mb-6 flex items-center justify-between bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
-        <div class="flex items-center gap-2">
-            <span class="text-sm font-bold text-slate-800">Pratinjau Cetak Modul Ajar / RPP</span>
-        </div>
-        <div class="flex items-center gap-2">
-            <button onclick="window.close()" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs">
-                Tutup
-            </button>
-            <button onclick="window.print()" class="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-md shadow-rose-600/20 flex items-center gap-1.5">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0 1 10.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0 .229 2.523a1.125 1.125 0 0 1-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0 0 21 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 0 0-1.913-.247M6.34 18H5.25A2.25 2.25 0 0 1 3 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 0 1 1.913-.247m10.5 0a48.536 48.536 0 0 0-10.5 0m10.5 0V3.75A2.25 2.25 0 0 0 16.5 1.5h-9A2.25 2.25 0 0 0 5.25 3.75v3.536m10.5 0A22.5 22.5 0 0 0 12 7.5a22.5 22.5 0 0 0-3.75-.214" /></svg>
-                Cetak Sekarang (Print)
-            </button>
-        </div>
+    <div class="no-print print-btn-bar">
+        <button class="print-btn" onclick="window.print()">🖨️ Cetak / Simpan PDF (A4 Portrait)</button>
+        <button class="print-btn" style="background:#475569;" onclick="window.close()">Tutup</button>
     </div>
 
-    <!-- Printable Paper Layout -->
-    <div class="print-page max-w-4xl mx-auto bg-white p-8 sm:p-12 rounded-3xl shadow-xl border border-slate-200/60 text-black">
+    <div class="rpp-container">
         
-        <!-- Header / Kop Dokumen -->
-        <div class="text-center border-b-2 border-black pb-4 mb-6">
-            <h2 class="text-lg font-extrabold uppercase tracking-wide"><?= e(SYS_APP_NAME) ?></h2>
-            <h1 class="text-xl font-bold uppercase tracking-wider mt-1">RENCANA PELAKSANAAN PEMBELAJARAN (MODUL AJAR)</h1>
-            <p class="text-xs text-slate-600 mt-0.5">TAHUN AJARAN <?= strtoupper(e($item['nama_tahun'])) ?> • SEMESTER <?= strtoupper(e($item['semester'])) ?></p>
+        <!-- KOP SEKOLAH (dari Pengaturan Sistem) -->
+        <?php
+        $namaSekolah = $unitProfile['nama_lembaga'] ?? 'SD ISLAM TERPADU BINA INSAN PALU';
+        $logoSekolah = !empty($unitProfile['logo_url']) ? url($unitProfile['logo_url']) : url('public/assets/images/logo.png');
+        ?>
+        <div class="kop-header">
+            <img src="<?= $logoSekolah ?>" alt="Logo Sekolah" class="kop-logo" onerror="this.style.display='none'">
+            <div class="kop-title">
+                <h1><?= e($namaSekolah) ?></h1>
+                <h2>RENCANA PELAKSANAAN PEMBELAJARAN</h2>
+                <h3>Tahun Ajaran <?= e($tahunAjaran) ?> <?= e($item['semester'] ?? '') ?></h3>
+            </div>
         </div>
 
-        <!-- I. INFORMASI UMUM -->
-        <div class="mb-6">
-            <h2 class="font-bold uppercase text-xs border-b border-black pb-1 mb-3">I. INFORMASI UMUM</h2>
-            <table class="w-full text-xs">
+        <!-- IDENTITAS MODUL TABLE (Exact Match Image 1) -->
+        <table class="bordered identitas-table">
+            <tr>
+                <td style="width: 22%; font-weight: bold;">Nama Guru Mapel</td>
+                <td style="width: 28%;"><?= e($item['guru_nama'] ?: 'Widya Ningrum, S.Pd') ?></td>
+                <td style="width: 22%; font-weight: bold;">Model Pembelajaran</td>
+                <td style="width: 28%;"><?= e($konten['model_pembelajaran'] ?? 'Problem Based Learning') ?></td>
+            </tr>
+            <tr>
+                <td style="font-weight: bold;">Mata Pelajaran</td>
+                <td><?= e($item['mata_pelajaran'] ?: 'IPAS') ?></td>
+                <td style="font-weight: bold;">Alokasi Waktu</td>
+                <td><?= e($item['alokasi_waktu'] ?: '2 x 35 Menit (Pertemuan 1)') ?></td>
+            </tr>
+            <tr>
+                <td style="font-weight: bold;">Semester</td>
+                <td><?= e($semesterLabel) ?></td>
+                <td style="font-weight: bold;">Waktu Pelaksanaan</td>
+                <td><?= e($konten['waktu_pelaksanaan'] ?? '22 - 25 Juli 2025') ?></td>
+            </tr>
+            <tr>
+                <td style="font-weight: bold;">Fase</td>
+                <td><?= e($item['fase'] ?: 'B') ?></td>
+                <td style="font-weight: bold;">Kelas (Rombel)</td>
+                <td><?= e($item['tingkat_kelas'] ?: 'III (Tiga) Abdurrahman') ?></td>
+            </tr>
+        </table>
+
+        <!-- CAPAIAN PEMBELAJARAN (CP) -->
+        <table class="bordered">
+            <tr>
+                <td class="bg-yellow-header">Capaian Pembelajaran (CP)</td>
+            </tr>
+            <tr>
+                <td class="table-cell-pad" style="text-align: justify;">
+                    <?= nl2br(e($konten['cp_text'] ?? ($konten['cp'] ?? 'Peserta didik memahami konsep materi dan mengidentifikasi keterkaitannya dalam kehidupan sehari-hari.'))) ?>
+                </td>
+            </tr>
+        </table>
+
+        <!-- TUJUAN PEMBELAJARAN (3 RANAH WITH YELLOW HEADERS) -->
+        <table class="bordered">
+            <tr>
+                <td colspan="2" class="bg-yellow-header">Tujuan Pembelajaran</td>
+            </tr>
+            <tr>
+                <td class="bg-yellow table-cell-pad text-center" style="width: 22%; vertical-align: middle;">Attitude/Sikap</td>
+                <td class="table-cell-pad"><?= nl2br(e($konten['tp_attitude'] ?? '-')) ?></td>
+            </tr>
+            <tr>
+                <td class="bg-yellow table-cell-pad text-center" style="vertical-align: middle;">Skill/Keterampilan</td>
+                <td class="table-cell-pad"><?= nl2br(e($konten['tp_skill'] ?? '-')) ?></td>
+            </tr>
+            <tr>
+                <td class="bg-yellow table-cell-pad text-center" style="vertical-align: middle;">Knowledge/Pengetahuan</td>
+                <td class="table-cell-pad"><?= nl2br(e($konten['tp_knowledge'] ?? ($konten['tujuan_pembelajaran'] ?? '-'))) ?></td>
+            </tr>
+        </table>
+
+        <!-- KATA KUNCI & PERTANYAAN PEMANTIK -->
+        <table class="bordered">
+            <tr>
+                <td class="bg-yellow-header" style="width: 50%;">Kata Kunci / Konten</td>
+                <td class="bg-yellow-header" style="width: 50%;">Pertanyaan Pemantik</td>
+            </tr>
+            <tr>
+                <td class="table-cell-pad"><?= e($konten['kata_kunci'] ?? '-') ?></td>
+                <td class="table-cell-pad"><?= nl2br(e($konten['pertanyaan_pemantik'] ?? '-')) ?></td>
+            </tr>
+        </table>
+
+        <!-- PENGETAHUAN PENDUKUNG & ASESMEN DIAGNOSIS KOGNITIF -->
+        <table class="bordered">
+            <tr>
+                <td class="bg-yellow-header" style="width: 50%;">Pengetahuan Pendukung</td>
+                <td class="bg-yellow-header" style="width: 50%;">Asesmen Diagnosis Kognitif</td>
+            </tr>
+            <tr>
+                <td class="table-cell-pad"><?= nl2br(e($konten['pengetahuan_pendukung'] ?? '-')) ?></td>
+                <td class="table-cell-pad"><?= nl2br(e($konten['asesmen_diagnosis'] ?? ($konten['asesmen_diagnostik'] ?? '-'))) ?></td>
+            </tr>
+        </table>
+
+        <!-- KKTP (KRITERIA KETERCAPAIAN TUJUAN PEMBELAJARAN) -->
+        <table class="bordered">
+            <tr>
+                <td colspan="3" class="bg-yellow-header">Kriteria Ketercapaian Tujuan Pembelajaran (KKTP)</td>
+            </tr>
+            <tr class="bg-yellow text-center" style="font-size: 10pt;">
+                <th style="width: 8%; padding: 4px;">No</th>
+                <th style="width: 62%; padding: 4px;">KKTP</th>
+                <th style="width: 30%; padding: 4px;">Waktu Pelaksanaan</th>
+            </tr>
+            <?php if (empty($kktpRows)): ?>
                 <tr>
-                    <td class="py-1 w-44 font-semibold">Nama Penyusun / Guru</td>
-                    <td class="py-1">: <?= e($item['guru_nama']) ?> <?= !empty($item['guru_nip']) ? '(NIP. ' . e($item['guru_nip']) . ')' : '' ?></td>
+                    <td class="text-center">1</td>
+                    <td class="table-cell-pad">Peserta didik mampu menguasai indikator pembelajaran topik ini.</td>
+                    <td class="table-cell-pad text-center">Pertemuan 1</td>
                 </tr>
+            <?php else: ?>
+                <?php foreach ($kktpRows as $rIdx => $kr): ?>
+                    <tr>
+                        <td class="text-center"><?= $rIdx + 1 ?></td>
+                        <td class="table-cell-pad"><?= e($kr['indikator'] ?? ($kr['kktp'] ?? '-')) ?></td>
+                        <td class="table-cell-pad text-center"><?= e($kr['waktu'] ?? ($kr['pekan'] ?? '-')) ?></td>
+                    </tr>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </table>
+
+        <!-- MEDIA, SARANA, METODE & SUMBER BELAJAR -->
+        <table class="bordered">
+            <tr>
+                <td class="bg-yellow-header" style="width: 25%;">Media</td>
+                <td class="bg-yellow-header" style="width: 25%;">Sarana</td>
+                <td class="bg-yellow-header" style="width: 25%;">Metode</td>
+                <td class="bg-yellow-header" style="width: 25%;">Sumber Belajar</td>
+            </tr>
+            <tr>
+                <td class="table-cell-pad"><?= nl2br(e($konten['media'] ?? 'PPT Interaktif, Video Pembelajaran, LKPD')) ?></td>
+                <td class="table-cell-pad"><?= nl2br(e($konten['sarana'] ?? ($konten['sarana_prasarana'] ?? 'LCD Proyektor, Laptop, Papan Tulis'))) ?></td>
+                <td class="table-cell-pad"><?= nl2br(e($konten['metode'] ?? 'Diskusi, Pengamatan, Tanya Jawab')) ?></td>
+                <td class="table-cell-pad"><?= nl2br(e($konten['sumber_belajar'] ?? 'Buku Siswa Kemendikbud, Modul JSIT')) ?></td>
+            </tr>
+        </table>
+
+        <!-- PELAKSANAAN PEMBELAJARAN PENDEKATAN TERPADU (JSIT FORMAT) -->
+        <table class="bordered">
+            <tr>
+                <td colspan="3" class="bg-yellow-header">Pelaksanaan Pembelajaran Pendekatan TERPADU</td>
+            </tr>
+            <tr class="bg-yellow text-center" style="font-size: 10pt;">
+                <th style="width: 8%; padding: 4px;">No</th>
+                <th style="width: 28%; padding: 4px;">Tahap / Kegiatan</th>
+                <th style="width: 64%; padding: 4px;">Deskripsi Kegiatan</th>
+            </tr>
+            <!-- Opener -->
+            <tr>
+                <td class="text-center">1</td>
+                <td class="table-cell-pad text-bold">Pembukaan (Opener)<br><small style="font-weight:normal;"><?= e($konten['opener_waktu'] ?? '10 Menit') ?></small></td>
+                <td class="table-cell-pad"><?= nl2br(e($konten['opener_kegiatan'] ?? ($konten['kegiatan_pendahuluan'] ?? '-'))) ?></td>
+            </tr>
+            <!-- Telaah -->
+            <tr>
+                <td class="text-center">2</td>
+                <td class="table-cell-pad text-bold">Telaah<br><small style="font-weight:normal;"><?= e($konten['telaah_waktu'] ?? '20 Menit') ?></small></td>
+                <td class="table-cell-pad"><?= nl2br(e($konten['telaah_kegiatan'] ?? '-')) ?></td>
+            </tr>
+            <!-- Eksplorasi -->
+            <tr>
+                <td class="text-center">3</td>
+                <td class="table-cell-pad text-bold">Eksplorasi<br><small style="font-weight:normal;"><?= e($konten['eksplorasi_waktu'] ?? '20 Menit') ?></small></td>
+                <td class="table-cell-pad"><?= nl2br(e($konten['eksplorasi_kegiatan'] ?? '-')) ?></td>
+            </tr>
+            <!-- Rumuskan -->
+            <tr>
+                <td class="text-center">4</td>
+                <td class="table-cell-pad text-bold">Rumuskan<br><small style="font-weight:normal;"><?= e($konten['rumuskan_waktu'] ?? '20 Menit') ?></small></td>
+                <td class="table-cell-pad"><?= nl2br(e($konten['rumuskan_kegiatan'] ?? '-')) ?></td>
+            </tr>
+            <!-- Presentasikan -->
+            <tr>
+                <td class="text-center">5</td>
+                <td class="table-cell-pad text-bold">Presentasikan<br><small style="font-weight:normal;"><?= e($konten['presentasikan_waktu'] ?? '20 Menit') ?></small></td>
+                <td class="table-cell-pad"><?= nl2br(e($konten['presentasikan_kegiatan'] ?? '-')) ?></td>
+            </tr>
+            <!-- Aplikasikan -->
+            <tr>
+                <td class="text-center">6</td>
+                <td class="table-cell-pad text-bold">Aplikasikan<br><small style="font-weight:normal;"><?= e($konten['aplikasikan_waktu'] ?? '10 Menit') ?></small></td>
+                <td class="table-cell-pad"><?= nl2br(e($konten['aplikasikan_kegiatan'] ?? '-')) ?></td>
+            </tr>
+            <!-- Kaitkan & Simpulkan -->
+            <tr>
+                <td class="text-center">7</td>
+                <td class="table-cell-pad text-bold">Kaitkan dan Simpulkan<br><small style="font-weight:normal;"><?= e($konten['kaitkan_waktu'] ?? '2 Menit') ?></small></td>
+                <td class="table-cell-pad"><?= nl2br(e($konten['kaitkan_kegiatan'] ?? '-')) ?></td>
+            </tr>
+            <!-- Duniawi -->
+            <tr>
+                <td class="text-center">8</td>
+                <td class="table-cell-pad text-bold">Duniawi<br><small style="font-weight:normal;"><?= e($konten['duniawi_waktu'] ?? '2 Menit') ?></small></td>
+                <td class="table-cell-pad"><?= nl2br(e($konten['duniawi_kegiatan'] ?? '-')) ?></td>
+            </tr>
+            <!-- Ukhrowi -->
+            <tr>
+                <td class="text-center">9</td>
+                <td class="table-cell-pad text-bold">Ukhrowi<br><small style="font-weight:normal;"><?= e($konten['ukhrowi_waktu'] ?? '3 Menit') ?></small></td>
+                <td class="table-cell-pad"><?= nl2br(e($konten['ukhrowi_kegiatan'] ?? '-')) ?></td>
+            </tr>
+            <!-- Closure -->
+            <tr>
+                <td class="text-center" rowspan="2">10</td>
+                <td class="table-cell-pad text-bold">Closure: Refleksi<br><small style="font-weight:normal;"><?= e($konten['refleksi_waktu'] ?? '2 Menit') ?></small></td>
+                <td class="table-cell-pad"><?= nl2br(e($konten['refleksi_kegiatan'] ?? '-')) ?></td>
+            </tr>
+            <tr>
+                <td class="table-cell-pad text-bold">Closure: Kegiatan Penutup<br><small style="font-weight:normal;"><?= e($konten['penutup_waktu'] ?? '2 Menit') ?></small></td>
+                <td class="table-cell-pad"><?= nl2br(e($konten['penutup_kegiatan'] ?? ($konten['kegiatan_penutup'] ?? '-'))) ?></td>
+            </tr>
+        </table>
+
+        <!-- PENILAIAN TERPADU -->
+        <table class="bordered">
+            <tr>
+                <td colspan="5" class="bg-yellow-header">Penilaian Terpadu</td>
+            </tr>
+            <tr class="bg-yellow text-center" style="font-size: 10pt;">
+                <th style="width: 18%; padding: 4px;">Ranah</th>
+                <th style="width: 26%; padding: 4px;">Tujuan Pembelajaran</th>
+                <th style="width: 18%; padding: 4px;">AfL</th>
+                <th style="width: 18%; padding: 4px;">AaL</th>
+                <th style="width: 20%; padding: 4px;">AoL</th>
+            </tr>
+            <tr>
+                <td class="table-cell-pad text-bold">Attitude / Sikap</td>
+                <td class="table-cell-pad"><?= e($konten['penilaian_sikap_tp'] ?? 'Berakhlak mulia & mandiri') ?></td>
+                <td class="table-cell-pad"><?= e($konten['penilaian_sikap_afl'] ?? ($konten['asesmen_formatif'] ?? 'Observasi')) ?></td>
+                <td class="table-cell-pad"><?= e($konten['penilaian_sikap_aal'] ?? 'Penilaian Diri') ?></td>
+                <td class="table-cell-pad"><?= e($konten['penilaian_sikap_aol'] ?? 'Jurnal Catatan') ?></td>
+            </tr>
+            <tr>
+                <td class="table-cell-pad text-bold">Skill / Keterampilan</td>
+                <td class="table-cell-pad"><?= e($konten['penilaian_skill_tp'] ?? 'Mengomunikasikan hasil kerja') ?></td>
+                <td class="table-cell-pad"><?= e($konten['penilaian_skill_afl'] ?? 'Unjuk Kerja') ?></td>
+                <td class="table-cell-pad"><?= e($konten['penilaian_skill_aal'] ?? 'Checklist Tugas') ?></td>
+                <td class="table-cell-pad"><?= e($konten['penilaian_skill_aol'] ?? 'Rubrik LKPD') ?></td>
+            </tr>
+            <tr>
+                <td class="table-cell-pad text-bold">Knowledge / Pengetahuan</td>
+                <td class="table-cell-pad"><?= e($konten['penilaian_knowledge_tp'] ?? 'Memahami konsep materi') ?></td>
+                <td class="table-cell-pad"><?= e($konten['penilaian_knowledge_afl'] ?? 'Tanya Jawab') ?></td>
+                <td class="table-cell-pad"><?= e($konten['penilaian_knowledge_aal'] ?? 'Kuis Mandiri') ?></td>
+                <td class="table-cell-pad"><?= e($konten['penilaian_knowledge_aol'] ?? ($konten['asesmen_sumatif'] ?? 'Tes Tertulis')) ?></td>
+            </tr>
+        </table>
+
+        <!-- PENERAPAN INTROFLEX -->
+        <table class="bordered">
+            <tr>
+                <td colspan="4" class="bg-yellow-header">Penerapan INTROFLEX</td>
+            </tr>
+            <tr class="bg-yellow text-center" style="font-size: 10pt;">
+                <th style="width: 25%; padding: 4px;">Individualisasi</th>
+                <th style="width: 25%; padding: 4px;">Interaksi</th>
+                <th style="width: 25%; padding: 4px;">Observasi</th>
+                <th style="width: 25%; padding: 4px;">Refleksi</th>
+            </tr>
+            <tr>
+                <td class="table-cell-pad"><?= nl2br(e($konten['introflex_individualisasi'] ?? 'Menyapa siswa menyebut nama dan bimbingan sesuai kebutuhan.')) ?></td>
+                <td class="table-cell-pad"><?= nl2br(e($konten['introflex_interaksi'] ?? 'Membangun diskusi aktif dalam kelompok dan kelas.')) ?></td>
+                <td class="table-cell-pad"><?= nl2br(e($konten['introflex_observasi'] ?? 'Mengamati keaktifan dan antusiasme siswa.')) ?></td>
+                <td class="table-cell-pad"><?= nl2br(e($konten['introflex_refleksi'] ?? ($konten['refleksi_guru_siswa'] ?? 'Memberikan umpan balik dan evaluasi pemahaman.'))) ?></td>
+            </tr>
+        </table>
+
+        <!-- TANDA TANGAN PENGESAHAN 3 KOLOM -->
+        <?php
+        // Kepala Sekolah dari Pengaturan Sistem
+        $ksNama = $unitProfile['kepala_sekolah']['nama'] ?? $konten['kepala_sekolah_nama'] ?? 'Kepala Sekolah';
+        $ksNip = $unitProfile['kepala_sekolah']['nip'] ?? $konten['kepala_sekolah_nip'] ?? '';
+        
+        // Pemeriksa = siapa yang approve RPP ini, fallback ke user login sekarang
+        $loggedInUser = (class_exists('Auth') && Auth::name() && Auth::name() !== 'Guest') ? Auth::name() : '';
+        $rawPemeriksa = $konten['pemeriksa_nama'] ?? '';
+        if ($rawPemeriksa === 'Tim Kurikulum SDIT Bina Insan' || $rawPemeriksa === 'Tim Kurikulum') {
+            $rawPemeriksa = '';
+        }
+        $pemeriksaNama = !empty($approverName) ? $approverName : (!empty($rawPemeriksa) ? $rawPemeriksa : (!empty($loggedInUser) ? $loggedInUser : 'Belum Diperiksa'));
+        $pemeriksaNip = $approverNip ?? $konten['pemeriksa_nip'] ?? '';
+        ?>
+        <div style="margin-top: 25px; page-break-inside: avoid;">
+            <table style="border: none; width: 100%; text-align: center; font-size: 10.5pt;">
                 <tr>
-                    <td class="py-1 font-semibold">Mata Pelajaran</td>
-                    <td class="py-1">: <strong><?= e($item['mata_pelajaran']) ?></strong></td>
-                </tr>
-                <tr>
-                    <td class="py-1 font-semibold">Fase / Kelas</td>
-                    <td class="py-1">: <?= !empty($item['fase']) ? 'Fase ' . e($item['fase']) . ' / ' : '' ?><?= e($item['tingkat_kelas']) ?></td>
-                </tr>
-                <tr>
-                    <td class="py-1 font-semibold">Alokasi Waktu / Pertemuan</td>
-                    <td class="py-1">: <?= e($item['alokasi_waktu']) ?> (Pertemuan ke-<?= e($konten['pertemuan_ke'] ?? '1') ?>)</td>
-                </tr>
-                <tr>
-                    <td class="py-1 font-semibold">Model Pembelajaran</td>
-                    <td class="py-1">: <?= e($konten['model_pembelajaran'] ?? 'Problem Based Learning') ?></td>
-                </tr>
-                <tr>
-                    <td class="py-1 font-semibold">Profil Pelajar Pancasila</td>
-                    <td class="py-1">: <?= !empty($profilPancasila) ? implode(', ', $profilPancasila) : '-' ?></td>
-                </tr>
-                <tr>
-                    <td class="py-1 font-semibold">Sarana & Prasarana</td>
-                    <td class="py-1">: <?= e($konten['sarana_prasarana'] ?? '-') ?></td>
+                    <td style="width: 33%; border: none; vertical-align: top;">
+                        Mengetahui,<br>
+                        <strong>Kepala Sekolah</strong>
+                        <div style="height: 60px;"></div>
+                        <strong><u><?= e($ksNama) ?></u></strong><br>
+                        <?php if (!empty($ksNip)): ?>
+                            <span>NIP: <?= e($ksNip) ?></span>
+                        <?php endif; ?>
+                    </td>
+                    <td style="width: 33%; border: none; vertical-align: top;">
+                        Diperiksa oleh,<br>
+                        <strong>Pemeriksa RPP</strong>
+                        <div style="height: 60px;"></div>
+                        <strong><u><?= e($pemeriksaNama) ?></u></strong><br>
+                        <?php if (!empty($pemeriksaNip)): ?>
+                            <span>NIP: <?= e($pemeriksaNip) ?></span>
+                        <?php endif; ?>
+                    </td>
+                    <td style="width: 33%; border: none; vertical-align: top;">
+                        Palu, <?= date('d F Y', strtotime($item['created_at'])) ?><br>
+                        <strong>Guru Mata Pelajaran</strong>
+                        <div style="height: 60px;"></div>
+                        <strong><u><?= e($item['guru_nama'] ?: 'Guru Mapel') ?></u></strong><br>
+                        <?php if (!empty($item['guru_nip'])): ?>
+                            <span>NIP: <?= e($item['guru_nip']) ?></span>
+                        <?php endif; ?>
+                    </td>
                 </tr>
             </table>
-        </div>
-
-        <!-- II. KOMPONEN INTI -->
-        <div class="mb-6 text-xs space-y-3">
-            <h2 class="font-bold uppercase text-xs border-b border-black pb-1 mb-2">II. KOMPONEN INTI</h2>
-            
-            <div>
-                <p class="font-bold">A. Tujuan Pembelajaran (TP):</p>
-                <div class="pl-4 pt-1 whitespace-pre-line leading-relaxed"><?= e($konten['tujuan_pembelajaran'] ?? '-') ?></div>
-            </div>
-
-            <?php if (!empty($konten['pemahaman_bermakna'])): ?>
-                <div>
-                    <p class="font-bold">B. Pemahaman Bermakna:</p>
-                    <div class="pl-4 pt-1 whitespace-pre-line leading-relaxed"><?= e($konten['pemahaman_bermakna']) ?></div>
-                </div>
-            <?php endif; ?>
-
-            <?php if (!empty($konten['pertanyaan_pemantik'])): ?>
-                <div>
-                    <p class="font-bold">C. Pertanyaan Pemantik:</p>
-                    <div class="pl-4 pt-1 whitespace-pre-line leading-relaxed"><?= e($konten['pertanyaan_pemantik']) ?></div>
-                </div>
-            <?php endif; ?>
-        </div>
-
-        <!-- III. KEGIATAN PEMBELAJARAN -->
-        <div class="mb-6 text-xs space-y-3">
-            <h2 class="font-bold uppercase text-xs border-b border-black pb-1 mb-2">III. KEGIATAN PEMBELAJARAN</h2>
-            
-            <div class="border border-black p-3 rounded">
-                <p class="font-bold uppercase mb-1">1. Kegiatan Pendahuluan (<?= e($konten['waktu_pendahuluan'] ?? '15 Menit') ?>)</p>
-                <div class="pl-2 whitespace-pre-line leading-relaxed text-slate-800"><?= e($konten['kegiatan_pendahuluan'] ?? '-') ?></div>
-            </div>
-
-            <div class="border border-black p-3 rounded">
-                <p class="font-bold uppercase mb-1">2. Kegiatan Inti (<?= e($konten['waktu_inti'] ?? '60 Menit') ?>)</p>
-                <div class="pl-2 whitespace-pre-line leading-relaxed text-slate-800"><?= e($konten['kegiatan_inti'] ?? '-') ?></div>
-            </div>
-
-            <div class="border border-black p-3 rounded">
-                <p class="font-bold uppercase mb-1">3. Kegiatan Penutup (<?= e($konten['waktu_penutup'] ?? '15 Menit') ?>)</p>
-                <div class="pl-2 whitespace-pre-line leading-relaxed text-slate-800"><?= e($konten['kegiatan_penutup'] ?? '-') ?></div>
-            </div>
-        </div>
-
-        <!-- IV. ASESMEN & EVALUASI -->
-        <div class="mb-8 text-xs space-y-2">
-            <h2 class="font-bold uppercase text-xs border-b border-black pb-1 mb-2">IV. ASESMEN, REMEDIAL & PENGAYAAN</h2>
-            
-            <table class="w-full border border-black border-collapse">
-                <tr>
-                    <td class="p-2 border border-black font-semibold w-44">Asesmen Formatif</td>
-                    <td class="p-2 border border-black"><?= e($konten['asesmen_formatif'] ?? '-') ?></td>
-                </tr>
-                <tr>
-                    <td class="p-2 border border-black font-semibold">Asesmen Sumatif</td>
-                    <td class="p-2 border border-black"><?= e($konten['asesmen_sumatif'] ?? '-') ?></td>
-                </tr>
-                <tr>
-                    <td class="p-2 border border-black font-semibold">Pengayaan</td>
-                    <td class="p-2 border border-black"><?= e($konten['pengayaan'] ?? '-') ?></td>
-                </tr>
-                <tr>
-                    <td class="p-2 border border-black font-semibold">Remedial</td>
-                    <td class="p-2 border border-black"><?= e($konten['remedial'] ?? '-') ?></td>
-                </tr>
-            </table>
-        </div>
-
-        <!-- Tanda Tangan Pengesahan -->
-        <div class="mt-12 grid grid-cols-2 text-center text-xs break-inside-avoid">
-            <div>
-                <p>Mengetahui,</p>
-                <p class="font-bold">Kepala Sekolah</p>
-                <div class="h-20 flex items-center justify-center">
-                    <?php if ($item['status'] === 'disetujui'): ?>
-                        <span class="text-[10px] text-rose-800 font-bold border border-rose-600/50 bg-rose-50 px-2 py-1 rounded">TERVERIFIKASI SISTEM</span>
-                    <?php endif; ?>
-                </div>
-                <p class="font-bold underline tracking-wide"><?= e($item['approver_name'] ?? '................................................') ?></p>
-                <p class="text-[10px] text-slate-500">NIP. ........................................</p>
-            </div>
-
-            <div>
-                <p>Palu, <?= date('d F Y', strtotime($item['created_at'])) ?></p>
-                <p class="font-bold">Guru Pengampu Mata Pelajaran</p>
-                <div class="h-20"></div>
-                <p class="font-bold underline tracking-wide"><?= e($item['guru_nama']) ?></p>
-                <p class="text-[10px] text-slate-500"><?= !empty($item['guru_nip']) ? 'NIP. ' . e($item['guru_nip']) : 'NIP. ........................................' ?></p>
-            </div>
         </div>
 
     </div>

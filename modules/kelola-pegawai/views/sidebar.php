@@ -2,6 +2,12 @@
 /**
  * Sidebar Khusus Kelola Pegawai
  */
+$sbLogo = '';
+if (defined('SYS_APP_FAVICON') && !empty(SYS_APP_FAVICON)) {
+    $sbLogo = url(ltrim(SYS_APP_FAVICON, '/'));
+} elseif (defined('SYS_APP_LOGO') && !empty(SYS_APP_LOGO)) {
+    $sbLogo = url(ltrim(SYS_APP_LOGO, '/'));
+}
 ?>
 <aside id="sidebar" 
        class="fixed top-0 left-0 z-50 w-[280px] h-screen transition-transform duration-300 ease-in-out -translate-x-full lg:translate-x-0 bg-primary-900 border-r border-primary-800 flex flex-col"
@@ -10,14 +16,20 @@
     <!-- Sidebar Header -->
     <div class="h-16 flex items-center px-6 border-b border-primary-800/50 bg-primary-950/30">
         <div class="flex items-center gap-3">
-            <div class="w-8 h-8 rounded-2xl bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center shadow-lg shadow-primary-500/20">
-                <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
-                </svg>
-            </div>
-            <div>
-                <h1 class="text-white font-bold text-lg tracking-tight">Kelola Pegawai</h1>
-                <p class="text-primary-300 text-xs">Modul Portal BIP</p>
+            <?php if ($sbLogo): ?>
+                <div class="w-9 h-9 rounded-2xl bg-white p-1 flex items-center justify-center shadow-md shadow-black/20 shrink-0">
+                    <img src="<?= $sbLogo ?>" alt="Logo Sekolah" class="max-w-full max-h-full object-contain">
+                </div>
+            <?php else: ?>
+                <div class="w-8 h-8 rounded-2xl bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center shadow-lg shadow-primary-500/20 shrink-0">
+                    <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+                    </svg>
+                </div>
+            <?php endif; ?>
+            <div class="min-w-0">
+                <h1 class="text-white font-bold text-lg tracking-tight truncate">Kelola Pegawai</h1>
+                <p class="text-primary-300 text-xs truncate">Modul Portal BIP</p>
             </div>
         </div>
         
