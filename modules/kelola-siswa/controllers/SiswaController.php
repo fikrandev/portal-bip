@@ -713,21 +713,37 @@ class SiswaController
             return;
         }
 
-        $serverUrl = trim($_POST['dapodik_url'] ?? 'http://36.88.33.154:5774');
-        $token = trim($_POST['dapodik_token'] ?? 'z4sdZbDIem7ao9u');
-        $npsn = trim($_POST['dapodik_npsn'] ?? '69979223');
+        $serverUrl = trim($_POST['dapodik_url'] ?? '');
+        $token = trim($_POST['dapodik_token'] ?? '');
+        $npsn = trim($_POST['dapodik_npsn'] ?? '');
         $taId = intval($_POST['tahun_akademik_id'] ?? 0);
+
+        if (empty($serverUrl) || empty($token) || empty($npsn)) {
+            Response::withError(url('kelola-siswa'), 'URL Server Dapodik, Token Web Service, dan NPSN wajib diisi.');
+            return;
+        }
+
+        // SSRF protection: validate server URL
+        $parsedUrl = parse_url($serverUrl);
+        $scheme = strtolower($parsedUrl['scheme'] ?? '');
+        $host = strtolower($parsedUrl['host'] ?? '');
+        if (!in_array($scheme, ['http', 'https'], true) || empty($host)) {
+            Response::withError(url('kelola-siswa'), 'URL server Dapodik tidak valid (harus diawali http:// atau https://).');
+            return;
+        }
+
+        $resolvedIp = gethostbyname($host);
+        if ($host === 'localhost' || $resolvedIp === '127.0.0.1' || $resolvedIp === '::1' || str_starts_with($resolvedIp, '127.') || $resolvedIp === '169.254.169.254') {
+            Response::withError(url('kelola-siswa'), 'Akses ke localhost / loopback / metadata server dilarang demi keamanan.');
+            return;
+        }
+
         if ($taId <= 0) {
             $db = Database::getInstance();
             $taAktif = $db->query("SELECT id FROM tahun_akademik WHERE is_active = 1 LIMIT 1")->fetch();
             $taId = $taAktif ? (int)$taAktif['id'] : 0;
         }
         $jenjang = strtoupper(trim($_POST['jenjang'] ?? 'SD'));
-
-        if (empty($token) || empty($npsn)) {
-            Response::withError(url('kelola-siswa'), 'Token Web Service dan NPSN wajib diisi.');
-            return;
-        }
 
         $apiUrl = rtrim($serverUrl, '/') . "/WebService/getPesertaDidik?npsn=" . urlencode($npsn);
 

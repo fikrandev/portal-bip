@@ -220,8 +220,23 @@ class KelasController
         $npsn = trim($_POST['dapodik_npsn'] ?? '');
         $ta_id = (int)($_POST['tahun_akademik_id'] ?? 0);
 
-        if (empty($token) || empty($npsn) || empty($ta_id)) {
-            Response::withError(url('kelola-kelas'), 'Token Web Service, NPSN, dan Tahun Ajaran wajib diisi.');
+        if (empty($serverUrl) || empty($token) || empty($npsn) || empty($ta_id)) {
+            Response::withError(url('kelola-kelas'), 'URL Server Dapodik, Token Web Service, NPSN, dan Tahun Ajaran wajib diisi.');
+            return;
+        }
+
+        // SSRF protection: validate server URL
+        $parsedUrl = parse_url($serverUrl);
+        $scheme = strtolower($parsedUrl['scheme'] ?? '');
+        $host = strtolower($parsedUrl['host'] ?? '');
+        if (!in_array($scheme, ['http', 'https'], true) || empty($host)) {
+            Response::withError(url('kelola-kelas'), 'URL server Dapodik tidak valid (harus diawali http:// atau https://).');
+            return;
+        }
+
+        $resolvedIp = gethostbyname($host);
+        if ($host === 'localhost' || $resolvedIp === '127.0.0.1' || $resolvedIp === '::1' || str_starts_with($resolvedIp, '127.') || $resolvedIp === '169.254.169.254') {
+            Response::withError(url('kelola-kelas'), 'Akses ke localhost / loopback / metadata server dilarang demi keamanan.');
             return;
         }
 

@@ -13,11 +13,15 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <?php
-        $favIconRaw = defined('SYS_APP_FAVICON') && !empty(SYS_APP_FAVICON) ? url(ltrim(SYS_APP_FAVICON, '/')) : url('pwa-icon.png');
+        $iconVer = defined('SYS_APP_FAVICON') ? md5(SYS_APP_FAVICON . (defined('SYS_APP_LOGO') ? SYS_APP_LOGO : '')) : time();
+        $pwaIcon180 = url('pwa-icon.png?size=180&v=' . $iconVer);
+        $pwaIcon192 = url('pwa-icon.png?size=192&v=' . $iconVer);
+        $pwaIcon512 = url('pwa-icon.png?size=512&v=' . $iconVer);
+        $favIconRaw = defined('SYS_APP_FAVICON') && !empty(SYS_APP_FAVICON) ? url(ltrim(SYS_APP_FAVICON, '/')) : $pwaIcon192;
     ?>
-    <link rel="apple-touch-icon" sizes="180x180" href="<?= asset('images/pwa/apple-touch-icon.png') ?>">
-    <link rel="icon" type="image/png" sizes="192x192" href="<?= asset('images/pwa/icon-192.png') ?>">
-    <link rel="icon" type="image/png" sizes="512x512" href="<?= asset('images/pwa/icon-512.png') ?>">
+    <link rel="apple-touch-icon" sizes="180x180" href="<?= $pwaIcon180 ?>">
+    <link rel="icon" type="image/png" sizes="192x192" href="<?= $pwaIcon192 ?>">
+    <link rel="icon" type="image/png" sizes="512x512" href="<?= $pwaIcon512 ?>">
     <link rel="shortcut icon" href="<?= $favIconRaw ?>">
     
     <!-- Google Fonts: Inter & Amiri (Arabic Calligraphy) -->

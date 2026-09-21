@@ -914,3 +914,25 @@ Stack trace:
 #2 C:\Users\BINA INSAN PALU\.gemini\antigravity-ide\brain\929671e0-c53d-4698-8626-2fff89faf0ae\scratch\test_full_render.php(36): QuranSiswaController::index()
 #3 {main}
   thrown in E:\xampp\mysql\data\portal-bip\templates\partials\sidebar.php on line 334
+[11-Sep-2026 14:26:57 Asia/Makassar] PHP Fatal error:  Uncaught Error: Undefined constant "SYS_APP_NAME" in E:\xampp\mysql\data\portal-bip\templates\partials\header.php:9
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\templates\layouts\app.php(8): include()
+#1 E:\xampp\mysql\data\portal-bip\modules\kelola-quran-siswa\controllers\QuranSiswaController.php(175): include('E:\\xampp\\mysql\\...')
+#2 E:\xampp\mysql\data\portal-bip\modules\kelola-quran-siswa\controllers\QuranSiswaController.php(224): QuranSiswaController::renderPaudView('index', Array)
+#3 E:\xampp\mysql\data\portal-bip\scratch\test_render.php(29): QuranSiswaController::paudIndex()
+#4 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\templates\partials\header.php on line 9
+[11-Sep-2026 14:27:05 Asia/Makassar] PHP Fatal error:  Uncaught Error: Call to undefined function asset() in E:\xampp\mysql\data\portal-bip\templates\partials\header.php:60
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\templates\layouts\app.php(8): include()
+#1 E:\xampp\mysql\data\portal-bip\modules\kelola-quran-siswa\controllers\QuranSiswaController.php(175): include('E:\\xampp\\mysql\\...')
+#2 E:\xampp\mysql\data\portal-bip\modules\kelola-quran-siswa\controllers\QuranSiswaController.php(224): QuranSiswaController::renderPaudView('index', Array)
+#3 E:\xampp\mysql\data\portal-bip\scratch\test_render.php(41): QuranSiswaController::paudIndex()
+#4 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\templates\partials\header.php on line 60
+[11-Sep-2026 15:00:28 Asia/Makassar] PHP Fatal error:  Uncaught Error: Call to undefined method Database::pdo() in E:\xampp\mysql\data\portal-bip\modules\kelola-quran-siswa\controllers\QuranSiswaController.php:380
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\core\Router.php(98): QuranSiswaController::paudTargetStore()
+#1 E:\xampp\mysql\data\portal-bip\index.php(720): Router->dispatch()
+#2 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\modules\kelola-quran-siswa\controllers\QuranSiswaController.php on line 380

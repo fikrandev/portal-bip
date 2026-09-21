@@ -25,6 +25,19 @@ if (!defined('BASE_PATH')) {
     define('BASE_PATH', dirname(__DIR__));
 }
 
+// Defense-in-depth: if accessed via browser, verify session and super_admin role
+if (!$isCli) {
+    require_once BASE_PATH . '/config/app.php';
+    require_once BASE_PATH . '/config/session.php';
+    require_once BASE_PATH . '/core/Database.php';
+    require_once BASE_PATH . '/core/Auth.php';
+    
+    if (!Auth::check() || !Auth::isSuperAdmin()) {
+        http_response_code(403);
+        die("<!DOCTYPE html><html><head><title>Akses Ditolak</title><meta name='viewport' content='width=device-width, initial-scale=1'></head><body style='font-family:sans-serif;padding:40px;background:#f8fafc;color:#1e293b;'><div style='max-width:500px;margin:40px auto;background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:32px;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);'><h2 style='color:#dc2626;margin-top:0;'>⛔ Akses Ditolak (403 Forbidden)</h2><p>Migrasi database hanya dapat diakses melalui terminal <strong>CLI</strong> atau oleh <strong>Super Administrator</strong> yang telah login.</p><p><a href='../login' style='display:inline-block;padding:10px 18px;background:#2563eb;color:#fff;text-decoration:none;border-radius:10px;font-weight:bold;margin-top:10px;'>Login Super Admin</a></p></div></body></html>");
+    }
+}
+
 // Load Database Config if exists
 $configFile = BASE_PATH . '/config/database.php';
 if (file_exists($configFile)) {

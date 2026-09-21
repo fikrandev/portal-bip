@@ -163,65 +163,742 @@ class QuranSiswaController
     }
 
     /**
-     * Portal Qur'an Siswa PAUD / TK - /kelola-quran-siswa-paud
+     * Helper Render View Khusus Qur'an PAUD dengan Custom Sidebar (4 Menu Utama)
+     */
+    private static function renderPaudView(string $viewPath, array $data = []): void
+    {
+        extract($data);
+        $customSidebar = MODULES_PATH . '/kelola-quran-siswa/views/paud/sidebar.php';
+        ob_start();
+        include MODULES_PATH . '/kelola-quran-siswa/views/paud/' . $viewPath . '.php';
+        $content = ob_get_clean();
+        include TEMPLATES_PATH . '/layouts/app.php';
+    }
+
+    /**
+     * Fitur 1: Dashboard Qur'an PAUD / TK - /kelola-quran-siswa-paud
      */
     public static function paudIndex(): void
     {
-        $pageTitle = "Qur'an Siswa PAUD / TK";
+        $pageTitle = "Dashboard Qur'an PAUD / TK";
         $breadcrumbs = [
             ['label' => "Qur'an Siswa", 'url' => url('kelola-quran-siswa')],
-            ['label' => "Siswa PAUD"]
+            ['label' => "Qur'an PAUD"]
         ];
-        $activeJenjang = 'PAUD';
 
         $db = Database::getInstance();
         $counts = self::getJenjangStudentCounts();
 
-        // Ambil santri PAUD beserta capaian terakhir
-        $students = $db->findAll("
-            SELECT s.id, s.nama_lengkap, s.nis, s.nisn, s.kelas, s.jenjang,
-                   (SELECT COUNT(*) FROM quran_siswa_setoran qs WHERE qs.siswa_id = s.id AND qs.jenjang = 'PAUD') as setoran_count,
-                   (SELECT CASE 
-                               WHEN qs.jenis_setoran = 'iqro' THEN CONCAT('Iqro Jilid ', qs.iqro_jilid, ' (Hal. ', COALESCE(qs.iqro_halaman, '-'), ')')
-                               ELSE qs.surah_nama 
-                           END 
-                    FROM quran_siswa_setoran qs WHERE qs.siswa_id = s.id AND qs.jenjang = 'PAUD' ORDER BY qs.tanggal DESC, qs.id DESC LIMIT 1) as latest_materi,
-                   (SELECT qs.tanggal FROM quran_siswa_setoran qs WHERE qs.siswa_id = s.id AND qs.jenjang = 'PAUD' ORDER BY qs.tanggal DESC, qs.id DESC LIMIT 1) as latest_tanggal
-            FROM siswa s
-            WHERE UPPER(s.jenjang) IN ('PAUD','TK') AND s.is_active = 1
-            ORDER BY s.nama_lengkap ASC
+        // 1. Ambil grup target pembelajaran aktif
+        $groups = $db->findAll("
+            SELECT g.*, 
+                   (SELECT COUNT(DISTINCT qpn.siswa_id) FROM quran_paud_nilai qpn WHERE qpn.group_id = g.id) as total_santri_dinilai
+            FROM quran_paud_group g
+            WHERE g.deleted_at IS NULL AND g.is_active = 1
+            ORDER BY g.id DESC
         ");
 
-        // Riwayat Setoran PAUD
-        $setoranList = $db->findAll("
-            SELECT qs.*, s.nama_lengkap, s.kelas
-            FROM quran_siswa_setoran qs
-            JOIN siswa s ON qs.siswa_id = s.id
-            WHERE qs.jenjang = 'PAUD'
-            ORDER BY qs.tanggal DESC, qs.id DESC
-            LIMIT 30
+        // 2. Ambil riwayat penilaian santri PAUD terkini
+        $recentNilai = $db->findAll("
+            SELECT qpn.*, s.nama_lengkap, s.nis, s.kelas, g.kategori, g.nama_grup
+            FROM quran_paud_nilai qpn
+            JOIN siswa s ON qpn.siswa_id = s.id
+            JOIN quran_paud_group g ON qpn.group_id = g.id
+            ORDER BY qpn.tanggal_penilaian DESC, qpn.id DESC
+            LIMIT 10
         ");
 
-        // Stats PAUD
+        // 3. Stats Dashboard PAUD
         $stats = [
-            'total_siswa' => $counts['PAUD'],
-            'total_iqro' => (int)$db->query("SELECT COUNT(*) FROM quran_siswa_setoran WHERE jenjang = 'PAUD' AND jenis_setoran = 'iqro'")->fetchColumn(),
-            'total_surah' => (int)$db->query("SELECT COUNT(*) FROM quran_siswa_setoran WHERE jenjang = 'PAUD' AND jenis_setoran != 'iqro'")->fetchColumn(),
-            'total_mutqin' => (int)$db->query("SELECT COUNT(*) FROM quran_siswa_setoran WHERE jenjang = 'PAUD' AND status_lulus = 'mutqin'")->fetchColumn(),
+            'total_siswa' => $counts['PAUD'] ?? 0,
+            'total_grup_aktif' => count($groups),
+            'total_nilai' => (int)$db->query("SELECT COUNT(*) FROM quran_paud_nilai")->fetchColumn(),
+            'total_mutqin' => (int)$db->query("SELECT COUNT(*) FROM quran_paud_nilai WHERE status_lulus = 'Mutqin'")->fetchColumn(),
         ];
 
-        // All active students for modal form
-        $allStudents = $db->findAll("
-            SELECT id, nama_lengkap, kelas, 'PAUD' as jenjang
-            FROM siswa 
-            WHERE UPPER(jenjang) IN ('PAUD','TK') AND is_active = 1 
-            ORDER BY nama_lengkap ASC
+        self::renderPaudView('index', [
+            'pageTitle' => $pageTitle,
+            'breadcrumbs' => $breadcrumbs,
+            'groups' => $groups,
+            'recentNilai' => $recentNilai,
+            'stats' => $stats
+        ]);
+    }
+
+    /**
+     * Fitur 2: Pengaturan Target - Daftar Grup / Wadah Target
+     */
+    public static function paudTargetList(): void
+    {
+        $pageTitle = "Pengaturan Target Qur'an PAUD";
+        $breadcrumbs = [
+            ['label' => "Qur'an PAUD", 'url' => url('kelola-quran-siswa-paud')],
+            ['label' => "Pengaturan Target"]
+        ];
+
+        $db = Database::getInstance();
+        $filterStatus = $_GET['status'] ?? '';
+        $filterKelas = $_GET['kelas'] ?? '';
+
+        $where = "g.deleted_at IS NULL";
+        $params = [];
+
+        if ($filterStatus !== '') {
+            $where .= " AND g.is_active = ?";
+            $params[] = (int)$filterStatus;
+        }
+
+        if (!empty($filterKelas)) {
+            $where .= " AND g.kelas = ?";
+            $params[] = $filterKelas;
+        }
+
+        $groups = $db->findAll("
+            SELECT g.*, 
+                   (SELECT COUNT(DISTINCT qpn.siswa_id) FROM quran_paud_nilai qpn WHERE qpn.group_id = g.id) as total_santri_dinilai
+            FROM quran_paud_group g
+            WHERE $where
+            ORDER BY g.id DESC
+        ", $params);
+
+        $countAll = (int)$db->query("SELECT COUNT(*) FROM quran_paud_group WHERE deleted_at IS NULL")->fetchColumn();
+        $countActive = (int)$db->query("SELECT COUNT(*) FROM quran_paud_group WHERE deleted_at IS NULL AND is_active = 1")->fetchColumn();
+        $countInactive = (int)$db->query("SELECT COUNT(*) FROM quran_paud_group WHERE deleted_at IS NULL AND is_active = 0")->fetchColumn();
+
+        $kelasList = $db->query("
+            SELECT DISTINCT kelas FROM siswa 
+            WHERE UPPER(jenjang) IN ('PAUD','TK') AND kelas IS NOT NULL AND kelas != '' 
+            ORDER BY kelas ASC
+        ")->fetchAll(PDO::FETCH_COLUMN);
+
+        self::renderPaudView('target/index', [
+            'pageTitle' => $pageTitle,
+            'breadcrumbs' => $breadcrumbs,
+            'groups' => $groups,
+            'countAll' => $countAll,
+            'countActive' => $countActive,
+            'countInactive' => $countInactive,
+            'kelasList' => $kelasList
+        ]);
+    }
+
+    /**
+     * Fitur 2: Pengaturan Target - Form Buat Grup Target Baru
+     */
+    public static function paudTargetCreate(): void
+    {
+        $pageTitle = "Buat Grup Target Baru";
+        $breadcrumbs = [
+            ['label' => "Qur'an PAUD", 'url' => url('kelola-quran-siswa-paud')],
+            ['label' => "Pengaturan Target", 'url' => url('kelola-quran-siswa-paud/target')],
+            ['label' => "Buat Grup Baru"]
+        ];
+
+        $db = Database::getInstance();
+
+        // Ambil daftar kelas PAUD
+        $kelasList = $db->query("
+            SELECT DISTINCT kelas FROM siswa 
+            WHERE UPPER(jenjang) IN ('PAUD','TK') AND kelas IS NOT NULL AND kelas != '' 
+            ORDER BY kelas ASC
+        ")->fetchAll(PDO::FETCH_COLUMN);
+
+        if (empty($kelasList)) {
+            $kelasList = ['TK A - Al-Kautsar', 'TK B - Ar-Rahman', 'Kelompok Bermain (KB)'];
+        }
+
+        // Ambil tahun akademik aktif dari sistem & daftar seluruh tahun akademik
+        $taAktif = $db->find("SELECT id, nama_tahun, is_active FROM tahun_akademik WHERE is_active = 1 LIMIT 1");
+        $taList = $db->findAll("SELECT id, nama_tahun, is_active FROM tahun_akademik ORDER BY tanggal_mulai DESC");
+
+        // Ambil guru / ustadzah pengampu
+        $guruList = $db->findAll("SELECT id, nama FROM pegawai WHERE is_active = 1 ORDER BY nama ASC");
+
+        self::renderPaudView('target/create', [
+            'pageTitle' => $pageTitle,
+            'breadcrumbs' => $breadcrumbs,
+            'kelasList' => $kelasList,
+            'guruList' => $guruList,
+            'taAktif' => $taAktif,
+            'taList' => $taList
+        ]);
+    }
+
+    /**
+     * Fitur 2: Pengaturan Target - Simpan Grup Target Baru (POST)
+     * Hanya menyimpan identitas grup (nama grup, tahun akademik aktif sistem, status), lalu redirect ke atur target materi
+     */
+    public static function paudTargetStore(): void
+    {
+        if (class_exists('CSRF') && !CSRF::validate()) {
+            Response::withError(url('kelola-quran-siswa-paud/target'), 'Sesi tidak valid.');
+            return;
+        }
+
+        $namaGrup = trim($_POST['nama_grup'] ?? '');
+        $taId = !empty($_POST['tahun_akademik_id']) ? intval($_POST['tahun_akademik_id']) : (defined('SYS_TAHUN_AKADEMIK_ID') ? SYS_TAHUN_AKADEMIK_ID : 1);
+        $isActive = isset($_POST['is_active']) ? intval($_POST['is_active']) : 1;
+        $semester = in_array($_POST['semester'] ?? '', ['Ganjil', 'Genap']) ? $_POST['semester'] : 'Ganjil';
+        $kelas = 'PAUD / TK';
+        $guruId = null;
+        $guruNama = '';
+        $deskripsi = trim($_POST['deskripsi'] ?? '');
+
+        if (empty($namaGrup)) {
+            Response::withError(url('kelola-quran-siswa-paud/target/create'), 'Mohon isi Nama Group Target.');
+            return;
+        }
+
+        // Inisialisasi format target materi (Tahsin & Tahfidz) standar awal
+        $targetMateri = json_encode([
+            'tahsin' => [
+                'metode' => "Iqro'",
+                'jilid' => 1,
+                'halaman_awal' => 1,
+                'halaman_target' => 30,
+                'fokus' => ''
+            ],
+            'tahfidz' => [
+                'surah' => [],
+                'doa' => [],
+                'hadits' => [],
+                'fokus' => ''
+            ]
+        ], JSON_UNESCAPED_UNICODE);
+
+        $db = Database::getInstance();
+        $db->query("
+            INSERT INTO quran_paud_group (
+                nama_grup, kategori, tahun_akademik_id, semester, kelas,
+                guru_id, guru_nama, target_materi, deskripsi, is_active, created_by
+            ) VALUES (?, 'all', ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ", [
+            $namaGrup, $taId, $semester, $kelas,
+            $guruId, $guruNama, $targetMateri, $deskripsi, $isActive, Auth::id() ?: null
+        ]);
+
+        $newId = (int)$db->lastInsertId();
+        if (!$newId) {
+            $lastRow = $db->find("SELECT id FROM quran_paud_group WHERE nama_grup = ? ORDER BY id DESC LIMIT 1", [$namaGrup]);
+            $newId = (int)($lastRow['id'] ?? 0);
+        }
+
+        Response::withSuccess(url('kelola-quran-siswa-paud/target/manage/' . $newId), 'Alhamdulillah, group target berhasil dibuat! Silakan tentukan target materi Tahsin & Tahfidz di bawah ini.');
+    }
+
+    /**
+     * Fitur 2: Masuk ke Dalam Grup Target - Kelola & Atur Target Materi (Tahsin & Tahfidz)
+     */
+    public static function paudTargetManage(string|int $id = 0): void
+    {
+        $id = intval($id ?: ($_GET['id'] ?? 0));
+        $db = Database::getInstance();
+        $group = $db->find("SELECT * FROM quran_paud_group WHERE id = ? AND deleted_at IS NULL", [$id]);
+
+        if (!$group) {
+            Response::withError(url('kelola-quran-siswa-paud/target'), 'Grup target tidak ditemukan.');
+            return;
+        }
+
+        $pageTitle = "Kelola Target: " . $group['nama_grup'];
+        $breadcrumbs = [
+            ['label' => "Qur'an PAUD", 'url' => url('kelola-quran-siswa-paud')],
+            ['label' => "Pengaturan Target", 'url' => url('kelola-quran-siswa-paud/target')],
+            ['label' => $group['nama_grup']]
+        ];
+
+        // Ambil info tahun akademik
+        $ta = $db->find("SELECT id, nama_tahun, is_active FROM tahun_akademik WHERE id = ?", [$group['tahun_akademik_id']]);
+
+        // Decode target materi
+        $rawTarget = json_decode($group['target_materi'] ?? '{}', true) ?: [];
+        if (isset($rawTarget['tahsin']) || isset($rawTarget['tahfidz'])) {
+            $tahsin = $rawTarget['tahsin'] ?? [];
+            $tahfidz = $rawTarget['tahfidz'] ?? [];
+        } else {
+            $isLegTahsin = ($group['kategori'] === 'tahsin');
+            $tahsin = $isLegTahsin ? $rawTarget : [];
+            $tahfidz = !$isLegTahsin ? $rawTarget : [];
+        }
+
+        // Ambil seluruh santri jenjang PAUD/TK beserta data penilaian terkini
+        $santriList = $db->findAll("
+            SELECT s.id, s.nama_lengkap, s.nis, s.nisn, s.jenis_kelamin, s.foto, s.kelas,
+                   p.id as penilaian_id, p.status_lulus, p.materi_dinilai, p.nilai_kelancaran, p.nilai_makhraj, p.nilai_adab, p.bintang, p.updated_at as tgl_nilai
+            FROM siswa s
+            LEFT JOIN quran_paud_nilai p ON p.siswa_id = s.id AND p.group_id = ?
+            WHERE UPPER(s.jenjang) IN ('PAUD','TK') AND s.is_active = 1
+            ORDER BY s.nama_lengkap ASC
+        ", [$id]);
+
+        self::renderPaudView('target/manage', [
+            'pageTitle' => $pageTitle,
+            'breadcrumbs' => $breadcrumbs,
+            'group' => $group,
+            'ta' => $ta,
+            'tahsin' => $tahsin,
+            'tahfidz' => $tahfidz,
+            'santriList' => $santriList
+        ]);
+    }
+
+    /**
+     * Fitur 2: Simpan Target Materi di Dalam Grup (Tahsin & Tahfidz)
+     */
+    public static function paudTargetSaveMateri(string|int $id = 0): void
+    {
+        if (class_exists('CSRF') && !CSRF::validate()) {
+            Response::withError(url('kelola-quran-siswa-paud/target'), 'Sesi tidak valid.');
+            return;
+        }
+
+        $id = intval($id ?: ($_POST['id'] ?? 0));
+        $db = Database::getInstance();
+        $group = $db->find("SELECT * FROM quran_paud_group WHERE id = ? AND deleted_at IS NULL", [$id]);
+
+        if (!$group) {
+            Response::withError(url('kelola-quran-siswa-paud/target'), 'Grup target tidak ditemukan.');
+            return;
+        }
+
+        $tahfidzSurah = $_POST['tahfidz_surah'] ?? [];
+        $tahfidzDoa = $_POST['tahfidz_doa'] ?? [];
+        $tahfidzHadits = $_POST['tahfidz_hadits'] ?? [];
+
+        $targetMateri = json_encode([
+            'tahsin' => [
+                'metode' => trim($_POST['tahsin_metode'] ?? "Iqro'"),
+                'jilid' => intval($_POST['tahsin_jilid'] ?? 1),
+                'halaman_awal' => intval($_POST['tahsin_halaman_awal'] ?? 1),
+                'halaman_target' => intval($_POST['tahsin_halaman_target'] ?? 30),
+                'fokus' => trim($_POST['tahsin_fokus'] ?? '')
+            ],
+            'tahfidz' => [
+                'surah' => is_array($tahfidzSurah) ? array_values($tahfidzSurah) : [],
+                'doa' => is_array($tahfidzDoa) ? array_values($tahfidzDoa) : [],
+                'hadits' => is_array($tahfidzHadits) ? array_values($tahfidzHadits) : [],
+                'fokus' => trim($_POST['tahfidz_fokus'] ?? '')
+            ]
+        ], JSON_UNESCAPED_UNICODE);
+
+        $db->query("UPDATE quran_paud_group SET target_materi = ?, updated_at = NOW() WHERE id = ?", [$targetMateri, $id]);
+
+        Response::withSuccess(url('kelola-quran-siswa-paud/target/manage/' . $id), 'Alhamdulillah, target materi pembelajaran (Tahsin & Tahfidz) untuk grup ini berhasil disimpan!');
+    }
+
+    /**
+     * Fitur 2: Pengaturan Target - Edit Info Grup Target
+     */
+    public static function paudTargetEdit(string|int $id = 0): void
+    {
+        $id = intval($id ?: ($_GET['id'] ?? 0));
+        $db = Database::getInstance();
+        $group = $db->find("SELECT * FROM quran_paud_group WHERE id = ? AND deleted_at IS NULL", [$id]);
+
+        if (!$group) {
+            Response::withError(url('kelola-quran-siswa-paud/target'), 'Grup target tidak ditemukan.');
+            return;
+        }
+
+        $pageTitle = "Edit Info Grup Target";
+        $breadcrumbs = [
+            ['label' => "Qur'an PAUD", 'url' => url('kelola-quran-siswa-paud')],
+            ['label' => "Pengaturan Target", 'url' => url('kelola-quran-siswa-paud/target')],
+            ['label' => "Edit Info Grup"]
+        ];
+
+        $kelasList = $db->query("
+            SELECT DISTINCT kelas FROM siswa 
+            WHERE UPPER(jenjang) IN ('PAUD','TK') AND kelas IS NOT NULL AND kelas != '' 
+            ORDER BY kelas ASC
+        ")->fetchAll(PDO::FETCH_COLUMN);
+
+        $taAktif = $db->find("SELECT id, nama_tahun, is_active FROM tahun_akademik WHERE is_active = 1 LIMIT 1");
+        $taList = $db->findAll("SELECT id, nama_tahun, is_active FROM tahun_akademik ORDER BY tanggal_mulai DESC");
+        $guruList = $db->findAll("SELECT id, nama FROM pegawai WHERE is_active = 1 ORDER BY nama ASC");
+
+        self::renderPaudView('target/edit', [
+            'pageTitle' => $pageTitle,
+            'breadcrumbs' => $breadcrumbs,
+            'group' => $group,
+            'kelasList' => $kelasList,
+            'guruList' => $guruList,
+            'taAktif' => $taAktif,
+            'taList' => $taList
+        ]);
+    }
+
+    /**
+     * Fitur 2: Pengaturan Target - Update Info Grup Target (POST)
+     */
+    public static function paudTargetUpdate(string|int $id = 0): void
+    {
+        if (class_exists('CSRF') && !CSRF::validate()) {
+            Response::withError(url('kelola-quran-siswa-paud/target'), 'Sesi tidak valid.');
+            return;
+        }
+
+        $id = intval($id ?: ($_POST['id'] ?? 0));
+        $namaGrup = trim($_POST['nama_grup'] ?? '');
+        $taId = !empty($_POST['tahun_akademik_id']) ? intval($_POST['tahun_akademik_id']) : (defined('SYS_TAHUN_AKADEMIK_ID') ? SYS_TAHUN_AKADEMIK_ID : 1);
+        $isActive = isset($_POST['is_active']) ? intval($_POST['is_active']) : 1;
+
+        if (empty($namaGrup)) {
+            Response::withError(url('kelola-quran-siswa-paud/target/edit/' . $id), 'Mohon isi Nama Group Target.');
+            return;
+        }
+
+        $db = Database::getInstance();
+        $db->query("
+            UPDATE quran_paud_group SET
+                nama_grup = ?, tahun_akademik_id = ?, is_active = ?, updated_at = NOW()
+            WHERE id = ?
+        ", [$namaGrup, $taId, $isActive, $id]);
+
+        Response::withSuccess(url('kelola-quran-siswa-paud/target'), 'Informasi group target berhasil diperbarui.');
+    }
+
+    /**
+     * Fitur 2: Toggle Status Aktif Grup Target
+     */
+    public static function paudTargetToggleStatus(string|int $id = 0): void
+    {
+        $id = intval($id ?: ($_POST['id'] ?? 0));
+        $db = Database::getInstance();
+        $db->query("UPDATE quran_paud_group SET is_active = IF(is_active = 1, 0, 1), updated_at = NOW() WHERE id = ?", [$id]);
+        Response::withSuccess(url('kelola-quran-siswa-paud/target'), 'Status aktif grup berhasil diubah.');
+    }
+
+    /**
+     * Fitur 2: Hapus Grup Target
+     */
+    public static function paudTargetDelete(string|int $id = 0): void
+    {
+        $id = intval($id ?: ($_POST['id'] ?? 0));
+        $db = Database::getInstance();
+        $db->query("UPDATE quran_paud_group SET deleted_at = NOW() WHERE id = ?", [$id]);
+        Response::withSuccess(url('kelola-quran-siswa-paud/target'), 'Grup target berhasil dihapus.');
+    }
+
+    /**
+     * Fitur 3: Input Penilaian Qur'an PAUD - Halaman Utama / Daftar Grup Aktif
+     */
+    public static function paudPenilaianIndex(): void
+    {
+        $pageTitle = "Input Penilaian Qur'an PAUD";
+        $breadcrumbs = [
+            ['label' => "Qur'an PAUD", 'url' => url('kelola-quran-siswa-paud')],
+            ['label' => "Input Penilaian"]
+        ];
+
+        $db = Database::getInstance();
+        $groups = $db->findAll("
+            SELECT g.*, 
+                   (SELECT COUNT(DISTINCT qpn.siswa_id) FROM quran_paud_nilai qpn WHERE qpn.group_id = g.id) as total_santri_dinilai
+            FROM quran_paud_group g
+            WHERE g.deleted_at IS NULL AND g.is_active = 1
+            ORDER BY g.id DESC
         ");
 
-        ob_start();
-        include MODULES_PATH . '/kelola-quran-siswa/views/paud/index.php';
-        $content = ob_get_clean();
-        include TEMPLATES_PATH . '/layouts/app.php';
+        self::renderPaudView('penilaian/index', [
+            'pageTitle' => $pageTitle,
+            'breadcrumbs' => $breadcrumbs,
+            'groups' => $groups
+        ]);
+    }
+
+    /**
+     * Fitur 3: Input Penilaian - Form Input Nilai Santri per Grup Target
+     */
+    public static function paudPenilaianForm(string|int $groupId = 0): void
+    {
+        $groupId = intval($groupId ?: ($_GET['groupId'] ?? 0));
+        $db = Database::getInstance();
+
+        $group = $db->find("SELECT * FROM quran_paud_group WHERE id = ? AND deleted_at IS NULL", [$groupId]);
+        if (!$group) {
+            Response::withError(url('kelola-quran-siswa-paud/penilaian'), 'Grup target tidak ditemukan.');
+            return;
+        }
+
+        $pageTitle = "Lembar Penilaian: " . $group['nama_grup'];
+        $breadcrumbs = [
+            ['label' => "Qur'an PAUD", 'url' => url('kelola-quran-siswa-paud')],
+            ['label' => "Input Penilaian", 'url' => url('kelola-quran-siswa-paud/penilaian')],
+            ['label' => $group['nama_grup']]
+        ];
+
+        // Ambil santri jenjang PAUD/TK
+        if (empty($group['kelas']) || in_array($group['kelas'], ['PAUD / TK', 'Semua Kelas', 'Semua Kelas PAUD'])) {
+            $students = $db->findAll("
+                SELECT id, nis, nisn, nama_lengkap, kelas 
+                FROM siswa 
+                WHERE UPPER(jenjang) IN ('PAUD','TK') AND is_active = 1 
+                ORDER BY nama_lengkap ASC
+            ");
+        } else {
+            $students = $db->findAll("
+                SELECT id, nis, nisn, nama_lengkap, kelas 
+                FROM siswa 
+                WHERE kelas = ? AND is_active = 1 
+                ORDER BY nama_lengkap ASC
+            ", [$group['kelas']]);
+            if (empty($students)) {
+                $students = $db->findAll("
+                    SELECT id, nis, nisn, nama_lengkap, kelas 
+                    FROM siswa 
+                    WHERE UPPER(jenjang) IN ('PAUD','TK') AND is_active = 1 
+                    ORDER BY nama_lengkap ASC
+                ");
+            }
+        }
+
+        // Ambil nilai yang sudah pernah diinput untuk grup ini
+        $existingNilaiRaw = $db->findAll("SELECT * FROM quran_paud_nilai WHERE group_id = ?", [$groupId]);
+        $existingNilai = [];
+        foreach ($existingNilaiRaw as $row) {
+            $existingNilai[$row['siswa_id']] = $row;
+        }
+
+        self::renderPaudView('penilaian/input', [
+            'pageTitle' => $pageTitle,
+            'breadcrumbs' => $breadcrumbs,
+            'group' => $group,
+            'students' => $students,
+            'existingNilai' => $existingNilai
+        ]);
+    }
+
+    /**
+     * Fitur 3: Input Penilaian - Simpan Penilaian Santri (POST)
+     */
+    public static function paudPenilaianStore(string|int $groupId = 0): void
+    {
+        if (class_exists('CSRF') && !CSRF::validate()) {
+            Response::withError(url('kelola-quran-siswa-paud/penilaian'), 'Sesi tidak valid.');
+            return;
+        }
+
+        $groupId = intval($groupId ?: ($_POST['group_id'] ?? 0));
+        $tanggalPenilaian = trim($_POST['tanggal_penilaian'] ?? date('Y-m-d'));
+        $materiDefault = trim($_POST['materi_default'] ?? 'Iqro Jilid 1');
+        $nilaiData = $_POST['nilai'] ?? [];
+
+        $db = Database::getInstance();
+        $group = $db->find("SELECT * FROM quran_paud_group WHERE id = ?", [$groupId]);
+        $isTahsin = ($group && $group['kategori'] === 'tahsin');
+
+        foreach ($nilaiData as $siswaId => $row) {
+            $siswaId = intval($siswaId);
+            if (!$siswaId) continue;
+
+            $materi = !empty($row['materi_dinilai']) ? trim($row['materi_dinilai']) : $materiDefault;
+            $kelancaran = in_array($row['nilai_kelancaran'] ?? '', ['A','B','C','D']) ? $row['nilai_kelancaran'] : 'A';
+            $makhraj = in_array($row['nilai_makhraj'] ?? '', ['A','B','C','D']) ? $row['nilai_makhraj'] : 'A';
+            $adab = in_array($row['nilai_adab'] ?? '', ['A','B','C','D']) ? $row['nilai_adab'] : 'A';
+            $bintang = max(1, min(5, intval($row['bintang'] ?? 5)));
+            $statusLulus = in_array($row['status_lulus'] ?? '', ['Mutqin','Lancar','Ulang','Perlu Bimbingan']) ? $row['status_lulus'] : 'Lancar';
+            $catatan = trim($row['catatan'] ?? '');
+
+            // Simpan atau perbarui nilai di quran_paud_nilai
+            $exist = $db->find("SELECT id FROM quran_paud_nilai WHERE group_id = ? AND siswa_id = ?", [$groupId, $siswaId]);
+            if ($exist) {
+                $db->query("
+                    UPDATE quran_paud_nilai SET
+                        tanggal_penilaian = ?, materi_dinilai = ?, nilai_kelancaran = ?,
+                        nilai_makhraj = ?, nilai_adab = ?, bintang = ?, status_lulus = ?,
+                        catatan = ?, updated_at = NOW()
+                    WHERE id = ?
+                ", [$tanggalPenilaian, $materi, $kelancaran, $makhraj, $adab, $bintang, $statusLulus, $catatan, $exist['id']]);
+            } else {
+                $db->query("
+                    INSERT INTO quran_paud_nilai (
+                        group_id, siswa_id, tanggal_penilaian, materi_dinilai,
+                        nilai_kelancaran, nilai_makhraj, nilai_adab, bintang, status_lulus, catatan
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ", [$groupId, $siswaId, $tanggalPenilaian, $materi, $kelancaran, $makhraj, $adab, $bintang, $statusLulus, $catatan]);
+            }
+
+            // Sinkronisasi otomatis ke quran_siswa_target
+            $db->query("
+                INSERT INTO quran_siswa_target (siswa_id, jenjang, capaian_terakhir, status, updated_at)
+                VALUES (?, 'PAUD', ?, 'Aktif', NOW())
+                ON DUPLICATE KEY UPDATE capaian_terakhir = VALUES(capaian_terakhir), updated_at = NOW()
+            ", [$siswaId, $materi . " ($statusLulus)"]);
+        }
+
+        Response::withSuccess(url('kelola-quran-siswa-paud/penilaian/' . $groupId), 'Alhamdulillah, penilaian santri Qur\'an PAUD berhasil disimpan!');
+    }
+
+    /**
+     * Fitur 4: Rekap Nilai - Halaman Rekapitulasi & Laporan Capaian Santri
+     */
+    public static function paudRekapIndex(): void
+    {
+        $pageTitle = "Rekap Nilai Qur'an PAUD";
+        $breadcrumbs = [
+            ['label' => "Qur'an PAUD", 'url' => url('kelola-quran-siswa-paud')],
+            ['label' => "Rekap Nilai"]
+        ];
+
+        $db = Database::getInstance();
+        $filterKategori = trim($_GET['kategori'] ?? '');
+        $filterKelas = trim($_GET['kelas'] ?? '');
+        $filterStatus = trim($_GET['status'] ?? '');
+
+        $where = "1=1";
+        $params = [];
+
+        if (!empty($filterKategori)) {
+            $where .= " AND g.kategori = ?";
+            $params[] = $filterKategori;
+        }
+
+        if (!empty($filterKelas)) {
+            $where .= " AND s.kelas = ?";
+            $params[] = $filterKelas;
+        }
+
+        if (!empty($filterStatus)) {
+            $where .= " AND qpn.status_lulus = ?";
+            $params[] = $filterStatus;
+        }
+
+        $rekapList = $db->findAll("
+            SELECT qpn.*, s.nama_lengkap, s.nis, s.kelas, g.nama_grup, g.kategori
+            FROM quran_paud_nilai qpn
+            JOIN siswa s ON qpn.siswa_id = s.id
+            JOIN quran_paud_group g ON qpn.group_id = g.id
+            WHERE $where
+            ORDER BY qpn.tanggal_penilaian DESC, s.nama_lengkap ASC
+        ", $params);
+
+        // Stats Rekap
+        $counts = self::getJenjangStudentCounts();
+        $avgBintang = (float)$db->query("SELECT COALESCE(AVG(bintang), 5) FROM quran_paud_nilai")->fetchColumn();
+        $totalMutqin = (int)$db->query("SELECT COUNT(*) FROM quran_paud_nilai WHERE status_lulus = 'Mutqin'")->fetchColumn();
+
+        $rekapStats = [
+            'total_siswa' => $counts['PAUD'] ?? 0,
+            'total_penilaian' => count($rekapList),
+            'avg_bintang' => $avgBintang,
+            'total_mutqin' => $totalMutqin
+        ];
+
+        $kelasList = $db->query("
+            SELECT DISTINCT kelas FROM siswa 
+            WHERE UPPER(jenjang) IN ('PAUD','TK') AND kelas IS NOT NULL AND kelas != '' 
+            ORDER BY kelas ASC
+        ")->fetchAll(PDO::FETCH_COLUMN);
+
+        self::renderPaudView('rekap/index', [
+            'pageTitle' => $pageTitle,
+            'breadcrumbs' => $breadcrumbs,
+            'rekapList' => $rekapList,
+            'rekapStats' => $rekapStats,
+            'kelasList' => $kelasList
+        ]);
+    }
+
+    /**
+     * Fitur 4: Cetak Rekapitulasi Nilai Qur'an PAUD Siap Cetak A4
+     */
+    public static function paudRekapCetak(): void
+    {
+        $db = Database::getInstance();
+        $filterKategori = trim($_GET['kategori'] ?? '');
+        $filterKelas = trim($_GET['kelas'] ?? '');
+        $filterStatus = trim($_GET['status'] ?? '');
+
+        $where = "1=1";
+        $params = [];
+
+        if (!empty($filterKategori)) {
+            $where .= " AND g.kategori = ?";
+            $params[] = $filterKategori;
+        }
+
+        if (!empty($filterKelas)) {
+            $where .= " AND s.kelas = ?";
+            $params[] = $filterKelas;
+        }
+
+        if (!empty($filterStatus)) {
+            $where .= " AND qpn.status_lulus = ?";
+            $params[] = $filterStatus;
+        }
+
+        $rekapList = $db->findAll("
+            SELECT qpn.*, s.nama_lengkap, s.nis, s.kelas, g.nama_grup, g.kategori
+            FROM quran_paud_nilai qpn
+            JOIN siswa s ON qpn.siswa_id = s.id
+            JOIN quran_paud_group g ON qpn.group_id = g.id
+            WHERE $where
+            ORDER BY qpn.tanggal_penilaian DESC, s.nama_lengkap ASC
+        ", $params);
+
+        include MODULES_PATH . '/kelola-quran-siswa/views/paud/rekap/cetak.php';
+        exit;
+    }
+
+    /**
+     * Fitur 4: Export Rekap Nilai ke Spreadsheet CSV / XLS
+     */
+    public static function paudRekapExport(): void
+    {
+        $db = Database::getInstance();
+        $filterKategori = trim($_GET['kategori'] ?? '');
+        $filterKelas = trim($_GET['kelas'] ?? '');
+
+        $where = "1=1";
+        $params = [];
+
+        if (!empty($filterKategori)) {
+            $where .= " AND g.kategori = ?";
+            $params[] = $filterKategori;
+        }
+
+        if (!empty($filterKelas)) {
+            $where .= " AND s.kelas = ?";
+            $params[] = $filterKelas;
+        }
+
+        $rows = $db->findAll("
+            SELECT qpn.tanggal_penilaian, s.nis, s.nama_lengkap, s.kelas,
+                   g.kategori, qpn.materi_dinilai, qpn.nilai_kelancaran,
+                   qpn.nilai_makhraj, qpn.nilai_adab, qpn.bintang, qpn.status_lulus, qpn.catatan
+            FROM quran_paud_nilai qpn
+            JOIN siswa s ON qpn.siswa_id = s.id
+            JOIN quran_paud_group g ON qpn.group_id = g.id
+            WHERE $where
+            ORDER BY qpn.tanggal_penilaian DESC, s.nama_lengkap ASC
+        ", $params);
+
+        $filename = 'rekap_nilai_quran_paud_' . date('Ymd_His') . '.csv';
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+
+        $output = fopen('php://output', 'w');
+        fputcsv($output, ['Tanggal', 'NIS', 'Nama Santri', 'Kelas', 'Kategori', 'Materi Dinilai', 'Kelancaran', 'Makhraj', 'Adab', 'Bintang (1-5)', 'Status', 'Catatan']);
+
+        foreach ($rows as $r) {
+            fputcsv($output, [
+                $r['tanggal_penilaian'],
+                $r['nis'],
+                $r['nama_lengkap'],
+                $r['kelas'],
+                $r['kategori'] === 'tahsin' ? 'a. Tahsin' : 'b. Tahfidz',
+                $r['materi_dinilai'],
+                $r['nilai_kelancaran'],
+                $r['nilai_makhraj'],
+                $r['nilai_adab'],
+                $r['bintang'],
+                $r['status_lulus'],
+                $r['catatan']
+            ]);
+        }
+        fclose($output);
+        exit;
     }
 
     /**

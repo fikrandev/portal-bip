@@ -50,7 +50,8 @@
         <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
                 <?php 
-                    $pwaInstallerIcon = !empty(SYS_APP_FAVICON) ? url(ltrim(SYS_APP_FAVICON, '/')) : url('pwa-icon.png');
+                    $iconVer = defined('SYS_APP_FAVICON') ? md5(SYS_APP_FAVICON . (defined('SYS_APP_LOGO') ? SYS_APP_LOGO : '')) : time();
+                    $pwaInstallerIcon = url('pwa-icon.png?size=192&v=' . $iconVer);
                 ?>
                 <img src="<?= $pwaInstallerIcon ?>" alt="App Icon" loading="lazy" class="w-12 h-12 rounded-2xl shadow-md border-2 border-white/30 shrink-0 bg-white/90 p-1 object-contain">
                 <div>

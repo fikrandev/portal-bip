@@ -1,4 +1,11 @@
-<?php ini_set('display_errors', '1');
+<?php
+// Only display errors if APP_DEBUG is explicitly enabled, otherwise hide for security
+if (getenv('APP_DEBUG') === 'true' || getenv('APP_DEBUG') === '1') {
+    ini_set('display_errors', '1');
+    error_reporting(E_ALL);
+} else {
+    ini_set('display_errors', '0');
+}
 /**
  * =====================================================
  * Portal BIP - Front Controller (Entry Point)
@@ -504,6 +511,28 @@ $router->get('/kelola-quran-siswa-sd', [QuranSiswaController::class, 'sdIndex'],
 $router->get('/kelola-quran-siswa/sd', [QuranSiswaController::class, 'sdIndex'], [Middleware::permissionRequired('quran_siswa.view')]);
 $router->get('/kelola-quran-siswa-paud', [QuranSiswaController::class, 'paudIndex'], [Middleware::permissionRequired('quran_siswa.view')]);
 $router->get('/kelola-quran-siswa/paud', [QuranSiswaController::class, 'paudIndex'], [Middleware::permissionRequired('quran_siswa.view')]);
+
+// Fitur 2: Pengaturan Target Qur'an PAUD (a. Tahsin, b. Tahfidz)
+$router->get('/kelola-quran-siswa-paud/target', [QuranSiswaController::class, 'paudTargetList'], [Middleware::permissionRequired('quran_siswa.view')]);
+$router->get('/kelola-quran-siswa-paud/target/create', [QuranSiswaController::class, 'paudTargetCreate'], [Middleware::permissionRequired('quran_siswa.create')]);
+$router->post('/kelola-quran-siswa-paud/target/store', [QuranSiswaController::class, 'paudTargetStore'], [Middleware::permissionRequired('quran_siswa.create')]);
+$router->get('/kelola-quran-siswa-paud/target/manage/{id}', [QuranSiswaController::class, 'paudTargetManage'], [Middleware::permissionRequired('quran_siswa.view')]);
+$router->get('/kelola-quran-siswa-paud/target/{id}', [QuranSiswaController::class, 'paudTargetManage'], [Middleware::permissionRequired('quran_siswa.view')]);
+$router->post('/kelola-quran-siswa-paud/target/manage/{id}/store', [QuranSiswaController::class, 'paudTargetSaveMateri'], [Middleware::permissionRequired('quran_siswa.update')]);
+$router->get('/kelola-quran-siswa-paud/target/edit/{id}', [QuranSiswaController::class, 'paudTargetEdit'], [Middleware::permissionRequired('quran_siswa.update')]);
+$router->post('/kelola-quran-siswa-paud/target/update/{id}', [QuranSiswaController::class, 'paudTargetUpdate'], [Middleware::permissionRequired('quran_siswa.update')]);
+$router->post('/kelola-quran-siswa-paud/target/toggle-status/{id}', [QuranSiswaController::class, 'paudTargetToggleStatus'], [Middleware::permissionRequired('quran_siswa.update')]);
+$router->post('/kelola-quran-siswa-paud/target/delete/{id}', [QuranSiswaController::class, 'paudTargetDelete'], [Middleware::permissionRequired('quran_siswa.delete')]);
+
+// Fitur 3: Input Penilaian Qur'an PAUD
+$router->get('/kelola-quran-siswa-paud/penilaian', [QuranSiswaController::class, 'paudPenilaianIndex'], [Middleware::permissionRequired('quran_siswa.view')]);
+$router->get('/kelola-quran-siswa-paud/penilaian/{groupId}', [QuranSiswaController::class, 'paudPenilaianForm'], [Middleware::permissionRequired('quran_siswa.create')]);
+$router->post('/kelola-quran-siswa-paud/penilaian/store/{groupId}', [QuranSiswaController::class, 'paudPenilaianStore'], [Middleware::permissionRequired('quran_siswa.create')]);
+
+// Fitur 4: Rekap Nilai Qur'an PAUD
+$router->get('/kelola-quran-siswa-paud/rekap', [QuranSiswaController::class, 'paudRekapIndex'], [Middleware::permissionRequired('quran_siswa.view')]);
+$router->get('/kelola-quran-siswa-paud/rekap/cetak', [QuranSiswaController::class, 'paudRekapCetak'], [Middleware::permissionRequired('quran_siswa.view')]);
+$router->get('/kelola-quran-siswa-paud/rekap/export', [QuranSiswaController::class, 'paudRekapExport'], [Middleware::permissionRequired('quran_siswa.view')]);
 $router->get('/kelola-quran-siswa-smp-sma', [QuranSiswaController::class, 'smpSmaIndex'], [Middleware::permissionRequired('quran_siswa.view')]);
 $router->get('/kelola-quran-siswa/smp-sma', [QuranSiswaController::class, 'smpSmaIndex'], [Middleware::permissionRequired('quran_siswa.view')]);
 $router->post('/kelola-quran-siswa/setoran/store', [QuranSiswaController::class, 'storeSetoran'], [Middleware::permissionRequired('quran_siswa.create')]);
@@ -554,45 +583,115 @@ $router->post('/pengaturan-sistem/reset-data/process', [SettingsController::clas
 $router->post('/pengaturan-sistem/reset', [SettingsController::class, 'resetData'], [Middleware::permissionRequired('settings.reset')]);
 
 // -- Portal Guru Mobile (PWA) --
-$router->get('/mobile', [PortalGuruController::class, 'beranda']);
-$router->get('/portal-guru', [PortalGuruController::class, 'beranda']);
-$router->get('/guru', [PortalGuruController::class, 'beranda']);
-$router->get('/mobile/absen', [PortalGuruController::class, 'absen']);
-$router->get('/mobile/jurnal', [PortalGuruController::class, 'jurnal']);
-$router->get('/mobile/kelas', [PortalGuruController::class, 'kelas']);
-$router->get('/mobile/absensi-kelas', [PortalGuruController::class, 'absensiKelas']);
-$router->get('/mobile/murid', [PortalGuruController::class, 'murid']);
-$router->get('/mobile/profil', [PortalGuruController::class, 'profil']);
-$router->get('/mobile/notifikasi', [PortalGuruController::class, 'notifikasi']);
-$router->get('/mobile/materi', [PortalGuruController::class, 'materi']);
-$router->get('/mobile/buat-tugas', [PortalGuruController::class, 'buatTugas']);
-$router->get('/mobile/pesan-kelas', [PortalGuruController::class, 'pesanKelas']);
-$router->get('/mobile/bank-soal', [PortalGuruController::class, 'bankSoal']);
-$router->get('/mobile/quran', [PortalGuruController::class, 'quran']);
-$router->get('/mobile/dzikir', [PortalGuruController::class, 'dzikir']);
-$router->get('/mobile/keterlambatan-siswa', [PortalGuruController::class, 'keterlambatanSiswa']);
-$router->get('/mobile/izin', [PortalGuruController::class, 'izin']);
-$router->get('/mobile/cuti', [PortalGuruController::class, 'cuti']);
+$router->get('/mobile', [PortalGuruController::class, 'beranda'], [[Middleware::class, 'authRequired']]);
+$router->get('/portal-guru', [PortalGuruController::class, 'beranda'], [[Middleware::class, 'authRequired']]);
+$router->get('/guru', [PortalGuruController::class, 'beranda'], [[Middleware::class, 'authRequired']]);
+$router->get('/mobile/absen', [PortalGuruController::class, 'absen'], [[Middleware::class, 'authRequired']]);
+$router->get('/mobile/jurnal', [PortalGuruController::class, 'jurnal'], [[Middleware::class, 'authRequired']]);
+$router->get('/mobile/kelas', [PortalGuruController::class, 'kelas'], [[Middleware::class, 'authRequired']]);
+$router->get('/mobile/absensi-kelas', [PortalGuruController::class, 'absensiKelas'], [[Middleware::class, 'authRequired']]);
+$router->get('/mobile/murid', [PortalGuruController::class, 'murid'], [[Middleware::class, 'authRequired']]);
+$router->get('/mobile/profil', [PortalGuruController::class, 'profil'], [[Middleware::class, 'authRequired']]);
+$router->get('/mobile/notifikasi', [PortalGuruController::class, 'notifikasi'], [[Middleware::class, 'authRequired']]);
+$router->get('/mobile/materi', [PortalGuruController::class, 'materi'], [[Middleware::class, 'authRequired']]);
+$router->get('/mobile/buat-tugas', [PortalGuruController::class, 'buatTugas'], [[Middleware::class, 'authRequired']]);
+$router->get('/mobile/pesan-kelas', [PortalGuruController::class, 'pesanKelas'], [[Middleware::class, 'authRequired']]);
+$router->get('/mobile/bank-soal', [PortalGuruController::class, 'bankSoal'], [[Middleware::class, 'authRequired']]);
+$router->get('/mobile/quran', [PortalGuruController::class, 'quran'], [[Middleware::class, 'authRequired']]);
+$router->get('/mobile/dzikir', [PortalGuruController::class, 'dzikir'], [[Middleware::class, 'authRequired']]);
+$router->get('/mobile/keterlambatan-siswa', [PortalGuruController::class, 'keterlambatanSiswa'], [[Middleware::class, 'authRequired']]);
+$router->get('/mobile/izin', [PortalGuruController::class, 'izin'], [[Middleware::class, 'authRequired']]);
+$router->get('/mobile/cuti', [PortalGuruController::class, 'cuti'], [[Middleware::class, 'authRequired']]);
 
-// -- PWA Dynamic Icon Route (Always Sync with Favicon from Pengaturan Sistem) --
+// -- PWA Dynamic Icon Route (Always Prioritize App Icon Uploaded from Pengaturan Sistem) --
 $router->get('/pwa-icon.png', function() {
-    $pwaIcon512 = PUBLIC_PATH . '/images/pwa/icon-512.png';
-    if (file_exists($pwaIcon512)) {
-        header('Content-Type: image/png');
-        header('Cache-Control: public, max-age=86400');
-        readfile($pwaIcon512);
+    $activeIcon = '';
+    if (defined('SYS_APP_FAVICON') && !empty(SYS_APP_FAVICON)) {
+        $cand = BASE_PATH . '/' . ltrim(SYS_APP_FAVICON, '/');
+        if (file_exists($cand)) $activeIcon = $cand;
+    }
+    if (empty($activeIcon) && defined('SYS_APP_LOGO') && !empty(SYS_APP_LOGO)) {
+        $cand = BASE_PATH . '/' . ltrim(SYS_APP_LOGO, '/');
+        if (file_exists($cand)) $activeIcon = $cand;
+    }
+    if (empty($activeIcon)) {
+        // Fallback to uploaded settings folder
+        $uploadDir = BASE_PATH . '/public/uploads/settings/';
+        $favs = glob($uploadDir . 'favicon_*.*');
+        if (!empty($favs)) $activeIcon = end($favs);
+        if (empty($activeIcon)) {
+            $logos = glob($uploadDir . 'logo_*.*');
+            if (!empty($logos)) $activeIcon = end($logos);
+        }
+    }
+    if (empty($activeIcon)) {
+        $pwaIcon512 = PUBLIC_PATH . '/images/pwa/icon-512.png';
+        if (file_exists($pwaIcon512)) $activeIcon = $pwaIcon512;
+    }
+
+    if (empty($activeIcon) || !file_exists($activeIcon)) {
+        http_response_code(404);
         exit;
     }
-    
-    $faviconSetting = defined('SYS_APP_FAVICON') ? SYS_APP_FAVICON : '';
-    $filePath = !empty($faviconSetting) ? BASE_PATH . '/' . ltrim($faviconSetting, '/') : '';
-    if (!empty($filePath) && file_exists($filePath)) {
-        header('Content-Type: image/png');
+
+    $reqSize = isset($_GET['size']) ? (int)$_GET['size'] : (isset($_GET['s']) ? (int)$_GET['s'] : 0);
+    $isMaskable = !empty($_GET['maskable']);
+    $ext = strtolower(pathinfo($activeIcon, PATHINFO_EXTENSION));
+
+    // Direct output if no resize or maskable transformation needed
+    if ($reqSize <= 0 && !$isMaskable && in_array($ext, ['png', 'jpg', 'jpeg', 'webp'])) {
+        $mime = $ext === 'png' ? 'image/png' : ($ext === 'webp' ? 'image/webp' : 'image/jpeg');
+        header('Content-Type: ' . $mime);
         header('Cache-Control: public, max-age=86400');
-        readfile($filePath);
+        header('Last-Modified: ' . gmdate('D, d M Y H:i:s', filemtime($activeIcon)) . ' GMT');
+        readfile($activeIcon);
         exit;
     }
-    http_response_code(404);
+
+    // Dynamic resizing & maskable safe-padding using GD
+    $targetSize = ($reqSize > 0 && $reqSize <= 1024) ? $reqSize : 512;
+    $raw = file_get_contents($activeIcon);
+    $srcImg = null;
+    if ($ext === 'ico') {
+        $pos = strpos($raw, "\x89PNG\r\n\x1a\n");
+        if ($pos !== false) {
+            $srcImg = @imagecreatefromstring(substr($raw, $pos));
+        }
+    }
+    if (!$srcImg) {
+        $srcImg = @imagecreatefromstring($raw);
+    }
+
+    if ($srcImg) {
+        $dst = imagecreatetruecolor($targetSize, $targetSize);
+        if ($isMaskable) {
+            $bg = imagecolorallocate($dst, 255, 255, 255);
+            imagefilledrectangle($dst, 0, 0, $targetSize, $targetSize, $bg);
+            $inner = (int)($targetSize * 0.80);
+            $offset = (int)(($targetSize - $inner) / 2);
+            imagealphablending($dst, true);
+            imagecopyresampled($dst, $srcImg, $offset, $offset, 0, 0, $inner, $inner, imagesx($srcImg), imagesy($srcImg));
+        } else {
+            imagealphablending($dst, false);
+            imagesavealpha($dst, true);
+            $transparent = imagecolorallocatealpha($dst, 255, 255, 255, 127);
+            imagefilledrectangle($dst, 0, 0, $targetSize, $targetSize, $transparent);
+            imagealphablending($dst, true);
+            imagecopyresampled($dst, $srcImg, 0, 0, 0, 0, $targetSize, $targetSize, imagesx($srcImg), imagesy($srcImg));
+            imagealphablending($dst, false);
+            imagesavealpha($dst, true);
+        }
+        header('Content-Type: image/png');
+        header('Cache-Control: public, max-age=86400');
+        header('Last-Modified: ' . gmdate('D, d M Y H:i:s', filemtime($activeIcon)) . ' GMT');
+        imagepng($dst, null, 8);
+        imagedestroy($dst);
+        imagedestroy($srcImg);
+        exit;
+    }
+
+    header('Content-Type: image/png');
+    readfile($activeIcon);
     exit;
 });
 
@@ -613,34 +712,43 @@ $router->get('/manifest.json', function() {
             $manifest['scope'] = rtrim(url(''), '/') . '/';
             $manifest['id'] = 'portal-guru-bip-app';
 
-            // High-resolution exact icons
+            // Check icon timestamp from settings for instant cache-busting
+            $customIconPath = '';
+            if (defined('SYS_APP_FAVICON') && !empty(SYS_APP_FAVICON) && file_exists(BASE_PATH . '/' . ltrim(SYS_APP_FAVICON, '/'))) {
+                $customIconPath = BASE_PATH . '/' . ltrim(SYS_APP_FAVICON, '/');
+            } elseif (defined('SYS_APP_LOGO') && !empty(SYS_APP_LOGO) && file_exists(BASE_PATH . '/' . ltrim(SYS_APP_LOGO, '/'))) {
+                $customIconPath = BASE_PATH . '/' . ltrim(SYS_APP_LOGO, '/');
+            }
+            $iconVer = !empty($customIconPath) ? filemtime($customIconPath) : '1';
+
+            // High-resolution exact icons from dynamic endpoint synced with Pengaturan Sistem
             $manifest['icons'] = [
                 [
-                    'src' => asset('images/pwa/icon-192.png'),
+                    'src' => url('pwa-icon.png?size=192&v=' . $iconVer),
                     'sizes' => '192x192',
                     'type' => 'image/png',
                     'purpose' => 'any'
                 ],
                 [
-                    'src' => asset('images/pwa/icon-maskable-192.png'),
+                    'src' => url('pwa-icon.png?size=192&maskable=1&v=' . $iconVer),
                     'sizes' => '192x192',
                     'type' => 'image/png',
                     'purpose' => 'maskable'
                 ],
                 [
-                    'src' => asset('images/pwa/icon-512.png'),
+                    'src' => url('pwa-icon.png?size=512&v=' . $iconVer),
                     'sizes' => '512x512',
                     'type' => 'image/png',
                     'purpose' => 'any'
                 ],
                 [
-                    'src' => asset('images/pwa/icon-maskable-512.png'),
+                    'src' => url('pwa-icon.png?size=512&maskable=1&v=' . $iconVer),
                     'sizes' => '512x512',
                     'type' => 'image/png',
                     'purpose' => 'maskable'
                 ],
                 [
-                    'src' => asset('images/pwa/apple-touch-icon.png'),
+                    'src' => url('pwa-icon.png?size=180&v=' . $iconVer),
                     'sizes' => '180x180',
                     'type' => 'image/png'
                 ]
@@ -648,7 +756,7 @@ $router->get('/manifest.json', function() {
 
             if (!empty($manifest['shortcuts'])) {
                 foreach ($manifest['shortcuts'] as &$sc) {
-                    $sc['icons'] = [[ 'src' => asset('images/pwa/icon-192.png'), 'sizes' => '192x192', 'type' => 'image/png' ]];
+                    $sc['icons'] = [[ 'src' => url('pwa-icon.png?size=192&v=' . $iconVer), 'sizes' => '192x192', 'type' => 'image/png' ]];
                 }
             }
 
@@ -674,15 +782,16 @@ $router->get('/sw.js', function() {
     exit;
 });
 
-// -- Database Migration Routes --
+// -- Database Migration Routes (Restricted to Super Admin) --
 $router->get('/desktop-migrate', function() {
     require_once BASE_PATH . '/desktop-migrate/migrate.php';
     exit;
-});
+}, [Middleware::roleRequired('super_admin')]);
+
 $router->get('/mobile-migrate', function() {
     require_once BASE_PATH . '/mobile-migrate/migrate.php';
     exit;
-});
+}, [Middleware::roleRequired('super_admin')]);
 
 // -- API Routes (JSON) --
 $router->get('/api/quran/surat', [PortalGuruController::class, 'apiSuratList']);

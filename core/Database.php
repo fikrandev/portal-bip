@@ -71,6 +71,14 @@ class Database
     }
 
     /**
+     * Alias to getConnection() for backward compatibility
+     */
+    public function pdo(): PDO
+    {
+        return $this->pdo;
+    }
+
+    /**
      * Execute a query with parameters
      * 
      * @param string $sql  SQL query with placeholders

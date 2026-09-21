@@ -182,25 +182,58 @@ class Auth
     }
 
     /**
+     * Ensure login_attempts table exists in database
+     */
+    private static function ensureAttemptsTable(): void
+    {
+        static $checked = false;
+        if ($checked) return;
+        try {
+            $db = Database::getInstance();
+            $db->query("CREATE TABLE IF NOT EXISTS `login_attempts` (
+                `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                `ip_address` VARCHAR(45) NOT NULL,
+                `username` VARCHAR(100) NOT NULL,
+                `attempted_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                INDEX `idx_la_ip_time` (`ip_address`, `attempted_at`),
+                INDEX `idx_la_user_time` (`username`, `attempted_at`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+            $checked = true;
+        } catch (Throwable $e) {
+            // Proceed gracefully if DB table creation is not permitted
+        }
+    }
+
+    /**
      * Record a failed login attempt
      */
     private static function recordFailedAttempt(string $username): void
     {
-        if (!isset($_SESSION['login_attempts'])) {
-            $_SESSION['login_attempts'] = [];
-        }
+        self::ensureAttemptsTable();
+        $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
 
-        $key = md5($username . ($_SERVER['REMOTE_ADDR'] ?? ''));
-        
-        if (!isset($_SESSION['login_attempts'][$key])) {
-            $_SESSION['login_attempts'][$key] = [
-                'count' => 0,
-                'first_attempt' => time()
-            ];
+        try {
+            $db = Database::getInstance();
+            $db->insert('login_attempts', [
+                'ip_address'   => $ip,
+                'username'     => $username,
+                'attempted_at' => date('Y-m-d H:i:s')
+            ]);
+        } catch (Throwable $e) {
+            // Fallback to session if database write fails
+            if (!isset($_SESSION['login_attempts'])) {
+                $_SESSION['login_attempts'] = [];
+            }
+            $key = md5($username . $ip);
+            if (!isset($_SESSION['login_attempts'][$key])) {
+                $_SESSION['login_attempts'][$key] = [
+                    'count' => 0,
+                    'first_attempt' => time()
+                ];
+            }
+            $_SESSION['login_attempts'][$key]['count']++;
+            $_SESSION['login_attempts'][$key]['last_attempt'] = time();
         }
-
-        $_SESSION['login_attempts'][$key]['count']++;
-        $_SESSION['login_attempts'][$key]['last_attempt'] = time();
     }
 
     /**
@@ -208,21 +241,34 @@ class Auth
      */
     private static function isLockedOut(string $username): bool
     {
-        $key = md5($username . ($_SERVER['REMOTE_ADDR'] ?? ''));
-        
-        if (!isset($_SESSION['login_attempts'][$key])) {
-            return false;
-        }
+        self::ensureAttemptsTable();
+        $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+        $lockoutSince = date('Y-m-d H:i:s', time() - (LOCKOUT_DURATION * 60));
 
-        $attempts = $_SESSION['login_attempts'][$key];
-        
-        if ($attempts['count'] >= MAX_LOGIN_ATTEMPTS) {
-            $lockoutEnd = $attempts['last_attempt'] + (LOCKOUT_DURATION * 60);
-            if (time() < $lockoutEnd) {
+        try {
+            $db = Database::getInstance();
+            $row = $db->find(
+                "SELECT COUNT(*) as attempts FROM `login_attempts` 
+                 WHERE (ip_address = ? OR username = ?) AND attempted_at >= ?",
+                [$ip, $username, $lockoutSince]
+            );
+            $attempts = (int)($row['attempts'] ?? 0);
+            if ($attempts >= MAX_LOGIN_ATTEMPTS) {
                 return true;
             }
-            // Lockout expired, clear
-            self::clearFailedAttempts($username);
+        } catch (Throwable $e) {
+            // Fallback to session check if database check fails
+            $key = md5($username . $ip);
+            if (isset($_SESSION['login_attempts'][$key])) {
+                $sessionAttempts = $_SESSION['login_attempts'][$key];
+                if ($sessionAttempts['count'] >= MAX_LOGIN_ATTEMPTS) {
+                    $lockoutEnd = $sessionAttempts['last_attempt'] + (LOCKOUT_DURATION * 60);
+                    if (time() < $lockoutEnd) {
+                        return true;
+                    }
+                    unset($_SESSION['login_attempts'][$key]);
+                }
+            }
         }
 
         return false;
@@ -233,7 +279,21 @@ class Auth
      */
     private static function clearFailedAttempts(string $username): void
     {
-        $key = md5($username . ($_SERVER['REMOTE_ADDR'] ?? ''));
+        self::ensureAttemptsTable();
+        $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+
+        try {
+            $db = Database::getInstance();
+            $db->delete('login_attempts', 'ip_address = ? OR username = ?', [$ip, $username]);
+            
+            // Periodically clean up records older than 1 day to keep table lean
+            $oldThreshold = date('Y-m-d H:i:s', time() - 86400);
+            $db->delete('login_attempts', 'attempted_at < ?', [$oldThreshold]);
+        } catch (Throwable $e) {
+            // Fallback
+        }
+
+        $key = md5($username . $ip);
         unset($_SESSION['login_attempts'][$key]);
     }
 

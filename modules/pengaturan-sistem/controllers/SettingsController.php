@@ -564,7 +564,7 @@ class SettingsController
         // Global Logo
         if (isset($_FILES['app_logo']) && $_FILES['app_logo']['error'] === UPLOAD_ERR_OK) {
             $ext = strtolower(pathinfo($_FILES['app_logo']['name'], PATHINFO_EXTENSION));
-            if (in_array($ext, ['png', 'jpg', 'jpeg', 'svg'])) {
+            if (in_array($ext, ['png', 'jpg', 'jpeg', 'svg', 'webp'])) {
                 $filename = 'logo_' . time() . '.' . $ext;
                 if (move_uploaded_file($_FILES['app_logo']['tmp_name'], $uploadDir . $filename)) {
                     $val = '/public/uploads/settings/' . $filename;
@@ -574,6 +574,11 @@ class SettingsController
                     } else {
                         $db->query("INSERT INTO settings (setting_key, setting_value) VALUES ('app_logo', ?)", [$val]);
                     }
+
+                    // Sinkronkan ke icon PWA
+                    try {
+                        self::syncAppIconToPwa($uploadDir . $filename);
+                    } catch (\Throwable $e) {}
                 }
             }
         }
@@ -581,7 +586,7 @@ class SettingsController
         // Favicon
         if (isset($_FILES['app_favicon']) && $_FILES['app_favicon']['error'] === UPLOAD_ERR_OK) {
             $ext = strtolower(pathinfo($_FILES['app_favicon']['name'], PATHINFO_EXTENSION));
-            if (in_array($ext, ['png', 'ico', 'svg'])) {
+            if (in_array($ext, ['png', 'ico', 'svg', 'jpg', 'jpeg', 'webp'])) {
                 $filename = 'favicon_' . time() . '.' . $ext;
                 if (move_uploaded_file($_FILES['app_favicon']['tmp_name'], $uploadDir . $filename)) {
                     $val = '/public/uploads/settings/' . $filename;
@@ -594,8 +599,8 @@ class SettingsController
 
                     // Sinkronkan juga ke icon installer PWA agar otomatis diperbarui dengan resolusi presisi
                     try {
-                        self::syncFaviconToPwa($uploadDir . $filename);
-                    } catch (\Exception $e) {}
+                        self::syncAppIconToPwa($uploadDir . $filename);
+                    } catch (\Throwable $e) {}
                 }
             }
         }
@@ -943,32 +948,55 @@ class SettingsController
     }
 
     /**
-     * Resample and sync favicon image to all standard PWA WebAPK icons
+     * Resample and sync uploaded application icon to all standard PWA WebAPK icons
      */
-    private static function syncFaviconToPwa(string $sourceFile): void
+    public static function syncAppIconToPwa(?string $sourceFile = null): bool
     {
-        if (!file_exists($sourceFile)) return;
-        
-        $pngData = null;
+        if (empty($sourceFile) || !file_exists($sourceFile)) {
+            // Find active uploaded icon in settings
+            $iconPath = '';
+            if (defined('SYS_APP_FAVICON') && !empty(SYS_APP_FAVICON)) {
+                $cand = BASE_PATH . '/' . ltrim(SYS_APP_FAVICON, '/');
+                if (file_exists($cand)) $iconPath = $cand;
+            }
+            if (empty($iconPath) && defined('SYS_APP_LOGO') && !empty(SYS_APP_LOGO)) {
+                $cand = BASE_PATH . '/' . ltrim(SYS_APP_LOGO, '/');
+                if (file_exists($cand)) $iconPath = $cand;
+            }
+            if (empty($iconPath)) {
+                $uploadDir = BASE_PATH . '/public/uploads/settings/';
+                $favs = glob($uploadDir . 'favicon_*.*');
+                if (!empty($favs)) $iconPath = end($favs);
+                if (empty($iconPath)) {
+                    $logos = glob($uploadDir . 'logo_*.*');
+                    if (!empty($logos)) $iconPath = end($logos);
+                }
+            }
+            if (empty($iconPath) || !file_exists($iconPath)) return false;
+            $sourceFile = $iconPath;
+        }
+
         $ext = strtolower(pathinfo($sourceFile, PATHINFO_EXTENSION));
-        if ($ext === 'png') {
-            $pngData = file_get_contents($sourceFile);
-        } elseif ($ext === 'ico') {
+        $srcImg = null;
+
+        if ($ext === 'ico') {
             $raw = file_get_contents($sourceFile);
             $pos = strpos($raw, "\x89PNG\r\n\x1a\n");
             if ($pos !== false) {
-                $pngData = substr($raw, $pos);
+                $srcImg = @imagecreatefromstring(substr($raw, $pos));
             }
         }
-        
-        if (!$pngData) return;
-        
-        $srcImg = @imagecreatefromstring($pngData);
-        if (!$srcImg) return;
-        
+
+        if (!$srcImg) {
+            $raw = file_get_contents($sourceFile);
+            $srcImg = @imagecreatefromstring($raw);
+        }
+
+        if (!$srcImg) return false;
+
         $pwaDir = BASE_PATH . '/public/images/pwa/';
-        if (!is_dir($pwaDir)) @mkdir($pwaDir, 0777, true);
-        
+        if (!is_dir($pwaDir)) @mkdir($pwaDir, 0755, true);
+
         $makeIcon = function($size, $isMaskable, $destPath) use ($srcImg) {
             $dst = imagecreatetruecolor($size, $size);
             if ($isMaskable) {
@@ -991,22 +1019,23 @@ class SettingsController
             imagepng($dst, $destPath, 9);
             imagedestroy($dst);
         };
-        
-        // Public directory icons
+
+        // 1. Public directory icons
         $makeIcon(192, false, $pwaDir . 'icon-192.png');
         $makeIcon(512, false, $pwaDir . 'icon-512.png');
         $makeIcon(192, true, $pwaDir . 'icon-maskable-192.png');
         $makeIcon(512, true, $pwaDir . 'icon-maskable-512.png');
         $makeIcon(180, false, $pwaDir . 'apple-touch-icon.png');
         $makeIcon(512, false, $pwaDir . 'pwa-icon.png');
-        
-        // Root directory icons for direct static Nginx access
+
+        // 2. Root directory icons for direct static Nginx access
         $makeIcon(192, false, BASE_PATH . '/icon-192.png');
         $makeIcon(512, false, BASE_PATH . '/icon-512.png');
         $makeIcon(512, false, BASE_PATH . '/pwa-icon.png');
         $makeIcon(180, false, BASE_PATH . '/apple-touch-icon.png');
-        
+
         imagedestroy($srcImg);
+        return true;
     }
 }
 
