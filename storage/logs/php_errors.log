@@ -936,3 +936,12 @@ Stack trace:
 #1 E:\xampp\mysql\data\portal-bip\index.php(720): Router->dispatch()
 #2 {main}
   thrown in E:\xampp\mysql\data\portal-bip\modules\kelola-quran-siswa\controllers\QuranSiswaController.php on line 380
+[22-Sep-2026 08:36:53 Asia/Makassar] PHP Deprecated:  Required parameter $back_color follows optional parameter $filename in E:\xampp\mysql\data\portal-bip\core\phpqrcode.php on line 955
+[22-Sep-2026 08:36:53 Asia/Makassar] PHP Deprecated:  Required parameter $fore_color follows optional parameter $filename in E:\xampp\mysql\data\portal-bip\core\phpqrcode.php on line 955
+[22-Sep-2026 08:36:53 Asia/Makassar] PHP Deprecated:  Required parameter $back_color follows optional parameter $filename in E:\xampp\mysql\data\portal-bip\core\phpqrcode.php on line 3549
+[22-Sep-2026 08:36:53 Asia/Makassar] PHP Deprecated:  Required parameter $fore_color follows optional parameter $filename in E:\xampp\mysql\data\portal-bip\core\phpqrcode.php on line 3549
+[22-Sep-2026 08:36:53 Asia/Makassar] PHP Fatal error:  Uncaught Error: Call to undefined function url() in E:\xampp\mysql\data\portal-bip\core\KartuHelper.php:208
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\scratch\verify_kartu_download.php(28): KartuHelper::generateCard(Array)
+#1 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\core\KartuHelper.php on line 208

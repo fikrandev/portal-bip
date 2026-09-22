@@ -35,6 +35,7 @@ require_once BASE_PATH . '/core/Response.php';
 require_once BASE_PATH . '/core/ExcelHelper.php';
 require_once BASE_PATH . '/core/ModalHelper.php';
 require_once BASE_PATH . '/core/DropdownHelper.php';
+require_once BASE_PATH . '/core/KartuHelper.php';
 
 // ── Global System Settings ──────────────────────────
 try {

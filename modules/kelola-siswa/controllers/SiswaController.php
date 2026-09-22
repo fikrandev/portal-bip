@@ -1873,25 +1873,33 @@ class SiswaController
     }
 
     /**
-     * Cetak Kartu Siswa (Single)
+     * Cetak / Download Kartu Siswa PNG (Single)
+     * Langsung unduh file PNG: {nisn}-{nama_siswa}.png
      */
     public static function cetakKartu(int $id): void
     {
         $db = Database::getInstance();
-        $siswa = $db->find("SELECT id, id_siswa, nisn, nama_lengkap, jenjang FROM siswa WHERE id = ?", [$id]);
+        $siswa = $db->find("SELECT id, id_siswa, nis, nisn, nama_lengkap, nama, jenjang, foto FROM siswa WHERE id = ?", [$id]);
         
         if (!$siswa) {
             Response::withError(url('kelola-siswa'), 'Data siswa tidak ditemukan.');
             return;
         }
 
-        $siswaList = [$siswa];
-        include MODULES_PATH . '/kelola-siswa/views/kartu.php';
-        exit;
+        // Jika diminta pratinjau HTML secara eksplisit via ?view=html
+        if (isset($_GET['view']) && in_array($_GET['view'], ['html', 'preview'])) {
+            $siswaList = [$siswa];
+            include MODULES_PATH . '/kelola-siswa/views/kartu.php';
+            exit;
+        }
+
+        // Unduh langsung file PNG beresolusi tinggi: {nisn}-{nama_siswa}.png
+        KartuHelper::downloadSingle($siswa);
     }
 
     /**
-     * Cetak Kartu Siswa Massal (Berdasarkan Filter)
+     * Cetak / Download Kartu Siswa Massal (ZIP)
+     * Langsung unduh file ZIP berisi seluruh kartu PNG siswa
      */
     public static function cetakKartuMassal(): void
     {
@@ -1918,16 +1926,33 @@ class SiswaController
             $params[] = "%{$searchQuery}%";
         }
 
-        // Limit to 500 to prevent browser crash, order by same as view
-        $siswaList = $db->findAll("SELECT id, id_siswa, nisn, nama_lengkap, jenjang FROM siswa WHERE {$where} ORDER BY jenjang ASC, kelas ASC, nama_lengkap ASC LIMIT 500", $params);
+        // Batasi 500 siswa per tarikan untuk mencegah kehabisan memori server
+        $siswaList = $db->findAll("SELECT id, id_siswa, nis, nisn, nama_lengkap, nama, jenjang, foto FROM siswa WHERE {$where} ORDER BY jenjang ASC, kelas ASC, nama_lengkap ASC LIMIT 500", $params);
         
         if (empty($siswaList)) {
-            Response::withError(url('kelola-siswa/foto'), 'Tidak ada data siswa yang cocok dengan filter untuk dicetak.');
+            Response::withError(url('kelola-siswa/foto'), 'Tidak ada data siswa yang cocok dengan filter untuk diunduh.');
             return;
         }
 
-        include MODULES_PATH . '/kelola-siswa/views/kartu.php';
-        exit;
+        // Jika diminta pratinjau HTML secara eksplisit via ?view=html
+        if (isset($_GET['view']) && in_array($_GET['view'], ['html', 'preview'])) {
+            include MODULES_PATH . '/kelola-siswa/views/kartu.php';
+            exit;
+        }
+
+        // Penamaan file ZIP dinamis sesuai filter
+        $zipParts = ['kartu_siswa'];
+        if (!empty($filterJenjang)) {
+            $zipParts[] = preg_replace('/[^a-zA-Z0-9]/', '', $filterJenjang);
+        }
+        if (!empty($filterKelas)) {
+            $zipParts[] = preg_replace('/[^a-zA-Z0-9]/', '', $filterKelas);
+        }
+        $zipParts[] = date('Ymd_His');
+        $zipFilename = implode('_', $zipParts) . '.zip';
+
+        // Unduh langsung file ZIP berisi file-file PNG {nisn}-{nama_siswa}.png
+        KartuHelper::downloadZip($siswaList, $zipFilename);
     }
 
     /**

@@ -29,9 +29,9 @@
                 ]);
                 $massalUrl = url('kelola-siswa/cetak-kartu-massal') . (!empty($massalParams) ? '?' . http_build_query($massalParams) : '');
             ?>
-            <a href="<?= $massalUrl ?>" target="_blank" class="px-5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs shadow-md transition-all flex items-center gap-2">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6v-8z" /></svg>
-                <span>Cetak Filtered</span>
+            <a href="<?= $massalUrl ?>" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md transition-all flex items-center gap-2" title="Unduh seluruh kartu siswa yang difilter sebagai file ZIP">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
+                <span>Download Filtered (ZIP)</span>
             </a>
 
             <!-- Pengaturan Template Kartu -->
@@ -114,9 +114,9 @@
 
                         <!-- Overlay Button (Upload) -->
                         <div class="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 backdrop-blur-sm">
-                            <a href="<?= url('kelola-siswa/cetak-kartu/' . $s['id']) ?>" target="_blank" class="px-4 py-2 w-28 text-center rounded-xl bg-indigo-600 text-white font-bold text-[10px] shadow-lg flex items-center justify-center gap-1.5 hover:bg-indigo-700 transition-colors">
-                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6v-8z" /></svg>
-                                <span>Cetak Kartu</span>
+                            <a href="<?= url('kelola-siswa/cetak-kartu/' . $s['id']) ?>" class="px-4 py-2 w-28 text-center rounded-xl bg-indigo-600 text-white font-bold text-[10px] shadow-lg flex items-center justify-center gap-1.5 hover:bg-indigo-700 transition-colors" title="Download Kartu (PNG)">
+                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
+                                <span>Download PNG</span>
                             </a>
                             <button onclick="openUploadModal(<?= $s['id'] ?>, '<?= addslashes(e($s['nama'])) ?>')" class="px-4 py-2 w-28 text-center rounded-xl bg-white text-slate-800 font-bold text-[10px] shadow-lg flex items-center justify-center gap-1.5 hover:bg-emerald-50 hover:text-emerald-700 transition-colors">
                                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" /></svg>

@@ -164,12 +164,16 @@
 </head>
 <body>
 
-    <div class="fixed top-4 right-4 print:hidden z-50 flex gap-2">
-        <button onclick="window.close()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-sm font-bold shadow-md transition-colors">Tutup</button>
-        <button onclick="window.print()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-bold shadow-md transition-colors flex items-center gap-2">
+    <div class="fixed top-4 right-4 print:hidden z-50 flex items-center gap-2">
+        <a href="<?= url('kelola-siswa/cetak-kartu-massal') ?>" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-lg transition-colors flex items-center gap-1.5">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
+            <span>Download Semua (ZIP)</span>
+        </a>
+        <button onclick="window.print()" class="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold shadow-md transition-colors flex items-center gap-1.5">
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6v-8z" /></svg>
-            Print Kartu (<?= count($siswaList) ?>)
+            <span>Print Fisik (<?= count($siswaList) ?>)</span>
         </button>
+        <button onclick="window.close()" class="px-3 py-2 bg-white/80 backdrop-blur-xs hover:bg-white text-slate-700 border border-slate-200 rounded-xl text-xs font-bold shadow-md transition-colors">Tutup</button>
     </div>
 
     <?php 
@@ -228,6 +232,12 @@
             <div class="qr-container qrcode-box" data-qr="<?= e($qrUrl) ?>"></div>
         </div>
     </div>
+    <div class="print:hidden -mt-2 mb-4 text-center">
+        <a href="<?= url('kelola-siswa/cetak-kartu/' . $siswa['id']) ?>" class="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs shadow-md transition-all">
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
+            <span>Download PNG (<?= e($siswa['nisn'] ?: $siswa['nama_lengkap']) ?>)</span>
+        </a>
+    </div>
     <?php endforeach; ?>
 
     <!-- Error message if any template missing -->
@@ -253,13 +263,6 @@
                     correctLevel : QRCode.CorrectLevel.M
                 });
             });
-
-            // Automatically open print dialog after a slight delay to ensure QR is rendered
-            setTimeout(() => {
-                <?php if (!$templateMissing): ?>
-                window.print();
-                <?php endif; ?>
-            }, 800);
         });
     </script>
 </body>
