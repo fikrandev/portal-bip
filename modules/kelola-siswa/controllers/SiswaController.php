@@ -1775,8 +1775,8 @@ class SiswaController
                 mkdir($uploadDir, 0777, true);
             }
 
-            $tempExtractDir = BASE_PATH . '/scratch/temp_zip_' . time() . '/';
-            mkdir($tempExtractDir, 0777, true);
+            $tempExtractDir = sys_get_temp_dir() . '/temp_zip_' . time() . '/';
+            @mkdir($tempExtractDir, 0777, true);
             
             $zip->extractTo($tempExtractDir);
             $zip->close();

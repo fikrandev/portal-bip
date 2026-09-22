@@ -1,4 +1,8 @@
 <?php
+// Suppress deprecations for PHP 8.2+ compatibility
+if (defined('E_DEPRECATED')) {
+    @error_reporting(error_reporting() & ~E_DEPRECATED);
+}
 
 /*
  * PHP QR Code encoder
@@ -949,6 +953,7 @@
 
     define('QR_IMAGE', true);
 
+    #[\AllowDynamicProperties]
     class QRimage {
 
         //----------------------------------------------------------------------
@@ -988,7 +993,7 @@
         }
 
         //----------------------------------------------------------------------
-        private static function image($frame, $pixelPerPoint = 4, $outerFrame = 4, $back_color = 0xFFFFFF, $fore_color = 0x000000)
+        public static function image($frame, $pixelPerPoint = 4, $outerFrame = 4, $back_color = 0xFFFFFF, $fore_color = 0x000000)
         {
             $h = count($frame);
             $w = strlen($frame[0]);
@@ -2985,6 +2990,7 @@
 
     //##########################################################################
     
+    #[\AllowDynamicProperties]
     class QRcode {
     
         public $version;
@@ -3111,6 +3117,15 @@
             return $this->encodeInput($input);
         }
         
+        //----------------------------------------------------------------------
+        public static function image($text, $level = QR_ECLEVEL_L, $size = 3, $margin = 4, $back_color = 0xFFFFFF, $fore_color = 0x000000) 
+        {
+            $enc = QRencode::factory($level, $size, $margin, $back_color, $fore_color);
+            $tab = $enc->encode($text);
+            $maxSize = (int)(QR_PNG_MAXIMUM_SIZE / (count($tab)+2*$margin));
+            return QRimage::image($tab, min(max(1, $size), $maxSize), $margin, $back_color, $fore_color);
+        }
+
         //----------------------------------------------------------------------
         public static function png($text, $outfile = false, $level = QR_ECLEVEL_L, $size = 3, $margin = 4, $saveandprint=false, $back_color = 0xFFFFFF, $fore_color = 0x000000) 
         {
@@ -3239,6 +3254,7 @@
     
     //##########################################################################    
     
+    #[\AllowDynamicProperties]
     class QRencode {
     
         public $casesensitive = true;
@@ -3249,6 +3265,7 @@
         public $margin = 4;
         public $back_color = 0xFFFFFF;
         public $fore_color = 0x000000;
+        public $cmyk = false;
         
         public $structured = 0; // not supported yet
         

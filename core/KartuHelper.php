@@ -220,10 +220,14 @@ class KartuHelper
      */
     public static function downloadSingle(array $siswa): void
     {
+        // Suppress display of warnings/deprecations so they don't break image binary stream
+        $prevDisplay = ini_get('display_errors');
+        @ini_set('display_errors', '0');
+
         $card = self::generateCard($siswa);
         $filename = self::getStudentCardFilename($siswa, 'png');
 
-        if (ob_get_level()) {
+        while (ob_get_level()) {
             ob_end_clean();
         }
 
@@ -235,6 +239,7 @@ class KartuHelper
 
         imagepng($card, null, 8);
         imagedestroy($card);
+        @ini_set('display_errors', $prevDisplay);
         exit;
     }
 
@@ -248,12 +253,20 @@ class KartuHelper
             return;
         }
 
-        $tempZipDir = BASE_PATH . '/scratch';
-        if (!is_dir($tempZipDir)) {
-            mkdir($tempZipDir, 0777, true);
+        // Suppress display of warnings/deprecations so they don't break zip binary stream
+        $prevDisplay = ini_get('display_errors');
+        @ini_set('display_errors', '0');
+
+        // Choose a guaranteed writable system temp directory (/tmp on Linux, C:\Temp on Windows)
+        $tempZipDir = sys_get_temp_dir();
+        if (!is_dir($tempZipDir) || !is_writable($tempZipDir)) {
+            $tempZipDir = BASE_PATH . '/storage';
+            if (!is_dir($tempZipDir)) {
+                @mkdir($tempZipDir, 0777, true);
+            }
         }
 
-        $tempZipFile = $tempZipDir . '/kartu_batch_' . uniqid() . '.zip';
+        $tempZipFile = rtrim($tempZipDir, '/\\') . '/kartu_batch_' . uniqid() . '.zip';
         $zip = new ZipArchive();
 
         if ($zip->open($tempZipFile, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
@@ -290,7 +303,7 @@ class KartuHelper
 
         $zip->close();
 
-        if (ob_get_level()) {
+        while (ob_get_level()) {
             ob_end_clean();
         }
 
@@ -303,6 +316,7 @@ class KartuHelper
 
         readfile($tempZipFile);
         @unlink($tempZipFile);
+        @ini_set('display_errors', $prevDisplay);
         exit;
     }
 
@@ -431,29 +445,34 @@ class KartuHelper
     }
 
     /**
-     * Draw QR Code with clean white rounded frame
+     * Draw QR Code with clean white rounded frame (100% In-Memory, No Disk Access)
      */
     private static function drawQrCode(\GdImage $card, string $url, int $x, int $y, int $size): void
     {
-        $scratchDir = BASE_PATH . '/scratch';
-        if (!is_dir($scratchDir)) {
-            mkdir($scratchDir, 0777, true);
+        $qrRaw = null;
+
+        // Method 1: Direct in-memory image generation via QRcode::image()
+        if (method_exists('QRcode', 'image')) {
+            $qrRaw = @QRcode::image($url, QR_ECLEVEL_M, 6, 1);
         }
 
-        $tempQrPath = $scratchDir . '/qr_' . md5($url . microtime()) . '.png';
-        QRcode::png($url, $tempQrPath, QR_ECLEVEL_M, 6, 1);
-
-        if (file_exists($tempQrPath)) {
-            $qrRaw = @imagecreatefrompng($tempQrPath);
-            if ($qrRaw) {
-                $white = imagecolorallocate($card, 255, 255, 255);
-                $pad = 6;
-                // White background badge for QR
-                imagefilledrectangle($card, $x - $pad, $y - $pad, $x + $size + $pad, $y + $size + $pad, $white);
-                imagecopyresampled($card, $qrRaw, $x, $y, 0, 0, $size, $size, imagesx($qrRaw), imagesy($qrRaw));
-                imagedestroy($qrRaw);
+        // Method 2: Output buffer capture (in-memory stream, zero disk write)
+        if (!$qrRaw) {
+            ob_start();
+            @QRcode::png($url, false, QR_ECLEVEL_M, 6, 1);
+            $rawPng = ob_get_clean();
+            if (!empty($rawPng)) {
+                $qrRaw = @imagecreatefromstring($rawPng);
             }
-            @unlink($tempQrPath);
+        }
+
+        if ($qrRaw) {
+            $white = imagecolorallocate($card, 255, 255, 255);
+            $pad = 6;
+            // White background badge for QR
+            imagefilledrectangle($card, $x - $pad, $y - $pad, $x + $size + $pad, $y + $size + $pad, $white);
+            imagecopyresampled($card, $qrRaw, $x, $y, 0, 0, $size, $size, imagesx($qrRaw), imagesy($qrRaw));
+            imagedestroy($qrRaw);
         }
     }
 
