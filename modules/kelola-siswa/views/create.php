@@ -146,7 +146,16 @@
                 <!-- Jenjang Sekolah -->
                 <div>
                     <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Jenjang Satuan Pendidikan <span class="text-rose-500">*</span></label>
-                    <select name="jenjang" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs bg-slate-50 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none transition-all">
+                    <?php 
+                    $classesByJenjang = $classesByJenjang ?? [
+                        'SD' => [],
+                        'SMP' => [],
+                        'SMA' => [],
+                        'PAUD' => [],
+                    ];
+                    $initialClasses = $classesByJenjang['SD'] ?? [];
+                    ?>
+                    <select name="jenjang" id="jenjang-select" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs bg-slate-50 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none transition-all font-semibold">
                         <option value="PAUD">🌱 PAUD / TK</option>
                         <option value="SD" selected>🎒 SD (Sekolah Dasar)</option>
                         <option value="SMP">📚 SMP</option>
@@ -156,8 +165,39 @@
 
                 <!-- Kelas -->
                 <div>
-                    <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Rombongan Belajar / Kelas <span class="text-rose-500">*</span></label>
-                    <input type="text" name="kelas" required placeholder="Contoh: 1A, KB, 7B, 10 MIPA" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs bg-slate-50 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none transition-all">
+                    <div class="flex items-center justify-between mb-1">
+                        <label class="block text-[11px] font-bold text-slate-700 uppercase">Rombongan Belajar / Kelas <span class="text-rose-500">*</span></label>
+                        <button type="button" id="btn-toggle-manual-kelas" class="text-[10px] text-emerald-600 hover:text-emerald-700 font-semibold underline cursor-pointer">
+                            + Input Manual
+                        </button>
+                    </div>
+
+                    <!-- Dropdown Mode (Default) -->
+                    <div id="kelas-dropdown-container">
+                        <select name="kelas" id="kelas-select" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs bg-slate-50 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none transition-all font-semibold">
+                            <option value="">-- Pilih Kelas SD --</option>
+                            <?php foreach ($initialClasses as $k): 
+                                $label = (stripos($k, 'kelas') === 0 || stripos($k, 'paud') === 0 || stripos($k, 'tk') === 0 || stripos($k, 'kb') === 0) ? $k : 'Kelas ' . $k;
+                            ?>
+                                <option value="<?= e($k) ?>">
+                                    <?= e($label) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <!-- Input Manual Mode (Hidden by default, can be toggled) -->
+                    <div id="kelas-manual-container" class="hidden">
+                        <div class="flex items-center gap-1.5">
+                            <input type="text" id="kelas-input-manual" placeholder="Ketik nama kelas/rombel..." class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs bg-slate-50 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none transition-all font-semibold">
+                            <button type="button" id="btn-cancel-manual-kelas" class="px-2.5 py-2.5 rounded-xl border border-slate-200 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold transition-colors" title="Kembali ke Dropdown">
+                                ✕
+                            </button>
+                        </div>
+                    </div>
+                    <p class="text-[10px] text-slate-400 mt-1" id="kelas-hint">
+                        Menampilkan pilihan kelas untuk jenjang <strong id="current-jenjang-label" class="text-slate-600">SD</strong>.
+                    </p>
                 </div>
 
                 <!-- Tahun Ajaran -->
@@ -447,3 +487,79 @@
         </div>
     </form>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const classesByJenjang = <?= json_encode($classesByJenjang, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+    const jenjangSelect = document.getElementById('jenjang-select');
+    const kelasSelect = document.getElementById('kelas-select');
+    const jenjangLabel = document.getElementById('current-jenjang-label');
+    const btnToggleManual = document.getElementById('btn-toggle-manual-kelas');
+    const btnCancelManual = document.getElementById('btn-cancel-manual-kelas');
+    const dropdownContainer = document.getElementById('kelas-dropdown-container');
+    const manualContainer = document.getElementById('kelas-manual-container');
+    const manualInput = document.getElementById('kelas-input-manual');
+
+    function populateKelas(jenjang, selectedValue = '') {
+        let j = (jenjang || 'SD').toUpperCase();
+        if (j === 'TK') j = 'PAUD';
+        if (jenjangLabel) jenjangLabel.textContent = j;
+
+        const classes = classesByJenjang[j] || [];
+        kelasSelect.innerHTML = '<option value="">-- Pilih Kelas ' + j + ' --</option>';
+
+        let isSelectedFound = false;
+        classes.forEach(function(k) {
+            const opt = document.createElement('option');
+            opt.value = k;
+            let label = k;
+            if (!k.toLowerCase().startsWith('kelas') && !k.toLowerCase().startsWith('paud') && !k.toLowerCase().startsWith('tk') && !k.toLowerCase().startsWith('kb')) {
+                label = 'Kelas ' + k;
+            }
+            opt.textContent = label;
+            if (selectedValue && selectedValue.trim().toLowerCase() === k.trim().toLowerCase()) {
+                opt.selected = true;
+                isSelectedFound = true;
+            }
+            kelasSelect.appendChild(opt);
+        });
+
+        if (selectedValue && !isSelectedFound) {
+            const opt = document.createElement('option');
+            opt.value = selectedValue;
+            opt.textContent = 'Kelas ' + selectedValue;
+            opt.selected = true;
+            kelasSelect.appendChild(opt);
+        }
+    }
+
+    if (jenjangSelect && kelasSelect) {
+        jenjangSelect.addEventListener('change', function() {
+            populateKelas(this.value, '');
+        });
+    }
+
+    if (btnToggleManual && btnCancelManual && manualInput && dropdownContainer && manualContainer) {
+        btnToggleManual.addEventListener('click', function() {
+            dropdownContainer.classList.add('hidden');
+            manualContainer.classList.remove('hidden');
+            kelasSelect.removeAttribute('name');
+            manualInput.setAttribute('name', 'kelas');
+            manualInput.value = kelasSelect.value || '';
+            manualInput.focus();
+            btnToggleManual.classList.add('hidden');
+        });
+
+        btnCancelManual.addEventListener('click', function() {
+            manualContainer.classList.add('hidden');
+            dropdownContainer.classList.remove('hidden');
+            manualInput.removeAttribute('name');
+            kelasSelect.setAttribute('name', 'kelas');
+            btnToggleManual.classList.remove('hidden');
+            if (manualInput.value.trim()) {
+                populateKelas(jenjangSelect.value, manualInput.value.trim());
+            }
+        });
+    }
+});
+</script>

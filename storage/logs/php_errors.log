@@ -945,3 +945,5 @@ Stack trace:
 #0 E:\xampp\mysql\data\portal-bip\scratch\verify_kartu_download.php(28): KartuHelper::generateCard(Array)
 #1 {main}
   thrown in E:\xampp\mysql\data\portal-bip\core\KartuHelper.php on line 208
+[23-Sep-2026 14:29:22 Asia/Makassar] Query Error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'tingkat' in 'field list' | SQL: SELECT nama_kelas, tingkat FROM kelas WHERE is_active = 1 ORDER BY nama_kelas ASC
+[23-Sep-2026 14:34:42 Asia/Makassar] Query Error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'tingkat' in 'field list' | SQL: SELECT nama_kelas, tingkat FROM kelas WHERE is_active = 1 ORDER BY nama_kelas ASC

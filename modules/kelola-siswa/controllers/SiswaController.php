@@ -171,6 +171,7 @@ class SiswaController
         
         $db = Database::getInstance();
         $kelasList = $db->findAll("SELECT DISTINCT kelas FROM siswa WHERE kelas IS NOT NULL AND kelas != '' ORDER BY kelas ASC");
+        $classesByJenjang = self::getClassesByJenjang('', 'SD');
 
         ob_start();
         include MODULES_PATH . '/kelola-siswa/views/create.php';
@@ -327,6 +328,93 @@ class SiswaController
         include TEMPLATES_PATH . '/layouts/app.php';
     }
 
+    /**
+     * Get grouped list of classes per jenjang (SD, SMP, SMA, PAUD)
+     */
+    public static function getClassesByJenjang(?string $currentKelas = null, ?string $currentJenjang = null): array
+    {
+        $db = Database::getInstance();
+
+        // Ambil daftar kelas murni dari database (tabel siswa & tabel master kelas)
+        $classesByJenjang = [
+            'SD' => [],
+            'SMP' => [],
+            'SMA' => [],
+            'PAUD' => [],
+        ];
+
+        // 1. Fetch distinct classes existing in `siswa` table
+        try {
+            $siswaClasses = $db->findAll("
+                SELECT DISTINCT UPPER(TRIM(jenjang)) as j, TRIM(kelas) as k 
+                FROM siswa 
+                WHERE kelas IS NOT NULL AND kelas != ''
+                ORDER BY kelas ASC
+            ");
+            if (is_array($siswaClasses)) {
+                foreach ($siswaClasses as $sc) {
+                    $j = $sc['j'] ?? '';
+                    $k = $sc['k'] ?? '';
+                    if ($j === 'TK') $j = 'PAUD';
+                    if (!empty($j) && !empty($k)) {
+                        if (!isset($classesByJenjang[$j])) {
+                            $classesByJenjang[$j] = [];
+                        }
+                        if (!in_array($k, $classesByJenjang[$j])) {
+                            $classesByJenjang[$j][] = $k;
+                        }
+                    }
+                }
+            }
+        } catch (Exception $e) {}
+
+        // 2. Fetch classes from `kelas` master table if available
+        try {
+            $masterKelas = $db->findAll("SELECT nama_kelas, tingkat FROM kelas WHERE is_active = 1 ORDER BY nama_kelas ASC");
+            if (is_array($masterKelas)) {
+                foreach ($masterKelas as $mk) {
+                    $nama = trim($mk['nama_kelas']);
+                    $tingkat = trim($mk['tingkat'] ?? '');
+                    if (empty($nama)) continue;
+
+                    $targetJenjang = 'SD';
+                    if (preg_match('/^(7|8|9|VII|VIII|IX)\b/i', $nama) || in_array($tingkat, ['7', '8', '9', 'VII', 'VIII', 'IX'])) {
+                        $targetJenjang = 'SMP';
+                    } elseif (preg_match('/^(10|11|12|X|XI|XII)\b/i', $nama) || in_array($tingkat, ['10', '11', '12', 'X', 'XI', 'XII'])) {
+                        $targetJenjang = 'SMA';
+                    } elseif (preg_match('/^(PAUD|TK|KB)\b/i', $nama)) {
+                        $targetJenjang = 'PAUD';
+                    }
+
+                    if (!in_array($nama, $classesByJenjang[$targetJenjang])) {
+                        $classesByJenjang[$targetJenjang][] = $nama;
+                    }
+                }
+            }
+        } catch (Exception $e) {}
+
+        // 3. Ensure student's current kelas is included in their jenjang list
+        if (!empty($currentKelas) && !empty($currentJenjang)) {
+            $cj = strtoupper(trim($currentJenjang));
+            if ($cj === 'TK') $cj = 'PAUD';
+            if (!isset($classesByJenjang[$cj])) {
+                $classesByJenjang[$cj] = [];
+            }
+            if (!in_array($currentKelas, $classesByJenjang[$cj])) {
+                array_unshift($classesByJenjang[$cj], $currentKelas);
+            }
+        }
+
+        // Natural sort classes within each jenjang
+        foreach ($classesByJenjang as $j => &$list) {
+            natsort($list);
+            $list = array_values($list);
+        }
+        unset($list);
+
+        return $classesByJenjang;
+    }
+
     public static function edit(int $id): void
     {
         $db = Database::getInstance();
@@ -343,6 +431,7 @@ class SiswaController
         ];
         
         $kelasList = $db->findAll("SELECT DISTINCT kelas FROM siswa WHERE kelas IS NOT NULL AND kelas != '' ORDER BY kelas ASC");
+        $classesByJenjang = self::getClassesByJenjang($siswa['kelas'] ?? '', $siswa['jenjang'] ?? 'SD');
 
         ob_start();
         include MODULES_PATH . '/kelola-siswa/views/edit.php';
