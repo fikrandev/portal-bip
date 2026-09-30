@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * View: Input Absen Kelas (Wali Kelas / Harian)
  * Admin flow: Pilih kelas dari daftar kelas aktif -> input presensi harian
@@ -10,7 +10,7 @@
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
             <div class="flex items-center gap-2">
-                <span class="px-3 py-1 rounded-xl text-xs font-black bg-teal-50 text-teal-700 border border-teal-200">
+                <span class="px-3 py-1 rounded-xl text-xs font-black bg-primary-50 text-primary-700 border border-primary-200">
                     Presensi Rombel / Wali Kelas
                 </span>
                 <?php if ($isAdmin): ?>
@@ -18,7 +18,7 @@
                         Mode Administrator (Pilih Kelas)
                     </span>
                 <?php else: ?>
-                    <span class="px-3 py-1 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    <span class="px-3 py-1 rounded-xl text-xs font-bold bg-primary-50 text-primary-700 border border-primary-200">
                         Mode Wali Kelas
                     </span>
                 <?php endif; ?>
@@ -43,7 +43,7 @@
             <!-- Pilih Kelas -->
             <div class="md:col-span-2 space-y-1">
                 <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">Pilih Rombongan Belajar / Kelas:</label>
-                <select name="kelas" onchange="this.form.submit()" class="w-full px-4 py-2.5 rounded-2xl border border-slate-200 text-xs font-bold text-slate-700 bg-slate-50 focus:ring-2 focus:ring-teal-500 focus:outline-none">
+                <select name="kelas" onchange="this.form.submit()" class="w-full px-4 py-2.5 rounded-2xl border border-slate-200 text-xs font-bold text-slate-700 bg-slate-50 focus:ring-2 focus:ring-primary-500 focus:outline-none">
                     <?php foreach ($kelasList as $k): ?>
                         <option value="<?= htmlspecialchars($k['kelas']) ?>" <?= $selectedKelas === $k['kelas'] ? 'selected' : '' ?>>
                             Kelas <?= htmlspecialchars($k['kelas']) ?> (Jenjang <?= htmlspecialchars($k['jenjang']) ?>)
@@ -55,26 +55,26 @@
             <!-- Pilih Tanggal Presensi -->
             <div class="space-y-1">
                 <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">Tanggal Presensi:</label>
-                <input type="date" name="tanggal" value="<?= $tanggal ?>" onchange="this.form.submit()" class="w-full px-4 py-2.5 rounded-2xl border border-slate-200 text-xs font-bold text-slate-700 bg-slate-50 focus:ring-2 focus:ring-teal-500 focus:outline-none">
+                <input type="date" name="tanggal" value="<?= $tanggal ?>" onchange="this.form.submit()" class="w-full px-4 py-2.5 rounded-2xl border border-slate-200 text-xs font-bold text-slate-700 bg-slate-50 focus:ring-2 focus:ring-primary-500 focus:outline-none">
             </div>
         </form>
     </div>
 
     <!-- Kelas Highlight Card -->
     <?php if (!empty($selectedKelas)): ?>
-    <div class="bg-gradient-to-r from-teal-600 to-emerald-700 rounded-3xl p-6 text-white shadow-lg shadow-teal-600/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div class="bg-gradient-to-r from-primary-600 to-primary-700 rounded-3xl p-6 text-white shadow-lg shadow-primary-600/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div class="flex items-center gap-4">
             <div class="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-3xl shrink-0">
                 🏫
             </div>
             <div>
-                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-white/20 text-teal-100 border border-white/20">
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-white/20 text-primary-100 border border-white/20">
                     Rombongan Belajar Aktif
                 </span>
                 <h2 class="text-xl sm:text-2xl font-black mt-1">
                     Kelas <?= htmlspecialchars($selectedKelas) ?>
                 </h2>
-                <p class="text-xs text-teal-100/80 mt-0.5">
+                <p class="text-xs text-primary-100/80 mt-0.5">
                     Tanggal Presensi: <strong><?= date('d F Y', strtotime($tanggal)) ?></strong>
                 </p>
             </div>
@@ -82,7 +82,7 @@
 
         <div class="flex items-center gap-3">
             <a href="<?= url('kelola-absen-siswa/kelas/input?kelas=' . urlencode($selectedKelas) . '&tanggal=' . $tanggal) ?>" 
-               class="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-white text-teal-800 hover:bg-teal-50 font-black text-xs sm:text-sm shadow-md transition-all">
+               class="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-white text-primary-800 hover:bg-primary-50 font-black text-xs sm:text-sm shadow-md transition-all">
                 <span>⚡ Buka Form Presensi Hari Ini &rarr;</span>
             </a>
         </div>
@@ -96,7 +96,7 @@
                 <h3 class="text-sm sm:text-base font-bold text-slate-800">Riwayat Presensi Harian Kelas <?= htmlspecialchars($selectedKelas) ?></h3>
                 <p class="text-xs text-slate-400">Daftar hari yang telah dicatat presensi hariannya</p>
             </div>
-            <a href="<?= url('kelola-absen-siswa/rekap?mode=kelas&kelas=' . urlencode($selectedKelas)) ?>" class="text-xs font-bold text-teal-600 hover:text-teal-700 hover:underline">
+            <a href="<?= url('kelola-absen-siswa/rekap?mode=kelas&kelas=' . urlencode($selectedKelas)) ?>" class="text-xs font-bold text-primary-600 hover:text-primary-700 hover:underline">
                 Lihat Matriks Bulanan &rarr;
             </a>
         </div>
@@ -140,13 +140,13 @@
                                     <?= htmlspecialchars($rks['catatan'] ?: '-') ?>
                                 </td>
                                 <td class="py-3 px-4 text-center">
-                                    <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold <?= $rate >= 85 ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800' ?>">
+                                    <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold <?= $rate >= 85 ? 'bg-primary-100 text-primary-800' : 'bg-amber-100 text-amber-800' ?>">
                                         <?= $rks['total_hadir'] ?>/<?= $rks['total_siswa'] ?> (<?= $rate ?>%)
                                     </span>
                                 </td>
                                 <td class="py-3 px-4 text-right">
                                     <a href="<?= url('kelola-absen-siswa/kelas/input?kelas=' . urlencode($rks['kelas']) . '&tanggal=' . $rks['tanggal']) ?>" 
-                                       class="px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-teal-50 hover:text-teal-700 text-slate-600 font-bold text-[11px] transition-all">
+                                       class="px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-primary-50 hover:text-primary-700 text-slate-600 font-bold text-[11px] transition-all">
                                         Buka Presensi
                                     </a>
                                 </td>

@@ -1,4 +1,4 @@
-<?php 
+﻿<?php 
 /** 
  * Create Pegawai Form - Modern Responsive Layout
  * Portal BIP - Bina Insan Palu
@@ -364,7 +364,7 @@
                     <p class="text-xs text-slate-500 mt-0.5">Data pasangan (suami/istri), anak, atau orang tua pegawai.</p>
                 </div>
                 <button type="button" id="btn-add-keluarga" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all flex items-center gap-1.5 self-start">
-                    <span>+ Tambah Anggota</span>
+                    <span>Tambah Anggota</span>
                 </button>
             </div>
 
@@ -443,7 +443,7 @@
                     <p class="text-xs text-slate-500 mt-0.5">Kompetensi khusus, IT, bahasa, atau keagamaan yang dimiliki pegawai.</p>
                 </div>
                 <button type="button" id="btn-add-skill" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all flex items-center gap-1.5 self-start">
-                    <span>+ Tambah Keahlian</span>
+                    <span>Tambah Keahlian</span>
                 </button>
             </div>
 
@@ -501,7 +501,7 @@
                     <p class="text-xs text-slate-500 mt-0.5">Jenjang pendidikan, sekolah/universitas, jurusan, dan tahun kelulusan.</p>
                 </div>
                 <button type="button" id="btn-add-pendidikan" class="px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all flex items-center gap-1.5 self-start">
-                    <span>+ Tambah Pendidikan</span>
+                    <span>Tambah Pendidikan</span>
                 </button>
             </div>
 

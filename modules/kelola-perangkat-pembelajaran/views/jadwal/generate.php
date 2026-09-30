@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Auto-Generator Jadwal Cerdas - View
  */
@@ -14,7 +14,7 @@
                 </a>
             </div>
             <h1 class="text-2xl font-extrabold text-primary-950 tracking-tight flex items-center gap-3 mt-1">
-                <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-700 flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
+                <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white shadow-lg shadow-primary-500/20">
                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
                     </svg>
@@ -37,7 +37,7 @@
     <div class="bg-gradient-to-br from-slate-900 to-indigo-950 p-8 rounded-3xl text-white shadow-xl space-y-6">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-white/10">
             <div>
-                <span class="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold border border-emerald-500/30">
+                <span class="px-3 py-1 rounded-full bg-primary-500/20 text-primary-300 text-xs font-bold border border-primary-500/30">
                     Engine Status: Ready to Generate
                 </span>
                 <h2 class="text-xl font-extrabold mt-2"><?= e($grup['nama_grup']) ?></h2>
@@ -45,7 +45,7 @@
                     Tahun Ajaran: <strong class="text-white"><?= e($grup['tahun_ajaran']) ?></strong> | Semester: <strong class="text-white"><?= e($grup['semester']) ?></strong> | Unit: <strong class="text-white"><?= e($grup['jenjang']) ?></strong>
                 </p>
                 <?php if (!empty($unitKelasSiswa)): ?>
-                    <p class="text-[11px] text-emerald-300/90 mt-2">
+                    <p class="text-[11px] text-primary-300/90 mt-2">
                         🏫 <strong><?= count($unitKelasSiswa) ?> Rombel/Kelas</strong> terdeteksi dari data siswa Unit <strong><?= e($grup['jenjang']) ?></strong>.
                     </p>
                 <?php endif; ?>
@@ -59,9 +59,9 @@
                     <p class="text-[11px] text-slate-400">Total Kelas</p>
                     <p class="text-xl font-extrabold text-white"><?= number_format($totalKelasPenugasan) ?></p>
                 </div>
-                <div class="text-center px-4 py-2 bg-emerald-500/20 rounded-2xl border border-emerald-500/30">
-                    <p class="text-[11px] text-emerald-300">Total Beban JP</p>
-                    <p class="text-xl font-extrabold text-emerald-400"><?= number_format($totalJpPenugasan) ?> JP</p>
+                <div class="text-center px-4 py-2 bg-primary-500/20 rounded-2xl border border-primary-500/30">
+                    <p class="text-[11px] text-primary-300">Total Beban JP</p>
+                    <p class="text-xl font-extrabold text-primary-400"><?= number_format($totalJpPenugasan) ?> JP</p>
                 </div>
             </div>
         </div>
@@ -73,7 +73,7 @@
                 <!-- Max Block Length -->
                 <div class="bg-white/5 p-4 rounded-2xl border border-white/10 space-y-2">
                     <label class="font-bold text-slate-200 block">Panjang Blok Sesi Mengajar</label>
-                    <select name="max_block_length" class="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white focus:border-emerald-500">
+                    <select name="max_block_length" class="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white focus:border-primary-500">
                         <option value="2" selected>Maksimal 2 JP Berurutan (Rekomendasi)</option>
                         <option value="3">Maksimal 3 JP Berurutan</option>
                         <option value="4">Maksimal 4 JP Berurutan</option>
@@ -85,15 +85,15 @@
                 <div class="bg-white/5 p-4 rounded-2xl border border-white/10 space-y-2">
                     <label class="font-bold text-slate-200 block">Jadwal Hari Sabtu</label>
                     <div class="flex items-center gap-2 mt-2">
-                        <input type="checkbox" name="allow_saturday" id="allow_saturday" value="1" checked class="w-4 h-4 text-emerald-500 rounded bg-slate-800 border-slate-700">
+                        <input type="checkbox" name="allow_saturday" id="allow_saturday" value="1" checked class="w-4 h-4 text-primary-500 rounded bg-slate-800 border-slate-700">
                         <label for="allow_saturday" class="cursor-pointer text-slate-300">Sertakan Hari Sabtu untuk alokasi KBM</label>
                     </div>
                 </div>
 
                 <!-- Conflict Guarantee -->
-                <div class="bg-emerald-500/10 p-4 rounded-2xl border border-emerald-500/30 space-y-1 text-emerald-300">
+                <div class="bg-primary-500/10 p-4 rounded-2xl border border-primary-500/30 space-y-1 text-primary-300">
                     <p class="font-bold text-sm flex items-center gap-1.5">
-                        <svg class="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
+                        <svg class="w-4 h-4 text-primary-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
                         Jaminan 100% Bebas Bentrok
                     </p>
                     <p class="text-[11px] text-slate-300">
@@ -104,7 +104,7 @@
 
             <!-- Execute Button -->
             <div class="pt-4 flex items-center justify-end gap-3">
-                <button type="submit" onclick="this.innerHTML='Sedang Mengomputasi Jadwal...'; this.disabled=true; this.form.submit();" class="px-8 py-3.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white text-sm font-black rounded-2xl shadow-lg shadow-emerald-500/30 transition-all flex items-center gap-3 cursor-pointer">
+                <button type="submit" onclick="this.innerHTML='Sedang Mengomputasi Jadwal...'; this.disabled=true; this.form.submit();" class="px-8 py-3.5 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white text-sm font-black rounded-2xl shadow-lg shadow-primary-500/30 transition-all flex items-center gap-3 cursor-pointer">
                     <svg class="w-5 h-5 animate-spin-slow" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"/></svg>
                     <span>JALANKAN AUTO-GENERATOR JADWAL SEKARANG</span>
                 </button>
@@ -150,7 +150,7 @@
                         <td class="px-5 py-3 font-bold text-indigo-700"><?= e($t['mata_pelajaran']) ?></td>
                         <td class="px-5 py-3 text-slate-800 font-medium"><?= e($t['nama_guru']) ?></td>
                         <td class="px-5 py-3 text-center">
-                            <span class="px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-50 text-emerald-800 border border-emerald-200">
+                            <span class="px-2.5 py-1 rounded-full text-[10px] font-black bg-primary-50 text-primary-800 border border-primary-200">
                                 <?= $t['jumlah_jp'] ?> JP
                             </span>
                         </td>

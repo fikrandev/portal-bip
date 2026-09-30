@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Cetak Rekap Mutaba'ah Al-Qur'an Siswa (A4 Printable)
  */
@@ -35,7 +35,7 @@ $jenjangLabel = match ($jenjang) {
             <button onclick="window.history.back()" class="px-4 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50">
                 Kembali
             </button>
-            <button onclick="window.print()" class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-500/20 flex items-center gap-1.5">
+            <button onclick="window.print()" class="px-5 py-2 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold shadow-md shadow-primary-500/20 flex items-center gap-1.5">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24-3.327 2.45-6.079 5.28-6.079 2.83 0 5.52 2.752 5.28 6.079m-10.56 0A5.998 5.998 0 0 0 12 19.5c2.83 0 5.28-2.343 5.28-5.671m-10.56 0C6.72 10.5 9.17 8.157 12 8.157m0 0a5.998 5.998 0 0 1 5.28 5.672M6 20.25h12M9 3.75h6" />
                 </svg>
@@ -50,7 +50,7 @@ $jenjangLabel = match ($jenjang) {
         <!-- Kop Surat -->
         <div class="border-b-2 border-slate-900 pb-4 mb-6 text-center relative">
             <h2 class="text-xl font-black text-slate-900 tracking-wide uppercase">YAYASAN BINA INSAN PALU</h2>
-            <h1 class="text-lg font-extrabold text-emerald-800 tracking-tight mt-0.5"><?= htmlspecialchars($jenjangLabel) ?></h1>
+            <h1 class="text-lg font-extrabold text-primary-800 tracking-tight mt-0.5"><?= htmlspecialchars($jenjangLabel) ?></h1>
             <p class="text-xs text-slate-600 mt-1">Jl. Bina Insan No. 1, Kota Palu, Sulawesi Tengah • Telp: (0451) 123456</p>
             <p class="text-[11px] text-slate-500 italic">Portal Akademik & Terintegrasi Qur'an Siswa</p>
         </div>

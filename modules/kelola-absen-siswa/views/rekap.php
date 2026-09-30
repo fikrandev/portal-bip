@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Rekapitulasi Absen Siswa — Komprehensif
  * Mendukung:
@@ -27,10 +27,10 @@ $exportUrl = url('kelola-absen-siswa/rekap/export?' . http_build_query([
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
             <div class="flex items-center gap-2">
-                <span class="px-3 py-1 rounded-xl text-xs font-black bg-emerald-50 text-emerald-700 border border-emerald-200">
+                <span class="px-3 py-1 rounded-xl text-xs font-black bg-primary-50 text-primary-700 border border-primary-200">
                     Laporan Presensi Siswa
                 </span>
-                <span class="px-3 py-1 rounded-xl text-xs font-bold bg-teal-50 text-teal-700 border border-teal-200">
+                <span class="px-3 py-1 rounded-xl text-xs font-bold bg-primary-50 text-primary-700 border border-primary-200">
                     Kelas <?= htmlspecialchars($cleanKelas) ?>
                 </span>
             </div>
@@ -48,7 +48,7 @@ $exportUrl = url('kelola-absen-siswa/rekap/export?' . http_build_query([
                 <span>Dashboard</span>
             </a>
             <?php if ($mode !== 'siswa'): ?>
-                <a href="<?= $exportUrl ?>" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-500/20 transition-all">
+                <a href="<?= $exportUrl ?>" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-md shadow-primary-500/20 transition-all">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                     <span>Ekspor CSV</span>
                 </a>
@@ -65,17 +65,17 @@ $exportUrl = url('kelola-absen-siswa/rekap/export?' . http_build_query([
         <!-- Mode Tabs -->
         <div class="flex items-center gap-2 border-b border-slate-100 pb-3 flex-wrap">
             <a href="<?= url('kelola-absen-siswa/rekap?mode=kelas&kelas=' . urlencode($cleanKelas) . '&bulan=' . $selectedBulan) ?>" 
-               class="px-4 py-2 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 <?= $mode === 'kelas' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' ?>">
+               class="px-4 py-2 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 <?= $mode === 'kelas' ? 'bg-primary-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' ?>">
                 <span>🏫</span>
                 <span>Rekap Absen Kelas (Harian)</span>
             </a>
             <a href="<?= url('kelola-absen-siswa/rekap?mode=mapel&kelas=' . urlencode($cleanKelas) . '&mapel=' . urlencode($selectedMapel)) ?>" 
-               class="px-4 py-2 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 <?= $mode === 'mapel' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' ?>">
+               class="px-4 py-2 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 <?= $mode === 'mapel' ? 'bg-primary-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' ?>">
                 <span>📚</span>
                 <span>Rekap Absen Mapel (Pertemuan)</span>
             </a>
             <a href="<?= url('kelola-absen-siswa/rekap?mode=siswa&kelas=' . urlencode($cleanKelas) . (!empty($selectedSiswaId) ? '&siswa_id=' . $selectedSiswaId : '')) ?>" 
-               class="px-4 py-2 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 <?= $mode === 'siswa' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' ?>">
+               class="px-4 py-2 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 <?= $mode === 'siswa' ? 'bg-primary-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' ?>">
                 <span>👤</span>
                 <span>Kartu Presensi Siswa</span>
             </a>
@@ -128,7 +128,7 @@ $exportUrl = url('kelola-absen-siswa/rekap/export?' . http_build_query([
             <?php endif; ?>
 
             <div>
-                <button type="submit" class="px-5 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-500/20 transition-all">
+                <button type="submit" class="px-5 py-2.5 rounded-2xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-md shadow-primary-500/20 transition-all">
                     Terapkan Filter
                 </button>
             </div>
@@ -144,8 +144,8 @@ $exportUrl = url('kelola-absen-siswa/rekap/export?' . http_build_query([
                 <p class="text-xs text-slate-400">Bulan: <?= date('F Y', strtotime($selectedBulan . '-01')) ?> &bull; Total <?= count($sessions) ?> hari aktif tercatat</p>
             </div>
             <div class="flex items-center gap-2 text-[11px] font-bold">
-                <span class="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800">H: Hadir</span>
-                <span class="px-2 py-0.5 rounded-md bg-blue-100 text-blue-800">S: Sakit</span>
+                <span class="px-2 py-0.5 rounded-md bg-primary-100 text-primary-800">H: Hadir</span>
+                <span class="px-2 py-0.5 rounded-md bg-primary-100 text-primary-800">S: Sakit</span>
                 <span class="px-2 py-0.5 rounded-md bg-amber-100 text-amber-800">I: Izin</span>
                 <span class="px-2 py-0.5 rounded-md bg-rose-100 text-rose-800">A: Alpa</span>
                 <span class="px-2 py-0.5 rounded-md bg-purple-100 text-purple-800">T: Terlambat</span>
@@ -166,8 +166,8 @@ $exportUrl = url('kelola-absen-siswa/rekap/export?' . http_build_query([
                                 <div><?= date('d', strtotime($ses['tanggal'])) ?></div>
                             </th>
                         <?php endforeach; ?>
-                        <th class="py-3 px-2 text-center bg-emerald-50/80 text-emerald-800 border-l border-slate-200 font-bold w-12">H</th>
-                        <th class="py-3 px-2 text-center bg-blue-50/80 text-blue-800 w-12 font-bold">S</th>
+                        <th class="py-3 px-2 text-center bg-primary-50/80 text-primary-800 border-l border-slate-200 font-bold w-12">H</th>
+                        <th class="py-3 px-2 text-center bg-primary-50/80 text-primary-800 w-12 font-bold">S</th>
                         <th class="py-3 px-2 text-center bg-amber-50/80 text-amber-800 w-12 font-bold">I</th>
                         <th class="py-3 px-2 text-center bg-rose-50/80 text-rose-800 w-12 font-bold">A</th>
                         <th class="py-3 px-2 text-center bg-purple-50/80 text-purple-800 w-12 font-bold">T</th>
@@ -191,8 +191,8 @@ $exportUrl = url('kelola-absen-siswa/rekap/export?' . http_build_query([
                                 <?php foreach ($sessions as $ses): 
                                     $st = $row['daily'][$ses['id']] ?? '-';
                                     $bgClass = 'text-slate-300';
-                                    if ($st === 'H') $bgClass = 'bg-emerald-50 font-bold text-emerald-700';
-                                    elseif ($st === 'S') $bgClass = 'bg-blue-50 font-bold text-blue-700';
+                                    if ($st === 'H') $bgClass = 'bg-primary-50 font-bold text-primary-700';
+                                    elseif ($st === 'S') $bgClass = 'bg-primary-50 font-bold text-primary-700';
                                     elseif ($st === 'I') $bgClass = 'bg-amber-50 font-bold text-amber-700';
                                     elseif ($st === 'A') $bgClass = 'bg-rose-50 font-black text-rose-700';
                                     elseif ($st === 'T') $bgClass = 'bg-purple-50 font-bold text-purple-700';
@@ -201,13 +201,13 @@ $exportUrl = url('kelola-absen-siswa/rekap/export?' . http_build_query([
                                         <?= $st ?>
                                     </td>
                                 <?php endforeach; ?>
-                                <td class="py-2 px-2 text-center font-bold bg-emerald-50/40 text-emerald-800 border-l border-slate-200"><?= $row['h'] ?></td>
-                                <td class="py-2 px-2 text-center font-bold bg-blue-50/40 text-blue-800"><?= $row['s'] ?></td>
+                                <td class="py-2 px-2 text-center font-bold bg-primary-50/40 text-primary-800 border-l border-slate-200"><?= $row['h'] ?></td>
+                                <td class="py-2 px-2 text-center font-bold bg-primary-50/40 text-primary-800"><?= $row['s'] ?></td>
                                 <td class="py-2 px-2 text-center font-bold bg-amber-50/40 text-amber-800"><?= $row['i'] ?></td>
                                 <td class="py-2 px-2 text-center font-bold bg-rose-50/40 text-rose-800"><?= $row['a'] ?></td>
                                 <td class="py-2 px-2 text-center font-bold bg-purple-50/40 text-purple-800"><?= $row['t'] ?></td>
                                 <td class="py-2 px-3 text-center bg-slate-50 font-black text-slate-800">
-                                    <span class="px-2 py-0.5 rounded-full text-[11px] <?= $row['persen'] >= 85 ? 'bg-emerald-100 text-emerald-800' : ($row['persen'] >= 70 ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800') ?>">
+                                    <span class="px-2 py-0.5 rounded-full text-[11px] <?= $row['persen'] >= 85 ? 'bg-primary-100 text-primary-800' : ($row['persen'] >= 70 ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800') ?>">
                                         <?= $row['persen'] ?>%
                                     </span>
                                 </td>
@@ -229,8 +229,8 @@ $exportUrl = url('kelola-absen-siswa/rekap/export?' . http_build_query([
                 <p class="text-xs text-slate-400">Total <?= count($sessions) ?> pertemuan telah terlaksana</p>
             </div>
             <div class="flex items-center gap-2 text-[11px] font-bold">
-                <span class="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800">H: Hadir</span>
-                <span class="px-2 py-0.5 rounded-md bg-blue-100 text-blue-800">S: Sakit</span>
+                <span class="px-2 py-0.5 rounded-md bg-primary-100 text-primary-800">H: Hadir</span>
+                <span class="px-2 py-0.5 rounded-md bg-primary-100 text-primary-800">S: Sakit</span>
                 <span class="px-2 py-0.5 rounded-md bg-amber-100 text-amber-800">I: Izin</span>
                 <span class="px-2 py-0.5 rounded-md bg-rose-100 text-rose-800">A: Alpa</span>
                 <span class="px-2 py-0.5 rounded-md bg-purple-100 text-purple-800">T: Terlambat</span>
@@ -251,8 +251,8 @@ $exportUrl = url('kelola-absen-siswa/rekap/export?' . http_build_query([
                                 <div class="text-[9px] text-slate-500"><?= date('d/m', strtotime($ses['tanggal'])) ?></div>
                             </th>
                         <?php endforeach; ?>
-                        <th class="py-3 px-2 text-center bg-emerald-50/80 text-emerald-800 border-l border-slate-200 font-bold w-12">H</th>
-                        <th class="py-3 px-2 text-center bg-blue-50/80 text-blue-800 w-12 font-bold">S</th>
+                        <th class="py-3 px-2 text-center bg-primary-50/80 text-primary-800 border-l border-slate-200 font-bold w-12">H</th>
+                        <th class="py-3 px-2 text-center bg-primary-50/80 text-primary-800 w-12 font-bold">S</th>
                         <th class="py-3 px-2 text-center bg-amber-50/80 text-amber-800 w-12 font-bold">I</th>
                         <th class="py-3 px-2 text-center bg-rose-50/80 text-rose-800 w-12 font-bold">A</th>
                         <th class="py-3 px-2 text-center bg-purple-50/80 text-purple-800 w-12 font-bold">T</th>
@@ -276,8 +276,8 @@ $exportUrl = url('kelola-absen-siswa/rekap/export?' . http_build_query([
                                 <?php foreach ($sessions as $ses): 
                                     $st = $row['pertemuan'][$ses['id']] ?? '-';
                                     $bgClass = 'text-slate-300';
-                                    if ($st === 'H') $bgClass = 'bg-emerald-50 font-bold text-emerald-700';
-                                    elseif ($st === 'S') $bgClass = 'bg-blue-50 font-bold text-blue-700';
+                                    if ($st === 'H') $bgClass = 'bg-primary-50 font-bold text-primary-700';
+                                    elseif ($st === 'S') $bgClass = 'bg-primary-50 font-bold text-primary-700';
                                     elseif ($st === 'I') $bgClass = 'bg-amber-50 font-bold text-amber-700';
                                     elseif ($st === 'A') $bgClass = 'bg-rose-50 font-black text-rose-700';
                                     elseif ($st === 'T') $bgClass = 'bg-purple-50 font-bold text-purple-700';
@@ -286,13 +286,13 @@ $exportUrl = url('kelola-absen-siswa/rekap/export?' . http_build_query([
                                         <?= $st ?>
                                     </td>
                                 <?php endforeach; ?>
-                                <td class="py-2 px-2 text-center font-bold bg-emerald-50/40 text-emerald-800 border-l border-slate-200"><?= $row['h'] ?></td>
-                                <td class="py-2 px-2 text-center font-bold bg-blue-50/40 text-blue-800"><?= $row['s'] ?></td>
+                                <td class="py-2 px-2 text-center font-bold bg-primary-50/40 text-primary-800 border-l border-slate-200"><?= $row['h'] ?></td>
+                                <td class="py-2 px-2 text-center font-bold bg-primary-50/40 text-primary-800"><?= $row['s'] ?></td>
                                 <td class="py-2 px-2 text-center font-bold bg-amber-50/40 text-amber-800"><?= $row['i'] ?></td>
                                 <td class="py-2 px-2 text-center font-bold bg-rose-50/40 text-rose-800"><?= $row['a'] ?></td>
                                 <td class="py-2 px-2 text-center font-bold bg-purple-50/40 text-purple-800"><?= $row['t'] ?></td>
                                 <td class="py-2 px-3 text-center bg-slate-50 font-black text-slate-800">
-                                    <span class="px-2 py-0.5 rounded-full text-[11px] <?= $row['persen'] >= 85 ? 'bg-emerald-100 text-emerald-800' : ($row['persen'] >= 70 ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800') ?>">
+                                    <span class="px-2 py-0.5 rounded-full text-[11px] <?= $row['persen'] >= 85 ? 'bg-primary-100 text-primary-800' : ($row['persen'] >= 70 ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800') ?>">
                                         <?= $row['persen'] ?>%
                                     </span>
                                 </td>
@@ -322,7 +322,7 @@ $exportUrl = url('kelola-absen-siswa/rekap/export?' . http_build_query([
         <!-- Student Info Header -->
         <div class="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div class="flex items-center gap-4">
-                <div class="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center text-3xl font-bold">
+                <div class="w-16 h-16 rounded-2xl bg-primary-50 text-primary-700 flex items-center justify-center text-3xl font-bold">
                     👨‍🎓
                 </div>
                 <div>
@@ -333,13 +333,13 @@ $exportUrl = url('kelola-absen-siswa/rekap/export?' . http_build_query([
 
             <!-- Stats Badge -->
             <div class="flex items-center gap-3 flex-wrap">
-                <div class="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-center min-w-[70px]">
-                    <p class="text-[10px] font-bold text-emerald-700 uppercase">Hadir</p>
-                    <p class="text-lg font-black text-emerald-800"><?= $totH ?></p>
+                <div class="p-3 rounded-2xl bg-primary-50 border border-primary-200 text-center min-w-[70px]">
+                    <p class="text-[10px] font-bold text-primary-700 uppercase">Hadir</p>
+                    <p class="text-lg font-black text-primary-800"><?= $totH ?></p>
                 </div>
-                <div class="p-3 rounded-2xl bg-blue-50 border border-blue-200 text-center min-w-[70px]">
-                    <p class="text-[10px] font-bold text-blue-700 uppercase">Sakit</p>
-                    <p class="text-lg font-black text-blue-800"><?= $totS ?></p>
+                <div class="p-3 rounded-2xl bg-primary-50 border border-primary-200 text-center min-w-[70px]">
+                    <p class="text-[10px] font-bold text-primary-700 uppercase">Sakit</p>
+                    <p class="text-lg font-black text-primary-800"><?= $totS ?></p>
                 </div>
                 <div class="p-3 rounded-2xl bg-amber-50 border border-amber-200 text-center min-w-[70px]">
                     <p class="text-[10px] font-bold text-amber-700 uppercase">Izin</p>
@@ -380,8 +380,8 @@ $exportUrl = url('kelola-absen-siswa/rekap/export?' . http_build_query([
                             </tr>
                         <?php else: ?>
                             <?php foreach ($studentHistory as $sh): 
-                                $statusBadge = 'bg-emerald-50 text-emerald-700 border-emerald-200';
-                                if ($sh['status'] === 'S') $statusBadge = 'bg-blue-50 text-blue-700 border-blue-200';
+                                $statusBadge = 'bg-primary-50 text-primary-700 border-primary-200';
+                                if ($sh['status'] === 'S') $statusBadge = 'bg-primary-50 text-primary-700 border-primary-200';
                                 elseif ($sh['status'] === 'I') $statusBadge = 'bg-amber-50 text-amber-700 border-amber-200';
                                 elseif ($sh['status'] === 'A') $statusBadge = 'bg-rose-50 text-rose-700 border-rose-200';
                                 elseif ($sh['status'] === 'T') $statusBadge = 'bg-purple-50 text-purple-700 border-purple-200';

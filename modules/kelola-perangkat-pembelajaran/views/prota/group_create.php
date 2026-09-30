@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Buat Grup Program Tahunan (Prota) Baru
  * Terhubung dengan Grup Prosem (Bisa Centang 2: Ganjil & Genap)
@@ -98,7 +98,7 @@ $selectedUnit = old('unit', $_GET['unit'] ?? 'SD');
                                     <div class="flex-1 min-w-0">
                                         <div class="flex items-center gap-2 flex-wrap">
                                             <span class="text-xs font-bold text-slate-800"><?= e($pg['judul']) ?></span>
-                                            <span class="px-2 py-0.5 rounded-lg text-[10px] font-bold <?= ($pg['semester'] === 'Ganjil') ? 'bg-amber-100 text-amber-800 border border-amber-300' : 'bg-blue-100 text-blue-800 border border-blue-300' ?>">
+                                            <span class="px-2 py-0.5 rounded-lg text-[10px] font-bold <?= ($pg['semester'] === 'Ganjil') ? 'bg-amber-100 text-amber-800 border border-amber-300' : 'bg-primary-100 text-primary-800 border border-primary-300' ?>">
                                                 Semester <?= e($pg['semester']) ?>
                                             </span>
                                             <span class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">

@@ -1,4 +1,4 @@
-<?php /** Create Role View with Advanced Permission Matrix */ ?>
+﻿<?php /** Create Role View with Advanced Permission Matrix */ ?>
 <div class="max-w-5xl mx-auto space-y-6">
     <!-- Breadcrumb & Header -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -67,7 +67,7 @@
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-5">
                 <div>
                     <h2 class="text-base font-bold text-slate-800 tracking-tight flex items-center gap-2">
-                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                        <span class="w-2.5 h-2.5 rounded-full bg-primary-500"></span>
                         Konfigurasi Hak Akses Fitur & Approval
                     </h2>
                     <p class="text-xs text-slate-500 mt-0.5">
@@ -79,7 +79,7 @@
                 <div class="flex flex-wrap items-center gap-2">
                     <button type="button" onclick="toggleAllPermissions(true)" 
                             class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-colors flex items-center gap-1.5">
-                        <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <svg class="w-3.5 h-3.5 text-primary-600" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                         </svg>
                         Pilih Semua
@@ -164,11 +164,11 @@
                                 $borderStyle = 'border-slate-200 hover:border-amber-300 has-[:checked]:bg-amber-50/50 has-[:checked]:border-amber-400';
                                 $badgeClass = 'bg-amber-100 text-amber-700 text-[10px] font-bold px-1.5 py-0.5 rounded';
                             } elseif (str_ends_with($p['slug'], '.create')) {
-                                $borderStyle = 'border-slate-200 hover:border-emerald-300 has-[:checked]:bg-emerald-50/50 has-[:checked]:border-emerald-400';
-                                $badgeClass = 'bg-emerald-100 text-emerald-700 text-[10px] font-bold px-1.5 py-0.5 rounded';
+                                $borderStyle = 'border-slate-200 hover:border-primary-300 has-[:checked]:bg-primary-50/50 has-[:checked]:border-primary-400';
+                                $badgeClass = 'bg-primary-100 text-primary-700 text-[10px] font-bold px-1.5 py-0.5 rounded';
                             } else {
-                                $borderStyle = 'border-slate-200 hover:border-blue-300 has-[:checked]:bg-blue-50/50 has-[:checked]:border-blue-400';
-                                $badgeClass = 'bg-blue-100 text-blue-700 text-[10px] font-bold px-1.5 py-0.5 rounded';
+                                $borderStyle = 'border-slate-200 hover:border-primary-300 has-[:checked]:bg-primary-50/50 has-[:checked]:border-primary-400';
+                                $badgeClass = 'bg-primary-100 text-primary-700 text-[10px] font-bold px-1.5 py-0.5 rounded';
                             }
                         ?>
                         <label class="perm-item relative flex items-start gap-3 p-3 rounded-2xl border <?= $borderStyle ?> cursor-pointer transition-all select-none"

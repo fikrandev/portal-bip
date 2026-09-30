@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Qur'an Siswa SMP & SMA IT - Main Portal View
  */
@@ -37,7 +37,7 @@ include MODULES_PATH . '/kelola-quran-siswa/views/partials/top_tabs.php';
 
             <!-- Tombol Setoran -->
             <button type="button" onclick="openModalSetoran('SMP_SMA')"
-                    class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white font-bold text-xs shadow-md shadow-indigo-500/20 transition-all flex items-center gap-2">
+                    class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-primary-600 hover:from-indigo-700 hover:to-primary-700 text-white font-bold text-xs shadow-md shadow-indigo-500/20 transition-all flex items-center gap-2">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                 </svg>
@@ -58,11 +58,11 @@ include MODULES_PATH . '/kelola-quran-siswa/views/partials/top_tabs.php';
         </div>
 
         <!-- Total Setoran / Tasmi -->
-        <div class="bg-white rounded-2xl p-4 border border-blue-200/70 shadow-xs">
-            <span class="text-[10px] font-bold uppercase tracking-wider text-blue-700">Setoran & Tasmi'</span>
+        <div class="bg-white rounded-2xl p-4 border border-primary-200/70 shadow-xs">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-primary-700">Setoran & Tasmi'</span>
             <div class="flex items-baseline justify-between mt-2">
-                <span class="text-2xl font-black text-blue-700"><?= number_format($stats['total_setoran'] ?? 0) ?></span>
-                <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-800">Riwayat</span>
+                <span class="text-2xl font-black text-primary-700"><?= number_format($stats['total_setoran'] ?? 0) ?></span>
+                <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-primary-50 text-primary-800">Riwayat</span>
             </div>
         </div>
 
@@ -76,11 +76,11 @@ include MODULES_PATH . '/kelola-quran-siswa/views/partials/top_tabs.php';
         </div>
 
         <!-- Mutqin -->
-        <div class="bg-white rounded-2xl p-4 border border-emerald-200/70 shadow-xs">
-            <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-700">Capaian Mutqin ⭐</span>
+        <div class="bg-white rounded-2xl p-4 border border-primary-200/70 shadow-xs">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-primary-700">Capaian Mutqin ⭐</span>
             <div class="flex items-baseline justify-between mt-2">
-                <span class="text-2xl font-black text-emerald-700"><?= number_format($stats['total_mutqin'] ?? 0) ?></span>
-                <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800">Mumtaz</span>
+                <span class="text-2xl font-black text-primary-700"><?= number_format($stats['total_mutqin'] ?? 0) ?></span>
+                <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-primary-50 text-primary-800">Mumtaz</span>
             </div>
         </div>
     </div>

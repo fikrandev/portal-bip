@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Prota - Detail View
  * Menampilkan Matriks Program Tahunan Persis Sesuai Format Kurikulum Merdeka
@@ -81,7 +81,7 @@ if (!isset($unitProfile) || empty($unitProfile)) {
                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>
                 <span>Edit Prota</span>
             </a>
-            <a href="<?= url("kelola-perangkat-pembelajaran/prota/cetak/{$item['id']}") ?>" target="_blank" class="inline-flex items-center gap-2 px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-md shadow-emerald-500/20 transition-all">
+            <a href="<?= url("kelola-perangkat-pembelajaran/prota/cetak/{$item['id']}") ?>" target="_blank" class="inline-flex items-center gap-2 px-5 py-2 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-xl text-xs shadow-md shadow-primary-500/20 transition-all">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0 1 10.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0 .229 2.523a1.125 1.125 0 0 1-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0 0 21 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 0 0-1.913-.247M6.34 18H5.25A2.25 2.25 0 0 1 3 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 0 1 1.913-.247m10.5 0a48.536 48.536 0 0 0-10.5 0m10.5 0V3.75A2.25 2.25 0 0 0 16.5 1.5h-9A2.25 2.25 0 0 0 5.25 3.75v3.536m10.5 0A22.5 22.5 0 0 0 12 7.5a22.5 22.5 0 0 0-3.75-.214" /></svg>
                 <span>Cetak Landscape A4</span>
             </a>
@@ -117,18 +117,18 @@ if (!isset($unitProfile) || empty($unitProfile)) {
         <div class="mb-5 overflow-hidden rounded-xl border border-slate-900">
             <table class="w-full border-collapse text-xs" style="font-family: 'Times New Roman', Times, serif;">
                 <tr>
-                    <td class="w-[14%] bg-blue-100 p-3 text-center align-middle border-r border-slate-900">
+                    <td class="w-[14%] bg-primary-100 p-3 text-center align-middle border-r border-slate-900">
                         <?php if (!empty($unitProfile['logo_url'])): ?>
                             <img src="<?= url(ltrim($unitProfile['logo_url'], '/')) ?>" class="max-h-14 max-w-full mx-auto object-contain" alt="Logo">
                         <?php else: ?>
                             <span class="text-2xl font-black text-sky-600">BIP</span>
                         <?php endif; ?>
                     </td>
-                    <td class="w-[38%] bg-blue-200 p-3 text-center align-middle border-r border-slate-900">
+                    <td class="w-[38%] bg-primary-200 p-3 text-center align-middle border-r border-slate-900">
                         <div class="text-[11px] font-bold uppercase text-slate-900">Mata Pelajaran</div>
                         <div class="text-sm font-black uppercase text-slate-900 mt-0.5"><?= e($item['mata_pelajaran']) ?></div>
                     </td>
-                    <td class="w-[48%] bg-blue-200 p-0 align-middle">
+                    <td class="w-[48%] bg-primary-200 p-0 align-middle">
                         <table class="w-full border-collapse text-[11px] font-semibold text-slate-900">
                             <tr class="border-b border-slate-900">
                                 <td class="py-1 px-3 w-28 whitespace-nowrap font-bold">Pengajar</td>

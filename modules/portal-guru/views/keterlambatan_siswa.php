@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Pencatatan Keterlambatan Siswa View (Mobile)
  * Records late student arrivals with reasons, minutes late, action/coaching taken, and history.
@@ -118,7 +118,7 @@
                         </div>
                         <div class="flex items-start gap-1.5 text-slate-700">
                             <span class="text-[11px] font-bold text-slate-400 shrink-0">Tindakan:</span>
-                            <span class="font-bold text-emerald-800"><?= htmlspecialchars($r['action']) ?></span>
+                            <span class="font-bold text-primary-800"><?= htmlspecialchars($r['action']) ?></span>
                         </div>
                     </div>
 
@@ -357,7 +357,7 @@
                         </div>
                         <div class="flex items-start gap-1.5 text-slate-700">
                             <span class="text-[11px] font-bold text-slate-400 shrink-0">Tindakan:</span>
-                            <span class="font-bold text-emerald-800">${action}</span>
+                            <span class="font-bold text-primary-800">${action}</span>
                         </div>
                     </div>
                     <div class="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-slate-50">

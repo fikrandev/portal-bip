@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * HES - Index View with Unit Filtering
  */
@@ -11,7 +11,7 @@
                 <a href="<?= url('kelola-perangkat-pembelajaran/heb') ?>" class="px-3.5 py-1.5 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 font-semibold text-xs transition-colors">
                     📘 Hari Efektif Belajar (HEB)
                 </a>
-                <a href="<?= url('kelola-perangkat-pembelajaran/hes') ?>" class="px-3.5 py-1.5 rounded-xl bg-teal-600 text-white font-bold text-xs shadow-sm">
+                <a href="<?= url('kelola-perangkat-pembelajaran/hes') ?>" class="px-3.5 py-1.5 rounded-xl bg-primary-600 text-white font-bold text-xs shadow-sm">
                     📗 Hari Efektif Sekolah (HES)
                 </a>
             </div>
@@ -19,7 +19,7 @@
             <p class="text-xs sm:text-sm text-slate-500">Perhitungan dan distribusi hari kerja / operasional sekolah per semester dan unit</p>
         </div>
         <div class="flex items-center gap-3">
-            <a href="<?= url('kelola-perangkat-pembelajaran/hes/create') ?>" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-teal-600 hover:bg-teal-700 text-white font-semibold text-xs sm:text-sm shadow-md shadow-teal-500/20 transition-all">
+            <a href="<?= url('kelola-perangkat-pembelajaran/hes/create') ?>" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-primary-600 hover:bg-primary-700 text-white font-semibold text-xs sm:text-sm shadow-md shadow-primary-500/20 transition-all">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
                 Buat HES Baru
             </a>
@@ -36,7 +36,7 @@
             </a>
             <?php foreach ($unit_list as $uKey => $uInfo): ?>
                 <?php $isActiveUnit = ($filter_unit === $uKey); ?>
-                <a href="<?= url('kelola-perangkat-pembelajaran/hes?' . http_build_query(array_merge($_GET, ['unit' => $uKey]))) ?>" class="px-3.5 py-1.5 rounded-xl font-semibold transition-all whitespace-nowrap inline-flex items-center gap-1.5 <?= $isActiveUnit ? 'bg-teal-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' ?>">
+                <a href="<?= url('kelola-perangkat-pembelajaran/hes?' . http_build_query(array_merge($_GET, ['unit' => $uKey]))) ?>" class="px-3.5 py-1.5 rounded-xl font-semibold transition-all whitespace-nowrap inline-flex items-center gap-1.5 <?= $isActiveUnit ? 'bg-primary-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' ?>">
                     <span><?= $uInfo['icon'] ?></span>
                     <span>Unit <?= $uKey ?></span>
                 </a>
@@ -47,7 +47,7 @@
             <input type="hidden" name="unit" value="<?= e($filter_unit) ?>">
             <div>
                 <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Tahun Ajaran</label>
-                <select name="ta" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs bg-slate-50 focus:ring-2 focus:ring-teal-500 focus:outline-none">
+                <select name="ta" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs bg-slate-50 focus:ring-2 focus:ring-primary-500 focus:outline-none">
                     <option value="">Semua Tahun Ajaran</option>
                     <?php foreach ($ta_list as $ta): ?>
                         <option value="<?= $ta['id'] ?>" <?= $filter_ta == $ta['id'] ? 'selected' : '' ?>><?= e($ta['nama_tahun']) ?></option>
@@ -57,7 +57,7 @@
 
             <div>
                 <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Semester</label>
-                <select name="semester" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs bg-slate-50 focus:ring-2 focus:ring-teal-500 focus:outline-none">
+                <select name="semester" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs bg-slate-50 focus:ring-2 focus:ring-primary-500 focus:outline-none">
                     <option value="">Semua Semester</option>
                     <option value="Ganjil" <?= $filter_semester === 'Ganjil' ? 'selected' : '' ?>>Semester Ganjil</option>
                     <option value="Genap" <?= $filter_semester === 'Genap' ? 'selected' : '' ?>>Semester Genap</option>
@@ -66,7 +66,7 @@
 
             <div>
                 <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Status Dokumen</label>
-                <select name="status" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs bg-slate-50 focus:ring-2 focus:ring-teal-500 focus:outline-none">
+                <select name="status" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs bg-slate-50 focus:ring-2 focus:ring-primary-500 focus:outline-none">
                     <option value="">Semua Status</option>
                     <option value="draft" <?= $filter_status === 'draft' ? 'selected' : '' ?>>Draft</option>
                     <option value="diajukan" <?= $filter_status === 'diajukan' ? 'selected' : '' ?>>Menunggu Verifikasi</option>
@@ -78,8 +78,8 @@
             <div>
                 <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Pencarian</label>
                 <div class="flex items-center gap-2">
-                    <input type="text" name="search" value="<?= e($search) ?>" placeholder="Cari judul HES..." class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs bg-slate-50 focus:ring-2 focus:ring-teal-500 focus:outline-none">
-                    <button type="submit" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-xl text-xs transition-colors">
+                    <input type="text" name="search" value="<?= e($search) ?>" placeholder="Cari judul HES..." class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs bg-slate-50 focus:ring-2 focus:ring-primary-500 focus:outline-none">
+                    <button type="submit" class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-xl text-xs transition-colors">
                         Cari
                     </button>
                 </div>
@@ -125,7 +125,7 @@
                             $statusBadge = [
                                 'draft' => ['label' => 'Draft', 'class' => 'bg-slate-100 text-slate-600 border-slate-200'],
                                 'diajukan' => ['label' => 'Menunggu Review', 'class' => 'bg-amber-100 text-amber-800 border-amber-300'],
-                                'disetujui' => ['label' => 'Disetujui', 'class' => 'bg-emerald-100 text-emerald-800 border-emerald-300'],
+                                'disetujui' => ['label' => 'Disetujui', 'class' => 'bg-primary-100 text-primary-800 border-primary-300'],
                                 'ditolak' => ['label' => 'Perlu Revisi', 'class' => 'bg-rose-100 text-rose-800 border-rose-300']
                             ][$row['status']] ?? ['label' => ucfirst($row['status']), 'class' => 'bg-slate-100 text-slate-700 border-slate-200'];
                             ?>
@@ -145,7 +145,7 @@
                                     <div class="text-[11px] text-slate-500">Semester <?= e($row['semester']) ?></div>
                                 </td>
                                 <td class="py-3.5 px-4 whitespace-nowrap">
-                                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-teal-50 text-teal-800 font-extrabold text-xs">
+                                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-primary-50 text-primary-800 font-extrabold text-xs">
                                         <?= $totalHE ?> Hari Efektif
                                     </span>
                                 </td>
@@ -155,7 +155,7 @@
                                 </td>
                                 <td class="py-3.5 px-4 whitespace-nowrap">
                                     <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border <?= $statusBadge['class'] ?>">
-                                        <span class="w-1.5 h-1.5 rounded-full <?= $row['status'] === 'disetujui' ? 'bg-emerald-500' : ($row['status'] === 'diajukan' ? 'bg-amber-500' : ($row['status'] === 'ditolak' ? 'bg-rose-500' : 'bg-slate-400')) ?>"></span>
+                                        <span class="w-1.5 h-1.5 rounded-full <?= $row['status'] === 'disetujui' ? 'bg-primary-500' : ($row['status'] === 'diajukan' ? 'bg-amber-500' : ($row['status'] === 'ditolak' ? 'bg-rose-500' : 'bg-slate-400')) ?>"></span>
                                         <?= $statusBadge['label'] ?>
                                     </span>
                                 </td>
@@ -164,7 +164,7 @@
                                         <a href="<?= url("kelola-perangkat-pembelajaran/hes/detail/{$row['id']}") ?>" class="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors" title="Lihat Detail">
                                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg>
                                         </a>
-                                        <a href="<?= url("kelola-perangkat-pembelajaran/hes/edit/{$row['id']}") ?>" class="p-1.5 rounded-lg bg-teal-50 hover:bg-teal-100 text-teal-700 transition-colors" title="Edit HES">
+                                        <a href="<?= url("kelola-perangkat-pembelajaran/hes/edit/{$row['id']}") ?>" class="p-1.5 rounded-lg bg-primary-50 hover:bg-primary-100 text-primary-700 transition-colors" title="Edit HES">
                                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" /></svg>
                                         </a>
                                         <a href="<?= url("kelola-perangkat-pembelajaran/hes/cetak/{$row['id']}") ?>" target="_blank" class="p-1.5 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-700 transition-colors" title="Cetak Dokumen">
@@ -190,7 +190,7 @@
                 <span class="text-xs text-slate-500">Halaman <?= $page ?> dari <?= $totalPages ?> (Total: <?= $total ?>)</span>
                 <div class="flex gap-1">
                     <?php for ($p = 1; $p <= $totalPages; $p++): ?>
-                        <a href="<?= url('kelola-perangkat-pembelajaran/hes?' . http_build_query(array_merge($_GET, ['page' => $p]))) ?>" class="px-3 py-1 rounded-lg text-xs font-semibold <?= $p === $page ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200' ?>">
+                        <a href="<?= url('kelola-perangkat-pembelajaran/hes?' . http_build_query(array_merge($_GET, ['page' => $p]))) ?>" class="px-3 py-1 rounded-lg text-xs font-semibold <?= $p === $page ? 'bg-primary-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200' ?>">
                             <?= $p ?>
                         </a>
                     <?php endfor; ?>

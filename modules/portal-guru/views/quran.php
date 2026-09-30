@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Al-Qur'an Digital View (Mobile & PWA)
  * Features:
@@ -27,14 +27,14 @@
     </div>
 
     <!-- Right: Tilawah 2-Minute Badge -->
-    <div id="quran-tilawah-status-badge" class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
-        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+    <div id="quran-tilawah-status-badge" class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-primary-50 text-primary-700 border border-primary-200 flex items-center gap-1">
+        <span class="w-2 h-2 rounded-full bg-primary-500 animate-pulse"></span>
         <span id="quran-timer-display">00:00 / 02:00</span>
     </div>
 </div>
 
 <!-- 2-Minute Reading Tracker Sticky Progress Bar -->
-<div id="quran-timer-tracker-card" class="bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white px-4 py-3 shadow-md mx-4 mt-3 rounded-2xl relative overflow-hidden transition-all duration-300">
+<div id="quran-timer-tracker-card" class="bg-gradient-to-r from-primary-600 via-primary-600 to-primary-700 text-white px-4 py-3 shadow-md mx-4 mt-3 rounded-2xl relative overflow-hidden transition-all duration-300">
     <div class="flex items-center justify-between gap-2 relative z-10">
         <div class="flex items-center gap-2.5 min-w-0">
             <div class="w-8 h-8 rounded-xl bg-white/15 flex items-center justify-center text-sm shrink-0">
@@ -42,7 +42,7 @@
             </div>
             <div class="min-w-0">
                 <h4 id="tracker-title" class="text-xs font-bold leading-tight">Target Tilawah Harian (2 Menit)</h4>
-                <p id="tracker-desc" class="text-[10px] text-emerald-100/90 leading-tight truncate">Baca Qur'an 2 menit untuk centang otomatis.</p>
+                <p id="tracker-desc" class="text-[10px] text-primary-100/90 leading-tight truncate">Baca Qur'an 2 menit untuk centang otomatis.</p>
             </div>
         </div>
         <div class="text-right shrink-0">
@@ -52,7 +52,7 @@
 
     <!-- Progress Bar -->
     <div class="w-full h-1.5 bg-black/20 rounded-full mt-2.5 overflow-hidden">
-        <div id="tracker-progress-bar" class="h-full bg-emerald-300 rounded-full transition-all duration-500" style="width: 0%;"></div>
+        <div id="tracker-progress-bar" class="h-full bg-primary-300 rounded-full transition-all duration-500" style="width: 0%;"></div>
     </div>
 </div>
 
@@ -77,7 +77,7 @@
 
             <!-- Filter Chips -->
             <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1">
-                <button type="button" onclick="setSurahFilter('all')" id="filter-all" class="filter-chip px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-600 text-white shadow-xs">Semua (114)</button>
+                <button type="button" onclick="setSurahFilter('all')" id="filter-all" class="filter-chip px-3 py-1 rounded-full text-[11px] font-bold bg-primary-600 text-white shadow-xs">Semua (114)</button>
                 <button type="button" onclick="setSurahFilter('makkiyah')" id="filter-makkiyah" class="filter-chip px-3 py-1 rounded-full text-[11px] font-bold bg-white text-slate-600 border border-slate-200">Makkiyah</button>
                 <button type="button" onclick="setSurahFilter('madaniyah')" id="filter-madaniyah" class="filter-chip px-3 py-1 rounded-full text-[11px] font-bold bg-white text-slate-600 border border-slate-200">Madaniyah</button>
                 <button type="button" onclick="setSurahFilter('juz30')" id="filter-juz30" class="filter-chip px-3 py-1 rounded-full text-[11px] font-bold bg-white text-slate-600 border border-slate-200">Juz 30</button>
@@ -87,33 +87,33 @@
         <!-- Dual Bookmark Banners (Tilawah & Hafalan) -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             <!-- 1. Terakhir Dibaca (Tilawah) -->
-            <div id="last-read-card" onclick="resumeLastRead()" class="bg-gradient-to-r from-blue-50 to-indigo-50 p-3 rounded-2xl border border-blue-100/80 flex items-center justify-between cursor-pointer press-bounce shadow-xs">
+            <div id="last-read-card" onclick="resumeLastRead()" class="bg-gradient-to-r from-primary-50 to-indigo-50 p-3 rounded-2xl border border-primary-100/80 flex items-center justify-between cursor-pointer press-bounce shadow-xs">
                 <div class="flex items-center gap-2.5 min-w-0">
-                    <div class="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center text-sm shadow-xs shrink-0">
+                    <div class="w-8 h-8 rounded-xl bg-primary-600 text-white flex items-center justify-center text-sm shadow-xs shrink-0">
                         📖
                     </div>
                     <div class="min-w-0">
-                        <p class="text-[10px] font-bold text-blue-800 uppercase tracking-wider">Terakhir Dibaca (Tilawah)</p>
+                        <p class="text-[10px] font-bold text-primary-800 uppercase tracking-wider">Terakhir Dibaca (Tilawah)</p>
                         <p id="last-read-text" class="text-xs font-black text-slate-800 leading-tight truncate">Halaman 293 • QS. Al-Kahfi: 1</p>
                     </div>
                 </div>
-                <span class="text-xs font-bold text-blue-600 flex items-center gap-0.5 shrink-0">
+                <span class="text-xs font-bold text-primary-600 flex items-center gap-0.5 shrink-0">
                     Lanjut <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
                 </span>
             </div>
 
             <!-- 2. Target Hafalan (Tahfidz) -->
-            <div id="last-hafalan-card" onclick="resumeLastHafalan()" class="bg-gradient-to-r from-emerald-50 to-teal-50 p-3 rounded-2xl border border-emerald-100/80 flex items-center justify-between cursor-pointer press-bounce shadow-xs">
+            <div id="last-hafalan-card" onclick="resumeLastHafalan()" class="bg-gradient-to-r from-primary-50 to-primary-50 p-3 rounded-2xl border border-primary-100/80 flex items-center justify-between cursor-pointer press-bounce shadow-xs">
                 <div class="flex items-center gap-2.5 min-w-0">
-                    <div class="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-sm shadow-xs shrink-0">
+                    <div class="w-8 h-8 rounded-xl bg-primary-600 text-white flex items-center justify-center text-sm shadow-xs shrink-0">
                         🧠
                     </div>
                     <div class="min-w-0">
-                        <p class="text-[10px] font-bold text-emerald-800 uppercase tracking-wider">Target Hafalan (Tahfidz)</p>
+                        <p class="text-[10px] font-bold text-primary-800 uppercase tracking-wider">Target Hafalan (Tahfidz)</p>
                         <p id="last-hafalan-text" class="text-xs font-black text-slate-800 leading-tight truncate">QS. Al-Mulk: Ayat 1</p>
                     </div>
                 </div>
-                <span class="text-xs font-bold text-emerald-600 flex items-center gap-0.5 shrink-0">
+                <span class="text-xs font-bold text-primary-600 flex items-center gap-0.5 shrink-0">
                     Hafal <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
                 </span>
             </div>
@@ -123,7 +123,7 @@
         <div id="surah-list-container" class="space-y-2">
             <!-- Dynamically populated via JS -->
             <div class="py-12 flex flex-col items-center justify-center text-slate-400">
-                <svg class="animate-spin h-7 w-7 text-emerald-600 mb-2" viewBox="0 0 24 24">
+                <svg class="animate-spin h-7 w-7 text-primary-600 mb-2" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
@@ -147,7 +147,7 @@
                 
                 <!-- Mode Switcher (Segmented Control) -->
                 <div class="flex items-center p-1 bg-slate-100 rounded-2xl border border-slate-200/80 shrink-0">
-                    <button type="button" id="tab-mode-ayat" onclick="switchReaderMode('ayat')" class="py-1 px-2.5 rounded-xl text-[11px] font-bold transition-all flex items-center gap-1 bg-white text-emerald-800 shadow-xs">
+                    <button type="button" id="tab-mode-ayat" onclick="switchReaderMode('ayat')" class="py-1 px-2.5 rounded-xl text-[11px] font-bold transition-all flex items-center gap-1 bg-white text-primary-800 shadow-xs">
                         <span>📑 Per Ayat</span>
                     </button>
                     <button type="button" id="tab-mode-mushaf" onclick="switchReaderMode('mushaf')" class="py-1 px-2.5 rounded-xl text-[11px] font-bold transition-all flex items-center gap-1 text-slate-500 hover:text-slate-800">
@@ -160,16 +160,16 @@
             </div>
 
             <!-- Surah Big Header Badge (Used in Per Ayat & Hafalan Modes) -->
-            <div id="reader-surah-header-banner" class="bg-gradient-to-tr from-emerald-700 via-teal-700 to-emerald-800 rounded-2xl p-4 text-white text-center shadow-lg shadow-emerald-700/20 relative overflow-hidden">
+            <div id="reader-surah-header-banner" class="bg-gradient-to-tr from-primary-700 via-primary-700 to-primary-800 rounded-2xl p-4 text-white text-center shadow-lg shadow-primary-700/20 relative overflow-hidden">
                 <div class="absolute -right-4 -bottom-4 text-white/10 text-8xl font-arabic pointer-events-none select-none">
                     📖
                 </div>
                 <h3 id="reader-surah-name" class="text-lg font-black tracking-wide">Surah Al-Fatihah</h3>
-                <p id="reader-surah-arti" class="text-xs text-emerald-100 font-medium">Pembukaan • 7 Ayat • Mekah</p>
+                <p id="reader-surah-arti" class="text-xs text-primary-100 font-medium">Pembukaan • 7 Ayat • Mekah</p>
                 
                 <!-- Audio Recitation Player Button -->
                 <div class="mt-3 flex items-center justify-center gap-2">
-                    <button type="button" id="btn-play-surah-audio" onclick="toggleSurahAudio()" class="px-3.5 py-1.5 rounded-full bg-white text-emerald-800 text-xs font-bold flex items-center gap-1.5 shadow-md press-bounce">
+                    <button type="button" id="btn-play-surah-audio" onclick="toggleSurahAudio()" class="px-3.5 py-1.5 rounded-full bg-white text-primary-800 text-xs font-bold flex items-center gap-1.5 shadow-md press-bounce">
                         <i data-lucide="play" id="audio-icon" class="w-3.5 h-3.5 fill-current"></i>
                         <span id="audio-text">Putar Audio Surah</span>
                     </button>
@@ -184,8 +184,8 @@
                     <button type="button" onclick="adjustFontSize(2)" class="w-7 h-7 rounded-lg bg-slate-100 text-slate-700 text-xs font-bold flex items-center justify-center press-bounce" title="Perbesar Font">A+</button>
                 </div>
                 <div class="flex items-center gap-1.5">
-                    <button type="button" onclick="toggleLatin()" id="btn-toggle-latin" class="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-bold press-bounce">Latin</button>
-                    <button type="button" onclick="toggleTranslation()" id="btn-toggle-arti" class="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold press-bounce">Arti</button>
+                    <button type="button" onclick="toggleLatin()" id="btn-toggle-latin" class="px-2.5 py-1 rounded-lg bg-primary-50 text-primary-700 border border-primary-200 text-[10px] font-bold press-bounce">Latin</button>
+                    <button type="button" onclick="toggleTranslation()" id="btn-toggle-arti" class="px-2.5 py-1 rounded-lg bg-primary-50 text-primary-700 border border-primary-200 text-[10px] font-bold press-bounce">Arti</button>
                 </div>
             </div>
 
@@ -193,22 +193,22 @@
             <div id="controls-mode-mushaf" class="hidden space-y-3 pt-2 border-t border-slate-100">
                 
                 <!-- Quick Page Navigator Bar -->
-                <div class="flex items-center justify-between gap-2 p-2 bg-emerald-50/70 border border-emerald-200/80 rounded-2xl">
+                <div class="flex items-center justify-between gap-2 p-2 bg-primary-50/70 border border-primary-200/80 rounded-2xl">
                     <!-- Page Prev (Kanan/Sebelumnya) -->
-                    <button type="button" onclick="navigateMushafPage(1)" class="px-3 py-1.5 bg-white hover:bg-emerald-100 text-emerald-900 border border-emerald-200 rounded-xl text-xs font-bold flex items-center gap-1 press-bounce shadow-xs" title="Lembar Berikutnya (Maju)">
+                    <button type="button" onclick="navigateMushafPage(1)" class="px-3 py-1.5 bg-white hover:bg-primary-100 text-primary-900 border border-primary-200 rounded-xl text-xs font-bold flex items-center gap-1 press-bounce shadow-xs" title="Lembar Berikutnya (Maju)">
                         <span>◀ Maju</span>
                     </button>
 
                     <!-- Center: Page Selector & Jump Button -->
                     <div class="text-center">
-                        <button type="button" onclick="openPageSelectorSheet()" class="font-mono font-bold text-xs text-emerald-900 hover:text-emerald-700 flex items-center justify-center gap-1 bg-white px-3 py-1 rounded-xl border border-emerald-200 shadow-xs press-bounce">
-                            <span>📖 Halaman</span> <span id="mushaf-ctrl-page-num" class="text-emerald-700 font-black">1</span> <span>/ 604</span>
+                        <button type="button" onclick="openPageSelectorSheet()" class="font-mono font-bold text-xs text-primary-900 hover:text-primary-700 flex items-center justify-center gap-1 bg-white px-3 py-1 rounded-xl border border-primary-200 shadow-xs press-bounce">
+                            <span>📖 Halaman</span> <span id="mushaf-ctrl-page-num" class="text-primary-700 font-black">1</span> <span>/ 604</span>
                             <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400"></i>
                         </button>
                     </div>
 
                     <!-- Page Next (Kiri/Maju) -->
-                    <button type="button" onclick="navigateMushafPage(-1)" class="px-3 py-1.5 bg-white hover:bg-emerald-100 text-emerald-900 border border-emerald-200 rounded-xl text-xs font-bold flex items-center gap-1 press-bounce shadow-xs" title="Lembar Sebelumnya (Mundur)">
+                    <button type="button" onclick="navigateMushafPage(-1)" class="px-3 py-1.5 bg-white hover:bg-primary-100 text-primary-900 border border-primary-200 rounded-xl text-xs font-bold flex items-center gap-1 press-bounce shadow-xs" title="Lembar Sebelumnya (Mundur)">
                         <span>Mundur ▶</span>
                     </button>
                 </div>
@@ -237,23 +237,23 @@
                         <span class="font-bold text-slate-700 flex items-center gap-1.5">
                             <span>🎯 Progres Hafalan Surah</span>
                         </span>
-                        <span id="hafalan-stat-summary" class="font-bold text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded-md text-[11px]">
+                        <span id="hafalan-stat-summary" class="font-bold text-primary-700 bg-primary-100/70 px-2 py-0.5 rounded-md text-[11px]">
                             0 / 0 Lancar (0%)
                         </span>
                     </div>
 
                     <!-- Multi-Color Progress Bar -->
                     <div class="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden flex">
-                        <div id="bar-mutqin" class="bg-emerald-500 h-full transition-all duration-300" style="width: 0%;" title="Lancar (Mutqin)"></div>
+                        <div id="bar-mutqin" class="bg-primary-500 h-full transition-all duration-300" style="width: 0%;" title="Lancar (Mutqin)"></div>
                         <div id="bar-murajaah" class="bg-amber-400 h-full transition-all duration-300" style="width: 0%;" title="Sedang Dihafal"></div>
                         <div id="bar-sulit" class="bg-rose-400 h-full transition-all duration-300" style="width: 0%;" title="Perlu Diulang"></div>
                     </div>
 
                     <div class="flex items-center justify-between text-[10px] text-slate-500 font-medium mt-2 flex-wrap gap-1">
-                        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> Mutqin (<span id="count-mutqin">0</span>)</span>
+                        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-primary-500"></span> Mutqin (<span id="count-mutqin">0</span>)</span>
                         <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-amber-400"></span> Muraja'ah (<span id="count-murajaah">0</span>)</span>
                         <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-rose-400"></span> Perlu Diulang (<span id="count-sulit">0</span>)</span>
-                        <button type="button" onclick="markAllMutqin()" class="text-emerald-700 font-bold hover:underline">Tandai Semua Lancar</button>
+                        <button type="button" onclick="markAllMutqin()" class="text-primary-700 font-bold hover:underline">Tandai Semua Lancar</button>
                     </div>
                 </div>
 
@@ -261,7 +261,7 @@
                 <div>
                     <span class="text-[11px] font-bold text-slate-700 block mb-1.5">Metode Tampilan Hafalan:</span>
                     <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
-                        <button type="button" onclick="setHafalanFilter('normal')" id="hafalan-opt-normal" class="hafalan-opt-btn px-2 py-1.5 rounded-xl text-[11px] font-bold bg-emerald-600 text-white shadow-xs text-center press-bounce">
+                        <button type="button" onclick="setHafalanFilter('normal')" id="hafalan-opt-normal" class="hafalan-opt-btn px-2 py-1.5 rounded-xl text-[11px] font-bold bg-primary-600 text-white shadow-xs text-center press-bounce">
                             👁️ Tampil Penuh
                         </button>
                         <button type="button" onclick="setHafalanFilter('blur')" id="hafalan-opt-blur" class="hafalan-opt-btn px-2 py-1.5 rounded-xl text-[11px] font-bold bg-white text-slate-700 border border-slate-200 text-center press-bounce">
@@ -280,20 +280,20 @@
                 </div>
 
                 <!-- Tikrar Looping Player Controls -->
-                <div class="p-3 bg-emerald-50/70 border border-emerald-200/80 rounded-2xl space-y-2">
+                <div class="p-3 bg-primary-50/70 border border-primary-200/80 rounded-2xl space-y-2">
                     <div class="flex items-center justify-between">
-                        <span class="text-xs font-bold text-emerald-900 flex items-center gap-1.5">
+                        <span class="text-xs font-bold text-primary-900 flex items-center gap-1.5">
                             <span>🔁 Metode Tikrar (Pengulangan Audio)</span>
                         </span>
-                        <button type="button" onclick="startTikrarSequence()" id="btn-start-tikrar" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-[11px] shadow-xs flex items-center gap-1 press-bounce">
+                        <button type="button" onclick="startTikrarSequence()" id="btn-start-tikrar" class="px-3 py-1 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-bold text-[11px] shadow-xs flex items-center gap-1 press-bounce">
                             <i data-lucide="repeat" class="w-3 h-3"></i> Putar Tikrar
                         </button>
                     </div>
 
                     <div class="grid grid-cols-2 gap-2 text-xs">
                         <div>
-                            <label class="text-[10px] font-bold text-emerald-800">Jumlah Ulang per Ayat:</label>
-                            <select id="tikrar-repeat-count" class="w-full mt-0.5 p-1.5 bg-white border border-emerald-200 rounded-lg text-xs font-bold text-slate-800">
+                            <label class="text-[10px] font-bold text-primary-800">Jumlah Ulang per Ayat:</label>
+                            <select id="tikrar-repeat-count" class="w-full mt-0.5 p-1.5 bg-white border border-primary-200 rounded-lg text-xs font-bold text-slate-800">
                                 <option value="1">1x Ulang</option>
                                 <option value="3" selected>3x Ulang</option>
                                 <option value="5">5x Ulang</option>
@@ -303,8 +303,8 @@
                             </select>
                         </div>
                         <div>
-                            <label class="text-[10px] font-bold text-emerald-800">Jeda Waktu Mengikuti:</label>
-                            <select id="tikrar-delay-sec" class="w-full mt-0.5 p-1.5 bg-white border border-emerald-200 rounded-lg text-xs font-bold text-slate-800">
+                            <label class="text-[10px] font-bold text-primary-800">Jeda Waktu Mengikuti:</label>
+                            <select id="tikrar-delay-sec" class="w-full mt-0.5 p-1.5 bg-white border border-primary-200 rounded-lg text-xs font-bold text-slate-800">
                                 <option value="0">Tanpa Jeda</option>
                                 <option value="2" selected>Jeda 2 Detik</option>
                                 <option value="4">Jeda 4 Detik</option>
@@ -322,7 +322,7 @@
 
             <!-- Bismillah Header (Used in Mode 1 & 3) -->
             <div id="reader-bismillah-box" class="py-3 text-center">
-                <p class="font-quran text-3xl sm:text-4xl text-emerald-950 font-normal leading-relaxed">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</p>
+                <p class="font-quran text-3xl sm:text-4xl text-primary-950 font-normal leading-relaxed">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</p>
             </div>
         </div>
 
@@ -343,11 +343,11 @@
                 
                 <!-- Ornate Page Header (Surah & Juz) -->
                 <div class="flex items-center justify-between pb-3 mb-3 border-b-2 border-amber-800/15 text-xs text-amber-950 font-bold font-arabic">
-                    <span id="mushaf-page-juz-title" class="text-sm font-arabic font-bold text-emerald-900">الجُزْءُ الأول</span>
+                    <span id="mushaf-page-juz-title" class="text-sm font-arabic font-bold text-primary-900">الجُزْءُ الأول</span>
                     <span class="text-[10px] font-sans font-black text-amber-900 bg-amber-200/70 px-2.5 py-0.5 rounded-full shadow-inner">
                         Mushaf Madinah
                     </span>
-                    <span id="mushaf-page-surah-title" class="text-sm font-arabic font-bold text-emerald-900">سُورَةُ الفَاتِحَةِ</span>
+                    <span id="mushaf-page-surah-title" class="text-sm font-arabic font-bold text-primary-900">سُورَةُ الفَاتِحَةِ</span>
                 </div>
 
                 <!-- Page Flowing Content Mount -->
@@ -359,7 +359,7 @@
 
                 <!-- Ornate Page Footer -->
                 <div class="mt-5 pt-3 border-t-2 border-amber-800/15 flex items-center justify-between text-xs text-amber-950">
-                    <button type="button" onclick="navigateMushafPage(1)" class="font-bold text-emerald-800 hover:text-emerald-950 flex items-center gap-1 press-bounce">
+                    <button type="button" onclick="navigateMushafPage(1)" class="font-bold text-primary-800 hover:text-primary-950 flex items-center gap-1 press-bounce">
                         <span>◀ Hal. <span id="mushaf-next-page-hint">2</span></span>
                     </button>
                     
@@ -368,7 +368,7 @@
                         <span class="text-[10px] font-mono text-slate-400 block -mt-1" id="mushaf-latin-page-num">Halaman 1</span>
                     </div>
 
-                    <button type="button" onclick="navigateMushafPage(-1)" class="font-bold text-emerald-800 hover:text-emerald-950 flex items-center gap-1 press-bounce">
+                    <button type="button" onclick="navigateMushafPage(-1)" class="font-bold text-primary-800 hover:text-primary-950 flex items-center gap-1 press-bounce">
                         <span>Hal. <span id="mushaf-prev-page-hint">Prev</span> ▶</span>
                     </button>
                 </div>
@@ -384,7 +384,7 @@
                        value="1" 
                        oninput="onMushafSliderChange(this.value)" 
                        class="flex-1 accent-emerald-600 h-2 bg-slate-200 rounded-lg cursor-pointer">
-                <span id="slider-page-value" class="font-mono font-black text-xs text-emerald-800 shrink-0 min-w-[45px] text-right">1 / 604</span>
+                <span id="slider-page-value" class="font-mono font-black text-xs text-primary-800 shrink-0 min-w-[45px] text-right">1 / 604</span>
             </div>
         </div>
 
@@ -400,7 +400,7 @@
             <button type="button" id="btn-prev-surah" onclick="navigateSurah(-1)" class="flex-1 py-3 px-3 rounded-2xl bg-white border border-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm press-bounce">
                 <i data-lucide="chevron-left" class="w-4 h-4"></i> Surah Sebelumnya
             </button>
-            <button type="button" id="btn-next-surah" onclick="navigateSurah(1)" class="flex-1 py-3 px-3 rounded-2xl bg-emerald-600 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/20 press-bounce">
+            <button type="button" id="btn-next-surah" onclick="navigateSurah(1)" class="flex-1 py-3 px-3 rounded-2xl bg-primary-600 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-primary-600/20 press-bounce">
                 Surah Berikutnya <i data-lucide="chevron-right" class="w-4 h-4"></i>
             </button>
         </div>
@@ -559,7 +559,7 @@
         const trackerTime = document.getElementById('tracker-time-text');
 
         if (badge) {
-            badge.className = 'px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-600 text-white shadow-xs flex items-center gap-1';
+            badge.className = 'px-2.5 py-1 rounded-full text-[10px] font-bold bg-primary-600 text-white shadow-xs flex items-center gap-1';
             badge.innerHTML = '<span>✓</span> <span>Tilawah Selesai</span>';
         }
         if (trackerTitle) trackerTitle.innerHTML = 'Alhamdulillah! Target 2 Menit Selesai ✓';
@@ -630,16 +630,16 @@
             const isAnyMutqin = hafalanStats.mutqin > 0;
 
             html += `
-                <div onclick="openSurahReader(${nomor})" class="surah-card bg-white rounded-2xl p-3.5 shadow-sm border border-slate-100 hover:border-emerald-200 cursor-pointer press-bounce flex items-center justify-between gap-3 transition-all" data-name="${namaLatin.toLowerCase()} ${arti.toLowerCase()} ${nomor}" data-type="${tempatTurun.toLowerCase()}" data-nomor="${nomor}">
+                <div onclick="openSurahReader(${nomor})" class="surah-card bg-white rounded-2xl p-3.5 shadow-sm border border-slate-100 hover:border-primary-200 cursor-pointer press-bounce flex items-center justify-between gap-3 transition-all" data-name="${namaLatin.toLowerCase()} ${arti.toLowerCase()} ${nomor}" data-type="${tempatTurun.toLowerCase()}" data-nomor="${nomor}">
                     <div class="flex items-center gap-3 min-w-0">
                         <!-- Surah Number Box -->
-                        <div class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-800 flex items-center justify-center font-black text-xs shrink-0 border border-emerald-100">
+                        <div class="w-9 h-9 rounded-xl bg-primary-50 text-primary-800 flex items-center justify-center font-black text-xs shrink-0 border border-primary-100">
                             ${nomor}
                         </div>
                         <div class="min-w-0">
                             <div class="flex items-center gap-1.5">
                                 <h4 class="font-black text-slate-900 text-xs leading-tight truncate">${namaLatin}</h4>
-                                ${isAnyMutqin ? `<span class="text-[9px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.2 rounded-full">${hafalanStats.mutqin} Hafal</span>` : ''}
+                                ${isAnyMutqin ? `<span class="text-[9px] bg-primary-100 text-primary-800 font-bold px-1.5 py-0.2 rounded-full">${hafalanStats.mutqin} Hafal</span>` : ''}
                             </div>
                             <p class="text-[10px] text-slate-400 truncate mt-0.5">${arti} • ${jumlahAyat} Ayat • Hal. ${pageStart}</p>
                         </div>
@@ -647,7 +647,7 @@
 
                     <!-- Arabic Name Calligraphy -->
                     <div class="text-right shrink-0">
-                        <p class="font-arabic text-lg font-bold text-emerald-950">${namaArab}</p>
+                        <p class="font-arabic text-lg font-bold text-primary-950">${namaArab}</p>
                         <span class="text-[9px] font-bold text-slate-400 capitalize">${tempatTurun}</span>
                     </div>
                 </div>
@@ -676,7 +676,7 @@
         });
         const activeBtn = document.getElementById(`filter-${type}`);
         if (activeBtn) {
-            activeBtn.className = 'filter-chip px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-600 text-white shadow-xs';
+            activeBtn.className = 'filter-chip px-3 py-1 rounded-full text-[11px] font-bold bg-primary-600 text-white shadow-xs';
         }
 
         document.querySelectorAll('.surah-card').forEach(card => {
@@ -862,14 +862,14 @@
         if (contHafalan) contHafalan.classList.add('hidden');
 
         if (mode === 'ayat') {
-            if (tabAyat) tabAyat.className = 'py-1 px-2.5 rounded-xl text-[11px] font-bold transition-all flex items-center gap-1 bg-white text-emerald-800 shadow-xs';
+            if (tabAyat) tabAyat.className = 'py-1 px-2.5 rounded-xl text-[11px] font-bold transition-all flex items-center gap-1 bg-white text-primary-800 shadow-xs';
             if (ctrlAyat) ctrlAyat.classList.remove('hidden');
             if (contAyat) contAyat.classList.remove('hidden');
             if (surahHeaderBanner) surahHeaderBanner.classList.remove('hidden');
             if (surahNavFooter) surahNavFooter.classList.remove('hidden');
             if (bismillahBox && currentSurahNumber !== 1 && currentSurahNumber !== 9) bismillahBox.classList.remove('hidden');
         } else if (mode === 'mushaf') {
-            if (tabMushaf) tabMushaf.className = 'py-1 px-2.5 rounded-xl text-[11px] font-bold transition-all flex items-center gap-1 bg-white text-emerald-800 shadow-xs';
+            if (tabMushaf) tabMushaf.className = 'py-1 px-2.5 rounded-xl text-[11px] font-bold transition-all flex items-center gap-1 bg-white text-primary-800 shadow-xs';
             if (ctrlMushaf) ctrlMushaf.classList.remove('hidden');
             if (contMushaf) contMushaf.classList.remove('hidden');
             if (surahHeaderBanner) surahHeaderBanner.classList.add('hidden'); // Mushaf uses authentic page header
@@ -877,7 +877,7 @@
             if (surahNavFooter) surahNavFooter.classList.add('hidden'); // Mushaf uses page turn footer
             loadAndRenderMushafPage(currentMushafPage, targetAyat);
         } else if (mode === 'hafalan') {
-            if (tabHafalan) tabHafalan.className = 'py-1 px-2.5 rounded-xl text-[11px] font-bold transition-all flex items-center gap-1 bg-white text-emerald-800 shadow-xs';
+            if (tabHafalan) tabHafalan.className = 'py-1 px-2.5 rounded-xl text-[11px] font-bold transition-all flex items-center gap-1 bg-white text-primary-800 shadow-xs';
             if (ctrlHafalan) ctrlHafalan.classList.remove('hidden');
             if (contHafalan) contHafalan.classList.remove('hidden');
             if (surahHeaderBanner) surahHeaderBanner.classList.remove('hidden');
@@ -919,7 +919,7 @@
             // Hafalan status
             const hStatus = getAyatHafalanStatus(data.nomor, noAyat);
             let hBadge = '';
-            if (hStatus === 'mutqin') hBadge = '<span class="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">🟢 Mutqin</span>';
+            if (hStatus === 'mutqin') hBadge = '<span class="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-primary-100 text-primary-800 border border-primary-200">🟢 Mutqin</span>';
             else if (hStatus === 'murajaah') hBadge = '<span class="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-800 border border-amber-200">🟡 Muraja\'ah</span>';
             else if (hStatus === 'sulit') hBadge = '<span class="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-rose-100 text-rose-800 border border-rose-200">🔴 Perlu Diulang</span>';
 
@@ -928,7 +928,7 @@
                     <!-- Top Sub-bar: Ayah Number, Bookmark & Audio -->
                     <div class="flex items-center justify-between pb-2 border-b border-slate-50 text-[11px] gap-2">
                         <div class="flex items-center gap-1.5 font-bold text-slate-700 min-w-0">
-                            <span class="w-6 h-6 rounded-lg ${isBookmarked ? 'bg-amber-500 text-white font-bold shadow-xs' : 'bg-emerald-50 text-emerald-800 border border-emerald-100'} flex items-center justify-center font-mono text-[10px] shrink-0">${noAyat}</span>
+                            <span class="w-6 h-6 rounded-lg ${isBookmarked ? 'bg-amber-500 text-white font-bold shadow-xs' : 'bg-primary-50 text-primary-800 border border-primary-100'} flex items-center justify-center font-mono text-[10px] shrink-0">${noAyat}</span>
                             <span class="${isBookmarked ? 'text-amber-700 font-bold' : 'text-slate-400'} shrink-0">Ayat ${noAyat}</span>
                             ${isBookmarked ? '<span class="text-[9px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded-full font-bold truncate">Ditandai</span>' : ''}
                             ${hBadge}
@@ -941,7 +941,7 @@
                             </button>
                             <!-- Audio Button -->
                             ${audioSrc ? `
-                            <button type="button" onclick="playAyatAudio('${audioSrc}', this)" class="px-2 py-1 rounded-xl bg-slate-50 hover:bg-emerald-50 hover:text-emerald-700 text-slate-600 font-bold text-[10px] flex items-center gap-1 press-bounce">
+                            <button type="button" onclick="playAyatAudio('${audioSrc}', this)" class="px-2 py-1 rounded-xl bg-slate-50 hover:bg-primary-50 hover:text-primary-700 text-slate-600 font-bold text-[10px] flex items-center gap-1 press-bounce">
                                 <i data-lucide="play" class="w-3 h-3 fill-current"></i> Putar
                             </button>` : ''}
                         </div>
@@ -956,7 +956,7 @@
 
                     <!-- Latin Transliteration -->
                     <div class="latin-box ${showLatin ? '' : 'hidden'}">
-                        <p class="text-xs text-blue-600 font-semibold leading-relaxed">
+                        <p class="text-xs text-primary-600 font-semibold leading-relaxed">
                             ${teksLatin}
                         </p>
                     </div>
@@ -1001,7 +1001,7 @@
         if (!cachedPagesData[pageNum]) {
             pageBody.innerHTML = `
                 <div class="py-16 text-center text-slate-400 space-y-2">
-                    <svg class="animate-spin h-7 w-7 text-emerald-700 mx-auto" viewBox="0 0 24 24">
+                    <svg class="animate-spin h-7 w-7 text-primary-700 mx-auto" viewBox="0 0 24 24">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle>
                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
@@ -1046,7 +1046,7 @@
             pageBody.innerHTML = `
                 <div class="py-12 text-center text-slate-400">
                     <p class="text-xs font-sans">Gagal memuat data lembar halaman ${pageNum}. Periksa koneksi internet.</p>
-                    <button type="button" onclick="loadAndRenderMushafPage(${pageNum})" class="mt-2 px-3 py-1.5 bg-emerald-600 text-white rounded-xl text-xs font-bold font-sans press-bounce">
+                    <button type="button" onclick="loadAndRenderMushafPage(${pageNum})" class="mt-2 px-3 py-1.5 bg-primary-600 text-white rounded-xl text-xs font-bold font-sans press-bounce">
                         Coba Lagi
                     </button>
                 </div>
@@ -1098,9 +1098,9 @@
             if (isFirstAyahOfSurah || currentRenderedSurahNum !== surahNum) {
                 currentRenderedSurahNum = surahNum;
                 html += `
-                    <div class="mushaf-surah-frame my-3 p-3 rounded-2xl bg-gradient-to-r from-emerald-900 via-teal-900 to-emerald-900 text-white text-center border-2 border-amber-300/40 shadow-sm relative overflow-hidden">
+                    <div class="mushaf-surah-frame my-3 p-3 rounded-2xl bg-gradient-to-r from-primary-900 via-primary-900 to-primary-900 text-white text-center border-2 border-amber-300/40 shadow-sm relative overflow-hidden">
                         <h4 class="font-arabic text-xl font-bold text-amber-200">${surahNameAr}</h4>
-                        <p class="text-[10px] font-sans font-medium text-emerald-100">${ayah.surah.revelationType === 'Meccan' ? 'Makkiyah' : 'Madaniyah'} • ${ayah.surah.numberOfAyahs} Ayat</p>
+                        <p class="text-[10px] font-sans font-medium text-primary-100">${ayah.surah.revelationType === 'Meccan' ? 'Makkiyah' : 'Madaniyah'} • ${ayah.surah.numberOfAyahs} Ayat</p>
                     </div>
                 `;
 
@@ -1108,7 +1108,7 @@
                 if (surahNum !== 1 && surahNum !== 9) {
                     html += `
                         <div class="text-center py-2 mb-2 border-b border-amber-900/10">
-                            <p class="font-quran text-3xl text-emerald-950 font-normal">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</p>
+                            <p class="font-quran text-3xl text-primary-950 font-normal">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</p>
                         </div>
                     `;
                 }
@@ -1118,17 +1118,17 @@
             const hStatus = getAyatHafalanStatus(surahNum, noAyat);
             const arabicNum = convertToArabicNumerals(noAyat);
 
-            let markerClass = "inline-flex items-center justify-center mx-1 px-1.5 py-0.5 rounded-full text-emerald-900 bg-emerald-100/70 border border-emerald-300/80 text-sm font-sans font-bold hover:bg-emerald-200 cursor-pointer transition-all";
+            let markerClass = "inline-flex items-center justify-center mx-1 px-1.5 py-0.5 rounded-full text-primary-900 bg-primary-100/70 border border-primary-300/80 text-sm font-sans font-bold hover:bg-primary-200 cursor-pointer transition-all";
             if (isBookmarked) {
                 markerClass = "inline-flex items-center justify-center mx-1 px-1.5 py-0.5 rounded-full text-amber-950 bg-amber-300 border border-amber-500 text-sm font-sans font-bold shadow-xs cursor-pointer";
             }
 
             let statusUnderline = "";
-            if (hStatus === 'mutqin') statusUnderline = "border-b-2 border-emerald-500/80";
+            if (hStatus === 'mutqin') statusUnderline = "border-b-2 border-primary-500/80";
             else if (hStatus === 'murajaah') statusUnderline = "border-b-2 border-amber-400/80";
 
             html += `
-                <span class="mushaf-ayah-span inline cursor-pointer p-0.5 rounded-lg transition-all ${isBookmarked ? 'bg-amber-200/80 text-amber-950 ring-2 ring-amber-400' : 'hover:bg-emerald-100/60'} ${statusUnderline}" 
+                <span class="mushaf-ayah-span inline cursor-pointer p-0.5 rounded-lg transition-all ${isBookmarked ? 'bg-amber-200/80 text-amber-950 ring-2 ring-amber-400' : 'hover:bg-primary-100/60'} ${statusUnderline}" 
                       id="mushaf-ayah-${noAyat}" 
                       onclick="openMushafAyatAction(${surahNum}, '${surahNameLatin.replace(/'/g, "\\'")}', ${noAyat}, ${currentMushafPage})">
                     ${teksArab}
@@ -1174,8 +1174,8 @@
                                min="1" 
                                max="604" 
                                value="${currentMushafPage}" 
-                               class="flex-1 p-3 bg-slate-50 border border-slate-200 rounded-2xl text-center font-mono font-black text-lg text-emerald-900 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                        <button type="button" onclick="const p = parseInt(document.getElementById('input-jump-page').value); if(p>=1&&p<=604){ AndroidUI.closeBottomSheet(); loadAndRenderMushafPage(p); } else { AndroidUI.toast('Masukkan nomor 1-604', 'warning'); }" class="px-5 py-3 bg-emerald-600 text-white font-bold text-xs rounded-2xl shadow-sm press-bounce">
+                               class="flex-1 p-3 bg-slate-50 border border-slate-200 rounded-2xl text-center font-mono font-black text-lg text-primary-900 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        <button type="button" onclick="const p = parseInt(document.getElementById('input-jump-page').value); if(p>=1&&p<=604){ AndroidUI.closeBottomSheet(); loadAndRenderMushafPage(p); } else { AndroidUI.toast('Masukkan nomor 1-604', 'warning'); }" class="px-5 py-3 bg-primary-600 text-white font-bold text-xs rounded-2xl shadow-sm press-bounce">
                             Buka Lembar
                         </button>
                     </div>
@@ -1183,12 +1183,12 @@
                     <div class="pt-2 border-t border-slate-100">
                         <span class="text-[11px] font-bold text-slate-500 block mb-2">Halaman Penting:</span>
                         <div class="grid grid-cols-3 gap-1.5 text-xs text-center font-bold">
-                            <button type="button" onclick="AndroidUI.closeBottomSheet(); loadAndRenderMushafPage(1);" class="p-2 bg-slate-100 hover:bg-emerald-50 text-slate-700 rounded-xl press-bounce">Hal. 1 (Al-Fatihah)</button>
-                            <button type="button" onclick="AndroidUI.closeBottomSheet(); loadAndRenderMushafPage(293);" class="p-2 bg-slate-100 hover:bg-emerald-50 text-slate-700 rounded-xl press-bounce">Hal. 293 (Al-Kahfi)</button>
-                            <button type="button" onclick="AndroidUI.closeBottomSheet(); loadAndRenderMushafPage(562);" class="p-2 bg-slate-100 hover:bg-emerald-50 text-slate-700 rounded-xl press-bounce">Hal. 562 (Al-Mulk)</button>
-                            <button type="button" onclick="AndroidUI.closeBottomSheet(); loadAndRenderMushafPage(582);" class="p-2 bg-slate-100 hover:bg-emerald-50 text-slate-700 rounded-xl press-bounce">Hal. 582 (Juz 30)</button>
-                            <button type="button" onclick="AndroidUI.closeBottomSheet(); loadAndRenderMushafPage(604);" class="p-2 bg-slate-100 hover:bg-emerald-50 text-slate-700 rounded-xl press-bounce">Hal. 604 (An-Nas)</button>
-                            <button type="button" onclick="AndroidUI.closeBottomSheet(); openJuzSelectorSheet();" class="p-2 bg-emerald-50 text-emerald-800 rounded-xl press-bounce">Pilih Juz (1-30) →</button>
+                            <button type="button" onclick="AndroidUI.closeBottomSheet(); loadAndRenderMushafPage(1);" class="p-2 bg-slate-100 hover:bg-primary-50 text-slate-700 rounded-xl press-bounce">Hal. 1 (Al-Fatihah)</button>
+                            <button type="button" onclick="AndroidUI.closeBottomSheet(); loadAndRenderMushafPage(293);" class="p-2 bg-slate-100 hover:bg-primary-50 text-slate-700 rounded-xl press-bounce">Hal. 293 (Al-Kahfi)</button>
+                            <button type="button" onclick="AndroidUI.closeBottomSheet(); loadAndRenderMushafPage(562);" class="p-2 bg-slate-100 hover:bg-primary-50 text-slate-700 rounded-xl press-bounce">Hal. 562 (Al-Mulk)</button>
+                            <button type="button" onclick="AndroidUI.closeBottomSheet(); loadAndRenderMushafPage(582);" class="p-2 bg-slate-100 hover:bg-primary-50 text-slate-700 rounded-xl press-bounce">Hal. 582 (Juz 30)</button>
+                            <button type="button" onclick="AndroidUI.closeBottomSheet(); loadAndRenderMushafPage(604);" class="p-2 bg-slate-100 hover:bg-primary-50 text-slate-700 rounded-xl press-bounce">Hal. 604 (An-Nas)</button>
+                            <button type="button" onclick="AndroidUI.closeBottomSheet(); openJuzSelectorSheet();" class="p-2 bg-primary-50 text-primary-800 rounded-xl press-bounce">Pilih Juz (1-30) →</button>
                         </div>
                     </div>
                 </div>
@@ -1202,8 +1202,8 @@
             const page = JUZ_PAGE_MAP[j] || 1;
             const isCur = currentMushafPage >= page && (j === 30 || currentMushafPage < (JUZ_PAGE_MAP[j + 1] || 605));
             gridHtml += `
-                <button type="button" onclick="AndroidUI.closeBottomSheet(); loadAndRenderMushafPage(${page});" class="p-2.5 rounded-2xl ${isCur ? 'bg-emerald-600 text-white font-bold shadow-xs' : 'bg-slate-100 hover:bg-emerald-50 text-slate-800'} text-xs font-bold press-bounce">
-                    Juz ${j} <span class="text-[9px] block font-normal ${isCur ? 'text-emerald-100' : 'text-slate-400'}">Hal. ${page}</span>
+                <button type="button" onclick="AndroidUI.closeBottomSheet(); loadAndRenderMushafPage(${page});" class="p-2.5 rounded-2xl ${isCur ? 'bg-primary-600 text-white font-bold shadow-xs' : 'bg-slate-100 hover:bg-primary-50 text-slate-800'} text-xs font-bold press-bounce">
+                    Juz ${j} <span class="text-[9px] block font-normal ${isCur ? 'text-primary-100' : 'text-slate-400'}">Hal. ${page}</span>
                 </button>
             `;
         }
@@ -1252,14 +1252,14 @@
                     <!-- Header Hafalan Card -->
                     <div class="flex items-center justify-between pb-2 border-b border-slate-100 text-xs">
                         <div class="flex items-center gap-1.5 font-bold text-slate-800">
-                            <span class="w-6 h-6 rounded-lg ${isBookmarked ? 'bg-amber-500 text-white' : 'bg-emerald-100 text-emerald-800'} flex items-center justify-center font-mono text-[10px]">${noAyat}</span>
+                            <span class="w-6 h-6 rounded-lg ${isBookmarked ? 'bg-amber-500 text-white' : 'bg-primary-100 text-primary-800'} flex items-center justify-center font-mono text-[10px]">${noAyat}</span>
                             <span>Ayat ${noAyat}</span>
                             ${isBookmarked ? '<span class="text-[9px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded-full font-bold">Target Hafalan</span>' : ''}
                         </div>
 
                         <!-- Status Selector Pill Buttons -->
                         <div class="flex items-center gap-1">
-                            <button type="button" onclick="setHafalanStatus(${data.nomor}, ${noAyat}, 'mutqin')" class="px-2 py-1 rounded-lg text-[10px] font-bold ${hStatus === 'mutqin' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-emerald-50'} press-bounce" title="Sudah Hafal Lancar">
+                            <button type="button" onclick="setHafalanStatus(${data.nomor}, ${noAyat}, 'mutqin')" class="px-2 py-1 rounded-lg text-[10px] font-bold ${hStatus === 'mutqin' ? 'bg-primary-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-primary-50'} press-bounce" title="Sudah Hafal Lancar">
                                 🟢 Mutqin
                             </button>
                             <button type="button" onclick="setHafalanStatus(${data.nomor}, ${noAyat}, 'murajaah')" class="px-2 py-1 rounded-lg text-[10px] font-bold ${hStatus === 'murajaah' ? 'bg-amber-500 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-amber-50'} press-bounce" title="Sedang Dihafal / Perlu Pengulangan">
@@ -1277,14 +1277,14 @@
                          id="hafalan-text-box-${noAyat}">
                         
                         <!-- Tap to reveal hint badge -->
-                        <div class="reveal-hint-badge hidden text-center py-2 text-xs font-bold text-emerald-800 bg-emerald-100/80 rounded-xl mb-2">
+                        <div class="reveal-hint-badge hidden text-center py-2 text-xs font-bold text-primary-800 bg-primary-100/80 rounded-xl mb-2">
                             <span>👁️ Ketuk untuk Menampilkan Ayat</span>
                         </div>
 
                         <p class="font-quran text-right text-slate-950 font-normal leading-[2.5] tracking-wide hafalan-arabic-content" 
                            id="hafalan-arabic-${noAyat}" 
                            style="font-size: ${arabicFontSize + 5}px;">
-                            <span class="hafalan-clue-word text-emerald-800">${firstWords}</span>
+                            <span class="hafalan-clue-word text-primary-800">${firstWords}</span>
                             <span class="hafalan-rest-words">${remainingWords ? ' ' + remainingWords : ''}</span>
                         </p>
                     </div>
@@ -1299,12 +1299,12 @@
 
                             <!-- Audio Tikrar per Ayat -->
                             ${audioSrc ? `
-                            <button type="button" onclick="playSingleTikrar('${audioSrc}', ${noAyat})" class="px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 font-bold flex items-center gap-1 press-bounce">
+                            <button type="button" onclick="playSingleTikrar('${audioSrc}', ${noAyat})" class="px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-primary-50 text-slate-600 hover:text-primary-700 font-bold flex items-center gap-1 press-bounce">
                                 <i data-lucide="repeat" class="w-3 h-3"></i> Ulangi
                             </button>` : ''}
                         </div>
 
-                        <button type="button" onclick="toggleAyahReveal(${noAyat})" class="text-[10px] font-bold text-emerald-700 hover:underline">
+                        <button type="button" onclick="toggleAyahReveal(${noAyat})" class="text-[10px] font-bold text-primary-700 hover:underline">
                             Lihat / Tutup Ayat
                         </button>
                     </div>
@@ -1325,7 +1325,7 @@
         });
 
         const activeBtn = document.getElementById(`hafalan-opt-${filter}`);
-        if (activeBtn) activeBtn.className = 'hafalan-opt-btn px-2 py-1.5 rounded-xl text-[11px] font-bold bg-emerald-600 text-white shadow-xs text-center press-bounce';
+        if (activeBtn) activeBtn.className = 'hafalan-opt-btn px-2 py-1.5 rounded-xl text-[11px] font-bold bg-primary-600 text-white shadow-xs text-center press-bounce';
 
         const hintEl = document.getElementById('hafalan-method-hint');
         if (filter === 'normal') {
@@ -1636,8 +1636,8 @@
                 <div class="text-left space-y-3">
                     <p class="text-xs text-slate-500">Lafalkan sambungan dari ayat <strong>ke-${questionAyah.nomorAyat}</strong> berikut:</p>
                     
-                    <div class="p-4 rounded-2xl bg-emerald-50/80 border border-emerald-200/80 text-right">
-                        <span class="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full font-mono">Soal: Ayat ${questionAyah.nomorAyat}</span>
+                    <div class="p-4 rounded-2xl bg-primary-50/80 border border-primary-200/80 text-right">
+                        <span class="text-[10px] font-bold text-primary-800 bg-primary-100 px-2 py-0.5 rounded-full font-mono">Soal: Ayat ${questionAyah.nomorAyat}</span>
                         <p class="font-arabic text-xl font-bold text-slate-900 leading-loose mt-2">${questionAyah.teksArab}</p>
                     </div>
 
@@ -1649,7 +1649,7 @@
                     </div>
 
                     <div class="flex items-center gap-2 pt-2">
-                        <button type="button" id="btn-reveal-quiz-ans" onclick="document.getElementById('quiz-answer-box').classList.remove('hidden'); this.classList.add('hidden');" class="flex-1 py-2.5 bg-emerald-600 text-white font-bold text-xs rounded-xl shadow-sm press-bounce">
+                        <button type="button" id="btn-reveal-quiz-ans" onclick="document.getElementById('quiz-answer-box').classList.remove('hidden'); this.classList.add('hidden');" class="flex-1 py-2.5 bg-primary-600 text-white font-bold text-xs rounded-xl shadow-sm press-bounce">
                             👁️ Buka Kunci Jawaban
                         </button>
                         <button type="button" onclick="AndroidUI.closeBottomSheet(); setTimeout(openSambungAyatQuiz, 300);" class="flex-1 py-2.5 bg-slate-100 text-slate-700 font-bold text-xs rounded-xl hover:bg-slate-200 press-bounce">
@@ -1672,9 +1672,9 @@
             html: `
                 <div class="text-left space-y-3.5 max-h-[70vh] overflow-y-auto no-scrollbar">
                     
-                    <div class="p-3 bg-emerald-50 rounded-2xl border border-emerald-100 text-center">
-                        <span class="text-xs font-bold text-emerald-900">📖 Mushaf Madinah • Halaman ${pageNum}</span>
-                        <p class="text-[11px] text-emerald-700">Ayat ${noAyat} dari Surah ${surahNama}</p>
+                    <div class="p-3 bg-primary-50 rounded-2xl border border-primary-100 text-center">
+                        <span class="text-xs font-bold text-primary-900">📖 Mushaf Madinah • Halaman ${pageNum}</span>
+                        <p class="text-[11px] text-primary-700">Ayat ${noAyat} dari Surah ${surahNama}</p>
                     </div>
 
                     <!-- Actions Grid -->
@@ -1687,19 +1687,19 @@
                         </button>
 
                         <!-- 2. Bookmark Hafalan -->
-                        <button type="button" onclick="AndroidUI.closeBottomSheet(); setHafalanBookmark(${surahNomor}, '${surahNama.replace(/'/g, "\\'")}', ${noAyat});" class="p-3 rounded-2xl ${isHafalanBm ? 'bg-emerald-100 border border-emerald-300 text-emerald-900' : 'bg-slate-100 hover:bg-emerald-50 text-slate-700'} text-xs font-bold flex items-center gap-2 press-bounce">
-                            <i data-lucide="brain" class="w-4 h-4 text-emerald-600"></i>
+                        <button type="button" onclick="AndroidUI.closeBottomSheet(); setHafalanBookmark(${surahNomor}, '${surahNama.replace(/'/g, "\\'")}', ${noAyat});" class="p-3 rounded-2xl ${isHafalanBm ? 'bg-primary-100 border border-primary-300 text-primary-900' : 'bg-slate-100 hover:bg-primary-50 text-slate-700'} text-xs font-bold flex items-center gap-2 press-bounce">
+                            <i data-lucide="brain" class="w-4 h-4 text-primary-600"></i>
                             <span>${isHafalanBm ? 'Target Hafalan ✓' : 'Target Hafalan'}</span>
                         </button>
 
                         <!-- 3. Switch to Per Ayat Detail -->
-                        <button type="button" onclick="AndroidUI.closeBottomSheet(); openSurahReader(${surahNomor}, ${noAyat}, 'ayat');" class="p-3 rounded-2xl bg-slate-100 hover:bg-emerald-50 text-slate-700 text-xs font-bold flex items-center gap-2 press-bounce">
-                            <i data-lucide="file-text" class="w-4 h-4 text-emerald-600"></i>
+                        <button type="button" onclick="AndroidUI.closeBottomSheet(); openSurahReader(${surahNomor}, ${noAyat}, 'ayat');" class="p-3 rounded-2xl bg-slate-100 hover:bg-primary-50 text-slate-700 text-xs font-bold flex items-center gap-2 press-bounce">
+                            <i data-lucide="file-text" class="w-4 h-4 text-primary-600"></i>
                             <span>Lihat Terjemahan</span>
                         </button>
 
                         <!-- 4. Switch to Hafalan Mode -->
-                        <button type="button" onclick="AndroidUI.closeBottomSheet(); openSurahReader(${surahNomor}, ${noAyat}, 'hafalan');" class="p-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-2 shadow-sm press-bounce">
+                        <button type="button" onclick="AndroidUI.closeBottomSheet(); openSurahReader(${surahNomor}, ${noAyat}, 'hafalan');" class="p-3 rounded-2xl bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold flex items-center gap-2 shadow-sm press-bounce">
                             <i data-lucide="zap" class="w-4 h-4 text-amber-300"></i>
                             <span>Mode Hafalan</span>
                         </button>
@@ -1709,7 +1709,7 @@
                     <div class="pt-2 border-t border-slate-100">
                         <span class="text-[11px] font-bold text-slate-500 block mb-1.5">Status Penguasaan Hafalan:</span>
                         <div class="grid grid-cols-3 gap-1.5 text-center">
-                            <button type="button" onclick="AndroidUI.closeBottomSheet(); setHafalanStatus(${surahNomor}, ${noAyat}, 'mutqin');" class="py-2 rounded-xl text-xs font-bold ${hStatus === 'mutqin' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-emerald-50 text-emerald-800 border border-emerald-200'} press-bounce">
+                            <button type="button" onclick="AndroidUI.closeBottomSheet(); setHafalanStatus(${surahNomor}, ${noAyat}, 'mutqin');" class="py-2 rounded-xl text-xs font-bold ${hStatus === 'mutqin' ? 'bg-primary-600 text-white shadow-xs' : 'bg-primary-50 text-primary-800 border border-primary-200'} press-bounce">
                                 🟢 Mutqin
                             </button>
                             <button type="button" onclick="AndroidUI.closeBottomSheet(); setHafalanStatus(${surahNomor}, ${noAyat}, 'murajaah');" class="py-2 rounded-xl text-xs font-bold ${hStatus === 'murajaah' ? 'bg-amber-500 text-white shadow-xs' : 'bg-amber-50 text-amber-800 border border-amber-200'} press-bounce">
@@ -1812,7 +1812,7 @@
 
         if (lr && text) {
             const pageStr = lr.page ? `Hal. ${lr.page} • ` : '';
-            text.innerHTML = `${pageStr}QS. ${lr.nama}: Ayat ${lr.ayat} <span class="text-[9px] font-normal text-blue-500 block">• ${lr.time || 'Hari ini'}</span>`;
+            text.innerHTML = `${pageStr}QS. ${lr.nama}: Ayat ${lr.ayat} <span class="text-[9px] font-normal text-primary-500 block">• ${lr.time || 'Hari ini'}</span>`;
         } else if (text) {
             text.textContent = 'Halaman 293 • QS. Al-Kahfi: 1';
         }
@@ -1823,7 +1823,7 @@
         const text = document.getElementById('last-hafalan-text');
 
         if (hb && text) {
-            text.innerHTML = `QS. ${hb.nama}: Ayat ${hb.ayat} <span class="text-[9px] font-normal text-emerald-600 block">• ${hb.time || 'Hari ini'}</span>`;
+            text.innerHTML = `QS. ${hb.nama}: Ayat ${hb.ayat} <span class="text-[9px] font-normal text-primary-600 block">• ${hb.time || 'Hari ini'}</span>`;
         } else if (text) {
             text.textContent = 'QS. Al-Mulk: Ayat 1';
         }
@@ -1888,7 +1888,7 @@
         const btn = document.getElementById('btn-toggle-arti');
         if (btn) {
             btn.className = showTranslation 
-                ? 'px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold press-bounce'
+                ? 'px-2.5 py-1 rounded-lg bg-primary-50 text-primary-700 border border-primary-200 text-[10px] font-bold press-bounce'
                 : 'px-2.5 py-1 rounded-lg bg-slate-100 text-slate-500 text-[10px] font-bold press-bounce';
         }
     }
@@ -1901,7 +1901,7 @@
         const btn = document.getElementById('btn-toggle-latin');
         if (btn) {
             btn.className = showLatin 
-                ? 'px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-bold press-bounce'
+                ? 'px-2.5 py-1 rounded-lg bg-primary-50 text-primary-700 border border-primary-200 text-[10px] font-bold press-bounce'
                 : 'px-2.5 py-1 rounded-lg bg-slate-100 text-slate-500 text-[10px] font-bold press-bounce';
         }
     }

@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Dashboard & Monitoring Statistik Data Siswa - Portal BIP
  */
@@ -12,7 +12,7 @@
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
             <h1 class="text-2xl font-extrabold text-primary-950 tracking-tight flex items-center gap-3">
-                <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-700 flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
+                <div class="w-10 h-10 rounded-2xl bg-primary-600 flex items-center justify-center text-white shadow-lg shadow-primary-500/20">
                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6a7.5 7.5 0 1 0 7.5 7.5h-7.5V6Z" />
                         <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 10.5H21A7.5 7.5 0 0 0 13.5 3v7.5Z" />
@@ -29,7 +29,7 @@
                 <svg class="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" /></svg>
                 <span>Kelola Siswa</span>
             </a>
-            <a href="<?= url('kelola-siswa/create') ?>" class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-sm shadow-emerald-600/30 transition-all">
+            <a href="<?= url('kelola-siswa/create') ?>" class="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-xs font-semibold shadow-sm shadow-primary-500/20 transition-all">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
                 <span>Tambah Siswa</span>
             </a>
@@ -39,14 +39,14 @@
     <!-- KPI Summary Cards -->
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <!-- Total Siswa Aktif -->
-        <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm relative overflow-hidden group hover:border-emerald-300 transition-all">
+        <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm relative overflow-hidden group hover:border-primary-200 transition-all">
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Siswa Aktif</p>
                     <h3 class="text-3xl font-extrabold text-slate-900 mt-1"><?= number_format($totalAktif) ?></h3>
-                    <p class="text-[11px] text-emerald-600 font-medium mt-1">Total terdaftar di Portal</p>
+                    <p class="text-[11px] text-primary-600 font-medium mt-1">Total terdaftar di Portal</p>
                 </div>
-                <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <div class="w-12 h-12 rounded-2xl bg-primary-50 text-primary-600 flex items-center justify-center group-hover:scale-110 transition-transform">
                     <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.438 60.438 0 0 0-.491 6.347A48.62 48.62 0 0 1 12 20.904a48.62 48.62 0 0 1 8.232-4.41 60.46 60.46 0 0 0-.491-6.347m-15.482 0a50.636 50.636 0 0 0-2.658-.813A59.906 59.906 0 0 1 12 3.493a59.903 59.903 0 0 1 10.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.717 50.717 0 0 1 12 13.489a50.702 50.702 0 0 1 7.74-3.342M6.75 15a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v-3.675A55.378 55.378 0 0 1 12 8.443m-7.007 11.55A5.981 5.981 0 0 0 6.75 15.75v-1.5"/></svg>
                 </div>
             </div>
@@ -116,7 +116,7 @@
     <!-- Distribution by Education Level (Jenjang) -->
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <!-- PAUD / TK -->
-        <a href="<?= url('kelola-siswa?jenjang=PAUD') ?>" class="bg-gradient-to-br from-emerald-500 to-teal-700 p-5 rounded-2xl text-white shadow-md shadow-emerald-600/20 hover:scale-[1.02] transition-transform">
+        <a href="<?= url('kelola-siswa?jenjang=PAUD') ?>" class="bg-primary-600 p-5 rounded-2xl text-white shadow-md shadow-primary-500/20 hover:scale-[1.02] transition-transform">
             <div class="flex items-center justify-between">
                 <span class="text-xs font-bold uppercase tracking-wider opacity-80">PAUD / TK</span>
                 <span class="px-2 py-0.5 rounded-full bg-white/20 text-[10px] font-semibold">Tingkat Awal</span>

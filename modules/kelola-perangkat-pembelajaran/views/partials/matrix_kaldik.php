@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Reusable Kaldik Monthly Calendar Matrix View Component
  * 
@@ -61,8 +61,8 @@ $getAgendaForDate = function(string $dateStr) use ($agendas) {
 // Category styling map
 $categoryStyles = [
     'kbm' => [
-        'bg' => 'bg-emerald-500 text-white font-bold shadow-sm',
-        'badge' => 'bg-emerald-100 text-emerald-800 border-emerald-300',
+        'bg' => 'bg-primary-500 text-white font-bold shadow-sm',
+        'badge' => 'bg-primary-100 text-primary-800 border-primary-300',
         'print_bg' => 'background-color: #10b981 !important; color: #ffffff !important;',
         'label' => 'KBM Efektif',
         'icon' => '📚'
@@ -116,10 +116,10 @@ $categoryStyles = [
                 <button type="button" onclick="filterMatrixSemester('all')" class="matrix-tab-btn px-3 py-1.5 rounded-lg transition-all text-slate-600 hover:text-slate-900" data-tab="all">
                     1 Tahun Penuh (12 Bulan)
                 </button>
-                <button type="button" onclick="filterMatrixSemester('Ganjil')" class="matrix-tab-btn px-3 py-1.5 rounded-lg transition-all <?= ($activeSemester === 'Ganjil') ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900' ?>" data-tab="Ganjil">
+                <button type="button" onclick="filterMatrixSemester('Ganjil')" class="matrix-tab-btn px-3 py-1.5 rounded-lg transition-all <?= ($activeSemester === 'Ganjil') ? 'bg-primary-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900' ?>" data-tab="Ganjil">
                     Semester Ganjil (Jul - Des)
                 </button>
-                <button type="button" onclick="filterMatrixSemester('Genap')" class="matrix-tab-btn px-3 py-1.5 rounded-lg transition-all <?= ($activeSemester === 'Genap') ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900' ?>" data-tab="Genap">
+                <button type="button" onclick="filterMatrixSemester('Genap')" class="matrix-tab-btn px-3 py-1.5 rounded-lg transition-all <?= ($activeSemester === 'Genap') ? 'bg-primary-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900' ?>" data-tab="Genap">
                     Semester Genap (Jan - Jun)
                 </button>
             </div>
@@ -172,12 +172,12 @@ $categoryStyles = [
         ?>
             <div class="kaldik-month-card bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden transition-all <?= $isVisible ? '' : 'hidden' ?>" data-semester="<?= $mon['smt'] ?>">
                 <!-- Month Card Header -->
-                <div class="bg-gradient-to-r from-emerald-600 to-teal-700 text-white px-4 py-2.5 flex items-center justify-between">
+                <div class="bg-gradient-to-r from-primary-600 to-primary-700 text-white px-4 py-2.5 flex items-center justify-between">
                     <div>
                         <h4 class="text-xs sm:text-sm font-extrabold uppercase tracking-wide">
                             <?= e($mon['name']) ?> <?= $yNum ?>
                         </h4>
-                        <span class="text-[10px] text-emerald-100 font-medium">Semester <?= e($mon['smt']) ?></span>
+                        <span class="text-[10px] text-primary-100 font-medium">Semester <?= e($mon['smt']) ?></span>
                     </div>
                     <div class="text-right">
                         <span class="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-white backdrop-blur-xs">
@@ -262,10 +262,10 @@ function filterMatrixSemester(targetTab) {
     const btns = document.querySelectorAll('.matrix-tab-btn');
     btns.forEach(btn => {
         if (btn.getAttribute('data-tab') === targetTab) {
-            btn.classList.add('bg-emerald-600', 'text-white', 'shadow-sm');
+            btn.classList.add('bg-primary-600', 'text-white', 'shadow-sm');
             btn.classList.remove('text-slate-600');
         } else {
-            btn.classList.remove('bg-emerald-600', 'text-white', 'shadow-sm');
+            btn.classList.remove('bg-primary-600', 'text-white', 'shadow-sm');
             btn.classList.add('text-slate-600');
         }
     });

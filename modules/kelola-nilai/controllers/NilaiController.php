@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 class NilaiController
 {
@@ -169,12 +169,12 @@ class NilaiController
             ],
             'SD' => [
                 'name' => 'SD (Sekolah Dasar)',
-                'bg_soft' => 'bg-emerald-100 text-emerald-700',
+                'bg_soft' => 'bg-primary-100 text-primary-700',
                 'icon' => '🎒'
             ],
             'SMP' => [
                 'name' => 'SMP (Sekolah Menengah Pertama)',
-                'bg_soft' => 'bg-blue-100 text-blue-700',
+                'bg_soft' => 'bg-primary-100 text-primary-700',
                 'icon' => '📚'
             ],
             'SMA' => [
@@ -285,12 +285,12 @@ class NilaiController
             ],
             'SD' => [
                 'name' => 'SD (Sekolah Dasar)',
-                'bg_soft' => 'bg-emerald-100 text-emerald-700',
+                'bg_soft' => 'bg-primary-100 text-primary-700',
                 'icon' => '🎒'
             ],
             'SMP' => [
                 'name' => 'SMP (Sekolah Menengah Pertama)',
-                'bg_soft' => 'bg-blue-100 text-blue-700',
+                'bg_soft' => 'bg-primary-100 text-primary-700',
                 'icon' => '📚'
             ],
             'SMA' => [

@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * CP & ATP - Create View
  * Format 5 Kolom Sesuai Format Standar Guru:
@@ -131,7 +131,7 @@ $bulanOptions = ['Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desembe
                 </div>
                 <button type="button" onclick="addBlockRow()" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-500/20 transition-all">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
-                    + Tambah Blok Elemen / TP
+                    Tambah Blok Elemen / TP
                 </button>
             </div>
 
@@ -174,7 +174,7 @@ $bulanOptions = ['Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desembe
                             <label class="text-xs font-bold text-slate-700 uppercase">
                                 4. KKTP (Kriteria Ketercapaian TP) &nbsp;&bull;&nbsp; 5. Alokasi Bulan & Pekan
                             </label>
-                            <button type="button" onclick="addKktpRow(this)" class="inline-flex items-center gap-1 px-3 py-1 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-[11px] transition-colors">
+                            <button type="button" onclick="addKktpRow(this)" class="inline-flex items-center gap-1 px-3 py-1 rounded-xl bg-primary-50 hover:bg-primary-100 text-primary-700 font-bold text-[11px] transition-colors">
                                 + Tambah Baris KKTP
                             </button>
                         </div>
@@ -451,7 +451,7 @@ function addBlockRow() {
                 <label class="text-xs font-bold text-slate-700 uppercase">
                     4. KKTP (Kriteria Ketercapaian TP) &nbsp;&bull;&nbsp; 5. Alokasi Bulan & Pekan
                 </label>
-                <button type="button" onclick="addKktpRow(this)" class="inline-flex items-center gap-1 px-3 py-1 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-[11px] transition-colors">
+                <button type="button" onclick="addKktpRow(this)" class="inline-flex items-center gap-1 px-3 py-1 rounded-xl bg-primary-50 hover:bg-primary-100 text-primary-700 font-bold text-[11px] transition-colors">
                     + Tambah Baris KKTP
                 </button>
             </div>

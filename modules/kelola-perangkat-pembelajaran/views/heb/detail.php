@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * HEB - Detail View
  */
@@ -13,7 +13,7 @@ $distribusi = $konten['distribusi_jp'] ?? [];
 $statusBadge = [
     'draft' => ['label' => 'Draft', 'class' => 'bg-slate-100 text-slate-700 border-slate-300'],
     'diajukan' => ['label' => 'Menunggu Verifikasi', 'class' => 'bg-amber-100 text-amber-800 border-amber-300'],
-    'disetujui' => ['label' => 'Disetujui / Sah', 'class' => 'bg-emerald-100 text-emerald-800 border-emerald-300'],
+    'disetujui' => ['label' => 'Disetujui / Sah', 'class' => 'bg-primary-100 text-primary-800 border-primary-300'],
     'ditolak' => ['label' => 'Perlu Revisi', 'class' => 'bg-rose-100 text-rose-800 border-rose-300']
 ][$item['status']] ?? ['label' => ucfirst($item['status']), 'class' => 'bg-slate-100 text-slate-700 border-slate-300'];
 ?>
@@ -73,10 +73,10 @@ $statusBadge = [
             <p class="text-2xl font-black text-cyan-900 mt-1"><?= $totalJpEfektif ?> JP</p>
             <p class="text-[11px] text-cyan-700">1 Semester</p>
         </div>
-        <div class="bg-white rounded-2xl p-4 border border-emerald-200 shadow-sm text-center bg-emerald-50/50">
-            <p class="text-[10px] text-emerald-800 uppercase font-bold">JP KBM Materi</p>
-            <p class="text-2xl font-black text-emerald-900 mt-1"><?= (int)($distribusi['jp_kbm'] ?? 0) ?> JP</p>
-            <p class="text-[11px] text-emerald-700">Tatap Muka</p>
+        <div class="bg-white rounded-2xl p-4 border border-primary-200 shadow-sm text-center bg-primary-50/50">
+            <p class="text-[10px] text-primary-800 uppercase font-bold">JP KBM Materi</p>
+            <p class="text-2xl font-black text-primary-900 mt-1"><?= (int)($distribusi['jp_kbm'] ?? 0) ?> JP</p>
+            <p class="text-[11px] text-primary-700">Tatap Muka</p>
         </div>
     </div>
 

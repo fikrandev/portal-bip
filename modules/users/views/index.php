@@ -1,4 +1,4 @@
-<?php /** Users List View */ ?>
+﻿<?php /** Users List View */ ?>
 
 <!-- Page Header & Action Buttons (Sudut Kanan Atas) -->
 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
@@ -20,7 +20,7 @@
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
             </svg>
-            <span>+ Tambah Pengguna</span>
+            <span>Tambah Pengguna</span>
         </a>
     </div>
     <?php endif; ?>
@@ -84,8 +84,8 @@
                     </td>
                     <td class="px-6 py-4 text-center">
                         <?php if ($u['is_active']): ?>
-                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-2xl bg-emerald-50 text-emerald-700 text-xs font-medium">
-                                <span class="w-1.5 h-1.5 rounded-2xl bg-emerald-500"></span>Aktif
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-2xl bg-primary-50 text-primary-700 text-xs font-medium">
+                                <span class="w-1.5 h-1.5 rounded-2xl bg-primary-500"></span>Aktif
                             </span>
                         <?php else: ?>
                             <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-2xl bg-slate-100 text-slate-500 text-xs font-medium">

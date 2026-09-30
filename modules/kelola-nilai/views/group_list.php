@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Daftar Grup Nilai — Table View
  * Terstruktur seperti Daftar Wadah Grup Perangkat Pembelajaran
@@ -11,12 +11,12 @@ $unit_list = [
     ],
     'SD' => [
         'name' => 'SD (Sekolah Dasar)',
-        'badge' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
+        'badge' => 'bg-primary-50 text-primary-700 border-primary-200',
         'icon' => '🎒'
     ],
     'SMP' => [
         'name' => 'SMP (Sekolah Menengah Pertama)',
-        'badge' => 'bg-blue-50 text-blue-700 border-blue-200',
+        'badge' => 'bg-primary-50 text-primary-700 border-primary-200',
         'icon' => '📚'
     ],
     'SMA' => [
@@ -34,7 +34,7 @@ $curUnit = $_GET['unit'] ?? '';
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
             <div class="flex items-center gap-2">
-                <span class="px-3 py-1 rounded-xl text-xs font-black bg-teal-50 text-teal-700 border border-teal-200">
+                <span class="px-3 py-1 rounded-xl text-xs font-black bg-primary-50 text-primary-700 border border-primary-200">
                     Manajemen Wadah Nilai
                 </span>
             </div>
@@ -45,9 +45,9 @@ $curUnit = $_GET['unit'] ?? '';
             <a href="<?= url('kelola-nilai') ?>" class="px-4 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors">
                 Kembali
             </a>
-            <a href="<?= url('kelola-nilai/group/create') ?>" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs sm:text-sm shadow-md shadow-teal-500/20 transition-all">
+            <a href="<?= url('kelola-nilai/group/create') ?>" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs sm:text-sm shadow-md shadow-primary-500/20 transition-all">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
-                <span>+ Buat Grup Nilai Baru</span>
+                <span>Buat Grup Nilai Baru</span>
             </a>
         </div>
     </div>
@@ -58,12 +58,12 @@ $curUnit = $_GET['unit'] ?? '';
         <div class="flex items-center gap-2 flex-wrap">
             <span class="text-xs font-bold text-slate-400 mr-1 uppercase">Status:</span>
             <a href="<?= url('kelola-nilai/group' . (!empty($curUnit) ? '?unit=' . urlencode($curUnit) : '')) ?>" 
-               class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all <?= empty($curStatus) ? 'bg-teal-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' ?>">
+               class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all <?= empty($curStatus) ? 'bg-primary-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' ?>">
                 Semua (<?= $totalAll ?? count($groups) ?>)
             </a>
             <a href="<?= url('kelola-nilai/group?status=aktif' . (!empty($curUnit) ? '&unit=' . urlencode($curUnit) : '')) ?>" 
-               class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all <?= $curStatus === 'aktif' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' ?>">
-                <span class="w-2 h-2 rounded-full <?= $curStatus === 'aktif' ? 'bg-white' : 'bg-emerald-500' ?>"></span>
+               class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all <?= $curStatus === 'aktif' ? 'bg-primary-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' ?>">
+                <span class="w-2 h-2 rounded-full <?= $curStatus === 'aktif' ? 'bg-white' : 'bg-primary-500' ?>"></span>
                 <span>Aktif (<?= $totalActive ?? 0 ?>)</span>
             </a>
             <a href="<?= url('kelola-nilai/group?status=nonaktif' . (!empty($curUnit) ? '&unit=' . urlencode($curUnit) : '')) ?>" 
@@ -79,7 +79,7 @@ $curUnit = $_GET['unit'] ?? '';
                 <input type="hidden" name="status" value="<?= e($curStatus) ?>">
             <?php endif; ?>
             <label class="text-xs font-bold text-slate-400 uppercase">Unit:</label>
-            <select name="unit" onchange="this.form.submit()" class="px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-slate-50 font-semibold text-slate-700 focus:ring-2 focus:ring-teal-500 focus:outline-none">
+            <select name="unit" onchange="this.form.submit()" class="px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-slate-50 font-semibold text-slate-700 focus:ring-2 focus:ring-primary-500 focus:outline-none">
                 <option value="">Semua Unit Sekolah</option>
                 <?php foreach ($unit_list as $uk => $uv): ?>
                     <option value="<?= $uk ?>" <?= $curUnit === $uk ? 'selected' : '' ?>>Unit <?= $uk ?></option>
@@ -113,14 +113,14 @@ $curUnit = $_GET['unit'] ?? '';
                     <?php if (empty($groups)): ?>
                         <tr>
                             <td colspan="8" class="py-12 text-center text-slate-400">
-                                <div class="w-14 h-14 rounded-2xl bg-teal-50 flex items-center justify-center mx-auto mb-3 text-2xl">
+                                <div class="w-14 h-14 rounded-2xl bg-primary-50 flex items-center justify-center mx-auto mb-3 text-2xl">
                                     📁
                                 </div>
                                 <p class="font-bold text-slate-700 text-sm">Belum Ada Wadah Grup Nilai</p>
                                 <p class="text-xs text-slate-400 mt-1">
                                     <?= !empty($curStatus) || !empty($curUnit) ? 'Tidak ditemukan wadah grup nilai dengan filter terpilih.' : 'Silakan buat wadah grup nilai baru untuk memulai penginputan nilai.' ?>
                                 </p>
-                                <a href="<?= url('kelola-nilai/group/create') ?>" class="inline-flex items-center gap-1.5 px-4 py-2 mt-4 bg-teal-50 text-teal-700 font-bold text-xs rounded-xl hover:bg-teal-100 border border-teal-200 transition-colors">
+                                <a href="<?= url('kelola-nilai/group/create') ?>" class="inline-flex items-center gap-1.5 px-4 py-2 mt-4 bg-primary-50 text-primary-700 font-bold text-xs rounded-xl hover:bg-primary-100 border border-primary-200 transition-colors">
                                     + Buat Grup Nilai Baru
                                 </a>
                             </td>
@@ -133,7 +133,7 @@ $curUnit = $_GET['unit'] ?? '';
                             $totalInput = (int)($g['total_input'] ?? 0);
                             $isActive = !empty($g['is_active']);
                         ?>
-                            <tr class="transition-colors group <?= $isActive ? 'hover:bg-teal-50/20' : 'bg-slate-50/50 hover:bg-slate-100/50' ?>">
+                            <tr class="transition-colors group <?= $isActive ? 'hover:bg-primary-50/20' : 'bg-slate-50/50 hover:bg-slate-100/50' ?>">
                                 <!-- No -->
                                 <td class="py-3.5 px-4 text-center font-bold text-slate-400">
                                     <?= $idx + 1 ?>
@@ -150,7 +150,7 @@ $curUnit = $_GET['unit'] ?? '';
                                 <!-- Judul Wadah / Grup Nilai -->
                                 <td class="py-3.5 px-4">
                                     <div class="font-bold leading-snug <?= $isActive ? 'text-slate-900' : 'text-slate-600' ?>">
-                                        <a href="<?= url('kelola-nilai/input/' . $g['id']) ?>" class="hover:text-teal-600 transition-colors text-sm">
+                                        <a href="<?= url('kelola-nilai/input/' . $g['id']) ?>" class="hover:text-primary-600 transition-colors text-sm">
                                             <?= e($g['judul'] ?: 'Grup Penilaian') ?>
                                         </a>
                                         <?php if (!$isActive): ?>
@@ -160,7 +160,7 @@ $curUnit = $_GET['unit'] ?? '';
                                     <div class="text-[11px] font-semibold text-slate-400 mt-0.5 flex items-center gap-2 flex-wrap">
                                         <span>Wadah Penilaian</span>
                                         <span>&bull;</span>
-                                        <span class="text-teal-700 font-bold"><?= !empty($g['jenis_penilaian']) ? e($g['jenis_penilaian']) : 'Formatif & Sumatif' ?></span>
+                                        <span class="text-primary-700 font-bold"><?= !empty($g['jenis_penilaian']) ? e($g['jenis_penilaian']) : 'Formatif & Sumatif' ?></span>
                                         <?php if (!empty($g['nama_kelas'])): ?>
                                             <span>&bull;</span>
                                             <span>Kelas <?= e($g['nama_kelas']) ?></span>
@@ -176,7 +176,7 @@ $curUnit = $_GET['unit'] ?? '';
                                 <td class="py-3.5 px-4">
                                     <div class="font-bold text-slate-800"><?= e($g['nama_tahun'] ?: '2026/2027') ?></div>
                                     <div class="mt-0.5">
-                                        <span class="px-2 py-0.5 rounded-lg text-[10px] font-bold <?= ($g['semester'] === 'Ganjil' || $g['semester'] === '1') ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800' ?>">
+                                        <span class="px-2 py-0.5 rounded-lg text-[10px] font-bold <?= ($g['semester'] === 'Ganjil' || $g['semester'] === '1') ? 'bg-amber-100 text-amber-800' : 'bg-primary-100 text-primary-800' ?>">
                                             Semester <?= e($g['semester'] ?: '-') ?>
                                         </span>
                                     </div>
@@ -196,7 +196,7 @@ $curUnit = $_GET['unit'] ?? '';
 
                                 <!-- Total Nilai Diinput -->
                                 <td class="py-3.5 px-4 text-center">
-                                    <span class="px-2.5 py-1 rounded-full text-[11px] font-bold <?= $totalInput > 0 ? 'bg-teal-50 text-teal-700 border border-teal-200' : 'bg-slate-100 text-slate-500 border border-slate-200' ?>">
+                                    <span class="px-2.5 py-1 rounded-full text-[11px] font-bold <?= $totalInput > 0 ? 'bg-primary-50 text-primary-700 border border-primary-200' : 'bg-slate-100 text-slate-500 border border-slate-200' ?>">
                                         <?= $totalInput ?> Nilai Diinput
                                     </span>
                                 </td>
@@ -204,8 +204,8 @@ $curUnit = $_GET['unit'] ?? '';
                                 <!-- Status -->
                                 <td class="py-3.5 px-4 text-center">
                                     <?php if ($isActive): ?>
-                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-primary-50 text-primary-700 border border-primary-200">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-primary-500"></span>
                                             <span>Wadah Aktif</span>
                                         </span>
                                     <?php else: ?>
@@ -220,7 +220,7 @@ $curUnit = $_GET['unit'] ?? '';
                                 <td class="py-3.5 px-4 text-right">
                                     <div class="flex items-center justify-end gap-1.5">
                                         <!-- Buka Wadah -->
-                                        <a href="<?= url('kelola-nilai/input/' . $g['id']) ?>" title="Buka Wadah Nilai" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-teal-50 hover:bg-teal-100 text-teal-700 font-bold transition-colors">
+                                        <a href="<?= url('kelola-nilai/input/' . $g['id']) ?>" title="Buka Wadah Nilai" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-primary-50 hover:bg-primary-100 text-primary-700 font-bold transition-colors">
                                             <span>Buka</span>
                                             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" /></svg>
                                         </a>
@@ -242,7 +242,7 @@ $curUnit = $_GET['unit'] ?? '';
                                                     </svg>
                                                 </button>
                                             <?php else: ?>
-                                                <button type="submit" title="Aktifkan Kembali Wadah" class="p-1.5 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-emerald-700 transition-colors">
+                                                <button type="submit" title="Aktifkan Kembali Wadah" class="p-1.5 rounded-xl bg-primary-100 hover:bg-primary-200 text-primary-700 transition-colors">
                                                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                                                         <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z" />
                                                     </svg>

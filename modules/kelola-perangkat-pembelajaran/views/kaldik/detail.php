@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Kaldik - Detail View & Kelola Agenda di Dalam Grup Kaldik
  */
@@ -8,7 +8,7 @@ $isActive = !empty($item['is_active']);
 $statusBadge = [
     'draft' => ['label' => 'Draft', 'class' => 'bg-slate-100 text-slate-700 border-slate-300'],
     'diajukan' => ['label' => 'Menunggu Verifikasi', 'class' => 'bg-amber-100 text-amber-800 border-amber-300'],
-    'disetujui' => ['label' => 'Disetujui / Sah', 'class' => 'bg-emerald-100 text-emerald-800 border-emerald-300'],
+    'disetujui' => ['label' => 'Disetujui / Sah', 'class' => 'bg-primary-100 text-primary-800 border-primary-300'],
     'ditolak' => ['label' => 'Perlu Revisi', 'class' => 'bg-rose-100 text-rose-800 border-rose-300']
 ][$item['status']] ?? ['label' => ucfirst($item['status']), 'class' => 'bg-slate-100 text-slate-700 border-slate-300'];
 
@@ -30,8 +30,8 @@ $uIcon = $unitList[$itemUnit]['icon'] ?? '🏫';
                 <!-- Status Aktif / Acuan Badge -->
                 <form method="POST" action="<?= url("kelola-perangkat-pembelajaran/kaldik/toggle-active/{$item['id']}") ?>" class="inline">
                     <?= CSRF::field() ?>
-                    <button type="submit" title="Klik untuk mengubah status aktif" class="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-bold transition-all border <?= $isActive ? 'bg-emerald-100 text-emerald-800 border-emerald-300 shadow-sm hover:bg-emerald-200' : 'bg-slate-100 text-slate-600 border-slate-300 hover:bg-slate-200' ?>">
-                        <span class="w-2 h-2 rounded-full <?= $isActive ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400' ?>"></span>
+                    <button type="submit" title="Klik untuk mengubah status aktif" class="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-bold transition-all border <?= $isActive ? 'bg-primary-100 text-primary-800 border-primary-300 shadow-sm hover:bg-primary-200' : 'bg-slate-100 text-slate-600 border-slate-300 hover:bg-slate-200' ?>">
+                        <span class="w-2 h-2 rounded-full <?= $isActive ? 'bg-primary-500 animate-pulse' : 'bg-slate-400' ?>"></span>
                         <?= $isActive ? '🟢 AKTIF (Acuan Guru)' : '⚪ NON-AKTIF (Arsip)' ?>
                     </button>
                 </form>
@@ -72,20 +72,20 @@ $uIcon = $unitList[$itemUnit]['icon'] ?? '🏫';
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
             <div>
                 <h2 class="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Daftar Agenda & Kegiatan Akademik
+                    <span class="w-2.5 h-2.5 rounded-full bg-primary-500"></span> Daftar Agenda & Kegiatan Akademik
                 </h2>
                 <p class="text-xs text-slate-500 mt-0.5">Kelola seluruh rincian jadwal kegiatan akademik di dalam kalender pendidikan ini</p>
             </div>
-            <button type="button" onclick="toggleFormAgenda()" class="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition-all">
+            <button type="button" onclick="toggleFormAgenda()" class="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-sm transition-all">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
                 Tambah Kegiatan Baru
             </button>
         </div>
 
         <!-- Inline Quick Add Agenda Form -->
-        <div id="form-tambah-agenda" class="hidden bg-slate-50 border border-emerald-200/80 rounded-2xl p-4 sm:p-5 animate-in fade-in slide-in-from-top-2 space-y-4">
+        <div id="form-tambah-agenda" class="hidden bg-slate-50 border border-primary-200/80 rounded-2xl p-4 sm:p-5 animate-in fade-in slide-in-from-top-2 space-y-4">
             <div class="flex items-center justify-between">
-                <h4 class="text-xs font-bold text-emerald-950 uppercase tracking-wider flex items-center gap-2">
+                <h4 class="text-xs font-bold text-primary-950 uppercase tracking-wider flex items-center gap-2">
                     <span>✨</span> Form Tambah Kegiatan Akademik
                 </h4>
                 <button type="button" onclick="toggleFormAgenda()" class="text-xs text-slate-400 hover:text-slate-600 font-bold">✕ Tutup Form</button>
@@ -137,7 +137,7 @@ $uIcon = $unitList[$itemUnit]['icon'] ?? '🏫';
                     <label class="block text-[11px] font-semibold text-slate-700 mb-1">Keterangan / Lokasi</label>
                     <div class="flex items-center gap-2">
                         <input type="text" name="keterangan" placeholder="Contoh: Diikuti semua..." class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
-                        <button type="submit" class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs whitespace-nowrap shadow-sm transition-colors">
+                        <button type="submit" class="px-5 py-2 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs whitespace-nowrap shadow-sm transition-colors">
                             Simpan
                         </button>
                     </div>
@@ -179,11 +179,11 @@ $uIcon = $unitList[$itemUnit]['icon'] ?? '🏫';
                         <?php foreach ($agendas as $i => $ag): ?>
                             <?php
                             $katBadge = [
-                                'kbm' => ['label' => 'KBM Efektif', 'class' => 'bg-emerald-100 text-emerald-800'],
+                                'kbm' => ['label' => 'KBM Efektif', 'class' => 'bg-primary-100 text-primary-800'],
                                 'penilaian' => ['label' => 'Penilaian / Ujian', 'class' => 'bg-amber-100 text-amber-800'],
                                 'libur_nasional' => ['label' => 'Libur Nasional', 'class' => 'bg-rose-100 text-rose-800'],
                                 'libur_semester' => ['label' => 'Libur Semester', 'class' => 'bg-purple-100 text-purple-800'],
-                                'kegiatan' => ['label' => 'Kegiatan Sekolah', 'class' => 'bg-blue-100 text-blue-800']
+                                'kegiatan' => ['label' => 'Kegiatan Sekolah', 'class' => 'bg-primary-100 text-primary-800']
                             ][$ag['kategori'] ?? 'kegiatan'] ?? ['label' => 'Kegiatan', 'class' => 'bg-slate-100 text-slate-700'];
                             ?>
                             <tr class="hover:bg-slate-50/70">

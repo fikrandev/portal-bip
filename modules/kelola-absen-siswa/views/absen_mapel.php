@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * View: Input Absen Mapel
  * Terintegrasi langsung dengan Wadah Grup Absen:
@@ -6,8 +6,8 @@
  */
 $unit_list = [
     'PAUD' => ['name' => 'PAUD / TK', 'badge' => 'bg-pink-50 text-pink-700 border-pink-200', 'icon' => '🧸'],
-    'SD'   => ['name' => 'SD (Sekolah Dasar)', 'badge' => 'bg-emerald-50 text-emerald-700 border-emerald-200', 'icon' => '🎒'],
-    'SMP'  => ['name' => 'SMP (Sekolah Menengah Pertama)', 'badge' => 'bg-blue-50 text-blue-700 border-blue-200', 'icon' => '📚'],
+    'SD'   => ['name' => 'SD (Sekolah Dasar)', 'badge' => 'bg-primary-50 text-primary-700 border-primary-200', 'icon' => '🎒'],
+    'SMP'  => ['name' => 'SMP (Sekolah Menengah Pertama)', 'badge' => 'bg-primary-50 text-primary-700 border-primary-200', 'icon' => '📚'],
     'SMA'  => ['name' => 'SMA / SMK', 'badge' => 'bg-purple-50 text-purple-700 border-purple-200', 'icon' => '🎓']
 ];
 
@@ -19,7 +19,7 @@ $curUnit = $_GET['unit'] ?? '';
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
             <div class="flex items-center gap-2">
-                <span class="px-3 py-1 rounded-xl text-xs font-black bg-emerald-50 text-emerald-700 border border-emerald-200">
+                <span class="px-3 py-1 rounded-xl text-xs font-black bg-primary-50 text-primary-700 border border-primary-200">
                     Input Absen Mapel
                 </span>
                 <?php if ($isAdmin): ?>
@@ -27,7 +27,7 @@ $curUnit = $_GET['unit'] ?? '';
                         Mode Administrator
                     </span>
                 <?php else: ?>
-                    <span class="px-3 py-1 rounded-xl text-xs font-bold bg-teal-50 text-teal-700 border border-teal-200">
+                    <span class="px-3 py-1 rounded-xl text-xs font-bold bg-primary-50 text-primary-700 border border-primary-200">
                         Mode Guru Pengampu
                     </span>
                 <?php endif; ?>
@@ -43,9 +43,9 @@ $curUnit = $_GET['unit'] ?? '';
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
                 <span>Rekap Absen</span>
             </a>
-            <a href="<?= url('kelola-absen-siswa/group/create?tipe=mapel' . ($selectedGuruId ? '&guru_id=' . $selectedGuruId : '')) ?>" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-md shadow-emerald-500/20 transition-all">
+            <a href="<?= url('kelola-absen-siswa/group/create?tipe=mapel' . ($selectedGuruId ? '&guru_id=' . $selectedGuruId : '')) ?>" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs sm:text-sm shadow-md shadow-primary-500/20 transition-all">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
-                <span>+ Buat Wadah Absen Baru</span>
+                <span>Buat Wadah Absen Baru</span>
             </a>
         </div>
     </div>
@@ -56,12 +56,12 @@ $curUnit = $_GET['unit'] ?? '';
         <div class="flex items-center gap-2 flex-wrap">
             <span class="text-xs font-bold text-slate-400 mr-1 uppercase">Status:</span>
             <a href="<?= url('kelola-absen-siswa/mapel' . (!empty($curUnit) ? '?unit=' . urlencode($curUnit) : '') . ($selectedGuruId && $isAdmin ? (!empty($curUnit) ? '&' : '?') . 'guru_id=' . $selectedGuruId : '')) ?>" 
-               class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all <?= empty($curStatus) ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' ?>">
+               class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all <?= empty($curStatus) ? 'bg-primary-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' ?>">
                 Semua (<?= $totalAll ?? count($groups) ?>)
             </a>
             <a href="<?= url('kelola-absen-siswa/mapel?status=aktif' . (!empty($curUnit) ? '&unit=' . urlencode($curUnit) : '') . ($selectedGuruId && $isAdmin ? '&guru_id=' . $selectedGuruId : '')) ?>" 
-               class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all <?= $curStatus === 'aktif' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' ?>">
-                <span class="w-2 h-2 rounded-full <?= $curStatus === 'aktif' ? 'bg-white' : 'bg-emerald-500' ?>"></span>
+               class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all <?= $curStatus === 'aktif' ? 'bg-primary-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' ?>">
+                <span class="w-2 h-2 rounded-full <?= $curStatus === 'aktif' ? 'bg-white' : 'bg-primary-500' ?>"></span>
                 <span>Aktif (<?= $totalActive ?? 0 ?>)</span>
             </a>
             <a href="<?= url('kelola-absen-siswa/mapel?status=nonaktif' . (!empty($curUnit) ? '&unit=' . urlencode($curUnit) : '') . ($selectedGuruId && $isAdmin ? '&guru_id=' . $selectedGuruId : '')) ?>" 
@@ -113,8 +113,8 @@ $curUnit = $_GET['unit'] ?? '';
                 <p class="text-xs text-slate-400">Pilih wadah presensi aktif di bawah ini untuk mencatat presensi kehadiran siswa</p>
             </div>
             <a href="<?= url('kelola-absen-siswa/group/create?tipe=mapel' . ($selectedGuruId ? '&guru_id=' . $selectedGuruId : '')) ?>" 
-               class="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600 hover:text-emerald-700 hover:underline">
-                <span>+ Buat Wadah Baru</span>
+               class="inline-flex items-center gap-1.5 text-xs font-bold text-primary-600 hover:text-primary-700 hover:underline">
+                <span>Buat Wadah Baru</span>
             </a>
         </div>
 
@@ -136,7 +136,7 @@ $curUnit = $_GET['unit'] ?? '';
                     <?php if (empty($groups)): ?>
                         <tr>
                             <td colspan="8" class="py-12 text-center text-slate-400">
-                                <div class="w-14 h-14 rounded-2xl bg-emerald-50 flex items-center justify-center mx-auto mb-3 text-2xl">
+                                <div class="w-14 h-14 rounded-2xl bg-primary-50 flex items-center justify-center mx-auto mb-3 text-2xl">
                                     📁
                                 </div>
                                 <p class="font-bold text-slate-700 text-sm">Belum Ada Wadah Grup Absen Mapel</p>
@@ -144,7 +144,7 @@ $curUnit = $_GET['unit'] ?? '';
                                     Silakan buat wadah grup presensi terlebih dahulu untuk menentukan mata pelajaran, kelas, dan guru pengampu sebelum mencatat absen.
                                 </p>
                                 <a href="<?= url('kelola-absen-siswa/group/create?tipe=mapel' . ($selectedGuruId ? '&guru_id=' . $selectedGuruId : '')) ?>" 
-                                   class="inline-flex items-center gap-1.5 px-5 py-2.5 mt-4 bg-emerald-600 text-white font-bold text-xs rounded-2xl hover:bg-emerald-700 shadow-md shadow-emerald-500/20 transition-all">
+                                   class="inline-flex items-center gap-1.5 px-5 py-2.5 mt-4 bg-primary-600 text-white font-bold text-xs rounded-2xl hover:bg-primary-700 shadow-md shadow-primary-500/20 transition-all">
                                     + Buat Wadah Absen Mapel Sekarang
                                 </a>
                             </td>
@@ -159,7 +159,7 @@ $curUnit = $_GET['unit'] ?? '';
                             $cleanKelas = preg_replace('/^Kelas\s+/i', '', $g['kelas'] ?? '');
                             $inputUrl = url('kelola-absen-siswa/input/' . $g['id']);
                         ?>
-                            <tr class="transition-colors group <?= $isActive ? 'hover:bg-emerald-50/20' : 'bg-slate-50/50 hover:bg-slate-100/50' ?>">
+                            <tr class="transition-colors group <?= $isActive ? 'hover:bg-primary-50/20' : 'bg-slate-50/50 hover:bg-slate-100/50' ?>">
                                 <!-- No -->
                                 <td class="py-3.5 px-4 text-center font-bold text-slate-400">
                                     <?= $idx + 1 ?>
@@ -176,7 +176,7 @@ $curUnit = $_GET['unit'] ?? '';
                                 <!-- Judul Wadah -->
                                 <td class="py-3.5 px-4">
                                     <div class="font-bold leading-snug <?= $isActive ? 'text-slate-900' : 'text-slate-600' ?>">
-                                        <a href="<?= $inputUrl ?>" class="hover:text-emerald-600 transition-colors text-sm">
+                                        <a href="<?= $inputUrl ?>" class="hover:text-primary-600 transition-colors text-sm">
                                             <?= htmlspecialchars($g['judul'] ?: 'Wadah Absen Mapel') ?>
                                         </a>
                                         <?php if (!$isActive): ?>
@@ -195,7 +195,7 @@ $curUnit = $_GET['unit'] ?? '';
                                     <div class="font-bold text-slate-800 text-xs">
                                         <?= htmlspecialchars($g['mata_pelajaran'] ?: '-') ?>
                                     </div>
-                                    <div class="text-[11px] text-emerald-700 font-semibold mt-0.5">
+                                    <div class="text-[11px] text-primary-700 font-semibold mt-0.5">
                                         Kelas <?= htmlspecialchars($cleanKelas ?: '-') ?>
                                     </div>
                                 </td>
@@ -209,7 +209,7 @@ $curUnit = $_GET['unit'] ?? '';
 
                                 <!-- Total Sesi -->
                                 <td class="py-3.5 px-4 text-center">
-                                    <span class="px-2.5 py-1 rounded-full text-[11px] font-bold <?= $totalSesi > 0 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-500 border border-slate-200' ?>">
+                                    <span class="px-2.5 py-1 rounded-full text-[11px] font-bold <?= $totalSesi > 0 ? 'bg-primary-50 text-primary-700 border border-primary-200' : 'bg-slate-100 text-slate-500 border border-slate-200' ?>">
                                         <?= $totalSesi ?> Pertemuan
                                     </span>
                                 </td>
@@ -219,8 +219,8 @@ $curUnit = $_GET['unit'] ?? '';
                                     <button type="button" 
                                             onclick="toggleGroupStatus(<?= $g['id'] ?>, this)"
                                             data-status="<?= $isActive ? '1' : '0' ?>"
-                                            class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold border transition-all cursor-pointer <?= $isActive ? 'bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100' : 'bg-slate-100 text-slate-500 border-slate-300 hover:bg-slate-200' ?>">
-                                        <span class="w-2 h-2 rounded-full <?= $isActive ? 'bg-emerald-500' : 'bg-slate-400' ?>"></span>
+                                            class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold border transition-all cursor-pointer <?= $isActive ? 'bg-primary-50 text-primary-700 border-primary-300 hover:bg-primary-100' : 'bg-slate-100 text-slate-500 border-slate-300 hover:bg-slate-200' ?>">
+                                        <span class="w-2 h-2 rounded-full <?= $isActive ? 'bg-primary-500' : 'bg-slate-400' ?>"></span>
                                         <span class="status-label"><?= $isActive ? 'Aktif' : 'Nonaktif' ?></span>
                                     </button>
                                 </td>
@@ -230,14 +230,14 @@ $curUnit = $_GET['unit'] ?? '';
                                     <div class="flex items-center justify-end gap-2">
                                         <!-- Tombol Input Absen -->
                                         <a href="<?= $inputUrl ?>" 
-                                           class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm shadow-emerald-500/20 transition-all">
+                                           class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-sm shadow-primary-500/20 transition-all">
                                             <span>⚡</span>
                                             <span>Input Absen</span>
                                         </a>
 
                                         <!-- Edit Wadah -->
                                         <a href="<?= url('kelola-absen-siswa/group/edit/' . $g['id']) ?>" 
-                                           class="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-colors" 
+                                           class="p-1.5 text-slate-400 hover:text-primary-600 hover:bg-primary-50 rounded-xl transition-colors" 
                                            title="Edit Wadah">
                                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
@@ -290,8 +290,8 @@ function toggleGroupStatus(groupId, btn) {
             const label = btn.querySelector('.status-label');
 
             if (isNowActive) {
-                btn.className = 'inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold border transition-all cursor-pointer bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100';
-                dot.className = 'w-2 h-2 rounded-full bg-emerald-500';
+                btn.className = 'inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold border transition-all cursor-pointer bg-primary-50 text-primary-700 border-primary-300 hover:bg-primary-100';
+                dot.className = 'w-2 h-2 rounded-full bg-primary-500';
                 label.textContent = 'Aktif';
             } else {
                 btn.className = 'inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold border transition-all cursor-pointer bg-slate-100 text-slate-500 border-slate-300 hover:bg-slate-200';

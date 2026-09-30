@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Qur'an PAUD - Halaman Kelola Target di Dalam Grup
  * Menampilkan rincian identitas grup serta pengaturan lengkap Target Tahsin & Tahfidz
@@ -45,15 +45,15 @@ $santriBelum = $totalSantri - $santriDinilai;
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
             <div class="flex items-center gap-2 flex-wrap">
-                <span class="px-3 py-1 rounded-xl text-xs font-black bg-teal-50 text-teal-700 border border-teal-200">
+                <span class="px-3 py-1 rounded-xl text-xs font-black bg-primary-50 text-primary-700 border border-primary-200">
                     Pengaturan Target
                 </span>
                 <span class="px-3 py-1 rounded-xl text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
                     Jenjang PAUD / TK
                 </span>
                 <?php if ($group['is_active']): ?>
-                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-primary-50 text-primary-700 border border-primary-200">
+                        <span class="w-2 h-2 rounded-full bg-primary-500"></span>
                         <span>Aktif</span>
                     </span>
                 <?php else: ?>
@@ -86,7 +86,7 @@ $santriBelum = $totalSantri - $santriDinilai;
                 </svg>
                 <span>Edit Info</span>
             </a>
-            <a href="<?= url('kelola-quran-siswa-paud/penilaian/' . $group['id']) ?>" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-md shadow-teal-500/20 transition-all">
+            <a href="<?= url('kelola-quran-siswa-paud/penilaian/' . $group['id']) ?>" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-md shadow-primary-500/20 transition-all">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
@@ -102,10 +102,10 @@ $santriBelum = $totalSantri - $santriDinilai;
             <div class="flex items-center gap-1.5 mt-1">
                 <span class="text-xs font-bold text-slate-800"><?= htmlspecialchars($ta['nama_tahun'] ?? 'Tahun Ajaran Aktif') ?></span>
                 <?php if (!empty($ta['is_active'])): ?>
-                    <span class="w-2 h-2 rounded-full bg-emerald-500" title="Aktif di Sistem"></span>
+                    <span class="w-2 h-2 rounded-full bg-primary-500" title="Aktif di Sistem"></span>
                 <?php endif; ?>
             </div>
-            <span class="text-[10px] text-teal-600 font-semibold mt-0.5 block">Semester <?= htmlspecialchars($group['semester'] ?? 'Ganjil') ?></span>
+            <span class="text-[10px] text-primary-600 font-semibold mt-0.5 block">Semester <?= htmlspecialchars($group['semester'] ?? 'Ganjil') ?></span>
         </div>
 
         <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
@@ -123,7 +123,7 @@ $santriBelum = $totalSantri - $santriDinilai;
         <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
             <span class="text-[11px] font-bold text-slate-400 block uppercase">Progress Penilaian</span>
             <div class="flex items-center gap-2 mt-1">
-                <span class="text-xs font-bold text-teal-700"><?= $santriDinilai ?> / <?= $totalSantri ?></span>
+                <span class="text-xs font-bold text-primary-700"><?= $santriDinilai ?> / <?= $totalSantri ?></span>
                 <span class="text-[10px] text-slate-400">(<?= $totalSantri > 0 ? round(($santriDinilai / $totalSantri) * 100) : 0 ?>%)</span>
             </div>
             <span class="text-[10px] text-amber-600 font-medium mt-0.5 block"><?= $santriBelum ?> santri belum dinilai</span>
@@ -223,7 +223,7 @@ $santriBelum = $totalSantri - $santriDinilai;
             <div>
                 <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-5">
                     <div class="flex items-center gap-3">
-                        <div class="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-black text-xs shadow-sm shadow-emerald-500/20">
+                        <div class="w-8 h-8 rounded-xl bg-primary-600 text-white flex items-center justify-center font-black text-xs shadow-sm shadow-primary-500/20">
                             2
                         </div>
                         <div>
@@ -231,24 +231,24 @@ $santriBelum = $totalSantri - $santriDinilai;
                             <p class="text-[11px] text-slate-400">Pilih surah pendek Juz 30 dan doa-doa harian yang ditargetkan untuk santri</p>
                         </div>
                     </div>
-                    <span class="px-2.5 py-1 rounded-xl text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                    <span class="px-2.5 py-1 rounded-xl text-[10px] font-bold bg-primary-50 text-primary-800 border border-primary-200">
                         Tahfidz PAUD
                     </span>
                 </div>
 
-                <div class="bg-emerald-50/30 border border-emerald-200/60 rounded-2xl p-5 space-y-6">
+                <div class="bg-primary-50/30 border border-primary-200/60 rounded-2xl p-5 space-y-6">
                     
                     <!-- Checklist Surah Pendek Juz 30 -->
                     <div>
                         <div class="flex items-center justify-between mb-3">
                             <label class="text-xs font-bold text-slate-800 flex items-center gap-2">
                                 <span>Target Hafalan Surah Pendek (Juz 30)</span>
-                                <span id="countSurahSelected" class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                                <span id="countSurahSelected" class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-primary-100 text-primary-800">
                                     <?= count($savedSurah) ?> Terpilih
                                 </span>
                             </label>
                             <div class="flex items-center gap-2">
-                                <button type="button" onclick="selectAllCheckboxes('surah-cb', true)" class="text-[11px] font-bold text-emerald-700 hover:text-emerald-800 bg-white px-2.5 py-1 rounded-xl border border-emerald-200 shadow-sm transition-colors">
+                                <button type="button" onclick="selectAllCheckboxes('surah-cb', true)" class="text-[11px] font-bold text-primary-700 hover:text-primary-800 bg-white px-2.5 py-1 rounded-xl border border-primary-200 shadow-sm transition-colors">
                                     Pilih Semua
                                 </button>
                                 <button type="button" onclick="selectAllCheckboxes('surah-cb', false)" class="text-[11px] font-bold text-slate-500 hover:text-slate-700 bg-white px-2.5 py-1 rounded-xl border border-slate-200 shadow-sm transition-colors">
@@ -261,9 +261,9 @@ $santriBelum = $totalSantri - $santriDinilai;
                             <?php foreach ($surahListPaud as $surah): 
                                 $isChecked = in_array($surah, $savedSurah);
                             ?>
-                                <label class="flex items-center gap-2 p-2.5 rounded-xl border <?= $isChecked ? 'border-emerald-300 bg-emerald-100/50' : 'border-slate-200/80 bg-white' ?> hover:border-emerald-300 cursor-pointer transition-all">
+                                <label class="flex items-center gap-2 p-2.5 rounded-xl border <?= $isChecked ? 'border-primary-300 bg-primary-100/50' : 'border-slate-200/80 bg-white' ?> hover:border-primary-300 cursor-pointer transition-all">
                                     <input type="checkbox" name="tahfidz_surah[]" value="<?= htmlspecialchars($surah) ?>" 
-                                           class="surah-cb rounded text-emerald-600 focus:ring-emerald-500" 
+                                           class="surah-cb rounded text-primary-600 focus:ring-emerald-500" 
                                            <?= $isChecked ? 'checked' : '' ?>
                                            onchange="updateSelectionCount()">
                                     <span class="text-xs font-semibold text-slate-700 truncate"><?= htmlspecialchars($surah) ?></span>
@@ -273,16 +273,16 @@ $santriBelum = $totalSantri - $santriDinilai;
                     </div>
 
                     <!-- Checklist Doa Harian Santri PAUD -->
-                    <div class="pt-4 border-t border-emerald-200/60">
+                    <div class="pt-4 border-t border-primary-200/60">
                         <div class="flex items-center justify-between mb-3">
                             <label class="text-xs font-bold text-slate-800 flex items-center gap-2">
                                 <span>Target Doa-Doa Harian Santri PAUD</span>
-                                <span id="countDoaSelected" class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-teal-100 text-teal-800">
+                                <span id="countDoaSelected" class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-primary-100 text-primary-800">
                                     <?= count($savedDoa) ?> Terpilih
                                 </span>
                             </label>
                             <div class="flex items-center gap-2">
-                                <button type="button" onclick="selectAllCheckboxes('doa-cb', true)" class="text-[11px] font-bold text-teal-700 hover:text-teal-800 bg-white px-2.5 py-1 rounded-xl border border-teal-200 shadow-sm transition-colors">
+                                <button type="button" onclick="selectAllCheckboxes('doa-cb', true)" class="text-[11px] font-bold text-primary-700 hover:text-primary-800 bg-white px-2.5 py-1 rounded-xl border border-primary-200 shadow-sm transition-colors">
                                     Pilih Semua
                                 </button>
                                 <button type="button" onclick="selectAllCheckboxes('doa-cb', false)" class="text-[11px] font-bold text-slate-500 hover:text-slate-700 bg-white px-2.5 py-1 rounded-xl border border-slate-200 shadow-sm transition-colors">
@@ -295,9 +295,9 @@ $santriBelum = $totalSantri - $santriDinilai;
                             <?php foreach ($doaListPaud as $doa): 
                                 $isChecked = in_array($doa, $savedDoa);
                             ?>
-                                <label class="flex items-center gap-2 p-2.5 rounded-xl border <?= $isChecked ? 'border-teal-300 bg-teal-100/50' : 'border-slate-200/80 bg-white' ?> hover:border-teal-300 cursor-pointer transition-all">
+                                <label class="flex items-center gap-2 p-2.5 rounded-xl border <?= $isChecked ? 'border-primary-300 bg-primary-100/50' : 'border-slate-200/80 bg-white' ?> hover:border-primary-300 cursor-pointer transition-all">
                                     <input type="checkbox" name="tahfidz_doa[]" value="<?= htmlspecialchars($doa) ?>" 
-                                           class="doa-cb rounded text-teal-600 focus:ring-teal-500" 
+                                           class="doa-cb rounded text-primary-600 focus:ring-primary-500" 
                                            <?= $isChecked ? 'checked' : '' ?>
                                            onchange="updateSelectionCount()">
                                     <span class="text-xs font-semibold text-slate-700 truncate"><?= htmlspecialchars($doa) ?></span>
@@ -307,7 +307,7 @@ $santriBelum = $totalSantri - $santriDinilai;
                     </div>
 
                     <!-- Checklist Hadits Pilihan Santri PAUD -->
-                    <div class="pt-4 border-t border-emerald-200/60">
+                    <div class="pt-4 border-t border-primary-200/60">
                         <label class="text-xs font-bold text-slate-800 block mb-2">
                             Target Hadits Pilihan Santri PAUD (Opsional)
                         </label>
@@ -333,7 +333,7 @@ $santriBelum = $totalSantri - $santriDinilai;
                         <input type="text" name="tahfidz_fokus" 
                                value="<?= htmlspecialchars($tahfidz['fokus'] ?? 'Hafalan lancar mutqin dengan makhraj huruf dan kelancaran yang baik') ?>"
                                placeholder="Contoh: Hafalan mutqin dengan tajwid dasar dan kelancaran pelafalan"
-                               class="w-full px-4 py-2.5 rounded-2xl border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 text-xs font-semibold text-slate-800 bg-white">
+                               class="w-full px-4 py-2.5 rounded-2xl border border-slate-200 focus:border-primary-500 focus:ring-2 focus:ring-emerald-500/20 text-xs font-semibold text-slate-800 bg-white">
                     </div>
                 </div>
             </div>
@@ -343,7 +343,7 @@ $santriBelum = $totalSantri - $santriDinilai;
                 <a href="<?= url('kelola-quran-siswa-paud/target') ?>" class="px-5 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors">
                     Kembali
                 </a>
-                <button type="submit" class="inline-flex items-center gap-2 px-6 py-2.5 rounded-2xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-md shadow-teal-500/20 transition-all">
+                <button type="submit" class="inline-flex items-center gap-2 px-6 py-2.5 rounded-2xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-md shadow-primary-500/20 transition-all">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                     </svg>
@@ -366,7 +366,7 @@ $santriBelum = $totalSantri - $santriDinilai;
             </div>
 
             <a href="<?= url('kelola-quran-siswa-paud/penilaian/' . $group['id']) ?>" 
-               class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-teal-50 hover:bg-teal-100 text-teal-700 border border-teal-200 font-bold text-xs transition-all self-start sm:self-auto">
+               class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary-50 hover:bg-primary-100 text-primary-700 border border-primary-200 font-bold text-xs transition-all self-start sm:self-auto">
                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
@@ -431,7 +431,7 @@ $santriBelum = $totalSantri - $santriDinilai;
                                 </td>
                                 <td class="py-3 px-4 text-center">
                                     <?php if (!empty($s['status_lulus'])): ?>
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold <?= $s['status_lulus'] === 'Mutqin' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : ($s['status_lulus'] === 'Lancar' ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-amber-50 text-amber-700 border border-amber-200') ?>">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold <?= $s['status_lulus'] === 'Mutqin' ? 'bg-primary-50 text-primary-700 border border-primary-200' : ($s['status_lulus'] === 'Lancar' ? 'bg-primary-50 text-primary-700 border border-primary-200' : 'bg-amber-50 text-amber-700 border border-amber-200') ?>">
                                             <?= htmlspecialchars($s['status_lulus']) ?>
                                         </span>
                                     <?php else: ?>
@@ -440,7 +440,7 @@ $santriBelum = $totalSantri - $santriDinilai;
                                 </td>
                                 <td class="py-3 px-4 text-right">
                                     <a href="<?= url('kelola-quran-siswa-paud/penilaian/' . $group['id']) ?>" 
-                                       class="px-2.5 py-1 rounded-xl bg-teal-50 hover:bg-teal-100 text-teal-700 font-bold text-[11px] border border-teal-200 transition-colors inline-flex items-center gap-1">
+                                       class="px-2.5 py-1 rounded-xl bg-primary-50 hover:bg-primary-100 text-primary-700 font-bold text-[11px] border border-primary-200 transition-colors inline-flex items-center gap-1">
                                         <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Z" />
                                         </svg>
@@ -463,9 +463,9 @@ function selectAllCheckboxes(className, state) {
         const parent = cb.closest('label');
         if (parent) {
             if (state) {
-                parent.classList.add('border-emerald-300', 'bg-emerald-100/50');
+                parent.classList.add('border-primary-300', 'bg-primary-100/50');
             } else {
-                parent.classList.remove('border-emerald-300', 'bg-emerald-100/50');
+                parent.classList.remove('border-primary-300', 'bg-primary-100/50');
             }
         }
     });
@@ -487,9 +487,9 @@ function updateSelectionCount() {
         const parent = cb.closest('label');
         if (parent) {
             if (cb.checked) {
-                parent.classList.add('border-emerald-300', 'bg-emerald-100/50');
+                parent.classList.add('border-primary-300', 'bg-primary-100/50');
             } else {
-                parent.classList.remove('border-emerald-300', 'bg-emerald-100/50');
+                parent.classList.remove('border-primary-300', 'bg-primary-100/50');
             }
         }
     });

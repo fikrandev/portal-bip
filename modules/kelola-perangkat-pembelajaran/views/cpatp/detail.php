@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * CP & ATP - Detail View
  * Format 5 Kolom: Elemen, Capaian Pembelajaran, Tujuan Pembelajaran, KKTP, Bulan
@@ -14,7 +14,7 @@ $cpatpRows = $konten['cpatp_rows'] ?? [];
                     Unit <?= e($item['unit']) ?> &bull; <?= e($item['fase'] ?: 'Fase B') ?>
                 </span>
                 <?php if ($item['status'] === 'disetujui'): ?>
-                    <span class="px-3 py-1 rounded-xl text-xs font-black bg-emerald-100 text-emerald-700">Disetujui</span>
+                    <span class="px-3 py-1 rounded-xl text-xs font-black bg-primary-100 text-primary-700">Disetujui</span>
                 <?php elseif ($item['status'] === 'diajukan'): ?>
                     <span class="px-3 py-1 rounded-xl text-xs font-black bg-amber-100 text-amber-700">Menunggu Verifikasi</span>
                 <?php elseif ($item['status'] === 'ditolak'): ?>
@@ -129,7 +129,7 @@ $cpatpRows = $konten['cpatp_rows'] ?? [];
             <div class="flex items-center gap-3 pt-2">
                 <form method="POST" action="<?= url("kelola-perangkat-pembelajaran/approve/{$item['id']}") ?>">
                     <?= CSRF::field() ?>
-                    <button type="submit" onclick="return confirm('Setujui dokumen CP & ATP ini?');" class="px-5 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-500/20 transition-all">
+                    <button type="submit" onclick="return confirm('Setujui dokumen CP & ATP ini?');" class="px-5 py-2.5 rounded-2xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-md shadow-primary-500/20 transition-all">
                         ✓ Setujui Dokumen
                     </button>
                 </form>

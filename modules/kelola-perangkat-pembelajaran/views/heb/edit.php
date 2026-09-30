@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * HEB - Edit View with Unit Isolation & Kaldik Acuan per Unit
  */
@@ -88,7 +88,7 @@ $selectedKaldikId = old('kaldik_id', $item['kaldik_id'] ?? '');
                     <option value="">-- Pilih Kaldik Acuan (Opsional) --</option>
                 </select>
 
-                <div id="kaldik-info-box" class="hidden p-3 rounded-xl bg-cyan-50/80 border border-teal-200 text-xs text-cyan-900 flex items-center justify-between">
+                <div id="kaldik-info-box" class="hidden p-3 rounded-xl bg-cyan-50/80 border border-primary-200 text-xs text-cyan-900 flex items-center justify-between">
                     <div>
                         <span class="font-bold" id="kaldik-info-title">Judul Kaldik</span>
                         <p class="text-[11px] text-cyan-700" id="kaldik-info-sub">Penyusun & Semester</p>
@@ -214,10 +214,10 @@ $selectedKaldikId = old('kaldik_id', $item['kaldik_id'] ?? '');
         <!-- Perhitungan Total JP & Distribusi Waktu -->
         <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm space-y-4">
             <h2 class="text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-3 flex items-center gap-2">
-                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Distribusi Alokasi Jam Pelajaran (JP)
+                <span class="w-2.5 h-2.5 rounded-full bg-primary-500"></span> Distribusi Alokasi Jam Pelajaran (JP)
             </h2>
 
-            <div class="p-5 rounded-2xl bg-gradient-to-br from-cyan-50 to-teal-50 border border-cyan-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="p-5 rounded-2xl bg-gradient-to-br from-cyan-50 to-primary-50 border border-cyan-200 flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div>
                     <span class="text-xs text-cyan-800 font-bold uppercase tracking-wider">Formula Perhitungan JP:</span>
                     <p class="text-sm text-cyan-950 font-medium mt-0.5">

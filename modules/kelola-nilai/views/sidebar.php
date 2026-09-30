@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Sidebar Modul Kelola Nilai
  */
@@ -107,8 +107,8 @@ if (defined('SYS_APP_FAVICON') && !empty(SYS_APP_FAVICON)) {
     <div class="p-4 border-t border-primary-800/50 bg-primary-950/20 space-y-2">
         <a href="<?= url('mobile') ?>" 
            target="_blank"
-           class="flex items-center gap-2.5 px-3 py-2 rounded-2xl text-xs font-semibold text-emerald-300 hover:text-white bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 transition-all">
-            <svg class="w-4 h-4 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+           class="flex items-center gap-2.5 px-3 py-2 rounded-2xl text-xs font-semibold text-primary-300 hover:text-white bg-primary-500/10 hover:bg-primary-500/20 border border-primary-500/20 transition-all">
+            <svg class="w-4 h-4 text-primary-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 0 0 6 3.75v16.5a2.25 2.25 0 0 0 2.25 2.25h7.5A2.25 2.25 0 0 0 18 20.25V3.75a2.25 2.25 0 0 0-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" />
             </svg>
             <span>📱 Portal Guru (Mobile)</span>

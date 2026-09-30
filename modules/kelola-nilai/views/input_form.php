@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Daftar Nilai — Format Komprehensif
  * Multi-level header: CP → TP → ATP + Sumatif (LM, SAS, Nilai Rapor)
@@ -44,13 +44,13 @@ $grandTotal = 3 + $totalAtpCols + 1 + $totalLM + 1 + 1 + 1;
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
             <div class="flex items-center gap-2 flex-wrap mb-1.5">
-                <span class="px-3 py-1 rounded-xl text-xs font-black bg-teal-50 text-teal-700 border border-teal-200">
+                <span class="px-3 py-1 rounded-xl text-xs font-black bg-primary-50 text-primary-700 border border-primary-200">
                     Daftar Nilai Semester
                 </span>
                 <?php if (!empty($doc['fase'])): ?>
                     <span class="px-3 py-1 rounded-xl text-xs font-bold bg-purple-50 text-purple-700 border border-purple-200"><?= e($doc['fase']) ?></span>
                 <?php endif; ?>
-                <span class="px-3 py-1 rounded-xl text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                <span class="px-3 py-1 rounded-xl text-xs font-bold bg-primary-50 text-primary-700 border border-primary-200">
                     Semester <?= e($semesterLabel) ?>
                 </span>
             </div>
@@ -80,7 +80,7 @@ $grandTotal = 3 + $totalAtpCols + 1 + $totalLM + 1 + 1 + 1;
         <!-- Scroll Hint Banner -->
         <div class="px-5 py-2.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between gap-3 text-xs text-slate-500">
             <div class="flex items-center gap-2">
-                <span class="inline-flex items-center justify-center w-5 h-5 rounded-md bg-teal-100 text-teal-800 text-xs font-black">↔</span>
+                <span class="inline-flex items-center justify-center w-5 h-5 rounded-md bg-primary-100 text-primary-800 text-xs font-black">↔</span>
                 <span>Geser tabel ke samping untuk melihat seluruh kolom. Kolom <strong>No</strong> &amp; <strong>Nama Siswa</strong> tetap terkunci (sticky).</span>
             </div>
             <span class="font-bold text-slate-700 bg-white px-2.5 py-1 rounded-lg border border-slate-200 shrink-0 text-xs">
@@ -104,7 +104,7 @@ $grandTotal = 3 + $totalAtpCols + 1 + $totalLM + 1 + 1 + 1;
                             </th>
                         <?php endforeach; ?>
 
-                        <th class="px-2 py-2 text-center border border-slate-700 font-black bg-slate-900 text-teal-300" rowspan="3" style="min-width:45px">
+                        <th class="px-2 py-2 text-center border border-slate-700 font-black bg-slate-900 text-primary-300" rowspan="3" style="min-width:45px">
                             <div class="leading-tight">NA<br>(F)</div>
                         </th>
 
@@ -114,13 +114,13 @@ $grandTotal = 3 + $totalAtpCols + 1 + $totalLM + 1 + 1 + 1;
                             </th>
                         <?php endif; ?>
 
-                        <th class="px-2 py-2 text-center border border-slate-700 font-black bg-slate-900 text-teal-300" rowspan="3" style="min-width:45px">
+                        <th class="px-2 py-2 text-center border border-slate-700 font-black bg-slate-900 text-primary-300" rowspan="3" style="min-width:45px">
                             <div class="leading-tight">NA<br>(S)</div>
                         </th>
                         <th class="px-2 py-2 text-center border border-slate-700 font-black bg-slate-900 text-slate-200" rowspan="3" style="min-width:45px">
                             <div class="leading-tight">SAS<br>R</div>
                         </th>
-                        <th class="px-2 py-2 text-center border border-slate-700 font-black bg-slate-950 text-teal-300 border-l-2 border-l-teal-500" rowspan="3" style="min-width:55px">
+                        <th class="px-2 py-2 text-center border border-slate-700 font-black bg-slate-950 text-primary-300 border-l-2 border-l-teal-500" rowspan="3" style="min-width:55px">
                             <div class="leading-tight">Nilai<br>Rapor</div>
                         </th>
                     </tr>
@@ -175,11 +175,11 @@ $grandTotal = 3 + $totalAtpCols + 1 + $totalLM + 1 + 1 + 1;
                             $sId = (int)$s['id'];
                             $jk = ($s['jenis_kelamin'] === 'L' || $s['jenis_kelamin'] === 'Laki-Laki') ? 'L' : 'P';
                         ?>
-                            <tr class="hover:bg-teal-50/20 transition-colors group" data-siswa="<?= $sId ?>">
+                            <tr class="hover:bg-primary-50/20 transition-colors group" data-siswa="<?= $sId ?>">
                                 <!-- No -->
                                 <td class="px-2 py-1.5 text-center text-[10px] font-medium text-slate-500 border border-slate-200 sticky left-0 bg-white group-hover:bg-slate-50 z-10 w-[40px] min-w-[40px]"><?= $sIdx + 1 ?></td>
                                 <!-- L/P -->
-                                <td class="px-2 py-1.5 text-center text-[10px] font-bold border border-slate-200 sticky left-[40px] bg-white group-hover:bg-slate-50 z-10 w-[35px] min-w-[35px] <?= $jk === 'L' ? 'text-blue-600' : 'text-pink-600' ?>"><?= $jk ?></td>
+                                <td class="px-2 py-1.5 text-center text-[10px] font-bold border border-slate-200 sticky left-[40px] bg-white group-hover:bg-slate-50 z-10 w-[35px] min-w-[35px] <?= $jk === 'L' ? 'text-primary-600' : 'text-pink-600' ?>"><?= $jk ?></td>
                                 <!-- Nama -->
                                 <td class="px-3 py-1.5 text-[11px] font-semibold text-slate-800 border border-slate-200 sticky left-[75px] bg-white group-hover:bg-slate-50 z-10 truncate min-w-[170px] max-w-[200px] shadow-[2px_0_4px_rgba(0,0,0,0.06)]" title="<?= e($s['nama']) ?>"><?= e($s['nama']) ?></td>
 
@@ -194,7 +194,7 @@ $grandTotal = 3 + $totalAtpCols + 1 + $totalLM + 1 + 1 + 1;
                                                 <input type="number" step="0.01" min="0" max="100"
                                                        name="nilai[<?= $sId ?>][<?= $tp['rowIdx'] ?>_<?= $kIdx ?>]"
                                                        value="<?= e($existVal) ?>"
-                                                       class="w-full px-1 py-1.5 text-center text-[11px] font-medium border-0 bg-transparent focus:bg-teal-50 focus:ring-1 focus:ring-teal-400 focus:outline-none rounded atp-input"
+                                                       class="w-full px-1 py-1.5 text-center text-[11px] font-medium border-0 bg-transparent focus:bg-primary-50 focus:ring-1 focus:ring-primary-400 focus:outline-none rounded atp-input"
                                                        data-siswa="<?= $sId ?>"
                                                        data-tp="<?= $tp['rowIdx'] ?>"
                                                        placeholder="—">
@@ -221,7 +221,7 @@ $grandTotal = 3 + $totalAtpCols + 1 + $totalLM + 1 + 1 + 1;
                                         <input type="number" step="0.01" min="0" max="100"
                                                name="lm[<?= $sId ?>][<?= $lm ?>]"
                                                value="<?= e($lmVal) ?>"
-                                               class="w-full px-1 py-1.5 text-center text-[11px] font-medium border-0 bg-transparent focus:bg-teal-50 focus:ring-1 focus:ring-teal-400 focus:outline-none rounded lm-input"
+                                               class="w-full px-1 py-1.5 text-center text-[11px] font-medium border-0 bg-transparent focus:bg-primary-50 focus:ring-1 focus:ring-primary-400 focus:outline-none rounded lm-input"
                                                data-siswa="<?= $sId ?>"
                                                placeholder="—">
                                     </td>
@@ -238,14 +238,14 @@ $grandTotal = 3 + $totalAtpCols + 1 + $totalLM + 1 + 1 + 1;
                                     <input type="number" step="0.01" min="0" max="100"
                                            name="sas[<?= $sId ?>]"
                                            value="<?= e($sasVal) ?>"
-                                           class="w-full px-1 py-1.5 text-center text-[11px] font-medium border-0 bg-transparent focus:bg-teal-50 focus:ring-1 focus:ring-teal-400 focus:outline-none rounded sas-input"
+                                           class="w-full px-1 py-1.5 text-center text-[11px] font-medium border-0 bg-transparent focus:bg-primary-50 focus:ring-1 focus:ring-primary-400 focus:outline-none rounded sas-input"
                                            data-siswa="<?= $sId ?>"
                                            placeholder="—">
                                 </td>
 
                                 <!-- ═══ Nilai Rapor ═══ -->
-                                <td class="px-1 py-1.5 text-center border border-slate-300 bg-teal-50/80 border-l-2 border-l-teal-600">
-                                    <span class="nr-cell text-[11px] font-black text-teal-900" data-siswa="<?= $sId ?>">—</span>
+                                <td class="px-1 py-1.5 text-center border border-slate-300 bg-primary-50/80 border-l-2 border-l-teal-600">
+                                    <span class="nr-cell text-[11px] font-black text-primary-900" data-siswa="<?= $sId ?>">—</span>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -268,7 +268,7 @@ $grandTotal = 3 + $totalAtpCols + 1 + $totalLM + 1 + 1 + 1;
     <!-- Keterangan Elemen CP & TP -->
     <div class="bg-white rounded-3xl border border-slate-200/80 shadow-sm p-6 space-y-4">
         <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-            <span class="w-2.5 h-2.5 rounded-full bg-teal-600"></span>
+            <span class="w-2.5 h-2.5 rounded-full bg-primary-600"></span>
             Keterangan Elemen CP &amp; TP
         </h3>
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -286,7 +286,7 @@ $grandTotal = 3 + $totalAtpCols + 1 + $totalLM + 1 + 1 + 1;
                                 TP: <?= e($row['tp']) ?>
                             </p>
                         <?php endif; ?>
-                        <p class="text-teal-700 font-bold mt-1 text-[10px]">
+                        <p class="text-primary-700 font-bold mt-1 text-[10px]">
                             <?= count($row['kktp_list'] ?? []) ?> Indikator ATP
                         </p>
                     </div>
@@ -380,7 +380,7 @@ function recalcRow(siswaId) {
 }
 
 function colorClass(val) {
-    if (val >= 75) return 'text-teal-700';
+    if (val >= 75) return 'text-primary-700';
     if (val >= 60) return 'text-slate-700';
     return 'text-rose-600';
 }
@@ -406,10 +406,10 @@ function setAutoSaveStatus(state, msg) {
     if (!badge) return;
 
     if (state === 'saved') {
-        badge.className = 'inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-sm select-none';
+        badge.className = 'inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all bg-primary-50 text-primary-700 border border-primary-200 shadow-sm select-none';
         badge.onclick = null;
         badge.innerHTML = `
-            <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+            <svg class="w-4 h-4 text-primary-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
             <span id="autosave-text">${msg || 'Otomatis Tersimpan'}</span>
         `;
     } else if (state === 'saving') {

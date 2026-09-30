@@ -1,4 +1,4 @@
-<?php /** Roles List View */ ?>
+﻿<?php /** Roles List View */ ?>
 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
     <div>
         <h1 class="text-2xl font-extrabold text-primary-950 tracking-tight flex items-center gap-3">
@@ -15,7 +15,7 @@
     <div class="flex items-center gap-2.5">
         <a href="<?= url('roles/create') ?>" class="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white font-bold rounded-xl shadow-lg shadow-primary-500/25 transition-all text-sm">
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
-            <span>+ Tambah Peran</span>
+            <span>Tambah Peran</span>
         </a>
     </div>
     <?php endif; ?>

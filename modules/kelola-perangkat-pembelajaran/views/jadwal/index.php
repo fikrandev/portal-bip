@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Jadwal Pelajaran - Index View
  * Modul Kelola Perangkat Pembelajaran
@@ -31,10 +31,10 @@
 
     <!-- Active Schedule Highlight Banner -->
     <?php if ($activeGrup): ?>
-    <div class="bg-gradient-to-r from-emerald-600 via-teal-600 to-primary-700 rounded-3xl p-6 text-white shadow-lg shadow-emerald-600/20 relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-6">
+    <div class="bg-gradient-to-r from-primary-600 via-primary-600 to-primary-700 rounded-3xl p-6 text-white shadow-lg shadow-primary-600/20 relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div class="space-y-2 z-10">
             <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 text-xs font-black uppercase tracking-wider backdrop-blur-sm border border-white/30">
-                <span class="w-2 h-2 rounded-full bg-emerald-300 animate-ping"></span>
+                <span class="w-2 h-2 rounded-full bg-primary-300 animate-ping"></span>
                 Jadwal Resmi Aktif Saat Ini
             </div>
             <h2 class="text-2xl font-black tracking-tight"><?= e($activeGrup['nama_grup']) ?></h2>
@@ -45,8 +45,8 @@
             </p>
         </div>
         <div class="flex items-center gap-2 z-10 flex-wrap">
-            <a href="<?= url('kelola-perangkat-pembelajaran/jadwal/matriks/' . $activeGrup['id']) ?>" class="px-4 py-2 bg-white text-emerald-800 hover:bg-white/90 rounded-xl text-xs font-bold shadow-sm transition-all flex items-center gap-2">
-                <svg class="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z"/></svg>
+            <a href="<?= url('kelola-perangkat-pembelajaran/jadwal/matriks/' . $activeGrup['id']) ?>" class="px-4 py-2 bg-white text-primary-800 hover:bg-white/90 rounded-xl text-xs font-bold shadow-sm transition-all flex items-center gap-2">
+                <svg class="w-4 h-4 text-primary-600" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z"/></svg>
                 <span>Lihat Matriks Jadwal</span>
             </a>
             <a href="<?= url('kelola-perangkat-pembelajaran/jadwal/pengaturan-jp/' . $activeGrup['id']) ?>" class="px-3.5 py-2 bg-white/20 hover:bg-white/30 text-white rounded-xl text-xs font-semibold backdrop-blur-sm transition-all flex items-center gap-1.5">
@@ -94,14 +94,14 @@
                     </tr>
                     <?php else: ?>
                     <?php foreach ($grupList as $g): ?>
-                    <tr class="hover:bg-slate-50/80 transition-colors <?= !empty($g['is_active']) ? 'bg-emerald-50/30' : '' ?>">
+                    <tr class="hover:bg-slate-50/80 transition-colors <?= !empty($g['is_active']) ? 'bg-primary-50/30' : '' ?>">
                         <td class="px-6 py-4">
                             <div class="flex items-center gap-2.5">
                                 <a href="<?= url('kelola-perangkat-pembelajaran/jadwal/matriks/' . $g['id']) ?>" class="font-extrabold text-slate-900 hover:text-indigo-600 transition-colors text-sm">
                                     <?= e($g['nama_grup']) ?>
                                 </a>
                                 <?php if (!empty($g['is_active'])): ?>
-                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300">AKTIF</span>
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-primary-100 text-primary-800 border border-primary-300">AKTIF</span>
                                 <?php endif; ?>
                             </div>
                             <?php if (!empty($g['keterangan'])): ?>
@@ -127,13 +127,13 @@
                         </td>
                         <td class="px-6 py-4 text-center">
                             <?php if (!empty($g['is_active'])): ?>
-                                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Berlaku Resmi
+                                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-primary-50 text-primary-700 border border-primary-200">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-primary-500"></span> Berlaku Resmi
                                 </span>
                             <?php else: ?>
                                 <form action="<?= url('kelola-perangkat-pembelajaran/jadwal/set-active/' . $g['id']) ?>" method="POST" class="inline">
                                     <?= CSRF::field() ?>
-                                    <button type="submit" class="px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 hover:bg-emerald-600 hover:text-white text-slate-600 border border-slate-200 transition-all" title="Klik untuk mengaktifkan jadwal ini">
+                                    <button type="submit" class="px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 hover:bg-primary-600 hover:text-white text-slate-600 border border-slate-200 transition-all" title="Klik untuk mengaktifkan jadwal ini">
                                         Aktifkan Ini
                                     </button>
                                 </form>
@@ -147,7 +147,7 @@
                                 <a href="<?= url('kelola-perangkat-pembelajaran/jadwal/pengaturan-jp/' . $g['id']) ?>" class="p-2 rounded-xl bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors" title="Pengaturan JP & Jam Rutin">
                                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
                                 </a>
-                                <a href="<?= url('kelola-perangkat-pembelajaran/jadwal/generate/' . $g['id']) ?>" class="p-2 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors" title="Auto-Generator Cerdas">
+                                <a href="<?= url('kelola-perangkat-pembelajaran/jadwal/generate/' . $g['id']) ?>" class="p-2 rounded-xl bg-primary-50 text-primary-700 hover:bg-primary-100 transition-colors" title="Auto-Generator Cerdas">
                                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"/></svg>
                                 </a>
                                 <a href="<?= url('kelola-perangkat-pembelajaran/jadwal/edit/' . $g['id']) ?>" class="p-2 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors" title="Edit Grup">

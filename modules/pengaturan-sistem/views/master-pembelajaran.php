@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * View Master Data Referensi Pembelajaran (Mata Pelajaran)
  * Mendukung Hapus Multiple (Centang) dan Hapus Semua
@@ -35,7 +35,7 @@
 
             <button type="button" onclick="openModalTambah()" class="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white font-bold rounded-xl text-xs sm:text-sm shadow-md shadow-primary-500/20 transition-all">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
-                <span>+ Tambah Mata Pelajaran</span>
+                <span>Tambah Mata Pelajaran</span>
             </button>
         </div>
     </div>
@@ -160,7 +160,7 @@
                                     <td class="px-5 py-3 text-center">
                                         <form method="POST" action="<?= url('pengaturan-sistem/master-pembelajaran/toggle-aktif/' . $mp['id']) ?>" class="inline">
                                             <?= CSRF::field() ?>
-                                            <button type="submit" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold transition-all <?= $mp['is_active'] ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200' : 'bg-slate-100 text-slate-500 hover:bg-slate-200' ?>" title="Klik untuk ubah status">
+                                            <button type="submit" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold transition-all <?= $mp['is_active'] ? 'bg-primary-50 text-primary-700 hover:bg-primary-100 border border-primary-200' : 'bg-slate-100 text-slate-500 hover:bg-slate-200' ?>" title="Klik untuk ubah status">
                                                 <?= $mp['is_active'] ? '● Aktif' : '○ Nonaktif' ?>
                                             </button>
                                         </form>

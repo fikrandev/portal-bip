@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Sidebar Modul Kelola Absen Siswa
  * Desain konsisten dengan Modul Kelola Nilai
@@ -24,7 +24,7 @@ if (defined('SYS_APP_FAVICON') && !empty(SYS_APP_FAVICON)) {
                     <img src="<?= $sbLogo ?>" alt="Logo Sekolah" class="max-w-full max-h-full object-contain">
                 </div>
             <?php else: ?>
-                <div class="w-8 h-8 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/20 text-white font-bold shrink-0">
+                <div class="w-8 h-8 rounded-2xl bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center shadow-lg shadow-primary-500/20 text-white font-bold shrink-0">
                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                     </svg>
@@ -32,7 +32,7 @@ if (defined('SYS_APP_FAVICON') && !empty(SYS_APP_FAVICON)) {
             <?php endif; ?>
             <div class="min-w-0">
                 <h1 class="text-white font-bold text-base tracking-tight leading-tight truncate">Kelola Absen</h1>
-                <p class="text-emerald-300 text-xs truncate">Presensi Siswa BIP</p>
+                <p class="text-primary-300 text-xs truncate">Presensi Siswa BIP</p>
             </div>
         </div>
         
@@ -54,10 +54,10 @@ if (defined('SYS_APP_FAVICON') && !empty(SYS_APP_FAVICON)) {
                 if (!function_exists('renderAbsenMenuItem')) {
                     function renderAbsenMenuItem($label, $url, $icon, $isActive = false, $badge = null) {
                         $activeClass = $isActive 
-                            ? 'bg-emerald-600/30 text-white font-semibold shadow-sm border border-emerald-500/40' 
+                            ? 'bg-primary-600/30 text-white font-semibold shadow-sm border border-primary-500/40' 
                             : 'text-primary-200 hover:bg-primary-800/60 hover:text-white border border-transparent';
                         
-                        $iconColor = $isActive ? 'text-emerald-400' : 'text-primary-400 group-hover:text-emerald-300';
+                        $iconColor = $isActive ? 'text-primary-400' : 'text-primary-400 group-hover:text-primary-300';
                         
                         echo "<li>
                             <a href=\"$url\" class=\"flex items-center justify-between px-3 py-2.5 rounded-2xl transition-all duration-200 group $activeClass\">
@@ -66,7 +66,7 @@ if (defined('SYS_APP_FAVICON') && !empty(SYS_APP_FAVICON)) {
                                     <span class=\"text-sm truncate\">$label</span>
                                 </div>";
                         if ($badge) {
-                            echo "<span class=\"text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30\">$badge</span>";
+                            echo "<span class=\"text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary-500/20 text-primary-300 border border-primary-500/30\">$badge</span>";
                         }
                         echo "</a></li>";
                     }
@@ -120,8 +120,8 @@ if (defined('SYS_APP_FAVICON') && !empty(SYS_APP_FAVICON)) {
     <div class="p-4 border-t border-primary-800/50 bg-primary-950/20 space-y-2">
         <a href="<?= url('mobile') ?>" 
            target="_blank"
-           class="flex items-center gap-2.5 px-3 py-2 rounded-2xl text-xs font-semibold text-emerald-300 hover:text-white bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 transition-all">
-            <svg class="w-4 h-4 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+           class="flex items-center gap-2.5 px-3 py-2 rounded-2xl text-xs font-semibold text-primary-300 hover:text-white bg-primary-500/10 hover:bg-primary-500/20 border border-primary-500/20 transition-all">
+            <svg class="w-4 h-4 text-primary-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 0 0 6 3.75v16.5a2.25 2.25 0 0 0 2.25 2.25h7.5A2.25 2.25 0 0 0 18 20.25V3.75a2.25 2.25 0 0 0-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" />
             </svg>
             <span>📱 Portal Guru (Mobile)</span>

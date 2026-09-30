@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Konfigurasi Akademik View (Refactored for Multiple Years)
  */
@@ -81,8 +81,8 @@
                                 </td>
                                 <td class="px-6 py-4">
                                     <?php if ($ta['is_active'] == 1): ?>
-                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-600 border border-emerald-200">
-                                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-primary-50 text-primary-600 border border-primary-200">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-primary-500 animate-pulse"></span>
                                             Aktif
                                         </span>
                                     <?php else: ?>

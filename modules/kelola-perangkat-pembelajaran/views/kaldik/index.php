@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Kaldik - Index View with Master Group Kaldik per Unit (PAUD, SD, SMP, SMA) & Active Status
  */
@@ -8,13 +8,13 @@
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
             <h1 class="text-xl sm:text-2xl font-bold text-slate-800 tracking-tight flex items-center gap-2.5">
-                <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
+                <span class="w-3 h-3 rounded-full bg-primary-500"></span>
                 Grup Kalender Pendidikan (Kaldik)
             </h1>
             <p class="text-xs sm:text-sm text-slate-500">Kelola Master Kalender Pendidikan per Unit & Tahun Ajaran. Kaldik yang aktif menjadi acuan resmi guru saat membuat HES & HEB.</p>
         </div>
         <div class="flex items-center gap-3">
-            <a href="<?= url('kelola-perangkat-pembelajaran/kaldik/create') ?>" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs sm:text-sm shadow-md shadow-emerald-500/20 transition-all">
+            <a href="<?= url('kelola-perangkat-pembelajaran/kaldik/create') ?>" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-primary-600 hover:bg-primary-700 text-white font-semibold text-xs sm:text-sm shadow-md shadow-primary-500/20 transition-all">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
                 Tambah Grup Kaldik
             </a>
@@ -22,14 +22,14 @@
     </div>
 
     <!-- Info Guide Banner -->
-    <div class="bg-gradient-to-r from-emerald-50 via-teal-50 to-cyan-50 border border-emerald-200/80 rounded-3xl p-4 sm:p-5 flex items-start gap-3.5 shadow-sm">
-        <div class="w-9 h-9 rounded-2xl bg-emerald-500 text-white flex items-center justify-center font-bold text-base flex-shrink-0 shadow-sm">
+    <div class="bg-gradient-to-r from-primary-50 via-primary-50 to-cyan-50 border border-primary-200/80 rounded-3xl p-4 sm:p-5 flex items-start gap-3.5 shadow-sm">
+        <div class="w-9 h-9 rounded-2xl bg-primary-500 text-white flex items-center justify-center font-bold text-base flex-shrink-0 shadow-sm">
             💡
         </div>
         <div class="text-xs text-slate-700 leading-relaxed space-y-1">
-            <h4 class="font-bold text-emerald-950 text-[13px]">Cara Kerja Manajemen Grup Kalender Pendidikan:</h4>
+            <h4 class="font-bold text-primary-950 text-[13px]">Cara Kerja Manajemen Grup Kalender Pendidikan:</h4>
             <p class="text-slate-600">
-                1. Buat grup Kaldik baru untuk masing-masing unit (<strong>PAUD, SD, SMP, SMA</strong>) dan setel statusnya menjadi <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-bold text-[10px]">🟢 Aktif</span>.<br>
+                1. Buat grup Kaldik baru untuk masing-masing unit (<strong>PAUD, SD, SMP, SMA</strong>) dan setel statusnya menjadi <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-primary-100 text-primary-800 font-bold text-[10px]">🟢 Aktif</span>.<br>
                 2. Di dalam grup tersebut, Anda dapat mengisi daftar agenda akademik, jadwal KBM, PTS/STS, PAS/SAS, dan hari libur.<br>
                 3. Ketika pergantian tahun ajaran di masa depan, nonaktifkan Kaldik lama dan buat grup Kaldik baru untuk tahun berikutnya.
             </p>
@@ -46,7 +46,7 @@
             </a>
             <?php foreach ($unit_list as $uKey => $uInfo): ?>
                 <?php $isActiveUnit = ($filter_unit === $uKey); ?>
-                <a href="<?= url('kelola-perangkat-pembelajaran/kaldik?' . http_build_query(array_merge($_GET, ['unit' => $uKey]))) ?>" class="px-3.5 py-1.5 rounded-xl font-semibold transition-all whitespace-nowrap inline-flex items-center gap-1.5 <?= $isActiveUnit ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' ?>">
+                <a href="<?= url('kelola-perangkat-pembelajaran/kaldik?' . http_build_query(array_merge($_GET, ['unit' => $uKey]))) ?>" class="px-3.5 py-1.5 rounded-xl font-semibold transition-all whitespace-nowrap inline-flex items-center gap-1.5 <?= $isActiveUnit ? 'bg-primary-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' ?>">
                     <span><?= $uInfo['icon'] ?? '🏫' ?></span>
                     <span>Unit <?= $uKey ?></span>
                 </a>
@@ -90,7 +90,7 @@
                 <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Pencarian</label>
                 <div class="flex items-center gap-2">
                     <input type="text" name="search" value="<?= e($search) ?>" placeholder="Cari nama kaldik / penyusun..." class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs bg-slate-50 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
-                    <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl text-xs transition-colors">
+                    <button type="submit" class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-xl text-xs transition-colors">
                         Cari
                     </button>
                 </div>
@@ -135,7 +135,7 @@
                             $konten = !empty($row['konten_json']) ? json_decode($row['konten_json'], true) : [];
                             $totalAgendas = !empty($konten['agendas']) ? count($konten['agendas']) : 0;
                             ?>
-                            <tr class="hover:bg-slate-50/70 transition-colors <?= $isActive ? 'bg-emerald-50/20' : '' ?>">
+                            <tr class="hover:bg-slate-50/70 transition-colors <?= $isActive ? 'bg-primary-50/20' : '' ?>">
                                 <td class="py-3.5 px-4 whitespace-nowrap">
                                     <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-bold border <?= $uBadge ?>">
                                         <span><?= $uIcon ?></span>
@@ -144,11 +144,11 @@
                                 </td>
                                 <td class="py-3.5 px-4">
                                     <div class="flex items-center gap-2">
-                                        <a href="<?= url("kelola-perangkat-pembelajaran/kaldik/detail/{$row['id']}") ?>" class="font-bold text-slate-800 hover:text-emerald-700 text-xs sm:text-sm transition-colors">
+                                        <a href="<?= url("kelola-perangkat-pembelajaran/kaldik/detail/{$row['id']}") ?>" class="font-bold text-slate-800 hover:text-primary-700 text-xs sm:text-sm transition-colors">
                                             <?= e($row['judul']) ?>
                                         </a>
                                         <?php if ($isActive): ?>
-                                            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-primary-100 text-primary-800 border border-primary-300">
                                                 Acuan Unit
                                             </span>
                                         <?php endif; ?>
@@ -162,14 +162,14 @@
                                 <td class="py-3.5 px-4 whitespace-nowrap">
                                     <form method="POST" action="<?= url("kelola-perangkat-pembelajaran/kaldik/toggle-active/{$row['id']}") ?>" class="inline">
                                         <?= CSRF::field() ?>
-                                        <button type="submit" title="Klik untuk mengubah status aktif" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold transition-all border <?= $isActive ? 'bg-emerald-100 text-emerald-800 border-emerald-300 shadow-sm hover:bg-emerald-200' : 'bg-slate-100 text-slate-500 border-slate-300 hover:bg-slate-200' ?>">
-                                            <span class="w-2 h-2 rounded-full <?= $isActive ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400' ?>"></span>
+                                        <button type="submit" title="Klik untuk mengubah status aktif" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold transition-all border <?= $isActive ? 'bg-primary-100 text-primary-800 border-primary-300 shadow-sm hover:bg-primary-200' : 'bg-slate-100 text-slate-500 border-slate-300 hover:bg-slate-200' ?>">
+                                            <span class="w-2 h-2 rounded-full <?= $isActive ? 'bg-primary-500 animate-pulse' : 'bg-slate-400' ?>"></span>
                                             <?= $isActive ? '🟢 AKTIF' : '⚪ NON-AKTIF' ?>
                                         </button>
                                     </form>
                                 </td>
                                 <td class="py-3.5 px-4 whitespace-nowrap">
-                                    <a href="<?= url("kelola-perangkat-pembelajaran/kaldik/detail/{$row['id']}") ?>" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-emerald-50 text-slate-700 hover:text-emerald-800 font-bold text-xs transition-colors">
+                                    <a href="<?= url("kelola-perangkat-pembelajaran/kaldik/detail/{$row['id']}") ?>" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-primary-50 text-slate-700 hover:text-primary-800 font-bold text-xs transition-colors">
                                         <span>📅</span>
                                         <span><?= $totalAgendas ?> Kegiatan</span>
                                     </a>
@@ -180,7 +180,7 @@
                                 </td>
                                 <td class="py-3.5 px-4 text-right whitespace-nowrap">
                                     <div class="flex items-center justify-end gap-1.5">
-                                        <a href="<?= url("kelola-perangkat-pembelajaran/kaldik/detail/{$row['id']}") ?>" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs transition-colors" title="Buka & Kelola Agenda Kaldik">
+                                        <a href="<?= url("kelola-perangkat-pembelajaran/kaldik/detail/{$row['id']}") ?>" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-primary-50 hover:bg-primary-100 text-primary-800 font-bold text-xs transition-colors" title="Buka & Kelola Agenda Kaldik">
                                             <span>Kelola Agenda</span>
                                             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" /></svg>
                                         </a>
@@ -210,7 +210,7 @@
                 <span class="text-xs text-slate-500">Halaman <?= $page ?> dari <?= $totalPages ?> (Total: <?= $total ?>)</span>
                 <div class="flex gap-1">
                     <?php for ($p = 1; $p <= $totalPages; $p++): ?>
-                        <a href="<?= url('kelola-perangkat-pembelajaran/kaldik?' . http_build_query(array_merge($_GET, ['page' => $p]))) ?>" class="px-3 py-1 rounded-lg text-xs font-semibold <?= $p === $page ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200' ?>">
+                        <a href="<?= url('kelola-perangkat-pembelajaran/kaldik?' . http_build_query(array_merge($_GET, ['page' => $p]))) ?>" class="px-3 py-1 rounded-lg text-xs font-semibold <?= $p === $page ? 'bg-primary-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200' ?>">
                             <?= $p ?>
                         </a>
                     <?php endfor; ?>

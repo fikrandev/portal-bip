@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * View Galeri Foto Siswa
  */
@@ -8,7 +8,7 @@
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
             <h1 class="text-2xl font-extrabold text-primary-950 tracking-tight flex items-center gap-3">
-                <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white shadow-lg shadow-emerald-500/20 text-lg">
+                <div class="w-10 h-10 rounded-2xl bg-primary-600 flex items-center justify-center text-white shadow-lg shadow-primary-500/20 text-lg">
                     🖼️
                 </div>
                 <span>Galeri Foto Siswa</span>
@@ -29,7 +29,7 @@
                 ]);
                 $massalUrl = url('kelola-siswa/cetak-kartu-massal') . (!empty($massalParams) ? '?' . http_build_query($massalParams) : '');
             ?>
-            <a href="<?= $massalUrl ?>" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md transition-all flex items-center gap-2" title="Unduh seluruh kartu siswa yang difilter sebagai file ZIP">
+            <a href="<?= $massalUrl ?>" class="px-5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-md transition-all flex items-center gap-2" title="Unduh seluruh kartu siswa yang difilter sebagai file ZIP">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
                 <span>Download Filtered (ZIP)</span>
             </a>
@@ -78,7 +78,7 @@
                     <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Cari Nama / NISN</label>
                     <input type="text" name="search" value="<?= e($searchQuery) ?>" placeholder="Masukkan nama atau NISN..." class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs bg-slate-50 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
                 </div>
-                <button type="submit" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md transition-all self-end">
+                <button type="submit" class="px-5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-md transition-all self-end">
                     Filter
                 </button>
             </div>
@@ -118,7 +118,7 @@
                                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
                                 <span>Download PNG</span>
                             </a>
-                            <button onclick="openUploadModal(<?= $s['id'] ?>, '<?= addslashes(e($s['nama'])) ?>')" class="px-4 py-2 w-28 text-center rounded-xl bg-white text-slate-800 font-bold text-[10px] shadow-lg flex items-center justify-center gap-1.5 hover:bg-emerald-50 hover:text-emerald-700 transition-colors">
+                            <button onclick="openUploadModal(<?= $s['id'] ?>, '<?= addslashes(e($s['nama'])) ?>')" class="px-4 py-2 w-28 text-center rounded-xl bg-white text-slate-800 font-bold text-[10px] shadow-lg flex items-center justify-center gap-1.5 hover:bg-primary-50 hover:text-primary-700 transition-colors">
                                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" /></svg>
                                 <span>Ganti Foto</span>
                             </button>
@@ -249,7 +249,7 @@
         <div class="bg-white rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl border border-slate-200/80 space-y-5">
             <div class="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div class="flex items-center gap-2.5">
-                    <div class="w-9 h-9 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-base">
+                    <div class="w-9 h-9 rounded-2xl bg-primary-100 text-primary-700 flex items-center justify-center font-bold text-base">
                         🖼️
                     </div>
                     <div>
@@ -268,7 +268,7 @@
 
                 <div>
                     <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Pilih File Foto (JPG/PNG)</label>
-                    <input type="file" name="foto" accept="image/jpeg, image/png" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs bg-slate-50 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100">
+                    <input type="file" name="foto" accept="image/jpeg, image/png" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs bg-slate-50 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100">
                     <p class="text-[10px] text-slate-400 mt-1">Foto akan otomatis dikompres menjadi maksimal 700KB.</p>
                 </div>
 
@@ -276,7 +276,7 @@
                     <button type="button" onclick="document.getElementById('modal-upload-foto').classList.add('hidden')" class="px-4 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs transition-colors">
                         Batal
                     </button>
-                    <button type="submit" class="px-5 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-500/20 transition-all">
+                    <button type="submit" class="px-5 py-2.5 rounded-2xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-md shadow-primary-500/20 transition-all">
                         Upload
                     </button>
                 </div>

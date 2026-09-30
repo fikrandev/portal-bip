@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Dzikir Pagi & Petang View (Al-Ma'tsurat Sugro & Kubro)
  * Features interactive digital tasbih counters, audio/vibration feedback, and auto-check integration for Ibadah Harian.
@@ -338,16 +338,16 @@
             const arabText = (d.id === 'doa_pagi_petang') ? (currentMode === 'pagi' ? d.arab_pagi : d.arab_petang) : d.arab;
 
             html += `
-                <div class="dzikir-card bg-white rounded-3xl p-4 shadow-sm border ${isCompleted ? 'border-emerald-300 ring-2 ring-emerald-100 bg-emerald-50/15' : 'border-slate-100'} space-y-3 transition-all" id="card-dzikir-${d.id}">
+                <div class="dzikir-card bg-white rounded-3xl p-4 shadow-sm border ${isCompleted ? 'border-primary-300 ring-2 ring-emerald-100 bg-primary-50/15' : 'border-slate-100'} space-y-3 transition-all" id="card-dzikir-${d.id}">
                     <!-- Top Sub-bar -->
                     <div class="flex items-center justify-between pb-2 border-b border-slate-50 text-[11px]">
                         <div class="flex items-center gap-1.5 font-bold text-slate-700 min-w-0">
-                            <span class="w-6 h-6 rounded-lg ${isCompleted ? 'bg-emerald-500 text-white font-bold' : 'bg-purple-50 text-purple-700 border border-purple-100'} flex items-center justify-center font-mono text-[10px] shrink-0">${idx + 1}</span>
-                            <span class="truncate ${isCompleted ? 'text-emerald-800' : 'text-slate-800'}">${d.title}</span>
+                            <span class="w-6 h-6 rounded-lg ${isCompleted ? 'bg-primary-500 text-white font-bold' : 'bg-purple-50 text-purple-700 border border-purple-100'} flex items-center justify-center font-mono text-[10px] shrink-0">${idx + 1}</span>
+                            <span class="truncate ${isCompleted ? 'text-primary-800' : 'text-slate-800'}">${d.title}</span>
                         </div>
 
                         <!-- Interactive Tasbih Counter Button -->
-                        <button type="button" onclick="tapTasbihCounter('${d.id}', ${d.target})" class="tasbih-btn-${d.id} px-3 py-1.5 rounded-2xl ${isCompleted ? 'bg-emerald-600 text-white shadow-xs' : 'bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200'} font-mono font-black text-xs flex items-center gap-1.5 press-bounce shrink-0">
+                        <button type="button" onclick="tapTasbihCounter('${d.id}', ${d.target})" class="tasbih-btn-${d.id} px-3 py-1.5 rounded-2xl ${isCompleted ? 'bg-primary-600 text-white shadow-xs' : 'bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200'} font-mono font-black text-xs flex items-center gap-1.5 press-bounce shrink-0">
                             ${isCompleted ? '<span>✓ Selesai</span>' : `<span>📿 ${count} / ${d.target}</span>`}
                         </button>
                     </div>
@@ -360,7 +360,7 @@
                     </div>
 
                     <!-- Latin Transliteration -->
-                    <p class="text-xs text-blue-600 font-medium leading-relaxed">
+                    <p class="text-xs text-primary-600 font-medium leading-relaxed">
                         ${d.latin}
                     </p>
 
@@ -408,7 +408,7 @@
         if (countText) countText.textContent = `${completedCount} / ${items.length} Selesai`;
 
         if (completedCount === items.length && items.length > 0) {
-            if (badge) badge.className = 'px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-600 text-white shadow-xs';
+            if (badge) badge.className = 'px-2.5 py-1 rounded-full text-[10px] font-bold bg-primary-600 text-white shadow-xs';
         } else {
             if (badge) badge.className = 'px-2.5 py-1 rounded-full text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200';
         }

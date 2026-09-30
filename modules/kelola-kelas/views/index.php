@@ -1,4 +1,4 @@
-<?php /** Dashboard Kelola Kelas */ ?>
+﻿<?php /** Dashboard Kelola Kelas */ ?>
 <div class="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
     <div>
         <h1 class="text-2xl font-extrabold text-primary-950 tracking-tight flex items-center gap-3">
@@ -11,7 +11,7 @@
         </h1>
         <p class="text-slate-500 text-sm mt-1">Manajemen data kelas, wali kelas, dan pembagian rombongan belajar.</p>
     </div>
-        <button type="button" onclick="document.getElementById('modal-sync-dapodik').classList.remove('hidden')" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl shadow-sm transition-all duration-200">
+        <button type="button" onclick="document.getElementById('modal-sync-dapodik').classList.remove('hidden')" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold rounded-xl shadow-sm transition-all duration-200">
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
             </svg>
@@ -27,7 +27,7 @@
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
             </svg>
-            <span>+ Tambah Kelas</span>
+            <span>Tambah Kelas</span>
         </a>
     </div>
 </div>
@@ -46,7 +46,7 @@
         </div>
     </div>
     <div class="bg-white rounded-2xl p-5 border border-slate-200/60 shadow-sm flex items-center gap-4">
-        <div class="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600">
+        <div class="w-12 h-12 rounded-full bg-primary-50 flex items-center justify-center text-primary-600">
             <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0Z" />
             </svg>
@@ -106,7 +106,7 @@
                         <td class="px-6 py-4 text-slate-600"><?= e($k['wali_kelas'] ?: '-') ?></td>
                         <td class="px-6 py-4">
                             <?php if ($k['is_active']): ?>
-                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Aktif</span>
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-primary-100 text-primary-700"><span class="w-1.5 h-1.5 rounded-full bg-primary-500"></span> Aktif</span>
                             <?php else: ?>
                                 <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-rose-100 text-rose-700"><span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Nonaktif</span>
                             <?php endif; ?>
@@ -194,8 +194,8 @@
                 <?= CSRF::field() ?>
                 <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                     <div class="sm:flex sm:items-start">
-                        <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
-                            <svg class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-primary-100 sm:mx-0 sm:h-10 sm:w-10">
+                            <svg class="h-6 w-6 text-primary-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
                             </svg>
                         </div>
@@ -227,7 +227,7 @@
                     </div>
                 </div>
                 <div class="bg-slate-50 px-4 py-4 sm:px-6 flex flex-col sm:flex-row-reverse gap-2">
-                    <button type="submit" class="w-full sm:w-auto inline-flex justify-center rounded-[10px] border border-transparent px-4 py-2.5 bg-blue-600 text-base font-bold text-white shadow-sm hover:bg-blue-700 sm:text-sm">
+                    <button type="submit" class="w-full sm:w-auto inline-flex justify-center rounded-[10px] border border-transparent px-4 py-2.5 bg-primary-600 text-base font-bold text-white shadow-sm hover:bg-primary-700 sm:text-sm">
                         Mulai Tarik Data
                     </button>
                     <button type="button" onclick="document.getElementById('modal-sync-dapodik').classList.add('hidden')" class="w-full sm:w-auto inline-flex justify-center rounded-[10px] border border-slate-300 px-4 py-2.5 bg-white text-base font-bold text-slate-700 shadow-sm hover:bg-slate-50 sm:text-sm">

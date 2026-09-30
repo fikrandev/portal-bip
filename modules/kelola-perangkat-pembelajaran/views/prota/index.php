@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Prota - Index View with Wadah Grup & Filter Unit
  */
@@ -18,7 +18,7 @@
         <div class="flex items-center gap-3">
             <a href="<?= url('kelola-perangkat-pembelajaran/prota/group/create') ?>" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm shadow-md shadow-indigo-500/20 transition-all">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
-                <span>+ Buat Grup Prota Baru</span>
+                <span>Buat Grup Prota Baru</span>
             </a>
         </div>
     </div>

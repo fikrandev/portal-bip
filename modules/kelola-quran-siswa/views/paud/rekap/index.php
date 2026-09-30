@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Qur'an PAUD - Fitur 4: Rekap Nilai
  * Halaman Rekapitulasi Nilai & Capaian Santri PAUD
@@ -18,7 +18,7 @@ $exportUrl = url('kelola-quran-siswa-paud/rekap/export' . (!empty($_SERVER['QUER
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
             <div class="flex items-center gap-2">
-                <span class="px-3 py-1 rounded-xl text-xs font-black bg-teal-50 text-teal-700 border border-teal-200">
+                <span class="px-3 py-1 rounded-xl text-xs font-black bg-primary-50 text-primary-700 border border-primary-200">
                     Laporan Capaian Santri
                 </span>
                 <span class="px-3 py-1 rounded-xl text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
@@ -40,7 +40,7 @@ $exportUrl = url('kelola-quran-siswa-paud/rekap/export' . (!empty($_SERVER['QUER
                 </svg>
                 <span>Dashboard</span>
             </a>
-            <a href="<?= $exportUrl ?>" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-500/20 transition-all">
+            <a href="<?= $exportUrl ?>" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-md shadow-primary-500/20 transition-all">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                 </svg>
@@ -84,8 +84,8 @@ $exportUrl = url('kelola-quran-siswa-paud/rekap/export' . (!empty($_SERVER['QUER
         <div class="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-sm">
             <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Capaian Mutqin</span>
             <div class="flex items-baseline justify-between mt-2">
-                <span class="text-3xl font-black text-emerald-600"><?= (int)($rekapStats['total_mutqin'] ?? 0) ?></span>
-                <span class="text-xs font-bold text-emerald-600">Santri</span>
+                <span class="text-3xl font-black text-primary-600"><?= (int)($rekapStats['total_mutqin'] ?? 0) ?></span>
+                <span class="text-xs font-bold text-primary-600">Santri</span>
             </div>
         </div>
     </div>
@@ -97,7 +97,7 @@ $exportUrl = url('kelola-quran-siswa-paud/rekap/export' . (!empty($_SERVER['QUER
             <!-- Kategori -->
             <div>
                 <label class="block text-xs font-bold text-slate-600 uppercase mb-1.5">Kategori Pembelajaran</label>
-                <select name="kategori" onchange="this.form.submit()" class="w-full px-3.5 py-2.5 rounded-2xl border border-slate-200 text-xs font-semibold text-slate-800 bg-slate-50/50 focus:ring-2 focus:ring-teal-500 focus:outline-none">
+                <select name="kategori" onchange="this.form.submit()" class="w-full px-3.5 py-2.5 rounded-2xl border border-slate-200 text-xs font-semibold text-slate-800 bg-slate-50/50 focus:ring-2 focus:ring-primary-500 focus:outline-none">
                     <option value="">Semua Kategori</option>
                     <option value="tahsin" <?= $filterKategori === 'tahsin' ? 'selected' : '' ?>>a. Tahsin (Iqro')</option>
                     <option value="tahfidz" <?= $filterKategori === 'tahfidz' ? 'selected' : '' ?>>b. Tahfidz (Surah)</option>
@@ -107,7 +107,7 @@ $exportUrl = url('kelola-quran-siswa-paud/rekap/export' . (!empty($_SERVER['QUER
             <!-- Kelas -->
             <div>
                 <label class="block text-xs font-bold text-slate-600 uppercase mb-1.5">Pilih Kelas</label>
-                <select name="kelas" onchange="this.form.submit()" class="w-full px-3.5 py-2.5 rounded-2xl border border-slate-200 text-xs font-semibold text-slate-800 bg-slate-50/50 focus:ring-2 focus:ring-teal-500 focus:outline-none">
+                <select name="kelas" onchange="this.form.submit()" class="w-full px-3.5 py-2.5 rounded-2xl border border-slate-200 text-xs font-semibold text-slate-800 bg-slate-50/50 focus:ring-2 focus:ring-primary-500 focus:outline-none">
                     <option value="">Semua Kelas PAUD</option>
                     <?php if (!empty($kelasList)): ?>
                         <?php foreach ($kelasList as $kls): ?>
@@ -122,7 +122,7 @@ $exportUrl = url('kelola-quran-siswa-paud/rekap/export' . (!empty($_SERVER['QUER
             <!-- Status Kelulusan -->
             <div>
                 <label class="block text-xs font-bold text-slate-600 uppercase mb-1.5">Status Kelulusan</label>
-                <select name="status" onchange="this.form.submit()" class="w-full px-3.5 py-2.5 rounded-2xl border border-slate-200 text-xs font-semibold text-slate-800 bg-slate-50/50 focus:ring-2 focus:ring-teal-500 focus:outline-none">
+                <select name="status" onchange="this.form.submit()" class="w-full px-3.5 py-2.5 rounded-2xl border border-slate-200 text-xs font-semibold text-slate-800 bg-slate-50/50 focus:ring-2 focus:ring-primary-500 focus:outline-none">
                     <option value="">Semua Status</option>
                     <option value="Mutqin" <?= $filterStatus === 'Mutqin' ? 'selected' : '' ?>>Mutqin (Mumtaz)</option>
                     <option value="Lulus" <?= $filterStatus === 'Lulus' ? 'selected' : '' ?>>Lulus (Jayyid)</option>
@@ -136,7 +136,7 @@ $exportUrl = url('kelola-quran-siswa-paud/rekap/export' . (!empty($_SERVER['QUER
                 <div class="relative">
                     <input type="text" name="search" value="<?= htmlspecialchars($search) ?>" 
                            placeholder="Ketik nama santri..."
-                           class="w-full px-3.5 py-2.5 pl-9 rounded-2xl border border-slate-200 text-xs font-semibold text-slate-800 bg-slate-50/50 focus:ring-2 focus:ring-teal-500 focus:outline-none">
+                           class="w-full px-3.5 py-2.5 pl-9 rounded-2xl border border-slate-200 text-xs font-semibold text-slate-800 bg-slate-50/50 focus:ring-2 focus:ring-primary-500 focus:outline-none">
                     <svg class="w-4 h-4 text-slate-400 absolute left-3 top-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
                     </svg>
@@ -225,11 +225,11 @@ $exportUrl = url('kelola-quran-siswa-paud/rekap/export' . (!empty($_SERVER['QUER
                                 </td>
                                 <td class="py-3 px-4 text-center">
                                     <?php if ($r['status_lulus'] === 'Mutqin'): ?>
-                                        <span class="inline-flex items-center px-2.5 py-1 rounded-xl text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                        <span class="inline-flex items-center px-2.5 py-1 rounded-xl text-[10px] font-bold bg-primary-50 text-primary-700 border border-primary-200">
                                             Mutqin
                                         </span>
                                     <?php elseif ($r['status_lulus'] === 'Lulus'): ?>
-                                        <span class="inline-flex items-center px-2.5 py-1 rounded-xl text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                                        <span class="inline-flex items-center px-2.5 py-1 rounded-xl text-[10px] font-bold bg-primary-50 text-primary-700 border border-primary-200">
                                             Lulus
                                         </span>
                                     <?php else: ?>

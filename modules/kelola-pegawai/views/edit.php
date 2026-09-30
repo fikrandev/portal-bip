@@ -1,4 +1,4 @@
-<?php 
+﻿<?php 
 /** 
  * Edit Pegawai Form - Modern Tabbed & Bulletproof Layout
  * Portal BIP - Bina Insan Palu
@@ -56,7 +56,7 @@ if (!empty($tglMasuk)) {
                             <h1 class="text-xl sm:text-2xl font-black text-white tracking-tight">
                                 <?= e($pegawai['nama']) ?><?= !empty($pegawai['gelar']) ? ', ' . e($pegawai['gelar']) : '' ?>
                             </h1>
-                            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold shadow-sm <?= $pegawai['is_active'] ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/30' : 'bg-rose-500/20 text-rose-300 border border-rose-400/30' ?>">
+                            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold shadow-sm <?= $pegawai['is_active'] ? 'bg-primary-500/20 text-primary-300 border border-primary-200/30' : 'bg-rose-500/20 text-rose-300 border border-rose-400/30' ?>">
                                 <?= $pegawai['is_active'] ? '● Aktif' : '○ Non-Aktif' ?>
                             </span>
                         </div>
@@ -75,11 +75,11 @@ if (!empty($tglMasuk)) {
                         </div>
 
                         <div class="flex flex-wrap items-center gap-2 mt-2.5">
-                            <span class="px-2.5 py-0.5 rounded-lg text-xs font-bold <?= $curStatusPegawai === 'Tetap' ? 'bg-emerald-500 text-white' : ($curStatusPegawai === 'Kontrak' ? 'bg-amber-500 text-white' : 'bg-indigo-500 text-white') ?>">
+                            <span class="px-2.5 py-0.5 rounded-lg text-xs font-bold <?= $curStatusPegawai === 'Tetap' ? 'bg-primary-500 text-white' : ($curStatusPegawai === 'Kontrak' ? 'bg-amber-500 text-white' : 'bg-indigo-500 text-white') ?>">
                                 Status: <?= e($curStatusPegawai) ?>
                             </span>
                             <?php if(!empty($activePenugasan)): ?>
-                                <span class="px-2.5 py-0.5 rounded-lg text-xs font-semibold bg-emerald-500/30 text-emerald-200 border border-emerald-400/30 flex items-center gap-1">
+                                <span class="px-2.5 py-0.5 rounded-lg text-xs font-semibold bg-primary-500/30 text-primary-200 border border-primary-200/30 flex items-center gap-1">
                                     <span>📜 Penugasan: <?= e($activePenugasan['nama_grup']) ?></span>
                                 </span>
                             <?php endif; ?>
@@ -232,16 +232,16 @@ if (!empty($tglMasuk)) {
         <!-- ================= TAB 2: KEPEGAWAIAN & PENUGASAN ================= -->
         <div id="tab-kepegawaian" class="tab-content hidden space-y-6">
             <!-- Info Sinkronisasi Penugasan Aktif -->
-            <div class="p-5 rounded-2xl <?= !empty($activePenugasan) ? 'bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200' : 'bg-slate-50 border border-slate-200' ?>">
+            <div class="p-5 rounded-2xl <?= !empty($activePenugasan) ? 'bg-gradient-to-r from-primary-500 to-primary-600 border border-primary-200' : 'bg-slate-50 border border-slate-200' ?>">
                 <div class="flex items-start justify-between gap-4">
                     <div class="flex items-start gap-3">
                         <span class="text-2xl mt-0.5"><?= !empty($activePenugasan) ? '📜' : 'ℹ️' ?></span>
                         <div>
-                            <h3 class="text-xs font-bold <?= !empty($activePenugasan) ? 'text-emerald-950' : 'text-slate-800' ?> uppercase tracking-wider">
+                            <h3 class="text-xs font-bold <?= !empty($activePenugasan) ? 'text-primary-950' : 'text-slate-800' ?> uppercase tracking-wider">
                                 <?= !empty($activePenugasan) ? 'Sinkronisasi Penugasan & SK Aktif' : 'Status Penugasan' ?>
                             </h3>
                             <?php if(!empty($activePenugasan)): ?>
-                                <p class="text-xs text-emerald-800 mt-1 leading-relaxed">
+                                <p class="text-xs text-primary-800 mt-1 leading-relaxed">
                                     Pegawai ini terdaftar aktif pada grup SK <strong><?= e($activePenugasan['nama_grup']) ?></strong> (No. SK: <strong><?= e($activePenugasan['no_sk'] ?: 'Belum Ada No SK') ?></strong>).
                                     Unit tugas dan jabatan saat ini disesuaikan otomatis dengan SK penugasan aktif.
                                 </p>
@@ -253,7 +253,7 @@ if (!empty($tglMasuk)) {
                         </div>
                     </div>
                     <?php if(!empty($activePenugasan)): ?>
-                        <a href="<?= url('kelola-pegawai/penugasan/grup/' . $activePenugasan['grup_id']) ?>" target="_blank" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shrink-0 transition-colors shadow-sm">
+                        <a href="<?= url('kelola-pegawai/penugasan/grup/' . $activePenugasan['grup_id']) ?>" target="_blank" class="px-3 py-1.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-xs font-bold shrink-0 transition-colors shadow-sm">
                             Lihat SK Grup →
                         </a>
                     <?php endif; ?>
@@ -275,7 +275,7 @@ if (!empty($tglMasuk)) {
                         <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                             Unit Tugas / Sekolah <span class="text-rose-500">*</span>
                             <?php if(!empty($penugasanUnit)): ?>
-                                <span class="text-[10px] text-emerald-600 font-bold lowercase">(dari SK: <?= e($penugasanUnit) ?>)</span>
+                                <span class="text-[10px] text-primary-600 font-bold lowercase">(dari SK: <?= e($penugasanUnit) ?>)</span>
                             <?php endif; ?>
                         </label>
                         <select name="unit_tugas" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm font-medium focus:bg-white focus:border-primary-500 transition-all">
@@ -294,7 +294,7 @@ if (!empty($tglMasuk)) {
                         <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                             Jabatan / Posisi <span class="text-rose-500">*</span>
                             <?php if(!empty($penugasanJabatan)): ?>
-                                <span class="text-[10px] text-emerald-600 font-bold lowercase">(dari SK: <?= e($penugasanJabatan) ?>)</span>
+                                <span class="text-[10px] text-primary-600 font-bold lowercase">(dari SK: <?= e($penugasanJabatan) ?>)</span>
                             <?php endif; ?>
                         </label>
                         <select name="jabatan" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm font-medium focus:bg-white focus:border-primary-500 transition-all">
@@ -358,7 +358,7 @@ if (!empty($tglMasuk)) {
                             </div>
                             <label class="relative inline-flex items-center cursor-pointer">
                                 <input type="checkbox" name="is_active" value="1" <?= old('is_active', $pegawai['is_active']) ? 'checked' : '' ?> class="sr-only peer">
-                                <div class="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                                <div class="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
                             </label>
                         </div>
                     </div>
@@ -506,12 +506,12 @@ if (!empty($tglMasuk)) {
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4 mb-6">
                     <div>
                         <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
-                            <span class="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-xs font-bold">5</span>
+                            <span class="w-7 h-7 rounded-lg bg-primary-50 text-primary-600 flex items-center justify-center text-xs font-bold">5</span>
                             Susunan Anggota Keluarga
                         </h2>
                         <p class="text-xs text-slate-500 mt-0.5">Data pasangan (suami/istri), anak, atau orang tua pegawai.</p>
                     </div>
-                    <button type="button" id="btn-add-keluarga" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all self-start">
+                    <button type="button" id="btn-add-keluarga" class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all self-start">
                         + Tambah Anggota
                     </button>
                 </div>
@@ -835,7 +835,7 @@ if (!empty($tglMasuk)) {
                                             </span>
                                         </td>
                                         <td class="py-2.5 px-3 text-center">
-                                            <span class="px-2 py-0.5 rounded-full text-[11px] font-bold <?= $k['status'] === 'Aktif' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600' ?>">
+                                            <span class="px-2 py-0.5 rounded-full text-[11px] font-bold <?= $k['status'] === 'Aktif' ? 'bg-primary-50 text-primary-700' : 'bg-slate-100 text-slate-600' ?>">
                                                 <?= e($k['status']) ?>
                                             </span>
                                         </td>
@@ -949,7 +949,7 @@ if (!empty($tglMasuk)) {
                                             <span class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-50 text-indigo-700"><?= e($pl['jenis_pelatihan']) ?></span>
                                         </td>
                                         <td class="py-2.5 px-3 text-slate-700"><?= e($pl['penyelenggara']) ?></td>
-                                        <td class="py-2.5 px-3 text-center font-bold text-emerald-700"><?= $pl['jumlah_jam'] ? $pl['jumlah_jam'] . ' JP' : '-' ?></td>
+                                        <td class="py-2.5 px-3 text-center font-bold text-primary-700"><?= $pl['jumlah_jam'] ? $pl['jumlah_jam'] . ' JP' : '-' ?></td>
                                         <td class="py-2.5 px-3 text-right">
                                             <a href="<?= url('kelola-pegawai/pelatihan/edit/' . $pl['id']) ?>" class="p-1.5 text-slate-500 hover:text-indigo-600 font-bold" title="Edit">✏️</a>
                                         </td>
@@ -965,7 +965,7 @@ if (!empty($tglMasuk)) {
         <!-- 3. Sticky Action Bar Footer -->
         <div class="sticky bottom-4 z-30 bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200/90 shadow-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 mt-8">
             <div class="flex items-center gap-2 text-xs text-slate-500">
-                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                <span class="w-2 h-2 rounded-full bg-primary-500"></span>
                 <span>Pastikan data telah diperiksa dengan benar sebelum menyimpan.</span>
             </div>
 

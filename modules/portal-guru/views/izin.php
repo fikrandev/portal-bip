@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Pengajuan Izin Guru View (Mobile)
  * Supports Full-Day Absence (Izin Tidak Masuk) & Partial Class Leaving (Izin Keluar/Tidak Mengajar)
@@ -26,11 +26,11 @@
 <div class="p-4 space-y-3.5">
 
     <!-- 1. Quick Info Banner -->
-    <div class="bg-gradient-to-r from-blue-700 via-indigo-700 to-blue-800 rounded-3xl p-4 text-white shadow-lg shadow-blue-700/20 relative overflow-hidden flex items-center justify-between">
+    <div class="bg-gradient-to-r from-primary-700 via-indigo-700 to-primary-800 rounded-3xl p-4 text-white shadow-lg shadow-primary-700/20 relative overflow-hidden flex items-center justify-between">
         <div class="relative z-10 min-w-0">
-            <p class="text-[10px] text-blue-200 font-bold uppercase tracking-wider">Layanan Kepegawaian</p>
+            <p class="text-[10px] text-primary-200 font-bold uppercase tracking-wider">Layanan Kepegawaian</p>
             <h3 class="text-sm font-black mt-0.5">Pengajuan Izin Online</h3>
-            <p class="text-[10px] text-blue-100/90 mt-0.5">Ajukan izin tidak masuk atau izin keluar sementara secara digital.</p>
+            <p class="text-[10px] text-primary-100/90 mt-0.5">Ajukan izin tidak masuk atau izin keluar sementara secara digital.</p>
         </div>
         <div class="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center text-2xl shrink-0 shadow-inner">
             📄
@@ -56,15 +56,15 @@
         </button>
 
         <!-- Button 2: Izin Keluar Mengajar (Partial) -->
-        <button type="button" onclick="openFormIzinModal('keluar_mengajar')" class="bg-white rounded-3xl p-3.5 shadow-sm border border-slate-100 hover:border-blue-200 text-left transition-all press-bounce space-y-2 group">
-            <div class="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-lg group-hover:scale-110 transition-transform">
+        <button type="button" onclick="openFormIzinModal('keluar_mengajar')" class="bg-white rounded-3xl p-3.5 shadow-sm border border-slate-100 hover:border-primary-200 text-left transition-all press-bounce space-y-2 group">
+            <div class="w-10 h-10 rounded-2xl bg-primary-50 text-primary-600 flex items-center justify-center font-bold text-lg group-hover:scale-110 transition-transform">
                 🚪
             </div>
             <div>
                 <h4 class="font-black text-slate-900 text-xs leading-tight">Izin Keluar / Kelas</h4>
                 <p class="text-[10px] text-slate-400 mt-0.5 leading-tight">Meninggalkan Jam Mengajar Tertentu</p>
             </div>
-            <div class="flex items-center justify-between text-[10px] font-bold text-blue-700 pt-1 border-t border-slate-50">
+            <div class="flex items-center justify-between text-[10px] font-bold text-primary-700 pt-1 border-t border-slate-50">
                 <span>+ Ajukan Izin</span>
                 <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
             </div>
@@ -74,7 +74,7 @@
 
     <!-- 3. Filter Tabs (Semua, Tidak Masuk, Keluar) -->
     <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-1">
-        <button type="button" onclick="setIzinTypeFilter('all')" id="tab-izin-all" class="tab-izin px-3.5 py-1.5 rounded-full text-[11px] font-bold bg-blue-600 text-white shadow-xs">Semua Izin</button>
+        <button type="button" onclick="setIzinTypeFilter('all')" id="tab-izin-all" class="tab-izin px-3.5 py-1.5 rounded-full text-[11px] font-bold bg-primary-600 text-white shadow-xs">Semua Izin</button>
         <button type="button" onclick="setIzinTypeFilter('tidak_masuk')" id="tab-izin-tidak_masuk" class="tab-izin px-3.5 py-1.5 rounded-full text-[11px] font-bold bg-white text-slate-600 border border-slate-200">Izin Tidak Masuk</button>
         <button type="button" onclick="setIzinTypeFilter('keluar_mengajar')" id="tab-izin-keluar_mengajar" class="tab-izin px-3.5 py-1.5 rounded-full text-[11px] font-bold bg-white text-slate-600 border border-slate-200">Izin Keluar / Mengajar</button>
     </div>
@@ -104,8 +104,8 @@
 
                         <!-- Status Badge -->
                         <?php if ($r['status'] === 'Disetujui'): ?>
-                            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 shrink-0 flex items-center gap-1">
-                                <i data-lucide="check-circle" class="w-3 h-3 text-emerald-600"></i> Disetujui
+                            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-primary-100 text-primary-800 shrink-0 flex items-center gap-1">
+                                <i data-lucide="check-circle" class="w-3 h-3 text-primary-600"></i> Disetujui
                             </span>
                         <?php elseif ($r['status'] === 'Menunggu Persetujuan'): ?>
                             <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 shrink-0 flex items-center gap-1">
@@ -133,7 +133,7 @@
                         <?php if (!empty($r['classAffected'])): ?>
                             <div class="flex items-center justify-between text-slate-700">
                                 <span class="text-slate-400 font-semibold text-[11px]">Kelas Terdampak:</span>
-                                <span class="font-bold text-blue-700"><?= htmlspecialchars($r['classAffected']) ?></span>
+                                <span class="font-bold text-primary-700"><?= htmlspecialchars($r['classAffected']) ?></span>
                             </div>
                         <?php endif; ?>
 
@@ -146,7 +146,7 @@
                         <?php if (!empty($r['taskGiven'])): ?>
                             <div class="text-slate-700 pt-1 border-t border-slate-200/60">
                                 <span class="text-slate-400 font-semibold text-[11px] block mb-0.5">Tugas untuk Siswa:</span>
-                                <p class="font-semibold text-emerald-800 leading-relaxed"><?= htmlspecialchars($r['taskGiven']) ?></p>
+                                <p class="font-semibold text-primary-800 leading-relaxed"><?= htmlspecialchars($r['taskGiven']) ?></p>
                             </div>
                         <?php endif; ?>
 
@@ -162,7 +162,7 @@
                     <div class="flex items-center justify-between text-[10px] text-slate-400 px-1">
                         <span>Diajukan: <?= htmlspecialchars($r['submittedAt']) ?></span>
                         <?php if (!empty($r['document'])): ?>
-                            <span class="font-bold text-blue-600 flex items-center gap-1">
+                            <span class="font-bold text-primary-600 flex items-center gap-1">
                                 <i data-lucide="paperclip" class="w-3 h-3"></i> Lampiran Terlampir
                             </span>
                         <?php endif; ?>
@@ -186,7 +186,7 @@
 
         const activeBtn = document.getElementById(`tab-izin-${type}`);
         if (activeBtn) {
-            activeBtn.className = 'tab-izin px-3.5 py-1.5 rounded-full text-[11px] font-bold bg-blue-600 text-white shadow-xs';
+            activeBtn.className = 'tab-izin px-3.5 py-1.5 rounded-full text-[11px] font-bold bg-primary-600 text-white shadow-xs';
         }
 
         document.querySelectorAll('.izin-card').forEach(card => {
@@ -207,7 +207,7 @@
             title: isFullDay ? 'Izin Tidak Masuk (Full Day)' : 'Izin Keluar / Tidak Mengajar',
             subtitle: isFullDay ? 'Sakit, Dinas Luar, atau Keperluan Pribadi' : 'Meninggalkan sekolah pada jam pelajaran tertentu',
             icon: isFullDay ? '🏥' : '🚪',
-            iconBg: isFullDay ? 'bg-amber-100 text-amber-600' : 'bg-blue-100 text-blue-600',
+            iconBg: isFullDay ? 'bg-amber-100 text-amber-600' : 'bg-primary-100 text-primary-600',
             content: `
                 <div class="space-y-3 pt-1 text-left">
                     
@@ -239,24 +239,24 @@
                         <div class="grid grid-cols-2 gap-2">
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 mb-1">Jam Keluar <span class="text-rose-500">*</span></label>
-                                <input type="time" id="modal-izin-time-out" value="10:00" class="w-full px-3 py-2 text-xs bg-slate-50 rounded-2xl border border-slate-200 font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-inner">
+                                <input type="time" id="modal-izin-time-out" value="10:00" class="w-full px-3 py-2 text-xs bg-slate-50 rounded-2xl border border-slate-200 font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-inner">
                             </div>
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 mb-1">Estimasi Kembali</label>
-                                <input type="time" id="modal-izin-time-in" value="12:00" class="w-full px-3 py-2 text-xs bg-slate-50 rounded-2xl border border-slate-200 font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-inner">
+                                <input type="time" id="modal-izin-time-in" value="12:00" class="w-full px-3 py-2 text-xs bg-slate-50 rounded-2xl border border-slate-200 font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-inner">
                             </div>
                         </div>
 
                         <!-- Kelas & Jam Pelajaran Terdampak -->
                         <div>
                             <label class="block text-xs font-bold text-slate-700 mb-1">Kelas & Jam Mengajar Ditinggalkan <span class="text-rose-500">*</span></label>
-                            <input type="text" id="modal-izin-class-impact" placeholder="Contoh: Kelas 7A (Jam ke 1-2)" class="w-full px-3.5 py-2.5 text-xs bg-slate-50 rounded-2xl border border-slate-200 font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-inner">
+                            <input type="text" id="modal-izin-class-impact" placeholder="Contoh: Kelas 7A (Jam ke 1-2)" class="w-full px-3.5 py-2.5 text-xs bg-slate-50 rounded-2xl border border-slate-200 font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-inner">
                         </div>
 
                         <!-- Tugas untuk Siswa -->
                         <div>
                             <label class="block text-xs font-bold text-slate-700 mb-1">Tugas / Materi Titipan Siswa <span class="text-rose-500">*</span></label>
-                            <textarea id="modal-izin-task" rows="2" placeholder="Tuliskan tugas yang harus dikerjakan siswa selama ditinggal..." class="w-full px-3.5 py-2 text-xs bg-slate-50 rounded-2xl border border-slate-200 font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-inner resize-none"></textarea>
+                            <textarea id="modal-izin-task" rows="2" placeholder="Tuliskan tugas yang harus dikerjakan siswa selama ditinggal..." class="w-full px-3.5 py-2 text-xs bg-slate-50 rounded-2xl border border-slate-200 font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-inner resize-none"></textarea>
                         </div>
                     `}
 
@@ -294,7 +294,7 @@
                 },
                 {
                     text: 'Kirim Pengajuan',
-                    className: `flex-1 py-3 ${isFullDay ? 'bg-amber-500 hover:bg-amber-600 shadow-amber-500/20' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/20'} text-white font-bold text-xs rounded-2xl shadow-md text-center press-bounce`,
+                    className: `flex-1 py-3 ${isFullDay ? 'bg-amber-500 hover:bg-amber-600 shadow-amber-500/20' : 'bg-primary-600 hover:bg-primary-700 shadow-primary-600/20'} text-white font-bold text-xs rounded-2xl shadow-md text-center press-bounce`,
                     autoClose: false,
                     onClick: (e, btn) => {
                         submitIzin(type, btn);
@@ -339,7 +339,7 @@
                 newCard.innerHTML = `
                     <div class="flex items-center justify-between gap-2">
                         <div class="flex items-center gap-2 min-w-0">
-                            <span class="w-8 h-8 rounded-xl ${isFullDay ? 'bg-amber-50 text-amber-700' : 'bg-blue-50 text-blue-700'} flex items-center justify-center text-sm font-bold shrink-0">
+                            <span class="w-8 h-8 rounded-xl ${isFullDay ? 'bg-amber-50 text-amber-700' : 'bg-primary-50 text-primary-700'} flex items-center justify-center text-sm font-bold shrink-0">
                                 ${isFullDay ? '🏥' : '🚪'}
                             </span>
                             <div class="min-w-0">

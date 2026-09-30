@@ -1,0 +1,835 @@
+<?php
+/**
+ * Model Modul Kelola Sarpras (Sarana & Prasarana)
+ * Portal BIP
+ */
+
+class SarprasModel
+{
+    public static function db(): Database
+    {
+        return Database::getInstance();
+    }
+
+    // ── STATISTIK KHUSUS MOBILE APP ────────────────────────────────
+    public static function getStatistik(): array
+    {
+        $db = self::db();
+        return [
+            'total_barang' => (int)$db->find("SELECT COUNT(*) as cnt FROM sarpras_barang")['cnt'],
+            'total_tanah' => (int)$db->find("SELECT COUNT(*) as cnt FROM sarpras_tanah")['cnt'],
+            'total_bangunan' => (int)$db->find("SELECT COUNT(*) as cnt FROM sarpras_bangunan")['cnt'],
+            'total_ruangan' => (int)$db->find("SELECT COUNT(*) as cnt FROM sarpras_ruangan")['cnt']
+        ];
+    }
+
+    // ── STATISTIK & KPI DASHBOARD ──────────────────────────────────
+    public static function getDashboardStats(): array
+    {
+        $db = self::db();
+
+        $totalItem = $db->find("SELECT COUNT(*) as cnt, COALESCE(SUM(jumlah), 0) as total_qty, COALESCE(SUM(jumlah * harga_perolehan), 0) as total_nilai FROM sarpras_barang");
+        $kondisi = $db->findAll("SELECT kondisi, COUNT(*) as cnt, COALESCE(SUM(jumlah), 0) as qty FROM sarpras_barang GROUP BY kondisi");
+        
+        $baik = 0; $rusakRingan = 0; $rusakBerat = 0;
+        foreach ($kondisi as $k) {
+            if ($k['kondisi'] === 'Baik') $baik = (int)$k['qty'];
+            if ($k['kondisi'] === 'Rusak Ringan') $rusakRingan = (int)$k['qty'];
+            if ($k['kondisi'] === 'Rusak Berat') $rusakBerat = (int)$k['qty'];
+        }
+
+        $totalDipinjam = (int)$db->find("SELECT COUNT(*) as cnt FROM sarpras_peminjaman WHERE status = 'Dipinjam'")['cnt'];
+        // total pemeliharaan (asumsikan sarpras_maintenance)
+        $totalPemeliharaan = (int)$db->find("SELECT COUNT(*) as cnt FROM sarpras_maintenance WHERE status IN ('Menunggu', 'Dalam Perbaikan')")['cnt'];
+        $totalRuangan = (int)$db->find("SELECT COUNT(*) as cnt FROM sarpras_ruangan WHERE is_active = 1")['cnt'];
+        $totalKategori = (int)$db->find("SELECT COUNT(*) as cnt FROM sarpras_kategori")['cnt'];
+
+        // Per Kategori
+        $perKategori = $db->findAll("
+            SELECT k.nama_kategori, COUNT(b.id) as item_count, COALESCE(SUM(b.jumlah), 0) as total_qty 
+            FROM sarpras_kategori k
+            LEFT JOIN sarpras_barang b ON k.id = b.kategori_id
+            GROUP BY k.id, k.nama_kategori
+            ORDER BY total_qty DESC
+        ");
+
+        // Per Unit
+        $perUnit = $db->findAll("
+            SELECT unit, COUNT(*) as item_count, COALESCE(SUM(jumlah), 0) as total_qty, COALESCE(SUM(jumlah * harga_perolehan), 0) as total_nilai
+            FROM sarpras_barang
+            GROUP BY unit
+            ORDER BY total_qty DESC
+        ");
+
+        return [
+            'total_item' => (int)($totalItem['cnt'] ?? 0),
+            'total_qty' => (int)($totalItem['total_qty'] ?? 0),
+            'total_nilai' => (float)($totalItem['total_nilai'] ?? 0),
+            'kondisi_baik' => $baik,
+            'kondisi_rusak_ringan' => $rusakRingan,
+            'kondisi_rusak_berat' => $rusakBerat,
+            'total_dipinjam' => $totalDipinjam,
+            'total_pemeliharaan' => $totalPemeliharaan,
+            'total_ruangan' => $totalRuangan,
+            'total_kategori' => $totalKategori,
+            'per_kategori' => $perKategori,
+            'per_unit' => $perUnit
+        ];
+    }
+
+    // ── DATA BARANG & ASET ─────────────────────────────────────────
+    public static function getBarangList(array $filters = [], int $limit = 50, int $offset = 0): array
+    {
+        $db = self::db();
+        $sql = "
+            SELECT b.*, k.nama_kategori, k.kode_kategori, r.nama_ruangan, r.kode_ruangan, r.lokasi_gedung,
+                   (SELECT IFNULL(SUM(jumlah), 0) FROM sarpras_distribusi WHERE barang_id = b.id) as dipakai
+            FROM sarpras_barang b
+            LEFT JOIN sarpras_kategori k ON b.kategori_id = k.id
+            LEFT JOIN sarpras_ruangan r ON b.ruangan_id = r.id
+            WHERE 1=1
+
+        ";
+        $params = [];
+
+        if (!empty($filters['unit'])) {
+            $sql .= " AND b.unit = ?";
+            $params[] = $filters['unit'];
+        }
+        if (!empty($filters['kategori_id'])) {
+            $sql .= " AND b.kategori_id = ?";
+            $params[] = (int)$filters['kategori_id'];
+        }
+        if (!empty($filters['ruangan_id'])) {
+            $sql .= " AND b.ruangan_id = ?";
+            $params[] = (int)$filters['ruangan_id'];
+        }
+        if (!empty($filters['kondisi'])) {
+            $sql .= " AND b.kondisi = ?";
+            $params[] = $filters['kondisi'];
+        }
+        if (!empty($filters['status'])) {
+            $sql .= " AND b.status = ?";
+            $params[] = $filters['status'];
+        }
+        if (!empty($filters['search'])) {
+            $sql .= " AND (b.nama_barang LIKE ? OR b.kode_barang LIKE ? OR b.merk_model LIKE ? OR b.nomor_seri LIKE ?)";
+            $q = '%' . $filters['search'] . '%';
+            $params[] = $q;
+            $params[] = $q;
+            $params[] = $q;
+            $params[] = $q;
+        }
+
+        $sql .= " ORDER BY b.id DESC LIMIT $limit OFFSET $offset";
+        return $db->findAll($sql, $params);
+    }
+
+    public static function getBarangCount(array $filters = []): int
+    {
+        $db = self::db();
+        $sql = "SELECT COUNT(*) as cnt FROM sarpras_barang b WHERE 1=1";
+        $params = [];
+
+        if (!empty($filters['unit'])) {
+            $sql .= " AND b.unit = ?";
+            $params[] = $filters['unit'];
+        }
+        if (!empty($filters['kategori_id'])) {
+            $sql .= " AND b.kategori_id = ?";
+            $params[] = (int)$filters['kategori_id'];
+        }
+        if (!empty($filters['ruangan_id'])) {
+            $sql .= " AND b.ruangan_id = ?";
+            $params[] = (int)$filters['ruangan_id'];
+        }
+        if (!empty($filters['kondisi'])) {
+            $sql .= " AND b.kondisi = ?";
+            $params[] = $filters['kondisi'];
+        }
+        if (!empty($filters['status'])) {
+            $sql .= " AND b.status = ?";
+            $params[] = $filters['status'];
+        }
+        if (!empty($filters['search'])) {
+            $sql .= " AND (b.nama_barang LIKE ? OR b.kode_barang LIKE ? OR b.merk_model LIKE ?)";
+            $q = '%' . $filters['search'] . '%';
+            $params[] = $q;
+            $params[] = $q;
+            $params[] = $q;
+        }
+
+        $res = $db->find($sql, $params);
+        return (int)($res['cnt'] ?? 0);
+    }
+
+    public static function getBarangById(int $id): ?array
+    {
+        $db = self::db();
+        return $db->find("
+            SELECT b.*, k.nama_kategori, r.nama_ruangan, r.lokasi_gedung,
+                   (SELECT IFNULL(SUM(jumlah), 0) FROM sarpras_distribusi WHERE barang_id = b.id) as dipakai
+            FROM sarpras_barang b
+            LEFT JOIN sarpras_kategori k ON b.kategori_id = k.id
+            LEFT JOIN sarpras_ruangan r ON b.ruangan_id = r.id
+            WHERE b.id = ?
+        ", [$id]);
+    }
+
+    public static function insertBarang(array $data): int
+    {
+        $db = self::db();
+        return $db->insert('sarpras_barang', $data);
+    }
+
+    public static function updateBarang(int $id, array $data): bool
+    {
+        $db = self::db();
+        return $db->update('sarpras_barang', $data, 'id = ?', [$id]);
+    }
+
+    public static function deleteBarang(int $id): bool
+    {
+        $db = self::db();
+        return $db->delete('sarpras_barang', 'id = ?', [$id]);
+    }
+
+    public static function generateKodeBarangCustom(int $golonganId, int $kelompokId, int $asalAnggaranId): string
+    {
+        $db = self::db();
+        
+        $golongan = $db->find("SELECT kode FROM sarpras_golongan WHERE id = ?", [$golonganId]);
+        $kodeGol = $golongan ? $golongan['kode'] : '00';
+        
+        $kelompok = $db->find("SELECT kode FROM sarpras_kode_kelompok WHERE id = ?", [$kelompokId]);
+        $kodeKel = $kelompok ? $kelompok['kode'] : '00';
+        
+        $anggaran = $db->find("SELECT kode FROM sarpras_asal_anggaran WHERE id = ?", [$asalAnggaranId]);
+        $kodeAng = $anggaran ? $anggaran['kode'] : '00';
+        
+        $prefix = $kodeGol . '.' . $kodeKel . '.' . $kodeAng;
+        
+        $last = $db->find("SELECT kode_barang FROM sarpras_barang WHERE kode_barang LIKE ? ORDER BY id DESC LIMIT 1", ["{$prefix}.%"]);
+        $seq = 1;
+        if ($last && preg_match('/\.(\d+)$/', $last['kode_barang'], $m)) {
+            $seq = ((int)$m[1]) + 1;
+        }
+
+        return sprintf("%s.%03d", $prefix, $seq);
+    }
+
+    // ── MASTER RUANGAN ─────────────────────────────────────────────
+    public static function getAllRuangan(): array
+    {
+        $db = self::db();
+        return $db->findAll("
+            SELECT r.*, b.nama_bangunan, b.kode_bangunan,
+                   COUNT(DISTINCT dist.barang_id) as total_barang, COALESCE(SUM(dist.jumlah), 0) as total_qty
+            FROM sarpras_ruangan r
+            LEFT JOIN sarpras_bangunan b ON r.bangunan_id = b.id
+            LEFT JOIN sarpras_distribusi dist ON r.id = dist.ruangan_id
+            GROUP BY r.id
+            ORDER BY r.unit ASC, r.nama_ruangan ASC
+        ");
+    }
+
+    public static function getRuanganByBangunanId(int $bangunanId): array
+    {
+        $db = self::db();
+        return $db->findAll("
+            SELECT r.*, COUNT(DISTINCT dist.barang_id) as total_barang, COALESCE(SUM(dist.jumlah), 0) as total_qty
+            FROM sarpras_ruangan r
+            LEFT JOIN sarpras_distribusi dist ON r.id = dist.ruangan_id
+            WHERE r.bangunan_id = ?
+            GROUP BY r.id
+            ORDER BY r.lantai ASC, r.nama_ruangan ASC
+        ", [$bangunanId]);
+    }
+
+    public static function getRuanganById(int $id): ?array
+    {
+        return self::db()->find("SELECT * FROM sarpras_ruangan WHERE id = ?", [$id]);
+    }
+
+    public static function insertRuangan(array $data): int
+    {
+        return self::db()->insert('sarpras_ruangan', $data);
+    }
+
+    public static function updateRuangan(int $id, array $data): bool
+    {
+        return self::db()->update('sarpras_ruangan', $data, 'id = ?', [$id]);
+    }
+
+    public static function deleteRuangan(int $id): bool
+    {
+        return self::db()->delete('sarpras_ruangan', 'id = ?', [$id]);
+    }
+
+    public static function getPegawaiList(): array
+    {
+        return self::db()->findAll("
+            SELECT id, nama, gelar, niy, unit_tugas, jabatan, foto 
+            FROM pegawai 
+            WHERE is_active = 1 
+            ORDER BY nama ASC
+        ");
+    }
+
+    // ── MASTER KATEGORI ────────────────────────────────────────────
+    public static function getAllKategori(): array
+    {
+        $db = self::db();
+        return $db->findAll("
+            SELECT k.*, COUNT(b.id) as total_barang, COALESCE(SUM(b.jumlah), 0) as total_qty
+            FROM sarpras_kategori k
+            LEFT JOIN sarpras_barang b ON k.id = b.kategori_id
+            GROUP BY k.id
+            ORDER BY k.nama_kategori ASC
+        ");
+    }
+
+    public static function getKategoriById(int $id): ?array
+    {
+        return self::db()->find("SELECT * FROM sarpras_kategori WHERE id = ?", [$id]);
+    }
+
+    public static function insertKategori(array $data): int
+    {
+        return self::db()->insert('sarpras_kategori', $data);
+    }
+
+    public static function updateKategori(int $id, array $data): bool
+    {
+        return self::db()->update('sarpras_kategori', $data, 'id = ?', [$id]);
+    }
+
+    public static function deleteKategori(int $id): bool
+    {
+        return self::db()->delete('sarpras_kategori', 'id = ?', [$id]);
+    }
+
+    // ── SIRKULASI PEMINJAMAN ───────────────────────────────────────
+    public static function getPeminjamanList(?string $status = null): array
+    {
+        $db = self::db();
+        $sql = "
+            SELECT p.*, b.nama_barang, b.kode_barang, b.satuan, r.nama_ruangan
+            FROM sarpras_peminjaman p
+            JOIN sarpras_barang b ON p.barang_id = b.id
+            LEFT JOIN sarpras_ruangan r ON b.ruangan_id = r.id
+            WHERE 1=1
+        ";
+        $params = [];
+        if (!empty($status)) {
+            $sql .= " AND p.status = ?";
+            $params[] = $status;
+        }
+        $sql .= " ORDER BY p.id DESC";
+        return $db->findAll($sql, $params);
+    }
+
+    public static function insertPeminjaman(array $data): int
+    {
+        $db = self::db();
+        $pinjamId = $db->insert('sarpras_peminjaman', $data);
+
+        // Update status barang jadi 'Dipinjam'
+        $db->update('sarpras_barang', ['status' => 'Dipinjam'], 'id = ?', [$data['barang_id']]);
+
+        return $pinjamId;
+    }
+
+    public static function kembalikanBarang(int $id, string $kondisiSesudah, ?string $catatan = null): bool
+    {
+        $db = self::db();
+        $p = $db->find("SELECT * FROM sarpras_peminjaman WHERE id = ?", [$id]);
+        if (!$p) return false;
+
+        $db->update('sarpras_peminjaman', [
+            'status' => 'Kembali',
+            'tanggal_kembali' => date('Y-m-d'),
+            'kondisi_sesudah' => $kondisiSesudah,
+            'catatan' => $catatan ? ($p['catatan'] . " | " . $catatan) : $p['catatan']
+        ], 'id = ?', [$id]);
+
+        // Kembalikan status barang
+        $statusBrg = 'Tersedia';
+        if ($kondisiSesudah === 'Rusak Berat' || $kondisiSesudah === 'Rusak Ringan') {
+            $db->update('sarpras_barang', [
+                'status' => 'Dalam Perbaikan',
+                'kondisi' => $kondisiSesudah
+            ], 'id = ?', [$p['barang_id']]);
+        } else {
+            $db->update('sarpras_barang', [
+                'status' => 'Tersedia',
+                'kondisi' => $kondisiSesudah
+            ], 'id = ?', [$p['barang_id']]);
+        }
+
+        return true;
+    }
+
+    // ── PEMELIHARAAN & PERBAIKAN ───────────────────────────────────
+    public static function getPemeliharaanList(?string $status = null): array
+    {
+        $db = self::db();
+        $sql = "
+            SELECT m.*, b.nama_barang, b.kode_barang, r.nama_ruangan
+            FROM sarpras_pemeliharaan m
+            LEFT JOIN sarpras_barang b ON m.barang_id = b.id
+            LEFT JOIN sarpras_ruangan r ON m.ruangan_id = r.id
+            WHERE 1=1
+        ";
+        $params = [];
+        if (!empty($status)) {
+            $sql .= " AND m.status = ?";
+            $params[] = $status;
+        }
+        $sql .= " ORDER BY m.id DESC";
+        return $db->findAll($sql, $params);
+    }
+
+    public static function insertPemeliharaan(array $data): int
+    {
+        $db = self::db();
+        $mId = $db->insert('sarpras_pemeliharaan', $data);
+
+        if (!empty($data['barang_id'])) {
+            $db->update('sarpras_barang', ['status' => 'Dalam Perbaikan'], 'id = ?', [$data['barang_id']]);
+        }
+
+        return $mId;
+    }
+
+    public static function updateStatusPemeliharaan(int $id, string $status, ?string $tindakan, float $biaya, ?string $teknisi): bool
+    {
+        $db = self::db();
+        $m = $db->find("SELECT * FROM sarpras_pemeliharaan WHERE id = ?", [$id]);
+        if (!$m) return false;
+
+        $updateData = [
+            'status' => $status,
+            'tindakan_perbaikan' => $tindakan,
+            'biaya_realisasi' => $biaya,
+            'teknisi_pihak' => $teknisi
+        ];
+
+        if ($status === 'Selesai') {
+            $updateData['tanggal_selesai'] = date('Y-m-d');
+            if (!empty($m['barang_id'])) {
+                $db->update('sarpras_barang', [
+                    'status' => 'Tersedia',
+                    'kondisi' => 'Baik'
+                ], 'id = ?', [$m['barang_id']]);
+            }
+        } elseif ($status === 'Afkir') {
+            $updateData['tanggal_selesai'] = date('Y-m-d');
+            if (!empty($m['barang_id'])) {
+                $db->update('sarpras_barang', [
+                    'status' => 'Dihapuskan',
+                    'kondisi' => 'Rusak Berat'
+                ], 'id = ?', [$m['barang_id']]);
+            }
+        }
+
+        return $db->update('sarpras_pemeliharaan', $updateData, 'id = ?', [$id]);
+    }
+
+    // ── DATA TANAH (ASET TANAH) ────────────────────────────────────
+    public static function getTanahList(array $filters = []): array
+    {
+        $db = self::db();
+        $sql = "
+            SELECT t.*, 
+                   COUNT(b.id) as total_bangunan,
+                   COALESCE(SUM(b.luas_bangunan), 0) as total_luas_bangunan
+            FROM sarpras_tanah t
+            LEFT JOIN sarpras_bangunan b ON t.id = b.tanah_id
+            WHERE 1=1
+        ";
+        $params = [];
+
+        if (!empty($filters['search'])) {
+            $sql .= " AND (t.nama_tanah LIKE ? OR t.kode_tanah LIKE ? OR t.no_sertifikat LIKE ? OR t.alamat_lokasi LIKE ?)";
+            $keyword = '%' . $filters['search'] . '%';
+            $params[] = $keyword;
+            $params[] = $keyword;
+            $params[] = $keyword;
+            $params[] = $keyword;
+        }
+
+        if (!empty($filters['status_kepemilikan'])) {
+            $sql .= " AND t.status_kepemilikan = ?";
+            $params[] = $filters['status_kepemilikan'];
+        }
+
+        $sql .= " GROUP BY t.id ORDER BY t.id DESC";
+        $list = $db->findAll($sql, $params);
+
+        // Decode sertifikat images jika ada
+        foreach ($list as &$item) {
+            $item['gambar_sertifikat_list'] = [];
+            if (!empty($item['gambar_sertifikat'])) {
+                $decoded = json_decode($item['gambar_sertifikat'], true);
+                if (is_array($decoded)) {
+                    $item['gambar_sertifikat_list'] = $decoded;
+                } elseif (is_string($item['gambar_sertifikat'])) {
+                    $item['gambar_sertifikat_list'] = [$item['gambar_sertifikat']];
+                }
+            }
+        }
+
+        return $list;
+    }
+
+    public static function getTanahById(int $id): ?array
+    {
+        $db = self::db();
+        $tanah = $db->find("
+            SELECT t.*, 
+                   COUNT(b.id) as total_bangunan,
+                   COALESCE(SUM(b.luas_bangunan), 0) as total_luas_bangunan
+            FROM sarpras_tanah t
+            LEFT JOIN sarpras_bangunan b ON t.id = b.tanah_id
+            WHERE t.id = ?
+            GROUP BY t.id
+        ", [$id]);
+
+        if (!$tanah) return null;
+
+        $tanah['gambar_sertifikat_list'] = [];
+        if (!empty($tanah['gambar_sertifikat'])) {
+            $decoded = json_decode($tanah['gambar_sertifikat'], true);
+            if (is_array($decoded)) {
+                $tanah['gambar_sertifikat_list'] = $decoded;
+            } elseif (is_string($tanah['gambar_sertifikat'])) {
+                $tanah['gambar_sertifikat_list'] = [$tanah['gambar_sertifikat']];
+            }
+        }
+
+        // Ambil daftar bangunannya sekalian
+        $tanah['bangunan_list'] = self::getBangunanByTanahId($id);
+
+        return $tanah;
+    }
+
+    public static function generateKodeTanah(): string
+    {
+        $db = self::db();
+        $last = $db->find("SELECT kode_tanah FROM sarpras_tanah ORDER BY id DESC LIMIT 1");
+        if ($last && preg_match('/TNH-(\d+)/', $last['kode_tanah'], $matches)) {
+            $next = (int)$matches[1] + 1;
+        } else {
+            $count = (int)$db->find("SELECT COUNT(*) as cnt FROM sarpras_tanah")['cnt'];
+            $next = $count + 1;
+        }
+        return 'TNH-' . str_pad((string)$next, 3, '0', STR_PAD_LEFT);
+    }
+
+    public static function insertTanah(array $data): int
+    {
+        $db = self::db();
+        if (empty($data['kode_tanah'])) {
+            $data['kode_tanah'] = self::generateKodeTanah();
+        }
+        return $db->insert('sarpras_tanah', $data);
+    }
+
+    public static function updateTanah(int $id, array $data): bool
+    {
+        $db = self::db();
+        return $db->update('sarpras_tanah', $data, 'id = ?', [$id]);
+    }
+
+    public static function deleteTanah(int $id): bool
+    {
+        $db = self::db();
+        // Hapus atau unlink bangunan yang berada di atas tanah ini
+        $db->delete('sarpras_bangunan', 'tanah_id = ?', [$id]);
+        return $db->delete('sarpras_tanah', 'id = ?', [$id]);
+    }
+
+    // ── DATA BANGUNAN ──────────────────────────────────────────────
+    public static function getBangunanList(array $filters = []): array
+    {
+        $db = self::db();
+        $sql = "
+            SELECT b.*, t.nama_tanah, t.no_sertifikat, t.kode_tanah,
+                   COUNT(r.id) as total_ruangan
+            FROM sarpras_bangunan b
+            LEFT JOIN sarpras_tanah t ON b.tanah_id = t.id
+            LEFT JOIN sarpras_ruangan r ON b.id = r.bangunan_id
+            WHERE 1=1
+        ";
+        $params = [];
+
+        if (!empty($filters['tanah_id'])) {
+            $sql .= " AND b.tanah_id = ?";
+            $params[] = (int)$filters['tanah_id'];
+        }
+
+        if (!empty($filters['kondisi_bangunan'])) {
+            $sql .= " AND b.kondisi_bangunan = ?";
+            $params[] = $filters['kondisi_bangunan'];
+        }
+
+        if (!empty($filters['search'])) {
+            $sql .= " AND (b.nama_bangunan LIKE ? OR b.kode_bangunan LIKE ? OR t.nama_tanah LIKE ?)";
+            $keyword = '%' . $filters['search'] . '%';
+            $params[] = $keyword;
+            $params[] = $keyword;
+            $params[] = $keyword;
+        }
+
+        $sql .= " GROUP BY b.id ORDER BY b.id DESC";
+        return $db->findAll($sql, $params);
+    }
+
+    public static function getBangunanByTanahId(int $tanahId): array
+    {
+        $db = self::db();
+        return $db->findAll("
+            SELECT b.*, COUNT(r.id) as total_ruangan
+            FROM sarpras_bangunan b
+            LEFT JOIN sarpras_ruangan r ON b.id = r.bangunan_id
+            WHERE b.tanah_id = ?
+            GROUP BY b.id
+            ORDER BY b.id ASC
+        ", [$tanahId]);
+    }
+
+    public static function getBangunanById(int $id): ?array
+    {
+        $db = self::db();
+        return $db->find("
+            SELECT b.*, t.nama_tanah, t.no_sertifikat, t.kode_tanah
+            FROM sarpras_bangunan b
+            LEFT JOIN sarpras_tanah t ON b.tanah_id = t.id
+            WHERE b.id = ?
+        ", [$id]);
+    }
+
+    public static function generateKodeBangunan(): string
+    {
+        $db = self::db();
+        $last = $db->find("SELECT kode_bangunan FROM sarpras_bangunan ORDER BY id DESC LIMIT 1");
+        if ($last && preg_match('/BGN-(\d+)/', $last['kode_bangunan'], $matches)) {
+            $next = (int)$matches[1] + 1;
+        } else {
+            $count = (int)$db->find("SELECT COUNT(*) as cnt FROM sarpras_bangunan")['cnt'];
+            $next = $count + 1;
+        }
+        return 'BGN-' . str_pad((string)$next, 3, '0', STR_PAD_LEFT);
+    }
+
+    public static function insertBangunan(array $data): int
+    {
+        $db = self::db();
+        if (empty($data['kode_bangunan'])) {
+            $data['kode_bangunan'] = self::generateKodeBangunan();
+        }
+        return $db->insert('sarpras_bangunan', $data);
+    }
+
+    public static function updateBangunan(int $id, array $data): bool
+    {
+        $db = self::db();
+        return $db->update('sarpras_bangunan', $data, 'id = ?', [$id]);
+    }
+
+    public static function deleteBangunan(int $id): bool
+    {
+        $db = self::db();
+        return $db->delete('sarpras_bangunan', 'id = ?', [$id]);
+    }
+
+    // ── DATA ASET HIERARKI (TANAH -> BANGUNAN -> RUANG) ───────────
+    public static function getDataAsetHierarchy(): array
+    {
+        $tanahList = self::getTanahList();
+        $bangunanList = self::getBangunanList();
+        $ruanganList = self::getAllRuangan();
+
+        // Group ruangan by bangunan_id
+        $ruanganByBangunan = [];
+        foreach ($ruanganList as $r) {
+            $bId = (int)($r['bangunan_id'] ?? 0);
+            $ruanganByBangunan[$bId][] = $r;
+        }
+
+        // Group bangunan by tanah_id & attach ruangan
+        $bangunanByTanah = [];
+        $bangunanTanpaTanah = [];
+        foreach ($bangunanList as $b) {
+            $b['ruangan_list'] = $ruanganByBangunan[$b['id']] ?? [];
+            $tId = (int)($b['tanah_id'] ?? 0);
+            if ($tId > 0) {
+                $bangunanByTanah[$tId][] = $b;
+            } else {
+                $bangunanTanpaTanah[] = $b;
+            }
+        }
+
+        // Attach bangunan to each tanah
+        foreach ($tanahList as &$t) {
+            $t['bangunan_list'] = $bangunanByTanah[$t['id']] ?? [];
+            $totalRuang = 0;
+            foreach ($t['bangunan_list'] as $b) {
+                $totalRuang += count($b['ruangan_list']);
+            }
+            $t['total_ruangan'] = $totalRuang;
+        }
+        unset($t);
+
+        return [
+            'tanah_list' => $tanahList,
+            'bangunan_tanpa_tanah' => $bangunanTanpaTanah,
+            'ruangan_tanpa_bangunan' => $ruanganByBangunan[0] ?? []
+        ];
+    }
+
+    // ── REFERENSI: DATA GOLONGAN ────────────────────────────────────
+    public static function getGolonganList(): array
+    {
+        $db = self::db();
+        return $db->findAll("SELECT * FROM sarpras_golongan ORDER BY kode ASC");
+    }
+
+    public static function getGolonganById(int $id): ?array
+    {
+        $db = self::db();
+        return $db->find("SELECT * FROM sarpras_golongan WHERE id = ?", [$id]) ?: null;
+    }
+
+    public static function insertGolongan(array $data): int
+    {
+        return self::db()->insert('sarpras_golongan', $data);
+    }
+
+    public static function updateGolongan(int $id, array $data): bool
+    {
+        return self::db()->update('sarpras_golongan', $data, 'id = ?', [$id]);
+    }
+
+    public static function deleteGolongan(int $id): bool
+    {
+        return self::db()->delete('sarpras_golongan', 'id = ?', [$id]);
+    }
+
+    // ── REFERENSI: KODE KELOMPOK ────────────────────────────────────
+    public static function getKelompokList(): array
+    {
+        $db = self::db();
+        return $db->findAll("
+            SELECT k.*, g.nama_golongan, g.kode as kode_golongan
+            FROM sarpras_kode_kelompok k
+            LEFT JOIN sarpras_golongan g ON k.golongan_id = g.id
+            ORDER BY g.kode ASC, k.kode ASC
+        ");
+    }
+
+    public static function getKelompokById(int $id): ?array
+    {
+        $db = self::db();
+        return $db->find("SELECT * FROM sarpras_kode_kelompok WHERE id = ?", [$id]) ?: null;
+    }
+
+    public static function insertKelompok(array $data): int
+    {
+        return self::db()->insert('sarpras_kode_kelompok', $data);
+    }
+
+    public static function updateKelompok(int $id, array $data): bool
+    {
+        return self::db()->update('sarpras_kode_kelompok', $data, 'id = ?', [$id]);
+    }
+
+    public static function deleteKelompok(int $id): bool
+    {
+        return self::db()->delete('sarpras_kode_kelompok', 'id = ?', [$id]);
+    }
+
+    // ── REFERENSI: ASAL ANGGARAN ────────────────────────────────────
+    public static function getAsalAnggaranList(): array
+    {
+        $db = self::db();
+        return $db->findAll("SELECT * FROM sarpras_asal_anggaran ORDER BY kode ASC");
+    }
+
+    public static function getAsalAnggaranById(int $id): ?array
+    {
+        $db = self::db();
+        return $db->find("SELECT * FROM sarpras_asal_anggaran WHERE id = ?", [$id]) ?: null;
+    }
+
+    public static function insertAsalAnggaran(array $data): int
+    {
+        return self::db()->insert('sarpras_asal_anggaran', $data);
+    }
+
+    public static function updateAsalAnggaran(int $id, array $data): bool
+    {
+        return self::db()->update('sarpras_asal_anggaran', $data, 'id = ?', [$id]);
+    }
+
+    public static function deleteAsalAnggaran(int $id): bool
+    {
+        return self::db()->delete('sarpras_asal_anggaran', 'id = ?', [$id]);
+    }
+    // ── MASTER REFERENSI ───────────────────────────────────────────
+    public static function getAllGolongan(): array
+    {
+        return self::db()->findAll("SELECT * FROM sarpras_golongan ORDER BY kode ASC");
+    }
+
+    public static function getAllKelompok(): array
+    {
+        return self::db()->findAll("SELECT * FROM sarpras_kode_kelompok ORDER BY kode ASC");
+    }
+
+    public static function getAllAsalAnggaran(): array
+    {
+        return self::db()->findAll("SELECT * FROM sarpras_asal_anggaran ORDER BY kode ASC");
+    }
+
+    public static function getAllSatuan(): array
+    {
+        return self::db()->findAll("SELECT * FROM sarpras_satuan ORDER BY nama_satuan ASC");
+    }
+
+    // ==========================================
+    // DISTRIBUSI / PENEMPATAN BARANG
+    // ==========================================
+
+    public static function getDistribusiByRuangan(int $ruanganId): array
+    {
+        return self::db()->findAll("
+            SELECT d.*, b.kode_barang, b.nama_barang, b.merk_model, b.satuan, b.kondisi as kondisi_master
+            FROM sarpras_distribusi d
+            JOIN sarpras_barang b ON d.barang_id = b.id
+            WHERE d.ruangan_id = ?
+            ORDER BY d.created_at DESC
+        ", [$ruanganId]);
+    }
+
+    public static function getDistribusiById(int $id): ?array
+    {
+        return self::db()->find("SELECT * FROM sarpras_distribusi WHERE id = ?", [$id]);
+    }
+
+    public static function insertDistribusi(array $data): bool
+    {
+        return self::db()->insert('sarpras_distribusi', $data);
+    }
+
+    public static function updateDistribusi(int $id, array $data): bool
+    {
+        return self::db()->update('sarpras_distribusi', $data, 'id = ?', [$id]);
+    }
+
+    public static function deleteDistribusi(int $id): bool
+    {
+        return self::db()->delete('sarpras_distribusi', 'id = ?', [$id]);
+    }
+}

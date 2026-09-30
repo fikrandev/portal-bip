@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Kelola Siswa - Dashboard & Data Table View
  * Portal BIP - Complete Dapodik / BIP Student Management
@@ -11,7 +11,7 @@
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
             <h1 class="text-2xl font-extrabold text-primary-950 tracking-tight flex items-center gap-3">
-                <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white shadow-lg shadow-emerald-500/20 text-lg">
+                <div class="w-10 h-10 rounded-2xl bg-primary-600 flex items-center justify-center text-white shadow-lg shadow-primary-500/20 text-lg">
                     🎓
                 </div>
                 <span>Kelola Data Siswa</span>
@@ -36,9 +36,9 @@
             </a>
 
             <!-- Tambah Siswa Baru -->
-            <a href="<?= url('kelola-siswa/create') ?>" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-xs shadow-lg shadow-emerald-500/25 transition-all flex items-center gap-2">
+            <a href="<?= url('kelola-siswa/create') ?>" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-500 hover:to-primary-600 text-white font-bold text-xs shadow-lg shadow-primary-500/20 transition-all flex items-center gap-2">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
-                <span>+ Tambah Siswa Baru</span>
+                <span>Tambah Siswa Baru</span>
             </a>
         </div>
     </div>
@@ -55,12 +55,12 @@
         </div>
 
         <!-- PAUD / TK -->
-        <div class="bg-white rounded-2xl p-4 border border-emerald-200/70 shadow-xs flex flex-col justify-between">
-            <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-700 flex items-center gap-1">
+        <div class="bg-white rounded-2xl p-4 border border-primary-200/70 shadow-xs flex flex-col justify-between">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-primary-700 flex items-center gap-1">
                 <span>🌱</span> PAUD / TK
             </span>
             <div class="flex items-baseline justify-between mt-2">
-                <span class="text-2xl font-black text-emerald-700"><?= number_format($totalPaud) ?></span>
+                <span class="text-2xl font-black text-primary-700"><?= number_format($totalPaud) ?></span>
                 <span class="text-[10px] font-bold text-slate-400">Siswa</span>
             </div>
         </div>
@@ -133,10 +133,10 @@
             $urlParams['page'] = 1;
             $tabUrl = url('kelola-siswa' . (!empty($urlParams) ? '?' . http_build_query($urlParams) : ''));
             ?>
-            <a href="<?= $tabUrl ?>" class="px-4 py-2.5 text-xs font-bold border-b-2 whitespace-nowrap transition-all flex items-center gap-2 <?= $isActiveTab ? 'border-emerald-600 text-emerald-800 bg-emerald-50/60 rounded-t-xl' : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300' ?>">
+            <a href="<?= $tabUrl ?>" class="px-4 py-2.5 text-xs font-bold border-b-2 whitespace-nowrap transition-all flex items-center gap-2 <?= $isActiveTab ? 'border-primary-200 text-primary-800 bg-primary-50/60 rounded-t-xl' : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300' ?>">
                 <span><?= $tab['icon'] ?></span>
                 <span><?= $tab['label'] ?></span>
-                <span class="px-2 py-0.5 rounded-full text-[10px] <?= $isActiveTab ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600' ?>">
+                <span class="px-2 py-0.5 rounded-full text-[10px] <?= $isActiveTab ? 'bg-primary-600 text-white' : 'bg-slate-100 text-slate-600' ?>">
                     <?= number_format($tab['count']) ?>
                 </span>
             </a>
@@ -235,8 +235,8 @@
                             $namaSiswa = $s['nama_lengkap'] ?: $s['nama'];
                             $j = strtoupper($s['jenjang'] ?? 'SD');
                             $jenjangBadge = [
-                                'PAUD' => 'bg-emerald-50 text-emerald-800 border-emerald-200',
-                                'TK' => 'bg-emerald-50 text-emerald-800 border-emerald-200',
+                                'PAUD' => 'bg-primary-50 text-primary-800 border-primary-200',
+                                'TK' => 'bg-primary-50 text-primary-800 border-primary-200',
                                 'SD' => 'bg-sky-50 text-sky-800 border-sky-200',
                                 'SMP' => 'bg-indigo-50 text-indigo-800 border-indigo-200',
                                 'SMA' => 'bg-purple-50 text-purple-800 border-purple-200'
@@ -264,7 +264,7 @@
                                             </div>
                                         <?php endif; ?>
                                         <div>
-                                            <a href="<?= url("kelola-siswa/detail/{$s['id']}") ?>" class="font-bold text-slate-800 hover:text-emerald-700 text-xs transition-colors">
+                                            <a href="<?= url("kelola-siswa/detail/{$s['id']}") ?>" class="font-bold text-slate-800 hover:text-primary-700 text-xs transition-colors">
                                                 <?= e($namaSiswa) ?>
                                             </a>
                                             <div class="flex items-center gap-2 text-[10px] text-slate-400 font-mono mt-0.5">
@@ -321,8 +321,8 @@
 
                                 <!-- Dapodik -->
                                 <td class="py-3 px-4 text-center whitespace-nowrap">
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold <?= $isDapodik ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-slate-100 text-slate-500 border border-slate-200' ?>">
-                                        <span class="w-1.5 h-1.5 rounded-full <?= $isDapodik ? 'bg-emerald-500' : 'bg-slate-400' ?>"></span>
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold <?= $isDapodik ? 'bg-primary-100 text-primary-800 border border-primary-200' : 'bg-slate-100 text-slate-500 border border-slate-200' ?>">
+                                        <span class="w-1.5 h-1.5 rounded-full <?= $isDapodik ? 'bg-primary-500' : 'bg-slate-400' ?>"></span>
                                         <?= $isDapodik ? 'Sudah' : 'Belum' ?>
                                     </span>
                                 </td>
@@ -336,7 +336,7 @@
                                         </a>
 
                                         <!-- Detail Profile -->
-                                        <a href="<?= url("kelola-siswa/detail/{$s['id']}") ?>" class="p-1.5 rounded-xl bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 text-slate-600 transition-colors" title="Lihat Profil Lengkap">
+                                        <a href="<?= url("kelola-siswa/detail/{$s['id']}") ?>" class="p-1.5 rounded-xl bg-slate-100 hover:bg-primary-50 hover:text-primary-700 text-slate-600 transition-colors" title="Lihat Profil Lengkap">
                                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg>
                                         </a>
 
@@ -385,7 +385,7 @@
 
                     <?php for ($p = max(1, $page - 2); $p <= min($totalPages, $page + 2); $p++): ?>
                         <?php $queryParams['page'] = $p; ?>
-                        <a href="<?= url('kelola-siswa?' . http_build_query($queryParams)) ?>" class="px-3 py-1.5 rounded-xl font-bold <?= $p === $page ? 'bg-emerald-600 text-white shadow-xs' : 'border border-slate-200 text-slate-600 hover:bg-slate-50' ?>">
+                        <a href="<?= url('kelola-siswa?' . http_build_query($queryParams)) ?>" class="px-3 py-1.5 rounded-xl font-bold <?= $p === $page ? 'bg-primary-600 text-white shadow-xs' : 'border border-slate-200 text-slate-600 hover:bg-slate-50' ?>">
                             <?= $p ?>
                         </a>
                     <?php endfor; ?>

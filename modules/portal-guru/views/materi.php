@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Materi Pembelajaran Screen
  */
@@ -12,7 +12,7 @@
         </a>
         <h2 class="font-bold text-slate-800 text-base">Materi Pembelajaran</h2>
     </div>
-    <button onclick="window.showToast('Membuka formulir upload materi...', 'info')" class="w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-500/20 press-bounce">
+    <button onclick="window.showToast('Membuka formulir upload materi...', 'info')" class="w-9 h-9 rounded-full bg-primary-600 text-white flex items-center justify-center shadow-md shadow-primary-500/20 press-bounce">
         <i data-lucide="plus" class="w-5 h-5"></i>
     </button>
 </div>
@@ -21,7 +21,7 @@
     <?php foreach ($materials as $m): ?>
     <div class="bg-white rounded-3xl p-4 shadow-sm border border-slate-100 flex items-center justify-between gap-3">
         <div class="flex items-center gap-3 min-w-0">
-            <div class="w-11 h-11 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-xs shrink-0">
+            <div class="w-11 h-11 rounded-2xl bg-primary-50 text-primary-600 flex items-center justify-center font-bold text-xs shrink-0">
                 <?= e($m['fileType']) ?>
             </div>
             <div class="min-w-0">

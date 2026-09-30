@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Absen Kehadiran & Geolokasi Screen
  * Pure GPS Attendance (No Camera needed) with Check-in Masuk and 15:00 device time-locked Absen Pulang.
@@ -11,7 +11,7 @@
         <i data-lucide="arrow-left" class="w-5 h-5"></i>
     </a>
     <h2 class="font-bold text-slate-800 text-base">Presensi Geolokasi</h2>
-    <a href="<?= url('mobile/profil') ?>" class="w-9 h-9 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
+    <a href="<?= url('mobile/profil') ?>" class="w-9 h-9 rounded-full bg-primary-50 text-primary-600 flex items-center justify-center">
         <i data-lucide="history" class="w-4 h-4"></i>
     </a>
 </div>
@@ -19,7 +19,7 @@
 <div class="p-4 space-y-4">
 
     <!-- 1. Realtime Digital Clock Banner -->
-    <div class="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-3xl p-4 text-white shadow-lg shadow-blue-600/20 text-center relative overflow-hidden">
+    <div class="bg-gradient-to-r from-primary-600 to-indigo-700 rounded-3xl p-4 text-white shadow-lg shadow-primary-600/20 text-center relative overflow-hidden">
         <div class="relative z-10">
             <span class="inline-block px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-[10px] font-semibold tracking-wider uppercase mb-1">
                 Waktu Perangkat Anda
@@ -27,7 +27,7 @@
             <div id="live-clock" class="text-3xl font-black tracking-tight my-0.5">
                 <?= date('H:i') ?><span class="text-xl opacity-80" id="live-seconds">:<?= date('s') ?></span> <span class="text-xs font-normal opacity-75">WITA</span>
             </div>
-            <p class="text-xs text-blue-100 font-medium">
+            <p class="text-xs text-primary-100 font-medium">
                 <?= strftime('%A, %d %B %Y') ?? date('l, d F Y') ?>
             </p>
         </div>
@@ -38,7 +38,7 @@
     <div class="bg-white rounded-3xl p-4 shadow-sm border border-slate-100 space-y-3">
         <div class="flex items-center justify-between">
             <div class="flex items-center gap-2">
-                <div class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                <div class="w-8 h-8 rounded-xl bg-primary-100 text-primary-700 flex items-center justify-center">
                     <i data-lucide="map-pin" class="w-4 h-4"></i>
                 </div>
                 <div>
@@ -46,7 +46,7 @@
                     <p class="text-[10px] text-slate-400">Kampus Utama BIP • Radius 150m</p>
                 </div>
             </div>
-            <button type="button" onclick="window.initGeolocation()" class="px-2.5 py-1 text-[11px] font-semibold text-blue-600 bg-blue-50 rounded-xl hover:bg-blue-100 flex items-center gap-1 press-bounce">
+            <button type="button" onclick="window.initGeolocation()" class="px-2.5 py-1 text-[11px] font-semibold text-primary-600 bg-primary-50 rounded-xl hover:bg-primary-100 flex items-center gap-1 press-bounce">
                 <i data-lucide="refresh-cw" class="w-3 h-3"></i> Refresh GPS
             </button>
         </div>
@@ -67,14 +67,14 @@
             </div>
             <div>
                 <p class="text-[10px] text-slate-400">Jarak ke Sekolah</p>
-                <p id="gps-distance" class="font-mono font-bold text-emerald-600">18 Meter</p>
+                <p id="gps-distance" class="font-mono font-bold text-primary-600">18 Meter</p>
             </div>
         </div>
 
         <!-- GPS Status Badge -->
         <div class="flex items-center justify-between pt-1">
-            <span id="gps-radius-badge" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                <span class="w-2 h-2 rounded-full bg-emerald-600 animate-pulse"></span> Dalam Radius Sekolah (18m)
+            <span id="gps-radius-badge" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-primary-100 text-primary-800 border border-primary-300">
+                <span class="w-2 h-2 rounded-full bg-primary-600 animate-pulse"></span> Dalam Radius Sekolah (18m)
             </span>
             <span id="gps-status-text" class="text-[10px] text-slate-400 font-medium">GPS Terkunci</span>
         </div>

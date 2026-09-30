@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Profil Guru & PWA Management Screen
  * Compact size with Android Bottom Sheet confirmations and install dialogs.
@@ -13,8 +13,8 @@
         </a>
         <h2 class="font-bold text-slate-800 text-base">Profil & Pengaturan</h2>
     </div>
-    <span id="network-status-badge" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Online
+    <span id="network-status-badge" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-primary-50 text-primary-700 border border-primary-200">
+        <span class="w-2 h-2 rounded-full bg-primary-500 animate-pulse"></span> Online
     </span>
 </div>
 
@@ -24,12 +24,12 @@
     <div class="bg-white rounded-3xl p-5 shadow-sm border border-slate-100 text-center relative overflow-hidden space-y-3">
         <div class="relative w-20 h-20 mx-auto">
             <img src="<?= asset('images/mobile/teacher_rina.jpg') ?>" alt="Bu Rina" loading="lazy" class="w-20 h-20 rounded-full object-cover border-4 border-white shadow-md mx-auto">
-            <span class="absolute bottom-1 right-1 w-5 h-5 bg-emerald-500 border-2 border-white rounded-full flex items-center justify-center text-white text-[10px]">✓</span>
+            <span class="absolute bottom-1 right-1 w-5 h-5 bg-primary-500 border-2 border-white rounded-full flex items-center justify-center text-white text-[10px]">✓</span>
         </div>
 
         <div>
             <h3 class="font-black text-slate-900 text-lg leading-tight"><?= e($profile['name']) ?></h3>
-            <p class="text-xs text-blue-600 font-bold mt-0.5"><?= e($profile['role']) ?></p>
+            <p class="text-xs text-primary-600 font-bold mt-0.5"><?= e($profile['role']) ?></p>
             <p class="text-[11px] text-slate-400 font-mono mt-0.5">NIP: <?= e($profile['nip']) ?></p>
         </div>
 
@@ -46,7 +46,7 @@
     </div>
 
     <!-- 2. PWA Installation & Device Controls -->
-    <div class="bg-gradient-to-br from-blue-700 via-indigo-700 to-blue-800 rounded-3xl p-5 text-white shadow-xl shadow-blue-600/20 space-y-4">
+    <div class="bg-gradient-to-br from-primary-700 via-indigo-700 to-primary-800 rounded-3xl p-5 text-white shadow-xl shadow-primary-600/20 space-y-4">
         <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
                 <?php 
@@ -56,35 +56,35 @@
                 <img src="<?= $pwaInstallerIcon ?>" alt="App Icon" loading="lazy" class="w-12 h-12 rounded-2xl shadow-md border-2 border-white/30 shrink-0 bg-white/90 p-1 object-contain">
                 <div>
                     <h4 class="font-bold text-sm leading-tight">Aplikasi PWA & WebAPK</h4>
-                    <p class="text-xs text-blue-100 mt-0.5">Paket Resmi Portal Guru BIP</p>
+                    <p class="text-xs text-primary-100 mt-0.5">Paket Resmi Portal Guru BIP</p>
                 </div>
             </div>
-            <span class="px-2 py-0.5 bg-emerald-400 text-slate-900 text-[10px] font-black rounded-lg">v1.2.0</span>
+            <span class="px-2 py-0.5 bg-primary-400 text-slate-900 text-[10px] font-black rounded-lg">v1.2.0</span>
         </div>
 
         <!-- Real-time Diagnostics Grid -->
         <div class="grid grid-cols-2 gap-2 text-xs">
             <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-2.5 border border-white/10">
-                <p class="text-[10px] text-blue-200">Mode Eksekusi</p>
+                <p class="text-[10px] text-primary-200">Mode Eksekusi</p>
                 <p id="diag-app-mode" class="font-bold text-white text-[11px] mt-0.5 flex items-center gap-1">
-                    <span class="w-1.5 h-1.5 rounded-full bg-blue-300 animate-pulse"></span> Mendeteksi...
+                    <span class="w-1.5 h-1.5 rounded-full bg-primary-300 animate-pulse"></span> Mendeteksi...
                 </p>
             </div>
             <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-2.5 border border-white/10">
-                <p class="text-[10px] text-blue-200">Penyimpanan Offline</p>
+                <p class="text-[10px] text-primary-200">Penyimpanan Offline</p>
                 <p id="diag-cache-size" class="font-bold text-white text-[11px] mt-0.5 flex items-center gap-1">
                     <span>💾</span> ±3.8 MB
                 </p>
             </div>
         </div>
 
-        <p class="text-xs text-blue-100/90 leading-relaxed">
+        <p class="text-xs text-primary-100/90 leading-relaxed">
             Pasang aplikasi ini ke perangkat untuk pengalaman layar penuh bebas hambatan, akses instan tanpa browser, dan kemampuan presensi GPS offline.
         </p>
 
         <!-- PWA Action Buttons -->
         <div class="space-y-2 pt-1">
-            <button type="button" onclick="window.triggerPWAInstall()" class="w-full py-3 bg-white hover:bg-blue-50 text-blue-700 font-bold text-xs rounded-2xl shadow-lg flex items-center justify-center gap-2 press-bounce">
+            <button type="button" onclick="window.triggerPWAInstall()" class="w-full py-3 bg-white hover:bg-primary-50 text-primary-700 font-bold text-xs rounded-2xl shadow-lg flex items-center justify-center gap-2 press-bounce">
                 <i data-lucide="download" class="w-4 h-4"></i>
                 Pasang Aplikasi ke Smartphone
             </button>
@@ -105,7 +105,7 @@
         
         <a href="<?= url('mobile/absen') ?>" class="flex items-center justify-between p-3.5 hover:bg-slate-50 rounded-2xl transition-all press-bounce">
             <div class="flex items-center gap-3">
-                <div class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                <div class="w-9 h-9 rounded-xl bg-primary-50 text-primary-600 flex items-center justify-center">
                     <i data-lucide="calendar-check" class="w-4 h-4"></i>
                 </div>
                 <div>
@@ -118,7 +118,7 @@
 
         <a href="<?= url('mobile/jurnal') ?>" class="flex items-center justify-between p-3.5 hover:bg-slate-50 rounded-2xl transition-all press-bounce">
             <div class="flex items-center gap-3">
-                <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                <div class="w-9 h-9 rounded-xl bg-primary-50 text-primary-600 flex items-center justify-center">
                     <i data-lucide="book-check" class="w-4 h-4"></i>
                 </div>
                 <div>
@@ -232,9 +232,9 @@
         const modeElem = document.getElementById('diag-app-mode');
         if (modeElem) {
             if (isStandalone) {
-                modeElem.innerHTML = '<span class="text-emerald-300 font-bold">✓ Standalone App</span>';
+                modeElem.innerHTML = '<span class="text-primary-300 font-bold">✓ Standalone App</span>';
             } else {
-                modeElem.innerHTML = '<span class="text-blue-200">Web Browser</span>';
+                modeElem.innerHTML = '<span class="text-primary-200">Web Browser</span>';
             }
         }
 

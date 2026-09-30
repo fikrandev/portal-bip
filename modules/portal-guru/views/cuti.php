@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Pengajuan Cuti Guru View (Mobile)
  * Features leave quotas, new leave application form, and multi-step approval verification timeline.
@@ -18,7 +18,7 @@
     </div>
 
     <!-- Right Action -->
-    <button type="button" onclick="openFormCutiModal()" class="w-9 h-9 rounded-2xl bg-teal-50 text-teal-600 border border-teal-100 flex items-center justify-center press-bounce shadow-xs" title="Ajukan Cuti">
+    <button type="button" onclick="openFormCutiModal()" class="w-9 h-9 rounded-2xl bg-primary-50 text-primary-600 border border-primary-100 flex items-center justify-center press-bounce shadow-xs" title="Ajukan Cuti">
         <i data-lucide="plus" class="w-5 h-5"></i>
     </button>
 </div>
@@ -36,23 +36,23 @@
             
             <!-- Quota 1: Cuti Tahunan -->
             <div class="bg-white rounded-3xl p-3.5 border border-slate-100 shadow-sm text-center space-y-1">
-                <span class="text-xl font-black text-teal-600 block leading-none">
+                <span class="text-xl font-black text-primary-600 block leading-none">
                     <?= $quotas['tahunan']['remaining'] ?? 10 ?><span class="text-xs text-slate-400 font-normal">/<?= $quotas['tahunan']['total'] ?? 12 ?></span>
                 </span>
                 <span class="text-[10px] font-bold text-slate-800 block">Tahunan</span>
                 <div class="w-full bg-slate-100 rounded-full h-1 mt-1 overflow-hidden">
-                    <div class="bg-teal-500 h-1 rounded-full" style="width: <?= round((($quotas['tahunan']['remaining'] ?? 10) / ($quotas['tahunan']['total'] ?? 12)) * 100) ?>%"></div>
+                    <div class="bg-primary-500 h-1 rounded-full" style="width: <?= round((($quotas['tahunan']['remaining'] ?? 10) / ($quotas['tahunan']['total'] ?? 12)) * 100) ?>%"></div>
                 </div>
             </div>
 
             <!-- Quota 2: Cuti Sakit -->
             <div class="bg-white rounded-3xl p-3.5 border border-slate-100 shadow-sm text-center space-y-1">
-                <span class="text-xl font-black text-blue-600 block leading-none">
+                <span class="text-xl font-black text-primary-600 block leading-none">
                     <?= $quotas['sakit']['remaining'] ?? 14 ?><span class="text-xs text-slate-400 font-normal">/<?= $quotas['sakit']['total'] ?? 14 ?></span>
                 </span>
                 <span class="text-[10px] font-bold text-slate-800 block">Sakit</span>
                 <div class="w-full bg-slate-100 rounded-full h-1 mt-1 overflow-hidden">
-                    <div class="bg-blue-500 h-1 rounded-full" style="width: 100%"></div>
+                    <div class="bg-primary-500 h-1 rounded-full" style="width: 100%"></div>
                 </div>
             </div>
 
@@ -71,7 +71,7 @@
     </div>
 
     <!-- 2. Primary Action Button -->
-    <button type="button" onclick="openFormCutiModal()" class="w-full py-3.5 bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs rounded-2xl shadow-lg shadow-teal-600/30 flex items-center justify-center gap-2 press-bounce">
+    <button type="button" onclick="openFormCutiModal()" class="w-full py-3.5 bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs rounded-2xl shadow-lg shadow-primary-600/30 flex items-center justify-center gap-2 press-bounce">
         <i data-lucide="calendar-plus" class="w-4 h-4"></i>
         + Ajukan Permohonan Cuti Baru
     </button>
@@ -90,7 +90,7 @@
                     <!-- Header: Type & Status -->
                     <div class="flex items-center justify-between gap-2">
                         <div class="flex items-center gap-2.5 min-w-0">
-                            <div class="w-10 h-10 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center text-lg font-bold shrink-0">
+                            <div class="w-10 h-10 rounded-2xl bg-primary-50 text-primary-600 flex items-center justify-center text-lg font-bold shrink-0">
                                 🏖️
                             </div>
                             <div class="min-w-0">
@@ -100,8 +100,8 @@
                         </div>
 
                         <!-- Status Badge -->
-                        <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 shrink-0 flex items-center gap-1">
-                            <i data-lucide="check-circle" class="w-3 h-3 text-emerald-600"></i> <?= htmlspecialchars($r['status']) ?>
+                        <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-primary-100 text-primary-800 shrink-0 flex items-center gap-1">
+                            <i data-lucide="check-circle" class="w-3 h-3 text-primary-600"></i> <?= htmlspecialchars($r['status']) ?>
                         </span>
                     </div>
 
@@ -128,7 +128,7 @@
                             <div class="space-y-2">
                                 <?php foreach ($r['timeline'] as $tIdx => $t): ?>
                                     <div class="flex items-center gap-2 text-xs">
-                                        <div class="w-4 h-4 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[9px] font-bold shrink-0">
+                                        <div class="w-4 h-4 rounded-full bg-primary-500 text-white flex items-center justify-center text-[9px] font-bold shrink-0">
                                             ✓
                                         </div>
                                         <div class="flex-1 flex items-center justify-between">
@@ -143,7 +143,7 @@
 
                     <div class="text-[10px] text-slate-400 pt-1 border-t border-slate-50 flex items-center justify-between">
                         <span>Diajukan: <?= htmlspecialchars($r['submittedAt']) ?></span>
-                        <span class="font-semibold text-teal-700">Dokumen Lengkap</span>
+                        <span class="font-semibold text-primary-700">Dokumen Lengkap</span>
                     </div>
 
                 </div>
@@ -161,14 +161,14 @@
             title: 'Pengajuan Cuti Guru',
             subtitle: 'Isi formulir permohonan cuti resmi',
             icon: '🏖️',
-            iconBg: 'bg-teal-100 text-teal-600',
+            iconBg: 'bg-primary-100 text-primary-600',
             content: `
                 <div class="space-y-3 pt-1 text-left">
                     
                     <!-- Jenis Cuti -->
                     <div>
                         <label class="block text-xs font-bold text-slate-700 mb-1">Jenis Cuti <span class="text-rose-500">*</span></label>
-                        <select id="modal-cuti-type" class="w-full px-3.5 py-2.5 text-xs bg-slate-50 rounded-2xl border border-slate-200 font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500 shadow-inner">
+                        <select id="modal-cuti-type" class="w-full px-3.5 py-2.5 text-xs bg-slate-50 rounded-2xl border border-slate-200 font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-inner">
                             <option value="Cuti Tahunan">Cuti Tahunan (Sisa 10 Hari)</option>
                             <option value="Cuti Sakit">Cuti Sakit (> 3 Hari / Rawat Inap)</option>
                             <option value="Cuti Alasan Penting">Cuti Alasan Penting / Keluarga</option>
@@ -182,30 +182,30 @@
                     <div class="grid grid-cols-2 gap-2">
                         <div>
                             <label class="block text-xs font-bold text-slate-700 mb-1">Tanggal Mulai <span class="text-rose-500">*</span></label>
-                            <input type="date" id="modal-cuti-start" value="${todayStr}" class="w-full px-3 py-2 text-xs bg-slate-50 rounded-2xl border border-slate-200 font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500 shadow-inner">
+                            <input type="date" id="modal-cuti-start" value="${todayStr}" class="w-full px-3 py-2 text-xs bg-slate-50 rounded-2xl border border-slate-200 font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-inner">
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-slate-700 mb-1">Tanggal Selesai <span class="text-rose-500">*</span></label>
-                            <input type="date" id="modal-cuti-end" value="${todayStr}" class="w-full px-3 py-2 text-xs bg-slate-50 rounded-2xl border border-slate-200 font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500 shadow-inner">
+                            <input type="date" id="modal-cuti-end" value="${todayStr}" class="w-full px-3 py-2 text-xs bg-slate-50 rounded-2xl border border-slate-200 font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-inner">
                         </div>
                     </div>
 
                     <!-- Alasan Cuti (Textarea) -->
                     <div>
                         <label class="block text-xs font-bold text-slate-700 mb-1">Alasan / Keperluan Cuti <span class="text-rose-500">*</span></label>
-                        <textarea id="modal-cuti-reason" rows="2" placeholder="Jelaskan alasan dan keperluan cuti..." class="w-full px-3.5 py-2 text-xs bg-slate-50 rounded-2xl border border-slate-200 font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500 shadow-inner resize-none"></textarea>
+                        <textarea id="modal-cuti-reason" rows="2" placeholder="Jelaskan alasan dan keperluan cuti..." class="w-full px-3.5 py-2 text-xs bg-slate-50 rounded-2xl border border-slate-200 font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-inner resize-none"></textarea>
                     </div>
 
                     <!-- Kontak / Alamat Selama Cuti -->
                     <div>
                         <label class="block text-xs font-bold text-slate-700 mb-1">Nomor Kontak Darurat & Alamat Selama Cuti</label>
-                        <input type="text" id="modal-cuti-contact" placeholder="Contoh: 0812-4455-6677 (Jl. Merpati No. 12)" class="w-full px-3.5 py-2.5 text-xs bg-slate-50 rounded-2xl border border-slate-200 font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500 shadow-inner">
+                        <input type="text" id="modal-cuti-contact" placeholder="Contoh: 0812-4455-6677 (Jl. Merpati No. 12)" class="w-full px-3.5 py-2.5 text-xs bg-slate-50 rounded-2xl border border-slate-200 font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-inner">
                     </div>
 
                     <!-- Guru Pengganti / Pelimpahan Tugas -->
                     <div>
                         <label class="block text-xs font-bold text-slate-700 mb-1">Pelimpahan Tugas Mengajar</label>
-                        <select id="modal-cuti-substitute" class="w-full px-3.5 py-2.5 text-xs bg-slate-50 rounded-2xl border border-slate-200 font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500 shadow-inner">
+                        <select id="modal-cuti-substitute" class="w-full px-3.5 py-2.5 text-xs bg-slate-50 rounded-2xl border border-slate-200 font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-inner">
                             <option value="Pak Hendra, M.Pd & Bu Fitri, S.Pd">Pak Hendra, M.Pd & Bu Fitri, S.Pd</option>
                             <option value="Pak Ridwan, S.Kom">Pak Ridwan, S.Kom</option>
                             <option value="Guru Piket dan MGMP Matematika">Guru Piket dan Tim MGMP Matematika</option>
@@ -227,7 +227,7 @@
                 },
                 {
                     text: 'Kirim Permohonan',
-                    className: 'flex-1 py-3 bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs rounded-2xl shadow-md text-center press-bounce',
+                    className: 'flex-1 py-3 bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs rounded-2xl shadow-md text-center press-bounce',
                     autoClose: false,
                     onClick: (e, btn) => {
                         submitCuti(btn);
@@ -268,7 +268,7 @@
                 newCard.innerHTML = `
                     <div class="flex items-center justify-between gap-2">
                         <div class="flex items-center gap-2.5 min-w-0">
-                            <div class="w-10 h-10 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center text-lg font-bold shrink-0">
+                            <div class="w-10 h-10 rounded-2xl bg-primary-50 text-primary-600 flex items-center justify-center text-lg font-bold shrink-0">
                                 🏖️
                             </div>
                             <div class="min-w-0">

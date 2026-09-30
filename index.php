@@ -148,6 +148,7 @@ require_once BASE_PATH . '/modules/kelola-spmb/controllers/SpmbController.php';
 require_once BASE_PATH . '/modules/kelola-pelanggaran-siswa/controllers/PelanggaranSiswaController.php';
 require_once BASE_PATH . '/modules/kelola-izin-guru/controllers/IzinGuruController.php';
 require_once BASE_PATH . '/modules/kelola-buku-angkatan-siswa/controllers/BukuAngkatanSiswaController.php';
+require_once BASE_PATH . '/modules/kelola-sarpras/controllers/SarprasController.php';
 
 // ── Define Routes ───────────────────────────────────
 
@@ -550,6 +551,69 @@ $router->get('/kelola-pelanggaran-siswa', [PelanggaranSiswaController::class, 'i
 $router->get('/kelola-izin-guru', [IzinGuruController::class, 'index'], [Middleware::permissionRequired('izin_guru.view')]);
 $router->get('/kelola-buku-angkatan-siswa', [BukuAngkatanSiswaController::class, 'index'], [Middleware::permissionRequired('buku_angkatan.view')]);
 
+// -- Kelola Sarpras (Sarana & Prasarana) --
+$router->get('/kelola-sarpras', [SarprasController::class, 'index'], [Middleware::permissionRequired('sarpras.view')]);
+$router->get('/kelola-sarpras/dashboard', [SarprasController::class, 'index'], [Middleware::permissionRequired('sarpras.view')]);
+$router->get('/kelola-sarpras/export', [SarprasController::class, 'exportExcel'], [Middleware::permissionRequired('sarpras.export')]);
+$router->get('/kelola-sarpras/cetak-label/{id}', [SarprasController::class, 'cetakLabel'], [Middleware::permissionRequired('sarpras.export')]);
+
+// Barang / Aset
+$router->get('/kelola-sarpras/barang', [SarprasController::class, 'barangList'], [Middleware::permissionRequired('sarpras.view')]);
+$router->get('/kelola-sarpras/barang/create', [SarprasController::class, 'barangCreate'], [Middleware::permissionRequired('sarpras.create')]);
+$router->post('/kelola-sarpras/barang/store', [SarprasController::class, 'barangStore'], [Middleware::permissionRequired('sarpras.create')]);
+$router->get('/kelola-sarpras/barang/edit/{id}', [SarprasController::class, 'barangEdit'], [Middleware::permissionRequired('sarpras.update')]);
+$router->post('/kelola-sarpras/barang/update/{id}', [SarprasController::class, 'barangUpdate'], [Middleware::permissionRequired('sarpras.update')]);
+$router->post('/kelola-sarpras/barang/delete/{id}', [SarprasController::class, 'barangDelete'], [Middleware::permissionRequired('sarpras.delete')]);
+
+// Peminjaman
+$router->get('/kelola-sarpras/peminjaman', [SarprasController::class, 'peminjamanList'], [Middleware::permissionRequired('sarpras.view')]);
+$router->post('/kelola-sarpras/peminjaman/store', [SarprasController::class, 'peminjamanStore'], [Middleware::permissionRequired('sarpras.create')]);
+$router->post('/kelola-sarpras/peminjaman/kembali/{id}', [SarprasController::class, 'peminjamanKembali'], [Middleware::permissionRequired('sarpras.update')]);
+
+// Pemeliharaan
+$router->get('/kelola-sarpras/pemeliharaan', [SarprasController::class, 'pemeliharaanList'], [Middleware::permissionRequired('sarpras.view')]);
+$router->post('/kelola-sarpras/pemeliharaan/store', [SarprasController::class, 'pemeliharaanStore'], [Middleware::permissionRequired('sarpras.create')]);
+$router->post('/kelola-sarpras/pemeliharaan/update-status/{id}', [SarprasController::class, 'pemeliharaanUpdate'], [Middleware::permissionRequired('sarpras.update')]);
+
+// Ruangan
+$router->get('/kelola-sarpras/ruangan', [SarprasController::class, 'ruanganList'], [Middleware::permissionRequired('sarpras.view')]);
+$router->post('/kelola-sarpras/ruangan/store', [SarprasController::class, 'ruanganStore'], [Middleware::permissionRequired('sarpras.create')]);
+$router->post('/kelola-sarpras/ruangan/delete/{id}', [SarprasController::class, 'ruanganDelete'], [Middleware::permissionRequired('sarpras.delete')]);
+$router->get('/kelola-sarpras/ruangan/detail/{id}', [SarprasController::class, 'ruanganDetail'], [Middleware::permissionRequired('sarpras.view')]);
+$router->post('/kelola-sarpras/distribusi/store', [SarprasController::class, 'distribusiStore'], [Middleware::permissionRequired('sarpras.create')]);
+$router->post('/kelola-sarpras/distribusi/delete/{id}', [SarprasController::class, 'distribusiDelete'], [Middleware::permissionRequired('sarpras.delete')]);
+
+// Kategori
+$router->get('/kelola-sarpras/kategori', [SarprasController::class, 'kategoriList'], [Middleware::permissionRequired('sarpras.view')]);
+$router->post('/kelola-sarpras/kategori/store', [SarprasController::class, 'kategoriStore'], [Middleware::permissionRequired('sarpras.create')]);
+$router->post('/kelola-sarpras/kategori/delete/{id}', [SarprasController::class, 'kategoriDelete'], [Middleware::permissionRequired('sarpras.delete')]);
+
+// Data Aset: Hierarki (Accordion Tanah -> Bangunan -> Ruang)
+$router->get('/kelola-sarpras/data-aset', [SarprasController::class, 'dataAset'], [Middleware::permissionRequired('sarpras.view')]);
+$router->get('/kelola-sarpras/aset', [SarprasController::class, 'dataAset'], [Middleware::permissionRequired('sarpras.view')]);
+
+// Data Aset: Tanah
+$router->get('/kelola-sarpras/tanah', [SarprasController::class, 'tanahList'], [Middleware::permissionRequired('sarpras.view')]);
+$router->post('/kelola-sarpras/tanah/store', [SarprasController::class, 'tanahStore'], [Middleware::permissionRequired('sarpras.create')]);
+$router->post('/kelola-sarpras/tanah/update/{id}', [SarprasController::class, 'tanahUpdate'], [Middleware::permissionRequired('sarpras.update')]);
+$router->post('/kelola-sarpras/tanah/delete/{id}', [SarprasController::class, 'tanahDelete'], [Middleware::permissionRequired('sarpras.delete')]);
+$router->get('/kelola-sarpras/tanah/cetak-pdf', [SarprasController::class, 'tanahCetakPdf'], [Middleware::permissionRequired('sarpras.view')]);
+
+// Data Aset: Bangunan
+$router->get('/kelola-sarpras/bangunan', [SarprasController::class, 'bangunanList'], [Middleware::permissionRequired('sarpras.view')]);
+$router->post('/kelola-sarpras/bangunan/store', [SarprasController::class, 'bangunanStore'], [Middleware::permissionRequired('sarpras.create')]);
+$router->post('/kelola-sarpras/bangunan/update/{id}', [SarprasController::class, 'bangunanUpdate'], [Middleware::permissionRequired('sarpras.update')]);
+$router->post('/kelola-sarpras/bangunan/delete/{id}', [SarprasController::class, 'bangunanDelete'], [Middleware::permissionRequired('sarpras.delete')]);
+
+// Referensi Sarpras (Golongan, Kode Kelompok, Asal Anggaran)
+$router->get('/kelola-sarpras/referensi', [SarprasController::class, 'referensiList'], [Middleware::permissionRequired('sarpras.view')]);
+$router->post('/kelola-sarpras/referensi/golongan/store', [SarprasController::class, 'golonganStore'], [Middleware::permissionRequired('sarpras.create')]);
+$router->post('/kelola-sarpras/referensi/golongan/delete/{id}', [SarprasController::class, 'golonganDelete'], [Middleware::permissionRequired('sarpras.delete')]);
+$router->post('/kelola-sarpras/referensi/kelompok/store', [SarprasController::class, 'kelompokStore'], [Middleware::permissionRequired('sarpras.create')]);
+$router->post('/kelola-sarpras/referensi/kelompok/delete/{id}', [SarprasController::class, 'kelompokDelete'], [Middleware::permissionRequired('sarpras.delete')]);
+$router->post('/kelola-sarpras/referensi/asal-anggaran/store', [SarprasController::class, 'asalAnggaranStore'], [Middleware::permissionRequired('sarpras.create')]);
+$router->post('/kelola-sarpras/referensi/asal-anggaran/delete/{id}', [SarprasController::class, 'asalAnggaranDelete'], [Middleware::permissionRequired('sarpras.delete')]);
+
 // Pengaturan Sistem
 $router->get('/pengaturan-sistem', [SettingsController::class, 'index'], [Middleware::permissionRequired('settings.view')]);
 $router->get('/pengaturan-sistem/identitas', [SettingsController::class, 'identitas'], [Middleware::permissionRequired('settings.view')]);
@@ -603,6 +667,71 @@ $router->get('/mobile/dzikir', [PortalGuruController::class, 'dzikir'], [[Middle
 $router->get('/mobile/keterlambatan-siswa', [PortalGuruController::class, 'keterlambatanSiswa'], [[Middleware::class, 'authRequired']]);
 $router->get('/mobile/izin', [PortalGuruController::class, 'izin'], [[Middleware::class, 'authRequired']]);
 $router->get('/mobile/cuti', [PortalGuruController::class, 'cuti'], [[Middleware::class, 'authRequired']]);
+
+// ==============================================================================
+// MOBILE SARPRAS PWA ROUTES
+// ==============================================================================
+require_once MODULES_PATH . '/mobile-sarpras/controllers/MobileSarprasController.php';
+
+$router->get('/mobile-sarpras', [MobileSarprasController::class, 'dashboard'], [[Middleware::class, 'authRequired']]);
+$router->get('/mobile-sarpras/scan', [MobileSarprasController::class, 'scan'], [[Middleware::class, 'authRequired']]);
+$router->get('/mobile-sarpras/detail/{id}', [MobileSarprasController::class, 'detail'], [[Middleware::class, 'authRequired']]);
+
+// Form & List (Reuse logic, but mobile views)
+$router->get('/mobile-sarpras/inventaris', [MobileSarprasController::class, 'inventarisList'], [[Middleware::class, 'authRequired']]);
+$router->get('/mobile-sarpras/tanah', [MobileSarprasController::class, 'tanahList'], [[Middleware::class, 'authRequired']]);
+$router->get('/mobile-sarpras/bangunan', [MobileSarprasController::class, 'bangunanList'], [[Middleware::class, 'authRequired']]);
+$router->get('/mobile-sarpras/ruangan', [MobileSarprasController::class, 'ruanganList'], [[Middleware::class, 'authRequired']]);
+
+$router->get('/mobile-sarpras/inventaris/tambah', [MobileSarprasController::class, 'inventarisTambah'], [[Middleware::class, 'authRequired']]);
+$router->get('/mobile-sarpras/tanah/tambah', [MobileSarprasController::class, 'tanahTambah'], [[Middleware::class, 'authRequired']]);
+$router->get('/mobile-sarpras/bangunan/tambah', [MobileSarprasController::class, 'bangunanTambah'], [[Middleware::class, 'authRequired']]);
+$router->get('/mobile-sarpras/ruangan/tambah', [MobileSarprasController::class, 'ruanganTambah'], [[Middleware::class, 'authRequired']]);
+$router->get('/mobile-sarpras/maintenance', [MobileSarprasController::class, 'maintenanceList'], [[Middleware::class, 'authRequired']]);
+$router->get('/mobile-sarpras/maintenance/tambah', [MobileSarprasController::class, 'maintenanceTambah'], [[Middleware::class, 'authRequired']]);
+$router->get('/mobile-sarpras/peminjaman', [MobileSarprasController::class, 'peminjamanList'], [[Middleware::class, 'authRequired']]);
+$router->get('/mobile-sarpras/peminjaman/tambah', [MobileSarprasController::class, 'peminjamanTambah'], [[Middleware::class, 'authRequired']]);
+$router->get('/mobile-sarpras/pengajuan/tambah', [MobileSarprasController::class, 'pengajuanTambah'], [[Middleware::class, 'authRequired']]);
+
+$router->get('/mobile-sarpras/api/barang-by-kode', [MobileSarprasController::class, 'apiGetBarangByKode'], [[Middleware::class, 'authRequired']]);
+$router->get('/mobile-sarpras/api/barang-by-ruangan', [MobileSarprasController::class, 'apiGetBarangByRuangan'], [[Middleware::class, 'authRequired']]);
+
+$router->post('/mobile-sarpras/maintenance/store', [MobileSarprasController::class, 'maintenanceStore'], [[Middleware::class, 'authRequired']]);
+$router->post('/mobile-sarpras/peminjaman/store', [MobileSarprasController::class, 'peminjamanStore'], [[Middleware::class, 'authRequired']]);
+$router->post('/mobile-sarpras/pengajuan/store', [MobileSarprasController::class, 'pengajuanStore'], [[Middleware::class, 'authRequired']]);
+
+$router->post('/mobile-sarpras/action/subscribe-push', [MobileSarprasController::class, 'subscribePush'], [[Middleware::class, 'authRequired']]);
+
+$router->get('/mobile-sarpras/manifest.json', function() {
+    header('Content-Type: application/manifest+json; charset=utf-8');
+    header('Access-Control-Allow-Origin: *');
+    header('Cache-Control: no-cache, no-store, must-revalidate');
+    
+    $manifest = [
+        'name' => (defined('SYS_APP_NAME') && SYS_APP_NAME ? SYS_APP_NAME : 'Portal BIP') . ' - Mobile Sarpras',
+        'short_name' => 'Sarpras',
+        'description' => 'Aplikasi Manajemen Sarana dan Prasarana',
+        'start_url' => url('mobile-sarpras'),
+        'scope' => rtrim(url(''), '/') . '/',
+        'display' => 'standalone',
+        'display_override' => ['window-controls-overlay', 'standalone', 'minimal-ui'],
+        'orientation' => 'portrait-primary',
+        'background_color' => '#f8fafc',
+        'theme_color' => '#2563eb',
+        'lang' => 'id',
+        'dir' => 'ltr',
+        'icons' => [
+            [
+                'src' => url('pwa-icon.png'),
+                'sizes' => '192x192 512x512',
+                'type' => 'image/png',
+                'purpose' => 'any maskable'
+            ]
+        ]
+    ];
+    echo json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+    exit;
+});
 
 // -- PWA Dynamic Icon Route (Always Prioritize App Icon Uploaded from Pengaturan Sistem) --
 $router->get('/pwa-icon.png', function() {

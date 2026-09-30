@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Prestasi & Penghargaan Pegawai / Guru - Detail Portofolio Pegawai
  */
@@ -20,7 +20,7 @@
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                 </svg>
-                <span>+ Tambah Prestasi</span>
+                <span>Tambah Prestasi</span>
             </a>
             <a href="<?= url('kelola-pegawai/edit/' . $pegawai['id']) ?>" class="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs transition-colors">
                 Profil Pegawai

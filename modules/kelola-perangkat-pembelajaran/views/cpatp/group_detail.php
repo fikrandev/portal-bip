@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Detail Grup CP & ATP
  */
@@ -94,7 +94,7 @@
                                         </a>
                                     </div>
                                     <?php if (!empty($row['file_lampiran'])): ?>
-                                        <div class="flex items-center gap-1 text-[10px] text-emerald-600 mt-1">
+                                        <div class="flex items-center gap-1 text-[10px] text-primary-600 mt-1">
                                             <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m18.375 12.739-7.693 7.693a4.5 4.5 0 0 1-6.364-6.364l10.94-10.94A3 3 0 1 1 19.5 7.372L8.552 18.32m.009-.01-.01.01m5.699-9.941-7.81 7.81a1.5 1.5 0 0 0 2.112 2.13" /></svg>
                                             Lampiran Tersedia
                                         </div>
@@ -105,7 +105,7 @@
                                 </td>
                                 <td class="py-3.5 px-4 text-center">
                                     <?php if ($row['status'] === 'disetujui'): ?>
-                                        <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700">Disetujui</span>
+                                        <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-primary-100 text-primary-700">Disetujui</span>
                                     <?php elseif ($row['status'] === 'diajukan'): ?>
                                         <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700">Menunggu</span>
                                     <?php elseif ($row['status'] === 'ditolak'): ?>

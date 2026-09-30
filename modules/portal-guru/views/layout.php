@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="id" class="h-full bg-slate-100">
 <head>
     <meta charset="UTF-8">
@@ -83,7 +83,7 @@
         }
     </style>
 </head>
-<body class="h-full bg-slate-100 flex justify-center text-slate-800 antialiased selection:bg-blue-600 selection:text-white">
+<body class="h-full bg-slate-100 flex justify-center text-slate-800 antialiased selection:bg-primary-600 selection:text-white">
 
     <!-- Mobile Shell Wrapper (Original Compact Size: max-w-md) -->
     <div class="w-full max-w-md min-h-screen bg-[#f6f8fb] shadow-2xl flex flex-col relative overflow-x-hidden border-x border-slate-200/60 sm:my-4 sm:rounded-3xl sm:min-h-[860px]">
@@ -97,33 +97,33 @@
         <nav class="fixed bottom-0 sm:bottom-4 left-0 right-0 max-w-md mx-auto z-40 bg-white/90 backdrop-blur-xl border-t border-slate-200/80 px-3 py-2 flex items-center justify-around sm:rounded-b-3xl safe-bottom shadow-[0_-4px_20px_rgba(0,0,0,0.04)]">
             
             <!-- Tab 1: Beranda -->
-            <a href="<?= url('mobile') ?>" class="flex flex-col items-center gap-1 py-1 px-2.5 rounded-2xl press-bounce <?= ($activeTab ?? '') === 'beranda' ? 'text-blue-600 font-semibold' : 'text-slate-400 hover:text-slate-600 font-medium' ?>">
+            <a href="<?= url('mobile') ?>" class="flex flex-col items-center gap-1 py-1 px-2.5 rounded-2xl press-bounce <?= ($activeTab ?? '') === 'beranda' ? 'text-primary-600 font-semibold' : 'text-slate-400 hover:text-slate-600 font-medium' ?>">
                 <i data-lucide="home" class="w-5 h-5 <?= ($activeTab ?? '') === 'beranda' ? 'stroke-[2.5]' : 'stroke-2' ?>"></i>
                 <span class="text-[11px] leading-none">Beranda</span>
             </a>
 
             <!-- Tab 2: Kelas -->
-            <a href="<?= url('mobile/kelas') ?>" class="flex flex-col items-center gap-1 py-1 px-2.5 rounded-2xl press-bounce <?= ($activeTab ?? '') === 'kelas' ? 'text-blue-600 font-semibold' : 'text-slate-400 hover:text-slate-600 font-medium' ?>">
+            <a href="<?= url('mobile/kelas') ?>" class="flex flex-col items-center gap-1 py-1 px-2.5 rounded-2xl press-bounce <?= ($activeTab ?? '') === 'kelas' ? 'text-primary-600 font-semibold' : 'text-slate-400 hover:text-slate-600 font-medium' ?>">
                 <i data-lucide="users" class="w-5 h-5 <?= ($activeTab ?? '') === 'kelas' ? 'stroke-[2.5]' : 'stroke-2' ?>"></i>
                 <span class="text-[11px] leading-none">Kelas</span>
             </a>
 
             <!-- Center Elevated FAB: Buat (+) -->
             <div class="-mt-6 flex flex-col items-center">
-                <button onclick="openAndroidActionSheet()" class="w-13 h-13 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-600/40 hover:bg-blue-700 press-bounce border-4 border-[#f6f8fb]">
+                <button onclick="openAndroidActionSheet()" class="w-13 h-13 rounded-full bg-primary-600 text-white flex items-center justify-center shadow-lg shadow-primary-600/40 hover:bg-primary-700 press-bounce border-4 border-[#f6f8fb]">
                     <i data-lucide="plus" class="w-6 h-6 stroke-[3]"></i>
                 </button>
                 <span class="text-[10px] font-semibold text-slate-500 mt-1">Buat</span>
             </div>
 
             <!-- Tab 3: Murid -->
-            <a href="<?= url('mobile/murid') ?>" class="flex flex-col items-center gap-1 py-1 px-2.5 rounded-2xl press-bounce <?= ($activeTab ?? '') === 'murid' ? 'text-blue-600 font-semibold' : 'text-slate-400 hover:text-slate-600 font-medium' ?>">
+            <a href="<?= url('mobile/murid') ?>" class="flex flex-col items-center gap-1 py-1 px-2.5 rounded-2xl press-bounce <?= ($activeTab ?? '') === 'murid' ? 'text-primary-600 font-semibold' : 'text-slate-400 hover:text-slate-600 font-medium' ?>">
                 <i data-lucide="graduation-cap" class="w-5 h-5 <?= ($activeTab ?? '') === 'murid' ? 'stroke-[2.5]' : 'stroke-2' ?>"></i>
                 <span class="text-[11px] leading-none">Murid</span>
             </a>
 
             <!-- Tab 4: Profil -->
-            <a href="<?= url('mobile/profil') ?>" class="flex flex-col items-center gap-1 py-1 px-2.5 rounded-2xl press-bounce <?= ($activeTab ?? '') === 'profil' ? 'text-blue-600 font-semibold' : 'text-slate-400 hover:text-slate-600 font-medium' ?>">
+            <a href="<?= url('mobile/profil') ?>" class="flex flex-col items-center gap-1 py-1 px-2.5 rounded-2xl press-bounce <?= ($activeTab ?? '') === 'profil' ? 'text-primary-600 font-semibold' : 'text-slate-400 hover:text-slate-600 font-medium' ?>">
                 <i data-lucide="user" class="w-5 h-5 <?= ($activeTab ?? '') === 'profil' ? 'stroke-[2.5]' : 'stroke-2' ?>"></i>
                 <span class="text-[11px] leading-none">Profil</span>
             </a>
@@ -145,15 +145,15 @@
                 title: 'Aksi Cepat Guru',
                 subtitle: 'Pilih aktivitas pembelajaran, presensi & perizinan',
                 icon: '⚡',
-                iconBg: 'bg-blue-100 text-blue-600',
+                iconBg: 'bg-primary-100 text-primary-600',
                 content: `
                     <div class="grid grid-cols-3 gap-2.5 pt-1 pb-1">
-                        <a href="<?= url('mobile/absen') ?>" class="flex flex-col items-center gap-1.5 p-2.5 bg-emerald-50 rounded-2xl border border-emerald-100 press-bounce">
-                            <div class="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center shadow-md shadow-emerald-500/20 text-base font-bold">📍</div>
+                        <a href="<?= url('mobile/absen') ?>" class="flex flex-col items-center gap-1.5 p-2.5 bg-primary-50 rounded-2xl border border-primary-100 press-bounce">
+                            <div class="w-10 h-10 rounded-xl bg-primary-500 text-white flex items-center justify-center shadow-md shadow-primary-500/20 text-base font-bold">📍</div>
                             <span class="text-[11px] font-bold text-slate-700 text-center leading-tight">Absen GPS</span>
                         </a>
-                        <a href="<?= url('mobile/jurnal') ?>" class="flex flex-col items-center gap-1.5 p-2.5 bg-blue-50 rounded-2xl border border-blue-100 press-bounce">
-                            <div class="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-500/20 text-base font-bold">📝</div>
+                        <a href="<?= url('mobile/jurnal') ?>" class="flex flex-col items-center gap-1.5 p-2.5 bg-primary-50 rounded-2xl border border-primary-100 press-bounce">
+                            <div class="w-10 h-10 rounded-xl bg-primary-600 text-white flex items-center justify-center shadow-md shadow-primary-500/20 text-base font-bold">📝</div>
                             <span class="text-[11px] font-bold text-slate-700 text-center leading-tight">Isi Jurnal</span>
                         </a>
                         <a href="<?= url('mobile/absensi-kelas') ?>" class="flex flex-col items-center gap-1.5 p-2.5 bg-amber-50 rounded-2xl border border-amber-100 press-bounce">
@@ -170,8 +170,8 @@
                             <div class="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-md shadow-indigo-500/20 text-base font-bold">📄</div>
                             <span class="text-[11px] font-bold text-slate-700 text-center leading-tight">Izin Guru</span>
                         </a>
-                        <a href="<?= url('mobile/cuti') ?>" class="flex flex-col items-center gap-1.5 p-2.5 bg-teal-50 rounded-2xl border border-teal-100 press-bounce">
-                            <div class="w-10 h-10 rounded-xl bg-teal-600 text-white flex items-center justify-center shadow-md shadow-teal-500/20 text-base font-bold">🏖️</div>
+                        <a href="<?= url('mobile/cuti') ?>" class="flex flex-col items-center gap-1.5 p-2.5 bg-primary-50 rounded-2xl border border-primary-100 press-bounce">
+                            <div class="w-10 h-10 rounded-xl bg-primary-600 text-white flex items-center justify-center shadow-md shadow-primary-500/20 text-base font-bold">🏖️</div>
                             <span class="text-[11px] font-bold text-slate-700 text-center leading-tight">Cuti Guru</span>
                         </a>
 
@@ -179,8 +179,8 @@
                             <div class="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center shadow-md shadow-purple-500/20 text-base font-bold">📋</div>
                             <span class="text-[11px] font-bold text-slate-700 text-center leading-tight">Buat Tugas</span>
                         </a>
-                        <a href="<?= url('mobile/quran') ?>" class="flex flex-col items-center gap-1.5 p-2.5 bg-emerald-50 rounded-2xl border border-emerald-100 press-bounce">
-                            <div class="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-md shadow-emerald-500/20 text-base font-bold">📖</div>
+                        <a href="<?= url('mobile/quran') ?>" class="flex flex-col items-center gap-1.5 p-2.5 bg-primary-50 rounded-2xl border border-primary-100 press-bounce">
+                            <div class="w-10 h-10 rounded-xl bg-primary-600 text-white flex items-center justify-center shadow-md shadow-primary-500/20 text-base font-bold">📖</div>
                             <span class="text-[11px] font-bold text-slate-700 text-center leading-tight">Al-Qur'an</span>
                         </a>
                         <a href="<?= url('mobile/dzikir') ?>" class="flex flex-col items-center gap-1.5 p-2.5 bg-purple-50 rounded-2xl border border-purple-100 press-bounce">
@@ -202,15 +202,15 @@
                 content: `
                     <div class="space-y-2.5 bg-slate-50 p-3.5 rounded-2xl border border-slate-100 text-xs text-slate-700 leading-relaxed">
                         <div class="flex items-center gap-2.5">
-                            <span class="w-6 h-6 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center shrink-0 text-xs">1</span>
+                            <span class="w-6 h-6 rounded-full bg-primary-600 text-white font-bold flex items-center justify-center shrink-0 text-xs">1</span>
                             <p>Tekan tombol <strong>Share / Bagikan</strong> <span class="px-1 py-0.5 bg-white border border-slate-200 rounded font-mono">⎋ / ⤤</span> di bar bawah Safari.</p>
                         </div>
                         <div class="flex items-center gap-2.5">
-                            <span class="w-6 h-6 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center shrink-0 text-xs">2</span>
+                            <span class="w-6 h-6 rounded-full bg-primary-600 text-white font-bold flex items-center justify-center shrink-0 text-xs">2</span>
                             <p>Gulir ke bawah dan pilih <strong>"Tambahkan ke Layar Utama" (Add to Home Screen)</strong> ➕.</p>
                         </div>
                         <div class="flex items-center gap-2.5">
-                            <span class="w-6 h-6 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center shrink-0 text-xs">3</span>
+                            <span class="w-6 h-6 rounded-full bg-primary-600 text-white font-bold flex items-center justify-center shrink-0 text-xs">3</span>
                             <p>Tekan <strong>"Tambah" (Add)</strong> di pojok kanan atas. Selesai!</p>
                         </div>
                     </div>
@@ -218,7 +218,7 @@
                 actions: [
                     {
                         text: 'Saya Mengerti',
-                        className: 'w-full py-3 bg-blue-600 text-white font-bold text-xs rounded-2xl shadow-md'
+                        className: 'w-full py-3 bg-primary-600 text-white font-bold text-xs rounded-2xl shadow-md'
                     }
                 ]
             });
@@ -230,19 +230,19 @@
                 title: 'Pasang di Android',
                 subtitle: 'Panduan menambahkan ke Layar Utama Chrome',
                 icon: '🤖',
-                iconBg: 'bg-emerald-100 text-emerald-700',
+                iconBg: 'bg-primary-100 text-primary-700',
                 content: `
                     <div class="space-y-2.5 bg-slate-50 p-3.5 rounded-2xl border border-slate-100 text-xs text-slate-700 leading-relaxed">
                         <div class="flex items-center gap-2.5">
-                            <span class="w-6 h-6 rounded-full bg-emerald-600 text-white font-bold flex items-center justify-center shrink-0 text-xs">1</span>
+                            <span class="w-6 h-6 rounded-full bg-primary-600 text-white font-bold flex items-center justify-center shrink-0 text-xs">1</span>
                             <p>Tekan menu titik tiga <strong class="font-mono">⋮</strong> di pojok kanan atas browser Google Chrome.</p>
                         </div>
                         <div class="flex items-center gap-2.5">
-                            <span class="w-6 h-6 rounded-full bg-emerald-600 text-white font-bold flex items-center justify-center shrink-0 text-xs">2</span>
+                            <span class="w-6 h-6 rounded-full bg-primary-600 text-white font-bold flex items-center justify-center shrink-0 text-xs">2</span>
                             <p>Pilih menu <strong>"Tambahkan ke Layar Utama"</strong> atau <strong>"Install Aplikasi"</strong>.</p>
                         </div>
                         <div class="flex items-center gap-2.5">
-                            <span class="w-6 h-6 rounded-full bg-emerald-600 text-white font-bold flex items-center justify-center shrink-0 text-xs">3</span>
+                            <span class="w-6 h-6 rounded-full bg-primary-600 text-white font-bold flex items-center justify-center shrink-0 text-xs">3</span>
                             <p>Tekan <strong>"Install"</strong> dan tunggu ikon muncul di layar HP Anda.</p>
                         </div>
                     </div>
@@ -250,7 +250,7 @@
                 actions: [
                     {
                         text: 'Saya Mengerti',
-                        className: 'w-full py-3 bg-emerald-600 text-white font-bold text-xs rounded-2xl shadow-md'
+                        className: 'w-full py-3 bg-primary-600 text-white font-bold text-xs rounded-2xl shadow-md'
                     }
                 ]
             });

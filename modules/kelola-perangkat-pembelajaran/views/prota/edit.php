@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Prota - Edit View
  * Form Edit Matriks TP, ATP, JML JP, SMT, & Penilaian Harian
@@ -148,7 +148,7 @@ $targetGroupId = $konten['prota_group_id'] ?? null;
                 </div>
                 <button type="button" onclick="addTpBlock()" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs border border-indigo-200 transition-colors self-start sm:self-auto">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
-                    <span>+ Tambah Lingkup Materi / TP</span>
+                    <span>Tambah Lingkup Materi / TP</span>
                 </button>
             </div>
 
@@ -206,7 +206,7 @@ $targetGroupId = $konten['prota_group_id'] ?? null;
                         </div>
                         <div class="pt-1">
                             <button type="button" onclick="addAtpRow(this, <?= $tpIdx ?>)" class="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 inline-flex items-center gap-1">
-                                <span>+ Tambah Butir ATP</span>
+                                <span>Tambah Butir ATP</span>
                             </button>
                         </div>
                     </div>
@@ -245,8 +245,8 @@ $targetGroupId = $konten['prota_group_id'] ?? null;
                         <div class="text-[10px] text-indigo-300 uppercase font-bold">Semester 2</div>
                         <div class="text-sm font-black text-white" id="rekapSmt2">0 JP</div>
                     </div>
-                    <div class="text-center px-4 py-1.5 rounded-xl bg-emerald-500 text-white shadow-sm font-black">
-                        <div class="text-[10px] text-emerald-100 uppercase">Total 1 Tahun</div>
+                    <div class="text-center px-4 py-1.5 rounded-xl bg-primary-500 text-white shadow-sm font-black">
+                        <div class="text-[10px] text-primary-100 uppercase">Total 1 Tahun</div>
                         <div class="text-base" id="rekapTotal">0 JP</div>
                     </div>
                 </div>
@@ -319,7 +319,7 @@ function addTpBlock() {
             </div>
             <div class="pt-1">
                 <button type="button" onclick="addAtpRow(this, ${idx})" class="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 inline-flex items-center gap-1">
-                    <span>+ Tambah Butir ATP</span>
+                    <span>Tambah Butir ATP</span>
                 </button>
             </div>
         </div>

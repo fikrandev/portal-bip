@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Dashboard Qur'an PAUD / TK
  * Referensi UI/UX: Modul Kelola Nilai (Clean, Professional, Data-Driven)
@@ -10,7 +10,7 @@
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
             <div class="flex items-center gap-2">
-                <span class="px-3 py-1 rounded-xl text-xs font-black bg-teal-50 text-teal-700 border border-teal-200">
+                <span class="px-3 py-1 rounded-xl text-xs font-black bg-primary-50 text-primary-700 border border-primary-200">
                     Jenjang PAUD / TK
                 </span>
                 <span class="px-3 py-1 rounded-xl text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
@@ -37,11 +37,11 @@
                 </svg>
                 <span>Rekap Nilai</span>
             </a>
-            <a href="<?= url('kelola-quran-siswa-paud/target/create') ?>" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-md shadow-teal-500/20 transition-all">
+            <a href="<?= url('kelola-quran-siswa-paud/target/create') ?>" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-md shadow-primary-500/20 transition-all">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
                 </svg>
-                <span>+ Buat Grup Target</span>
+                <span>Buat Grup Target</span>
             </a>
         </div>
     </div>
@@ -49,20 +49,20 @@
     <!-- 4 KPI Summary Cards (Style Kelola Nilai) -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <!-- Wadah Grup Target -->
-        <div class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-sm relative overflow-hidden group hover:border-teal-300 transition-all">
+        <div class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-sm relative overflow-hidden group hover:border-primary-300 transition-all">
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Wadah Grup Target</p>
                     <h3 class="text-3xl font-black text-slate-800 mt-1"><?= number_format($stats['total_grup_aktif'] ?? count($groups ?? [])) ?></h3>
                 </div>
-                <div class="w-12 h-12 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <div class="w-12 h-12 rounded-2xl bg-primary-50 text-primary-600 flex items-center justify-center group-hover:scale-110 transition-transform">
                     <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z" />
                     </svg>
                 </div>
             </div>
             <div class="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px]">
-                <span class="text-emerald-700 font-bold">● Grup Aktif</span>
+                <span class="text-primary-700 font-bold">● Grup Aktif</span>
                 <span class="text-slate-400">Tahsin &amp; Tahfidz</span>
             </div>
         </div>
@@ -106,13 +106,13 @@
         </div>
 
         <!-- Capaian Mutqin -->
-        <div class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-sm relative overflow-hidden group hover:border-emerald-300 transition-all">
+        <div class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-sm relative overflow-hidden group hover:border-primary-300 transition-all">
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Capaian Mutqin</p>
-                    <h3 class="text-3xl font-black text-emerald-600 mt-1"><?= number_format($stats['total_mutqin'] ?? 0) ?></h3>
+                    <h3 class="text-3xl font-black text-primary-600 mt-1"><?= number_format($stats['total_mutqin'] ?? 0) ?></h3>
                 </div>
-                <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <div class="w-12 h-12 rounded-2xl bg-primary-50 text-primary-600 flex items-center justify-center group-hover:scale-110 transition-transform">
                     <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z" />
                     </svg>
@@ -120,7 +120,7 @@
             </div>
             <div class="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px]">
                 <span class="text-slate-500">Lulus / Tuntas Target</span>
-                <span class="text-emerald-700 font-bold">Mumtaz</span>
+                <span class="text-primary-700 font-bold">Mumtaz</span>
             </div>
         </div>
     </div>
@@ -136,7 +136,7 @@
                     Kelompok capaian tahsin dan tahfidz santri yang siap untuk diinputkan penilaian
                 </p>
             </div>
-            <a href="<?= url('kelola-quran-siswa-paud/target') ?>" class="text-xs font-bold text-teal-600 hover:text-teal-700 flex items-center gap-1">
+            <a href="<?= url('kelola-quran-siswa-paud/target') ?>" class="text-xs font-bold text-primary-600 hover:text-primary-700 flex items-center gap-1">
                 <span>Kelola Semua Grup Target</span>
                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"/>
@@ -187,7 +187,7 @@
                             <tr class="hover:bg-slate-50/70 transition-colors">
                                 <td class="py-3 px-4 text-center text-slate-400"><?= $idx + 1 ?></td>
                                 <td class="py-3 px-4">
-                                    <a href="<?= url('kelola-quran-siswa-paud/target/manage/' . $g['id']) ?>" class="font-bold text-slate-800 hover:text-teal-700 block text-sm transition-colors group-hover:underline">
+                                    <a href="<?= url('kelola-quran-siswa-paud/target/manage/' . $g['id']) ?>" class="font-bold text-slate-800 hover:text-primary-700 block text-sm transition-colors group-hover:underline">
                                         <?= htmlspecialchars($g['nama_grup']) ?>
                                     </a>
                                     <span class="text-[11px] text-slate-400">Pengampu: <?= htmlspecialchars($g['guru_nama'] ?: 'Guru PAUD') ?></span>
@@ -219,7 +219,7 @@
                                 <td class="py-3 px-4 text-slate-700">
                                     <?php if (!empty($tahfidz['surah'])): ?>
                                         <div class="flex items-center gap-1.5 flex-wrap">
-                                            <span class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                                            <span class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-primary-50 text-primary-800 border border-primary-200">
                                                 <?= count($tahfidz['surah']) ?> Surah
                                             </span>
                                             <span class="text-[11px] text-slate-600 truncate max-w-[160px]">
@@ -227,7 +227,7 @@
                                             </span>
                                         </div>
                                     <?php else: ?>
-                                        <a href="<?= url('kelola-quran-siswa-paud/target/manage/' . $g['id']) ?>" class="text-[11px] font-semibold text-emerald-600 hover:text-emerald-700 underline">
+                                        <a href="<?= url('kelola-quran-siswa-paud/target/manage/' . $g['id']) ?>" class="text-[11px] font-semibold text-primary-600 hover:text-primary-700 underline">
                                             + Atur Tahfidz
                                         </a>
                                     <?php endif; ?>
@@ -238,8 +238,8 @@
                                 </td>
                                 <td class="py-3 px-4 text-center">
                                     <?php if ($g['is_active']): ?>
-                                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-primary-50 text-primary-700 border border-primary-200">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-primary-500"></span>
                                             <span>Aktif</span>
                                         </span>
                                     <?php else: ?>
@@ -252,14 +252,14 @@
                                 <td class="py-3 px-4 text-right">
                                     <div class="inline-flex items-center gap-1.5 justify-end">
                                         <a href="<?= url('kelola-quran-siswa-paud/target/manage/' . $g['id']) ?>" 
-                                           class="px-2.5 py-1.5 rounded-xl bg-teal-50 hover:bg-teal-100 text-teal-700 border border-teal-200 font-bold text-xs shadow-sm transition-colors inline-flex items-center gap-1" title="Atur Target Tahsin & Tahfidz">
+                                           class="px-2.5 py-1.5 rounded-xl bg-primary-50 hover:bg-primary-100 text-primary-700 border border-primary-200 font-bold text-xs shadow-sm transition-colors inline-flex items-center gap-1" title="Atur Target Tahsin & Tahfidz">
                                             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                                             </svg>
                                             <span>Atur Target</span>
                                         </a>
                                         <a href="<?= url('kelola-quran-siswa-paud/penilaian/' . $g['id']) ?>" 
-                                           class="px-2.5 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-sm transition-colors inline-flex items-center gap-1" title="Input Penilaian Santri">
+                                           class="px-2.5 py-1.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-sm transition-colors inline-flex items-center gap-1" title="Input Penilaian Santri">
                                             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
                                             </svg>
@@ -292,7 +292,7 @@
                     Daftar 10 catatan penilaian dan capaian santri PAUD/TK terbaru
                 </p>
             </div>
-            <a href="<?= url('kelola-quran-siswa-paud/rekap') ?>" class="text-xs font-bold text-teal-600 hover:text-teal-700 flex items-center gap-1">
+            <a href="<?= url('kelola-quran-siswa-paud/rekap') ?>" class="text-xs font-bold text-primary-600 hover:text-primary-700 flex items-center gap-1">
                 <span>Lihat Rekap Lengkap</span>
                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"/>
@@ -340,7 +340,7 @@
                                 </td>
                                 <td class="py-3 px-4">
                                     <span class="font-bold text-slate-800 block"><?= htmlspecialchars($rn['nama_grup']) ?></span>
-                                    <span class="text-[11px] text-teal-700 font-medium">
+                                    <span class="text-[11px] text-primary-700 font-medium">
                                         <?= htmlspecialchars($rn['materi_capaian'] ?: '-') ?>
                                     </span>
                                 </td>
@@ -354,11 +354,11 @@
                                 </td>
                                 <td class="py-3 px-4 text-center">
                                     <?php if ($rn['status_lulus'] === 'Mutqin'): ?>
-                                        <span class="inline-flex items-center px-2.5 py-1 rounded-xl text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                        <span class="inline-flex items-center px-2.5 py-1 rounded-xl text-[10px] font-bold bg-primary-50 text-primary-700 border border-primary-200">
                                             Mutqin
                                         </span>
                                     <?php elseif ($rn['status_lulus'] === 'Lulus'): ?>
-                                        <span class="inline-flex items-center px-2.5 py-1 rounded-xl text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                                        <span class="inline-flex items-center px-2.5 py-1 rounded-xl text-[10px] font-bold bg-primary-50 text-primary-700 border border-primary-200">
                                             Lulus
                                         </span>
                                     <?php else: ?>

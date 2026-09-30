@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Sidebar Modul Qur'an PAUD / TK
  * Referensi Desain: Modul Kelola Nilai (Clean, Elegant, Professional, Tanpa Ikon Berlebihan)
@@ -30,7 +30,7 @@ if (defined('SYS_APP_FAVICON') && !empty(SYS_APP_FAVICON)) {
                     <img src="<?= $sbLogo ?>" alt="Logo Sekolah" class="max-w-full max-h-full object-contain">
                 </div>
             <?php else: ?>
-                <div class="w-8 h-8 rounded-2xl bg-gradient-to-br from-teal-400 to-emerald-600 flex items-center justify-center shadow-lg shadow-teal-500/20 text-white font-bold shrink-0">
+                <div class="w-8 h-8 rounded-2xl bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center shadow-lg shadow-primary-500/20 text-white font-bold shrink-0">
                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
                     </svg>
@@ -38,7 +38,7 @@ if (defined('SYS_APP_FAVICON') && !empty(SYS_APP_FAVICON)) {
             <?php endif; ?>
             <div class="min-w-0">
                 <h1 class="text-white font-bold text-base tracking-tight leading-tight truncate">Qur'an PAUD</h1>
-                <p class="text-teal-300 text-xs truncate">Pendidikan Anak Usia Dini</p>
+                <p class="text-primary-300 text-xs truncate">Pendidikan Anak Usia Dini</p>
             </div>
         </div>
         
@@ -60,9 +60,9 @@ if (defined('SYS_APP_FAVICON') && !empty(SYS_APP_FAVICON)) {
                 // 1. Dashboard
                 $isDashboard = ($currentUri === '/kelola-quran-siswa-paud' || $currentUri === '/portal-bip/kelola-quran-siswa-paud' || $currentUri === '/kelola-quran-siswa/paud' || $currentUri === '/portal-bip/kelola-quran-siswa/paud') && !str_contains($currentUri, 'target') && !str_contains($currentUri, 'penilaian') && !str_contains($currentUri, 'rekap');
                 $dashClass = $isDashboard 
-                    ? 'bg-teal-600/30 text-white font-semibold shadow-sm border border-teal-500/40' 
+                    ? 'bg-primary-600/30 text-white font-semibold shadow-sm border border-primary-500/40' 
                     : 'text-primary-200 hover:bg-primary-800/60 hover:text-white border border-transparent';
-                $dashIcon = $isDashboard ? 'text-teal-400' : 'text-primary-400 group-hover:text-teal-300';
+                $dashIcon = $isDashboard ? 'text-primary-400' : 'text-primary-400 group-hover:text-primary-300';
                 ?>
                 <li>
                     <a href="<?= url('kelola-quran-siswa-paud') ?>" class="flex items-center justify-between px-3 py-2.5 rounded-2xl transition-all duration-200 group <?= $dashClass ?>">
@@ -81,9 +81,9 @@ if (defined('SYS_APP_FAVICON') && !empty(SYS_APP_FAVICON)) {
                 <?php
                 $isTarget = str_contains($currentUri, 'kelola-quran-siswa-paud/target');
                 $targetClass = $isTarget 
-                    ? 'bg-teal-600/30 text-white font-semibold shadow-sm border border-teal-500/40' 
+                    ? 'bg-primary-600/30 text-white font-semibold shadow-sm border border-primary-500/40' 
                     : 'text-primary-200 hover:bg-primary-800/60 hover:text-white border border-transparent';
-                $targetIcon = $isTarget ? 'text-teal-400' : 'text-primary-400 group-hover:text-teal-300';
+                $targetIcon = $isTarget ? 'text-primary-400' : 'text-primary-400 group-hover:text-primary-300';
                 ?>
                 <li>
                     <a href="<?= url('kelola-quran-siswa-paud/target') ?>" class="flex items-center justify-between px-3 py-2.5 rounded-2xl transition-all duration-200 group <?= $targetClass ?>">
@@ -102,9 +102,9 @@ if (defined('SYS_APP_FAVICON') && !empty(SYS_APP_FAVICON)) {
                 <?php
                 $isPenilaian = str_contains($currentUri, 'kelola-quran-siswa-paud/penilaian');
                 $penilaianClass = $isPenilaian 
-                    ? 'bg-teal-600/30 text-white font-semibold shadow-sm border border-teal-500/40' 
+                    ? 'bg-primary-600/30 text-white font-semibold shadow-sm border border-primary-500/40' 
                     : 'text-primary-200 hover:bg-primary-800/60 hover:text-white border border-transparent';
-                $penilaianIcon = $isPenilaian ? 'text-teal-400' : 'text-primary-400 group-hover:text-teal-300';
+                $penilaianIcon = $isPenilaian ? 'text-primary-400' : 'text-primary-400 group-hover:text-primary-300';
                 ?>
                 <li>
                     <a href="<?= url('kelola-quran-siswa-paud/penilaian') ?>" class="flex items-center justify-between px-3 py-2.5 rounded-2xl transition-all duration-200 group <?= $penilaianClass ?>">
@@ -123,9 +123,9 @@ if (defined('SYS_APP_FAVICON') && !empty(SYS_APP_FAVICON)) {
                 <?php
                 $isRekap = str_contains($currentUri, 'kelola-quran-siswa-paud/rekap');
                 $rekapClass = $isRekap 
-                    ? 'bg-teal-600/30 text-white font-semibold shadow-sm border border-teal-500/40' 
+                    ? 'bg-primary-600/30 text-white font-semibold shadow-sm border border-primary-500/40' 
                     : 'text-primary-200 hover:bg-primary-800/60 hover:text-white border border-transparent';
-                $rekapIcon = $isRekap ? 'text-teal-400' : 'text-primary-400 group-hover:text-teal-300';
+                $rekapIcon = $isRekap ? 'text-primary-400' : 'text-primary-400 group-hover:text-primary-300';
                 ?>
                 <li>
                     <a href="<?= url('kelola-quran-siswa-paud/rekap') ?>" class="flex items-center justify-between px-3 py-2.5 rounded-2xl transition-all duration-200 group <?= $rekapClass ?>">
@@ -147,8 +147,8 @@ if (defined('SYS_APP_FAVICON') && !empty(SYS_APP_FAVICON)) {
     <div class="p-4 border-t border-primary-800/50 bg-primary-950/20 space-y-2">
         <a href="<?= url('mobile') ?>" 
            target="_blank"
-           class="flex items-center gap-2.5 px-3 py-2 rounded-2xl text-xs font-semibold text-emerald-300 hover:text-white bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 transition-all">
-            <svg class="w-4 h-4 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+           class="flex items-center gap-2.5 px-3 py-2 rounded-2xl text-xs font-semibold text-primary-300 hover:text-white bg-primary-500/10 hover:bg-primary-500/20 border border-primary-500/20 transition-all">
+            <svg class="w-4 h-4 text-primary-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 0 0 6 3.75v16.5a2.25 2.25 0 0 0 2.25 2.25h7.5A2.25 2.25 0 0 0 18 20.25V3.75a2.25 2.25 0 0 0-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" />
             </svg>
             <span>📱 Portal Guru (Mobile)</span>

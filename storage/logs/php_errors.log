@@ -947,3 +947,62 @@ Stack trace:
   thrown in E:\xampp\mysql\data\portal-bip\core\KartuHelper.php on line 208
 [23-Sep-2026 14:29:22 Asia/Makassar] Query Error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'tingkat' in 'field list' | SQL: SELECT nama_kelas, tingkat FROM kelas WHERE is_active = 1 ORDER BY nama_kelas ASC
 [23-Sep-2026 14:34:42 Asia/Makassar] Query Error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'tingkat' in 'field list' | SQL: SELECT nama_kelas, tingkat FROM kelas WHERE is_active = 1 ORDER BY nama_kelas ASC
+[29-Sep-2026 12:00:24 Asia/Makassar] Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'db_portal_bip.sarpras_golongan' doesn't exist | SQL: SELECT * FROM sarpras_golongan ORDER BY kode ASC
+[29-Sep-2026 12:00:24 Asia/Makassar] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'db_portal_bip.sarpras_golongan' doesn't exist in E:\xampp\mysql\data\portal-bip\core\Database.php:91
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\core\Database.php(91): PDO->prepare('SELECT * FROM s...')
+#1 E:\xampp\mysql\data\portal-bip\core\Database.php(115): Database->query('SELECT * FROM s...', Array)
+#2 E:\xampp\mysql\data\portal-bip\modules\kelola-sarpras\models\SarprasModel.php(673): Database->findAll('SELECT * FROM s...')
+#3 E:\xampp\mysql\data\portal-bip\modules\kelola-sarpras\controllers\SarprasController.php(1035): SarprasModel::getGolonganList()
+#4 E:\xampp\mysql\data\portal-bip\core\Router.php(98): SarprasController::referensiList()
+#5 E:\xampp\mysql\data\portal-bip\index.php(869): Router->dispatch()
+#6 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\core\Database.php on line 91
+[30-Sep-2026 21:41:01 Asia/Makassar] PHP Fatal error:  Uncaught Error: Call to undefined method SarprasModel::getStatistik() in E:\xampp\mysql\data\portal-bip\modules\mobile-sarpras\controllers\MobileSarprasController.php:24
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\core\Router.php(98): MobileSarprasController::dashboard()
+#1 E:\xampp\mysql\data\portal-bip\index.php(896): Router->dispatch()
+#2 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\modules\mobile-sarpras\controllers\MobileSarprasController.php on line 24
+[30-Sep-2026 21:42:13 Asia/Makassar] PHP Fatal error:  Uncaught Error: Call to private method SarprasModel::db() from scope MobileSarprasController in E:\xampp\mysql\data\portal-bip\modules\mobile-sarpras\controllers\MobileSarprasController.php:62
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\core\Router.php(98): MobileSarprasController::inventarisTambah()
+#1 E:\xampp\mysql\data\portal-bip\index.php(896): Router->dispatch()
+#2 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\modules\mobile-sarpras\controllers\MobileSarprasController.php on line 62
+[30-Sep-2026 21:42:55 Asia/Makassar] Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'db_portal_bip.sarpras_kategori_golongan' doesn't exist | SQL: SELECT * FROM sarpras_kategori_golongan ORDER BY kode ASC
+[30-Sep-2026 21:42:55 Asia/Makassar] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'db_portal_bip.sarpras_kategori_golongan' doesn't exist in E:\xampp\mysql\data\portal-bip\core\Database.php:91
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\core\Database.php(91): PDO->prepare('SELECT * FROM s...')
+#1 E:\xampp\mysql\data\portal-bip\core\Database.php(115): Database->query('SELECT * FROM s...', Array)
+#2 E:\xampp\mysql\data\portal-bip\modules\mobile-sarpras\controllers\MobileSarprasController.php(66): Database->findAll('SELECT * FROM s...')
+#3 E:\xampp\mysql\data\portal-bip\core\Router.php(98): MobileSarprasController::inventarisTambah()
+#4 E:\xampp\mysql\data\portal-bip\index.php(896): Router->dispatch()
+#5 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\core\Database.php on line 91
+[30-Sep-2026 21:42:58 Asia/Makassar] Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'db_portal_bip.sarpras_kategori_golongan' doesn't exist | SQL: SELECT * FROM sarpras_kategori_golongan ORDER BY kode ASC
+[30-Sep-2026 21:42:58 Asia/Makassar] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'db_portal_bip.sarpras_kategori_golongan' doesn't exist in E:\xampp\mysql\data\portal-bip\core\Database.php:91
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\core\Database.php(91): PDO->prepare('SELECT * FROM s...')
+#1 E:\xampp\mysql\data\portal-bip\core\Database.php(115): Database->query('SELECT * FROM s...', Array)
+#2 E:\xampp\mysql\data\portal-bip\modules\mobile-sarpras\controllers\MobileSarprasController.php(66): Database->findAll('SELECT * FROM s...')
+#3 E:\xampp\mysql\data\portal-bip\core\Router.php(98): MobileSarprasController::inventarisTambah()
+#4 E:\xampp\mysql\data\portal-bip\index.php(896): Router->dispatch()
+#5 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\core\Database.php on line 91
+[30-Sep-2026 21:43:03 Asia/Makassar] Query Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'db_portal_bip.sarpras_kategori_golongan' doesn't exist | SQL: SELECT * FROM sarpras_kategori_golongan ORDER BY kode ASC
+[30-Sep-2026 21:43:03 Asia/Makassar] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'db_portal_bip.sarpras_kategori_golongan' doesn't exist in E:\xampp\mysql\data\portal-bip\core\Database.php:91
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\core\Database.php(91): PDO->prepare('SELECT * FROM s...')
+#1 E:\xampp\mysql\data\portal-bip\core\Database.php(115): Database->query('SELECT * FROM s...', Array)
+#2 E:\xampp\mysql\data\portal-bip\modules\mobile-sarpras\controllers\MobileSarprasController.php(66): Database->findAll('SELECT * FROM s...')
+#3 E:\xampp\mysql\data\portal-bip\core\Router.php(98): MobileSarprasController::inventarisTambah()
+#4 E:\xampp\mysql\data\portal-bip\index.php(896): Router->dispatch()
+#5 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\core\Database.php on line 91
+[30-Sep-2026 23:20:15 Asia/Makassar] PHP Warning:  Undefined array key "tanggal_rencana_kembali" in E:\xampp\mysql\data\portal-bip\modules\mobile-sarpras\views\peminjaman\index.php on line 26
+[30-Sep-2026 23:20:15 Asia/Makassar] PHP Warning:  Undefined array key "peminjam" in E:\xampp\mysql\data\portal-bip\modules\mobile-sarpras\views\peminjaman\index.php on line 44
+[30-Sep-2026 23:20:15 Asia/Makassar] PHP Warning:  Undefined array key "tanggal_rencana_kembali" in E:\xampp\mysql\data\portal-bip\modules\mobile-sarpras\views\peminjaman\index.php on line 53
+[30-Sep-2026 23:20:44 Asia/Makassar] PHP Warning:  Undefined array key "tanggal_rencana_kembali" in E:\xampp\mysql\data\portal-bip\modules\mobile-sarpras\views\peminjaman\index.php on line 26
+[30-Sep-2026 23:20:44 Asia/Makassar] PHP Warning:  Undefined array key "peminjam" in E:\xampp\mysql\data\portal-bip\modules\mobile-sarpras\views\peminjaman\index.php on line 44
+[30-Sep-2026 23:20:44 Asia/Makassar] PHP Warning:  Undefined array key "tanggal_rencana_kembali" in E:\xampp\mysql\data\portal-bip\modules\mobile-sarpras\views\peminjaman\index.php on line 53

@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Qur'an PAUD - Lembar Form Input Penilaian Santri per Grup Target
  */
@@ -13,7 +13,7 @@ $today = date('Y-m-d');
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
             <div class="flex items-center gap-2">
-                <span class="px-3 py-1 rounded-xl text-xs font-black bg-teal-50 text-teal-700 border border-teal-200">
+                <span class="px-3 py-1 rounded-xl text-xs font-black bg-primary-50 text-primary-700 border border-primary-200">
                     Input Penilaian Santri
                 </span>
                 <span class="px-3 py-1 rounded-xl text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
@@ -35,7 +35,7 @@ $today = date('Y-m-d');
                 <span>Kembali</span>
             </a>
             <button type="submit" form="formPenilaianPaud" 
-                    class="inline-flex items-center gap-2 px-6 py-2.5 rounded-2xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-md shadow-teal-500/20 transition-all">
+                    class="inline-flex items-center gap-2 px-6 py-2.5 rounded-2xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-md shadow-primary-500/20 transition-all">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                 <span>Simpan Semua Nilai</span>
             </button>
@@ -67,7 +67,7 @@ if (isset($rawTarget['tahsin']) || isset($rawTarget['tahfidz'])) {
                         Tanggal Penilaian:
                     </label>
                     <input type="date" name="tanggal_penilaian" value="<?= $today ?>" required
-                           class="px-3.5 py-2.5 rounded-2xl border border-slate-200 focus:border-teal-500 text-xs font-bold text-slate-800 bg-slate-50/50">
+                           class="px-3.5 py-2.5 rounded-2xl border border-slate-200 focus:border-primary-500 text-xs font-bold text-slate-800 bg-slate-50/50">
                 </div>
 
                 <!-- Materi Pokok / Target yang Dinilai Hari Ini -->
@@ -76,7 +76,7 @@ if (isset($rawTarget['tahsin']) || isset($rawTarget['tahfidz'])) {
                         Materi yang Diuji / Dinilai Hari Ini: <span class="text-red-500">*</span>
                     </label>
                     <select name="materi_default" id="materiDefault" required
-                            class="w-full px-3.5 py-2.5 rounded-2xl border border-teal-200 focus:border-teal-500 text-xs font-bold text-slate-800 bg-teal-50/30">
+                            class="w-full px-3.5 py-2.5 rounded-2xl border border-primary-200 focus:border-primary-500 text-xs font-bold text-slate-800 bg-primary-50/30">
                         <optgroup label="Target Tahsin (Iqro' / Tilawati)">
                             <?php if (!empty($tahsin['jilid'])): ?>
                                 <option value="<?= htmlspecialchars($tahsin['metode'] ?? "Iqro'") ?> Jilid <?= $tahsin['jilid'] ?> (Hal. <?= $tahsin['halaman_awal'] ?? 1 ?>)">
@@ -242,7 +242,7 @@ if (isset($rawTarget['tahsin']) || isset($rawTarget['tahfidz'])) {
             <div class="p-5 border-t border-slate-100 flex items-center justify-between">
                 <span class="text-xs text-slate-400">Pastikan seluruh santri sudah dinilai sebelum menyimpan.</span>
                 <button type="submit" 
-                        class="px-6 py-2.5 rounded-2xl bg-gradient-to-r <?= $isTahsin ? 'from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 shadow-amber-500/20' : 'from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 shadow-emerald-600/20' ?> text-white font-bold text-xs shadow-md transition-all flex items-center gap-2">
+                        class="px-6 py-2.5 rounded-2xl bg-gradient-to-r <?= $isTahsin ? 'from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 shadow-amber-500/20' : 'from-primary-600 to-primary-600 hover:from-primary-700 hover:to-primary-700 shadow-primary-600/20' ?> text-white font-bold text-xs shadow-md transition-all flex items-center gap-2">
                     <span>Simpan Nilai Santri</span>
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />

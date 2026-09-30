@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Qur'an PAUD - Daftar Pengaturan Target (Grup / Wadah Target)
  * Referensi UI/UX: Modul Kelola Nilai (group_list.php)
@@ -12,7 +12,7 @@ $filterKelas = $_GET['kelas'] ?? '';
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
             <div class="flex items-center gap-2">
-                <span class="px-3 py-1 rounded-xl text-xs font-black bg-teal-50 text-teal-700 border border-teal-200">
+                <span class="px-3 py-1 rounded-xl text-xs font-black bg-primary-50 text-primary-700 border border-primary-200">
                     Manajemen Grup Target
                 </span>
                 <span class="px-3 py-1 rounded-xl text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
@@ -31,11 +31,11 @@ $filterKelas = $_GET['kelas'] ?? '';
                 Kembali ke Dashboard
             </a>
             <a href="<?= url('kelola-quran-siswa-paud/target/create') ?>" 
-               class="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-md shadow-teal-500/20 transition-all">
+               class="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-md shadow-primary-500/20 transition-all">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
                 </svg>
-                <span>+ Buat Grup Target Baru</span>
+                <span>Buat Grup Target Baru</span>
             </a>
         </div>
     </div>
@@ -47,13 +47,13 @@ $filterKelas = $_GET['kelas'] ?? '';
             <span class="text-xs font-bold text-slate-400 mr-1 uppercase">Status:</span>
             
             <a href="<?= url('kelola-quran-siswa-paud/target') ?>" 
-               class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all <?= $filterStatus === '' ? 'bg-teal-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' ?>">
+               class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all <?= $filterStatus === '' ? 'bg-primary-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' ?>">
                 Semua (<?= $countAll ?? count($groups) ?>)
             </a>
 
             <a href="<?= url('kelola-quran-siswa-paud/target?status=1') ?>" 
-               class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all <?= $filterStatus === '1' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' ?>">
-                <span class="w-2 h-2 rounded-full <?= $filterStatus === '1' ? 'bg-white' : 'bg-emerald-500' ?>"></span>
+               class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all <?= $filterStatus === '1' ? 'bg-primary-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' ?>">
+                <span class="w-2 h-2 rounded-full <?= $filterStatus === '1' ? 'bg-white' : 'bg-primary-500' ?>"></span>
                 <span>Aktif (<?= $countActive ?? 0 ?>)</span>
             </a>
 
@@ -112,7 +112,7 @@ $filterKelas = $_GET['kelas'] ?? '';
                             <tr class="hover:bg-slate-50/70 transition-colors">
                                 <td class="py-3.5 px-4 text-center text-slate-400"><?= $idx + 1 ?></td>
                                 <td class="py-3.5 px-4">
-                                    <a href="<?= url('kelola-quran-siswa-paud/target/manage/' . $g['id']) ?>" class="font-bold text-slate-800 hover:text-teal-700 block text-sm transition-colors group-hover:underline">
+                                    <a href="<?= url('kelola-quran-siswa-paud/target/manage/' . $g['id']) ?>" class="font-bold text-slate-800 hover:text-primary-700 block text-sm transition-colors group-hover:underline">
                                         <?= htmlspecialchars($g['nama_grup']) ?>
                                     </a>
                                     <span class="text-[11px] text-slate-400">Tahun Ajaran <?= htmlspecialchars($g['semester'] ?? 'Ganjil') ?></span>
@@ -139,7 +139,7 @@ $filterKelas = $_GET['kelas'] ?? '';
                                 <td class="py-3.5 px-4 text-slate-700">
                                     <?php if (!empty($tahfidz['surah'])): ?>
                                         <div class="flex items-center gap-1.5 flex-wrap">
-                                            <span class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                                            <span class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-primary-50 text-primary-800 border border-primary-200">
                                                 <?= count($tahfidz['surah']) ?> Surah
                                             </span>
                                             <span class="text-[11px] text-slate-600 truncate max-w-[180px]">
@@ -147,7 +147,7 @@ $filterKelas = $_GET['kelas'] ?? '';
                                             </span>
                                         </div>
                                     <?php else: ?>
-                                        <a href="<?= url('kelola-quran-siswa-paud/target/manage/' . $g['id']) ?>" class="text-[11px] font-semibold text-emerald-600 hover:text-emerald-700 underline">
+                                        <a href="<?= url('kelola-quran-siswa-paud/target/manage/' . $g['id']) ?>" class="text-[11px] font-semibold text-primary-600 hover:text-primary-700 underline">
                                             + Atur Tahfidz
                                         </a>
                                     <?php endif; ?>
@@ -158,8 +158,8 @@ $filterKelas = $_GET['kelas'] ?? '';
                                 </td>
                                 <td class="py-3.5 px-4 text-center">
                                     <?php if ($g['is_active']): ?>
-                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-primary-50 text-primary-700 border border-primary-200">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-primary-500"></span>
                                             <span>Aktif</span>
                                         </span>
                                     <?php else: ?>
@@ -172,14 +172,14 @@ $filterKelas = $_GET['kelas'] ?? '';
                                 <td class="py-3.5 px-4 text-right">
                                     <div class="inline-flex items-center gap-1.5 justify-end">
                                         <a href="<?= url('kelola-quran-siswa-paud/target/manage/' . $g['id']) ?>" 
-                                           class="px-2.5 py-1.5 rounded-xl bg-teal-50 hover:bg-teal-100 text-teal-700 border border-teal-200 font-bold text-xs shadow-sm transition-colors inline-flex items-center gap-1" title="Atur Target Tahsin & Tahfidz">
+                                           class="px-2.5 py-1.5 rounded-xl bg-primary-50 hover:bg-primary-100 text-primary-700 border border-primary-200 font-bold text-xs shadow-sm transition-colors inline-flex items-center gap-1" title="Atur Target Tahsin & Tahfidz">
                                             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                                             </svg>
                                             <span>Atur Target</span>
                                         </a>
                                         <a href="<?= url('kelola-quran-siswa-paud/penilaian/' . $g['id']) ?>" 
-                                           class="px-2.5 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-sm transition-colors inline-flex items-center gap-1" title="Input Penilaian">
+                                           class="px-2.5 py-1.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-sm transition-colors inline-flex items-center gap-1" title="Input Penilaian">
                                             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
                                             </svg>

@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Reusable Searchable Guru Picker Component with Live Search & Auto-Select
  * 
@@ -60,13 +60,13 @@ $isLoggedInUser = (!empty($logged_in_guru['id']) && $activeTeacher && (int)$logg
     || (!empty($logged_in_guru['nama']) && $activeTeacher && $logged_in_guru['nama'] === ($activeTeacher['nama'] ?? ''));
 
 $accentClasses = [
-    'emerald' => ['ring' => 'focus:ring-emerald-500', 'btn' => 'bg-emerald-600 hover:bg-emerald-700', 'badge' => 'bg-emerald-100 text-emerald-800 border-emerald-300', 'border' => 'border-emerald-500', 'bg_soft' => 'bg-emerald-50'],
+    'emerald' => ['ring' => 'focus:ring-emerald-500', 'btn' => 'bg-primary-600 hover:bg-primary-700', 'badge' => 'bg-primary-100 text-primary-800 border-primary-300', 'border' => 'border-primary-500', 'bg_soft' => 'bg-primary-50'],
     'rose' => ['ring' => 'focus:ring-rose-500', 'btn' => 'bg-rose-600 hover:bg-rose-700', 'badge' => 'bg-rose-100 text-rose-800 border-rose-300', 'border' => 'border-rose-500', 'bg_soft' => 'bg-rose-50'],
-    'teal' => ['ring' => 'focus:ring-teal-500', 'btn' => 'bg-teal-600 hover:bg-teal-700', 'badge' => 'bg-teal-100 text-teal-800 border-teal-300', 'border' => 'border-teal-500', 'bg_soft' => 'bg-teal-50'],
+    'teal' => ['ring' => 'focus:ring-primary-500', 'btn' => 'bg-primary-600 hover:bg-primary-700', 'badge' => 'bg-primary-100 text-primary-800 border-primary-300', 'border' => 'border-primary-500', 'bg_soft' => 'bg-primary-50'],
     'cyan' => ['ring' => 'focus:ring-cyan-500', 'btn' => 'bg-cyan-600 hover:bg-cyan-700', 'badge' => 'bg-cyan-100 text-cyan-800 border-cyan-300', 'border' => 'border-cyan-500', 'bg_soft' => 'bg-cyan-50'],
     'indigo' => ['ring' => 'focus:ring-indigo-500', 'btn' => 'bg-indigo-600 hover:bg-indigo-700', 'badge' => 'bg-indigo-100 text-indigo-800 border-indigo-300', 'border' => 'border-indigo-500', 'bg_soft' => 'bg-indigo-50'],
     'purple' => ['ring' => 'focus:ring-purple-500', 'btn' => 'bg-purple-600 hover:bg-purple-700', 'badge' => 'bg-purple-100 text-purple-800 border-purple-300', 'border' => 'border-purple-500', 'bg_soft' => 'bg-purple-50'],
-][$accent] ?? ['ring' => 'focus:ring-emerald-500', 'btn' => 'bg-emerald-600 hover:bg-emerald-700', 'badge' => 'bg-emerald-100 text-emerald-800 border-emerald-300', 'border' => 'border-emerald-500', 'bg_soft' => 'bg-emerald-50'];
+][$accent] ?? ['ring' => 'focus:ring-emerald-500', 'btn' => 'bg-primary-600 hover:bg-primary-700', 'badge' => 'bg-primary-100 text-primary-800 border-primary-300', 'border' => 'border-primary-500', 'bg_soft' => 'bg-primary-50'];
 ?>
 
 <div class="relative guru-searchable-picker space-y-2">
@@ -78,8 +78,8 @@ $accentClasses = [
             <span class="text-rose-500">*</span>
         </label>
         <?php if ($isLoggedInUser): ?>
-            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-primary-50 text-primary-700 border border-primary-200">
+                <span class="w-1.5 h-1.5 rounded-full bg-primary-500 animate-pulse"></span>
                 Sesuai Akun Login
             </span>
         <?php endif; ?>
@@ -151,7 +151,7 @@ $accentClasses = [
                             <div class="flex items-center gap-2 flex-wrap">
                                 <span class="text-xs font-bold text-slate-800 truncate"><?= e($g['nama']) ?></span>
                                 <?php if ($isSelf): ?>
-                                    <span class="px-1.5 py-0.2 rounded text-[9px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                    <span class="px-1.5 py-0.2 rounded text-[9px] font-extrabold bg-primary-100 text-primary-800 border border-primary-300">
                                         Anda
                                     </span>
                                 <?php endif; ?>
@@ -167,7 +167,7 @@ $accentClasses = [
                     </div>
 
                     <?php if ($isSelected): ?>
-                        <span class="text-xs text-emerald-600 font-bold px-2">✓ Terpilih</span>
+                        <span class="text-xs text-primary-600 font-bold px-2">✓ Terpilih</span>
                     <?php endif; ?>
                 </div>
             <?php endforeach; ?>

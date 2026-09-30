@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Kaldik - Create View with Unit Selection (PAUD, SD, SMP, SMA)
  */
@@ -20,7 +20,7 @@
         <!-- Identitas Utama & Unit Selector -->
         <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm space-y-5">
             <h2 class="text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-3 flex items-center gap-2">
-                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Identitas & Unit Kaldik
+                <span class="w-2.5 h-2.5 rounded-full bg-primary-500"></span> Identitas & Unit Kaldik
             </h2>
 
             <!-- Searchable Live Search Guru Picker (At Atas) -->
@@ -42,14 +42,14 @@
                     foreach ($unit_list as $uKey => $uInfo): 
                         $isChecked = ($selectedUnit === $uKey);
                     ?>
-                        <label class="relative flex flex-col items-center justify-center p-4 rounded-2xl border-2 cursor-pointer transition-all hover:border-emerald-400 hover:bg-slate-50/80 unit-card <?= $isChecked ? 'border-emerald-600 bg-emerald-50/40 ring-2 ring-emerald-500/20 shadow-sm' : 'border-slate-200 bg-white' ?>">
+                        <label class="relative flex flex-col items-center justify-center p-4 rounded-2xl border-2 cursor-pointer transition-all hover:border-primary-400 hover:bg-slate-50/80 unit-card <?= $isChecked ? 'border-primary-600 bg-primary-50/40 ring-2 ring-emerald-500/20 shadow-sm' : 'border-slate-200 bg-white' ?>">
                             <input type="radio" name="unit" value="<?= $uKey ?>" <?= $isChecked ? 'checked' : '' ?> class="sr-only unit-radio" onchange="updateUnitSelection(this)">
                             <div class="w-10 h-10 rounded-xl flex items-center justify-center text-2xl mb-1.5 <?= $uInfo['bg_soft'] ?>">
                                 <?= $uInfo['icon'] ?>
                             </div>
                             <span class="text-xs font-bold text-slate-800">Unit <?= $uKey ?></span>
                             <span class="text-[10px] text-slate-500 text-center leading-tight mt-0.5"><?= e($uInfo['name']) ?></span>
-                            <div class="unit-check-indicator absolute top-2 right-2 <?= $isChecked ? 'block text-emerald-600' : 'hidden' ?>">
+                            <div class="unit-check-indicator absolute top-2 right-2 <?= $isChecked ? 'block text-primary-600' : 'hidden' ?>">
                                 <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd" /></svg>
                             </div>
                         </label>
@@ -85,10 +85,10 @@
             <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
                 <label class="block text-xs font-bold text-slate-700">Status Keaktifan Kaldik Unit <span class="text-rose-500">*</span></label>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <label class="flex items-start gap-3 p-3 rounded-xl border-2 border-emerald-500 bg-emerald-50/50 cursor-pointer">
-                        <input type="radio" name="is_active" value="1" checked class="mt-0.5 text-emerald-600 focus:ring-emerald-500">
+                    <label class="flex items-start gap-3 p-3 rounded-xl border-2 border-primary-500 bg-primary-50/50 cursor-pointer">
+                        <input type="radio" name="is_active" value="1" checked class="mt-0.5 text-primary-600 focus:ring-emerald-500">
                         <div>
-                            <span class="text-xs font-bold text-emerald-950 flex items-center gap-1.5">
+                            <span class="text-xs font-bold text-primary-950 flex items-center gap-1.5">
                                 🟢 Jadikan Kaldik Aktif Utama
                             </span>
                             <p class="text-[11px] text-slate-500 mt-0.5">Otomatis dijadikan acuan resmi saat guru menyusun HES & HEB pada unit ini.</p>
@@ -116,9 +116,9 @@
         <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm space-y-4">
             <div class="flex items-center justify-between border-b border-slate-100 pb-3">
                 <h2 class="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                    <span class="w-2.5 h-2.5 rounded-full bg-teal-500"></span> Agenda Kegiatan Akademik
+                    <span class="w-2.5 h-2.5 rounded-full bg-primary-500"></span> Agenda Kegiatan Akademik
                 </h2>
-                <button type="button" onclick="tambahBarisAgenda()" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-bold transition-colors">
+                <button type="button" onclick="tambahBarisAgenda()" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary-50 hover:bg-primary-100 text-primary-700 text-xs font-bold transition-colors">
                     <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
                     Tambah Agenda
                 </button>
@@ -190,7 +190,7 @@
         <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm space-y-4">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
                 <div class="flex items-center gap-2">
-                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                    <span class="w-2.5 h-2.5 rounded-full bg-primary-500"></span>
                     <h2 class="text-sm font-bold text-slate-800 uppercase tracking-wider">
                         Pratinjau Matriks Kalender Tanggal Bulanan (Live Matrix)
                     </h2>
@@ -199,7 +199,7 @@
                     <button type="button" onclick="switchLiveMatrixSemester('all')" class="live-tab-btn px-3 py-1 rounded-lg transition-all text-slate-600 hover:text-slate-900" data-tab="all">
                         1 Tahun (12 Bulan)
                     </button>
-                    <button type="button" onclick="switchLiveMatrixSemester('Ganjil')" class="live-tab-btn px-3 py-1 rounded-lg transition-all bg-emerald-600 text-white shadow-sm" data-tab="Ganjil">
+                    <button type="button" onclick="switchLiveMatrixSemester('Ganjil')" class="live-tab-btn px-3 py-1 rounded-lg transition-all bg-primary-600 text-white shadow-sm" data-tab="Ganjil">
                         Semester Ganjil
                     </button>
                     <button type="button" onclick="switchLiveMatrixSemester('Genap')" class="live-tab-btn px-3 py-1 rounded-lg transition-all text-slate-600 hover:text-slate-900" data-tab="Genap">
@@ -211,7 +211,7 @@
             <!-- Legenda Warna -->
             <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 text-[11px] font-semibold text-slate-700">
                 <div class="flex items-center gap-1.5 p-1.5 rounded-xl bg-slate-50 border border-slate-200/80">
-                    <span class="w-3.5 h-3.5 rounded-md bg-emerald-500 text-white flex items-center justify-center text-[9px] font-bold"></span>
+                    <span class="w-3.5 h-3.5 rounded-md bg-primary-500 text-white flex items-center justify-center text-[9px] font-bold"></span>
                     <span class="truncate">KBM Efektif</span>
                 </div>
                 <div class="flex items-center gap-1.5 p-1.5 rounded-xl bg-slate-50 border border-slate-200/80">
@@ -247,7 +247,7 @@
             <a href="<?= url('kelola-perangkat-pembelajaran/kaldik') ?>" class="px-5 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors">
                 Batal
             </a>
-            <button type="submit" class="px-6 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-lg shadow-emerald-500/20 transition-all flex items-center gap-2">
+            <button type="submit" class="px-6 py-2.5 rounded-2xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-lg shadow-primary-500/20 transition-all flex items-center gap-2">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
                 Simpan Kalender Pendidikan
             </button>
@@ -260,7 +260,7 @@ let currentMatrixSemester = 'Ganjil';
 
 function updateUnitSelection(radio) {
     document.querySelectorAll('.unit-card').forEach(card => {
-        card.classList.remove('border-emerald-600', 'bg-emerald-50/40', 'ring-2', 'ring-emerald-500/20', 'shadow-sm');
+        card.classList.remove('border-primary-600', 'bg-primary-50/40', 'ring-2', 'ring-emerald-500/20', 'shadow-sm');
         card.classList.add('border-slate-200', 'bg-white');
         const indicator = card.querySelector('.unit-check-indicator');
         if (indicator) {
@@ -272,7 +272,7 @@ function updateUnitSelection(radio) {
     const selectedCard = radio.closest('.unit-card');
     if (selectedCard) {
         selectedCard.classList.remove('border-slate-200', 'bg-white');
-        selectedCard.classList.add('border-emerald-600', 'bg-emerald-50/40', 'ring-2', 'ring-emerald-500/20', 'shadow-sm');
+        selectedCard.classList.add('border-primary-600', 'bg-primary-50/40', 'ring-2', 'ring-emerald-500/20', 'shadow-sm');
         const indicator = selectedCard.querySelector('.unit-check-indicator');
         if (indicator) {
             indicator.classList.remove('hidden');
@@ -335,10 +335,10 @@ function switchLiveMatrixSemester(tab) {
     const btns = document.querySelectorAll('.live-tab-btn');
     btns.forEach(b => {
         if (b.getAttribute('data-tab') === tab) {
-            b.classList.add('bg-emerald-600', 'text-white', 'shadow-sm');
+            b.classList.add('bg-primary-600', 'text-white', 'shadow-sm');
             b.classList.remove('text-slate-600');
         } else {
-            b.classList.remove('bg-emerald-600', 'text-white', 'shadow-sm');
+            b.classList.remove('bg-primary-600', 'text-white', 'shadow-sm');
             b.classList.add('text-slate-600');
         }
     });
@@ -382,7 +382,7 @@ function renderLiveMatrix() {
     ];
 
     const categoryStyles = {
-        kbm: { bg: 'bg-emerald-500 text-white font-bold', label: 'KBM Efektif' },
+        kbm: { bg: 'bg-primary-500 text-white font-bold', label: 'KBM Efektif' },
         penilaian: { bg: 'bg-amber-400 text-amber-950 font-bold ring-1 ring-amber-500/30', label: 'Penilaian/Ujian' },
         libur_nasional: { bg: 'bg-rose-500 text-white font-bold', label: 'Libur Nasional' },
         libur_semester: { bg: 'bg-purple-500 text-white font-bold', label: 'Libur Semester' },
@@ -459,12 +459,12 @@ function renderLiveMatrix() {
 
         html += `
             <div class="bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden">
-                <div class="bg-gradient-to-r from-emerald-600 to-teal-700 text-white px-4 py-2.5 flex items-center justify-between">
+                <div class="bg-gradient-to-r from-primary-600 to-primary-700 text-white px-4 py-2.5 flex items-center justify-between">
                     <div>
                         <h4 class="text-xs sm:text-sm font-extrabold uppercase tracking-wide">
                             ${mon.name} ${mon.y}
                         </h4>
-                        <span class="text-[10px] text-emerald-100 font-medium">Semester ${mon.smt}</span>
+                        <span class="text-[10px] text-primary-100 font-medium">Semester ${mon.smt}</span>
                     </div>
                     <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-white">
                         ${countEfektif} HE • ${countLibur} HL

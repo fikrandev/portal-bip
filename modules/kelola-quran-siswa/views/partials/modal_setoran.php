@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Modal Setoran Al-Qur'an Siswa (Universal for PAUD, SD, SMP & SMA)
  * Variables expected:
@@ -17,14 +17,14 @@
         <div class="relative transform overflow-hidden rounded-3xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-2xl border border-slate-100">
             
             <!-- Modal Header -->
-            <div class="bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 px-6 py-4 text-white flex items-center justify-between">
+            <div class="bg-gradient-to-r from-primary-600 via-primary-600 to-primary-700 px-6 py-4 text-white flex items-center justify-between">
                 <div class="flex items-center gap-2.5">
                     <div class="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center text-lg">
                         📖
                     </div>
                     <div>
                         <h3 class="text-base font-bold leading-tight" id="modal-title">Input Setoran Qur'an Siswa</h3>
-                        <p class="text-xs text-emerald-100/90" id="modal-subtitle">Pencatatan ziyadah, muroja'ah & tilawah/iqro</p>
+                        <p class="text-xs text-primary-100/90" id="modal-subtitle">Pencatatan ziyadah, muroja'ah & tilawah/iqro</p>
                     </div>
                 </div>
                 <button type="button" onclick="closeModalSetoran()" class="p-1.5 rounded-full hover:bg-white/20 text-white/80 hover:text-white transition-colors">
@@ -44,7 +44,7 @@
                     <div>
                         <label class="block text-xs font-bold text-slate-700 mb-1">Jenjang Unit Siswa <span class="text-rose-500">*</span></label>
                         <select name="jenjang" id="setoran-jenjang" onchange="onJenjangChange(this.value)" required
-                                class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-slate-50">
+                                class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold focus:ring-2 focus:ring-emerald-500 focus:border-primary-500 bg-slate-50">
                             <option value="PAUD">🧸 PAUD / TK</option>
                             <option value="SD" selected>🎒 Sekolah Dasar (SD IT)</option>
                             <option value="SMP_SMA">🎓 SMP & SMA IT</option>
@@ -53,7 +53,7 @@
                     <div>
                         <label class="block text-xs font-bold text-slate-700 mb-1">Tanggal Setoran <span class="text-rose-500">*</span></label>
                         <input type="date" name="tanggal" value="<?= date('Y-m-d') ?>" required
-                               class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                               class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-emerald-500 focus:border-primary-500">
                     </div>
                 </div>
 
@@ -61,7 +61,7 @@
                 <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1">Nama Siswa / Santri <span class="text-rose-500">*</span></label>
                     <select name="siswa_id" id="setoran-siswa-id" required
-                            class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                            class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-primary-500">
                         <option value="">-- Pilih Siswa --</option>
                         <?php if (!empty($allStudents)): ?>
                             <?php foreach ($allStudents as $s): ?>
@@ -77,7 +77,7 @@
                 <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1">Jenis Setoran <span class="text-rose-500">*</span></label>
                     <select name="jenis_setoran" id="setoran-jenis" onchange="onJenisSetoranChange(this.value)" required
-                            class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                            class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold focus:ring-2 focus:ring-emerald-500 focus:border-primary-500">
                         <option value="ziyadah">Ziyadah (Hafalan Baru)</option>
                         <option value="murojaah">Muroja'ah (Pengulangan Hafalan)</option>
                         <option value="iqro" id="opt-jenis-iqro">Iqro' / Tilawati (Khusus PAUD/Tahsin Awal)</option>
@@ -155,14 +155,14 @@
                 </div>
 
                 <!-- 6. Penilaian Kualitas (Tajwid, Makhorij, Kelancaran) & Status -->
-                <div class="p-4 rounded-2xl bg-emerald-50/50 border border-emerald-200/70 space-y-3">
-                    <span class="text-xs font-extrabold text-emerald-950 flex items-center gap-1.5">
+                <div class="p-4 rounded-2xl bg-primary-50/50 border border-primary-200/70 space-y-3">
+                    <span class="text-xs font-extrabold text-primary-950 flex items-center gap-1.5">
                         <span>⭐</span> Penilaian Mutu Bacaan & Status Kelulusan
                     </span>
                     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
                         <div>
                             <label class="block text-[11px] font-bold text-slate-700 mb-1">Kelancaran</label>
-                            <select name="nilai_kelancaran" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white font-bold text-emerald-800">
+                            <select name="nilai_kelancaran" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white font-bold text-primary-800">
                                 <option value="A">A (Sangat Lancar)</option>
                                 <option value="B">B (Lancar)</option>
                                 <option value="C">C (Kurang Lancar)</option>
@@ -171,7 +171,7 @@
                         </div>
                         <div>
                             <label class="block text-[11px] font-bold text-slate-700 mb-1">Tajwid</label>
-                            <select name="nilai_tajwid" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white font-bold text-emerald-800">
+                            <select name="nilai_tajwid" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white font-bold text-primary-800">
                                 <option value="A">A (Sangat Baik)</option>
                                 <option value="B">B (Baik)</option>
                                 <option value="C">C (Cukup)</option>
@@ -180,7 +180,7 @@
                         </div>
                         <div>
                             <label class="block text-[11px] font-bold text-slate-700 mb-1">Makhorij</label>
-                            <select name="nilai_makhorij" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white font-bold text-emerald-800">
+                            <select name="nilai_makhorij" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white font-bold text-primary-800">
                                 <option value="A">A (Fashih)</option>
                                 <option value="B">B (Baik)</option>
                                 <option value="C">C (Cukup)</option>
@@ -189,7 +189,7 @@
                         </div>
                         <div>
                             <label class="block text-[11px] font-bold text-slate-700 mb-1">Status Hasil</label>
-                            <select name="status_lulus" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white font-extrabold text-teal-800">
+                            <select name="status_lulus" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white font-extrabold text-primary-800">
                                 <option value="lancar">✓ Lancar (Lanjut)</option>
                                 <option value="mutqin">⭐ Mutqin (Sempurna)</option>
                                 <option value="ulang">⟳ Mengulang</option>
@@ -203,7 +203,7 @@
                 <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1">Catatan Pembimbing / Evaluasi Tajwid</label>
                     <textarea name="catatan" rows="2" placeholder="Catatan perbaikan ayat tertentu, mad/ghunnah, motivasi siswa..." 
-                              class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"></textarea>
+                              class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-primary-500"></textarea>
                 </div>
 
                 <!-- Action Buttons -->
@@ -213,7 +213,7 @@
                         Batal
                     </button>
                     <button type="submit" 
-                            class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-xs shadow-md shadow-emerald-500/20 transition-all flex items-center gap-1.5">
+                            class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-primary-600 to-primary-600 hover:from-primary-700 hover:to-primary-700 text-white font-bold text-xs shadow-md shadow-primary-500/20 transition-all flex items-center gap-1.5">
                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                         </svg>

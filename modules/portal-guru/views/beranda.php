@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Beranda Guru (Mobile Dashboard)
  * Clean Card-based Ibadah Harian: items with sub-items trigger Android Bottom Sheet modals,
@@ -20,12 +20,12 @@
     
     <div class="flex items-center gap-2.5">
         <!-- Teacher Avatar Photo (Lazy Loaded) -->
-        <a href="<?= url('mobile/profil') ?>" class="relative block rounded-full p-0.5 bg-gradient-to-tr from-blue-500 to-sky-300 shadow-md press-bounce">
+        <a href="<?= url('mobile/profil') ?>" class="relative block rounded-full p-0.5 bg-gradient-to-tr from-primary-500 to-sky-300 shadow-md press-bounce">
             <img src="<?= asset('images/mobile/teacher_rina.jpg') ?>" 
                  alt="Bu Rina" 
                  loading="lazy"
                  class="w-14 h-14 rounded-full object-cover border-2 border-white">
-            <span class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full"></span>
+            <span class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-primary-500 border-2 border-white rounded-full"></span>
         </a>
 
         <!-- Notification Bell -->
@@ -45,13 +45,13 @@
         <div class="flex items-center justify-between gap-3">
             
             <!-- Left Green Badge Icon -->
-            <div id="beranda-checkin-badge" class="w-13 h-13 rounded-2xl bg-emerald-50 border border-emerald-100 flex flex-col items-center justify-center shrink-0">
-                <div class="w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-sm">
+            <div id="beranda-checkin-badge" class="w-13 h-13 rounded-2xl bg-primary-50 border border-primary-100 flex flex-col items-center justify-center shrink-0">
+                <div class="w-7 h-7 rounded-full bg-primary-500 text-white flex items-center justify-center shadow-sm">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
                     </svg>
                 </div>
-                <span class="text-[9px] font-bold text-emerald-700 mt-0.5">Check-in</span>
+                <span class="text-[9px] font-bold text-primary-700 mt-0.5">Check-in</span>
             </div>
 
             <!-- Middle Text -->
@@ -63,15 +63,15 @@
             </div>
 
             <!-- Right Green Pill Action Button -->
-            <a href="<?= url('mobile/absen') ?>" id="beranda-checkin-btn" class="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold bg-[#16a34a] hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20 press-bounce">
+            <a href="<?= url('mobile/absen') ?>" id="beranda-checkin-btn" class="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold bg-[#16a34a] hover:bg-primary-700 text-white shadow-md shadow-primary-600/20 press-bounce">
                 <span>📍</span>
                 <span>Check-in</span>
             </a>
         </div>
 
         <!-- Sub-bar: Belum check-in / Status -->
-        <div class="bg-[#f0fdf4] rounded-2xl p-2.5 flex items-center gap-2.5 mt-3 border border-emerald-100/70">
-            <div class="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 text-xs">
+        <div class="bg-[#f0fdf4] rounded-2xl p-2.5 flex items-center gap-2.5 mt-3 border border-primary-100/70">
+            <div class="w-6 h-6 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center shrink-0 text-xs">
                 <i data-lucide="clock" class="w-3.5 h-3.5"></i>
             </div>
             <div>
@@ -89,13 +89,13 @@
                 <h3 class="font-bold text-slate-800 text-xs">Ibadah Harian</h3>
             </div>
             <div class="flex items-center gap-1">
-                <a href="<?= url('mobile/quran') ?>" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 hover:bg-emerald-200 flex items-center gap-1 transition-all press-bounce">
+                <a href="<?= url('mobile/quran') ?>" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary-100 text-primary-800 hover:bg-primary-200 flex items-center gap-1 transition-all press-bounce">
                     <span>📖</span> Qur'an
                 </a>
                 <a href="<?= url('mobile/dzikir') ?>" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-800 hover:bg-purple-200 flex items-center gap-1 transition-all press-bounce">
                     <span>📿</span> Dzikir
                 </a>
-                <span id="ibadah-total-badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                <span id="ibadah-total-badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary-50 text-primary-700 border border-primary-200">
                     0/4 Selesai
                 </span>
             </div>
@@ -105,11 +105,11 @@
         <div class="grid grid-cols-4 gap-2">
             
             <!-- Card 1: Sholat 5 Waktu -->
-            <div onclick="openSholatModal()" id="card-ibadah-sholat" class="bg-white rounded-2xl p-2.5 shadow-sm border border-slate-100 hover:border-emerald-200 cursor-pointer press-bounce flex flex-col items-center text-center space-y-1.5 transition-all relative">
+            <div onclick="openSholatModal()" id="card-ibadah-sholat" class="bg-white rounded-2xl p-2.5 shadow-sm border border-slate-100 hover:border-primary-200 cursor-pointer press-bounce flex flex-col items-center text-center space-y-1.5 transition-all relative">
                 <span id="badge-ibadah-sholat" class="absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center text-[8px] font-bold">
                     ⋯
                 </span>
-                <div class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center text-base shadow-xs">
+                <div class="w-9 h-9 rounded-xl bg-primary-50 text-primary-700 flex items-center justify-center text-base shadow-xs">
                     🕌
                 </div>
                 <div class="w-full">
@@ -119,11 +119,11 @@
             </div>
 
             <!-- Card 2: Tilawah Al-Qur'an (Direct Click Toggle) -->
-            <div onclick="toggleDirectIbadah('tilawah')" id="card-ibadah-tilawah" class="bg-white rounded-2xl p-2.5 shadow-sm border border-slate-100 hover:border-blue-200 cursor-pointer press-bounce flex flex-col items-center text-center space-y-1.5 transition-all relative">
+            <div onclick="toggleDirectIbadah('tilawah')" id="card-ibadah-tilawah" class="bg-white rounded-2xl p-2.5 shadow-sm border border-slate-100 hover:border-primary-200 cursor-pointer press-bounce flex flex-col items-center text-center space-y-1.5 transition-all relative">
                 <span id="badge-ibadah-tilawah" class="absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center text-[8px] font-bold">
                     ⋯
                 </span>
-                <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center text-base shadow-xs">
+                <div class="w-9 h-9 rounded-xl bg-primary-50 text-primary-700 flex items-center justify-center text-base shadow-xs">
                     📖
                 </div>
                 <div class="w-full">
@@ -164,17 +164,17 @@
     </div>
 
     <!-- 3. Jadwal Hari Ini Card -->
-    <div class="bg-gradient-to-br from-blue-50/90 via-white to-sky-50/50 rounded-3xl p-4 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-blue-100/70 relative overflow-hidden">
+    <div class="bg-gradient-to-br from-primary-50/90 via-white to-sky-50/50 rounded-3xl p-4 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-primary-100/70 relative overflow-hidden">
         
         <!-- Header -->
         <div class="flex items-center justify-between mb-3.5">
             <div class="flex items-center gap-2.5">
-                <div class="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-600/30">
+                <div class="w-8 h-8 rounded-xl bg-primary-600 text-white flex items-center justify-center shadow-md shadow-primary-600/30">
                     <i data-lucide="calendar" class="w-4 h-4"></i>
                 </div>
                 <h3 class="font-bold text-slate-800 text-sm">Jadwal Hari Ini</h3>
             </div>
-            <a href="<?= url('mobile/kelas') ?>" class="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1">
+            <a href="<?= url('mobile/kelas') ?>" class="text-xs font-semibold text-primary-600 hover:text-primary-700 flex items-center gap-1">
                 Lihat Semua <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
             </a>
         </div>
@@ -186,16 +186,16 @@
             <div class="flex-1 space-y-3.5 pl-1">
                 
                 <!-- Schedule Item 1 -->
-                <div class="relative pl-5 border-l-2 border-blue-400">
-                    <span class="absolute -left-[5px] top-1 w-2.5 h-2.5 rounded-full bg-blue-600 ring-4 ring-blue-100"></span>
+                <div class="relative pl-5 border-l-2 border-primary-400">
+                    <span class="absolute -left-[5px] top-1 w-2.5 h-2.5 rounded-full bg-primary-600 ring-4 ring-primary-100"></span>
                     <p class="text-[10px] font-semibold text-slate-400">08.00 - 08.45</p>
                     <h4 class="text-xs font-bold text-slate-900 leading-snug">Matematika</h4>
                     <p class="text-[10px] text-slate-500 font-medium">Kelas 7A</p>
                 </div>
 
                 <!-- Schedule Item 2 -->
-                <div class="relative pl-5 border-l-2 border-blue-300">
-                    <span class="absolute -left-[5px] top-1 w-2.5 h-2.5 rounded-full bg-blue-500 ring-4 ring-blue-100"></span>
+                <div class="relative pl-5 border-l-2 border-primary-300">
+                    <span class="absolute -left-[5px] top-1 w-2.5 h-2.5 rounded-full bg-primary-500 ring-4 ring-primary-100"></span>
                     <p class="text-[10px] font-semibold text-slate-400">09.00 - 09.45</p>
                     <h4 class="text-xs font-bold text-slate-900 leading-snug">Matematika</h4>
                     <p class="text-[10px] text-slate-500 font-medium">Kelas 7B</p>
@@ -217,9 +217,9 @@
     <div class="grid grid-cols-2 gap-3">
         
         <!-- Metric 1: Kelas Diampu -->
-        <a href="<?= url('mobile/kelas') ?>" class="bg-white rounded-2xl p-3.5 shadow-sm border border-slate-100 hover:border-blue-200 transition-all press-bounce block">
+        <a href="<?= url('mobile/kelas') ?>" class="bg-white rounded-2xl p-3.5 shadow-sm border border-slate-100 hover:border-primary-200 transition-all press-bounce block">
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                <div class="w-10 h-10 rounded-2xl bg-primary-50 text-primary-600 flex items-center justify-center shrink-0">
                     <i data-lucide="users" class="w-5 h-5"></i>
                 </div>
                 <div>
@@ -234,9 +234,9 @@
         </a>
 
         <!-- Metric 2: Tugas Aktif -->
-        <a href="<?= url('mobile/buat-tugas') ?>" class="bg-white rounded-2xl p-3.5 shadow-sm border border-slate-100 hover:border-emerald-200 transition-all press-bounce block">
+        <a href="<?= url('mobile/buat-tugas') ?>" class="bg-white rounded-2xl p-3.5 shadow-sm border border-slate-100 hover:border-primary-200 transition-all press-bounce block">
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                <div class="w-10 h-10 rounded-2xl bg-primary-50 text-primary-600 flex items-center justify-center shrink-0">
                     <i data-lucide="clipboard-list" class="w-5 h-5"></i>
                 </div>
                 <div>
@@ -293,8 +293,8 @@
         <div class="bg-white rounded-3xl p-4 shadow-sm border border-slate-100 grid grid-cols-3 gap-3">
             
             <!-- 1: Al-Qur'an Digital (Emerald) -->
-            <a href="<?= url('mobile/quran') ?>" class="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-emerald-50/50 transition-all press-bounce">
-                <div class="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-md shadow-emerald-500/20 text-lg">
+            <a href="<?= url('mobile/quran') ?>" class="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-primary-50/50 transition-all press-bounce">
+                <div class="w-12 h-12 rounded-2xl bg-primary-600 text-white flex items-center justify-center shadow-md shadow-primary-500/20 text-lg">
                     📖
                 </div>
                 <span class="text-[11px] font-bold text-slate-800 text-center leading-tight">Al-Qur'an<br>Digital</span>
@@ -309,16 +309,16 @@
             </a>
 
             <!-- 3: Materi Pembelajaran (Blue) -->
-            <a href="<?= url('mobile/materi') ?>" class="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-blue-50/50 transition-all press-bounce">
-                <div class="w-12 h-12 rounded-2xl bg-[#3b82f6] text-white flex items-center justify-center shadow-md shadow-blue-500/20">
+            <a href="<?= url('mobile/materi') ?>" class="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-primary-50/50 transition-all press-bounce">
+                <div class="w-12 h-12 rounded-2xl bg-[#3b82f6] text-white flex items-center justify-center shadow-md shadow-primary-500/20">
                     <i data-lucide="book-open" class="w-5 h-5"></i>
                 </div>
                 <span class="text-[11px] font-bold text-slate-800 text-center leading-tight">Materi<br>Ajar</span>
             </a>
 
             <!-- 4: Buat Tugas (Green) -->
-            <a href="<?= url('mobile/buat-tugas') ?>" class="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-emerald-50/50 transition-all press-bounce">
-                <div class="w-12 h-12 rounded-2xl bg-[#10b981] text-white flex items-center justify-center shadow-md shadow-emerald-500/20">
+            <a href="<?= url('mobile/buat-tugas') ?>" class="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-primary-50/50 transition-all press-bounce">
+                <div class="w-12 h-12 rounded-2xl bg-[#10b981] text-white flex items-center justify-center shadow-md shadow-primary-500/20">
                     <i data-lucide="clipboard-check" class="w-5 h-5"></i>
                 </div>
                 <span class="text-[11px] font-bold text-slate-800 text-center leading-tight">Buat<br>Tugas</span>
@@ -372,13 +372,13 @@
             </a>
 
             <!-- Item 3: Pengajuan Cuti (Teal) -->
-            <a href="<?= url('mobile/cuti') ?>" class="bg-white rounded-3xl p-3 shadow-sm border border-slate-100 hover:border-teal-200 flex flex-col items-center text-center gap-1.5 press-bounce">
-                <div class="w-11 h-11 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center text-lg font-bold shadow-xs">
+            <a href="<?= url('mobile/cuti') ?>" class="bg-white rounded-3xl p-3 shadow-sm border border-slate-100 hover:border-primary-200 flex flex-col items-center text-center gap-1.5 press-bounce">
+                <div class="w-11 h-11 rounded-2xl bg-primary-50 text-primary-600 flex items-center justify-center text-lg font-bold shadow-xs">
                     🏖️
                 </div>
                 <div>
                     <h4 class="font-black text-slate-900 text-[11px] leading-tight">Pengajuan<br>Cuti Guru</h4>
-                    <span class="text-[9px] font-bold text-teal-600">Sisa 10 Hari</span>
+                    <span class="text-[9px] font-bold text-primary-600">Sisa 10 Hari</span>
                 </div>
             </a>
 
@@ -386,7 +386,7 @@
     </div>
 
     <!-- 6. Motivational Banner Card (Guru Hebat) -->
-    <div class="bg-gradient-to-r from-blue-50 via-sky-50 to-indigo-50 rounded-3xl p-4 border border-blue-100/70 shadow-sm relative overflow-hidden flex items-center justify-between gap-3">
+    <div class="bg-gradient-to-r from-primary-50 via-sky-50 to-indigo-50 rounded-3xl p-4 border border-primary-100/70 shadow-sm relative overflow-hidden flex items-center justify-between gap-3">
         
         <!-- Left: Potted plant art -->
         <div class="w-12 h-16 shrink-0 flex items-center justify-center">
@@ -405,7 +405,7 @@
 
         <!-- Center Text -->
         <div class="flex-1 min-w-0">
-            <h4 class="font-bold text-xs text-blue-950 flex items-center gap-1 leading-snug">
+            <h4 class="font-bold text-xs text-primary-950 flex items-center gap-1 leading-snug">
                 Terima kasih, Guru Hebat! 💙
             </h4>
             <p class="text-[10px] text-slate-500 font-normal leading-tight mt-0.5">
@@ -415,7 +415,7 @@
 
         <!-- Right: Hand with blue pen & sparkle decoration -->
         <div class="w-16 h-14 shrink-0 relative flex items-center justify-center">
-            <span class="absolute top-0 right-1 text-blue-400 text-xs">✦</span>
+            <span class="absolute top-0 right-1 text-primary-400 text-xs">✦</span>
             <span class="absolute bottom-1 left-0 text-sky-400 text-[10px]">✦</span>
             
             <svg class="w-14 h-14" viewBox="0 0 80 80" fill="none">
@@ -465,7 +465,7 @@
             listHtml += `
                 <div class="flex items-center justify-between p-2.5 rounded-2xl bg-slate-50 border border-slate-100 gap-2">
                     <label class="flex items-center gap-2.5 cursor-pointer min-w-0 flex-1">
-                        <input type="checkbox" id="modal-sholat-${s.id}" ${isChecked ? 'checked' : ''} class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500">
+                        <input type="checkbox" id="modal-sholat-${s.id}" ${isChecked ? 'checked' : ''} class="w-4 h-4 rounded text-primary-600 focus:ring-emerald-500">
                         <div class="min-w-0">
                             <p class="text-xs font-bold text-slate-800 leading-tight">${s.name}</p>
                             <p class="text-[10px] text-slate-400 font-mono">${s.time} WITA</p>
@@ -474,10 +474,10 @@
 
                     <!-- Location Toggle Pill -->
                     <div class="flex items-center bg-white p-0.5 rounded-xl border border-slate-200 text-[10px] font-bold shrink-0" data-modal-sholat="${s.id}">
-                        <button type="button" onclick="setModalSholatLoc('${s.id}', 'rumah')" class="modal-loc-rumah px-2 py-1 rounded-lg ${isRumah ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'text-slate-500'} font-bold transition-all">
+                        <button type="button" onclick="setModalSholatLoc('${s.id}', 'rumah')" class="modal-loc-rumah px-2 py-1 rounded-lg ${isRumah ? 'bg-primary-50 text-primary-700 border border-primary-200' : 'text-slate-500'} font-bold transition-all">
                             🏠 Rumah
                         </button>
-                        <button type="button" onclick="setModalSholatLoc('${s.id}', 'masjid')" class="modal-loc-masjid px-2 py-1 rounded-lg ${!isRumah ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'text-slate-500'} font-bold transition-all">
+                        <button type="button" onclick="setModalSholatLoc('${s.id}', 'masjid')" class="modal-loc-masjid px-2 py-1 rounded-lg ${!isRumah ? 'bg-primary-50 text-primary-700 border border-primary-200' : 'text-slate-500'} font-bold transition-all">
                             🕌 Masjid
                         </button>
                     </div>
@@ -489,7 +489,7 @@
             title: 'Sholat Fardhu 5 Waktu',
             subtitle: 'Pilih waktu sholat dan tempat pelaksanaan',
             icon: '🕌',
-            iconBg: 'bg-emerald-100 text-emerald-700',
+            iconBg: 'bg-primary-100 text-primary-700',
             content: `
                 <div class="space-y-2.5 pt-1 text-left">
                     <!-- Gender Selector -->
@@ -499,7 +499,7 @@
                             <button type="button" onclick="switchModalGender('P')" id="modal-gender-p" class="px-2 py-1 rounded-lg ${ibadahData.gender === 'P' ? 'bg-pink-500 text-white' : 'text-slate-600'} transition-all">
                                 👩 Perempuan (Di Rumah)
                             </button>
-                            <button type="button" onclick="switchModalGender('L')" id="modal-gender-l" class="px-2 py-1 rounded-lg ${ibadahData.gender === 'L' ? 'bg-blue-600 text-white' : 'text-slate-600'} transition-all">
+                            <button type="button" onclick="switchModalGender('L')" id="modal-gender-l" class="px-2 py-1 rounded-lg ${ibadahData.gender === 'L' ? 'bg-primary-600 text-white' : 'text-slate-600'} transition-all">
                                 👨 Laki-laki (Di Masjid)
                             </button>
                         </div>
@@ -517,7 +517,7 @@
                 },
                 {
                     text: 'Simpan',
-                    className: 'flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-2xl shadow-md text-center press-bounce',
+                    className: 'flex-1 py-3 bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs rounded-2xl shadow-md text-center press-bounce',
                     autoClose: false,
                     onClick: (e, btn) => {
                         AndroidUI.setButtonLoading(btn, 'Menyimpan...');
@@ -543,10 +543,10 @@
         const btnR = container.querySelector('.modal-loc-rumah');
         const btnM = container.querySelector('.modal-loc-masjid');
         if (loc === 'rumah') {
-            btnR.className = 'modal-loc-rumah px-2 py-1 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold transition-all';
+            btnR.className = 'modal-loc-rumah px-2 py-1 rounded-lg bg-primary-50 text-primary-700 border border-primary-200 font-bold transition-all';
             btnM.className = 'modal-loc-masjid px-2 py-1 rounded-lg text-slate-500 font-medium transition-all';
         } else {
-            btnM.className = 'modal-loc-masjid px-2 py-1 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 font-bold transition-all';
+            btnM.className = 'modal-loc-masjid px-2 py-1 rounded-lg bg-primary-50 text-primary-700 border border-primary-200 font-bold transition-all';
             btnR.className = 'modal-loc-rumah px-2 py-1 rounded-lg text-slate-500 font-medium transition-all';
         }
     }
@@ -561,7 +561,7 @@
         const btnL = document.getElementById('modal-gender-l');
         if (btnP && btnL) {
             btnP.className = `px-2 py-1 rounded-lg ${gender === 'P' ? 'bg-pink-500 text-white' : 'text-slate-600'} transition-all`;
-            btnL.className = `px-2 py-1 rounded-lg ${gender === 'L' ? 'bg-blue-600 text-white' : 'text-slate-600'} transition-all`;
+            btnL.className = `px-2 py-1 rounded-lg ${gender === 'L' ? 'bg-primary-600 text-white' : 'text-slate-600'} transition-all`;
         }
     }
 
@@ -571,24 +571,24 @@
             title: 'Tilawah Al-Qur\'an',
             subtitle: 'Target harian membaca Al-Qur\'an',
             icon: '📖',
-            iconBg: 'bg-blue-100 text-blue-600',
+            iconBg: 'bg-primary-100 text-primary-600',
             content: `
                 <div class="space-y-3 pt-1 text-left">
-                    <label class="flex items-center gap-2.5 p-3 rounded-2xl bg-blue-50 border border-blue-100 cursor-pointer">
-                        <input type="checkbox" id="modal-check-tilawah" ${ibadahData.tilawah.checked ? 'checked' : ''} class="w-4 h-4 rounded text-blue-600 focus:ring-blue-500">
-                        <span class="text-xs font-bold text-blue-900">Sudah Tilawah Hari Ini</span>
+                    <label class="flex items-center gap-2.5 p-3 rounded-2xl bg-primary-50 border border-primary-100 cursor-pointer">
+                        <input type="checkbox" id="modal-check-tilawah" ${ibadahData.tilawah.checked ? 'checked' : ''} class="w-4 h-4 rounded text-primary-600 focus:ring-primary-500">
+                        <span class="text-xs font-bold text-primary-900">Sudah Tilawah Hari Ini</span>
                     </label>
 
                     <div>
                         <label class="block text-xs font-bold text-slate-700 mb-1">Capaian Ayat / Halaman / Juz</label>
-                        <input type="text" id="modal-input-tilawah" value="${ibadahData.tilawah.text || ''}" placeholder="Contoh: QS. Al-Kahfi: 1-10 (Hal. 293)" class="w-full px-3.5 py-2.5 text-xs bg-slate-50 rounded-2xl border border-slate-200 font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-inner">
+                        <input type="text" id="modal-input-tilawah" value="${ibadahData.tilawah.text || ''}" placeholder="Contoh: QS. Al-Kahfi: 1-10 (Hal. 293)" class="w-full px-3.5 py-2.5 text-xs bg-slate-50 rounded-2xl border border-slate-200 font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-inner">
                     </div>
 
                     <div class="flex flex-wrap gap-1.5 pt-0.5">
-                        <button type="button" onclick="setTilawahQuick('1 Halaman')" class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 hover:bg-blue-50 hover:text-blue-700">+ 1 Halaman</button>
-                        <button type="button" onclick="setTilawahQuick('1 Ruku\'')" class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 hover:bg-blue-50 hover:text-blue-700">+ 1 Ruku'</button>
-                        <button type="button" onclick="setTilawahQuick('1/2 Juz')" class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 hover:bg-blue-50 hover:text-blue-700">+ 1/2 Juz</button>
-                        <button type="button" onclick="setTilawahQuick('1 Juz')" class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 hover:bg-blue-50 hover:text-blue-700">+ 1 Juz</button>
+                        <button type="button" onclick="setTilawahQuick('1 Halaman')" class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 hover:bg-primary-50 hover:text-primary-700">+ 1 Halaman</button>
+                        <button type="button" onclick="setTilawahQuick('1 Ruku\'')" class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 hover:bg-primary-50 hover:text-primary-700">+ 1 Ruku'</button>
+                        <button type="button" onclick="setTilawahQuick('1/2 Juz')" class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 hover:bg-primary-50 hover:text-primary-700">+ 1/2 Juz</button>
+                        <button type="button" onclick="setTilawahQuick('1 Juz')" class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 hover:bg-primary-50 hover:text-primary-700">+ 1 Juz</button>
                     </div>
                 </div>
             `,
@@ -599,7 +599,7 @@
                 },
                 {
                     text: 'Simpan',
-                    className: 'flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-2xl shadow-md text-center press-bounce',
+                    className: 'flex-1 py-3 bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs rounded-2xl shadow-md text-center press-bounce',
                     autoClose: false,
                     onClick: (e, btn) => {
                         AndroidUI.setButtonLoading(btn, 'Menyimpan...');
@@ -774,20 +774,20 @@
         const subSholat = document.getElementById('sub-ibadah-sholat');
 
         if (sholatDone === 5) {
-            badgeSholat.className = 'absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[8px] font-bold shadow-xs';
+            badgeSholat.className = 'absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full bg-primary-500 text-white flex items-center justify-center text-[8px] font-bold shadow-xs';
             badgeSholat.innerHTML = '✓';
             subSholat.textContent = `5/5 ✓`;
-            cardSholat.classList.add('border-emerald-200', 'bg-emerald-50/20');
+            cardSholat.classList.add('border-primary-200', 'bg-primary-50/20');
         } else if (sholatDone > 0) {
             badgeSholat.className = 'absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full bg-amber-500 text-white flex items-center justify-center text-[8px] font-bold';
             badgeSholat.innerHTML = `${sholatDone}`;
             subSholat.textContent = `${sholatDone}/5`;
-            cardSholat.classList.remove('border-emerald-200', 'bg-emerald-50/20');
+            cardSholat.classList.remove('border-primary-200', 'bg-primary-50/20');
         } else {
             badgeSholat.className = 'absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center text-[8px] font-bold';
             badgeSholat.innerHTML = '⋯';
             subSholat.textContent = `0/5`;
-            cardSholat.classList.remove('border-emerald-200', 'bg-emerald-50/20');
+            cardSholat.classList.remove('border-primary-200', 'bg-primary-50/20');
         }
 
         // 2. Tilawah Card
@@ -796,15 +796,15 @@
         const subTilawah = document.getElementById('sub-ibadah-tilawah');
 
         if (ibadahData.tilawah.checked) {
-            badgeTilawah.className = 'absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full bg-blue-500 text-white flex items-center justify-center text-[8px] font-bold shadow-xs';
+            badgeTilawah.className = 'absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full bg-primary-500 text-white flex items-center justify-center text-[8px] font-bold shadow-xs';
             badgeTilawah.innerHTML = '✓';
             subTilawah.textContent = 'Selesai ✓';
-            cardTilawah.classList.add('border-blue-200', 'bg-blue-50/20');
+            cardTilawah.classList.add('border-primary-200', 'bg-primary-50/20');
         } else {
             badgeTilawah.className = 'absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center text-[8px] font-bold';
             badgeTilawah.innerHTML = '⋯';
             subTilawah.textContent = 'Belum';
-            cardTilawah.classList.remove('border-blue-200', 'bg-blue-50/20');
+            cardTilawah.classList.remove('border-primary-200', 'bg-primary-50/20');
         }
 
         // 3. Dzikir Card
@@ -861,9 +861,9 @@
         if (totalBadge) {
             totalBadge.textContent = `${totalCompleted}/4 Selesai`;
             if (totalCompleted === 4) {
-                totalBadge.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-600 text-white shadow-xs';
+                totalBadge.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-primary-600 text-white shadow-xs';
             } else {
-                totalBadge.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200';
+                totalBadge.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-primary-50 text-primary-700 border border-primary-200';
             }
         }
     }

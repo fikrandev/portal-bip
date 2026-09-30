@@ -1,9 +1,9 @@
-<div class="space-y-6">
+﻿<div class="space-y-6">
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
             <div class="flex items-center gap-2 flex-wrap mb-1.5">
-                <span class="px-3 py-1 rounded-xl text-xs font-black bg-teal-50 text-teal-700 border border-teal-200">
+                <span class="px-3 py-1 rounded-xl text-xs font-black bg-primary-50 text-primary-700 border border-primary-200">
                     Penilaian 1 Mapel &bull; 1 Semester
                 </span>
                 <span class="px-3 py-1 rounded-xl text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
@@ -14,7 +14,7 @@
                 </span>
             </div>
             <h1 class="text-xl sm:text-2xl font-bold text-slate-800 tracking-tight flex items-center gap-3">
-                <span class="w-10 h-10 rounded-2xl bg-gradient-to-br from-teal-400 to-indigo-600 flex items-center justify-center text-white font-black text-base shadow-md shadow-teal-500/20 shrink-0">
+                <span class="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary-400 to-indigo-600 flex items-center justify-center text-white font-black text-base shadow-md shadow-primary-500/20 shrink-0">
                     <?= strtoupper(mb_substr($guruNama ?? 'G', 0, 1)) ?>
                 </span>
                 <span><?= e($guruNama) ?></span>
@@ -32,8 +32,8 @@
     </div>
 
     <!-- Info Banner -->
-    <div class="bg-gradient-to-r from-teal-50/80 via-indigo-50/50 to-sky-50/60 border border-teal-200/70 rounded-3xl p-5 flex items-start gap-4 shadow-xs">
-        <div class="w-11 h-11 rounded-2xl bg-teal-100/80 text-teal-800 flex items-center justify-center text-xl shrink-0 shadow-xs border border-teal-200/50">
+    <div class="bg-gradient-to-r from-primary-50/80 via-indigo-50/50 to-sky-50/60 border border-primary-200/70 rounded-3xl p-5 flex items-start gap-4 shadow-xs">
+        <div class="w-11 h-11 rounded-2xl bg-primary-100/80 text-primary-800 flex items-center justify-center text-xl shrink-0 shadow-xs border border-primary-200/50">
             📋
         </div>
         <div class="min-w-0">
@@ -58,9 +58,9 @@
             <?php foreach ($mapelGroup as $mapel => $kelasList): ?>
                 <div class="bg-white rounded-3xl border border-slate-200/80 shadow-sm overflow-hidden">
                     <!-- Mapel Header -->
-                    <div class="px-6 py-4 bg-gradient-to-r from-slate-50 via-slate-50/90 to-teal-50/30 border-b border-slate-200/80 flex items-center justify-between gap-4 flex-wrap">
+                    <div class="px-6 py-4 bg-gradient-to-r from-slate-50 via-slate-50/90 to-primary-50/30 border-b border-slate-200/80 flex items-center justify-between gap-4 flex-wrap">
                         <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-2xl bg-teal-600 text-white flex items-center justify-center text-lg shrink-0 shadow-md shadow-teal-500/20">
+                            <div class="w-10 h-10 rounded-2xl bg-primary-600 text-white flex items-center justify-center text-lg shrink-0 shadow-md shadow-primary-500/20">
                                 📖
                             </div>
                             <div>
@@ -81,7 +81,7 @@
                             <div class="p-5 sm:px-6 sm:py-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-slate-50/60 transition-colors">
                                 <div class="flex items-start sm:items-center gap-4 min-w-0">
                                     <!-- Class Badge / Icon -->
-                                    <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-50 to-teal-50 border border-teal-200/60 text-teal-700 flex items-center justify-center text-2xl shrink-0 shadow-xs">
+                                    <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-50 to-primary-50 border border-primary-200/60 text-primary-700 flex items-center justify-center text-2xl shrink-0 shadow-xs">
                                         🏫
                                     </div>
                                     
@@ -92,7 +92,7 @@
                                                 <?= e($item['kelas']) ?>
                                             </h4>
                                             <?php if (!empty($item['status'])): ?>
-                                                <span class="px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                                <span class="px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider bg-primary-50 text-primary-700 border border-primary-200">
                                                     <?= ucfirst(e($item['status'])) ?>
                                                 </span>
                                             <?php endif; ?>
@@ -107,7 +107,7 @@
                                             <?php endif; ?>
 
                                             <!-- Semester -->
-                                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl font-bold bg-blue-50 text-blue-700 border border-blue-200/70">
+                                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl font-bold bg-primary-50 text-primary-700 border border-primary-200/70">
                                                 📅 Semester <?= e($group['semester'] ?? '-') ?>
                                             </span>
 
@@ -118,7 +118,7 @@
 
                                             <!-- Total TP -->
                                             <?php if (!empty($item['tp_count'])): ?>
-                                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl font-bold bg-teal-50 text-teal-700 border border-teal-200/70">
+                                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl font-bold bg-primary-50 text-primary-700 border border-primary-200/70">
                                                     🎯 <?= $item['tp_count'] ?> TP
                                                 </span>
                                             <?php endif; ?>
@@ -130,7 +130,7 @@
 
                                             <!-- Progress Nilai jika sudah diisi -->
                                             <?php if (!empty($item['nilai_count']) && $item['nilai_count'] > 0): ?>
-                                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-xs">
+                                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl font-bold bg-primary-100 text-primary-800 border border-primary-300 shadow-xs">
                                                     ✓ <?= (int)$item['nilai_count'] ?> Siswa Dinilai
                                                 </span>
                                             <?php endif; ?>
@@ -141,7 +141,7 @@
                                 <!-- Action Button -->
                                 <div class="shrink-0 flex items-center self-end md:self-auto pt-2 md:pt-0">
                                     <a href="<?= url("kelola-nilai/input/{$groupId}/doc/{$item['doc_id']}") ?>" 
-                                       class="inline-flex items-center gap-2.5 px-6 py-3 rounded-2xl bg-teal-600 hover:bg-teal-700 active:scale-95 text-white font-bold text-xs sm:text-sm shadow-md shadow-teal-600/25 hover:shadow-lg hover:shadow-teal-600/35 transition-all">
+                                       class="inline-flex items-center gap-2.5 px-6 py-3 rounded-2xl bg-primary-600 hover:bg-primary-700 active:scale-95 text-white font-bold text-xs sm:text-sm shadow-md shadow-primary-600/25 hover:shadow-lg hover:shadow-primary-600/35 transition-all">
                                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125" />
                                         </svg>

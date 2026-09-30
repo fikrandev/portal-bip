@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Form Presensi Harian Kelas Siswa (Wali Kelas / Piket)
  * Dilengkapi Autosave real-time, tombol "Set Semua Hadir", live counter, dan cetak Jurnal Harian A4
@@ -10,10 +10,10 @@ $dayName = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'][date
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
             <div class="flex items-center gap-2">
-                <span class="px-3 py-1 rounded-xl text-xs font-black bg-teal-50 text-teal-700 border border-teal-200">
+                <span class="px-3 py-1 rounded-xl text-xs font-black bg-primary-50 text-primary-700 border border-primary-200">
                     Presensi Harian Rombel
                 </span>
-                <span class="px-3 py-1 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                <span class="px-3 py-1 rounded-xl text-xs font-bold bg-primary-50 text-primary-700 border border-primary-200">
                     <?= $dayName ?>, <?= date('d F Y', strtotime($tanggal)) ?>
                 </span>
             </div>
@@ -35,11 +35,11 @@ $dayName = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'][date
                 <svg class="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
                 <span>Cetak Jurnal A4</span>
             </a>
-            <button type="button" onclick="setAllHadir()" class="px-4 py-2.5 rounded-2xl bg-teal-50 text-teal-700 border border-teal-300 hover:bg-teal-100 font-bold text-xs transition-all flex items-center gap-1.5 shadow-sm">
+            <button type="button" onclick="setAllHadir()" class="px-4 py-2.5 rounded-2xl bg-primary-50 text-primary-700 border border-primary-300 hover:bg-primary-100 font-bold text-xs transition-all flex items-center gap-1.5 shadow-sm">
                 <span>⚡</span>
                 <span>Set Semua Hadir</span>
             </button>
-            <button type="button" onclick="document.getElementById('formPresensiKelas').submit()" class="px-5 py-2.5 rounded-2xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-md shadow-teal-500/20 transition-all flex items-center gap-2">
+            <button type="button" onclick="document.getElementById('formPresensiKelas').submit()" class="px-5 py-2.5 rounded-2xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-md shadow-primary-500/20 transition-all flex items-center gap-2">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
                 <span>Simpan Presensi</span>
             </button>
@@ -50,12 +50,12 @@ $dayName = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'][date
     <div class="bg-white rounded-3xl border border-slate-200/80 p-4 sm:p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div class="flex items-center gap-2 flex-wrap">
             <span class="text-xs font-bold text-slate-400 mr-2 uppercase tracking-wider">Live Counter Rombel:</span>
-            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold bg-primary-50 text-primary-700 border border-primary-200">
+                <span class="w-2 h-2 rounded-full bg-primary-500"></span>
                 <span>Hadir: <strong id="cnt_H">0</strong></span>
             </span>
-            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
-                <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold bg-primary-50 text-primary-700 border border-primary-200">
+                <span class="w-2 h-2 rounded-full bg-primary-500"></span>
                 <span>Sakit: <strong id="cnt_S">0</strong></span>
             </span>
             <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
@@ -72,8 +72,8 @@ $dayName = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'][date
             </span>
         </div>
 
-        <div id="autosaveStatus" class="flex items-center gap-2 text-xs font-bold text-teal-600">
-            <svg class="w-4 h-4 text-teal-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+        <div id="autosaveStatus" class="flex items-center gap-2 text-xs font-bold text-primary-600">
+            <svg class="w-4 h-4 text-primary-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
             <span>Autosave Aktif</span>
         </div>
     </div>
@@ -89,14 +89,14 @@ $dayName = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'][date
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Tanggal Presensi</label>
                     <input type="date" name="tanggal" value="<?= $tanggal ?>" 
                            onchange="reloadWithDate(this.value)" 
-                           class="w-full px-3 py-2 rounded-2xl border border-slate-200 text-xs font-bold text-slate-700 bg-slate-50 focus:ring-2 focus:ring-teal-500 focus:outline-none">
+                           class="w-full px-3 py-2 rounded-2xl border border-slate-200 text-xs font-bold text-slate-700 bg-slate-50 focus:ring-2 focus:ring-primary-500 focus:outline-none">
                 </div>
 
                 <!-- Catatan Sesi / Jurnal Kelas -->
                 <div class="sm:col-span-2">
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Catatan Khusus Kelas / Jurnal Piket</label>
                     <input type="text" name="catatan_sesi" value="<?= htmlspecialchars($session['catatan'] ?? '') ?>" 
-                           class="w-full px-4 py-2 rounded-2xl border border-slate-200 text-xs font-medium text-slate-700 bg-slate-50 focus:ring-2 focus:ring-teal-500 focus:outline-none" 
+                           class="w-full px-4 py-2 rounded-2xl border border-slate-200 text-xs font-medium text-slate-700 bg-slate-50 focus:ring-2 focus:ring-primary-500 focus:outline-none" 
                            placeholder="Cth: Suasana kelas kondusif, 1 siswa sakit di UKS setelah jam ke-3">
                 </div>
             </div>
@@ -147,7 +147,7 @@ $dayName = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'][date
 
                                         <!-- L/P -->
                                         <td class="py-3 px-4 text-center">
-                                            <span class="px-2 py-0.5 rounded-md text-[10px] font-bold <?= $sw['jenis_kelamin'] === 'L' ? 'bg-blue-50 text-blue-700' : 'bg-pink-50 text-pink-700' ?>">
+                                            <span class="px-2 py-0.5 rounded-md text-[10px] font-bold <?= $sw['jenis_kelamin'] === 'L' ? 'bg-primary-50 text-primary-700' : 'bg-pink-50 text-pink-700' ?>">
                                                 <?= htmlspecialchars($sw['jenis_kelamin'] ?: '-') ?>
                                             </span>
                                         </td>
@@ -158,7 +158,7 @@ $dayName = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'][date
                                                 <!-- H: Hadir -->
                                                 <label class="cursor-pointer">
                                                     <input type="radio" name="status[<?= $sid ?>]" value="H" class="sr-only status-radio" <?= $curStatus === 'H' ? 'checked' : '' ?> onchange="onStatusChanged(<?= $sid ?>, 'H', this)">
-                                                    <span class="status-btn px-2.5 py-1 rounded-xl text-xs font-black transition-all inline-block <?= $curStatus === 'H' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-600 hover:text-emerald-700' ?>">
+                                                    <span class="status-btn px-2.5 py-1 rounded-xl text-xs font-black transition-all inline-block <?= $curStatus === 'H' ? 'bg-primary-600 text-white shadow-sm' : 'text-slate-600 hover:text-primary-700' ?>">
                                                         H
                                                     </span>
                                                 </label>
@@ -166,7 +166,7 @@ $dayName = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'][date
                                                 <!-- S: Sakit -->
                                                 <label class="cursor-pointer">
                                                     <input type="radio" name="status[<?= $sid ?>]" value="S" class="sr-only status-radio" <?= $curStatus === 'S' ? 'checked' : '' ?> onchange="onStatusChanged(<?= $sid ?>, 'S', this)">
-                                                    <span class="status-btn px-2.5 py-1 rounded-xl text-xs font-black transition-all inline-block <?= $curStatus === 'S' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600 hover:text-blue-700' ?>">
+                                                    <span class="status-btn px-2.5 py-1 rounded-xl text-xs font-black transition-all inline-block <?= $curStatus === 'S' ? 'bg-primary-600 text-white shadow-sm' : 'text-slate-600 hover:text-primary-700' ?>">
                                                         S
                                                     </span>
                                                 </label>
@@ -202,7 +202,7 @@ $dayName = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'][date
                                             <input type="text" name="catatan[<?= $sid ?>]" value="<?= htmlspecialchars($curCatatan) ?>" 
                                                    onblur="onNoteBlur(<?= $sid ?>, this.value)"
                                                    placeholder="Catatan..." 
-                                                   class="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs focus:ring-1 focus:ring-teal-500 focus:outline-none bg-slate-50/50">
+                                                   class="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs focus:ring-1 focus:ring-primary-500 focus:outline-none bg-slate-50/50">
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
@@ -216,11 +216,11 @@ $dayName = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'][date
             <div class="mt-6 flex items-center justify-between">
                 <p class="text-xs text-slate-400">Setiap perubahan status dan catatan otomatis disimpan ke database.</p>
                 <div class="flex items-center gap-3">
-                    <button type="button" onclick="setAllHadir()" class="px-4 py-2.5 rounded-2xl bg-teal-50 text-teal-700 border border-teal-300 hover:bg-teal-100 font-bold text-xs transition-all flex items-center gap-1.5 shadow-sm">
+                    <button type="button" onclick="setAllHadir()" class="px-4 py-2.5 rounded-2xl bg-primary-50 text-primary-700 border border-primary-300 hover:bg-primary-100 font-bold text-xs transition-all flex items-center gap-1.5 shadow-sm">
                         <span>⚡</span>
                         <span>Set Semua Hadir</span>
                     </button>
-                    <button type="submit" class="px-6 py-2.5 rounded-2xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-md shadow-teal-500/20 transition-all flex items-center gap-2">
+                    <button type="submit" class="px-6 py-2.5 rounded-2xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-md shadow-primary-500/20 transition-all flex items-center gap-2">
                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
                         <span>Simpan Presensi Kelas</span>
                     </button>
@@ -259,8 +259,8 @@ function updateRadioStyles(row, chosenVal) {
     });
     const activeSpan = row.querySelector(`input[value="${chosenVal}"] + .status-btn`);
     if (activeSpan) {
-        if (chosenVal === 'H') activeSpan.className = 'status-btn px-2.5 py-1 rounded-xl text-xs font-black transition-all inline-block bg-emerald-600 text-white shadow-sm';
-        else if (chosenVal === 'S') activeSpan.className = 'status-btn px-2.5 py-1 rounded-xl text-xs font-black transition-all inline-block bg-blue-600 text-white shadow-sm';
+        if (chosenVal === 'H') activeSpan.className = 'status-btn px-2.5 py-1 rounded-xl text-xs font-black transition-all inline-block bg-primary-600 text-white shadow-sm';
+        else if (chosenVal === 'S') activeSpan.className = 'status-btn px-2.5 py-1 rounded-xl text-xs font-black transition-all inline-block bg-primary-600 text-white shadow-sm';
         else if (chosenVal === 'I') activeSpan.className = 'status-btn px-2.5 py-1 rounded-xl text-xs font-black transition-all inline-block bg-amber-500 text-white shadow-sm';
         else if (chosenVal === 'A') activeSpan.className = 'status-btn px-2.5 py-1 rounded-xl text-xs font-black transition-all inline-block bg-rose-600 text-white shadow-sm';
         else if (chosenVal === 'T') activeSpan.className = 'status-btn px-2.5 py-1 rounded-xl text-xs font-black transition-all inline-block bg-purple-600 text-white shadow-sm';
@@ -273,7 +273,7 @@ function showAutosaveStatus(msg, isSaving = false) {
     if (isSaving) {
         el.innerHTML = '<span class="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span><span class="text-amber-600">Menyimpan...</span>';
     } else {
-        el.innerHTML = '<svg class="w-4 h-4 text-teal-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg><span class="text-teal-600">' + msg + '</span>';
+        el.innerHTML = '<svg class="w-4 h-4 text-primary-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg><span class="text-primary-600">' + msg + '</span>';
     }
 }
 

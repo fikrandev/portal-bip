@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Pengaturan JP & Jam Rutin Harian - View
  */
@@ -26,7 +26,7 @@
             </p>
         </div>
         <div class="flex items-center gap-2">
-            <a href="<?= url('kelola-perangkat-pembelajaran/jadwal/generate/' . $grup['id']) ?>" class="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-sm shadow-emerald-600/30 transition-all">
+            <a href="<?= url('kelola-perangkat-pembelajaran/jadwal/generate/' . $grup['id']) ?>" class="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-xs font-semibold shadow-sm shadow-primary-600/30 transition-all">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"/></svg>
                 <span>Buka Generator Jadwal →</span>
             </a>
@@ -98,18 +98,18 @@
             </div>
             <button onclick="openTambahModal('Senin')" class="px-3.5 py-1.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-xl text-xs font-bold border border-indigo-200 transition-colors flex items-center gap-1.5 cursor-pointer">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
-                <span>+ Tambah Agenda Khusus</span>
+                <span>Tambah Agenda Khusus</span>
             </button>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <?php 
             $dayColors = [
-                'Senin' => 'from-blue-500 to-indigo-600',
+                'Senin' => 'from-primary-500 to-indigo-600',
                 'Selasa' => 'from-indigo-500 to-purple-600',
                 'Rabu' => 'from-purple-500 to-pink-600',
-                'Kamis' => 'from-teal-500 to-emerald-600',
-                'Jumat' => 'from-emerald-500 to-green-600',
+                'Kamis' => 'from-primary-500 to-primary-600',
+                'Jumat' => 'from-primary-500 to-green-600',
                 'Sabtu' => 'from-amber-500 to-orange-600',
             ];
             foreach (['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'] as $day): 

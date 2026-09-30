@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Detail Wadah Grup RPP / Modul Ajar (JSIT)
  * Menampilkan Daftar Dokumen RPP per Guru & Mapel, Tombol Cetak Semua Portrait A4
@@ -9,7 +9,7 @@
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
             <div class="flex items-center gap-2">
-                <span class="px-3 py-1 rounded-xl text-xs font-black bg-teal-50 text-teal-700 border border-teal-200">
+                <span class="px-3 py-1 rounded-xl text-xs font-black bg-primary-50 text-primary-700 border border-primary-200">
                     Wadah Dokumen RPP & Modul Ajar (JSIT)
                 </span>
             </div>
@@ -28,20 +28,20 @@
             <!-- Tombol Sinkronisasi dari CP & ATP -->
             <form method="POST" action="<?= url("kelola-perangkat-pembelajaran/rpp/group/{$group['id']}/sync") ?>" onsubmit="return confirm('Sinkronkan / buat ulang dokumen RPP dari data Grup CP & ATP yang aktif?');" class="inline">
                 <?= CSRF::field() ?>
-                <button type="submit" class="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-teal-50 hover:bg-teal-100 text-teal-700 font-bold text-xs border border-teal-200 transition-colors" title="Sinkronkan data RPP dari CP & ATP">
+                <button type="submit" class="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-primary-50 hover:bg-primary-100 text-primary-700 font-bold text-xs border border-primary-200 transition-colors" title="Sinkronkan data RPP dari CP & ATP">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
                     <span>Sinkronkan dari CP & ATP</span>
                 </button>
             </form>
 
-            <a href="<?= url("kelola-perangkat-pembelajaran/rpp/group/{$group['id']}/cetak-semua") ?>" target="_blank" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-500/20 transition-all" title="Cetak Semua Dokumen RPP dalam Grup (A4 Portrait)">
+            <a href="<?= url("kelola-perangkat-pembelajaran/rpp/group/{$group['id']}/cetak-semua") ?>" target="_blank" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-md shadow-primary-500/20 transition-all" title="Cetak Semua Dokumen RPP dalam Grup (A4 Portrait)">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0 1 10.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0 .229 2.523a1.125 1.125 0 0 1-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0 0 21 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 0 0-1.913-.247M6.34 18H5.25A2.25 2.25 0 0 1 3 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 0 1 1.913-.247m10.5 0a48.536 48.536 0 0 0-10.5 0m10.5 0V3.75A2.25 2.25 0 0 0 16.5 1.5h-9A2.25 2.25 0 0 0 5.25 3.75v3.536m10.5 0A22.5 22.5 0 0 0 12 7.5a22.5 22.5 0 0 0-3.75-.214" /></svg>
                 <span>Cetak Semua (A4 Portrait)</span>
             </a>
 
-            <a href="<?= url('kelola-perangkat-pembelajaran/rpp/create/' . $group['id']) ?>" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-md shadow-teal-500/20 transition-all">
+            <a href="<?= url('kelola-perangkat-pembelajaran/rpp/create/' . $group['id']) ?>" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-md shadow-primary-500/20 transition-all">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
-                <span>+ Tambah RPP Baru</span>
+                <span>Tambah RPP Baru</span>
             </a>
         </div>
     </div>
@@ -71,7 +71,7 @@
                         echo e($taName ?: '2026/2027');
                         ?>
                     </span>
-                    <span class="px-2.5 py-0.5 rounded-lg text-xs font-bold <?= ($group['semester'] === 'Ganjil') ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800' ?>">
+                    <span class="px-2.5 py-0.5 rounded-lg text-xs font-bold <?= ($group['semester'] === 'Ganjil') ? 'bg-amber-100 text-amber-800' : 'bg-primary-100 text-primary-800' ?>">
                         Semester <?= e($group['semester']) ?>
                     </span>
                 </div>
@@ -80,7 +80,7 @@
                 <p class="text-[11px] font-bold text-slate-400 uppercase mb-1">Sumber Grup CP & ATP</p>
                 <?php if (!empty($cpatp_group)): ?>
                     <div class="mt-1">
-                        <a href="<?= url("kelola-perangkat-pembelajaran/cpatp/group/{$cpatp_group['id']}") ?>" class="text-[11px] font-bold text-teal-700 hover:text-teal-900 bg-teal-50 hover:bg-teal-100 px-2.5 py-1 rounded-lg border border-teal-200 inline-flex items-center gap-1" title="Buka Wadah CP & ATP">
+                        <a href="<?= url("kelola-perangkat-pembelajaran/cpatp/group/{$cpatp_group['id']}") ?>" class="text-[11px] font-bold text-primary-700 hover:text-primary-900 bg-primary-50 hover:bg-primary-100 px-2.5 py-1 rounded-lg border border-primary-200 inline-flex items-center gap-1" title="Buka Wadah CP & ATP">
                             <span>🔗</span>
                             <span><?= e($cpatp_group['judul']) ?></span>
                         </a>
@@ -97,14 +97,14 @@
         <div class="px-6 py-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
                 <h2 class="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                    <span class="w-2.5 h-2.5 rounded-full bg-teal-600"></span>
+                    <span class="w-2.5 h-2.5 rounded-full bg-primary-600"></span>
                     Daftar Dokumen RPP / Modul Ajar (Total: <?= count($items) ?> Dokumen)
                 </h2>
                 <p class="text-xs text-slate-400 font-semibold mt-0.5">Format Standar JSIT SDIT Bina Insan Palu (Pendekatan TERPADU & INTROFLEX)</p>
             </div>
 
             <div class="w-full sm:w-64">
-                <input type="text" id="filterInput" onkeyup="filterTable()" placeholder="Cari Guru / Mapel / Topik..." class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-slate-50 focus:ring-2 focus:ring-teal-500 focus:outline-none">
+                <input type="text" id="filterInput" onkeyup="filterTable()" placeholder="Cari Guru / Mapel / Topik..." class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-slate-50 focus:ring-2 focus:ring-primary-500 focus:outline-none">
             </div>
         </div>
 
@@ -147,7 +147,7 @@
                                             Kelas <?= e($item['tingkat_kelas']) ?>
                                         </span>
                                         <?php if (!empty($item['fase'])): ?>
-                                            <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-teal-50 text-teal-700">
+                                            <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-primary-50 text-primary-700">
                                                 Fase <?= e($item['fase']) ?>
                                             </span>
                                         <?php endif; ?>
@@ -160,7 +160,7 @@
                                     <?php endif; ?>
                                 </td>
                                 <td class="py-3.5 px-4 text-center">
-                                    <span class="inline-flex items-center px-2.5 py-1 rounded-xl text-xs font-bold bg-teal-50 text-teal-800 border border-teal-200">
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-xl text-xs font-bold bg-primary-50 text-primary-800 border border-primary-200">
                                         ⏱️ <?= e($item['alokasi_waktu'] ?: '2 x 35 Menit') ?>
                                     </span>
                                 </td>
@@ -169,7 +169,7 @@
                                     $statusBadges = [
                                         'draft' => 'bg-slate-100 text-slate-600 border-slate-200',
                                         'diajukan' => 'bg-amber-50 text-amber-700 border-amber-200 animate-pulse',
-                                        'disetujui' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                                        'disetujui' => 'bg-primary-50 text-primary-700 border-primary-200',
                                         'ditolak' => 'bg-rose-50 text-rose-700 border-rose-200'
                                     ];
                                     $statusLabels = [
@@ -186,13 +186,13 @@
                                 </td>
                                 <td class="py-3.5 px-4 text-right">
                                     <div class="flex items-center justify-end gap-1.5">
-                                        <a href="<?= url("kelola-perangkat-pembelajaran/rpp/detail/{$item['id']}") ?>" class="p-1.5 rounded-xl bg-slate-100 hover:bg-teal-50 hover:text-teal-600 text-slate-600 transition-colors" title="Lihat Detail RPP">
+                                        <a href="<?= url("kelola-perangkat-pembelajaran/rpp/detail/{$item['id']}") ?>" class="p-1.5 rounded-xl bg-slate-100 hover:bg-primary-50 hover:text-primary-600 text-slate-600 transition-colors" title="Lihat Detail RPP">
                                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg>
                                         </a>
                                         <a href="<?= url("kelola-perangkat-pembelajaran/rpp/edit/{$item['id']}") ?>" class="p-1.5 rounded-xl bg-slate-100 hover:bg-amber-50 hover:text-amber-600 text-slate-600 transition-colors" title="Edit RPP">
                                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" /></svg>
                                         </a>
-                                        <a href="<?= url("kelola-perangkat-pembelajaran/rpp/cetak/{$item['id']}") ?>" target="_blank" class="p-1.5 rounded-xl bg-slate-100 hover:bg-emerald-50 hover:text-emerald-600 text-slate-600 transition-colors" title="Cetak Dokumen Portrait A4">
+                                        <a href="<?= url("kelola-perangkat-pembelajaran/rpp/cetak/{$item['id']}") ?>" target="_blank" class="p-1.5 rounded-xl bg-slate-100 hover:bg-primary-50 hover:text-primary-600 text-slate-600 transition-colors" title="Cetak Dokumen Portrait A4">
                                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0 1 10.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0 .229 2.523a1.125 1.125 0 0 1-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0 0 21 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 0 0-1.913-.247M6.34 18H5.25A2.25 2.25 0 0 1 3 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 0 1 1.913-.247m10.5 0a48.536 48.536 0 0 0-10.5 0m10.5 0V3.75A2.25 2.25 0 0 0 16.5 1.5h-9A2.25 2.25 0 0 0 5.25 3.75v3.536m10.5 0A22.5 22.5 0 0 0 12 7.5a22.5 22.5 0 0 0-3.75-.214" /></svg>
                                         </a>
                                         <form method="POST" action="<?= url("kelola-perangkat-pembelajaran/rpp/delete/{$item['id']}") ?>" onsubmit="return confirm('Apakah Anda yakin ingin menghapus dokumen RPP ini?');" class="inline">

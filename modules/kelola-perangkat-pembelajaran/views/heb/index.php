@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * HEB - Index View with Unit Filtering & Badges
  */
@@ -123,7 +123,7 @@
                             $statusBadge = [
                                 'draft' => ['label' => 'Draft', 'class' => 'bg-slate-100 text-slate-600 border-slate-200'],
                                 'diajukan' => ['label' => 'Menunggu Review', 'class' => 'bg-amber-100 text-amber-800 border-amber-300'],
-                                'disetujui' => ['label' => 'Disetujui', 'class' => 'bg-emerald-100 text-emerald-800 border-emerald-300'],
+                                'disetujui' => ['label' => 'Disetujui', 'class' => 'bg-primary-100 text-primary-800 border-primary-300'],
                                 'ditolak' => ['label' => 'Perlu Revisi', 'class' => 'bg-rose-100 text-rose-800 border-rose-300']
                             ][$row['status']] ?? ['label' => ucfirst($row['status']), 'class' => 'bg-slate-100 text-slate-700 border-slate-200'];
                             ?>
@@ -153,7 +153,7 @@
                                 </td>
                                 <td class="py-3.5 px-4 whitespace-nowrap">
                                     <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border <?= $statusBadge['class'] ?>">
-                                        <span class="w-1.5 h-1.5 rounded-full <?= $row['status'] === 'disetujui' ? 'bg-emerald-500' : ($row['status'] === 'diajukan' ? 'bg-amber-500' : ($row['status'] === 'ditolak' ? 'bg-rose-500' : 'bg-slate-400')) ?>"></span>
+                                        <span class="w-1.5 h-1.5 rounded-full <?= $row['status'] === 'disetujui' ? 'bg-primary-500' : ($row['status'] === 'diajukan' ? 'bg-amber-500' : ($row['status'] === 'ditolak' ? 'bg-rose-500' : 'bg-slate-400')) ?>"></span>
                                         <?= $statusBadge['label'] ?>
                                     </span>
                                 </td>

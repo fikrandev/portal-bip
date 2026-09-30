@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Identitas Sekolah & Pengaturan Unit View
  */
@@ -44,7 +44,7 @@ $unitListInfo = [
                             </div>
                             <div class="flex-1">
                                 <input type="file" name="app_logo" accept=".png,.jpg,.jpeg,.svg" onchange="previewImage(this, 'preview-logo'); document.getElementById('text-logo') && document.getElementById('text-logo').classList.add('hidden');"
-                                       class="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer">
+                                       class="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 cursor-pointer">
                                 <p class="mt-1 text-[11px] text-slate-400">PNG, JPG, SVG max 2MB.</p>
                             </div>
                         </div>
@@ -61,7 +61,7 @@ $unitListInfo = [
                             </div>
                             <div class="flex-1">
                                 <input type="file" name="app_favicon" accept=".png,.ico,.svg" onchange="previewImage(this, 'preview-favicon'); document.getElementById('text-fav') && document.getElementById('text-fav').classList.add('hidden');"
-                                       class="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer">
+                                       class="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 cursor-pointer">
                                 <p class="mt-1 text-[11px] text-slate-400">ICO, PNG max 512kb (1:1 ratio).</p>
                             </div>
                         </div>
@@ -172,7 +172,7 @@ $unitListInfo = [
             <span class="text-xs font-semibold text-slate-500">
                 Pastikan seluruh data unit dan nama kepala sekolah sudah benar sebelum menyimpan.
             </span>
-            <button type="submit" class="px-7 py-3 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white font-black rounded-xl shadow-md shadow-emerald-600/20 transition-all text-xs sm:text-sm cursor-pointer flex items-center gap-2">
+            <button type="submit" class="px-7 py-3 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white font-black rounded-xl shadow-md shadow-primary-600/20 transition-all text-xs sm:text-sm cursor-pointer flex items-center gap-2">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
                 <span>Simpan Seluruh Pengaturan</span>
             </button>

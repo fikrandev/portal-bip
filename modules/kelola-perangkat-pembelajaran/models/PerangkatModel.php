@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Perangkat Pembelajaran Model
  * 
@@ -113,22 +113,22 @@ class PerangkatModel
                 'alias' => 'SD',
                 'desc' => 'Fase A (Kls 1-2), B (Kls 3-4), C (Kls 5-6)',
                 'icon' => '🎒',
-                'badge' => 'bg-emerald-100 text-emerald-800 border-emerald-300',
+                'badge' => 'bg-primary-100 text-primary-800 border-primary-300',
                 'accent' => 'emerald',
-                'bg' => 'bg-emerald-50',
-                'bg_soft' => 'bg-emerald-100 text-emerald-700',
-                'border' => 'border-emerald-200'
+                'bg' => 'bg-primary-50',
+                'bg_soft' => 'bg-primary-100 text-primary-700',
+                'border' => 'border-primary-200'
             ],
             'SMP' => [
                 'name' => 'SMP (Sekolah Menengah Pertama)',
                 'alias' => 'SMP',
                 'desc' => 'Fase D (Kelas VII, VIII, IX)',
                 'icon' => '📚',
-                'badge' => 'bg-blue-100 text-blue-800 border-blue-300',
+                'badge' => 'bg-primary-100 text-primary-800 border-primary-300',
                 'accent' => 'blue',
-                'bg' => 'bg-blue-50',
-                'bg_soft' => 'bg-blue-100 text-blue-700',
-                'border' => 'border-blue-200'
+                'bg' => 'bg-primary-50',
+                'bg_soft' => 'bg-primary-100 text-primary-700',
+                'border' => 'border-primary-200'
             ],
             'SMA' => [
                 'name' => 'SMA / SMK',

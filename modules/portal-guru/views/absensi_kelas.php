@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Absensi Siswa per Kelas Screen
  * Compact size with Button Loading and Smooth Animated SVG Checkmark Modal.
@@ -16,7 +16,7 @@
             <p class="text-[10px] text-slate-400"><?= date('d F Y') ?></p>
         </div>
     </div>
-    <button onclick="setAllPresent()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-xs font-bold shadow-sm press-bounce flex items-center gap-1">
+    <button onclick="setAllPresent()" class="px-3 py-1.5 bg-primary-600 hover:bg-primary-700 text-white rounded-2xl text-xs font-bold shadow-sm press-bounce flex items-center gap-1">
         ✓ Semua Hadir
     </button>
 </div>
@@ -25,13 +25,13 @@
 
     <!-- Counter Summary Bar -->
     <div class="grid grid-cols-4 gap-2 text-center bg-white rounded-3xl p-3 shadow-sm border border-slate-100">
-        <div class="p-2 rounded-2xl bg-emerald-50 border border-emerald-100">
-            <span id="count-h" class="text-base font-black text-emerald-700">8</span>
-            <p class="text-[10px] font-bold text-emerald-600">Hadir</p>
+        <div class="p-2 rounded-2xl bg-primary-50 border border-primary-100">
+            <span id="count-h" class="text-base font-black text-primary-700">8</span>
+            <p class="text-[10px] font-bold text-primary-600">Hadir</p>
         </div>
-        <div class="p-2 rounded-2xl bg-blue-50 border border-blue-100">
-            <span id="count-s" class="text-base font-black text-blue-700">1</span>
-            <p class="text-[10px] font-bold text-blue-600">Sakit</p>
+        <div class="p-2 rounded-2xl bg-primary-50 border border-primary-100">
+            <span id="count-s" class="text-base font-black text-primary-700">1</span>
+            <p class="text-[10px] font-bold text-primary-600">Sakit</p>
         </div>
         <div class="p-2 rounded-2xl bg-amber-50 border border-amber-100">
             <span id="count-i" class="text-base font-black text-amber-700">1</span>
@@ -59,8 +59,8 @@
 
             <!-- Status Pill Toggle Buttons -->
             <div class="flex items-center gap-1 shrink-0" data-student-id="<?= $s['id'] ?>">
-                <button type="button" onclick="setStatus(<?= $s['id'] ?>, 'H', this)" class="btn-stat w-7 h-7 rounded-xl text-xs font-bold transition-all <?= $s['status'] === 'H' ? 'bg-emerald-500 text-white shadow-sm' : 'bg-slate-100 text-slate-500' ?>">H</button>
-                <button type="button" onclick="setStatus(<?= $s['id'] ?>, 'S', this)" class="btn-stat w-7 h-7 rounded-xl text-xs font-bold transition-all <?= $s['status'] === 'S' ? 'bg-blue-500 text-white shadow-sm' : 'bg-slate-100 text-slate-500' ?>">S</button>
+                <button type="button" onclick="setStatus(<?= $s['id'] ?>, 'H', this)" class="btn-stat w-7 h-7 rounded-xl text-xs font-bold transition-all <?= $s['status'] === 'H' ? 'bg-primary-500 text-white shadow-sm' : 'bg-slate-100 text-slate-500' ?>">H</button>
+                <button type="button" onclick="setStatus(<?= $s['id'] ?>, 'S', this)" class="btn-stat w-7 h-7 rounded-xl text-xs font-bold transition-all <?= $s['status'] === 'S' ? 'bg-primary-500 text-white shadow-sm' : 'bg-slate-100 text-slate-500' ?>">S</button>
                 <button type="button" onclick="setStatus(<?= $s['id'] ?>, 'I', this)" class="btn-stat w-7 h-7 rounded-xl text-xs font-bold transition-all <?= $s['status'] === 'I' ? 'bg-amber-500 text-white shadow-sm' : 'bg-slate-100 text-slate-500' ?>">I</button>
                 <button type="button" onclick="setStatus(<?= $s['id'] ?>, 'A', this)" class="btn-stat w-7 h-7 rounded-xl text-xs font-bold transition-all <?= $s['status'] === 'A' ? 'bg-rose-500 text-white shadow-sm' : 'bg-slate-100 text-slate-500' ?>">A</button>
             </div>
@@ -70,7 +70,7 @@
 
     <!-- Submit Attendance Button with Button Loading -->
     <div class="pt-2">
-        <button type="button" id="btn-save-class-att" onclick="saveClassAttendance(this)" class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-2xl shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 press-bounce">
+        <button type="button" id="btn-save-class-att" onclick="saveClassAttendance(this)" class="w-full py-3.5 bg-primary-600 hover:bg-primary-700 text-white font-bold text-sm rounded-2xl shadow-lg shadow-primary-600/30 flex items-center justify-center gap-2 press-bounce">
             <i data-lucide="check-circle" class="w-5 h-5"></i>
             Simpan Absensi Kelas Ini
         </button>
@@ -86,8 +86,8 @@
         });
 
         const activeColors = {
-            'H': 'bg-emerald-500 text-white shadow-sm',
-            'S': 'bg-blue-500 text-white shadow-sm',
+            'H': 'bg-primary-500 text-white shadow-sm',
+            'S': 'bg-primary-500 text-white shadow-sm',
             'I': 'bg-amber-500 text-white shadow-sm',
             'A': 'bg-rose-500 text-white shadow-sm'
         };
@@ -104,7 +104,7 @@
                 container.querySelectorAll('.btn-stat').forEach(b => {
                     b.className = 'btn-stat w-7 h-7 rounded-xl text-xs font-bold bg-slate-100 text-slate-500 transition-all';
                 });
-                hBtn.className = 'btn-stat w-7 h-7 rounded-xl text-xs font-bold bg-emerald-500 text-white shadow-sm transition-all';
+                hBtn.className = 'btn-stat w-7 h-7 rounded-xl text-xs font-bold bg-primary-500 text-white shadow-sm transition-all';
             }
         });
         updateCounts();
@@ -139,7 +139,7 @@
             title: 'Simpan Rekap Presensi?',
             subtitle: 'Rekap kehadiran kelas <?= e($selectedClass ?? "Kelas 7A") ?>',
             icon: '📋',
-            iconBg: 'bg-emerald-100 text-emerald-700',
+            iconBg: 'bg-primary-100 text-primary-700',
             message: `Hadir: <strong>${h}</strong>, Sakit: <strong>${s}</strong>, Izin: <strong>${i}</strong>, Alpa: <strong>${a}</strong>. Simpan data ini ke server?`,
             confirmText: 'Ya, Simpan',
             cancelText: 'Batal',
@@ -158,7 +158,7 @@
                         actions: [
                             {
                                 text: 'Kembali ke Kelas',
-                                className: 'w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-2xl shadow-md text-center',
+                                className: 'w-full py-3 bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs rounded-2xl shadow-md text-center',
                                 onClick: () => window.location.href = '<?= url("mobile/kelas") ?>'
                             }
                         ]

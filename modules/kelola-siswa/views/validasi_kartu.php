@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * View Validasi Kartu Siswa (Public Endpoint)
  * Ditampilkan saat QR Code kartu siswa dipindai menggunakan smartphone
@@ -25,7 +25,7 @@ $npsnMap = [
 $npsnSekolah = $npsnMap[$jenjang] ?? '69979223';
 
 $isActive = (bool)($siswa['is_active'] ?? 1);
-$statusColor = $isActive ? 'bg-emerald-500 text-white shadow-emerald-500/30' : 'bg-rose-500 text-white shadow-rose-500/30';
+$statusColor = $isActive ? 'bg-primary-500 text-white shadow-primary-500/20' : 'bg-rose-500 text-white shadow-rose-500/30';
 $statusText = $isActive ? 'Siswa Aktif' : 'Tidak Aktif';
 $statusIcon = $isActive 
     ? '<svg class="w-3.5 h-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>'
@@ -160,41 +160,41 @@ $isDapodik = strtolower(trim((string)($siswa['dapodik'] ?? ''))) === 'sudah';
 
                 <!-- Dapodik Synchronization Status Section (Prominent) -->
                 <?php if ($isDapodik): ?>
-                    <div class="mt-4 p-4 rounded-2xl bg-gradient-to-br from-emerald-50 via-teal-50/60 to-emerald-100/50 border border-emerald-200 text-left relative overflow-hidden shadow-sm">
+                    <div class="mt-4 p-4 rounded-2xl bg-gradient-to-br from-primary-500 via-teal-50/60 to-primary-600/50 border border-primary-200 text-left relative overflow-hidden shadow-sm">
                         <!-- Watermark background icon -->
-                        <div class="absolute -right-3 -bottom-3 text-emerald-600/10 pointer-events-none">
+                        <div class="absolute -right-3 -bottom-3 text-primary-600/10 pointer-events-none">
                             <svg class="w-24 h-24" fill="currentColor" viewBox="0 0 24 24">
                                 <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/>
                             </svg>
                         </div>
                         
                         <div class="flex items-start gap-3 relative z-10">
-                            <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center flex-shrink-0 shadow-md shadow-emerald-600/25">
+                            <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-primary-500 to-primary-600 text-white flex items-center justify-center flex-shrink-0 shadow-md shadow-primary-500/20">
                                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                                 </svg>
                             </div>
                             <div class="flex-1 min-w-0">
                                 <div class="flex items-center justify-between gap-1.5 mb-0.5">
-                                    <h2 class="text-xs font-black text-emerald-950 uppercase tracking-wide">
+                                    <h2 class="text-xs font-black text-primary-950 uppercase tracking-wide">
                                         Tersinkronisasi Dapodik
                                     </h2>
-                                    <span class="inline-flex items-center px-1.5 py-0.5 rounded-md text-[8.5px] font-black bg-emerald-200 text-emerald-900 uppercase tracking-wider">
+                                    <span class="inline-flex items-center px-1.5 py-0.5 rounded-md text-[8.5px] font-black bg-primary-200 text-primary-900 uppercase tracking-wider">
                                         Kemendikbud
                                     </span>
                                 </div>
-                                <p class="text-[11px] text-emerald-800 font-medium leading-snug">
+                                <p class="text-[11px] text-primary-800 font-medium leading-snug">
                                     Data siswa telah terverifikasi dan tersinkronisasi langsung dengan sistem Data Pokok Pendidikan Nasional.
                                 </p>
                             </div>
                         </div>
 
-                        <div class="mt-3 pt-2.5 border-t border-emerald-200/80 flex items-center justify-between text-[10px] text-emerald-900 font-bold relative z-10">
+                        <div class="mt-3 pt-2.5 border-t border-primary-200/80 flex items-center justify-between text-[10px] text-primary-900 font-bold relative z-10">
                             <span class="flex items-center gap-1.5">
-                                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                <span class="w-2 h-2 rounded-full bg-primary-500 animate-pulse"></span>
                                 Status: Resmi & Valid
                             </span>
-                            <span class="font-mono text-emerald-800 bg-emerald-100/80 px-2 py-0.5 rounded-md">
+                            <span class="font-mono text-primary-800 bg-primary-100/80 px-2 py-0.5 rounded-md">
                                 NPSN: <?= e($npsnSekolah) ?>
                             </span>
                         </div>

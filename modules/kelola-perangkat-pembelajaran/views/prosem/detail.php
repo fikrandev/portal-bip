@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Prosem - Detail View
  */
@@ -11,7 +11,7 @@ $bulanList = $konten['bulan_list'] ?? ($item['semester'] === 'Genap'
 $statusBadge = [
     'draft' => ['label' => 'Draft', 'class' => 'bg-slate-100 text-slate-700 border-slate-300'],
     'diajukan' => ['label' => 'Menunggu Verifikasi', 'class' => 'bg-amber-100 text-amber-800 border-amber-300'],
-    'disetujui' => ['label' => 'Disetujui / Sah', 'class' => 'bg-emerald-100 text-emerald-800 border-emerald-300'],
+    'disetujui' => ['label' => 'Disetujui / Sah', 'class' => 'bg-primary-100 text-primary-800 border-primary-300'],
     'ditolak' => ['label' => 'Perlu Revisi', 'class' => 'bg-rose-100 text-rose-800 border-rose-300']
 ][$item['status']] ?? ['label' => ucfirst($item['status']), 'class' => 'bg-slate-100 text-slate-700 border-slate-300'];
 ?>

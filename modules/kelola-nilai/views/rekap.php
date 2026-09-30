@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Rekapitulasi Nilai Siswa — Komprehensif
  * Mendukung Rekap Per Kelas (Leger), Detail Per Mapel, dan Kartu Nilai Per Siswa
@@ -24,7 +24,7 @@ $exportUrl = url('kelola-nilai/rekap/export?' . http_build_query([
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
             <div class="flex items-center gap-2">
-                <span class="px-3 py-1 rounded-xl text-xs font-black bg-teal-50 text-teal-700 border border-teal-200">
+                <span class="px-3 py-1 rounded-xl text-xs font-black bg-primary-50 text-primary-700 border border-primary-200">
                     Laporan Nilai Siswa
                 </span>
                 <?php if ($activeGroup): ?>
@@ -45,7 +45,7 @@ $exportUrl = url('kelola-nilai/rekap/export?' . http_build_query([
                 <svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"/></svg>
                 <span>Dashboard</span>
             </a>
-            <a href="<?= $exportUrl ?>" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-500/20 transition-all">
+            <a href="<?= $exportUrl ?>" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-md shadow-primary-500/20 transition-all">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                 <span>Ekspor Excel</span>
             </a>
@@ -64,7 +64,7 @@ $exportUrl = url('kelola-nilai/rekap/export?' . http_build_query([
             <!-- 1. Wadah Nilai -->
             <div>
                 <label class="block text-xs font-bold text-slate-600 uppercase mb-1.5">Wadah Grup Nilai</label>
-                <select name="group_id" onchange="this.form.submit()" class="w-full px-3.5 py-2.5 rounded-2xl border border-slate-200 text-xs font-semibold text-slate-800 bg-slate-50/50 focus:ring-2 focus:ring-teal-500 focus:outline-none">
+                <select name="group_id" onchange="this.form.submit()" class="w-full px-3.5 py-2.5 rounded-2xl border border-slate-200 text-xs font-semibold text-slate-800 bg-slate-50/50 focus:ring-2 focus:ring-primary-500 focus:outline-none">
                     <?php if (empty($groups)): ?>
                         <option value="">(Belum ada wadah)</option>
                     <?php else: ?>
@@ -80,7 +80,7 @@ $exportUrl = url('kelola-nilai/rekap/export?' . http_build_query([
             <!-- 2. Pilihan Kelas -->
             <div>
                 <label class="block text-xs font-bold text-slate-600 uppercase mb-1.5">Pilih Kelas</label>
-                <select name="kelas" onchange="this.form.submit()" class="w-full px-3.5 py-2.5 rounded-2xl border border-slate-200 text-xs font-semibold text-slate-800 bg-slate-50/50 focus:ring-2 focus:ring-teal-500 focus:outline-none">
+                <select name="kelas" onchange="this.form.submit()" class="w-full px-3.5 py-2.5 rounded-2xl border border-slate-200 text-xs font-semibold text-slate-800 bg-slate-50/50 focus:ring-2 focus:ring-primary-500 focus:outline-none">
                     <?php if (empty($kelasList)): ?>
                         <option value="">(Tidak ada data kelas)</option>
                     <?php else: ?>
@@ -96,7 +96,7 @@ $exportUrl = url('kelola-nilai/rekap/export?' . http_build_query([
             <!-- 3. Pilihan Mata Pelajaran -->
             <div>
                 <label class="block text-xs font-bold text-slate-600 uppercase mb-1.5">Mata Pelajaran</label>
-                <select name="mapel" onchange="this.form.submit()" class="w-full px-3.5 py-2.5 rounded-2xl border border-slate-200 text-xs font-semibold text-slate-800 bg-slate-50/50 focus:ring-2 focus:ring-teal-500 focus:outline-none">
+                <select name="mapel" onchange="this.form.submit()" class="w-full px-3.5 py-2.5 rounded-2xl border border-slate-200 text-xs font-semibold text-slate-800 bg-slate-50/50 focus:ring-2 focus:ring-primary-500 focus:outline-none">
                     <option value="" <?= empty($selectedMapel) ? 'selected' : '' ?>>Semua Mapel (Leger Rapor)</option>
                     <?php foreach ($mapelList as $m): ?>
                         <option value="<?= e($m) ?>" <?= ($selectedMapel === $m) ? 'selected' : '' ?>>
@@ -108,7 +108,7 @@ $exportUrl = url('kelola-nilai/rekap/export?' . http_build_query([
 
             <!-- 4. Tombol Terapkan & Reset -->
             <div class="flex items-end gap-2">
-                <button type="submit" class="flex-1 px-4 py-2.5 rounded-2xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-sm transition-all flex items-center justify-center gap-2">
+                <button type="submit" class="flex-1 px-4 py-2.5 rounded-2xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-sm transition-all flex items-center justify-center gap-2">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                     <span>Tampilkan</span>
                 </button>
@@ -123,17 +123,17 @@ $exportUrl = url('kelola-nilai/rekap/export?' . http_build_query([
             <span class="text-xs font-bold text-slate-400 mr-2 uppercase">Mode Rekap:</span>
             
             <a href="javascript:void(0)" onclick="switchMode('leger')" 
-               class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all <?= ($viewMode === 'leger' || empty($viewMode)) ? 'bg-teal-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' ?>">
+               class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all <?= ($viewMode === 'leger' || empty($viewMode)) ? 'bg-primary-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' ?>">
                 📋 Rekap Per Kelas (Leger Nilai)
             </a>
             
             <a href="javascript:void(0)" onclick="switchMode('mapel')" 
-               class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all <?= $viewMode === 'mapel' ? 'bg-teal-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' ?>">
+               class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all <?= $viewMode === 'mapel' ? 'bg-primary-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' ?>">
                 📖 Detail Asesmen per Mapel
             </a>
 
             <a href="javascript:void(0)" onclick="switchMode('siswa')" 
-               class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all <?= $viewMode === 'siswa' ? 'bg-teal-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' ?>">
+               class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all <?= $viewMode === 'siswa' ? 'bg-primary-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' ?>">
                 👤 Kartu Nilai Per Siswa
             </a>
         </div>
@@ -147,7 +147,7 @@ $exportUrl = url('kelola-nilai/rekap/export?' . http_build_query([
         </div>
         <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
             <p class="text-[10px] font-bold text-slate-400 uppercase">Siswa Terisi Nilai</p>
-            <h4 class="text-xl font-black text-teal-600 mt-0.5"><?= $classStats['total_terisi'] ?> Siswa</h4>
+            <h4 class="text-xl font-black text-primary-600 mt-0.5"><?= $classStats['total_terisi'] ?> Siswa</h4>
         </div>
         <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
             <p class="text-[10px] font-bold text-slate-400 uppercase">Rata-Rata Kelas</p>
@@ -155,7 +155,7 @@ $exportUrl = url('kelola-nilai/rekap/export?' . http_build_query([
         </div>
         <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
             <p class="text-[10px] font-bold text-slate-400 uppercase">Tertinggi / Terendah</p>
-            <h4 class="text-xl font-black text-emerald-600 mt-0.5">
+            <h4 class="text-xl font-black text-primary-600 mt-0.5">
                 <?= $classStats['max'] > 0 ? $classStats['max'] : '-' ?> <span class="text-xs text-slate-400 font-semibold">/ <?= $classStats['min'] > 0 ? $classStats['min'] : '-' ?></span>
             </h4>
         </div>
@@ -172,7 +172,7 @@ $exportUrl = url('kelola-nilai/rekap/export?' . http_build_query([
                     </h3>
                     <p class="text-xs text-slate-400 mt-0.5">Matriks nilai akhir seluruh mata pelajaran per siswa dalam 1 kelas</p>
                 </div>
-                <span class="text-[11px] font-bold px-3 py-1 rounded-xl bg-teal-50 text-teal-700 border border-teal-200">
+                <span class="text-[11px] font-bold px-3 py-1 rounded-xl bg-primary-50 text-primary-700 border border-primary-200">
                     <?= count($rekapSiswa) ?> Siswa Terdaftar
                 </span>
             </div>
@@ -194,7 +194,7 @@ $exportUrl = url('kelola-nilai/rekap/export?' . http_build_query([
                                         <span class="truncate block max-w-[120px] mx-auto"><?= e($m) ?></span>
                                     </th>
                                 <?php endforeach; ?>
-                                <th class="py-3 px-3 text-center border-r border-slate-200 bg-teal-50/60 text-teal-800 min-w-[90px]">Rerata</th>
+                                <th class="py-3 px-3 text-center border-r border-slate-200 bg-primary-50/60 text-primary-800 min-w-[90px]">Rerata</th>
                                 <th class="py-3 px-3 text-center bg-amber-50/60 text-amber-800 min-w-[80px]">Peringkat</th>
                             </tr>
                         </thead>
@@ -209,11 +209,11 @@ $exportUrl = url('kelola-nilai/rekap/export?' . http_build_query([
                                 elseif ($rank !== '-') $rankBadge = '#' . $rank;
                                 else $rankBadge = '-';
                             ?>
-                                <tr class="hover:bg-teal-50/20 transition-colors">
+                                <tr class="hover:bg-primary-50/20 transition-colors">
                                     <td class="py-3 px-3 text-center text-slate-400 font-bold border-r border-slate-200"><?= $idx + 1 ?></td>
                                     <td class="py-3 px-3 text-center text-slate-500 font-mono border-r border-slate-200"><?= e($s['nis'] ?: '-') ?></td>
                                     <td class="py-3 px-4 border-r border-slate-200">
-                                        <a href="javascript:void(0)" onclick="viewStudentCard(<?= (int)$s['id'] ?>)" class="font-bold text-slate-800 hover:text-teal-600 transition-colors">
+                                        <a href="javascript:void(0)" onclick="viewStudentCard(<?= (int)$s['id'] ?>)" class="font-bold text-slate-800 hover:text-primary-600 transition-colors">
                                             <?= e($s['nama']) ?>
                                         </a>
                                         <div class="text-[10px] text-slate-400">JK: <?= e($s['jenis_kelamin'] ?? '-') ?></div>
@@ -226,7 +226,7 @@ $exportUrl = url('kelola-nilai/rekap/export?' . http_build_query([
                                         <td class="py-3 px-3 text-center border-r border-slate-200">
                                             <?php if ($naVal !== null): ?>
                                                 <div class="font-bold text-slate-800"><?= number_format($naVal, 1) ?></div>
-                                                <span class="inline-block text-[9px] font-black px-1.5 py-0.2 rounded mt-0.5 <?= $pred === 'A' ? 'bg-emerald-100 text-emerald-800' : ($pred === 'B' ? 'bg-sky-100 text-sky-800' : ($pred === 'C' ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800')) ?>">
+                                                <span class="inline-block text-[9px] font-black px-1.5 py-0.2 rounded mt-0.5 <?= $pred === 'A' ? 'bg-primary-100 text-primary-800' : ($pred === 'B' ? 'bg-sky-100 text-sky-800' : ($pred === 'C' ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800')) ?>">
                                                     <?= $pred ?>
                                                 </span>
                                             <?php else: ?>
@@ -234,7 +234,7 @@ $exportUrl = url('kelola-nilai/rekap/export?' . http_build_query([
                                             <?php endif; ?>
                                         </td>
                                     <?php endforeach; ?>
-                                    <td class="py-3 px-3 text-center font-black border-r border-slate-200 bg-teal-50/30 text-teal-800">
+                                    <td class="py-3 px-3 text-center font-black border-r border-slate-200 bg-primary-50/30 text-primary-800">
                                         <?= $rs['overall_avg'] !== null ? number_format($rs['overall_avg'], 1) : '-' ?>
                                     </td>
                                     <td class="py-3 px-3 text-center font-bold bg-amber-50/30">
@@ -275,7 +275,7 @@ $exportUrl = url('kelola-nilai/rekap/export?' . http_build_query([
                     <div class="space-y-3 pt-2">
                         <div class="flex items-center justify-between bg-slate-50 p-3 rounded-2xl border border-slate-200/80">
                             <div class="flex items-center gap-2">
-                                <span class="w-7 h-7 rounded-xl bg-teal-600 text-white font-bold text-xs flex items-center justify-center">📚</span>
+                                <span class="w-7 h-7 rounded-xl bg-primary-600 text-white font-bold text-xs flex items-center justify-center">📚</span>
                                 <h4 class="font-bold text-slate-800 text-xs sm:text-sm"><?= e($mKey) ?></h4>
                             </div>
                         </div>
@@ -287,7 +287,7 @@ $exportUrl = url('kelola-nilai/rekap/export?' . http_build_query([
                                         <th class="py-3 px-3 w-10 text-center border-r border-slate-200">No</th>
                                         <th class="py-3 px-3 w-20 text-center border-r border-slate-200">NIS</th>
                                         <th class="py-3 px-4 min-w-[180px] border-r border-slate-200">Nama Siswa</th>
-                                        <th class="py-3 px-3 text-center border-r border-slate-200 bg-teal-50/40 text-teal-800 min-w-[120px]">
+                                        <th class="py-3 px-3 text-center border-r border-slate-200 bg-primary-50/40 text-primary-800 min-w-[120px]">
                                             Rerata Formatif (TP/ATP)
                                         </th>
                                         <th class="py-3 px-3 text-center border-r border-slate-200 bg-sky-50/40 text-sky-800 min-w-[120px]">
@@ -316,8 +316,8 @@ $exportUrl = url('kelola-nilai/rekap/export?' . http_build_query([
                                             <td class="py-3 px-3 text-center text-slate-400 font-bold border-r border-slate-200"><?= $idx + 1 ?></td>
                                             <td class="py-3 px-3 text-center text-slate-500 font-mono border-r border-slate-200"><?= e($s['nis'] ?: '-') ?></td>
                                             <td class="py-3 px-4 font-bold text-slate-800 border-r border-slate-200"><?= e($s['nama']) ?></td>
-                                            <td class="py-3 px-3 text-center border-r border-slate-200 bg-teal-50/20">
-                                                <?= $fmtAvg !== null ? '<strong class="text-teal-800">' . number_format($fmtAvg, 1) . '</strong>' : '<span class="text-slate-300">-</span>' ?>
+                                            <td class="py-3 px-3 text-center border-r border-slate-200 bg-primary-50/20">
+                                                <?= $fmtAvg !== null ? '<strong class="text-primary-800">' . number_format($fmtAvg, 1) . '</strong>' : '<span class="text-slate-300">-</span>' ?>
                                             </td>
                                             <td class="py-3 px-3 text-center border-r border-slate-200 bg-sky-50/20">
                                                 <?= $lmAvg !== null ? '<strong class="text-sky-800">' . number_format($lmAvg, 1) . '</strong>' : '<span class="text-slate-300">-</span>' ?>
@@ -330,7 +330,7 @@ $exportUrl = url('kelola-nilai/rekap/export?' . http_build_query([
                                             </td>
                                             <td class="py-3 px-3 text-center">
                                                 <?php if ($pred !== '-'): ?>
-                                                    <span class="px-2.5 py-0.5 rounded-lg text-xs font-black <?= $pred === 'A' ? 'bg-emerald-100 text-emerald-800' : ($pred === 'B' ? 'bg-sky-100 text-sky-800' : ($pred === 'C' ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800')) ?>">
+                                                    <span class="px-2.5 py-0.5 rounded-lg text-xs font-black <?= $pred === 'A' ? 'bg-primary-100 text-primary-800' : ($pred === 'B' ? 'bg-sky-100 text-sky-800' : ($pred === 'C' ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800')) ?>">
                                                         <?= $pred ?>
                                                     </span>
                                                 <?php else: ?>
@@ -382,12 +382,12 @@ $exportUrl = url('kelola-nilai/rekap/export?' . http_build_query([
                             'mapel' => $selectedMapel,
                             'mode' => 'siswa',
                             'siswa_id' => $s['id']
-                        ])) ?>" class="flex items-center justify-between p-2.5 rounded-2xl transition-all <?= $isSel ? 'bg-teal-600 text-white shadow-sm' : 'hover:bg-slate-50 text-slate-700' ?>">
+                        ])) ?>" class="flex items-center justify-between p-2.5 rounded-2xl transition-all <?= $isSel ? 'bg-primary-600 text-white shadow-sm' : 'hover:bg-slate-50 text-slate-700' ?>">
                             <div class="min-w-0">
                                 <div class="font-bold text-xs truncate <?= $isSel ? 'text-white' : 'text-slate-800' ?>"><?= e($s['nama']) ?></div>
-                                <div class="text-[10px] <?= $isSel ? 'text-teal-100' : 'text-slate-400' ?>">NIS: <?= e($s['nis'] ?: '-') ?></div>
+                                <div class="text-[10px] <?= $isSel ? 'text-primary-100' : 'text-slate-400' ?>">NIS: <?= e($s['nis'] ?: '-') ?></div>
                             </div>
-                            <span class="text-xs font-black <?= $isSel ? 'bg-teal-700 text-white' : 'bg-slate-100 text-slate-700' ?> px-2 py-0.5 rounded-lg">
+                            <span class="text-xs font-black <?= $isSel ? 'bg-primary-700 text-white' : 'bg-slate-100 text-slate-700' ?> px-2 py-0.5 rounded-lg">
                                 <?= $rs['overall_avg'] !== null ? number_format($rs['overall_avg'], 1) : '-' ?>
                             </span>
                         </a>
@@ -407,7 +407,7 @@ $exportUrl = url('kelola-nilai/rekap/export?' . http_build_query([
                     <!-- Student Profile Header -->
                     <div class="flex items-start justify-between border-b border-slate-100 pb-4">
                         <div class="flex items-center gap-3.5">
-                            <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-teal-500 to-indigo-600 text-white font-black text-lg flex items-center justify-center shadow-md shadow-teal-500/20">
+                            <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary-500 to-indigo-600 text-white font-black text-lg flex items-center justify-center shadow-md shadow-primary-500/20">
                                 <?= strtoupper(mb_substr($as['nama'], 0, 1)) ?>
                             </div>
                             <div>
@@ -421,7 +421,7 @@ $exportUrl = url('kelola-nilai/rekap/export?' . http_build_query([
                         </div>
                         <div class="text-right">
                             <span class="text-[10px] font-bold text-slate-400 uppercase">Rata-Rata Capaian</span>
-                            <div class="text-2xl font-black text-teal-600">
+                            <div class="text-2xl font-black text-primary-600">
                                 <?= $activeSiswaData['overall_avg'] !== null ? number_format($activeSiswaData['overall_avg'], 1) : '-' ?>
                             </div>
                             <span class="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
@@ -440,7 +440,7 @@ $exportUrl = url('kelola-nilai/rekap/export?' . http_build_query([
                                     <th class="py-3 px-3 text-center border-r border-slate-200">Formatif</th>
                                     <th class="py-3 px-3 text-center border-r border-slate-200">Sumatif LM</th>
                                     <th class="py-3 px-3 text-center border-r border-slate-200">SAS</th>
-                                    <th class="py-3 px-3 text-center border-r border-slate-200 bg-teal-50/40 text-teal-800">Nilai Akhir</th>
+                                    <th class="py-3 px-3 text-center border-r border-slate-200 bg-primary-50/40 text-primary-800">Nilai Akhir</th>
                                     <th class="py-3 px-3 text-center">Predikat</th>
                                 </tr>
                             </thead>
@@ -470,12 +470,12 @@ $exportUrl = url('kelola-nilai/rekap/export?' . http_build_query([
                                         <td class="py-3 px-3 text-center border-r border-slate-200">
                                             <?= $sas !== null ? number_format($sas, 1) : '-' ?>
                                         </td>
-                                        <td class="py-3 px-3 text-center font-black border-r border-slate-200 bg-teal-50/20 text-teal-800">
+                                        <td class="py-3 px-3 text-center font-black border-r border-slate-200 bg-primary-50/20 text-primary-800">
                                             <?= $na !== null ? number_format($na, 1) : '-' ?>
                                         </td>
                                         <td class="py-3 px-3 text-center">
                                             <?php if ($prd !== '-'): ?>
-                                                <span class="px-2 py-0.5 rounded-lg text-xs font-black <?= $prd === 'A' ? 'bg-emerald-100 text-emerald-800' : ($prd === 'B' ? 'bg-sky-100 text-sky-800' : ($prd === 'C' ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800')) ?>">
+                                                <span class="px-2 py-0.5 rounded-lg text-xs font-black <?= $prd === 'A' ? 'bg-primary-100 text-primary-800' : ($prd === 'B' ? 'bg-sky-100 text-sky-800' : ($prd === 'C' ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800')) ?>">
                                                     <?= $prd ?>
                                                 </span>
                                             <?php else: ?>

@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Dashboard Kelola Absen Siswa — Visual & Data Analytics
  * Menggunakan Chart.js untuk visualisasi kehadiran dan tren presensi
@@ -12,10 +12,10 @@
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
             <div class="flex items-center gap-2">
-                <span class="px-3 py-1 rounded-xl text-xs font-black bg-emerald-50 text-emerald-700 border border-emerald-200">
+                <span class="px-3 py-1 rounded-xl text-xs font-black bg-primary-50 text-primary-700 border border-primary-200">
                     Sistem Presensi Siswa
                 </span>
-                <span class="px-3 py-1 rounded-xl text-xs font-bold bg-teal-50 text-teal-700 border border-teal-200">
+                <span class="px-3 py-1 rounded-xl text-xs font-bold bg-primary-50 text-primary-700 border border-primary-200">
                     Real-time Monitoring
                 </span>
             </div>
@@ -27,11 +27,11 @@
             </p>
         </div>
         <div class="flex items-center gap-3 flex-wrap">
-            <a href="<?= url('kelola-absen-siswa/mapel') ?>" class="px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-500/20 transition-all flex items-center gap-2">
+            <a href="<?= url('kelola-absen-siswa/mapel') ?>" class="px-4 py-2.5 rounded-2xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-md shadow-primary-500/20 transition-all flex items-center gap-2">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25"/></svg>
                 <span>Input Absen Mapel</span>
             </a>
-            <a href="<?= url('kelola-absen-siswa/kelas') ?>" class="px-4 py-2.5 rounded-2xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-md shadow-teal-500/20 transition-all flex items-center gap-2">
+            <a href="<?= url('kelola-absen-siswa/kelas') ?>" class="px-4 py-2.5 rounded-2xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-md shadow-primary-500/20 transition-all flex items-center gap-2">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z"/></svg>
                 <span>Input Absen Kelas</span>
             </a>
@@ -45,35 +45,35 @@
     <!-- KPI Summary Cards (4 Cards) -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <!-- Kehadiran Hari Ini -->
-        <div class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-sm relative overflow-hidden group hover:border-emerald-300 transition-all">
+        <div class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-sm relative overflow-hidden group hover:border-primary-300 transition-all">
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Kehadiran Hari Ini</p>
                     <h3 class="text-3xl font-black text-slate-800 mt-1"><?= $attendanceRate ?>%</h3>
                 </div>
-                <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+                <div class="w-12 h-12 rounded-2xl bg-primary-50 text-primary-600 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
                     📊
                 </div>
             </div>
             <div class="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px]">
-                <span class="text-emerald-700 font-bold">● <?= number_format($todayHadir) ?> Hadir</span>
+                <span class="text-primary-700 font-bold">● <?= number_format($todayHadir) ?> Hadir</span>
                 <span class="text-slate-500 font-medium">Dari <?= number_format($todayTotal) ?> Presensi</span>
             </div>
         </div>
 
         <!-- Total Siswa Aktif -->
-        <div class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-sm relative overflow-hidden group hover:border-teal-300 transition-all">
+        <div class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-sm relative overflow-hidden group hover:border-primary-300 transition-all">
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Siswa Aktif</p>
                     <h3 class="text-3xl font-black text-slate-800 mt-1"><?= number_format($totalSiswa) ?></h3>
                 </div>
-                <div class="w-12 h-12 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+                <div class="w-12 h-12 rounded-2xl bg-primary-50 text-primary-600 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
                     👨‍🎓
                 </div>
             </div>
             <div class="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px]">
-                <span class="text-teal-700 font-bold">Terdaftar di BIP</span>
+                <span class="text-primary-700 font-bold">Terdaftar di BIP</span>
                 <span class="text-slate-400">Status Aktif</span>
             </div>
         </div>
@@ -107,8 +107,8 @@
                 </div>
             </div>
             <div class="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px]">
-                <span class="text-emerald-600 font-bold">H: <?= $monthStats['total_h'] ?? 0 ?></span>
-                <span class="text-blue-600 font-bold">S: <?= $monthStats['total_s'] ?? 0 ?></span>
+                <span class="text-primary-600 font-bold">H: <?= $monthStats['total_h'] ?? 0 ?></span>
+                <span class="text-primary-600 font-bold">S: <?= $monthStats['total_s'] ?? 0 ?></span>
                 <span class="text-amber-600 font-bold">I: <?= $monthStats['total_i'] ?? 0 ?></span>
                 <span class="text-rose-600 font-bold">A: <?= $monthStats['total_a'] ?? 0 ?></span>
             </div>
@@ -119,19 +119,19 @@
     <div class="bg-white rounded-3xl border border-slate-200/80 p-4 sm:p-5 shadow-sm">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
             <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-2">
-                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span class="w-2 h-2 rounded-full bg-primary-500 animate-pulse"></span>
                 <span>Rincian Status Kehadiran Hari Ini (<?= date('d M Y') ?>)</span>
             </h4>
             <span class="text-xs text-slate-400">Pembaruan data otomatis</span>
         </div>
         <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
-            <div class="p-3 rounded-2xl bg-emerald-50/70 border border-emerald-200/80 text-center">
-                <p class="text-[10px] font-bold text-emerald-700 uppercase">Hadir (H)</p>
-                <p class="text-xl font-black text-emerald-800 mt-0.5"><?= number_format($todayHadir) ?></p>
+            <div class="p-3 rounded-2xl bg-primary-50/70 border border-primary-200/80 text-center">
+                <p class="text-[10px] font-bold text-primary-700 uppercase">Hadir (H)</p>
+                <p class="text-xl font-black text-primary-800 mt-0.5"><?= number_format($todayHadir) ?></p>
             </div>
-            <div class="p-3 rounded-2xl bg-blue-50/70 border border-blue-200/80 text-center">
-                <p class="text-[10px] font-bold text-blue-700 uppercase">Sakit (S)</p>
-                <p class="text-xl font-black text-blue-800 mt-0.5"><?= number_format($todaySakit) ?></p>
+            <div class="p-3 rounded-2xl bg-primary-50/70 border border-primary-200/80 text-center">
+                <p class="text-[10px] font-bold text-primary-700 uppercase">Sakit (S)</p>
+                <p class="text-xl font-black text-primary-800 mt-0.5"><?= number_format($todaySakit) ?></p>
             </div>
             <div class="p-3 rounded-2xl bg-amber-50/70 border border-amber-200/80 text-center">
                 <p class="text-[10px] font-bold text-amber-700 uppercase">Izin (I)</p>
@@ -178,8 +178,8 @@
                 <canvas id="distribusiStatusChart"></canvas>
             </div>
             <div class="mt-4 pt-3 border-t border-slate-100 grid grid-cols-2 gap-2 text-[11px]">
-                <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span><span>Hadir: <?= $monthStats['total_h'] ?? 0 ?></span></div>
-                <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span><span>Sakit: <?= $monthStats['total_s'] ?? 0 ?></span></div>
+                <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-primary-500"></span><span>Hadir: <?= $monthStats['total_h'] ?? 0 ?></span></div>
+                <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-primary-500"></span><span>Sakit: <?= $monthStats['total_s'] ?? 0 ?></span></div>
                 <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span><span>Izin: <?= $monthStats['total_i'] ?? 0 ?></span></div>
                 <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span><span>Alpa: <?= $monthStats['total_a'] ?? 0 ?></span></div>
             </div>
@@ -194,7 +194,7 @@
                 <h3 class="text-sm sm:text-base font-bold text-slate-800">Tingkat Kehadiran per Kelas (%)</h3>
                 <p class="text-xs text-slate-400">Persentase kehadiran rata-rata per rombongan belajar</p>
             </div>
-            <span class="px-2.5 py-1 rounded-xl text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+            <span class="px-2.5 py-1 rounded-xl text-[10px] font-bold bg-primary-50 text-primary-700 border border-primary-200">
                 Data Presensi
             </span>
         </div>
@@ -212,7 +212,7 @@
                 <p class="text-xs text-slate-400">Sesi presensi mapel & kelas harian yang baru dicatat</p>
             </div>
             <div class="flex items-center gap-2">
-                <a href="<?= url('kelola-absen-siswa/rekap') ?>" class="text-xs font-bold text-emerald-600 hover:text-emerald-700 hover:underline">
+                <a href="<?= url('kelola-absen-siswa/rekap') ?>" class="text-xs font-bold text-primary-600 hover:text-primary-700 hover:underline">
                     Lihat Semua Rekap &rarr;
                 </a>
             </div>
@@ -246,8 +246,8 @@
                         <?php foreach ($recentSessions as $rs): 
                             $rate = $rs['total_siswa'] > 0 ? round(($rs['total_hadir'] / $rs['total_siswa']) * 100) : 0;
                             $tipeBadge = $rs['tipe_presensi'] === 'mapel'
-                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                : 'bg-teal-50 text-teal-700 border-teal-200';
+                                ? 'bg-primary-50 text-primary-700 border-primary-200'
+                                : 'bg-primary-50 text-primary-700 border-primary-200';
                         ?>
                             <tr class="hover:bg-slate-50/80 transition-colors">
                                 <td class="py-3 px-4 font-semibold text-slate-700">
@@ -271,19 +271,19 @@
                                     <?= htmlspecialchars($rs['nama_guru'] ?? 'Petugas') ?>
                                 </td>
                                 <td class="py-3 px-4 text-center">
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold <?= $rate >= 85 ? 'bg-emerald-100 text-emerald-800' : ($rate >= 70 ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800') ?>">
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold <?= $rate >= 85 ? 'bg-primary-100 text-primary-800' : ($rate >= 70 ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800') ?>">
                                         <?= $rs['total_hadir'] ?>/<?= $rs['total_siswa'] ?> (<?= $rate ?>%)
                                     </span>
                                 </td>
                                 <td class="py-3 px-4 text-right">
                                     <?php if ($rs['tipe_presensi'] === 'mapel'): ?>
                                         <a href="<?= url('kelola-absen-siswa/mapel/input?guru_id=' . $rs['guru_id'] . '&mapel=' . urlencode($rs['mata_pelajaran']) . '&kelas=' . urlencode($rs['kelas']) . '&tanggal=' . $rs['tanggal'] . '&pertemuan_ke=' . $rs['pertemuan_ke']) ?>" 
-                                           class="px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 text-slate-600 font-bold text-[11px] transition-all">
+                                           class="px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-primary-50 hover:text-primary-700 text-slate-600 font-bold text-[11px] transition-all">
                                             Buka Presensi
                                         </a>
                                     <?php else: ?>
                                         <a href="<?= url('kelola-absen-siswa/kelas/input?kelas=' . urlencode($rs['kelas']) . '&tanggal=' . $rs['tanggal']) ?>" 
-                                           class="px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-teal-50 hover:text-teal-700 text-slate-600 font-bold text-[11px] transition-all">
+                                           class="px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-primary-50 hover:text-primary-700 text-slate-600 font-bold text-[11px] transition-all">
                                             Buka Presensi
                                         </a>
                                     <?php endif; ?>

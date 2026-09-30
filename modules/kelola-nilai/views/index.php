@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Dashboard Kelola Nilai — Visual & Data Analytics
  * Menggunakan Chart.js untuk visualisasi performa akademik
@@ -12,7 +12,7 @@
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
             <div class="flex items-center gap-2">
-                <span class="px-3 py-1 rounded-xl text-xs font-black bg-teal-50 text-teal-700 border border-teal-200">
+                <span class="px-3 py-1 rounded-xl text-xs font-black bg-primary-50 text-primary-700 border border-primary-200">
                     Sistem Penilaian Akademik
                 </span>
                 <span class="px-3 py-1 rounded-xl text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
@@ -35,9 +35,9 @@
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
                 <span>Rekap Nilai</span>
             </a>
-            <a href="<?= url('kelola-nilai/group/create') ?>" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-md shadow-teal-500/20 transition-all">
+            <a href="<?= url('kelola-nilai/group/create') ?>" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-md shadow-primary-500/20 transition-all">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
-                <span>+ Buat Grup Nilai</span>
+                <span>Buat Grup Nilai</span>
             </a>
         </div>
     </div>
@@ -45,18 +45,18 @@
     <!-- KPI Summary Cards (4 Cards) -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <!-- Total Wadah -->
-        <div class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-sm relative overflow-hidden group hover:border-teal-300 transition-all">
+        <div class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-sm relative overflow-hidden group hover:border-primary-300 transition-all">
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Wadah Grup Nilai</p>
                     <h3 class="text-3xl font-black text-slate-800 mt-1"><?= number_format($totalGroups) ?></h3>
                 </div>
-                <div class="w-12 h-12 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+                <div class="w-12 h-12 rounded-2xl bg-primary-50 text-primary-600 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
                     📁
                 </div>
             </div>
             <div class="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px]">
-                <span class="text-emerald-700 font-bold">● <?= $totalActiveGroups ?> Wadah Aktif</span>
+                <span class="text-primary-700 font-bold">● <?= $totalActiveGroups ?> Wadah Aktif</span>
                 <span class="text-slate-400">○ <?= $totalInactiveGroups ?> Nonaktif</span>
             </div>
         </div>
@@ -96,19 +96,19 @@
         </div>
 
         <!-- Rata-Rata Nilai -->
-        <div class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-sm relative overflow-hidden group hover:border-emerald-300 transition-all">
+        <div class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-sm relative overflow-hidden group hover:border-primary-300 transition-all">
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Rata-Rata Nilai</p>
-                    <h3 class="text-3xl font-black text-emerald-600 mt-1"><?= $avgNilai > 0 ? $avgNilai : '-' ?></h3>
+                    <h3 class="text-3xl font-black text-primary-600 mt-1"><?= $avgNilai > 0 ? $avgNilai : '-' ?></h3>
                 </div>
-                <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+                <div class="w-12 h-12 rounded-2xl bg-primary-50 text-primary-600 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
                     📈
                 </div>
             </div>
             <div class="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px]">
                 <span class="text-slate-500">Rerata Nilai Keseluruhan</span>
-                <span class="px-2 py-0.5 rounded-full font-bold <?= $avgNilai >= 75 ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800' ?>">
+                <span class="px-2 py-0.5 rounded-full font-bold <?= $avgNilai >= 75 ? 'bg-primary-100 text-primary-800' : 'bg-amber-100 text-amber-800' ?>">
                     <?= $avgNilai >= 85 ? 'Sangat Baik' : ($avgNilai >= 75 ? 'Baik' : ($avgNilai >= 65 ? 'Cukup' : 'Evaluasi')) ?>
                 </span>
             </div>
@@ -171,7 +171,7 @@
                 <!-- Legend Details -->
                 <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 text-[11px]">
                     <div class="flex items-center gap-2">
-                        <span class="w-3 h-3 rounded-md bg-emerald-500"></span>
+                        <span class="w-3 h-3 rounded-md bg-primary-500"></span>
                         <span class="text-slate-600 font-medium">A (≥ 85): <strong><?= $predikatCounts['A'] ?></strong></span>
                     </div>
                     <div class="flex items-center gap-2">
@@ -203,7 +203,7 @@
                     </h3>
                     <p class="text-xs text-slate-400 mt-0.5">Daftar wadah penilaian aktif yang baru dibuat</p>
                 </div>
-                <a href="<?= url('kelola-nilai/group') ?>" class="text-xs font-bold text-teal-600 hover:text-teal-700">
+                <a href="<?= url('kelola-nilai/group') ?>" class="text-xs font-bold text-primary-600 hover:text-primary-700">
                     Lihat Semua &rarr;
                 </a>
             </div>
@@ -233,7 +233,7 @@
                                         <div class="text-[10px] text-slate-400 mt-0.5 flex items-center gap-1.5">
                                             <span class="px-1.5 py-0.5 rounded bg-slate-100 font-bold text-slate-600">Unit <?= e($rg['unit']) ?></span>
                                             <span>&bull;</span>
-                                            <span><?= !empty($rg['is_active']) ? '<span class="text-emerald-600 font-bold">Aktif</span>' : '<span class="text-slate-400">Nonaktif</span>' ?></span>
+                                            <span><?= !empty($rg['is_active']) ? '<span class="text-primary-600 font-bold">Aktif</span>' : '<span class="text-slate-400">Nonaktif</span>' ?></span>
                                         </div>
                                     </td>
                                     <td class="py-3">
@@ -241,12 +241,12 @@
                                         <span class="block text-[10px] text-slate-400">Smt <?= e($rg['semester']) ?></span>
                                     </td>
                                     <td class="py-3 text-center">
-                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-50 text-teal-700 border border-teal-200">
+                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary-50 text-primary-700 border border-primary-200">
                                             <?= (int)$rg['total_input'] ?> Nilai
                                         </span>
                                     </td>
                                     <td class="py-3 text-right">
-                                        <a href="<?= url('kelola-nilai/input/' . $rg['id']) ?>" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-teal-50 hover:bg-teal-100 text-teal-700 font-bold text-[11px] transition-colors">
+                                        <a href="<?= url('kelola-nilai/input/' . $rg['id']) ?>" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-primary-50 hover:bg-primary-100 text-primary-700 font-bold text-[11px] transition-colors">
                                             <span>Buka</span>
                                             <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" /></svg>
                                         </a>
@@ -295,7 +295,7 @@
                                 </div>
                             </div>
                             <div class="text-right shrink-0">
-                                <span class="px-2.5 py-1 rounded-xl text-xs font-black bg-emerald-100 text-emerald-800">
+                                <span class="px-2.5 py-1 rounded-xl text-xs font-black bg-primary-100 text-primary-800">
                                     <?= number_format($ts['rerata_nilai'], 1) ?>
                                 </span>
                             </div>

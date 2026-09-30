@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Kelas Diampu Screen
  * Shows PIC / Mendampingi stacked JP summary, and "Masuk" modal with Textarea (max 15 chars) and keyboard-aware "Simpan" button.
@@ -13,7 +13,7 @@
         </a>
         <h2 class="font-bold text-slate-800 text-base">Kelas Diampu (6)</h2>
     </div>
-    <a href="<?= url('mobile/absensi-kelas') ?>" class="px-3 py-1.5 bg-blue-50 text-blue-600 rounded-2xl text-xs font-bold flex items-center gap-1 press-bounce">
+    <a href="<?= url('mobile/absensi-kelas') ?>" class="px-3 py-1.5 bg-primary-50 text-primary-600 rounded-2xl text-xs font-bold flex items-center gap-1 press-bounce">
         <i data-lucide="user-check" class="w-3.5 h-3.5"></i> Absen
     </a>
 </div>
@@ -23,27 +23,27 @@
     <!-- Search / Filter -->
     <div class="relative">
         <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
-        <input type="text" id="filter-class" oninput="filterClasses()" placeholder="Cari nama kelas, PIC, atau jadwal..." class="w-full pl-10 pr-4 py-2.5 bg-white text-xs rounded-2xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm">
+        <input type="text" id="filter-class" oninput="filterClasses()" placeholder="Cari nama kelas, PIC, atau jadwal..." class="w-full pl-10 pr-4 py-2.5 bg-white text-xs rounded-2xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-sm">
     </div>
 
     <!-- Summary JP Chips (Stacked Vertically) -->
     <div class="grid grid-cols-2 gap-2.5">
         <!-- Card 1: Sebagai PIC -->
-        <div class="bg-emerald-50 p-3 rounded-2xl border border-emerald-100 flex flex-col justify-between space-y-1">
+        <div class="bg-primary-50 p-3 rounded-2xl border border-primary-100 flex flex-col justify-between space-y-1">
             <div class="flex items-center gap-1.5">
-                <span class="w-2 h-2 rounded-full bg-emerald-600"></span>
-                <span class="font-bold text-emerald-800 text-xs">Sebagai PIC</span>
+                <span class="w-2 h-2 rounded-full bg-primary-600"></span>
+                <span class="font-bold text-primary-800 text-xs">Sebagai PIC</span>
             </div>
-            <p class="font-black text-emerald-700 text-sm leading-tight">4 Kelas (8 JP)</p>
+            <p class="font-black text-primary-700 text-sm leading-tight">4 Kelas (8 JP)</p>
         </div>
 
         <!-- Card 2: Mendampingi -->
-        <div class="bg-blue-50 p-3 rounded-2xl border border-blue-100 flex flex-col justify-between space-y-1">
+        <div class="bg-primary-50 p-3 rounded-2xl border border-primary-100 flex flex-col justify-between space-y-1">
             <div class="flex items-center gap-1.5">
-                <span class="w-2 h-2 rounded-full bg-blue-600"></span>
-                <span class="font-bold text-blue-800 text-xs">Mendampingi</span>
+                <span class="w-2 h-2 rounded-full bg-primary-600"></span>
+                <span class="font-bold text-primary-800 text-xs">Mendampingi</span>
             </div>
-            <p class="font-black text-blue-700 text-sm leading-tight">2 Kelas (4 JP)</p>
+            <p class="font-black text-primary-700 text-sm leading-tight">2 Kelas (4 JP)</p>
         </div>
     </div>
 
@@ -69,18 +69,18 @@
             <!-- Schedule & PIC / Mendampingi Badge with Green / Blue Background -->
             <div class="bg-slate-50 p-2.5 rounded-2xl border border-slate-100 flex items-center justify-between text-[11px]">
                 <div class="flex items-center gap-1.5 text-slate-600 font-medium">
-                    <i data-lucide="clock" class="w-3.5 h-3.5 text-blue-600"></i>
+                    <i data-lucide="clock" class="w-3.5 h-3.5 text-primary-600"></i>
                     <span><?= e($k['schedule']) ?></span>
                 </div>
                 
                 <?php if ($k['role'] === 'PIC'): ?>
-                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1">
-                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-primary-100 text-primary-800 border border-primary-300 flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-primary-600"></span>
                         PIC | <?= $k['jp'] ?> JP
                     </span>
                 <?php else: ?>
-                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-300 flex items-center gap-1">
-                        <span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-primary-100 text-primary-800 border border-primary-300 flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-primary-600"></span>
                         Mendampingi | <?= $k['jp'] ?> JP
                     </span>
                 <?php endif; ?>
@@ -88,10 +88,10 @@
 
             <!-- Quick Actions -->
             <div class="grid grid-cols-3 gap-2 pt-1 border-t border-slate-50 text-center">
-                <a href="<?= url('mobile/absensi-kelas?kelas=' . urlencode($k['name'])) ?>" class="py-2 px-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-[11px] font-bold flex items-center justify-center gap-1 press-bounce">
+                <a href="<?= url('mobile/absensi-kelas?kelas=' . urlencode($k['name'])) ?>" class="py-2 px-2 rounded-xl bg-primary-50 hover:bg-primary-100 text-primary-700 text-[11px] font-bold flex items-center justify-center gap-1 press-bounce">
                     <i data-lucide="check" class="w-3.5 h-3.5"></i> Absen
                 </a>
-                <button type="button" onclick="openPresensiMasukModal('<?= e($k['name']) ?>', '<?= e($k['role']) ?>', '<?= e($k['schedule']) ?>')" class="py-2 px-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 text-[11px] font-bold flex items-center justify-center gap-1 press-bounce">
+                <button type="button" onclick="openPresensiMasukModal('<?= e($k['name']) ?>', '<?= e($k['role']) ?>', '<?= e($k['schedule']) ?>')" class="py-2 px-2 rounded-xl bg-primary-50 hover:bg-primary-100 text-primary-700 text-[11px] font-bold flex items-center justify-center gap-1 press-bounce">
                     <i data-lucide="log-in" class="w-3.5 h-3.5"></i> Masuk
                 </button>
                 <a href="<?= url('mobile/murid?kelas=' . urlencode($k['name'])) ?>" class="py-2 px-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold flex items-center justify-center gap-1 press-bounce">
@@ -126,7 +126,7 @@
             title: `Masuk ${className}`,
             subtitle: `${role} • ${schedule}`,
             icon: '🏫',
-            iconBg: 'bg-blue-100 text-blue-600',
+            iconBg: 'bg-primary-100 text-primary-600',
             content: `
                 <div class="space-y-2.5 pt-1 text-left">
                     <div>
@@ -139,7 +139,7 @@
                                   rows="2"
                                   placeholder="Tulis keterangan singkat..." 
                                   oninput="updateCharCount(this)"
-                                  class="w-full px-3.5 py-2.5 text-xs bg-slate-50 rounded-2xl border border-slate-200 font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-inner resize-none leading-relaxed"></textarea>
+                                  class="w-full px-3.5 py-2.5 text-xs bg-slate-50 rounded-2xl border border-slate-200 font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-inner resize-none leading-relaxed"></textarea>
                         <p class="text-[10px] text-slate-400 mt-1">Catatan singkat saat memulai pembelajaran di kelas.</p>
                     </div>
                 </div>
@@ -151,7 +151,7 @@
                 },
                 {
                     text: 'Simpan',
-                    className: 'flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-2xl shadow-md text-center press-bounce',
+                    className: 'flex-1 py-3 bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs rounded-2xl shadow-md text-center press-bounce',
                     autoClose: false,
                     onClick: function(e, btn) {
                         const input = document.getElementById('input-keterangan-masuk');

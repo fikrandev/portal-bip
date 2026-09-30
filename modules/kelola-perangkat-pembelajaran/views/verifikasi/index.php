@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Pusat Verifikasi / Approval Hub View
  */
@@ -25,7 +25,7 @@ $currentTipe = $filter_tipe ?? ($_GET['tipe'] ?? 'semua');
         <a href="<?= url('kelola-perangkat-pembelajaran/verifikasi?tab=pending&tipe=' . e($currentTipe)) ?>" class="px-5 py-2.5 font-bold text-xs border-b-2 transition-all flex items-center gap-2 <?= ($currentTab === 'pending' || $currentTab === 'diajukan') ? 'border-amber-600 text-amber-700 bg-amber-50/50 rounded-t-2xl' : 'border-transparent text-slate-500 hover:text-slate-700' ?>">
             <span>📥</span> Menunggu Review (<?= $pendingTotalCount ?? 0 ?>)
         </a>
-        <a href="<?= url('kelola-perangkat-pembelajaran/verifikasi?tab=history&tipe=' . e($currentTipe)) ?>" class="px-5 py-2.5 font-bold text-xs border-b-2 transition-all flex items-center gap-2 <?= $currentTab === 'history' ? 'border-emerald-600 text-emerald-700 bg-emerald-50/50 rounded-t-2xl' : 'border-transparent text-slate-500 hover:text-slate-700' ?>">
+        <a href="<?= url('kelola-perangkat-pembelajaran/verifikasi?tab=history&tipe=' . e($currentTipe)) ?>" class="px-5 py-2.5 font-bold text-xs border-b-2 transition-all flex items-center gap-2 <?= $currentTab === 'history' ? 'border-primary-600 text-primary-700 bg-primary-50/50 rounded-t-2xl' : 'border-transparent text-slate-500 hover:text-slate-700' ?>">
             <span>✅</span> Riwayat Keputusan
         </a>
         <a href="<?= url('kelola-perangkat-pembelajaran/verifikasi?tab=semua&tipe=' . e($currentTipe)) ?>" class="px-5 py-2.5 font-bold text-xs border-b-2 transition-all flex items-center gap-2 <?= $currentTab === 'semua' ? 'border-indigo-600 text-indigo-700 bg-indigo-50/50 rounded-t-2xl' : 'border-transparent text-slate-500 hover:text-slate-700' ?>">
@@ -116,8 +116,8 @@ $currentTipe = $filter_tipe ?? ($_GET['tipe'] ?? 'semua');
                         <?php foreach ($displayItems as $row): ?>
                             <?php
                             $tipeBadge = [
-                                'kaldik' => ['label' => 'Kaldik', 'class' => 'bg-emerald-100 text-emerald-800'],
-                                'hes' => ['label' => 'HES', 'class' => 'bg-teal-100 text-teal-800'],
+                                'kaldik' => ['label' => 'Kaldik', 'class' => 'bg-primary-100 text-primary-800'],
+                                'hes' => ['label' => 'HES', 'class' => 'bg-primary-100 text-primary-800'],
                                 'heb' => ['label' => 'HEB', 'class' => 'bg-cyan-100 text-cyan-800'],
                                 'prota' => ['label' => 'Prota', 'class' => 'bg-indigo-100 text-indigo-800'],
                                 'prosem' => ['label' => 'Prosem', 'class' => 'bg-purple-100 text-purple-800'],
@@ -128,7 +128,7 @@ $currentTipe = $filter_tipe ?? ($_GET['tipe'] ?? 'semua');
                             $statusBadge = [
                                 'draft' => ['label' => 'Draft', 'class' => 'bg-slate-100 text-slate-600 border-slate-200'],
                                 'diajukan' => ['label' => 'Menunggu Review', 'class' => 'bg-amber-100 text-amber-800 border-amber-300'],
-                                'disetujui' => ['label' => 'Disetujui', 'class' => 'bg-emerald-100 text-emerald-800 border-emerald-300'],
+                                'disetujui' => ['label' => 'Disetujui', 'class' => 'bg-primary-100 text-primary-800 border-primary-300'],
                                 'ditolak' => ['label' => 'Perlu Revisi', 'class' => 'bg-rose-100 text-rose-800 border-rose-300']
                             ][$row['status']] ?? ['label' => ucfirst($row['status']), 'class' => 'bg-slate-100 text-slate-700 border-slate-200'];
 
@@ -164,7 +164,7 @@ $currentTipe = $filter_tipe ?? ($_GET['tipe'] ?? 'semua');
                                 </td>
                                 <td class="py-3.5 px-4">
                                     <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border <?= $statusBadge['class'] ?>">
-                                        <span class="w-1.5 h-1.5 rounded-full <?= $row['status'] === 'disetujui' ? 'bg-emerald-500' : ($row['status'] === 'diajukan' ? 'bg-amber-500' : ($row['status'] === 'ditolak' ? 'bg-rose-500' : 'bg-slate-400')) ?>"></span>
+                                        <span class="w-1.5 h-1.5 rounded-full <?= $row['status'] === 'disetujui' ? 'bg-primary-500' : ($row['status'] === 'diajukan' ? 'bg-amber-500' : ($row['status'] === 'ditolak' ? 'bg-rose-500' : 'bg-slate-400')) ?>"></span>
                                         <?= $statusBadge['label'] ?>
                                     </span>
                                 </td>
@@ -179,7 +179,7 @@ $currentTipe = $filter_tipe ?? ($_GET['tipe'] ?? 'semua');
                                             <form method="POST" action="<?= url("kelola-perangkat-pembelajaran/approve/{$row['id']}") ?>" class="inline">
                                                 <?= CSRF::field() ?>
                                                 <input type="hidden" name="catatan" value="Disetujui dari Pusat Approval.">
-                                                <button type="submit" onclick="return confirm('Setujui dokumen <?= addslashes(e($row['judul'])) ?>?')" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition-colors flex items-center gap-1">
+                                                <button type="submit" onclick="return confirm('Setujui dokumen <?= addslashes(e($row['judul'])) ?>?')" class="px-3 py-1.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-sm transition-colors flex items-center gap-1">
                                                     <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>
                                                     Setujui
                                                 </button>

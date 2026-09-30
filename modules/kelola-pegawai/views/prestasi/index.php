@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Prestasi & Penghargaan Pegawai / Guru - Index View
  */
@@ -26,7 +26,7 @@
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                 </svg>
-                <span>+ Tambah Prestasi Baru</span>
+                <span>Tambah Prestasi Baru</span>
             </a>
         </div>
     </div>

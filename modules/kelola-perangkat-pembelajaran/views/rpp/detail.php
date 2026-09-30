@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Detail In-App Preview - RPP / Modul Ajar (JSIT Format)
  */
@@ -11,14 +11,14 @@ $kktpRows = $konten['kktp_rows'] ?? [];
     <div class="space-y-3">
         <div>
             <div class="flex items-center gap-2">
-                <span class="px-3 py-1 rounded-xl text-xs font-black bg-teal-50 text-teal-700 border border-teal-200">
+                <span class="px-3 py-1 rounded-xl text-xs font-black bg-primary-50 text-primary-700 border border-primary-200">
                     Dokumen RPP & Modul Ajar (JSIT)
                 </span>
                 <?php
                 $statusBadges = [
                     'draft' => 'bg-slate-100 text-slate-600 border-slate-200',
                     'diajukan' => 'bg-amber-50 text-amber-700 border-amber-200 animate-pulse',
-                    'disetujui' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                    'disetujui' => 'bg-primary-50 text-primary-700 border-primary-200',
                     'ditolak' => 'bg-rose-50 text-rose-700 border-rose-200'
                 ];
                 $statusLabels = [
@@ -48,7 +48,7 @@ $kktpRows = $konten['kktp_rows'] ?? [];
             <a href="<?= url("kelola-perangkat-pembelajaran/rpp/edit/{$item['id']}") ?>" class="px-4 py-2 rounded-2xl bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold text-xs border border-amber-200 transition-colors">
                 ✏️ Edit RPP
             </a>
-            <a href="<?= url("kelola-perangkat-pembelajaran/rpp/cetak/{$item['id']}") ?>" target="_blank" class="px-4 py-2 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-500/20 transition-all">
+            <a href="<?= url("kelola-perangkat-pembelajaran/rpp/cetak/{$item['id']}") ?>" target="_blank" class="px-4 py-2 rounded-2xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-md shadow-primary-500/20 transition-all">
                 🖨️ Cetak Portrait A4
             </a>
         </div>
@@ -133,14 +133,14 @@ $kktpRows = $konten['kktp_rows'] ?? [];
                     <p class="text-xs text-slate-700 leading-relaxed"><?= nl2br(e($konten['tp_attitude'] ?? '-')) ?></p>
                 </div>
                 <div class="p-3.5 rounded-2xl border border-slate-200 bg-slate-50/50">
-                    <div class="font-bold text-blue-900 text-xs uppercase mb-1 flex items-center gap-1.5">
-                        <span class="w-2 h-2 rounded-full bg-blue-500"></span> 2. Skill / Keterampilan
+                    <div class="font-bold text-primary-900 text-xs uppercase mb-1 flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-primary-500"></span> 2. Skill / Keterampilan
                     </div>
                     <p class="text-xs text-slate-700 leading-relaxed"><?= nl2br(e($konten['tp_skill'] ?? '-')) ?></p>
                 </div>
                 <div class="p-3.5 rounded-2xl border border-slate-200 bg-slate-50/50">
-                    <div class="font-bold text-emerald-900 text-xs uppercase mb-1 flex items-center gap-1.5">
-                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span> 3. Knowledge / Pengetahuan
+                    <div class="font-bold text-primary-900 text-xs uppercase mb-1 flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-primary-500"></span> 3. Knowledge / Pengetahuan
                     </div>
                     <p class="text-xs text-slate-700 leading-relaxed"><?= nl2br(e($konten['tp_knowledge'] ?? ($konten['tujuan_pembelajaran'] ?? '-'))) ?></p>
                 </div>
@@ -254,8 +254,8 @@ $kktpRows = $konten['kktp_rows'] ?? [];
                 <!-- Opener -->
                 <div class="p-3.5 rounded-2xl border border-slate-200 bg-slate-50/60">
                     <div class="flex justify-between items-center mb-1">
-                        <span class="font-bold text-teal-900 uppercase">1. Pembukaan (Opener)</span>
-                        <span class="font-bold px-2 py-0.5 rounded bg-teal-100 text-teal-800"><?= e($konten['opener_waktu'] ?? '10 Menit') ?></span>
+                        <span class="font-bold text-primary-900 uppercase">1. Pembukaan (Opener)</span>
+                        <span class="font-bold px-2 py-0.5 rounded bg-primary-100 text-primary-800"><?= e($konten['opener_waktu'] ?? '10 Menit') ?></span>
                     </div>
                     <p class="text-slate-700 leading-relaxed"><?= nl2br(e($konten['opener_kegiatan'] ?? ($konten['kegiatan_pendahuluan'] ?? '-'))) ?></p>
                 </div>
@@ -263,8 +263,8 @@ $kktpRows = $konten['kktp_rows'] ?? [];
                 <!-- Telaah -->
                 <div class="p-3.5 rounded-2xl border border-slate-200 bg-slate-50/60">
                     <div class="flex justify-between items-center mb-1">
-                        <span class="font-bold text-teal-900 uppercase">2. Telaah</span>
-                        <span class="font-bold px-2 py-0.5 rounded bg-teal-100 text-teal-800"><?= e($konten['telaah_waktu'] ?? '20 Menit') ?></span>
+                        <span class="font-bold text-primary-900 uppercase">2. Telaah</span>
+                        <span class="font-bold px-2 py-0.5 rounded bg-primary-100 text-primary-800"><?= e($konten['telaah_waktu'] ?? '20 Menit') ?></span>
                     </div>
                     <p class="text-slate-700 leading-relaxed"><?= nl2br(e($konten['telaah_kegiatan'] ?? '-')) ?></p>
                 </div>
@@ -272,8 +272,8 @@ $kktpRows = $konten['kktp_rows'] ?? [];
                 <!-- Eksplorasi -->
                 <div class="p-3.5 rounded-2xl border border-slate-200 bg-slate-50/60">
                     <div class="flex justify-between items-center mb-1">
-                        <span class="font-bold text-teal-900 uppercase">3. Eksplorasi</span>
-                        <span class="font-bold px-2 py-0.5 rounded bg-teal-100 text-teal-800"><?= e($konten['eksplorasi_waktu'] ?? '20 Menit') ?></span>
+                        <span class="font-bold text-primary-900 uppercase">3. Eksplorasi</span>
+                        <span class="font-bold px-2 py-0.5 rounded bg-primary-100 text-primary-800"><?= e($konten['eksplorasi_waktu'] ?? '20 Menit') ?></span>
                     </div>
                     <p class="text-slate-700 leading-relaxed"><?= nl2br(e($konten['eksplorasi_kegiatan'] ?? '-')) ?></p>
                 </div>
@@ -281,8 +281,8 @@ $kktpRows = $konten['kktp_rows'] ?? [];
                 <!-- Rumuskan -->
                 <div class="p-3.5 rounded-2xl border border-slate-200 bg-slate-50/60">
                     <div class="flex justify-between items-center mb-1">
-                        <span class="font-bold text-teal-900 uppercase">4. Rumuskan</span>
-                        <span class="font-bold px-2 py-0.5 rounded bg-teal-100 text-teal-800"><?= e($konten['rumuskan_waktu'] ?? '20 Menit') ?></span>
+                        <span class="font-bold text-primary-900 uppercase">4. Rumuskan</span>
+                        <span class="font-bold px-2 py-0.5 rounded bg-primary-100 text-primary-800"><?= e($konten['rumuskan_waktu'] ?? '20 Menit') ?></span>
                     </div>
                     <p class="text-slate-700 leading-relaxed"><?= nl2br(e($konten['rumuskan_kegiatan'] ?? '-')) ?></p>
                 </div>
@@ -290,8 +290,8 @@ $kktpRows = $konten['kktp_rows'] ?? [];
                 <!-- Presentasikan -->
                 <div class="p-3.5 rounded-2xl border border-slate-200 bg-slate-50/60">
                     <div class="flex justify-between items-center mb-1">
-                        <span class="font-bold text-teal-900 uppercase">5. Presentasikan</span>
-                        <span class="font-bold px-2 py-0.5 rounded bg-teal-100 text-teal-800"><?= e($konten['presentasikan_waktu'] ?? '20 Menit') ?></span>
+                        <span class="font-bold text-primary-900 uppercase">5. Presentasikan</span>
+                        <span class="font-bold px-2 py-0.5 rounded bg-primary-100 text-primary-800"><?= e($konten['presentasikan_waktu'] ?? '20 Menit') ?></span>
                     </div>
                     <p class="text-slate-700 leading-relaxed"><?= nl2br(e($konten['presentasikan_kegiatan'] ?? '-')) ?></p>
                 </div>
@@ -299,8 +299,8 @@ $kktpRows = $konten['kktp_rows'] ?? [];
                 <!-- Aplikasikan -->
                 <div class="p-3.5 rounded-2xl border border-slate-200 bg-slate-50/60">
                     <div class="flex justify-between items-center mb-1">
-                        <span class="font-bold text-teal-900 uppercase">6. Aplikasikan</span>
-                        <span class="font-bold px-2 py-0.5 rounded bg-teal-100 text-teal-800"><?= e($konten['aplikasikan_waktu'] ?? '10 Menit') ?></span>
+                        <span class="font-bold text-primary-900 uppercase">6. Aplikasikan</span>
+                        <span class="font-bold px-2 py-0.5 rounded bg-primary-100 text-primary-800"><?= e($konten['aplikasikan_waktu'] ?? '10 Menit') ?></span>
                     </div>
                     <p class="text-slate-700 leading-relaxed"><?= nl2br(e($konten['aplikasikan_kegiatan'] ?? '-')) ?></p>
                 </div>
@@ -308,8 +308,8 @@ $kktpRows = $konten['kktp_rows'] ?? [];
                 <!-- Kaitkan & Simpulkan -->
                 <div class="p-3.5 rounded-2xl border border-slate-200 bg-slate-50/60">
                     <div class="flex justify-between items-center mb-1">
-                        <span class="font-bold text-teal-900 uppercase">7. Kaitkan dan Simpulkan</span>
-                        <span class="font-bold px-2 py-0.5 rounded bg-teal-100 text-teal-800"><?= e($konten['kaitkan_waktu'] ?? '2 Menit') ?></span>
+                        <span class="font-bold text-primary-900 uppercase">7. Kaitkan dan Simpulkan</span>
+                        <span class="font-bold px-2 py-0.5 rounded bg-primary-100 text-primary-800"><?= e($konten['kaitkan_waktu'] ?? '2 Menit') ?></span>
                     </div>
                     <p class="text-slate-700 leading-relaxed"><?= nl2br(e($konten['kaitkan_kegiatan'] ?? '-')) ?></p>
                 </div>
@@ -318,15 +318,15 @@ $kktpRows = $konten['kktp_rows'] ?? [];
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div class="p-3.5 rounded-2xl border border-slate-200 bg-slate-50/60">
                         <div class="flex justify-between items-center mb-1">
-                            <span class="font-bold text-teal-900 uppercase">8. Duniawi</span>
-                            <span class="font-bold px-2 py-0.5 rounded bg-teal-100 text-teal-800"><?= e($konten['duniawi_waktu'] ?? '2 Menit') ?></span>
+                            <span class="font-bold text-primary-900 uppercase">8. Duniawi</span>
+                            <span class="font-bold px-2 py-0.5 rounded bg-primary-100 text-primary-800"><?= e($konten['duniawi_waktu'] ?? '2 Menit') ?></span>
                         </div>
                         <p class="text-slate-700 leading-relaxed"><?= nl2br(e($konten['duniawi_kegiatan'] ?? '-')) ?></p>
                     </div>
                     <div class="p-3.5 rounded-2xl border border-slate-200 bg-slate-50/60">
                         <div class="flex justify-between items-center mb-1">
-                            <span class="font-bold text-teal-900 uppercase">9. Ukhrowi</span>
-                            <span class="font-bold px-2 py-0.5 rounded bg-teal-100 text-teal-800"><?= e($konten['ukhrowi_waktu'] ?? '3 Menit') ?></span>
+                            <span class="font-bold text-primary-900 uppercase">9. Ukhrowi</span>
+                            <span class="font-bold px-2 py-0.5 rounded bg-primary-100 text-primary-800"><?= e($konten['ukhrowi_waktu'] ?? '3 Menit') ?></span>
                         </div>
                         <p class="text-slate-700 leading-relaxed"><?= nl2br(e($konten['ukhrowi_kegiatan'] ?? '-')) ?></p>
                     </div>
@@ -334,7 +334,7 @@ $kktpRows = $konten['kktp_rows'] ?? [];
 
                 <!-- Closure -->
                 <div class="p-3.5 rounded-2xl border border-slate-200 bg-slate-50/60">
-                    <span class="font-bold text-teal-900 uppercase block mb-2">10. Closure / Penutup</span>
+                    <span class="font-bold text-primary-900 uppercase block mb-2">10. Closure / Penutup</span>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div class="p-2.5 rounded-xl bg-white border border-slate-200">
                             <div class="flex justify-between items-center mb-1">
@@ -380,14 +380,14 @@ $kktpRows = $konten['kktp_rows'] ?? [];
                             <td class="py-2.5 px-3 border border-slate-200"><?= e($konten['penilaian_sikap_aol'] ?? '-') ?></td>
                         </tr>
                         <tr>
-                            <td class="py-2.5 px-3 border border-slate-200 font-bold text-blue-900 bg-blue-50/40">Keterampilan / Skill</td>
+                            <td class="py-2.5 px-3 border border-slate-200 font-bold text-primary-900 bg-primary-50/40">Keterampilan / Skill</td>
                             <td class="py-2.5 px-3 border border-slate-200"><?= e($konten['penilaian_skill_tp'] ?? '-') ?></td>
                             <td class="py-2.5 px-3 border border-slate-200"><?= e($konten['penilaian_skill_afl'] ?? '-') ?></td>
                             <td class="py-2.5 px-3 border border-slate-200"><?= e($konten['penilaian_skill_aal'] ?? '-') ?></td>
                             <td class="py-2.5 px-3 border border-slate-200"><?= e($konten['penilaian_skill_aol'] ?? '-') ?></td>
                         </tr>
                         <tr>
-                            <td class="py-2.5 px-3 border border-slate-200 font-bold text-emerald-900 bg-emerald-50/40">Pengetahuan / Knowledge</td>
+                            <td class="py-2.5 px-3 border border-slate-200 font-bold text-primary-900 bg-primary-50/40">Pengetahuan / Knowledge</td>
                             <td class="py-2.5 px-3 border border-slate-200"><?= e($konten['penilaian_knowledge_tp'] ?? '-') ?></td>
                             <td class="py-2.5 px-3 border border-slate-200"><?= e($konten['penilaian_knowledge_afl'] ?? '-') ?></td>
                             <td class="py-2.5 px-3 border border-slate-200"><?= e($konten['penilaian_knowledge_aal'] ?? '-') ?></td>
@@ -467,7 +467,7 @@ $kktpRows = $konten['kktp_rows'] ?? [];
     <?php if (!empty($logs)): ?>
         <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 space-y-4">
             <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                <span class="w-2.5 h-2.5 rounded-full bg-teal-600"></span> Riwayat Status & Catatan Verifikasi
+                <span class="w-2.5 h-2.5 rounded-full bg-primary-600"></span> Riwayat Status & Catatan Verifikasi
             </h3>
             <div class="space-y-3">
                 <?php foreach ($logs as $log): ?>
@@ -475,7 +475,7 @@ $kktpRows = $konten['kktp_rows'] ?? [];
                         <div>
                             <span class="font-bold text-slate-800"><?= e($log['user_nama']) ?></span>
                             <span class="text-slate-500">mengubah status menjadi:</span>
-                            <span class="font-bold text-teal-700 uppercase"><?= e($log['aksi'] ?? '-') ?></span>
+                            <span class="font-bold text-primary-700 uppercase"><?= e($log['aksi'] ?? '-') ?></span>
                             <?php if (!empty($log['catatan'])): ?>
                                 <p class="text-slate-600 mt-1 italic">"<?= e($log['catatan']) ?>"</p>
                             <?php endif; ?>

@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Dashboard Perangkat Pembelajaran
  */
@@ -6,18 +6,18 @@
 <div class="space-y-6">
 
     <!-- Top Hero Banner -->
-    <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-600 via-teal-700 to-primary-900 p-6 sm:p-8 text-white shadow-xl shadow-emerald-950/10 border border-emerald-500/30">
+    <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary-600 via-primary-700 to-primary-900 p-6 sm:p-8 text-white shadow-xl shadow-primary-950/10 border border-primary-500/30">
         <div class="absolute -right-10 -bottom-10 w-64 h-64 bg-white/10 rounded-full blur-3xl pointer-events-none"></div>
-        <div class="absolute right-20 top-0 w-32 h-32 bg-emerald-400/20 rounded-full blur-2xl pointer-events-none"></div>
+        <div class="absolute right-20 top-0 w-32 h-32 bg-primary-400/20 rounded-full blur-2xl pointer-events-none"></div>
         
         <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div class="space-y-2">
-                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 border border-white/20 backdrop-blur-md text-xs font-semibold text-emerald-100">
-                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 border border-white/20 backdrop-blur-md text-xs font-semibold text-primary-100">
+                    <span class="w-2 h-2 rounded-full bg-primary-400 animate-pulse"></span>
                     Tahun Ajaran <?= e(SYS_TAHUN_AKADEMIK_NAME) ?>
                 </div>
                 <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Perangkat Pembelajaran Guru</h1>
-                <p class="text-sm text-emerald-100/90 max-w-2xl leading-relaxed">
+                <p class="text-sm text-primary-100/90 max-w-2xl leading-relaxed">
                     Kelola dan susun perangkat kurikulum terpadu: Kaldik, HES, HEB, Prota, Prosem, dan Modul Ajar / RPP lengkap dengan alur verifikasi & pengesahan resmi.
                 </p>
             </div>
@@ -25,7 +25,7 @@
             <!-- Quick Action Dropdown / Buttons -->
             <div class="flex flex-wrap items-center gap-3">
                 <a href="<?= url('kelola-perangkat-pembelajaran/verifikasi') ?>" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white/15 hover:bg-white/25 border border-white/20 text-white text-sm font-semibold transition-all backdrop-blur-sm">
-                    <svg class="w-4 h-4 text-emerald-300" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <svg class="w-4 h-4 text-primary-300" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 0 1-1.043 3.296 3.745 3.745 0 0 1-3.296 1.043A3.745 3.745 0 0 1 12 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 0 1-3.296-1.043 3.745 3.745 0 0 1-1.043-3.296A3.745 3.745 0 0 1 3 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 0 1 1.043-3.296 3.746 3.746 0 0 1 3.296-1.043A3.746 3.746 0 0 1 12 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 0 1 3.296 1.043 3.746 3.746 0 0 1 1.043 3.296A3.745 3.745 0 0 1 21 12Z" />
                     </svg>
                     Pusat Verifikasi
@@ -35,8 +35,8 @@
                 </a>
 
                 <div class="relative group">
-                    <button type="button" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-white text-emerald-950 hover:bg-emerald-50 text-sm font-bold shadow-lg shadow-black/10 transition-all">
-                        <svg class="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                    <button type="button" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-white text-primary-950 hover:bg-primary-50 text-sm font-bold shadow-lg shadow-black/10 transition-all">
+                        <svg class="w-4 h-4 text-primary-600" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                         </svg>
                         Buat Dokumen
@@ -45,22 +45,22 @@
                         </svg>
                     </button>
                     <div class="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-slate-100 p-2 hidden group-hover:block z-50 animate-in fade-in slide-in-from-top-2">
-                        <a href="<?= url('kelola-perangkat-pembelajaran/kaldik/create') ?>" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition-colors">
-                            <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Kalender Pendidikan (Kaldik)
+                        <a href="<?= url('kelola-perangkat-pembelajaran/kaldik/create') ?>" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:bg-primary-50 hover:text-primary-700 transition-colors">
+                            <span class="w-2 h-2 rounded-full bg-primary-500"></span> Kalender Pendidikan (Kaldik)
                         </a>
-                        <a href="<?= url('kelola-perangkat-pembelajaran/hes/create') ?>" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition-colors">
-                            <span class="w-2 h-2 rounded-full bg-teal-500"></span> Hari Efektif Sekolah (HES)
+                        <a href="<?= url('kelola-perangkat-pembelajaran/hes/create') ?>" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:bg-primary-50 hover:text-primary-700 transition-colors">
+                            <span class="w-2 h-2 rounded-full bg-primary-500"></span> Hari Efektif Sekolah (HES)
                         </a>
-                        <a href="<?= url('kelola-perangkat-pembelajaran/heb/create') ?>" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition-colors">
+                        <a href="<?= url('kelola-perangkat-pembelajaran/heb/create') ?>" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:bg-primary-50 hover:text-primary-700 transition-colors">
                             <span class="w-2 h-2 rounded-full bg-cyan-500"></span> Hari Efektif Belajar (HEB)
                         </a>
-                        <a href="<?= url('kelola-perangkat-pembelajaran/prota/create') ?>" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition-colors">
+                        <a href="<?= url('kelola-perangkat-pembelajaran/prota/create') ?>" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:bg-primary-50 hover:text-primary-700 transition-colors">
                             <span class="w-2 h-2 rounded-full bg-indigo-500"></span> Program Tahunan (Prota)
                         </a>
-                        <a href="<?= url('kelola-perangkat-pembelajaran/prosem/create') ?>" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition-colors">
+                        <a href="<?= url('kelola-perangkat-pembelajaran/prosem/create') ?>" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:bg-primary-50 hover:text-primary-700 transition-colors">
                             <span class="w-2 h-2 rounded-full bg-purple-500"></span> Program Semester (Prosem)
                         </a>
-                        <a href="<?= url('kelola-perangkat-pembelajaran/rpp/create') ?>" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition-colors">
+                        <a href="<?= url('kelola-perangkat-pembelajaran/rpp/create') ?>" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:bg-primary-50 hover:text-primary-700 transition-colors">
                             <span class="w-2 h-2 rounded-full bg-rose-500"></span> RPP / Modul Ajar
                         </a>
                     </div>
@@ -96,14 +96,14 @@
         </div>
 
         <!-- Disetujui -->
-        <div class="bg-white rounded-3xl p-5 border border-emerald-200/80 shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow bg-gradient-to-br from-emerald-50/40 to-white">
-            <div class="w-12 h-12 rounded-2xl bg-emerald-100 flex items-center justify-center text-emerald-600 font-bold text-xl flex-shrink-0">
+        <div class="bg-white rounded-3xl p-5 border border-primary-200/80 shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow bg-gradient-to-br from-primary-50/40 to-white">
+            <div class="w-12 h-12 rounded-2xl bg-primary-100 flex items-center justify-center text-primary-600 font-bold text-xl flex-shrink-0">
                 ✅
             </div>
             <div>
-                <p class="text-xs font-medium text-emerald-700">Disetujui</p>
-                <h3 class="text-2xl font-extrabold text-emerald-900"><?= $stats['disetujui'] ?></h3>
-                <p class="text-[11px] text-emerald-600/80 mt-0.5">Sah & terverifikasi</p>
+                <p class="text-xs font-medium text-primary-700">Disetujui</p>
+                <h3 class="text-2xl font-extrabold text-primary-900"><?= $stats['disetujui'] ?></h3>
+                <p class="text-[11px] text-primary-600/80 mt-0.5">Sah & terverifikasi</p>
             </div>
         </div>
 
@@ -125,7 +125,7 @@
         <div class="flex items-center justify-between">
             <div>
                 <h2 class="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Distribusi Unit Satuan Pendidikan
+                    <span class="w-2.5 h-2.5 rounded-full bg-primary-500"></span> Distribusi Unit Satuan Pendidikan
                 </h2>
                 <p class="text-xs text-slate-500 mt-0.5">Ringkasan perangkat pembelajaran per jenjang pendidikan</p>
             </div>
@@ -134,7 +134,7 @@
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <?php foreach ($unit_list as $uKey => $uInfo): ?>
                 <?php $countUnit = $stats['by_unit'][$uKey] ?? 0; ?>
-                <div class="p-4 rounded-2xl border border-slate-200 bg-slate-50/50 hover:bg-white hover:border-emerald-300 hover:shadow-md transition-all flex flex-col justify-between">
+                <div class="p-4 rounded-2xl border border-slate-200 bg-slate-50/50 hover:bg-white hover:border-primary-300 hover:shadow-md transition-all flex flex-col justify-between">
                     <div class="flex items-center justify-between">
                         <div class="w-10 h-10 rounded-xl flex items-center justify-center text-2xl <?= $uInfo['bg_soft'] ?>">
                             <?= $uInfo['icon'] ?>
@@ -146,9 +146,9 @@
                         <p class="text-[10px] text-slate-500"><?= e($uInfo['name']) ?></p>
                     </div>
                     <div class="mt-3 pt-2 border-t border-slate-200/60 flex items-center justify-between text-[11px]">
-                        <a href="<?= url("kelola-perangkat-pembelajaran/kaldik?unit={$uKey}") ?>" class="font-bold text-emerald-600 hover:underline">Kaldik</a>
+                        <a href="<?= url("kelola-perangkat-pembelajaran/kaldik?unit={$uKey}") ?>" class="font-bold text-primary-600 hover:underline">Kaldik</a>
                         <span class="text-slate-300">•</span>
-                        <a href="<?= url("kelola-perangkat-pembelajaran/hes?unit={$uKey}") ?>" class="font-bold text-teal-600 hover:underline">HES</a>
+                        <a href="<?= url("kelola-perangkat-pembelajaran/hes?unit={$uKey}") ?>" class="font-bold text-primary-600 hover:underline">HES</a>
                         <span class="text-slate-300">•</span>
                         <a href="<?= url("kelola-perangkat-pembelajaran/heb?unit={$uKey}") ?>" class="font-bold text-cyan-600 hover:underline">HEB</a>
                     </div>
@@ -169,10 +169,10 @@
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             
             <!-- 1. Kaldik -->
-            <div class="group bg-white rounded-3xl p-6 border border-slate-200/80 hover:border-emerald-400 hover:shadow-lg transition-all duration-300 flex flex-col justify-between">
+            <div class="group bg-white rounded-3xl p-6 border border-slate-200/80 hover:border-primary-400 hover:shadow-lg transition-all duration-300 flex flex-col justify-between">
                 <div>
                     <div class="flex items-center justify-between mb-4">
-                        <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <div class="w-12 h-12 rounded-2xl bg-primary-500/10 text-primary-600 flex items-center justify-center group-hover:scale-110 transition-transform">
                             <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5m-9-6h.008v.008H12v-.008ZM12 15h.008v.008H12V15Zm0 2.25h.008v.008H12v-.008ZM9.75 15h.008v.008H9.75V15Zm0 2.25h.008v.008H9.75v-.008ZM7.5 15h.008v.008H7.5V15Zm0 2.25h.008v.008H7.5v-.008Zm6.75-4.5h.008v.008h-.008v-.008Zm0 2.25h.008v.008h-.008V15Zm0 2.25h.008v.008h-.008v-.008Zm2.25-4.5h.008v.008H16.5v-.008Zm0 2.25h.008v.008H16.5V15Z" />
                             </svg>
@@ -181,26 +181,26 @@
                             <?= $stats['by_type']['kaldik'] ?? 0 ?> Dokumen
                         </span>
                     </div>
-                    <h3 class="text-base font-bold text-slate-800 group-hover:text-emerald-700 transition-colors">Kalender Pendidikan (Kaldik)</h3>
+                    <h3 class="text-base font-bold text-slate-800 group-hover:text-primary-700 transition-colors">Kalender Pendidikan (Kaldik)</h3>
                     <p class="text-xs text-slate-500 mt-1.5 leading-relaxed">
                         Susun agenda akademik, jadwal awal semester, STS/PTS, SAS/PAS, libur nasional & kegiatan sekolah per bulan.
                     </p>
                 </div>
                 <div class="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between gap-2">
-                    <a href="<?= url('kelola-perangkat-pembelajaran/kaldik') ?>" class="text-xs font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1">
+                    <a href="<?= url('kelola-perangkat-pembelajaran/kaldik') ?>" class="text-xs font-bold text-primary-600 hover:text-primary-700 flex items-center gap-1">
                         Buka Kaldik →
                     </a>
-                    <a href="<?= url('kelola-perangkat-pembelajaran/kaldik/create') ?>" class="p-2 rounded-xl bg-slate-100 hover:bg-emerald-100 text-slate-600 hover:text-emerald-800 transition-colors" title="Buat Kaldik Baru">
+                    <a href="<?= url('kelola-perangkat-pembelajaran/kaldik/create') ?>" class="p-2 rounded-xl bg-slate-100 hover:bg-primary-100 text-slate-600 hover:text-primary-800 transition-colors" title="Buat Kaldik Baru">
                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
                     </a>
                 </div>
             </div>
 
             <!-- 2. HES -->
-            <div class="group bg-white rounded-3xl p-6 border border-slate-200/80 hover:border-teal-400 hover:shadow-lg transition-all duration-300 flex flex-col justify-between">
+            <div class="group bg-white rounded-3xl p-6 border border-slate-200/80 hover:border-primary-400 hover:shadow-lg transition-all duration-300 flex flex-col justify-between">
                 <div>
                     <div class="flex items-center justify-between mb-4">
-                        <div class="w-12 h-12 rounded-2xl bg-teal-500/10 text-teal-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <div class="w-12 h-12 rounded-2xl bg-primary-500/10 text-primary-600 flex items-center justify-center group-hover:scale-110 transition-transform">
                             <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                             </svg>
@@ -209,16 +209,16 @@
                             <?= $stats['by_type']['hes'] ?? 0 ?> Dokumen
                         </span>
                     </div>
-                    <h3 class="text-base font-bold text-slate-800 group-hover:text-teal-700 transition-colors">Hari Efektif Sekolah (HES)</h3>
+                    <h3 class="text-base font-bold text-slate-800 group-hover:text-primary-700 transition-colors">Hari Efektif Sekolah (HES)</h3>
                     <p class="text-xs text-slate-500 mt-1.5 leading-relaxed">
                         Hitung jumlah hari efektif sekolah, hari libur umum, dan kegiatan per bulan untuk Semester Ganjil & Genap.
                     </p>
                 </div>
                 <div class="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between gap-2">
-                    <a href="<?= url('kelola-perangkat-pembelajaran/hes') ?>" class="text-xs font-bold text-teal-600 hover:text-teal-700 flex items-center gap-1">
+                    <a href="<?= url('kelola-perangkat-pembelajaran/hes') ?>" class="text-xs font-bold text-primary-600 hover:text-primary-700 flex items-center gap-1">
                         Buka HES →
                     </a>
-                    <a href="<?= url('kelola-perangkat-pembelajaran/hes/create') ?>" class="p-2 rounded-xl bg-slate-100 hover:bg-teal-100 text-slate-600 hover:text-teal-800 transition-colors" title="Buat HES Baru">
+                    <a href="<?= url('kelola-perangkat-pembelajaran/hes/create') ?>" class="p-2 rounded-xl bg-slate-100 hover:bg-primary-100 text-slate-600 hover:text-primary-800 transition-colors" title="Buat HES Baru">
                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
                     </a>
                 </div>
@@ -393,8 +393,8 @@
                         <?php foreach ($recent_items as $item): ?>
                             <?php
                             $tipeBadge = [
-                                'kaldik' => ['label' => 'Kaldik', 'class' => 'bg-emerald-100 text-emerald-800'],
-                                'hes' => ['label' => 'HES', 'class' => 'bg-teal-100 text-teal-800'],
+                                'kaldik' => ['label' => 'Kaldik', 'class' => 'bg-primary-100 text-primary-800'],
+                                'hes' => ['label' => 'HES', 'class' => 'bg-primary-100 text-primary-800'],
                                 'heb' => ['label' => 'HEB', 'class' => 'bg-cyan-100 text-cyan-800'],
                                 'prota' => ['label' => 'Prota', 'class' => 'bg-indigo-100 text-indigo-800'],
                                 'prosem' => ['label' => 'Prosem', 'class' => 'bg-purple-100 text-purple-800'],
@@ -404,7 +404,7 @@
                             $statusBadge = [
                                 'draft' => ['label' => 'Draft', 'class' => 'bg-slate-100 text-slate-600 border-slate-200'],
                                 'diajukan' => ['label' => 'Menunggu Review', 'class' => 'bg-amber-100 text-amber-800 border-amber-300'],
-                                'disetujui' => ['label' => 'Disetujui', 'class' => 'bg-emerald-100 text-emerald-800 border-emerald-300'],
+                                'disetujui' => ['label' => 'Disetujui', 'class' => 'bg-primary-100 text-primary-800 border-primary-300'],
                                 'ditolak' => ['label' => 'Perlu Revisi', 'class' => 'bg-rose-100 text-rose-800 border-rose-300']
                             ][$item['status']] ?? ['label' => ucfirst($item['status']), 'class' => 'bg-slate-100 text-slate-700 border-slate-200'];
                             ?>
@@ -430,7 +430,7 @@
                                 </td>
                                 <td class="py-3.5 px-4">
                                     <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border <?= $statusBadge['class'] ?>">
-                                        <span class="w-1.5 h-1.5 rounded-full <?= $item['status'] === 'disetujui' ? 'bg-emerald-500' : ($item['status'] === 'diajukan' ? 'bg-amber-500' : ($item['status'] === 'ditolak' ? 'bg-rose-500' : 'bg-slate-400')) ?>"></span>
+                                        <span class="w-1.5 h-1.5 rounded-full <?= $item['status'] === 'disetujui' ? 'bg-primary-500' : ($item['status'] === 'diajukan' ? 'bg-amber-500' : ($item['status'] === 'ditolak' ? 'bg-rose-500' : 'bg-slate-400')) ?>"></span>
                                         <?= $statusBadge['label'] ?>
                                     </span>
                                 </td>
@@ -439,7 +439,7 @@
                                         <a href="<?= url("kelola-perangkat-pembelajaran/{$item['tipe']}/detail/{$item['id']}") ?>" class="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors" title="Lihat Detail">
                                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg>
                                         </a>
-                                        <a href="<?= url("kelola-perangkat-pembelajaran/{$item['tipe']}/edit/{$item['id']}") ?>" class="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 transition-colors" title="Edit Dokumen">
+                                        <a href="<?= url("kelola-perangkat-pembelajaran/{$item['tipe']}/edit/{$item['id']}") ?>" class="p-1.5 rounded-lg bg-primary-50 hover:bg-primary-100 text-primary-700 transition-colors" title="Edit Dokumen">
                                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" /></svg>
                                         </a>
                                         <a href="<?= url("kelola-perangkat-pembelajaran/{$item['tipe']}/cetak/{$item['id']}") ?>" target="_blank" class="p-1.5 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-700 transition-colors" title="Cetak Dokumen">

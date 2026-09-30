@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Rincian Hari Efektif (HEB & HES Auto-Generated) - View
  * Displays all classes & subjects assigned to the selected teacher vertically stacked.
@@ -10,7 +10,7 @@
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
             <div class="flex items-center gap-2 mb-2">
-                <a href="<?= url('kelola-perangkat-pembelajaran/rincian-hari-efektif') ?>" class="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 text-white font-black text-xs shadow-sm flex items-center gap-1.5">
+                <a href="<?= url('kelola-perangkat-pembelajaran/rincian-hari-efektif') ?>" class="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-primary-600 to-primary-700 text-white font-black text-xs shadow-sm flex items-center gap-1.5">
                     <span>⚡ Rincian Hari Efektif (Auto-Generated)</span>
                 </a>
                 <a href="<?= url('kelola-perangkat-pembelajaran/heb') ?>" class="px-3.5 py-1.5 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 font-semibold text-xs transition-colors">
@@ -22,7 +22,7 @@
             </div>
             <h1 class="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
                 <span>Rincian Hari Efektif (HEB & HES)</span>
-                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-primary-100 text-primary-800 border border-primary-200">
                     Auto-Calculated
                 </span>
             </h1>
@@ -56,7 +56,7 @@
             <span class="font-bold text-slate-400 uppercase text-[10px] whitespace-nowrap mr-1">Pilih Unit:</span>
             <?php foreach ($unitList as $uKey => $uInfo): ?>
                 <?php $isActiveUnit = ($selectedUnit === $uKey); ?>
-                <a href="<?= url('kelola-perangkat-pembelajaran/rincian-hari-efektif?' . http_build_query(array_merge($_GET, ['unit' => $uKey, 'guru_id' => '', 'kelas' => '', 'mapel' => '']))) ?>" class="px-3.5 py-1.5 rounded-xl font-bold transition-all whitespace-nowrap inline-flex items-center gap-1.5 <?= $isActiveUnit ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' ?>">
+                <a href="<?= url('kelola-perangkat-pembelajaran/rincian-hari-efektif?' . http_build_query(array_merge($_GET, ['unit' => $uKey, 'guru_id' => '', 'kelas' => '', 'mapel' => '']))) ?>" class="px-3.5 py-1.5 rounded-xl font-bold transition-all whitespace-nowrap inline-flex items-center gap-1.5 <?= $isActiveUnit ? 'bg-primary-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' ?>">
                     <span><?= $uInfo['icon'] ?></span>
                     <span>Unit <?= $uKey ?></span>
                 </a>
@@ -131,7 +131,7 @@
     <!-- Live Calculated Document Outputs (Vertical List of All Classes) -->
     <?php if (empty($resultsList)): ?>
         <div class="bg-white rounded-3xl p-12 text-center border border-slate-200 shadow-sm">
-            <div class="w-16 h-16 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-4">
+            <div class="w-16 h-16 rounded-full bg-primary-50 text-primary-600 flex items-center justify-center mx-auto mb-4">
                 <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                 </svg>
@@ -157,7 +157,7 @@
                     <!-- Card Top Tool Bar -->
                     <div class="flex items-center justify-between pb-3 border-b border-slate-100 text-xs">
                         <div class="flex items-center gap-2">
-                            <span class="w-6 h-6 rounded-full bg-emerald-600 text-white font-black flex items-center justify-center text-[11px]">
+                            <span class="w-6 h-6 rounded-full bg-primary-600 text-white font-black flex items-center justify-center text-[11px]">
                                 <?= $idx + 1 ?>
                             </span>
                             <span class="font-extrabold text-slate-800">

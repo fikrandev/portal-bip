@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Qur'an Siswa - Central Hub Dashboard View
  * Displays 3 Education Level Portals (PAUD, SD, SMP & SMA)
@@ -10,13 +10,13 @@ include MODULES_PATH . '/kelola-quran-siswa/views/partials/top_tabs.php';
 
     <!-- Hero Banner -->
     <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 via-primary-950 to-slate-900 text-white p-6 sm:p-8 shadow-xl border border-primary-800/40">
-        <div class="absolute -right-10 -bottom-10 w-72 h-72 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute -right-10 -bottom-10 w-72 h-72 bg-primary-500/10 rounded-full blur-3xl pointer-events-none"></div>
         <div class="absolute -left-10 -top-10 w-72 h-72 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
         
         <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div class="max-w-2xl">
-                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-emerald-300 text-xs font-bold mb-3 border border-white/10">
-                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-primary-300 text-xs font-bold mb-3 border border-white/10">
+                    <span class="w-2 h-2 rounded-full bg-primary-400 animate-pulse"></span>
                     <span>Modul Qur'an Terintegrasi Bina Insan Palu</span>
                 </div>
                 <h1 class="text-2xl sm:text-3xl font-black tracking-tight leading-tight">
@@ -29,7 +29,7 @@ include MODULES_PATH . '/kelola-quran-siswa/views/partials/top_tabs.php';
 
             <div class="flex items-center gap-3">
                 <button type="button" onclick="openModalSetoran('SD')" 
-                        class="px-5 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white text-xs sm:text-sm font-bold shadow-lg shadow-emerald-500/25 transition-all flex items-center gap-2">
+                        class="px-5 py-3 rounded-2xl bg-gradient-to-r from-primary-500 to-primary-500 hover:from-primary-600 hover:to-primary-600 text-white text-xs sm:text-sm font-bold shadow-lg shadow-primary-500/25 transition-all flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                     </svg>
@@ -86,19 +86,19 @@ include MODULES_PATH . '/kelola-quran-siswa/views/partials/top_tabs.php';
         </div>
 
         <!-- Portal 2: SD IT -->
-        <div class="group bg-white rounded-3xl border border-emerald-200/80 p-6 shadow-sm hover:shadow-xl hover:border-emerald-400 transition-all duration-300 flex flex-col justify-between relative overflow-hidden ring-2 ring-emerald-500/20">
-            <div class="absolute -right-6 -bottom-6 w-28 h-28 bg-emerald-500/5 rounded-full group-hover:scale-125 transition-transform"></div>
+        <div class="group bg-white rounded-3xl border border-primary-200/80 p-6 shadow-sm hover:shadow-xl hover:border-primary-400 transition-all duration-300 flex flex-col justify-between relative overflow-hidden ring-2 ring-emerald-500/20">
+            <div class="absolute -right-6 -bottom-6 w-28 h-28 bg-primary-500/5 rounded-full group-hover:scale-125 transition-transform"></div>
             <div>
                 <div class="flex items-center justify-between mb-4">
-                    <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white flex items-center justify-center text-2xl shadow-md shadow-emerald-500/20">
+                    <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-600 text-white flex items-center justify-center text-2xl shadow-md shadow-primary-500/20">
                         🎒
                     </div>
-                    <span class="px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                    <span class="px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-primary-50 text-primary-800 border border-primary-200">
                         Dasar IT (1–6)
                     </span>
                 </div>
                 
-                <h2 class="text-xl font-extrabold text-slate-900 group-hover:text-emerald-600 transition-colors">
+                <h2 class="text-xl font-extrabold text-slate-900 group-hover:text-primary-600 transition-colors">
                     Qur'an Siswa SD
                 </h2>
                 <p class="text-xs text-slate-500 mt-1.5 line-clamp-2">
@@ -106,20 +106,20 @@ include MODULES_PATH . '/kelola-quran-siswa/views/partials/top_tabs.php';
                 </p>
 
                 <!-- Stats summary -->
-                <div class="grid grid-cols-2 gap-2.5 mt-5 p-3.5 rounded-2xl bg-emerald-50/50 border border-emerald-100">
+                <div class="grid grid-cols-2 gap-2.5 mt-5 p-3.5 rounded-2xl bg-primary-50/50 border border-primary-100">
                     <div>
-                        <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-700">Total Siswa SD</span>
-                        <div class="text-xl font-black text-emerald-950 mt-0.5"><?= number_format($counts['SD'] ?? 0) ?></div>
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-primary-700">Total Siswa SD</span>
+                        <div class="text-xl font-black text-primary-950 mt-0.5"><?= number_format($counts['SD'] ?? 0) ?></div>
                     </div>
                     <div>
-                        <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-700">Setoran Hafalan</span>
-                        <div class="text-xl font-black text-emerald-950 mt-0.5"><?= number_format($stats['sd_setoran'] ?? 0) ?></div>
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-primary-700">Setoran Hafalan</span>
+                        <div class="text-xl font-black text-primary-950 mt-0.5"><?= number_format($stats['sd_setoran'] ?? 0) ?></div>
                     </div>
                 </div>
             </div>
 
-            <div class="mt-6 pt-4 border-t border-emerald-100/60 flex items-center justify-between">
-                <a href="<?= url('kelola-quran-siswa-sd') ?>" class="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-500/20 text-center transition-all flex items-center justify-center gap-2 group-hover:gap-3">
+            <div class="mt-6 pt-4 border-t border-primary-100/60 flex items-center justify-between">
+                <a href="<?= url('kelola-quran-siswa-sd') ?>" class="w-full py-2.5 px-4 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold shadow-md shadow-primary-500/20 text-center transition-all flex items-center justify-center gap-2 group-hover:gap-3">
                     <span>Masuk Portal SD</span>
                     <svg class="w-4 h-4 transition-transform" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
@@ -133,7 +133,7 @@ include MODULES_PATH . '/kelola-quran-siswa/views/partials/top_tabs.php';
             <div class="absolute -right-6 -bottom-6 w-28 h-28 bg-indigo-500/5 rounded-full group-hover:scale-125 transition-transform"></div>
             <div>
                 <div class="flex items-center justify-between mb-4">
-                    <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-600 to-blue-600 text-white flex items-center justify-center text-2xl shadow-md shadow-indigo-500/20">
+                    <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-600 to-primary-600 text-white flex items-center justify-center text-2xl shadow-md shadow-indigo-500/20">
                         🎓
                     </div>
                     <span class="px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-indigo-50 text-indigo-800 border border-indigo-200">
@@ -177,7 +177,7 @@ include MODULES_PATH . '/kelola-quran-siswa/views/partials/top_tabs.php';
     <div class="bg-white rounded-3xl border border-slate-200/80 shadow-sm overflow-hidden">
         <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
             <div class="flex items-center gap-2">
-                <span class="text-emerald-600">⚡</span>
+                <span class="text-primary-600">⚡</span>
                 <h3 class="text-sm font-extrabold text-slate-800">Aktivitas Setoran Terkini (Seluruh Jenjang)</h3>
             </div>
             <span class="text-xs text-slate-400 font-medium">Diperbarui real-time</span>
@@ -236,8 +236,8 @@ include MODULES_PATH . '/kelola-quran-siswa/views/partials/top_tabs.php';
                                 </td>
                                 <td class="py-3.5 px-6 text-center whitespace-nowrap">
                                     <span class="inline-flex gap-1 text-[10px] font-bold">
-                                        <span title="Kelancaran" class="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">K: <?= $row['nilai_kelancaran'] ?></span>
-                                        <span title="Tajwid" class="px-1.5 py-0.5 rounded bg-teal-50 text-teal-700 border border-teal-200">T: <?= $row['nilai_tajwid'] ?></span>
+                                        <span title="Kelancaran" class="px-1.5 py-0.5 rounded bg-primary-50 text-primary-700 border border-primary-200">K: <?= $row['nilai_kelancaran'] ?></span>
+                                        <span title="Tajwid" class="px-1.5 py-0.5 rounded bg-primary-50 text-primary-700 border border-primary-200">T: <?= $row['nilai_tajwid'] ?></span>
                                     </span>
                                 </td>
                                 <td class="py-3.5 px-6 text-center whitespace-nowrap">
