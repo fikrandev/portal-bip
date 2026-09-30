@@ -164,6 +164,9 @@ $router->get('/validasi-kartu/{id}', [SiswaController::class, 'validasiKartu']);
 $router->get('/', function() {
     // Auto-migrate if accessed via root (run in background)
     $scripts = [
+        BASE_PATH . '/database/migrate_sarpras_tables.php',
+        BASE_PATH . '/database/migrate_sarpras_tanah_bangunan.php',
+        BASE_PATH . '/database/migrate_sarpras_extensions.php',
         BASE_PATH . '/mobile-migrate/migrate.php',
         BASE_PATH . '/mobile-migrate/migrate_distribusi.php'
     ];
@@ -688,7 +691,27 @@ $router->get('/mobile/cuti', [PortalGuruController::class, 'cuti'], [[Middleware
 // ==============================================================================
 require_once MODULES_PATH . '/mobile-sarpras/controllers/MobileSarprasController.php';
 
-$router->get('/mobile-sarpras', [MobileSarprasController::class, 'dashboard'], [[Middleware::class, 'authRequired']]);
+$router->get('/mobile-sarpras', function() {
+    // Auto-migrate if accessed via mobile-sarpras dashboard (run in background)
+    $scripts = [
+        BASE_PATH . '/database/migrate_sarpras_tables.php',
+        BASE_PATH . '/database/migrate_sarpras_tanah_bangunan.php',
+        BASE_PATH . '/database/migrate_sarpras_extensions.php',
+        BASE_PATH . '/mobile-migrate/migrate.php',
+        BASE_PATH . '/mobile-migrate/migrate_distribusi.php'
+    ];
+    foreach ($scripts as $script) {
+        if (file_exists($script)) {
+            $cmd = 'php ' . escapeshellarg($script);
+            if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+                pclose(popen("start /B " . $cmd, "r"));
+            } else {
+                exec($cmd . " > /dev/null 2>&1 &");
+            }
+        }
+    }
+    MobileSarprasController::dashboard();
+}, [[Middleware::class, 'authRequired']]);
 $router->get('/mobile-sarpras/scan', [MobileSarprasController::class, 'scan'], [[Middleware::class, 'authRequired']]);
 $router->get('/mobile-sarpras/detail/{id}', [MobileSarprasController::class, 'detail'], [[Middleware::class, 'authRequired']]);
 
