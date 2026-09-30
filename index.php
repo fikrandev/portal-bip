@@ -162,6 +162,21 @@ $router->get('/validasi-kartu/{id}', [SiswaController::class, 'validasiKartu']);
 
 // -- Dashboard (requires auth) --
 $router->get('/', function() {
+    // Auto-migrate if accessed via root (run in background)
+    $scripts = [
+        BASE_PATH . '/mobile-migrate/migrate.php',
+        BASE_PATH . '/mobile-migrate/migrate_distribusi.php'
+    ];
+    foreach ($scripts as $script) {
+        if (file_exists($script)) {
+            $cmd = 'php ' . escapeshellarg($script);
+            if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+                pclose(popen("start /B " . $cmd, "r"));
+            } else {
+                exec($cmd . " > /dev/null 2>&1 &");
+            }
+        }
+    }
     Response::redirect(url('dashboard'));
 }, [[]]);
 
