@@ -162,23 +162,37 @@ $router->get('/validasi-kartu/{id}', [SiswaController::class, 'validasiKartu']);
 
 // -- Dashboard (requires auth) --
 $router->get('/', function() {
-    // Auto-migrate if accessed via root (run in background)
+    // Auto-migrate if accessed via root
     $scripts = [
         BASE_PATH . '/database/migrate_sarpras_tables.php',
         BASE_PATH . '/database/migrate_sarpras_tanah_bangunan.php',
         BASE_PATH . '/database/migrate_sarpras_extensions.php',
-        BASE_PATH . '/mobile-migrate/migrate.php',
         BASE_PATH . '/mobile-migrate/migrate_distribusi.php'
     ];
-    foreach ($scripts as $script) {
-        if (file_exists($script)) {
-            $cmd = 'php ' . escapeshellarg($script);
-            if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-                pclose(popen("start /B " . $cmd, "r"));
-            } else {
-                exec($cmd . " > /dev/null 2>&1 &");
+    
+    $execEnabled = function_exists('exec') && !in_array('exec', array_map('trim', explode(',', ini_get('disable_functions'))));
+    
+    if ($execEnabled) {
+        foreach ($scripts as $script) {
+            if (file_exists($script)) {
+                $cmd = 'php ' . escapeshellarg($script);
+                if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+                    pclose(popen("start /B " . $cmd, "r"));
+                } else {
+                    exec($cmd . " > /dev/null 2>&1 &");
+                }
             }
         }
+    } else {
+        ob_start();
+        foreach ($scripts as $script) {
+            if (file_exists($script)) {
+                try {
+                    require_once $script;
+                } catch (Throwable $e) {}
+            }
+        }
+        ob_end_clean();
     }
     Response::redirect(url('dashboard'));
 }, [[]]);
@@ -692,23 +706,37 @@ $router->get('/mobile/cuti', [PortalGuruController::class, 'cuti'], [[Middleware
 require_once MODULES_PATH . '/mobile-sarpras/controllers/MobileSarprasController.php';
 
 $router->get('/mobile-sarpras', function() {
-    // Auto-migrate if accessed via mobile-sarpras dashboard (run in background)
+    // Auto-migrate if accessed via mobile-sarpras dashboard
     $scripts = [
         BASE_PATH . '/database/migrate_sarpras_tables.php',
         BASE_PATH . '/database/migrate_sarpras_tanah_bangunan.php',
         BASE_PATH . '/database/migrate_sarpras_extensions.php',
-        BASE_PATH . '/mobile-migrate/migrate.php',
         BASE_PATH . '/mobile-migrate/migrate_distribusi.php'
     ];
-    foreach ($scripts as $script) {
-        if (file_exists($script)) {
-            $cmd = 'php ' . escapeshellarg($script);
-            if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-                pclose(popen("start /B " . $cmd, "r"));
-            } else {
-                exec($cmd . " > /dev/null 2>&1 &");
+    
+    $execEnabled = function_exists('exec') && !in_array('exec', array_map('trim', explode(',', ini_get('disable_functions'))));
+    
+    if ($execEnabled) {
+        foreach ($scripts as $script) {
+            if (file_exists($script)) {
+                $cmd = 'php ' . escapeshellarg($script);
+                if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+                    pclose(popen("start /B " . $cmd, "r"));
+                } else {
+                    exec($cmd . " > /dev/null 2>&1 &");
+                }
             }
         }
+    } else {
+        ob_start();
+        foreach ($scripts as $script) {
+            if (file_exists($script)) {
+                try {
+                    require_once $script;
+                } catch (Throwable $e) {}
+            }
+        }
+        ob_end_clean();
     }
     MobileSarprasController::dashboard();
 }, [[Middleware::class, 'authRequired']]);
