@@ -4,6 +4,34 @@
         <form action="<?= url('users/store') ?>" method="POST" id="form-create-user">
             <?= CSRF::field() ?>
             
+            <div class="mb-5 bg-blue-50/50 p-4 rounded-xl border border-blue-100">
+                <label for="pegawai_autofill" class="block text-sm font-semibold text-primary-800 mb-1.5 flex items-center gap-2">
+                    <svg class="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" /></svg>
+                    Pilih dari Data Pegawai (Auto-fill)
+                </label>
+                <select id="pegawai_autofill" class="searchable-select w-full" data-placeholder="-- Cari Nama Pegawai --">
+                    <option value="">-- Ketik untuk mencari pegawai --</option>
+                    <?php if (isset($pegawaiList)): ?>
+                        <?php foreach ($pegawaiList as $pegawai): ?>
+                            <?php 
+                            $pegName = e($pegawai['nama']);
+                            $pegEmail = e($pegawai['email'] ?? '');
+                            $pegPhone = e($pegawai['no_wa'] ?? '');
+                            $pegUsername = empty($pegEmail) ? strtolower(str_replace(' ', '', $pegName)) : explode('@', $pegEmail)[0];
+                            ?>
+                            <option value="<?= $pegawai['id'] ?>" 
+                                    data-nama="<?= $pegName ?>" 
+                                    data-email="<?= $pegEmail ?>"
+                                    data-phone="<?= $pegPhone ?>"
+                                    data-username="<?= $pegUsername ?>">
+                                <?= $pegName ?> <?= !empty($pegawai['niy']) ? '(NIY: ' . e($pegawai['niy']) . ')' : '' ?>
+                            </option>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </select>
+                <p class="text-xs text-blue-600 mt-1.5">*Pilih nama pegawai untuk mengisi form di bawah secara otomatis.</p>
+            </div>
+            
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">
                 <div>
                     <label for="full_name" class="block text-sm font-semibold text-primary-800 mb-1.5">Nama Lengkap <span class="text-rose-500">*</span></label>
@@ -70,3 +98,44 @@
         </form>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const pegawaiSelect = document.getElementById('pegawai_autofill');
+    if(pegawaiSelect) {
+        pegawaiSelect.addEventListener('change', function(e) {
+            const selectedOption = this.options[this.selectedIndex];
+            if(selectedOption.value) {
+                const nama = selectedOption.getAttribute('data-nama');
+                const email = selectedOption.getAttribute('data-email');
+                const phone = selectedOption.getAttribute('data-phone');
+                const username = selectedOption.getAttribute('data-username');
+                
+                if (nama) document.getElementById('full_name').value = nama;
+                if (email) document.getElementById('email').value = email;
+                if (phone) document.getElementById('phone').value = phone;
+                if (username) document.getElementById('username').value = username;
+            }
+        });
+        
+        // Listen to select2 event if it's used
+        if(window.jQuery && $(pegawaiSelect).data('select2')) {
+            $(pegawaiSelect).on('select2:select', function (e) {
+                const data = e.params.data;
+                const selectedOption = $(this).children('option[value="' + data.id + '"]')[0];
+                if(selectedOption && data.id) {
+                    const nama = selectedOption.getAttribute('data-nama');
+                    const email = selectedOption.getAttribute('data-email');
+                    const phone = selectedOption.getAttribute('data-phone');
+                    const username = selectedOption.getAttribute('data-username');
+                    
+                    if (nama) document.getElementById('full_name').value = nama;
+                    if (email) document.getElementById('email').value = email;
+                    if (phone) document.getElementById('phone').value = phone;
+                    if (username) document.getElementById('username').value = username;
+                }
+            });
+        }
+    }
+});
+</script>

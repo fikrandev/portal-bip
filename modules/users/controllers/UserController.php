@@ -56,6 +56,7 @@ class UserController
         ];
         $db = Database::getInstance();
         $roles = $db->findAll("SELECT * FROM roles ORDER BY name ASC");
+        $pegawaiList = $db->findAll("SELECT id, nama, email, no_wa, niy FROM pegawai WHERE is_active = 1 ORDER BY nama ASC");
         
         ob_start();
         include MODULES_PATH . '/users/views/create.php';
@@ -133,6 +134,7 @@ class UserController
             ['label' => 'Edit']
         ];
         $roles = $db->findAll("SELECT * FROM roles ORDER BY name ASC");
+        $pegawaiList = $db->findAll("SELECT id, nama, email, no_wa, niy FROM pegawai WHERE is_active = 1 ORDER BY nama ASC");
         $userRoleIds = array_column(RBAC::getUserRoles((int) $id), 'id');
         
         ob_start();
