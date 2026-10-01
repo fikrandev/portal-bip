@@ -1,5 +1,7 @@
 <?php
-define('BASE_PATH', dirname(__DIR__));
+if (!defined('BASE_PATH')) {
+    define('BASE_PATH', dirname(__DIR__));
+}
 $configFile = BASE_PATH . '/config/database.php';
 if (file_exists($configFile)) {
     require_once $configFile;

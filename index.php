@@ -170,7 +170,7 @@ $router->get('/', function() {
         BASE_PATH . '/mobile-migrate/migrate_distribusi.php'
     ];
     
-    $execEnabled = function_exists('exec') && !in_array('exec', array_map('trim', explode(',', ini_get('disable_functions'))));
+    $execEnabled = false; // Force inline migration for shared hosting compatibility
     
     if ($execEnabled) {
         foreach ($scripts as $script) {
@@ -722,7 +722,7 @@ $router->get('/mobile-sarpras', function() {
         BASE_PATH . '/mobile-migrate/migrate_distribusi.php'
     ];
     
-    $execEnabled = function_exists('exec') && !in_array('exec', array_map('trim', explode(',', ini_get('disable_functions'))));
+    $execEnabled = false; // Force inline migration for shared hosting compatibility
     
     if ($execEnabled) {
         foreach ($scripts as $script) {

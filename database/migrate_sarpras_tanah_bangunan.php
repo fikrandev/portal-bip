@@ -4,7 +4,9 @@
  * Portal BIP
  */
 
-define('BASE_PATH', realpath(__DIR__ . '/..'));
+if (!defined('BASE_PATH')) {
+    define('BASE_PATH', realpath(__DIR__ . '/..'));
+}
 require_once BASE_PATH . '/config/database.php';
 require_once BASE_PATH . '/core/Database.php';
 
