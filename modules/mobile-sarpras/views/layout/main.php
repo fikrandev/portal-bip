@@ -4,14 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#2563eb">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title><?= e($pageTitle ?? 'Sarpras Mobile') ?></title>
     
     <link rel="manifest" href="<?= url('mobile-sarpras/manifest.json') ?>">
-    <link rel="apple-touch-icon" href="<?= url('pwa-icon.png') ?>">
+    <link rel="apple-touch-icon" href="<?= url('pwa-icon.png') ?>?s=192">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode/html5-qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
     <style>
         /* Fix for unwanted text nodes (BOM) pushing layout down */
@@ -23,6 +26,18 @@
         
         /* Hide scrollbar for clean mobile look */
         ::-webkit-scrollbar { width: 0px; background: transparent; }
+
+        /* PWA Install Banner */
+        .pwa-install-banner {
+            position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+            z-index: 9998; width: calc(100% - 2rem); max-width: 400px;
+            background: linear-gradient(135deg, #1e40af, #3b82f6);
+            border-radius: 1rem; padding: 1rem 1.25rem;
+            box-shadow: 0 10px 40px rgba(37, 99, 235, 0.4);
+            display: none; /* hidden until beforeinstallprompt fires */
+            animation: slideUp 0.4s ease-out;
+        }
+        @keyframes slideUp { from { transform: translateX(-50%) translateY(100px); opacity: 0; } to { transform: translateX(-50%) translateY(0); opacity: 1; } }
     </style>
 </head>
 <body class="h-full flex flex-col overflow-hidden bg-slate-50 relative">
@@ -50,6 +65,25 @@
         </div>
     </div>
     
+    <!-- PWA Install Banner -->
+    <div id="pwa-install-banner" class="pwa-install-banner">
+        <div class="flex items-center gap-3 text-white">
+            <div class="w-11 h-11 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                <i data-lucide="download" class="w-6 h-6"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+                <p class="font-bold text-sm">Install Sarpras Mobile</p>
+                <p class="text-xs text-white/70">Akses cepat langsung dari layar utama</p>
+            </div>
+            <button id="pwa-install-btn" class="px-4 py-2 bg-white text-blue-600 font-bold text-sm rounded-xl shadow flex-shrink-0 active:scale-95 transition-transform">
+                Install
+            </button>
+            <button id="pwa-install-close" class="p-1 text-white/60 hover:text-white flex-shrink-0">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+    </div>
+
     <!-- Top App Bar -->
     <header class="bg-blue-600 text-white shadow-md z-40 flex-shrink-0 mobile-safe-top">
         <div class="px-4 py-3 flex items-center justify-between">
@@ -139,19 +173,64 @@
 
         lucide.createIcons();
 
-        // Register Service Worker for PWA
+        // ============================================================
+        // SERVICE WORKER REGISTRATION
+        // ============================================================
         if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('<?= url("sw.js") ?>')
-                    .then(registration => {
-                        console.log('ServiceWorker registration successful with scope: ', registration.scope);
-                    }, err => {
-                        console.log('ServiceWorker registration failed: ', err);
-                    });
+            navigator.serviceWorker.register('<?= url("sw-sarpras.js") ?>', { scope: '<?= url("") ?>' })
+                .then(reg => {
+                    console.log('[PWA] Service Worker registered, scope:', reg.scope);
+                })
+                .catch(err => {
+                    console.error('[PWA] Service Worker registration failed:', err);
+                });
+        }
+
+        // ============================================================
+        // PWA INSTALL PROMPT (beforeinstallprompt)
+        // ============================================================
+        let deferredPrompt = null;
+        const installBanner = document.getElementById('pwa-install-banner');
+        const installBtn = document.getElementById('pwa-install-btn');
+        const installClose = document.getElementById('pwa-install-close');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            // Show banner
+            if (installBanner) {
+                installBanner.style.display = 'block';
+                lucide.createIcons(); // re-render icons inside banner
+            }
+            console.log('[PWA] beforeinstallprompt fired, install banner shown');
+        });
+
+        if (installBtn) {
+            installBtn.addEventListener('click', async () => {
+                if (!deferredPrompt) return;
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                console.log('[PWA] User choice:', outcome);
+                deferredPrompt = null;
+                if (installBanner) installBanner.style.display = 'none';
             });
         }
 
-        // Push Notification Subscription Logic
+        if (installClose) {
+            installClose.addEventListener('click', () => {
+                if (installBanner) installBanner.style.display = 'none';
+            });
+        }
+
+        window.addEventListener('appinstalled', () => {
+            console.log('[PWA] App installed');
+            if (installBanner) installBanner.style.display = 'none';
+            deferredPrompt = null;
+        });
+
+        // ============================================================
+        // PUSH NOTIFICATION
+        // ============================================================
         document.getElementById('btn-notification').addEventListener('click', async () => {
             if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
                 alert('Push notification tidak didukung di browser ini.');

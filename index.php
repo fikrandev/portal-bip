@@ -789,9 +789,9 @@ $router->get('/mobile-sarpras/manifest.json', function() {
         'description' => 'Aplikasi Manajemen Sarana dan Prasarana',
         'id' => 'mobile-sarpras-bip-app',
         'start_url' => url('mobile-sarpras'),
-        'scope' => rtrim(url('mobile-sarpras'), '/') . '/',
+        'scope' => url(''),
         'display' => 'standalone',
-        'display_override' => ['window-controls-overlay', 'standalone', 'minimal-ui'],
+        'display_override' => ['standalone', 'minimal-ui'],
         'orientation' => 'portrait-primary',
         'background_color' => '#f8fafc',
         'theme_color' => '#2563eb',
@@ -799,10 +799,28 @@ $router->get('/mobile-sarpras/manifest.json', function() {
         'dir' => 'ltr',
         'icons' => [
             [
-                'src' => url('pwa-icon.png'),
-                'sizes' => '192x192 512x512',
+                'src' => url('pwa-icon.png') . '?s=192',
+                'sizes' => '192x192',
                 'type' => 'image/png',
-                'purpose' => 'any maskable'
+                'purpose' => 'any'
+            ],
+            [
+                'src' => url('pwa-icon.png') . '?s=192&maskable=1',
+                'sizes' => '192x192',
+                'type' => 'image/png',
+                'purpose' => 'maskable'
+            ],
+            [
+                'src' => url('pwa-icon.png') . '?s=512',
+                'sizes' => '512x512',
+                'type' => 'image/png',
+                'purpose' => 'any'
+            ],
+            [
+                'src' => url('pwa-icon.png') . '?s=512&maskable=1',
+                'sizes' => '512x512',
+                'type' => 'image/png',
+                'purpose' => 'maskable'
             ]
         ]
     ];
@@ -986,6 +1004,13 @@ $router->get('/sw.js', function() {
     header('Service-Worker-Allowed: /');
     header('Cache-Control: no-cache, no-store, must-revalidate');
     readfile(PUBLIC_PATH . '/sw.js');
+    exit;
+});
+$router->get('/sw-sarpras.js', function() {
+    header('Content-Type: application/javascript; charset=utf-8');
+    header('Service-Worker-Allowed: /');
+    header('Cache-Control: no-cache, no-store, must-revalidate');
+    readfile(PUBLIC_PATH . '/sw-sarpras.js');
     exit;
 });
 
