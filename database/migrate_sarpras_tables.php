@@ -299,6 +299,8 @@ try {
         ['sarpras.update', 'Edit Sarpras', 'Mengubah data aset, pengembalian barang, dan update status perbaikan'],
         ['sarpras.delete', 'Hapus Sarpras', 'Menghapus data aset, ruangan, atau riwayat sarpras'],
         ['sarpras.export', 'Ekspor & Cetak Sarpras', 'Mengekspor rekapitulasi inventaris ke Excel dan mencetak label QR/Barcode'],
+        ['sarpras.mobile', 'Akses Mobile Sarpras', 'Dapat mengakses dan menggunakan aplikasi PWA Mobile Sarpras'],
+        ['sarpras.approve', 'Persetujuan Sarpras', 'Dapat menyetujui peminjaman dan permohonan perbaikan sarpras'],
     ];
 
     $stmtP = $pdo->prepare("INSERT INTO permissions (name, slug, description, module_id) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE name = VALUES(name), description = VALUES(description), module_id = VALUES(module_id)");
