@@ -46,18 +46,6 @@
             </div>
             
             <div class="mb-5">
-                <label for="email" class="block text-sm font-semibold text-primary-800 mb-1.5">Email <span class="text-rose-500">*</span></label>
-                <input type="email" id="email" name="email" value="<?= e(old('email') ?: $user['email']) ?>" required
-                       class="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-[10px] text-slate-900 placeholder:text-slate-400 outline-none focus:outline-none focus:ring-0 hover:border-primary-500 focus:border-primary-500 transition-colors text-sm font-medium">
-            </div>
-
-            <div class="mb-5">
-                <label for="phone" class="block text-sm font-semibold text-primary-800 mb-1.5">Telepon</label>
-                <input type="text" id="phone" name="phone" value="<?= e(old('phone') ?: ($user['phone'] ?? '')) ?>"
-                       class="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-[10px] text-slate-900 placeholder:text-slate-400 outline-none focus:outline-none focus:ring-0 hover:border-primary-500 focus:border-primary-500 transition-colors text-sm font-medium">
-            </div>
-            
-            <div class="mb-5">
                 <label for="password" class="block text-sm font-semibold text-primary-800 mb-1.5">Password Baru <span class="text-xs text-slate-400 font-normal">(kosongkan jika tidak diubah)</span></label>
                 <input type="password" id="password" name="password" minlength="8"
                        class="w-full px-4 py-3 bg-white border border-slate-300 rounded-[10px] text-slate-900 placeholder:text-slate-400 outline-none focus:outline-none focus:ring-0 hover:border-primary-500 focus:border-primary-500 transition-colors text-sm font-medium">
@@ -104,10 +92,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 const phone = selectedOption.getAttribute('data-phone');
                 const username = selectedOption.getAttribute('data-username');
                 
-                if (nama) document.getElementById('full_name').value = nama;
-                if (email) document.getElementById('email').value = email;
-                if (phone) document.getElementById('phone').value = phone;
-                if (username) document.getElementById('username').value = username;
+                if (nama && document.getElementById('full_name')) document.getElementById('full_name').value = nama;
+                if (email && document.getElementById('email')) document.getElementById('email').value = email;
+                if (phone && document.getElementById('phone')) document.getElementById('phone').value = phone;
+                if (username && document.getElementById('username')) document.getElementById('username').value = username;
             }
         });
         
@@ -122,10 +110,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     const phone = selectedOption.getAttribute('data-phone');
                     const username = selectedOption.getAttribute('data-username');
                     
-                    if (nama) document.getElementById('full_name').value = nama;
-                    if (email) document.getElementById('email').value = email;
-                    if (phone) document.getElementById('phone').value = phone;
-                    if (username) document.getElementById('username').value = username;
+                    if (nama && document.getElementById('full_name')) document.getElementById('full_name').value = nama;
+                    if (email && document.getElementById('email')) document.getElementById('email').value = email;
+                    if (phone && document.getElementById('phone')) document.getElementById('phone').value = phone;
+                    if (username && document.getElementById('username')) document.getElementById('username').value = username;
                 }
             });
         }

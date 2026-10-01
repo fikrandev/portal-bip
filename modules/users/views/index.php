@@ -1,4 +1,4 @@
-﻿<?php /** Users List View */ ?>
+<?php /** Users List View */ ?>
 
 <!-- Page Header & Action Buttons (Sudut Kanan Atas) -->
 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
@@ -56,8 +56,7 @@
             <thead>
                 <tr class="bg-primary-50/50 border-b border-primary-100">
                     <th class="px-6 py-3.5 text-left font-semibold text-primary-800">Nama</th>
-                    <th class="px-6 py-3.5 text-left font-semibold text-primary-800 hidden sm:table-cell">Username</th>
-                    <th class="px-6 py-3.5 text-left font-semibold text-primary-800 hidden md:table-cell">Email</th>
+                    <th class="px-6 py-3.5 text-left font-semibold text-primary-800 hidden sm:table-cell">Username/Email</th>
                     <th class="px-6 py-3.5 text-left font-semibold text-primary-800 hidden lg:table-cell">Peran</th>
                     <th class="px-6 py-3.5 text-center font-semibold text-primary-800">Status</th>
                     <th class="px-6 py-3.5 text-center font-semibold text-primary-800">Aksi</th>
@@ -65,7 +64,7 @@
             </thead>
             <tbody class="divide-y divide-primary-50">
                 <?php if (empty($users)): ?>
-                <tr><td colspan="6" class="px-6 py-12 text-center text-slate-400">Tidak ada data pengguna.</td></tr>
+                <tr><td colspan="5" class="px-6 py-12 text-center text-slate-400">Tidak ada data pengguna.</td></tr>
                 <?php endif; ?>
                 <?php foreach ($users as $u): ?>
                 <tr class="hover:bg-primary-50/30 transition-colors">
@@ -78,7 +77,6 @@
                         </div>
                     </td>
                     <td class="px-6 py-4 text-slate-600 hidden sm:table-cell"><?= e($u['username']) ?></td>
-                    <td class="px-6 py-4 text-slate-600 hidden md:table-cell"><?= e($u['email']) ?></td>
                     <td class="px-6 py-4 hidden lg:table-cell">
                         <span class="inline-flex px-2.5 py-1 rounded-2xl bg-primary-50 text-primary-700 text-xs font-medium"><?= e($u['role_names'] ?? '-') ?></span>
                     </td>

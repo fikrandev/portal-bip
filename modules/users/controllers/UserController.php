@@ -74,11 +74,7 @@ class UserController
         
         $validator = Validator::make($_POST)
             ->required('full_name', 'Nama lengkap')
-            ->required('email', 'Email')
-            ->email('email', 'Email')
-            ->unique('email', 'users', 'email', null, 'Email')
             ->required('username', 'Username')
-            ->alphanumeric('username', 'Username')
             ->unique('username', 'users', 'username', null, 'Username')
             ->required('password', 'Password')
             ->minLength('password', 8, 'Password')
@@ -96,10 +92,10 @@ class UserController
             $userId = $db->insert('users', [
                 'uuid'      => self::generateUUID(),
                 'full_name' => trim($_POST['full_name']),
-                'email'     => trim($_POST['email']),
+                'email'     => trim($_POST['username']), // set email to username
                 'username'  => trim($_POST['username']),
                 'password'  => password_hash($_POST['password'], PASSWORD_BCRYPT),
-                'phone'     => trim($_POST['phone'] ?? ''),
+                'phone'     => '',
                 'is_active' => isset($_POST['is_active']) ? 1 : 0,
             ]);
             
@@ -160,9 +156,6 @@ class UserController
 
         $validator = Validator::make($_POST)
             ->required('full_name', 'Nama lengkap')
-            ->required('email', 'Email')
-            ->email('email', 'Email')
-            ->unique('email', 'users', 'email', (int) $id, 'Email')
             ->required('username', 'Username')
             ->unique('username', 'users', 'username', (int) $id, 'Username');
         
@@ -179,9 +172,9 @@ class UserController
         try {
             $data = [
                 'full_name' => trim($_POST['full_name']),
-                'email'     => trim($_POST['email']),
+                'email'     => trim($_POST['username']), // set email to username
                 'username'  => trim($_POST['username']),
-                'phone'     => trim($_POST['phone'] ?? ''),
+                'phone'     => '',
                 'is_active' => isset($_POST['is_active']) ? 1 : 0,
             ];
             if (!empty($_POST['password'])) {
