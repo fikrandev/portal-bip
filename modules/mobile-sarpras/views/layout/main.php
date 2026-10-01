@@ -27,6 +27,18 @@
         /* Hide scrollbar for clean mobile look */
         ::-webkit-scrollbar { width: 0px; background: transparent; }
 
+        /* Pull to Refresh */
+        .ptr-indicator {
+            position: absolute; top: -50px; left: 50%; transform: translateX(-50%);
+            width: 40px; height: 40px; border-radius: 50%;
+            background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+            display: flex; align-items: center; justify-content: center;
+            transition: transform 0.2s, opacity 0.2s; opacity: 0; z-index: 50;
+        }
+        .ptr-indicator.active { opacity: 1; }
+        .ptr-indicator.refreshing svg { animation: spin 0.8s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
         /* PWA Install Banner */
         .pwa-install-banner {
             position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
@@ -65,7 +77,7 @@
         </div>
     </div>
     
-    <!-- PWA Install Banner -->
+    <!-- PWA Install Banner (Auto Install for Chrome/Android) -->
     <div id="pwa-install-banner" class="pwa-install-banner">
         <div class="flex items-center gap-3 text-white">
             <div class="w-11 h-11 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -73,7 +85,7 @@
             </div>
             <div class="flex-1 min-w-0">
                 <p class="font-bold text-sm">Install Sarpras Mobile</p>
-                <p class="text-xs text-white/70">Akses cepat langsung dari layar utama</p>
+                <p id="pwa-install-desc" class="text-xs text-white/70">Akses cepat langsung dari layar utama</p>
             </div>
             <button id="pwa-install-btn" class="px-4 py-2 bg-white text-blue-600 font-bold text-sm rounded-xl shadow flex-shrink-0 active:scale-95 transition-transform">
                 Install
@@ -81,6 +93,29 @@
             <button id="pwa-install-close" class="p-1 text-white/60 hover:text-white flex-shrink-0">
                 <i data-lucide="x" class="w-5 h-5"></i>
             </button>
+        </div>
+    </div>
+
+    <!-- PWA Install Guide for iOS (manual) -->
+    <div id="pwa-ios-guide" class="pwa-install-banner" style="display:none;">
+        <div class="text-white">
+            <div class="flex items-center gap-3 mb-2">
+                <div class="w-11 h-11 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="smartphone" class="w-6 h-6"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p class="font-bold text-sm">Install Sarpras Mobile</p>
+                    <p class="text-xs text-white/70">Ikuti langkah di bawah ini</p>
+                </div>
+                <button id="pwa-ios-close" class="p-1 text-white/60 hover:text-white flex-shrink-0">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div class="bg-white/10 rounded-lg p-3 text-xs space-y-1">
+                <p>1. Ketuk ikon <strong>⋮</strong> (titik tiga) atau <strong>Share ↑</strong></p>
+                <p>2. Pilih <strong>"Tambahkan ke Layar Utama"</strong></p>
+                <p>3. Ketuk <strong>"Tambahkan"</strong></p>
+            </div>
         </div>
     </div>
 
@@ -106,7 +141,14 @@
     </header>
 
     <!-- Main Content Area -->
-    <main class="flex-1 overflow-y-auto w-full max-w-md mx-auto bg-slate-50 relative">
+    <main id="main-content" class="flex-1 overflow-y-auto w-full max-w-md mx-auto bg-slate-50 relative">
+        <!-- Pull to Refresh Indicator -->
+        <div id="ptr-indicator" class="ptr-indicator">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+            </svg>
+        </div>
         <div class="pb-24">
             <?= $content ?? '' ?>
         </div>
@@ -177,7 +219,7 @@
         // SERVICE WORKER REGISTRATION
         // ============================================================
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('<?= url("sw-sarpras.js") ?>', { scope: '<?= url("") ?>' })
+            navigator.serviceWorker.register('<?= url("sw-sarpras.js") ?>')
                 .then(reg => {
                     console.log('[PWA] Service Worker registered, scope:', reg.scope);
                 })
@@ -187,44 +229,142 @@
         }
 
         // ============================================================
-        // PWA INSTALL PROMPT (beforeinstallprompt)
+        // PULL TO REFRESH
+        // ============================================================
+        (function() {
+            const mainContent = document.getElementById('main-content');
+            const ptrIndicator = document.getElementById('ptr-indicator');
+            let startY = 0;
+            let currentY = 0;
+            let pulling = false;
+            const threshold = 80;
+
+            if (mainContent && ptrIndicator) {
+                mainContent.addEventListener('touchstart', function(e) {
+                    if (mainContent.scrollTop <= 0) {
+                        startY = e.touches[0].pageY;
+                        pulling = true;
+                    }
+                }, { passive: true });
+
+                mainContent.addEventListener('touchmove', function(e) {
+                    if (!pulling) return;
+                    currentY = e.touches[0].pageY;
+                    const diff = currentY - startY;
+                    if (diff > 0 && mainContent.scrollTop <= 0) {
+                        const progress = Math.min(diff / threshold, 1);
+                        ptrIndicator.style.transform = `translateX(-50%) translateY(${diff * 0.5}px)`;
+                        ptrIndicator.style.opacity = progress;
+                        ptrIndicator.classList.add('active');
+                    }
+                }, { passive: true });
+
+                mainContent.addEventListener('touchend', function() {
+                    if (!pulling) return;
+                    const diff = currentY - startY;
+                    if (diff >= threshold && mainContent.scrollTop <= 0) {
+                        ptrIndicator.classList.add('refreshing');
+                        ptrIndicator.style.transform = 'translateX(-50%) translateY(50px)';
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 400);
+                    } else {
+                        ptrIndicator.classList.remove('active');
+                        ptrIndicator.style.transform = 'translateX(-50%) translateY(-50px)';
+                        ptrIndicator.style.opacity = '0';
+                    }
+                    pulling = false;
+                    startY = 0;
+                    currentY = 0;
+                }, { passive: true });
+            }
+        })();
+
+        // ============================================================
+        // PWA INSTALL — AUTO SHOW ON PAGE LOAD
         // ============================================================
         let deferredPrompt = null;
+        let promptFired = false;
         const installBanner = document.getElementById('pwa-install-banner');
         const installBtn = document.getElementById('pwa-install-btn');
         const installClose = document.getElementById('pwa-install-close');
+        const iosGuide = document.getElementById('pwa-ios-guide');
+        const iosClose = document.getElementById('pwa-ios-close');
 
+        // Check if already installed as PWA (standalone mode)
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches 
+                          || window.navigator.standalone === true;
+        // Check if user dismissed today
+        const dismissKey = 'pwa_install_dismissed';
+        const lastDismiss = localStorage.getItem(dismissKey);
+        const dismissedToday = lastDismiss && (Date.now() - parseInt(lastDismiss)) < 86400000; // 24 hours
+
+        // Intercept beforeinstallprompt (Chrome/Edge Android)
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
-            // Show banner
-            if (installBanner) {
+            promptFired = true;
+
+            // Show native install banner immediately
+            if (!isStandalone && !dismissedToday && installBanner) {
                 installBanner.style.display = 'block';
-                lucide.createIcons(); // re-render icons inside banner
+                lucide.createIcons();
             }
-            console.log('[PWA] beforeinstallprompt fired, install banner shown');
+            console.log('[PWA] beforeinstallprompt fired');
         });
 
+        // If beforeinstallprompt doesn't fire within 2s, show manual guide
+        if (!isStandalone && !dismissedToday) {
+            setTimeout(() => {
+                if (!promptFired) {
+                    // Show manual guide (iOS Safari / Firefox / etc)
+                    if (iosGuide) {
+                        iosGuide.style.display = 'block';
+                        lucide.createIcons();
+                    }
+                    console.log('[PWA] No beforeinstallprompt, showing manual guide');
+                }
+            }, 2000);
+        }
+
+        // Install button click (native prompt)
         if (installBtn) {
             installBtn.addEventListener('click', async () => {
-                if (!deferredPrompt) return;
-                deferredPrompt.prompt();
-                const { outcome } = await deferredPrompt.userChoice;
-                console.log('[PWA] User choice:', outcome);
-                deferredPrompt = null;
-                if (installBanner) installBanner.style.display = 'none';
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+                    console.log('[PWA] User choice:', outcome);
+                    deferredPrompt = null;
+                    if (installBanner) installBanner.style.display = 'none';
+                } else {
+                    // No native prompt available, show manual guide
+                    if (installBanner) installBanner.style.display = 'none';
+                    if (iosGuide) {
+                        iosGuide.style.display = 'block';
+                        lucide.createIcons();
+                    }
+                }
             });
         }
 
+        // Close buttons
         if (installClose) {
             installClose.addEventListener('click', () => {
                 if (installBanner) installBanner.style.display = 'none';
+                localStorage.setItem(dismissKey, Date.now().toString());
+            });
+        }
+        if (iosClose) {
+            iosClose.addEventListener('click', () => {
+                if (iosGuide) iosGuide.style.display = 'none';
+                localStorage.setItem(dismissKey, Date.now().toString());
             });
         }
 
         window.addEventListener('appinstalled', () => {
             console.log('[PWA] App installed');
             if (installBanner) installBanner.style.display = 'none';
+            if (iosGuide) iosGuide.style.display = 'none';
             deferredPrompt = null;
         });
 

@@ -20,31 +20,22 @@
 
         <!-- SCAN QR SECTION -->
         <div id="section-scan" class="space-y-4">
-            <div id="scanner-wrapper" class="w-full aspect-square bg-slate-900 rounded-3xl overflow-hidden shadow-inner border-4 border-slate-200 relative mx-auto max-w-sm">
-                <div id="qr-reader" class="w-full h-full object-cover"></div>
-                
-                <!-- Scanner Overlay -->
-                <div class="absolute inset-0 z-10 pointer-events-none flex flex-col">
-                    <div class="flex-1 bg-black/40"></div>
-                    <div class="h-64 flex">
-                        <div class="flex-1 bg-black/40"></div>
-                        <div class="w-64 border-2 border-blue-500 relative">
-                            <!-- Scanner Animation Line -->
-                            <div class="absolute w-full h-1 bg-blue-500 shadow-[0_0_10px_2px_rgba(59,130,246,0.8)] animate-pulse" style="animation: scan 2s infinite linear;"></div>
-                        </div>
-                        <div class="flex-1 bg-black/40"></div>
+            <div id="scanner-wrapper" class="w-full bg-slate-900 rounded-3xl overflow-hidden shadow-inner border-4 border-slate-200 relative mx-auto max-w-sm">
+                <div id="qr-reader" style="width:100%;"></div>
+            </div>
+
+            <!-- Camera Fallback -->
+            <div id="camera-fallback-maint" class="hidden">
+                <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-center">
+                    <div class="inline-flex w-10 h-10 bg-amber-100 text-amber-600 rounded-full items-center justify-center mb-2">
+                        <i data-lucide="camera-off" class="w-5 h-5"></i>
                     </div>
-                    <div class="flex-1 bg-black/40"></div>
+                    <h3 class="font-bold text-slate-800 mb-1">Kamera tidak tersedia</h3>
+                    <p class="text-sm text-slate-500 mb-3">Pastikan browser memiliki izin akses kamera dan situs diakses via HTTPS.</p>
+                    <button type="button" onclick="location.reload()" class="px-5 py-2.5 bg-amber-500 text-white font-bold rounded-xl text-sm shadow-md w-full">Coba Lagi</button>
                 </div>
             </div>
 
-            <style>
-                @keyframes scan {
-                    0% { top: 0; }
-                    50% { top: 100%; }
-                    100% { top: 0; }
-                }
-            </style>
             <div id="scan-result" class="hidden bg-blue-50 border border-blue-100 rounded-2xl p-4">
                 <div class="flex gap-3">
                     <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 shrink-0">
@@ -127,8 +118,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const valBarangId = document.getElementById('val_barang_id');
     const selRuangan = document.getElementById('sel_ruangan');
     const selBarang = document.getElementById('sel_barang');
+    const fallback = document.getElementById('camera-fallback-maint');
 
-    let html5QrcodeScanner = null;
+    let html5Qrcode = null;
 
     // --- Mode Switching ---
     btnScan.addEventListener('click', () => {
@@ -157,40 +149,58 @@ document.addEventListener('DOMContentLoaded', function() {
         selRuangan.value = '';
         document.getElementById('scan-result').classList.add('hidden');
         document.getElementById('scanner-wrapper').classList.remove('hidden');
+        if (fallback) fallback.classList.add('hidden');
     }
 
     function showDetailForm(id) {
         valBarangId.value = id;
         secDetail.classList.remove('hidden');
-        // Scroll to form smoothly
         setTimeout(() => {
             secDetail.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }, 100);
     }
 
-    // --- QR SCANNER LOGIC ---
+    // --- QR SCANNER LOGIC (Direct Camera API) ---
     function startScanner() {
-        if (!html5QrcodeScanner) {
-            html5QrcodeScanner = new Html5QrcodeScanner("qr-reader", { fps: 10, qrbox: {width: 250, height: 250}, aspectRatio: 1.0 });
-            html5QrcodeScanner.render(onScanSuccess, onScanFailure);
-        }
+        if (html5Qrcode) return; // Already running
+        
+        html5Qrcode = new Html5Qrcode("qr-reader");
+        
+        const config = {
+            fps: 10,
+            qrbox: { width: 250, height: 250 },
+            aspectRatio: 1.0
+        };
+
+        html5Qrcode.start(
+            { facingMode: "environment" },
+            config,
+            onScanSuccess,
+            (errorMessage) => { /* ignore continuous scan errors */ }
+        ).then(() => {
+            console.log('Maintenance QR Scanner started');
+        }).catch((err) => {
+            console.error('Failed to start QR Scanner:', err);
+            if (fallback) fallback.classList.remove('hidden');
+        });
     }
 
     function stopScanner() {
-        if (html5QrcodeScanner) {
-            html5QrcodeScanner.clear().catch(error => {
-                console.error("Failed to clear html5QrcodeScanner. ", error);
+        if (html5Qrcode) {
+            html5Qrcode.stop().then(() => {
+                html5Qrcode = null;
+                console.log('Maintenance QR Scanner stopped');
+            }).catch(err => {
+                console.error("Failed to stop scanner:", err);
+                html5Qrcode = null;
             });
-            html5QrcodeScanner = null;
         }
     }
 
     async function onScanSuccess(decodedText, decodedResult) {
-        // Stop scanning after success
         stopScanner();
         document.getElementById('scanner-wrapper').classList.add('hidden');
         
-        // decodedText is expected to be kode_barang
         try {
             const res = await fetch(`<?= url('mobile-sarpras/api/barang-by-kode') ?>?kode=${encodeURIComponent(decodedText)}`);
             const json = await res.json();
@@ -200,7 +210,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('res-nama-barang').textContent = b.nama_barang;
                 document.getElementById('res-ruangan').textContent = 'Ruangan: ' + (b.nama_ruangan || '-');
                 document.getElementById('scan-result').classList.remove('hidden');
-                
+                lucide.createIcons();
                 showDetailForm(b.id);
             } else {
                 alert('Barang dengan kode ' + decodedText + ' tidak ditemukan.');
@@ -212,10 +222,6 @@ document.addEventListener('DOMContentLoaded', function() {
             resetSelection();
             startScanner();
         }
-    }
-
-    function onScanFailure(error) {
-        // handle scan failure, usually better to ignore and keep scanning
     }
 
     document.getElementById('btn-scan-ulang').addEventListener('click', () => {
