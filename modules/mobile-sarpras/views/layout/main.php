@@ -139,6 +139,18 @@
 
         lucide.createIcons();
 
+        // Register Service Worker for PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('<?= url("sw.js") ?>')
+                    .then(registration => {
+                        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                    }, err => {
+                        console.log('ServiceWorker registration failed: ', err);
+                    });
+            });
+        }
+
         // Push Notification Subscription Logic
         document.getElementById('btn-notification').addEventListener('click', async () => {
             if (!('serviceWorker' in navigator) || !('PushManager' in window)) {

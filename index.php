@@ -165,6 +165,7 @@ $router->get('/', function() {
     // Auto-migrate if accessed via root
     $scripts = [
         BASE_PATH . '/database/migrate_sarpras_tables.php',
+        BASE_PATH . '/database/migrate_sarpras_referensi.php',
         BASE_PATH . '/database/migrate_sarpras_tanah_bangunan.php',
         BASE_PATH . '/database/migrate_sarpras_extensions.php',
         BASE_PATH . '/mobile-migrate/migrate_distribusi.php'
@@ -717,6 +718,7 @@ $router->get('/mobile-sarpras', function() {
     // Auto-migrate if accessed via mobile-sarpras dashboard
     $scripts = [
         BASE_PATH . '/database/migrate_sarpras_tables.php',
+        BASE_PATH . '/database/migrate_sarpras_referensi.php',
         BASE_PATH . '/database/migrate_sarpras_tanah_bangunan.php',
         BASE_PATH . '/database/migrate_sarpras_extensions.php',
         BASE_PATH . '/mobile-migrate/migrate_distribusi.php'
