@@ -15,8 +15,8 @@ ini_set('session.use_strict_mode', '1');
 ini_set('session.use_only_cookies', '1');
 ini_set('session.cookie_httponly', '1');
 ini_set('session.cookie_samesite', 'Strict');
-ini_set('session.gc_maxlifetime', 7200); // 2 hours
-ini_set('session.cookie_lifetime', 0);   // Until browser close
+ini_set('session.gc_maxlifetime', 31536000); // 1 year
+ini_set('session.cookie_lifetime', 31536000);   // 1 year
 
 // HTTPS only in production (supports reverse proxy & Cloudflare)
 $isSecure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
