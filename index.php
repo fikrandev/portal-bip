@@ -620,6 +620,13 @@ $router->get('/kelola-sarpras/kategori', [SarprasController::class, 'kategoriLis
 $router->post('/kelola-sarpras/kategori/store', [SarprasController::class, 'kategoriStore'], [Middleware::permissionRequired('sarpras.create')]);
 $router->post('/kelola-sarpras/kategori/delete/{id}', [SarprasController::class, 'kategoriDelete'], [Middleware::permissionRequired('sarpras.delete')]);
 
+// Penyusutan Aset
+$router->get('/kelola-sarpras/penyusutan', [SarprasController::class, 'penyusutanList'], [Middleware::permissionRequired('sarpras.view')]);
+
+// Laporan Aset (Kondisi & Filter)
+$router->get('/kelola-sarpras/laporan', [SarprasController::class, 'laporanList'], [Middleware::permissionRequired('sarpras.view')]);
+$router->get('/kelola-sarpras/laporan/cetak', [SarprasController::class, 'laporanCetak'], [Middleware::permissionRequired('sarpras.view')]);
+
 // Data Aset: Hierarki (Accordion Tanah -> Bangunan -> Ruang)
 $router->get('/kelola-sarpras/data-aset', [SarprasController::class, 'dataAset'], [Middleware::permissionRequired('sarpras.view')]);
 $router->get('/kelola-sarpras/aset', [SarprasController::class, 'dataAset'], [Middleware::permissionRequired('sarpras.view')]);
@@ -645,6 +652,7 @@ $router->post('/kelola-sarpras/referensi/kelompok/store', [SarprasController::cl
 $router->post('/kelola-sarpras/referensi/kelompok/delete/{id}', [SarprasController::class, 'kelompokDelete'], [Middleware::permissionRequired('sarpras.delete')]);
 $router->post('/kelola-sarpras/referensi/asal-anggaran/store', [SarprasController::class, 'asalAnggaranStore'], [Middleware::permissionRequired('sarpras.create')]);
 $router->post('/kelola-sarpras/referensi/asal-anggaran/delete/{id}', [SarprasController::class, 'asalAnggaranDelete'], [Middleware::permissionRequired('sarpras.delete')]);
+$router->post('/kelola-sarpras/referensi/laporan/store', [SarprasController::class, 'pengaturanLaporanStore'], [Middleware::permissionRequired('sarpras.create')]);
 
 // Pengaturan Sistem
 $router->get('/pengaturan-sistem', [SettingsController::class, 'index'], [Middleware::permissionRequired('settings.view')]);
@@ -739,34 +747,34 @@ $router->get('/mobile-sarpras', function() {
         ob_end_clean();
     }
     MobileSarprasController::dashboard();
-}, [[Middleware::class, 'authRequired']]);
-$router->get('/mobile-sarpras/scan', [MobileSarprasController::class, 'scan'], [[Middleware::class, 'authRequired']]);
-$router->get('/mobile-sarpras/detail/{id}', [MobileSarprasController::class, 'detail'], [[Middleware::class, 'authRequired']]);
+}, [Middleware::permissionRequired('sarpras.mobile')]);
+$router->get('/mobile-sarpras/scan', [MobileSarprasController::class, 'scan'], [Middleware::permissionRequired('sarpras.mobile')]);
+$router->get('/mobile-sarpras/detail/{id}', [MobileSarprasController::class, 'detail'], [Middleware::permissionRequired('sarpras.mobile')]);
 
 // Form & List (Reuse logic, but mobile views)
-$router->get('/mobile-sarpras/inventaris', [MobileSarprasController::class, 'inventarisList'], [[Middleware::class, 'authRequired']]);
-$router->get('/mobile-sarpras/tanah', [MobileSarprasController::class, 'tanahList'], [[Middleware::class, 'authRequired']]);
-$router->get('/mobile-sarpras/bangunan', [MobileSarprasController::class, 'bangunanList'], [[Middleware::class, 'authRequired']]);
-$router->get('/mobile-sarpras/ruangan', [MobileSarprasController::class, 'ruanganList'], [[Middleware::class, 'authRequired']]);
+$router->get('/mobile-sarpras/inventaris', [MobileSarprasController::class, 'inventarisList'], [Middleware::permissionRequired('sarpras.mobile')]);
+$router->get('/mobile-sarpras/tanah', [MobileSarprasController::class, 'tanahList'], [Middleware::permissionRequired('sarpras.mobile')]);
+$router->get('/mobile-sarpras/bangunan', [MobileSarprasController::class, 'bangunanList'], [Middleware::permissionRequired('sarpras.mobile')]);
+$router->get('/mobile-sarpras/ruangan', [MobileSarprasController::class, 'ruanganList'], [Middleware::permissionRequired('sarpras.mobile')]);
 
-$router->get('/mobile-sarpras/inventaris/tambah', [MobileSarprasController::class, 'inventarisTambah'], [[Middleware::class, 'authRequired']]);
-$router->get('/mobile-sarpras/tanah/tambah', [MobileSarprasController::class, 'tanahTambah'], [[Middleware::class, 'authRequired']]);
-$router->get('/mobile-sarpras/bangunan/tambah', [MobileSarprasController::class, 'bangunanTambah'], [[Middleware::class, 'authRequired']]);
-$router->get('/mobile-sarpras/ruangan/tambah', [MobileSarprasController::class, 'ruanganTambah'], [[Middleware::class, 'authRequired']]);
-$router->get('/mobile-sarpras/maintenance', [MobileSarprasController::class, 'maintenanceList'], [[Middleware::class, 'authRequired']]);
-$router->get('/mobile-sarpras/maintenance/tambah', [MobileSarprasController::class, 'maintenanceTambah'], [[Middleware::class, 'authRequired']]);
-$router->get('/mobile-sarpras/peminjaman', [MobileSarprasController::class, 'peminjamanList'], [[Middleware::class, 'authRequired']]);
-$router->get('/mobile-sarpras/peminjaman/tambah', [MobileSarprasController::class, 'peminjamanTambah'], [[Middleware::class, 'authRequired']]);
-$router->get('/mobile-sarpras/pengajuan/tambah', [MobileSarprasController::class, 'pengajuanTambah'], [[Middleware::class, 'authRequired']]);
+$router->get('/mobile-sarpras/inventaris/tambah', [MobileSarprasController::class, 'inventarisTambah'], [Middleware::permissionRequired('sarpras.mobile')]);
+$router->get('/mobile-sarpras/tanah/tambah', [MobileSarprasController::class, 'tanahTambah'], [Middleware::permissionRequired('sarpras.mobile')]);
+$router->get('/mobile-sarpras/bangunan/tambah', [MobileSarprasController::class, 'bangunanTambah'], [Middleware::permissionRequired('sarpras.mobile')]);
+$router->get('/mobile-sarpras/ruangan/tambah', [MobileSarprasController::class, 'ruanganTambah'], [Middleware::permissionRequired('sarpras.mobile')]);
+$router->get('/mobile-sarpras/maintenance', [MobileSarprasController::class, 'maintenanceList'], [Middleware::permissionRequired('sarpras.mobile')]);
+$router->get('/mobile-sarpras/maintenance/tambah', [MobileSarprasController::class, 'maintenanceTambah'], [Middleware::permissionRequired('sarpras.mobile')]);
+$router->get('/mobile-sarpras/peminjaman', [MobileSarprasController::class, 'peminjamanList'], [Middleware::permissionRequired('sarpras.mobile')]);
+$router->get('/mobile-sarpras/peminjaman/tambah', [MobileSarprasController::class, 'peminjamanTambah'], [Middleware::permissionRequired('sarpras.mobile')]);
+$router->get('/mobile-sarpras/pengajuan/tambah', [MobileSarprasController::class, 'pengajuanTambah'], [Middleware::permissionRequired('sarpras.mobile')]);
 
-$router->get('/mobile-sarpras/api/barang-by-kode', [MobileSarprasController::class, 'apiGetBarangByKode'], [[Middleware::class, 'authRequired']]);
-$router->get('/mobile-sarpras/api/barang-by-ruangan', [MobileSarprasController::class, 'apiGetBarangByRuangan'], [[Middleware::class, 'authRequired']]);
+$router->get('/mobile-sarpras/api/barang-by-kode', [MobileSarprasController::class, 'apiGetBarangByKode'], [Middleware::permissionRequired('sarpras.mobile')]);
+$router->get('/mobile-sarpras/api/barang-by-ruangan', [MobileSarprasController::class, 'apiGetBarangByRuangan'], [Middleware::permissionRequired('sarpras.mobile')]);
 
-$router->post('/mobile-sarpras/maintenance/store', [MobileSarprasController::class, 'maintenanceStore'], [[Middleware::class, 'authRequired']]);
-$router->post('/mobile-sarpras/peminjaman/store', [MobileSarprasController::class, 'peminjamanStore'], [[Middleware::class, 'authRequired']]);
-$router->post('/mobile-sarpras/pengajuan/store', [MobileSarprasController::class, 'pengajuanStore'], [[Middleware::class, 'authRequired']]);
+$router->post('/mobile-sarpras/maintenance/store', [MobileSarprasController::class, 'maintenanceStore'], [Middleware::permissionRequired('sarpras.mobile')]);
+$router->post('/mobile-sarpras/peminjaman/store', [MobileSarprasController::class, 'peminjamanStore'], [Middleware::permissionRequired('sarpras.mobile')]);
+$router->post('/mobile-sarpras/pengajuan/store', [MobileSarprasController::class, 'pengajuanStore'], [Middleware::permissionRequired('sarpras.mobile')]);
 
-$router->post('/mobile-sarpras/action/subscribe-push', [MobileSarprasController::class, 'subscribePush'], [[Middleware::class, 'authRequired']]);
+$router->post('/mobile-sarpras/action/subscribe-push', [MobileSarprasController::class, 'subscribePush'], [Middleware::permissionRequired('sarpras.mobile')]);
 
 $router->get('/mobile-sarpras/manifest.json', function() {
     header('Content-Type: application/manifest+json; charset=utf-8');
@@ -777,8 +785,9 @@ $router->get('/mobile-sarpras/manifest.json', function() {
         'name' => (defined('SYS_APP_NAME') && SYS_APP_NAME ? SYS_APP_NAME : 'Portal BIP') . ' - Mobile Sarpras',
         'short_name' => 'Sarpras',
         'description' => 'Aplikasi Manajemen Sarana dan Prasarana',
+        'id' => 'mobile-sarpras-bip-app',
         'start_url' => url('mobile-sarpras'),
-        'scope' => rtrim(url(''), '/') . '/',
+        'scope' => rtrim(url('mobile-sarpras'), '/') . '/',
         'display' => 'standalone',
         'display_override' => ['window-controls-overlay', 'standalone', 'minimal-ui'],
         'orientation' => 'portrait-primary',

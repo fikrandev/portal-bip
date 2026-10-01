@@ -634,6 +634,130 @@ class SarprasController
         ]);
     }
 
+    public static function penyusutanList(): void
+    {
+        $tahunF = $_GET['tahun'] ?? date('Y');
+        $bulanF = $_GET['bulan'] ?? date('m');
+        
+        // Dapatkan semua barang yang memiliki harga perolehan > 0
+        $allBarang = SarprasModel::getBarangList([], 10000, 0);
+        $items = [];
+        
+        $totalHargaAwal = 0;
+        $totalAkumulasi = 0;
+        $totalNilaiBuku = 0;
+        
+        $targetYear = (int)$tahunF;
+        $targetMonth = (int)$bulanF;
+        $targetDecimal = $targetYear + ($targetMonth / 12);
+        
+        foreach ($allBarang as $b) {
+            $hargaAwal = (float)($b['harga_perolehan'] ?? 0);
+            if ($hargaAwal <= 0) continue;
+            
+            $tahunPerolehan = date('Y');
+            $bulanPerolehan = 1;
+            
+            if (!empty($b['tanggal_perolehan'])) {
+                $tahunPerolehan = (int)date('Y', strtotime($b['tanggal_perolehan']));
+                $bulanPerolehan = (int)date('m', strtotime($b['tanggal_perolehan']));
+            } elseif (!empty($b['tahun_pengadaan'])) {
+                $tahunPerolehan = (int)$b['tahun_pengadaan'];
+            }
+            
+            $masaManfaatTahun = (int)($b['masa_manfaat'] ?? 5);
+            if ($masaManfaatTahun <= 0) $masaManfaatTahun = 5;
+            
+            $startDecimal = $tahunPerolehan + ($bulanPerolehan / 12);
+            $umurPakaiTahun = $targetDecimal - $startDecimal;
+            if ($umurPakaiTahun < 0) $umurPakaiTahun = 0;
+            
+            $nilaiSisa = $hargaAwal * 0.1;
+            $penyusutanPerTahun = ($hargaAwal - $nilaiSisa) / $masaManfaatTahun;
+            
+            $akumulasiPenyusutan = $penyusutanPerTahun * $umurPakaiTahun;
+            if ($akumulasiPenyusutan > ($hargaAwal - $nilaiSisa)) {
+                $akumulasiPenyusutan = $hargaAwal - $nilaiSisa;
+            }
+            
+            $nilaiBuku = $hargaAwal - $akumulasiPenyusutan;
+            
+            $totalHargaAwal += $hargaAwal;
+            $totalAkumulasi += $akumulasiPenyusutan;
+            $totalNilaiBuku += $nilaiBuku;
+            
+            $items[] = [
+                'kode_barang' => $b['kode_barang'],
+                'nama_barang' => $b['nama_barang'],
+                'kategori' => $b['nama_kategori'] ?? '-',
+                'harga_awal' => $hargaAwal,
+                'masa_manfaat' => $masaManfaatTahun,
+                'penyusutan_per_tahun' => $penyusutanPerTahun,
+                'akumulasi_penyusutan' => $akumulasiPenyusutan,
+                'nilai_buku' => $nilaiBuku,
+                'umur_pakai_tahun' => $umurPakaiTahun
+            ];
+        }
+
+        self::view('penyusutan/index', [
+            'items' => $items,
+            'tahun' => $tahunF,
+            'bulan' => $bulanF,
+            'totalHargaAwal' => $totalHargaAwal,
+            'totalAkumulasi' => $totalAkumulasi,
+            'totalNilaiBuku' => $totalNilaiBuku
+        ], 'Laporan Penyusutan Aset', [
+            ['label' => 'Sarpras', 'url' => url('kelola-sarpras')],
+            ['label' => 'Penyusutan Aset']
+        ]);
+    }
+
+    public static function laporanList(): void
+    {
+        $ruangan_id = $_GET['ruangan_id'] ?? '';
+        $kategori_id = $_GET['kategori_id'] ?? '';
+        
+        $filters = [];
+        if (!empty($ruangan_id)) {
+            $filters['ruangan_id'] = (int)$ruangan_id;
+        }
+        if (!empty($kategori_id)) {
+            $filters['kategori_id'] = (int)$kategori_id;
+        }
+        
+        $allBarang = SarprasModel::getBarangList($filters, 10000, 0);
+        
+        $statBaik = 0;
+        $statRusakRingan = 0;
+        $statRusakBerat = 0;
+        $totalAset = count($allBarang);
+        
+        foreach ($allBarang as $b) {
+            $kondisi = strtolower(trim($b['kondisi']));
+            if ($kondisi === 'baik') $statBaik++;
+            elseif (strpos($kondisi, 'ringan') !== false) $statRusakRingan++;
+            elseif (strpos($kondisi, 'berat') !== false) $statRusakBerat++;
+        }
+        
+        $ruanganList = SarprasModel::getAllRuangan();
+        $kategoriList = SarprasModel::getAllKategori();
+        
+        self::view('laporan/index', [
+            'items' => $allBarang,
+            'ruanganList' => $ruanganList,
+            'kategoriList' => $kategoriList,
+            'filter_ruangan' => $ruangan_id,
+            'filter_kategori' => $kategori_id,
+            'statBaik' => $statBaik,
+            'statRusakRingan' => $statRusakRingan,
+            'statRusakBerat' => $statRusakBerat,
+            'totalAset' => $totalAset
+        ], 'Laporan Kondisi Aset', [
+            ['label' => 'Sarpras', 'url' => url('kelola-sarpras')],
+            ['label' => 'Laporan Aset']
+        ]);
+    }
+
     public static function kategoriStore(): void
     {
         CSRF::validate();
@@ -1154,11 +1278,18 @@ class SarprasController
         $golonganList    = SarprasModel::getGolonganList();
         $kelompokList    = SarprasModel::getKelompokList();
         $asalAnggaranList = SarprasModel::getAsalAnggaranList();
+        $pegawaiList     = SarprasModel::getPegawaiList();
+        
+        $kopSurat       = SarprasModel::getSetting('sarpras_kop_surat');
+        $kepalaSarprasId = SarprasModel::getSetting('sarpras_kepala_id');
 
         self::view('referensi/index', [
             'golonganList'     => $golonganList,
             'kelompokList'     => $kelompokList,
             'asalAnggaranList' => $asalAnggaranList,
+            'pegawaiList'      => $pegawaiList,
+            'kopSurat'         => $kopSurat,
+            'kepalaSarprasId'  => $kepalaSarprasId,
         ], 'Referensi Sarpras', [
             ['label' => 'Sarpras', 'url' => url('kelola-sarpras')],
             ['label' => 'Referensi']
@@ -1292,6 +1423,99 @@ class SarprasController
         }
         $redirectUrl = !empty($_POST['return_to']) ? $_POST['return_to'] : url('kelola-sarpras/bangunan');
         Response::redirect($redirectUrl);
+    }
+
+    public static function pengaturanLaporanStore(): void
+    {
+        CSRF::validate();
+        
+        $kepala_id = !empty($_POST['kepala_sarpras_id']) ? $_POST['kepala_sarpras_id'] : null;
+        SarprasModel::setSetting('sarpras_kepala_id', $kepala_id);
+
+        if (!empty($_FILES['kop_surat']['name'])) {
+            $file = $_FILES['kop_surat'];
+            if ($file['error'] === UPLOAD_ERR_OK) {
+                $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+                if (in_array($ext, ['jpg', 'jpeg', 'png'])) {
+                    $filename = 'kop_sarpras_' . time() . '.' . $ext;
+                    $uploadDir = __DIR__ . '/../../../public/uploads/sarpras/';
+                    if (!is_dir($uploadDir)) {
+                        mkdir($uploadDir, 0777, true);
+                    }
+                    if (move_uploaded_file($file['tmp_name'], $uploadDir . $filename)) {
+                        SarprasModel::setSetting('sarpras_kop_surat', 'uploads/sarpras/' . $filename);
+                    }
+                } else {
+                    $_SESSION['flash_error'] = "Format file Kop Surat tidak valid. Gunakan JPG atau PNG.";
+                    Response::redirect(url('kelola-sarpras/referensi') . '?tab=laporan');
+                    return;
+                }
+            }
+        }
+
+        $_SESSION['flash_success'] = "Pengaturan laporan berhasil disimpan!";
+        Response::redirect(url('kelola-sarpras/referensi') . '?tab=laporan');
+    }
+
+    public static function laporanCetak(): void
+    {
+        $ruangan_id = $_GET['ruangan_id'] ?? '';
+        $kategori_id = $_GET['kategori_id'] ?? '';
+        
+        $filters = [];
+        $namaRuanganCetak = 'Semua Ruangan';
+        $namaPenanggungJawab = '';
+        $niyPenanggungJawab = '';
+
+        if (!empty($ruangan_id)) {
+            $filters['ruangan_id'] = (int)$ruangan_id;
+            $ruangan = SarprasModel::getRuanganById((int)$ruangan_id);
+            if ($ruangan) {
+                $namaRuanganCetak = $ruangan['nama_ruangan'];
+                if (!empty($ruangan['penanggung_jawab_id'])) {
+                    $db = Database::getInstance();
+                    $peg = $db->find("SELECT nama, niy FROM pegawai WHERE id = ?", [$ruangan['penanggung_jawab_id']]);
+                    if ($peg) {
+                        $namaPenanggungJawab = $peg['nama'];
+                        $niyPenanggungJawab = $peg['niy'];
+                    } else {
+                        $namaPenanggungJawab = $ruangan['penanggung_jawab'] ?? '';
+                    }
+                } else {
+                    $namaPenanggungJawab = $ruangan['penanggung_jawab'] ?? '';
+                }
+            }
+        }
+        
+        if (!empty($kategori_id)) {
+            $filters['kategori_id'] = (int)$kategori_id;
+        }
+        
+        $allBarang = SarprasModel::getBarangList($filters, 10000, 0);
+        
+        $kopSurat = SarprasModel::getSetting('sarpras_kop_surat');
+        $kepalaId = SarprasModel::getSetting('sarpras_kepala_id');
+        $namaKepalaSarpras = '';
+        $niyKepalaSarpras = '';
+        
+        if ($kepalaId) {
+            $db = Database::getInstance();
+            $peg = $db->find("SELECT nama, niy FROM pegawai WHERE id = ?", [$kepalaId]);
+            if ($peg) {
+                $namaKepalaSarpras = $peg['nama'];
+                $niyKepalaSarpras = $peg['niy'];
+            }
+        }
+
+        self::view('laporan/cetak', [
+            'items' => $allBarang,
+            'kopSurat' => $kopSurat,
+            'namaRuanganCetak' => $namaRuanganCetak,
+            'namaPenanggungJawab' => $namaPenanggungJawab,
+            'niyPenanggungJawab' => $niyPenanggungJawab,
+            'namaKepalaSarpras' => $namaKepalaSarpras,
+            'niyKepalaSarpras' => $niyKepalaSarpras,
+        ], 'Cetak Laporan', [], true);
     }
 }
 

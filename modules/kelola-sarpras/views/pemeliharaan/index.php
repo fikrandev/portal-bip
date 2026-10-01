@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Pemeliharaan & Perbaikan Sarpras
  * Portal BIP
@@ -236,7 +236,7 @@
 
             <div>
                 <label class="block font-bold text-slate-700 mb-1">Biaya Realisasi Perbaikan (Rp)</label>
-                <input type="number" name="biaya_realisasi" id="update-biaya" value="0" min="0" step="1000" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:bg-white focus:border-primary-500 outline-none font-bold">
+                <input type="text" name="biaya_realisasi" id="update-biaya" value="0" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:bg-white focus:border-primary-500 outline-none font-bold" oninput="formatRupiah(this)">
             </div>
 
             <div>
@@ -279,5 +279,36 @@ function closeModalUpdate() {
     const m = document.getElementById('modal-update');
     m.classList.add('opacity-0', 'pointer-events-none');
     m.firstElementChild.classList.add('scale-95');
+}
+
+function formatRupiah(el) {
+    let value = el.value.replace(/[^,\d]/g, '');
+    let split = value.split(',');
+    let sisa = split[0].length % 3;
+    let rupiah = split[0].substr(0, sisa);
+    let ribuan = split[0].substr(sisa).match(/\d{3}/gi);
+
+    if (ribuan) {
+        let separator = sisa ? '.' : '';
+        rupiah += separator + ribuan.join('.');
+    }
+
+    rupiah = split[1] !== undefined ? rupiah + ',' + split[1] : rupiah;
+    el.value = rupiah;
+}
+
+// Custom format saat render update modal
+const originalOpenModalUpdate = openModalUpdate;
+window.openModalUpdate = function(item) {
+    originalOpenModalUpdate(item);
+    
+    // Format input biaya realisasi
+    let inputBiaya = document.getElementById('update-biaya');
+    if(item.biaya_realisasi && item.biaya_realisasi != "0" && item.biaya_realisasi != "0.00") {
+        inputBiaya.value = parseInt(item.biaya_realisasi).toString();
+    } else {
+        inputBiaya.value = '0';
+    }
+    formatRupiah(inputBiaya);
 }
 </script>

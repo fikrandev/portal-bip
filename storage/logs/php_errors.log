@@ -1006,3 +1006,11 @@ Stack trace:
 [30-Sep-2026 23:20:44 Asia/Makassar] PHP Warning:  Undefined array key "tanggal_rencana_kembali" in E:\xampp\mysql\data\portal-bip\modules\mobile-sarpras\views\peminjaman\index.php on line 26
 [30-Sep-2026 23:20:44 Asia/Makassar] PHP Warning:  Undefined array key "peminjam" in E:\xampp\mysql\data\portal-bip\modules\mobile-sarpras\views\peminjaman\index.php on line 44
 [30-Sep-2026 23:20:44 Asia/Makassar] PHP Warning:  Undefined array key "tanggal_rencana_kembali" in E:\xampp\mysql\data\portal-bip\modules\mobile-sarpras\views\peminjaman\index.php on line 53
+[01-Oct-2026 08:01:21 Asia/Makassar] PHP Fatal error:  Cannot redeclare SarprasModel::getPegawaiList() in E:\xampp\mysql\data\portal-bip\modules\kelola-sarpras\models\SarprasModel.php on line 300
+[01-Oct-2026 08:03:58 Asia/Makassar] PHP Fatal error:  Uncaught Error: Call to undefined method Database::prepare() in E:\xampp\mysql\data\portal-bip\modules\kelola-sarpras\models\SarprasModel.php:17
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\modules\kelola-sarpras\controllers\SarprasController.php(1283): SarprasModel::getSetting('sarpras_kop_sur...')
+#1 E:\xampp\mysql\data\portal-bip\core\Router.php(98): SarprasController::referensiList()
+#2 E:\xampp\mysql\data\portal-bip\index.php(1012): Router->dispatch()
+#3 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\modules\kelola-sarpras\models\SarprasModel.php on line 17

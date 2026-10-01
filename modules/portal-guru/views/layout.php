@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="id" class="h-full bg-slate-100">
 <head>
     <meta charset="UTF-8">
@@ -41,8 +41,30 @@
         .font-quran { font-family: 'Uthmani', 'Amiri', 'Traditional Arabic', serif; }
     </style>
     
-    <!-- Tailwind CSS 4 -->
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            200: '#bfdbfe',
+                            300: '#93c5fd',
+                            400: '#60a5fa',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
     
     <!-- Smooth Animations CSS -->
     <link rel="stylesheet" href="<?= asset('css/mobile/app-animations.css') ?>">

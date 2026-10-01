@@ -11,6 +11,25 @@ class SarprasModel
         return Database::getInstance();
     }
 
+    public static function getSetting(string $key, $default = null)
+    {
+        $db = self::db();
+        $stmt = $db->query("SELECT setting_value FROM settings WHERE setting_key = ?", [$key]);
+        $val = $stmt->fetchColumn();
+        return $val !== false ? $val : $default;
+    }
+
+    public static function setSetting(string $key, $value): void
+    {
+        $db = self::db();
+        $stmt = $db->query("SELECT id FROM settings WHERE setting_key = ?", [$key]);
+        if ($stmt->fetchColumn()) {
+            $db->query("UPDATE settings SET setting_value = ? WHERE setting_key = ?", [$value, $key]);
+        } else {
+            $db->query("INSERT INTO settings (setting_key, setting_value, setting_type, setting_group) VALUES (?, ?, 'string', 'sarpras')", [$key, $value]);
+        }
+    }
+
     // ── STATISTIK KHUSUS MOBILE APP ────────────────────────────────
     public static function getStatistik(): array
     {

@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Sidebar Khusus Modul Kelola Sarpras (Sarana & Prasarana)
  * Portal BIP
@@ -178,7 +178,47 @@ if (defined('SYS_APP_FAVICON') && !empty(SYS_APP_FAVICON)) {
                     </a>
                 </li>
 
-                <!-- 4. SIRKULASI PEMINJAMAN -->
+                <!-- 4. PENYUSUTAN ASET -->
+                <li>
+                    <a href="<?= url('kelola-sarpras/penyusutan') ?>" 
+                       class="flex items-center justify-between px-3 py-2.5 rounded-2xl transition-all duration-200 group <?= (strpos($_SERVER['REQUEST_URI'] ?? '', 'kelola-sarpras/penyusutan') !== false) 
+                           ? 'bg-primary-600/40 text-white font-semibold shadow-sm border border-primary-500/50' 
+                           : 'text-primary-200 hover:bg-primary-800/60 hover:text-white border border-transparent' ?>">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div class="<?= (strpos($_SERVER['REQUEST_URI'] ?? '', 'kelola-sarpras/penyusutan') !== false) ? 'text-primary-300' : 'text-primary-400 group-hover:text-primary-200' ?> transition-colors flex-shrink-0">
+                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                                </svg>
+                            </div>
+                            <span class="text-sm truncate">Penyusutan Aset</span>
+                        </div>
+                        <?php if (strpos($_SERVER['REQUEST_URI'] ?? '', 'kelola-sarpras/penyusutan') !== false): ?>
+                            <span class="w-1.5 h-1.5 rounded-full bg-primary-400 animate-pulse"></span>
+                        <?php endif; ?>
+                    </a>
+                </li>
+                
+                <!-- 5. LAPORAN ASET -->
+                <li>
+                    <a href="<?= url('kelola-sarpras/laporan') ?>" 
+                       class="flex items-center justify-between px-3 py-2.5 rounded-2xl transition-all duration-200 group <?= (strpos($_SERVER['REQUEST_URI'] ?? '', 'kelola-sarpras/laporan') !== false) 
+                           ? 'bg-primary-600/40 text-white font-semibold shadow-sm border border-primary-500/50' 
+                           : 'text-primary-200 hover:bg-primary-800/60 hover:text-white border border-transparent' ?>">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div class="<?= (strpos($_SERVER['REQUEST_URI'] ?? '', 'kelola-sarpras/laporan') !== false) ? 'text-primary-300' : 'text-primary-400 group-hover:text-primary-200' ?> transition-colors flex-shrink-0">
+                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                </svg>
+                            </div>
+                            <span class="text-sm truncate">Laporan Aset</span>
+                        </div>
+                        <?php if (strpos($_SERVER['REQUEST_URI'] ?? '', 'kelola-sarpras/laporan') !== false): ?>
+                            <span class="w-1.5 h-1.5 rounded-full bg-primary-400 animate-pulse"></span>
+                        <?php endif; ?>
+                    </a>
+                </li>
+
+                <!-- 5. SIRKULASI PEMINJAMAN -->
                 <li>
                     <a href="<?= url('kelola-sarpras/peminjaman') ?>" 
                        class="flex items-center justify-between px-3 py-2.5 rounded-2xl transition-all duration-200 group <?= $isPinjamActive 

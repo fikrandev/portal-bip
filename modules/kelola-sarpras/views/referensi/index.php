@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Halaman Referensi Sarpras
  * Tab 1: Data Golongan | Tab 2: Kode Kelompok | Tab 3: Asal Anggaran
@@ -44,13 +44,14 @@ $activeTab = $_GET['tab'] ?? 'golongan';
     <?php endif; ?>
 
     <!-- Tab Navigation -->
-    <div class="bg-white rounded-3xl border border-slate-200/80 shadow-sm overflow-hidden">
+    <div class="bg-white rounded-3xl border border-slate-200/80 shadow-sm">
         <div class="border-b border-slate-100 px-6 pt-5 flex gap-1 flex-wrap">
             <?php
             $tabs = [
                 'golongan'      => ['label' => 'Data Golongan',  'icon' => 'M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z'],
                 'kelompok'      => ['label' => 'Kode Kelompok',  'icon' => 'M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0ZM3.75 12h.007v.008H3.75V12Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm-.375 5.25h.007v.008H3.75v-.008Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z'],
                 'asal-anggaran' => ['label' => 'Asal Anggaran',  'icon' => 'M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 0 1 3 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 0 0-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 0 1-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 0 0 3 15h-.75M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm3 0h.008v.008H18V10.5Zm-12 0h.008v.008H6V10.5Z'],
+                'laporan'       => ['label' => 'Pengaturan Laporan', 'icon' => 'M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25ZM6.75 12h.008v.008H6.75V12Zm0 3h.008v.008H6.75V15Zm0 3h.008v.008H6.75V18Z'],
             ];
             foreach ($tabs as $key => $tab):
                 $isActive = ($activeTab === $key);
@@ -368,6 +369,52 @@ $activeTab = $_GET['tab'] ?? 'golongan';
                 </div>
             </div>
             <?php endif; /* end tab asal-anggaran */ ?>
+
+            <?php /* ============================================================
+               TAB 4 — PENGATURAN LAPORAN
+            ============================================================ */ ?>
+            <?php if ($activeTab === 'laporan'): ?>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Form Pengaturan Laporan -->
+                <div>
+                    <div class="bg-slate-50 border border-slate-200 rounded-2xl p-5">
+                        <h3 class="font-bold text-slate-700 text-sm mb-4">Pengaturan Cetak Laporan Aset</h3>
+                        <form action="<?= url('kelola-sarpras/referensi/laporan/store') ?>" method="POST" enctype="multipart/form-data" class="space-y-4 text-xs">
+                            <?= CSRF::field() ?>
+
+                            <div>
+                                <label class="block font-bold text-slate-600 mb-1">Upload Kop Surat (Format JPG/PNG)</label>
+                                <?php if (!empty($kopSurat)): ?>
+                                    <div class="mb-2 border border-slate-200 rounded-xl p-2 bg-white flex justify-center">
+                                        <img src="<?= asset($kopSurat) ?>" alt="Kop Surat" class="h-16 object-contain">
+                                    </div>
+                                <?php endif; ?>
+                                <input type="file" name="kop_surat" accept="image/png, image/jpeg, image/jpg"
+                                       class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-slate-800 focus:border-primary-500 outline-none">
+                                <p class="text-[10px] text-slate-400 mt-1">Gunakan gambar persegi panjang yang memuat kop surat instansi secara utuh.</p>
+                            </div>
+
+                            <div>
+                                <label class="block font-bold text-slate-600 mb-1">Kepala Sarpras (Penandatangan)</label>
+                                <select name="kepala_sarpras_id" id="kepala-sarpras-select" class="searchable-select w-full" data-placeholder="-- Cari Nama Pegawai --">
+                                    <option value="">-- Cari Nama Pegawai --</option>
+                                    <?php foreach ($pegawaiList as $pegawai): ?>
+                                        <?php $sel = ($kepalaSarprasId == $pegawai['id']) ? 'selected' : ''; ?>
+                                        <option value="<?= $pegawai['id'] ?>" <?= $sel ?>><?= e($pegawai['nama']) ?> <?= !empty($pegawai['gelar']) ? ', ' . e($pegawai['gelar']) : '' ?> (NIY: <?= e($pegawai['niy']) ?>)</option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+
+                            <div class="pt-2">
+                                <button type="submit" class="w-full py-2 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs transition-all shadow-sm">
+                                    Simpan Pengaturan Laporan
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <?php endif; /* end tab laporan */ ?>
 
         </div><!-- /p-6 -->
     </div><!-- /card -->
