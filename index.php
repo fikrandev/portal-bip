@@ -163,14 +163,11 @@ $router->get('/validasi-kartu/{id}', [SiswaController::class, 'validasiKartu']);
 // -- Dashboard (requires auth) --
 $router->get('/', function() {
     // Auto-migrate if accessed via root
-    $scripts = [
-        BASE_PATH . '/database/migrate_sarpras_tables.php',
-        BASE_PATH . '/database/migrate_sarpras_referensi.php',
-        BASE_PATH . '/database/migrate_sarpras_tanah_bangunan.php',
-        BASE_PATH . '/database/migrate_sarpras_extensions.php',
-        BASE_PATH . '/mobile-migrate/migrate_distribusi.php'
-    ];
-    
+    $scripts = glob(BASE_PATH . '/database/migrate_*.php');
+    if (!is_array($scripts)) $scripts = [];
+    $scripts[] = BASE_PATH . '/mobile-migrate/migrate_distribusi.php';
+    $scripts[] = BASE_PATH . '/database/schema.sql'; // If there's a way to run sql, but let's stick to php scripts
+
     $execEnabled = false; // Force inline migration for shared hosting compatibility
     
     if ($execEnabled) {
@@ -187,9 +184,12 @@ $router->get('/', function() {
     } else {
         ob_start();
         foreach ($scripts as $script) {
-            if (file_exists($script)) {
+            if (file_exists($script) && pathinfo($script, PATHINFO_EXTENSION) === 'php') {
                 try {
-                    require_once $script;
+                    // Use an isolated scope for variables
+                    call_user_func(function() use ($script) {
+                        @require_once $script;
+                    });
                 } catch (Throwable $e) {}
             }
         }
@@ -713,16 +713,17 @@ $router->get('/mobile/cuti', [PortalGuruController::class, 'cuti'], [[Middleware
 // MOBILE SARPRAS PWA ROUTES
 // ==============================================================================
 require_once MODULES_PATH . '/mobile-sarpras/controllers/MobileSarprasController.php';
+require_once MODULES_PATH . '/mobile-sarpras/controllers/MobileSarprasAuthController.php';
+
+$router->get('/mobile-sarpras/login', [MobileSarprasAuthController::class, 'showLogin'], [[MobileSarprasAuthController::class, 'guestOnly']]);
+$router->post('/mobile-sarpras/login', [MobileSarprasAuthController::class, 'login']);
+$router->get('/mobile-sarpras/logout', [MobileSarprasAuthController::class, 'logout']);
 
 $router->get('/mobile-sarpras', function() {
     // Auto-migrate if accessed via mobile-sarpras dashboard
-    $scripts = [
-        BASE_PATH . '/database/migrate_sarpras_tables.php',
-        BASE_PATH . '/database/migrate_sarpras_referensi.php',
-        BASE_PATH . '/database/migrate_sarpras_tanah_bangunan.php',
-        BASE_PATH . '/database/migrate_sarpras_extensions.php',
-        BASE_PATH . '/mobile-migrate/migrate_distribusi.php'
-    ];
+    $scripts = glob(BASE_PATH . '/database/migrate_*.php');
+    if (!is_array($scripts)) $scripts = [];
+    $scripts[] = BASE_PATH . '/mobile-migrate/migrate_distribusi.php';
     
     $execEnabled = false; // Force inline migration for shared hosting compatibility
     
@@ -740,43 +741,45 @@ $router->get('/mobile-sarpras', function() {
     } else {
         ob_start();
         foreach ($scripts as $script) {
-            if (file_exists($script)) {
+            if (file_exists($script) && pathinfo($script, PATHINFO_EXTENSION) === 'php') {
                 try {
-                    require_once $script;
+                    call_user_func(function() use ($script) {
+                        @require_once $script;
+                    });
                 } catch (Throwable $e) {}
             }
         }
         ob_end_clean();
     }
     MobileSarprasController::dashboard();
-}, [Middleware::permissionRequired('sarpras.mobile')]);
-$router->get('/mobile-sarpras/scan', [MobileSarprasController::class, 'scan'], [Middleware::permissionRequired('sarpras.mobile')]);
-$router->get('/mobile-sarpras/detail/{id}', [MobileSarprasController::class, 'detail'], [Middleware::permissionRequired('sarpras.mobile')]);
+}, [[MobileSarprasAuthController::class, 'authRequired']]);
+$router->get('/mobile-sarpras/scan', [MobileSarprasController::class, 'scan'], [[MobileSarprasAuthController::class, 'authRequired']]);
+$router->get('/mobile-sarpras/detail/{id}', [MobileSarprasController::class, 'detail'], [[MobileSarprasAuthController::class, 'authRequired']]);
 
 // Form & List (Reuse logic, but mobile views)
-$router->get('/mobile-sarpras/inventaris', [MobileSarprasController::class, 'inventarisList'], [Middleware::permissionRequired('sarpras.mobile')]);
-$router->get('/mobile-sarpras/tanah', [MobileSarprasController::class, 'tanahList'], [Middleware::permissionRequired('sarpras.mobile')]);
-$router->get('/mobile-sarpras/bangunan', [MobileSarprasController::class, 'bangunanList'], [Middleware::permissionRequired('sarpras.mobile')]);
-$router->get('/mobile-sarpras/ruangan', [MobileSarprasController::class, 'ruanganList'], [Middleware::permissionRequired('sarpras.mobile')]);
+$router->get('/mobile-sarpras/inventaris', [MobileSarprasController::class, 'inventarisList'], [[MobileSarprasAuthController::class, 'authRequired']]);
+$router->get('/mobile-sarpras/tanah', [MobileSarprasController::class, 'tanahList'], [[MobileSarprasAuthController::class, 'authRequired']]);
+$router->get('/mobile-sarpras/bangunan', [MobileSarprasController::class, 'bangunanList'], [[MobileSarprasAuthController::class, 'authRequired']]);
+$router->get('/mobile-sarpras/ruangan', [MobileSarprasController::class, 'ruanganList'], [[MobileSarprasAuthController::class, 'authRequired']]);
 
-$router->get('/mobile-sarpras/inventaris/tambah', [MobileSarprasController::class, 'inventarisTambah'], [Middleware::permissionRequired('sarpras.mobile')]);
-$router->get('/mobile-sarpras/tanah/tambah', [MobileSarprasController::class, 'tanahTambah'], [Middleware::permissionRequired('sarpras.mobile')]);
-$router->get('/mobile-sarpras/bangunan/tambah', [MobileSarprasController::class, 'bangunanTambah'], [Middleware::permissionRequired('sarpras.mobile')]);
-$router->get('/mobile-sarpras/ruangan/tambah', [MobileSarprasController::class, 'ruanganTambah'], [Middleware::permissionRequired('sarpras.mobile')]);
-$router->get('/mobile-sarpras/maintenance', [MobileSarprasController::class, 'maintenanceList'], [Middleware::permissionRequired('sarpras.mobile')]);
-$router->get('/mobile-sarpras/maintenance/tambah', [MobileSarprasController::class, 'maintenanceTambah'], [Middleware::permissionRequired('sarpras.mobile')]);
-$router->get('/mobile-sarpras/peminjaman', [MobileSarprasController::class, 'peminjamanList'], [Middleware::permissionRequired('sarpras.mobile')]);
-$router->get('/mobile-sarpras/peminjaman/tambah', [MobileSarprasController::class, 'peminjamanTambah'], [Middleware::permissionRequired('sarpras.mobile')]);
-$router->get('/mobile-sarpras/pengajuan/tambah', [MobileSarprasController::class, 'pengajuanTambah'], [Middleware::permissionRequired('sarpras.mobile')]);
+$router->get('/mobile-sarpras/inventaris/tambah', [MobileSarprasController::class, 'inventarisTambah'], [[MobileSarprasAuthController::class, 'authRequired']]);
+$router->get('/mobile-sarpras/tanah/tambah', [MobileSarprasController::class, 'tanahTambah'], [[MobileSarprasAuthController::class, 'authRequired']]);
+$router->get('/mobile-sarpras/bangunan/tambah', [MobileSarprasController::class, 'bangunanTambah'], [[MobileSarprasAuthController::class, 'authRequired']]);
+$router->get('/mobile-sarpras/ruangan/tambah', [MobileSarprasController::class, 'ruanganTambah'], [[MobileSarprasAuthController::class, 'authRequired']]);
+$router->get('/mobile-sarpras/maintenance', [MobileSarprasController::class, 'maintenanceList'], [[MobileSarprasAuthController::class, 'authRequired']]);
+$router->get('/mobile-sarpras/maintenance/tambah', [MobileSarprasController::class, 'maintenanceTambah'], [[MobileSarprasAuthController::class, 'authRequired']]);
+$router->get('/mobile-sarpras/peminjaman', [MobileSarprasController::class, 'peminjamanList'], [[MobileSarprasAuthController::class, 'authRequired']]);
+$router->get('/mobile-sarpras/peminjaman/tambah', [MobileSarprasController::class, 'peminjamanTambah'], [[MobileSarprasAuthController::class, 'authRequired']]);
+$router->get('/mobile-sarpras/pengajuan/tambah', [MobileSarprasController::class, 'pengajuanTambah'], [[MobileSarprasAuthController::class, 'authRequired']]);
 
-$router->get('/mobile-sarpras/api/barang-by-kode', [MobileSarprasController::class, 'apiGetBarangByKode'], [Middleware::permissionRequired('sarpras.mobile')]);
-$router->get('/mobile-sarpras/api/barang-by-ruangan', [MobileSarprasController::class, 'apiGetBarangByRuangan'], [Middleware::permissionRequired('sarpras.mobile')]);
+$router->get('/mobile-sarpras/api/barang-by-kode', [MobileSarprasController::class, 'apiGetBarangByKode'], [[MobileSarprasAuthController::class, 'authRequired']]);
+$router->get('/mobile-sarpras/api/barang-by-ruangan', [MobileSarprasController::class, 'apiGetBarangByRuangan'], [[MobileSarprasAuthController::class, 'authRequired']]);
 
-$router->post('/mobile-sarpras/maintenance/store', [MobileSarprasController::class, 'maintenanceStore'], [Middleware::permissionRequired('sarpras.mobile')]);
-$router->post('/mobile-sarpras/peminjaman/store', [MobileSarprasController::class, 'peminjamanStore'], [Middleware::permissionRequired('sarpras.mobile')]);
-$router->post('/mobile-sarpras/pengajuan/store', [MobileSarprasController::class, 'pengajuanStore'], [Middleware::permissionRequired('sarpras.mobile')]);
+$router->post('/mobile-sarpras/maintenance/store', [MobileSarprasController::class, 'maintenanceStore'], [[MobileSarprasAuthController::class, 'authRequired']]);
+$router->post('/mobile-sarpras/peminjaman/store', [MobileSarprasController::class, 'peminjamanStore'], [[MobileSarprasAuthController::class, 'authRequired']]);
+$router->post('/mobile-sarpras/pengajuan/store', [MobileSarprasController::class, 'pengajuanStore'], [[MobileSarprasAuthController::class, 'authRequired']]);
 
-$router->post('/mobile-sarpras/action/subscribe-push', [MobileSarprasController::class, 'subscribePush'], [Middleware::permissionRequired('sarpras.mobile')]);
+$router->post('/mobile-sarpras/action/subscribe-push', [MobileSarprasController::class, 'subscribePush'], [[MobileSarprasAuthController::class, 'authRequired']]);
 
 $router->get('/mobile-sarpras/manifest.json', function() {
     header('Content-Type: application/manifest+json; charset=utf-8');
@@ -791,7 +794,6 @@ $router->get('/mobile-sarpras/manifest.json', function() {
         'start_url' => url('mobile-sarpras'),
         'scope' => url(''),
         'display' => 'standalone',
-        'display_override' => ['standalone', 'minimal-ui'],
         'orientation' => 'portrait-primary',
         'background_color' => '#f8fafc',
         'theme_color' => '#2563eb',
@@ -799,25 +801,25 @@ $router->get('/mobile-sarpras/manifest.json', function() {
         'dir' => 'ltr',
         'icons' => [
             [
-                'src' => url('pwa-icon.png') . '?s=192',
+                'src' => url('public/images/pwa/icon-192.png'),
                 'sizes' => '192x192',
                 'type' => 'image/png',
                 'purpose' => 'any'
             ],
             [
-                'src' => url('pwa-icon.png') . '?s=192&maskable=1',
+                'src' => url('public/images/pwa/icon-maskable-192.png'),
                 'sizes' => '192x192',
                 'type' => 'image/png',
                 'purpose' => 'maskable'
             ],
             [
-                'src' => url('pwa-icon.png') . '?s=512',
+                'src' => url('public/images/pwa/icon-512.png'),
                 'sizes' => '512x512',
                 'type' => 'image/png',
                 'purpose' => 'any'
             ],
             [
-                'src' => url('pwa-icon.png') . '?s=512&maskable=1',
+                'src' => url('public/images/pwa/icon-maskable-512.png'),
                 'sizes' => '512x512',
                 'type' => 'image/png',
                 'purpose' => 'maskable'
@@ -1010,7 +1012,12 @@ $router->get('/sw-sarpras.js', function() {
     header('Content-Type: application/javascript; charset=utf-8');
     header('Service-Worker-Allowed: /');
     header('Cache-Control: no-cache, no-store, must-revalidate');
-    readfile(PUBLIC_PATH . '/sw-sarpras.js');
+    echo <<<'JS'
+const CACHE_NAME='sarpras-pwa-v2';
+self.addEventListener('install',e=>{self.skipWaiting();});
+self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(n=>Promise.all(n.filter(n=>n!==CACHE_NAME).map(n=>caches.delete(n)))).then(()=>self.clients.claim()));});
+self.addEventListener('fetch',e=>{if(e.request.method!=='GET'||!e.request.url.startsWith('http'))return;e.respondWith(fetch(e.request).then(r=>{if(r&&r.status===200){const c=r.clone();caches.open(CACHE_NAME).then(cache=>cache.put(e.request,c));}return r;}).catch(()=>caches.match(e.request)));});
+JS;
     exit;
 });
 

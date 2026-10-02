@@ -56,7 +56,7 @@
 
     <!-- Splash Screen Loader -->
     <div id="mobile-splash-loader" class="fixed inset-0 z-[9999] bg-blue-600 flex flex-col items-center justify-center transition-opacity duration-500">
-        <div class="relative w-24 h-24 mb-6 flex items-center justify-center bg-white rounded-3xl shadow-2xl p-4 animate-bounce">
+        <div class="relative w-16 h-16 mb-6 flex items-center justify-center bg-white rounded-2xl shadow-xl p-3 animate-bounce">
             <?php 
                 $logoUrl = '';
                 if (defined('SYS_APP_LOGO') && SYS_APP_LOGO) {
@@ -219,12 +219,22 @@
         // SERVICE WORKER REGISTRATION
         // ============================================================
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('<?= url("sw-sarpras.js") ?>')
-                .then(reg => {
-                    console.log('[PWA] Service Worker registered, scope:', reg.scope);
+            // Unregister old conflicting service workers first
+            navigator.serviceWorker.getRegistrations().then(function(regs) {
+                regs.forEach(function(reg) {
+                    if (reg.active && reg.active.scriptURL && !reg.active.scriptURL.includes('sw-sarpras.js')) {
+                        reg.unregister();
+                        console.log('[PWA] Unregistered old SW:', reg.active.scriptURL);
+                    }
+                });
+            });
+            // Register the sarpras SW - use absolute path from root
+            navigator.serviceWorker.register('<?= url('sw-sarpras.js') ?>')
+                .then(function(reg) {
+                    console.log('[PWA] SW registered OK, scope:', reg.scope);
                 })
-                .catch(err => {
-                    console.error('[PWA] Service Worker registration failed:', err);
+                .catch(function(err) {
+                    console.error('[PWA] SW registration FAILED:', err);
                 });
         }
 
