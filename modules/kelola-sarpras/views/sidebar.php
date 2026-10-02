@@ -178,6 +178,27 @@ if (defined('SYS_APP_FAVICON') && !empty(SYS_APP_FAVICON)) {
                     </a>
                 </li>
 
+                <!-- 3.1 CETAK LABEL QR -->
+                <li>
+                    <a href="<?= url('kelola-sarpras/cetak-label') ?>" 
+                       class="flex items-center justify-between px-3 py-2.5 rounded-2xl transition-all duration-200 group <?= (strpos($_SERVER['REQUEST_URI'] ?? '', 'kelola-sarpras/cetak-label') !== false) 
+                           ? 'bg-primary-600/40 text-white font-semibold shadow-sm border border-primary-500/50' 
+                           : 'text-primary-200 hover:bg-primary-800/60 hover:text-white border border-transparent' ?>">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div class="<?= (strpos($_SERVER['REQUEST_URI'] ?? '', 'kelola-sarpras/cetak-label') !== false) ? 'text-primary-300' : 'text-primary-400 group-hover:text-primary-200' ?> transition-colors flex-shrink-0">
+                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0 1 3.75 9.375v-4.5ZM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 0 1-1.125-1.125v-4.5ZM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0 1 13.5 9.375v-4.5Z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 6.75h.75v.75h-.75v-.75ZM6.75 16.5h.75v.75h-.75v-.75ZM16.5 6.75h.75v.75h-.75v-.75ZM13.5 13.5h.75v.75h-.75v-.75ZM13.5 19.5h.75v.75h-.75v-.75ZM19.5 13.5h.75v.75h-.75v-.75ZM19.5 19.5h.75v.75h-.75v-.75ZM16.5 16.5h.75v.75h-.75v-.75Z" />
+                                </svg>
+                            </div>
+                            <span class="text-sm truncate">Cetak Label QR</span>
+                        </div>
+                        <?php if (strpos($_SERVER['REQUEST_URI'] ?? '', 'kelola-sarpras/cetak-label') !== false): ?>
+                            <span class="w-1.5 h-1.5 rounded-full bg-primary-400 animate-pulse"></span>
+                        <?php endif; ?>
+                    </a>
+                </li>
+
                 <!-- 4. PENYUSUTAN ASET -->
                 <li>
                     <a href="<?= url('kelola-sarpras/penyusutan') ?>" 

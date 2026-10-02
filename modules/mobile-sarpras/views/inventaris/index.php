@@ -39,7 +39,7 @@
             </div>
         <?php else: ?>
             <?php foreach ($barang as $b): ?>
-                <a href="<?= url("mobile-sarpras/detail/{$b['id']}") ?>" class="block bg-white p-4 rounded-3xl shadow-sm border border-slate-100 active:scale-[0.98] transition-transform">
+                <div class="block bg-white p-4 rounded-3xl shadow-sm border border-slate-100 active:scale-[0.98] transition-transform">
                     <div class="flex gap-4">
                         <div class="w-16 h-16 bg-blue-50/50 rounded-2xl flex items-center justify-center flex-shrink-0 border border-blue-100/50 p-1">
                             <?php if (!empty($b['foto'])): ?>
@@ -62,15 +62,25 @@
                                 <span class="px-2 py-0.5 rounded-lg border text-[10px] font-bold <?= $kondisiColor ?>">
                                     <?= e($b['kondisi']) ?>
                                 </span>
-                                
-                                <span class="px-2 py-0.5 rounded-lg border text-[10px] font-bold bg-blue-50 text-blue-700 border-blue-100/50 truncate max-w-[120px]">
-                                    <i data-lucide="map-pin" class="w-3 h-3 inline-block -mt-0.5 mr-0.5"></i>
-                                    <?= e($b['nama_ruangan'] ?: 'Belum Ditempatkan') ?>
-                                </span>
+                            </div>
+                        
+                            <div class="flex items-center gap-2 mt-3 pt-2 border-t border-slate-100">
+                                <a href="<?= url('mobile-sarpras/detail/' . $b['id']) ?>" class="px-2 py-1 rounded-lg border text-[10px] font-bold bg-blue-50 text-blue-700 border-blue-200 flex items-center gap-1 active:bg-blue-100">
+                                    <i data-lucide="eye" class="w-3 h-3"></i> Detail
+                                </a>
+                                <a href="<?= url('mobile-sarpras/inventaris/edit/' . $b['id']) ?>" class="px-2 py-1 rounded-lg border text-[10px] font-bold bg-slate-50 text-slate-700 border-slate-200 flex items-center gap-1 active:bg-slate-100">
+                                    <i data-lucide="edit" class="w-3 h-3"></i> Edit
+                                </a>
+                                <form action="<?= url('kelola-sarpras/barang/delete/' . $b['id']) ?>" method="POST" class="inline ml-auto" onsubmit="return confirm('Yakin ingin menghapus barang ini?');">
+                                    <input type="hidden" name="return_to" value="<?= url('mobile-sarpras/inventaris') ?>">
+                                    <button type="submit" class="px-2 py-1 rounded-lg border text-[10px] font-bold bg-rose-50 text-rose-600 border-rose-100 flex items-center gap-1 active:bg-rose-100">
+                                        <i data-lucide="trash-2" class="w-3 h-3"></i>
+                                    </button>
+                                </form>
                             </div>
                         </div>
                     </div>
-                </a>
+                </div>
             <?php endforeach; ?>
         <?php endif; ?>
     </div>
@@ -101,3 +111,5 @@ function setKategori(id) {
     document.getElementById('filterForm').submit();
 }
 </script>
+
+

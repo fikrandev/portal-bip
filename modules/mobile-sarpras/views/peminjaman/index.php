@@ -74,6 +74,10 @@
                                         Lewat <?= $days ?> Hari
                                     </span>
                                 <?php endif; ?>
+                                
+                                <button onclick="openModalEditPinjamMobile(<?= $p['id'] ?>, '<?= htmlspecialchars(addslashes($p['nama_barang']), ENT_QUOTES) ?>', '<?= date('Y-m-d', strtotime($p['tanggal_pinjam'])) ?>', '<?= date('Y-m-d', strtotime($p['estimasi_kembali'])) ?>', '<?= htmlspecialchars(addslashes($p['status']), ENT_QUOTES) ?>')" class="px-2 py-1 rounded-lg border text-[10px] font-bold bg-slate-50 text-slate-700 border-slate-200 ml-auto flex items-center gap-1 active:bg-slate-100">
+                                    <i data-lucide="edit" class="w-3 h-3"></i> Edit
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -89,3 +93,75 @@
         <i data-lucide="plus" class="w-7 h-7"></i>
     </a>
 </div>
+
+<!-- Modal Edit Peminjaman (Mobile) -->
+<div id="modal-edit-pinjam" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/60 backdrop-blur-sm opacity-0 pointer-events-none transition-all duration-300">
+    <div class="bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-md transform translate-y-full sm:translate-y-0 sm:scale-95 transition-all duration-300">
+        <div class="p-5">
+            <div class="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-5 sm:hidden"></div>
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold text-slate-800">Edit Peminjaman</h3>
+                <button type="button" onclick="closeModalEditPinjamMobile()" class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-500">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+            
+            <form id="form-edit-pinjam-mobile" method="POST" class="space-y-4">
+                <input type="hidden" name="redirect_to" value="<?= url('mobile-sarpras/peminjaman') ?>">
+                
+                <div class="p-3 bg-blue-50 rounded-xl border border-blue-100">
+                    <p class="text-xs text-blue-600 font-medium mb-1">Barang Dipinjam</p>
+                    <p id="edit-pinjam-barang-nama" class="font-bold text-blue-900 text-sm"></p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Tanggal Pinjam</label>
+                        <input type="date" name="tanggal_pinjam" id="edit-tanggal-pinjam" required class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Estimasi Kembali</label>
+                        <input type="date" name="tanggal_rencana_kembali" id="edit-estimasi-kembali" required class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500">
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Status</label>
+                    <select name="status" id="edit-status" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500 font-bold">
+                        <option value="Dipinjam">Dipinjam</option>
+                        <option value="Dikembalikan">Dikembalikan</option>
+                    </select>
+                </div>
+
+                <div class="pt-2">
+                    <button type="submit" class="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-md active:scale-95 transition-all">
+                        Simpan Perubahan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function openModalEditPinjamMobile(id, nama, tglPinjam, estKembali, status) {
+    document.getElementById('form-edit-pinjam-mobile').action = '<?= url("mobile-sarpras/peminjaman/update/") ?>' + id;
+    document.getElementById('edit-pinjam-barang-nama').textContent = nama;
+    document.getElementById('edit-tanggal-pinjam').value = tglPinjam;
+    document.getElementById('edit-estimasi-kembali').value = estKembali;
+    document.getElementById('edit-status').value = status;
+    
+    const m = document.getElementById('modal-edit-pinjam');
+    m.classList.remove('opacity-0', 'pointer-events-none');
+    m.firstElementChild.classList.remove('translate-y-full');
+    if(window.innerWidth >= 640) m.firstElementChild.classList.remove('scale-95');
+}
+
+function closeModalEditPinjamMobile() {
+    const m = document.getElementById('modal-edit-pinjam');
+    m.classList.add('opacity-0', 'pointer-events-none');
+    m.firstElementChild.classList.add('translate-y-full');
+    if(window.innerWidth >= 640) m.firstElementChild.classList.add('scale-95');
+}
+</script>
+

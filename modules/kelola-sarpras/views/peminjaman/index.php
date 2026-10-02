@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Sirkulasi Peminjaman Sarpras
  * Portal BIP
@@ -115,11 +115,21 @@
                                 </td>
                                 <td class="py-3.5 px-4 text-center">
                                     <?php if ($p['status'] === 'Dipinjam'): ?>
-                                        <button onclick="openModalKembali(<?= $p['id'] ?>, '<?= htmlspecialchars(addslashes($p['nama_barang']), ENT_QUOTES) ?>')" class="px-3 py-1.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-[11px] shadow-sm transition-all">
-                                            Kembalikan
-                                        </button>
+                                        <div class="flex items-center justify-center gap-1.5">
+                                            <button onclick="openModalEditPinjam(<?= $p['id'] ?>, '<?= htmlspecialchars(addslashes($p['nama_barang']), ENT_QUOTES) ?>', '<?= date('Y-m-d', strtotime($p['tanggal_pinjam'])) ?>', '<?= date('Y-m-d', strtotime($p['estimasi_kembali'])) ?>', '<?= htmlspecialchars(addslashes($p['status']), ENT_QUOTES) ?>')" class="px-2 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] shadow-sm transition-all">
+                                                Edit
+                                            </button>
+                                            <button onclick="openModalKembali(<?= $p['id'] ?>, '<?= htmlspecialchars(addslashes($p['nama_barang']), ENT_QUOTES) ?>')" class="px-3 py-1.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-[11px] shadow-sm transition-all">
+                                                Kembalikan
+                                            </button>
+                                        </div>
                                     <?php else: ?>
-                                        <span class="text-slate-400 text-[11px] font-medium">Selesai</span>
+                                        <div class="flex items-center justify-center gap-1.5">
+                                            <button onclick="openModalEditPinjam(<?= $p['id'] ?>, '<?= htmlspecialchars(addslashes($p['nama_barang']), ENT_QUOTES) ?>', '<?= date('Y-m-d', strtotime($p['tanggal_pinjam'])) ?>', '<?= date('Y-m-d', strtotime($p['estimasi_kembali'])) ?>', '<?= htmlspecialchars(addslashes($p['status']), ENT_QUOTES) ?>')" class="px-2 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] shadow-sm transition-all">
+                                                Edit
+                                            </button>
+                                            <span class="text-slate-400 text-[11px] font-medium">Selesai</span>
+                                        </div>
                                     <?php endif; ?>
                                 </td>
                             </tr>
@@ -235,6 +245,44 @@
     </div>
 </div>
 
+<!-- Modal Edit Pinjam -->
+<div id="modal-edit-pinjam" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm opacity-0 pointer-events-none transition-all duration-200">
+    <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-md w-full overflow-hidden transform scale-95 transition-all duration-200 p-6">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+            <h3 class="text-base font-bold text-slate-800">Edit Peminjaman</h3>
+            <button onclick="closeModalEditPinjam()" class="text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
+        </div>
+        <form id="form-edit-pinjam" method="POST" class="space-y-4 text-xs">
+            <?= CSRF::field() ?>
+            <p class="text-slate-600">Barang: <strong id="edit-pinjam-barang-nama" class="text-slate-800"></strong></p>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">Tanggal Pinjam</label>
+                    <input type="date" name="tanggal_pinjam" id="edit-tanggal-pinjam" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:bg-white focus:border-primary-500 outline-none">
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">Estimasi Kembali</label>
+                    <input type="date" name="estimasi_kembali" id="edit-estimasi-kembali" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:bg-white focus:border-primary-500 outline-none">
+                </div>
+            </div>
+            
+            <div>
+                <label class="block font-bold text-slate-700 mb-1">Status</label>
+                <select name="status" id="edit-status" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:bg-white focus:border-primary-500 outline-none font-semibold">
+                    <option value="Dipinjam">Dipinjam</option>
+                    <option value="Dikembalikan">Dikembalikan</option>
+                </select>
+            </div>
+
+            <div class="mt-5 pt-3 border-t border-slate-100 flex justify-end gap-2">
+                <button type="button" onclick="closeModalEditPinjam()" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold">Batal</button>
+                <button type="submit" class="px-5 py-2 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold shadow-md">Simpan Perubahan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
 function openModalPinjam() {
     const m = document.getElementById('modal-pinjam');
@@ -243,6 +291,24 @@ function openModalPinjam() {
 }
 function closeModalPinjam() {
     const m = document.getElementById('modal-pinjam');
+    m.classList.add('opacity-0', 'pointer-events-none');
+    m.firstElementChild.classList.add('scale-95');
+}
+
+function openModalEditPinjam(id, nama, tglPinjam, estKembali, status) {
+    document.getElementById('form-edit-pinjam').action = '<?= url("kelola-sarpras/peminjaman/update/") ?>' + id;
+    document.getElementById('edit-pinjam-barang-nama').textContent = nama;
+    document.getElementById('edit-tanggal-pinjam').value = tglPinjam;
+    document.getElementById('edit-estimasi-kembali').value = estKembali;
+    document.getElementById('edit-status').value = status;
+    
+    const m = document.getElementById('modal-edit-pinjam');
+    m.classList.remove('opacity-0', 'pointer-events-none');
+    m.firstElementChild.classList.remove('scale-95');
+}
+
+function closeModalEditPinjam() {
+    const m = document.getElementById('modal-edit-pinjam');
     m.classList.add('opacity-0', 'pointer-events-none');
     m.firstElementChild.classList.add('scale-95');
 }

@@ -20,7 +20,7 @@ class SarprasController
         include TEMPLATES_PATH . '/layouts/app.php';
     }
 
-    // ── DASHBOARD SARPRAS ──────────────────────────────────────────
+    // ΓöÇΓöÇ DASHBOARD SARPRAS ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
     public static function index(): void
     {
         $stats = SarprasModel::getDashboardStats();
@@ -42,7 +42,7 @@ class SarprasController
         ]);
     }
 
-    // ── DAFTAR INVENTARIS BARANG ───────────────────────────────────
+    // ΓöÇΓöÇ DAFTAR INVENTARIS BARANG ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
     public static function barangList(): void
     {
         $filters = [
@@ -307,7 +307,7 @@ class SarprasController
         Response::redirect(url('kelola-sarpras/barang'));
     }
 
-    // ── SIRKULASI PEMINJAMAN ───────────────────────────────────────
+    // ΓöÇΓöÇ SIRKULASI PEMINJAMAN ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
     public static function peminjamanList(): void
     {
         $status = trim($_GET['status'] ?? '');
@@ -375,7 +375,44 @@ class SarprasController
         Response::redirect(url('kelola-sarpras/peminjaman'));
     }
 
-    // ── PEMELIHARAAN & PERBAIKAN ───────────────────────────────────
+    public static function peminjamanUpdate(int $id): void
+    {
+        CSRF::validate();
+        $db = Database::getInstance();
+        $status = trim($_POST['status'] ?? 'Dipinjam');
+        $tanggal_pinjam = trim($_POST['tanggal_pinjam'] ?? date('Y-m-d'));
+        $estimasi_kembali = trim($_POST['estimasi_kembali'] ?? date('Y-m-d'));
+        
+        $pinjam = $db->query("SELECT * FROM sarpras_peminjaman WHERE id = ?", [$id])->fetch();
+        if (!$pinjam) {
+            $_SESSION['flash_error'] = 'Data peminjaman tidak ditemukan!';
+            Response::redirect(url('kelola-sarpras/peminjaman'));
+            return;
+        }
+        
+        if ($status === 'Dikembalikan' && $pinjam['status'] === 'Dipinjam') {
+            $db->query("UPDATE sarpras_peminjaman SET status = 'Dikembalikan', tanggal_kembali = ?, tanggal_pinjam = ?, estimasi_kembali = ? WHERE id = ?", [
+                date('Y-m-d H:i:s'), $tanggal_pinjam, $estimasi_kembali, $id
+            ]);
+            // Restore sisa
+            $db->query("UPDATE sarpras_barang SET dipakai = GREATEST(dipakai - ?, 0) WHERE id = ?", [$pinjam['jumlah'], $pinjam['barang_id']]);
+        } elseif ($status === 'Dipinjam' && ($pinjam['status'] === 'Dikembalikan' || $pinjam['status'] === 'Kembali')) {
+            $db->query("UPDATE sarpras_peminjaman SET status = 'Dipinjam', tanggal_kembali = NULL, tanggal_pinjam = ?, estimasi_kembali = ? WHERE id = ?", [
+                $tanggal_pinjam, $estimasi_kembali, $id
+            ]);
+            // Deduct sisa
+            $db->query("UPDATE sarpras_barang SET dipakai = dipakai + ? WHERE id = ?", [$pinjam['jumlah'], $pinjam['barang_id']]);
+        } else {
+            $db->query("UPDATE sarpras_peminjaman SET status = ?, tanggal_pinjam = ?, estimasi_kembali = ? WHERE id = ?", [
+                $status, $tanggal_pinjam, $estimasi_kembali, $id
+            ]);
+        }
+        
+        $_SESSION['flash_success'] = 'Peminjaman berhasil diperbarui!';
+        Response::redirect(url('kelola-sarpras/peminjaman'));
+    }
+
+    // ΓöÇΓöÇ PEMELIHARAAN & PERBAIKAN ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
     public static function pemeliharaanList(): void
     {
         $status = trim($_GET['status'] ?? '');
@@ -445,7 +482,7 @@ class SarprasController
         Response::redirect(url('kelola-sarpras/pemeliharaan'));
     }
 
-    // ── MASTER RUANGAN ─────────────────────────────────────────────
+    // ΓöÇΓöÇ MASTER RUANGAN ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
     public static function ruanganList(): void
     {
         $items = SarprasModel::getAllRuangan();
@@ -575,35 +612,59 @@ class SarprasController
         CSRF::validate();
 
         $ruanganId = (int)$_POST['ruangan_id'];
-        $barangId = (int)$_POST['barang_id'];
-        $jumlah = (int)$_POST['jumlah'];
-        $kondisi = trim($_POST['kondisi'] ?? 'Baik');
-        $keterangan = trim($_POST['keterangan'] ?? '');
         
-        $barang = SarprasModel::getBarangById($barangId);
-        if (!$barang) {
-            $_SESSION['flash_error'] = 'Barang tidak ditemukan!';
-            Response::redirect(url("kelola-sarpras/ruangan/detail/{$ruanganId}"));
-            return;
+        $barangIds = $_POST['barang_id'] ?? [];
+        $jumlahs = $_POST['jumlah'] ?? [];
+        $kondisis = $_POST['kondisi'] ?? [];
+        $keterangans = $_POST['keterangan'] ?? [];
+
+        if (!is_array($barangIds)) {
+            $barangIds = [$barangIds];
+            $jumlahs = [$jumlahs];
+            $kondisis = [$kondisis];
+            $keterangans = [$keterangans];
         }
 
-        $sisa = $barang['jumlah'] - ($barang['dipakai'] ?? 0);
-        if ($jumlah > $sisa) {
-            $_SESSION['flash_error'] = 'Stok barang tidak mencukupi! Sisa stok hanya ' . $sisa . ' ' . $barang['satuan'];
-            Response::redirect(url("kelola-sarpras/ruangan/detail/{$ruanganId}"));
-            return;
+        $berhasil = 0;
+        $gagal = 0;
+
+        foreach ($barangIds as $index => $barangId) {
+            $barangId = (int)$barangId;
+            if (!$barangId) continue;
+            
+            $jumlah = (int)($jumlahs[$index] ?? 1);
+            $kondisi = trim($kondisis[$index] ?? 'Baik');
+            $keterangan = trim($keterangans[$index] ?? '');
+            
+            $barang = SarprasModel::getBarangById($barangId);
+            if (!$barang) {
+                $gagal++;
+                continue;
+            }
+
+            $sisa = $barang['jumlah'] - ($barang['dipakai'] ?? 0);
+            if ($jumlah > $sisa) {
+                $gagal++;
+                continue;
+            }
+
+            SarprasModel::insertDistribusi([
+                'ruangan_id' => $ruanganId,
+                'barang_id' => $barangId,
+                'jumlah' => $jumlah,
+                'kondisi' => $kondisi,
+                'keterangan' => $keterangan ?: null,
+                'tanggal_distribusi' => date('Y-m-d')
+            ]);
+            $berhasil++;
         }
 
-        SarprasModel::insertDistribusi([
-            'ruangan_id' => $ruanganId,
-            'barang_id' => $barangId,
-            'jumlah' => $jumlah,
-            'kondisi' => $kondisi,
-            'keterangan' => $keterangan ?: null,
-            'tanggal_distribusi' => date('Y-m-d')
-        ]);
-
-        $_SESSION['flash_success'] = 'Barang berhasil ditambahkan ke ruangan!';
+        if ($berhasil > 0) {
+            $_SESSION['flash_success'] = "Berhasil mendistribusikan {$berhasil} barang ke ruangan!" . ($gagal > 0 ? " ({$gagal} gagal/stok kurang)" : "");
+        } else {
+            $_SESSION['flash_error'] = 'Tidak ada barang yang berhasil didistribusikan (cek sisa stok).';
+        }
+        
         Response::redirect(url("kelola-sarpras/ruangan/detail/{$ruanganId}"));
     }
 
@@ -621,7 +682,7 @@ class SarprasController
         }
     }
 
-    // ── MASTER KATEGORI ────────────────────────────────────────────
+    // ΓöÇΓöÇ MASTER KATEGORI ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
     public static function kategoriList(): void
     {
         $items = SarprasModel::getAllKategori();
@@ -802,7 +863,7 @@ class SarprasController
         Response::redirect(url('kelola-sarpras/kategori'));
     }
 
-    // ── EXPORT EXCEL & CETAK LABEL ─────────────────────────────────
+    // ΓöÇΓöÇ EXPORT EXCEL & CETAK LABEL ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
     public static function exportExcel(): void
     {
         $items = SarprasModel::getBarangList([], 5000, 0);
@@ -846,26 +907,75 @@ class SarprasController
         exit;
     }
 
-    public static function cetakLabel(int $id): void
+    public static function cetakLabelIndex(): void
     {
-        $barang = SarprasModel::getBarangById($id);
-        if (!$barang) {
-            $_SESSION['flash_error'] = 'Barang tidak ditemukan!';
-            Response::redirect(url('kelola-sarpras/barang'));
+        $ruanganId = $_GET['ruangan_id'] ?? null;
+        $items = [];
+        if ($ruanganId) {
+            $items = self::db()->query("
+                SELECT d.*, b.nama_barang, b.kode_barang, b.merk, r.nama_ruangan 
+                FROM sarpras_distribusi d 
+                JOIN sarpras_barang b ON d.barang_id = b.id 
+                JOIN sarpras_ruangan r ON d.ruangan_id = r.id 
+                WHERE d.ruangan_id = ?
+            ", [$ruanganId])->fetchAll();
+        }
+        
+        $ruangan = self::db()->query("SELECT id, nama_ruangan FROM sarpras_ruangan ORDER BY nama_ruangan")->fetchAll();
+        
+        self::view('cetak-label/index', [
+            'ruangan' => $ruangan,
+            'items' => $items,
+            'selectedRuangan' => $ruanganId
+        ]);
+    }
+
+    public static function cetakLabelPrint(): void
+    {
+        $ruanganId = $_GET['ruangan_id'] ?? null;
+        $ids = $_GET['ids'] ?? '';
+        
+        if (!$ruanganId && empty($ids)) {
+            $_SESSION['flash_error'] = 'Tidak ada barang yang dipilih!';
+            Response::redirect(url('kelola-sarpras/cetak-label'));
             return;
         }
 
-        include BASE_PATH . '/modules/kelola-sarpras/views/barang/cetak_label.php';
+        $query = "
+            SELECT d.*, b.nama_barang, b.kode_barang, b.merk, r.nama_ruangan 
+            FROM sarpras_distribusi d 
+            JOIN sarpras_barang b ON d.barang_id = b.id 
+            JOIN sarpras_ruangan r ON d.ruangan_id = r.id 
+            WHERE 1=1
+        ";
+        $params = [];
+
+        if (!empty($ids)) {
+            $idArray = array_filter(explode(',', $ids));
+            if (empty($idArray)) {
+                die("Invalid IDs");
+            }
+            $placeholders = str_repeat('?,', count($idArray) - 1) . '?';
+            $query .= " AND d.id IN ($placeholders)";
+            $params = $idArray;
+        } else {
+            $query .= " AND d.ruangan_id = ?";
+            $params[] = $ruanganId;
+        }
+
+        $items = self::db()->query($query, $params)->fetchAll();
+
+        include BASE_PATH . '/modules/kelola-sarpras/views/cetak-label/cetak_label.php';
         exit;
     }
 
-    // ── DATA ASET HIERARKI (DIARAHKAN LANGSUNG KE DATA TANAH) ────
+    // ΓöÇΓöÇ DATA ASET HIERARKI (DIARAHKAN LANGSUNG KE DATA TANAH) ΓöÇΓöÇΓöÇΓöÇ
     public static function dataAset(): void
     {
         Response::redirect(url('kelola-sarpras/tanah'));
     }
 
-    // ── DATA TANAH (ASET TANAH) ────────────────────────────────────
+    // ΓöÇΓöÇ DATA TANAH (ASET TANAH) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
     public static function tanahList(): void
     {
         $filters = [
@@ -1105,7 +1215,7 @@ class SarprasController
         exit;
     }
 
-    // ── DATA BANGUNAN ──────────────────────────────────────────────
+    // ΓöÇΓöÇ DATA BANGUNAN ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
     public static function bangunanList(): void
     {
         $filters = [
@@ -1272,7 +1382,7 @@ class SarprasController
         Response::redirect($redirectUrl);
     }
 
-    // ── REFERENSI (Golongan, Kode Kelompok, Asal Anggaran) ─────────
+    // ΓöÇΓöÇ REFERENSI (Golongan, Kode Kelompok, Asal Anggaran) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
     public static function referensiList(): void
     {
         $golonganList    = SarprasModel::getGolonganList();
@@ -1516,6 +1626,43 @@ class SarprasController
             'namaKepalaSarpras' => $namaKepalaSarpras,
             'niyKepalaSarpras' => $niyKepalaSarpras,
         ], 'Cetak Laporan', [], true);
+    }
+
+    public static function barangDetailDistribusiJson(): void
+    {
+        $id = (int)($_GET['id'] ?? 0);
+        $barang = SarprasModel::getBarangById($id);
+        
+        if (!$barang) {
+            Response::json(['status' => 'error', 'message' => 'Barang tidak ditemukan.']);
+            return;
+        }
+
+        $barang['sisa'] = $barang['jumlah'] - ($barang['dipakai'] ?? 0);
+
+        $db = Database::getInstance();
+        $distribusi = $db->findAll("
+            SELECT d.*, r.nama_ruangan, b.nama_bangunan 
+            FROM sarpras_distribusi d
+            JOIN sarpras_ruangan r ON d.ruangan_id = r.id
+            LEFT JOIN sarpras_bangunan b ON r.bangunan_id = b.id
+            WHERE d.barang_id = ?
+        ", [$id]);
+
+        $peminjaman = $db->findAll("
+            SELECT p.*
+            FROM sarpras_peminjaman p
+            WHERE p.barang_id = ? AND p.status IN ('Menunggu', 'Dipinjam')
+        ", [$id]);
+
+        Response::json([
+            'status' => 'success',
+            'data' => [
+                'barang' => $barang,
+                'distribusi' => $distribusi,
+                'peminjaman' => $peminjaman
+            ]
+        ]);
     }
 }
 

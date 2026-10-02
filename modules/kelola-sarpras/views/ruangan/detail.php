@@ -114,73 +114,92 @@
 </div>
 
 <!-- Modal Distribusi Barang -->
-<div id="modal-distribusi" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm opacity-0 pointer-events-none transition-all duration-200">
-    <div class="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-primary-100 overflow-hidden flex flex-col transform scale-95 transition-all duration-200">
-        <div class="px-6 py-4 border-b border-primary-100 bg-primary-50 flex items-center justify-between">
+<div id="modal-distribusi" class="fixed inset-0 z-[100] hidden flex items-center justify-center">
+    <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeModalDistribusi()"></div>
+    <div class="bg-white w-full max-w-2xl rounded-3xl shadow-2xl relative z-10 max-h-[90vh] flex flex-col overflow-hidden">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
             <h3 class="text-base font-bold text-slate-800">Tambah Barang ke Ruangan</h3>
             <button onclick="closeModalDistribusi()" class="p-2 rounded-full text-slate-400 hover:text-slate-600 hover:bg-white transition-colors text-xl font-bold">&times;</button>
         </div>
-        <form action="<?= url('kelola-sarpras/distribusi/store') ?>" method="POST" class="p-6 space-y-4 text-xs">
+        <form action="<?= url('kelola-sarpras/distribusi/store') ?>" method="POST" class="flex flex-col flex-1 overflow-hidden">
             <?= CSRF::field() ?>
             <input type="hidden" name="ruangan_id" value="<?= $ruangan['id'] ?>">
             
-            <div class="relative">
-                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Pilih Aset/Barang <span class="text-rose-500">*</span></label>
-                
-                <input type="hidden" name="barang_id" id="hidden-barang-id" required>
-                
-                <button type="button" id="dropdown-trigger" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 focus:bg-white focus:border-primary-500 outline-none text-left flex justify-between items-center transition-colors">
-                    <span id="dropdown-selected-text" class="truncate">-- Pilih Barang --</span>
-                    <svg class="w-4 h-4 text-slate-400 flex-shrink-0 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
-                </button>
-                
-                <div id="dropdown-panel" class="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-2xl shadow-xl hidden flex-col overflow-hidden">
-                    <div class="p-2.5 border-b border-slate-100 bg-slate-50">
-                        <input type="text" id="search-barang-input" placeholder="Ketik nama / kode untuk mencari..." autocomplete="off" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:border-primary-500 outline-none">
-                    </div>
-                    <div id="dropdown-options" class="max-h-52 overflow-y-auto divide-y divide-slate-50 custom-scrollbar">
-                        <?php foreach ($barangTersedia as $b): 
-                            $sisa = $b['jumlah'] - ($b['dipakai'] ?? 0);
-                        ?>
-                            <div class="px-4 py-2.5 hover:bg-primary-50 cursor-pointer transition-colors option-barang" data-id="<?= $b['id'] ?>" data-sisa="<?= $sisa ?>" data-satuan="<?= e($b['satuan']) ?>" data-search="<?= strtolower(e($b['nama_barang'] . ' ' . $b['kode_barang'])) ?>">
-                                <div class="font-bold text-sm text-slate-800 pointer-events-none"><?= e($b['nama_barang']) ?></div>
-                                <div class="flex justify-between text-[10px] text-slate-500 mt-0.5 pointer-events-none">
-                                    <span><?= e($b['kode_barang']) ?></span>
-                                    <span class="font-semibold text-primary-600">Sisa: <?= $sisa ?> <?= e($b['satuan']) ?></span>
+            <div id="distribusi-items-container" class="p-6 overflow-y-auto space-y-6 flex-1 bg-slate-50/50">
+                <!-- Item Row Template -->
+                <div class="distribusi-item bg-white p-4 rounded-2xl border border-slate-200 relative shadow-sm">
+                    <button type="button" class="btn-remove-item absolute -top-3 -right-3 w-8 h-8 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center border-2 border-white shadow-sm hover:bg-rose-500 hover:text-white transition-colors hidden">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                    
+                    <div class="space-y-4 text-xs">
+                        <div class="relative custom-dropdown-container">
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Pilih Aset/Barang <span class="text-rose-500">*</span></label>
+                            
+                            <input type="hidden" name="barang_id[]" class="hidden-barang-id" required>
+                            
+                            <button type="button" class="dropdown-trigger w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:bg-white focus:border-primary-500 outline-none text-left flex justify-between items-center transition-colors">
+                                <span class="dropdown-selected-text truncate">-- Pilih Barang --</span>
+                                <svg class="w-4 h-4 text-slate-400 flex-shrink-0 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                            </button>
+                            
+                            <div class="dropdown-panel absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl hidden flex-col overflow-hidden">
+                                <div class="p-2 border-b border-slate-100 bg-slate-50">
+                                    <input type="text" placeholder="Ketik nama / kode..." autocomplete="off" class="search-barang-input w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 focus:border-primary-500 outline-none">
+                                </div>
+                                <div class="max-h-48 overflow-y-auto">
+                                    <?php foreach ($barangTersedia as $b): $sisa = $b['jumlah'] - ($b['dipakai'] ?? 0); ?>
+                                        <div class="option-barang px-3 py-2.5 hover:bg-slate-50 cursor-pointer border-b border-slate-50 last:border-0" 
+                                            data-id="<?= $b['id'] ?>" 
+                                            data-search="<?= strtolower($b['nama_barang'] . ' ' . $b['kode_barang']) ?>"
+                                            data-sisa="<?= $sisa ?>"
+                                            data-satuan="<?= e($b['satuan']) ?>">
+                                            <div class="font-bold text-slate-800 text-sm"><?= e($b['nama_barang']) ?></div>
+                                            <div class="text-[10px] text-slate-500 flex justify-between mt-0.5">
+                                                <span><?= e($b['kode_barang']) ?></span>
+                                                <span class="text-primary-600 font-bold bg-primary-50 px-1.5 py-0.5 rounded">Sisa: <?= $sisa ?> <?= e($b['satuan']) ?></span>
+                                            </div>
+                                        </div>
+                                    <?php endforeach; ?>
+                                    <?php if (empty($barangTersedia)): ?>
+                                        <div class="px-4 py-3 text-xs text-rose-500 text-center">Tidak ada stok barang yang tersedia.</div>
+                                    <?php endif; ?>
                                 </div>
                             </div>
-                        <?php endforeach; ?>
-                        <?php if (empty($barangTersedia)): ?>
-                            <div class="px-4 py-3 text-xs text-rose-500 text-center">Tidak ada stok barang yang tersedia.</div>
-                        <?php endif; ?>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Jumlah <span class="text-rose-500">*</span></label>
+                                <input type="number" name="jumlah[]" required min="1" value="1" class="distribusi-jumlah w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:bg-white focus:border-primary-500 outline-none font-bold">
+                                <p class="text-[10px] text-slate-400 mt-1 distribusi-info-sisa"></p>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Kondisi <span class="text-rose-500">*</span></label>
+                                <select name="kondisi[]" required class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:bg-white focus:border-primary-500 outline-none">
+                                    <option value="Baik">Baik</option>
+                                    <option value="Rusak Ringan">Rusak Ringan</option>
+                                    <option value="Rusak Berat">Rusak Berat</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Keterangan / Posisi di Ruangan</label>
+                            <input type="text" name="keterangan[]" placeholder="Contoh: Meja Guru, Pojok Kanan Depan..." class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:bg-white focus:border-primary-500 outline-none">
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-3">
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Jumlah <span class="text-rose-500">*</span></label>
-                    <input type="number" name="jumlah" id="distribusi-jumlah" required min="1" value="1" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 focus:bg-white focus:border-primary-500 outline-none font-bold">
-                    <p class="text-[10px] text-slate-400 mt-1" id="distribusi-info-sisa"></p>
+            <div class="px-6 py-4 border-t border-slate-100 flex items-center justify-between bg-white z-10">
+                <button type="button" onclick="tambahBarisDistribusi()" class="px-4 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-100 text-sm font-bold rounded-xl transition-colors flex items-center gap-1.5">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.5v15m7.5-7.5h-15" /></svg> Tambah Baris
+                </button>
+                <div class="flex gap-2">
+                    <button type="button" onclick="closeModalDistribusi()" class="px-5 py-2.5 bg-slate-100 text-slate-600 hover:bg-slate-200 text-sm font-bold rounded-xl transition-colors">Batal</button>
+                    <button type="submit" class="px-5 py-2.5 bg-primary-600 text-white hover:bg-primary-700 text-sm font-bold rounded-xl transition-all shadow-lg shadow-primary-500/30">Simpan Distribusi</button>
                 </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Kondisi <span class="text-rose-500">*</span></label>
-                    <select name="kondisi" required class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 focus:bg-white focus:border-primary-500 outline-none">
-                        <option value="Baik">Baik</option>
-                        <option value="Rusak Ringan">Rusak Ringan</option>
-                        <option value="Rusak Berat">Rusak Berat</option>
-                    </select>
-                </div>
-            </div>
-
-            <div>
-                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Keterangan / Posisi di Ruangan</label>
-                <input type="text" name="keterangan" placeholder="Contoh: Meja Guru, Pojok Kanan Depan..." class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 focus:bg-white focus:border-primary-500 outline-none">
-            </div>
-
-            <div class="pt-4 border-t border-slate-100 flex justify-end gap-2">
-                <button type="button" onclick="closeModalDistribusi()" class="px-5 py-2.5 bg-slate-100 text-slate-600 hover:bg-slate-200 text-sm font-bold rounded-xl transition-colors">Batal</button>
-                <button type="submit" class="px-5 py-2.5 bg-primary-600 text-white hover:bg-primary-700 text-sm font-bold rounded-xl transition-all shadow-lg shadow-primary-500/30">Simpan Distribusi</button>
             </div>
         </form>
     </div>
@@ -188,73 +207,153 @@
 
 <script>
     document.addEventListener("DOMContentLoaded", function() {
-        const trigger = document.getElementById('dropdown-trigger');
-        const selectedText = document.getElementById('dropdown-selected-text');
-        const inputSearch = document.getElementById('search-barang-input');
-        const dropdown = document.getElementById('dropdown-panel');
-        const hiddenInput = document.getElementById('hidden-barang-id');
-        const options = document.querySelectorAll('.option-barang');
-        const jumlahInput = document.getElementById('distribusi-jumlah');
-        const sisaInfo = document.getElementById('distribusi-info-sisa');
+        initCustomDropdowns();
+    });
 
-        // Toggle dropdown on click
-        trigger.addEventListener('click', (e) => {
-            dropdown.classList.toggle('hidden');
-            if (!dropdown.classList.contains('hidden')) {
-                inputSearch.focus();
-                inputSearch.value = '';
-                // Reset filter
-                options.forEach(opt => opt.style.display = 'block');
-            }
-        });
+    function initCustomDropdowns() {
+        // Event delegation for all dropdowns inside modal
+        const container = document.getElementById('distribusi-items-container');
+        if (!container) return;
 
-        // Hide dropdown when clicking outside
-        document.addEventListener('click', (e) => {
-            if (!trigger.contains(e.target) && !dropdown.contains(e.target)) {
-                dropdown.classList.add('hidden');
-            }
-        });
+        container.addEventListener('click', function(e) {
+            // Dropdown Trigger Click
+            const trigger = e.target.closest('.dropdown-trigger');
+            if (trigger) {
+                const parent = trigger.closest('.custom-dropdown-container');
+                const dropdown = parent.querySelector('.dropdown-panel');
+                const inputSearch = parent.querySelector('.search-barang-input');
+                const options = parent.querySelectorAll('.option-barang');
 
-        // Filter options on type
-        inputSearch.addEventListener('input', (e) => {
-            const val = e.target.value.toLowerCase();
-            options.forEach(opt => {
-                if (opt.getAttribute('data-search').includes(val)) {
-                    opt.style.display = 'block';
-                } else {
-                    opt.style.display = 'none';
+                // Close other dropdowns
+                document.querySelectorAll('.dropdown-panel').forEach(p => {
+                    if (p !== dropdown) p.classList.add('hidden');
+                });
+
+                dropdown.classList.toggle('hidden');
+                if (!dropdown.classList.contains('hidden')) {
+                    inputSearch.focus();
+                    inputSearch.value = '';
+                    options.forEach(opt => opt.style.display = 'block');
                 }
-            });
-        });
+                return;
+            }
 
-        // Select option
-        options.forEach(opt => {
-            opt.addEventListener('click', function() {
-                const id = this.getAttribute('data-id');
-                const name = this.querySelector('.font-bold').innerText;
-                const sisa = this.getAttribute('data-sisa');
-                const satuan = this.getAttribute('data-satuan');
+            // Option Click
+            const option = e.target.closest('.option-barang');
+            if (option) {
+                const parent = option.closest('.custom-dropdown-container');
+                const itemRow = option.closest('.distribusi-item');
+                
+                const id = option.getAttribute('data-id');
+                const name = option.querySelector('.font-bold').innerText;
+                const sisa = option.getAttribute('data-sisa');
+                const satuan = option.getAttribute('data-satuan');
 
-                selectedText.innerText = name;
-                hiddenInput.value = id;
+                parent.querySelector('.dropdown-selected-text').innerText = name;
+                parent.querySelector('.hidden-barang-id').value = id;
+                
+                const jumlahInput = itemRow.querySelector('.distribusi-jumlah');
+                const sisaInfo = itemRow.querySelector('.distribusi-info-sisa');
                 
                 jumlahInput.max = sisa;
+                jumlahInput.value = 1;
                 sisaInfo.innerText = `Maksimal: ${sisa} ${satuan}`;
                 
-                dropdown.classList.add('hidden');
-            });
+                parent.querySelector('.dropdown-panel').classList.add('hidden');
+            }
         });
-    });
+
+        // Search Input Filter
+        container.addEventListener('input', function(e) {
+            if (e.target.classList.contains('search-barang-input')) {
+                const val = e.target.value.toLowerCase();
+                const parent = e.target.closest('.custom-dropdown-container');
+                const options = parent.querySelectorAll('.option-barang');
+                options.forEach(opt => {
+                    if (opt.getAttribute('data-search').includes(val)) {
+                        opt.style.display = 'block';
+                    } else {
+                        opt.style.display = 'none';
+                    }
+                });
+            }
+        });
+
+        // Remove Row
+        container.addEventListener('click', function(e) {
+            const btn = e.target.closest('.btn-remove-item');
+            if (btn) {
+                const row = btn.closest('.distribusi-item');
+                row.remove();
+                updateRemoveButtons();
+            }
+        });
+
+        // Hide dropdowns when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.custom-dropdown-container')) {
+                document.querySelectorAll('.dropdown-panel').forEach(dropdown => {
+                    dropdown.classList.add('hidden');
+                });
+            }
+        });
+    }
+
+    function tambahBarisDistribusi() {
+        const container = document.getElementById('distribusi-items-container');
+        const rows = container.querySelectorAll('.distribusi-item');
+        if (rows.length >= 10) {
+            alert('Maksimal penambahan 10 baris dalam satu waktu.');
+            return;
+        }
+
+        const firstRow = rows[0];
+        const newRow = firstRow.cloneNode(true);
+        
+        // Reset values
+        newRow.querySelector('.hidden-barang-id').value = '';
+        newRow.querySelector('.dropdown-selected-text').innerText = '-- Pilih Barang --';
+        newRow.querySelector('.distribusi-jumlah').value = '1';
+        newRow.querySelector('.distribusi-jumlah').removeAttribute('max');
+        newRow.querySelector('.distribusi-info-sisa').innerText = '';
+        newRow.querySelector('select[name="kondisi[]"]').value = 'Baik';
+        newRow.querySelector('input[name="keterangan[]"]').value = '';
+        
+        // Hide dropdown panel if it was open
+        newRow.querySelector('.dropdown-panel').classList.add('hidden');
+        newRow.querySelector('.search-barang-input').value = '';
+        newRow.querySelectorAll('.option-barang').forEach(opt => opt.style.display = 'block');
+        
+        container.appendChild(newRow);
+        
+        updateRemoveButtons();
+        
+        // Scroll to bottom
+        container.scrollTop = container.scrollHeight;
+    }
+
+    function updateRemoveButtons() {
+        const rows = document.querySelectorAll('.distribusi-item');
+        rows.forEach((row, index) => {
+            const btn = row.querySelector('.btn-remove-item');
+            if (rows.length > 1) {
+                btn.classList.remove('hidden');
+            } else {
+                btn.classList.add('hidden');
+            }
+        });
+    }
 
     function openModalDistribusi() {
         const modal = document.getElementById('modal-distribusi');
-        modal.classList.remove('opacity-0', 'pointer-events-none');
-        modal.firstElementChild.classList.remove('scale-95');
+        modal.classList.remove('hidden');
     }
 
     function closeModalDistribusi() {
         const modal = document.getElementById('modal-distribusi');
-        modal.classList.add('opacity-0', 'pointer-events-none');
-        modal.firstElementChild.classList.add('scale-95');
+        modal.classList.add('hidden');
     }
 </script>
+
+
+

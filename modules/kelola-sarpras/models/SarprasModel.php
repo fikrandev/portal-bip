@@ -101,8 +101,7 @@ class SarprasModel
     {
         $db = self::db();
         $sql = "
-            SELECT b.*, k.nama_kategori, k.kode_kategori, r.nama_ruangan, r.kode_ruangan, r.lokasi_gedung,
-                   (SELECT IFNULL(SUM(jumlah), 0) FROM sarpras_distribusi WHERE barang_id = b.id) as dipakai
+            SELECT b.*, k.nama_kategori, k.kode_kategori, r.nama_ruangan, r.kode_ruangan, r.lokasi_gedung
             FROM sarpras_barang b
             LEFT JOIN sarpras_kategori k ON b.kategori_id = k.id
             LEFT JOIN sarpras_ruangan r ON b.ruangan_id = r.id
@@ -186,8 +185,7 @@ class SarprasModel
     {
         $db = self::db();
         return $db->find("
-            SELECT b.*, k.nama_kategori, r.nama_ruangan, r.lokasi_gedung,
-                   (SELECT IFNULL(SUM(jumlah), 0) FROM sarpras_distribusi WHERE barang_id = b.id) as dipakai
+            SELECT b.*, k.nama_kategori, r.nama_ruangan, r.lokasi_gedung
             FROM sarpras_barang b
             LEFT JOIN sarpras_kategori k ON b.kategori_id = k.id
             LEFT JOIN sarpras_ruangan r ON b.ruangan_id = r.id
@@ -282,7 +280,15 @@ class SarprasModel
 
     public static function deleteRuangan(int $id): bool
     {
-        return self::db()->delete('sarpras_ruangan', 'id = ?', [$id]);
+        $db = self::db();
+        // Kurangi 'dipakai' dari sarpras_barang untuk tiap distribusi di ruangan ini
+        $dist = $db->findAll("SELECT barang_id, jumlah FROM sarpras_distribusi WHERE ruangan_id = ?", [$id]);
+        foreach ($dist as $d) {
+            $db->query("UPDATE sarpras_barang SET dipakai = GREATEST(0, dipakai - ?) WHERE id = ?", [$d['jumlah'], $d['barang_id']]);
+        }
+        // Hapus distribusi
+        $db->delete('sarpras_distribusi', 'ruangan_id = ?', [$id]);
+        return $db->delete('sarpras_ruangan', 'id = ?', [$id]);
     }
 
     public static function getPegawaiList(): array
@@ -564,8 +570,13 @@ class SarprasModel
     public static function deleteTanah(int $id): bool
     {
         $db = self::db();
-        // Hapus atau unlink bangunan yang berada di atas tanah ini
-        $db->delete('sarpras_bangunan', 'tanah_id = ?', [$id]);
+        // Cari semua bangunan di atas tanah ini
+        $bangunanList = $db->findAll("SELECT id FROM sarpras_bangunan WHERE tanah_id = ?", [$id]);
+        foreach ($bangunanList as $b) {
+            // Hapus ruangan yang ada di bangunan ini menggunakan fungsi deleteBangunan agar cascade
+            self::deleteBangunan((int)$b['id']);
+        }
+        
         return $db->delete('sarpras_tanah', 'id = ?', [$id]);
     }
 
@@ -660,6 +671,11 @@ class SarprasModel
     public static function deleteBangunan(int $id): bool
     {
         $db = self::db();
+        // Hapus ruangan yang ada di bangunan ini
+        $ruanganList = $db->findAll("SELECT id FROM sarpras_ruangan WHERE bangunan_id = ?", [$id]);
+        foreach ($ruanganList as $r) {
+            self::deleteRuangan((int)$r['id']);
+        }
         return $db->delete('sarpras_bangunan', 'id = ?', [$id]);
     }
 
@@ -839,7 +855,12 @@ class SarprasModel
 
     public static function insertDistribusi(array $data): bool
     {
-        return self::db()->insert('sarpras_distribusi', $data);
+        $db = self::db();
+        $inserted = $db->insert('sarpras_distribusi', $data);
+        if ($inserted && isset($data['barang_id']) && isset($data['jumlah'])) {
+            $db->query("UPDATE sarpras_barang SET dipakai = dipakai + ? WHERE id = ?", [$data['jumlah'], $data['barang_id']]);
+        }
+        return $inserted;
     }
 
     public static function updateDistribusi(int $id, array $data): bool
@@ -849,6 +870,12 @@ class SarprasModel
 
     public static function deleteDistribusi(int $id): bool
     {
-        return self::db()->delete('sarpras_distribusi', 'id = ?', [$id]);
+        $db = self::db();
+        $dist = $db->query("SELECT barang_id, jumlah FROM sarpras_distribusi WHERE id = ?", [$id])->fetch();
+        if ($dist) {
+            $db->query("UPDATE sarpras_barang SET dipakai = GREATEST(dipakai - ?, 0) WHERE id = ?", [$dist['jumlah'], $dist['barang_id']]);
+        }
+        return $db->delete('sarpras_distribusi', 'id = ?', [$id]);
     }
 }
+

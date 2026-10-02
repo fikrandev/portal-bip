@@ -33,6 +33,18 @@
                                     <?= floatval($t['luas']) ?> m&sup2;
                                 </span>
                             </div>
+                        
+                            <div class="flex items-center gap-2 mt-3 pt-2 border-t border-slate-100">
+                                <a href="<?= url('mobile-sarpras/tanah/edit/' . $t['id']) ?>" class="px-2 py-1 rounded-lg border text-[10px] font-bold bg-slate-50 text-slate-700 border-slate-200 flex items-center gap-1 active:bg-slate-100">
+                                    <i data-lucide="edit" class="w-3 h-3"></i> Edit
+                                </a>
+                                <form action="<?= url('kelola-sarpras/tanah/delete/' . $t['id']) ?>" method="POST" class="inline" onsubmit="return confirm('Yakin ingin menghapus tanah ini? Semua bangunan dan ruangan di dalamnya akan ikut terhapus.');">
+                                    <input type="hidden" name="return_to" value="<?= url('mobile-sarpras/tanah') ?>">
+                                    <button type="submit" class="px-2 py-1 rounded-lg border text-[10px] font-bold bg-rose-50 text-rose-600 border-rose-100 flex items-center gap-1 active:bg-rose-100">
+                                        <i data-lucide="trash-2" class="w-3 h-3"></i> Hapus
+                                    </button>
+                                </form>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -47,3 +59,4 @@
         <i data-lucide="plus" class="w-7 h-7"></i>
     </a>
 </div>
+

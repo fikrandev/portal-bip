@@ -1,6 +1,6 @@
 <div class="px-4 pt-4 space-y-6">
     <div class="bg-white rounded-3xl p-5 shadow-sm border border-slate-100">
-        <form action="<?= url('kelola-sarpras/ruangan/store') ?>" method="POST" enctype="multipart/form-data" class="space-y-4">
+        <form action="<?= url('kelola-sarpras/ruangan/store') ?>" method="POST" enctype="multipart/form-data" class="space-y-4">`n            <input type="hidden" name="id" value="<?= $item['id'] ?>">
             <?= CSRF::field() ?>
             <input type="hidden" name="return_to" value="<?= url('mobile-sarpras/ruangan') ?>">
 
@@ -10,23 +10,23 @@
                     <select name="bangunan_id" required class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-purple-500">
                         <option value="">-- Pilih Gedung --</option>
                         <?php foreach ($bangunanList as $b): ?>
-                            <option value="<?= $b['id'] ?>"><?= e($b['nama_bangunan']) ?></option>
+                            <option value="<?= $b['id'] ?>" <?= $b['id'] == $item['bangunan_id'] ? 'selected' : '' ?> ><?= e($b['nama_bangunan']) ?></option>
                         <?php endforeach; ?>
                     </select>
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1">Nama Ruangan / Fasilitas <span class="text-rose-500">*</span></label>
-                    <input type="text" name="nama_ruangan" required class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-purple-500" placeholder="Cth: Ruang Kelas 1A">
+                    <input type="text" name="nama_ruangan" value="<?= e($item['nama_ruangan']) ?>" required class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-purple-500" placeholder="Cth: Ruang Kelas 1A">
                 </div>
                 
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs font-bold text-slate-700 mb-1">Jenis Ruangan <span class="text-rose-500">*</span></label>
                         <select name="jenis_ruangan" required class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-purple-500">
-                            <option value="Ruang Kelas" selected>Ruang Kelas (Belajar)</option>
+                            <option value="Ruang Kelas" <?= $item['jenis_ruangan'] == 'Ruang Kelas' ? 'selected' : '' ?>>Ruang Kelas (Belajar)</option>
                             <option value="Ruang Laboratorium">Ruang Laboratorium (Komputer/IPA/Bahasa)</option>
                             <option value="Ruang Kantor">Ruang Kantor / Administrasi</option>
-                            <option value="Ruang Guru">Ruang Guru</option>
+                            <option value="Ruang Guru" <?= $item['jenis_ruangan'] == 'Ruang Guru' ? 'selected' : '' ?>>Ruang Guru</option>
                             <option value="Ruang Pimpinan">Ruang Kepala Sekolah / Pimpinan</option>
                             <option value="Ruang Perpustakaan">Ruang Perpustakaan</option>
                             <option value="Ruang UKS">Ruang UKS / Medis</option>
@@ -35,9 +35,9 @@
                             <option value="Ruang Konseling / BK">Ruang Bimbingan Konseling (BK)</option>
                             <option value="Ruang OSIS">Ruang OSIS / Ekstrakurikuler</option>
                             <option value="Gudang">Gudang / Logistik</option>
-                            <option value="Toilet">Toilet / Sanitasi</option>
+                            <option value="Toilet" <?= $item['jenis_ruangan'] == 'Toilet' ? 'selected' : '' ?>>Toilet / Sanitasi</option>
                             <option value="Kantin">Kantin / Dapur</option>
-                            <option value="Lainnya">Fasilitas Lainnya</option>
+                            <option value="Lainnya" <?= $item['jenis_ruangan'] == 'Lainnya' ? 'selected' : '' ?>>Fasilitas Lainnya</option>
                         </select>
                     </div>
                     <div>
@@ -54,16 +54,16 @@
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs font-bold text-slate-700 mb-1">Panjang (m)</label>
-                        <input type="number" step="0.01" id="rng_panjang" name="panjang" placeholder="0.00" oninput="calculateLuasRng()" class="w-full px-3 py-2.5 bg-white border border-purple-200 rounded-xl text-sm font-bold outline-none focus:border-purple-500">
+                        <input type="number" step="0.01" id="rng_panjang" name="panjang" value="<?= floatval($item['panjang']) ?>" placeholder="0.00" oninput="calculateLuasRng()" class="w-full px-3 py-2.5 bg-white border border-purple-200 rounded-xl text-sm font-bold outline-none focus:border-purple-500">
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-slate-700 mb-1">Lebar (m)</label>
-                        <input type="number" step="0.01" id="rng_lebar" name="lebar" placeholder="0.00" oninput="calculateLuasRng()" class="w-full px-3 py-2.5 bg-white border border-purple-200 rounded-xl text-sm font-bold outline-none focus:border-purple-500">
+                        <input type="number" step="0.01" id="rng_lebar" name="lebar" value="<?= floatval($item['lebar']) ?>" placeholder="0.00" oninput="calculateLuasRng()" class="w-full px-3 py-2.5 bg-white border border-purple-200 rounded-xl text-sm font-bold outline-none focus:border-purple-500">
                     </div>
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-purple-900 mb-1">Luas Ruang (m²) <span class="text-purple-500 font-normal">(Otomatis)</span></label>
-                    <input type="number" step="0.01" id="rng_luas" name="luas" placeholder="0.00" class="w-full px-3 py-2.5 bg-purple-100 border border-purple-300 rounded-xl text-sm font-black text-purple-900 outline-none">
+                    <input type="number" step="0.01" id="rng_luas" name="luas" value="<?= floatval($item['luas']) ?>" placeholder="0.00" class="w-full px-3 py-2.5 bg-purple-100 border border-purple-300 rounded-xl text-sm font-black text-purple-900 outline-none">
                 </div>
             </div>
 
@@ -72,12 +72,12 @@
                     <div>
                         <label class="block text-xs font-bold text-slate-700 mb-1">Unit / Jenjang</label>
                         <select name="unit" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-purple-500">
-                            <option value="SD">SD</option>
-                            <option value="SMP">SMP</option>
-                            <option value="SMA">SMA</option>
+                            <option value="SD" <?= $item['unit'] == 'SD' ? 'selected' : '' ?>>SD</option>
+                            <option value="SMP" <?= $item['unit'] == 'SMP' ? 'selected' : '' ?>>SMP</option>
+                            <option value="SMA" <?= $item['unit'] == 'SMA' ? 'selected' : '' ?>>SMA</option>
                             <option value="PAUD">PAUD</option>
                             <option value="Yayasan">Yayasan</option>
-                            <option value="Semua" selected>Semua / Umum</option>
+                            <option value="Semua" <?= $item['unit'] == 'Semua' ? 'selected' : '' ?>>Semua / Umum</option>
                         </select>
                     </div>
                     <div>
@@ -104,7 +104,7 @@
 
             <div class="pt-4">
                 <button type="submit" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl py-3 shadow-md flex items-center justify-center gap-2">
-                    <i data-lucide="save" class="w-5 h-5"></i> Simpan Ruangan
+                    <i data-lucide="save" class="w-5 h-5"></i> Update Ruangan
                 </button>
             </div>
         </form>
@@ -118,4 +118,5 @@
         document.getElementById('rng_luas').value = (p * l).toFixed(2);
     }
 </script>
+
 

@@ -155,6 +155,25 @@ class MobileSarprasController
         ]);
     }
 
+
+    public static function inventarisEdit(int $id): void
+    {
+        $item = SarprasModel::getBarangById($id);
+        if (!$item) {
+            header('Location: ' . url('mobile-sarpras/inventaris'));
+            exit;
+        }
+        self::render('inventaris/edit', [
+            'pageTitle' => 'Edit Inventaris',
+            'activeTab' => 'input',
+            'item' => $item,
+            'golonganList' => SarprasModel::getAllGolongan(),
+            'kelompokList' => SarprasModel::getAllKelompok(),
+            'asalAnggaranList' => SarprasModel::getAllAsalAnggaran(),
+            'satuanList' => SarprasModel::getAllSatuan()
+        ]);
+    }
+
     public static function tanahTambah(): void
     {
         self::render('tanah/tambah', [
@@ -179,6 +198,52 @@ class MobileSarprasController
         self::render('ruangan/tambah', [
             'pageTitle' => 'Tambah Ruangan',
             'activeTab' => 'input',
+            'bangunanList' => SarprasModel::getBangunanList()
+        ]);
+    }
+
+    public static function tanahEdit(int $id): void
+    {
+        $item = SarprasModel::getTanahById($id);
+        if (!$item) {
+            header('Location: ' . url('mobile-sarpras/tanah'));
+            exit;
+        }
+        self::render('tanah/edit', [
+            'pageTitle' => 'Edit Tanah',
+            'activeTab' => 'input',
+            'item' => $item,
+            'asalAnggaranList' => SarprasModel::getAllAsalAnggaran()
+        ]);
+    }
+
+    public static function bangunanEdit(int $id): void
+    {
+        $item = SarprasModel::getBangunanById($id);
+        if (!$item) {
+            header('Location: ' . url('mobile-sarpras/bangunan'));
+            exit;
+        }
+        self::render('bangunan/edit', [
+            'pageTitle' => 'Edit Bangunan',
+            'activeTab' => 'input',
+            'item' => $item,
+            'tanahList' => SarprasModel::getTanahList(),
+            'asalAnggaranList' => SarprasModel::getAllAsalAnggaran()
+        ]);
+    }
+
+    public static function ruanganEdit(int $id): void
+    {
+        $item = SarprasModel::getRuanganById($id);
+        if (!$item) {
+            header('Location: ' . url('mobile-sarpras/ruangan'));
+            exit;
+        }
+        self::render('ruangan/edit', [
+            'pageTitle' => 'Edit Ruangan',
+            'activeTab' => 'input',
+            'item' => $item,
             'bangunanList' => SarprasModel::getBangunanList()
         ]);
     }
@@ -252,7 +317,7 @@ class MobileSarprasController
         }
         $db->query("UPDATE sarpras_barang SET status = ? WHERE id = ?", [$barangStatus, $_POST['barang_id']]);
         
-        FlashMessage::set('Laporan perbaikan berhasil disubmit!', 'success');
+        $_SESSION['flash_success'] = 'Laporan perbaikan berhasil disubmit!';
         header('Location: ' . url('mobile-sarpras/maintenance'));
         exit;
     }
@@ -278,8 +343,39 @@ class MobileSarprasController
         
         $db->query("UPDATE sarpras_barang SET status = 'Dipinjam' WHERE id = ?", [$_POST['barang_id']]);
         
-        FlashMessage::set('Peminjaman berhasil dicatat!', 'success');
+        $_SESSION['flash_success'] = 'Peminjaman berhasil dicatat!';
         header('Location: ' . url('mobile-sarpras/peminjaman'));
+        exit;
+    }
+
+    public static function peminjamanUpdate(int $id): void
+    {
+        $db = SarprasModel::db();
+        $status = trim($_POST['status'] ?? 'Dipinjam');
+        $tanggal_pinjam = trim($_POST['tanggal_pinjam'] ?? date('Y-m-d'));
+        $estimasi_kembali = trim($_POST['tanggal_rencana_kembali'] ?? date('Y-m-d'));
+        
+        $pinjam = $db->query("SELECT * FROM sarpras_peminjaman WHERE id = ?", [$id])->fetch();
+        
+        if ($status === 'Dikembalikan' && $pinjam['status'] === 'Dipinjam') {
+            $db->query("UPDATE sarpras_peminjaman SET status = 'Dikembalikan', tanggal_kembali = ?, tanggal_pinjam = ?, estimasi_kembali = ? WHERE id = ?", [
+                date('Y-m-d H:i:s'), $tanggal_pinjam, $estimasi_kembali, $id
+            ]);
+            $db->query("UPDATE sarpras_barang SET status = 'Tersedia' WHERE id = ?", [$pinjam['barang_id']]);
+        } elseif ($status === 'Dipinjam' && ($pinjam['status'] === 'Dikembalikan' || $pinjam['status'] === 'Kembali')) {
+            $db->query("UPDATE sarpras_peminjaman SET status = 'Dipinjam', tanggal_kembali = NULL, tanggal_pinjam = ?, estimasi_kembali = ? WHERE id = ?", [
+                $tanggal_pinjam, $estimasi_kembali, $id
+            ]);
+            $db->query("UPDATE sarpras_barang SET status = 'Dipinjam' WHERE id = ?", [$pinjam['barang_id']]);
+        } else {
+            $db->query("UPDATE sarpras_peminjaman SET status = ?, tanggal_pinjam = ?, estimasi_kembali = ? WHERE id = ?", [
+                $status, $tanggal_pinjam, $estimasi_kembali, $id
+            ]);
+        }
+        
+        $_SESSION['flash_success'] = 'Peminjaman berhasil diperbarui!';
+        $redirect = $_POST['redirect_to'] ?? url('mobile-sarpras/peminjaman');
+        header('Location: ' . $redirect);
         exit;
     }
 
@@ -297,7 +393,7 @@ class MobileSarprasController
             'Diajukan'
         ]);
         
-        FlashMessage::set('Pengajuan pembelian berhasil dikirim!', 'success');
+        $_SESSION['flash_success'] = 'Pengajuan pembelian berhasil dikirim!';
         header('Location: ' . url('mobile-sarpras'));
         exit;
     }
@@ -340,3 +436,4 @@ class MobileSarprasController
         exit;
     }
 }
+

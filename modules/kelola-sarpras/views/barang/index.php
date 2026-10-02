@@ -106,7 +106,6 @@
                         <th class="py-3.5 px-4 w-12 text-center">No</th>
                         <th class="py-3.5 px-4">Aset &amp; Kode Barang</th>
                         <th class="py-3.5 px-4">Kategori &amp; Unit</th>
-                        <th class="py-3.5 px-4">Penempatan Ruangan</th>
                         <th class="py-3.5 px-4 text-center">Jumlah</th>
                         <th class="py-3.5 px-4 text-center">Kondisi</th>
                         <th class="py-3.5 px-4 text-center">Status</th>
@@ -117,7 +116,7 @@
                 <tbody class="divide-y divide-slate-100">
                     <?php if (empty($items)): ?>
                         <tr>
-                            <td colspan="9" class="py-12 text-center text-slate-400">
+                            <td colspan="8" class="py-12 text-center text-slate-400">
                                 <div class="text-4xl mb-2">🔍</div>
                                 <p class="font-semibold">Tidak ada inventaris barang ditemukan.</p>
                                 <p class="text-[11px] text-slate-400 mt-1">Coba sesuaikan kata kunci pencarian atau filter Anda.</p>
@@ -156,10 +155,6 @@
                                     <div class="text-[10px] text-primary-800 font-bold">Unit: <?= e($b['unit']) ?></div>
                                 </td>
                                 <td class="py-3.5 px-4">
-                                    <div class="font-semibold text-slate-800"><?= e($b['nama_ruangan'] ?? 'Belum Ditentukan') ?></div>
-                                    <div class="text-[10px] text-slate-400"><?= e($b['lokasi_gedung'] ?? '-') ?></div>
-                                </td>
-                                <td class="py-3.5 px-4">
                                     <?php 
                                     $dipakai = $b['dipakai'] ?? 0;
                                     $sisa = $b['jumlah'] - $dipakai;
@@ -186,26 +181,21 @@
                                     <?php endif; ?>
                                 </td>
                                 <td class="py-3.5 px-4 text-center">
-                                    <?php if ($b['status'] === 'Tersedia'): ?>
-                                        <span class="text-primary-700 font-bold text-[11px]">● Tersedia</span>
-                                    <?php elseif ($b['status'] === 'Dipinjam'): ?>
-                                        <span class="text-indigo-700 font-bold text-[11px]">● Dipinjam</span>
-                                    <?php elseif ($b['status'] === 'Dalam Perbaikan'): ?>
-                                        <span class="text-amber-700 font-bold text-[11px]">● Perbaikan</span>
-                                    <?php else: ?>
-                                        <span class="text-slate-400 font-bold text-[11px]">● Dihapuskan</span>
-                                    <?php endif; ?>
+                                    <?php 
+                                        $sisaStatusText = ($sisa > 0) ? "Tersedia" : "Tidak Tersedia";
+                                        $sisaStatusColor = ($sisa > 0) ? "text-primary-700 hover:text-primary-800 hover:underline" : "text-rose-700 hover:text-rose-800 hover:underline";
+                                        $sisaDotColor = ($sisa > 0) ? "text-primary-700" : "text-rose-700";
+                                    ?>
+                                    <button type="button" onclick="openModalDetailDistribusi(<?= $b['id'] ?>)" class="<?= $sisaStatusColor ?> font-bold text-[11px] cursor-pointer">
+                                        <span class="<?= $sisaDotColor ?>">&#x2022;</span> <?= $sisaStatusText ?>
+                                    </button>
                                 </td>
                                 <td class="py-3.5 px-4 text-right">
-                                    <div class="font-bold text-slate-800">Rp <?= number_format($b['jumlah'] * $b['harga_perolehan'], 0, ',', '.') ?></div>
-                                    <div class="text-[10px] text-slate-400">@ Rp <?= number_format($b['harga_perolehan'], 0, ',', '.') ?></div>
+                                    <div class="font-bold text-slate-800">Rp <?= number_format($b['harga_perolehan'], 0, ',', '.') ?></div>
+                                    <div class="text-[10px] text-slate-400">@ Rp <?= number_format($b['harga_perolehan'] / max(1, $b['jumlah']), 0, ',', '.') ?></div>
                                 </td>
                                 <td class="py-3.5 px-4 text-center">
                                     <div class="flex items-center justify-center gap-1.5">
-                                        <!-- Cetak Label -->
-                                        <a href="<?= url('kelola-sarpras/cetak-label/' . $b['id']) ?>" target="_blank" class="p-1.5 rounded-lg text-slate-500 hover:text-primary-600 hover:bg-primary-50 transition-colors" title="Cetak Label QR/Barcode">
-                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0 1 3.75 9.375v-4.5ZM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 0 1-1.125-1.125v-4.5ZM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0 1 13.5 9.375v-4.5Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 6.75h.75v.75h-.75v-.75ZM6.75 16.5h.75v.75h-.75v-.75ZM16.5 6.75h.75v.75h-.75v-.75ZM13.5 13.5h.75v.75h-.75v-.75ZM13.5 19.5h.75v.75h-.75v-.75ZM19.5 13.5h.75v.75h-.75v-.75ZM19.5 19.5h.75v.75h-.75v-.75ZM16.5 16.5h.75v.75h-.75v-.75Z" /></svg>
-                                        </a>
                                         <!-- Edit -->
                                         <button type="button" onclick="openModalEdit(<?= htmlspecialchars(json_encode($b)) ?>)" class="p-1.5 rounded-lg text-slate-500 hover:text-amber-600 hover:bg-amber-50 transition-colors" title="Edit Aset">
                                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125"/></svg>
@@ -476,8 +466,9 @@ function showDetail(item) {
             <div><span class="text-slate-400">Tahun Perolehan:</span><div class="font-semibold">${item.tahun_pengadaan || '-'}</div></div>
         </div>
         <div class="p-3 bg-primary-50/50 rounded-2xl border border-primary-100">
-            <span class="text-slate-500 font-medium">Harga Perolehan:</span>
-            <div class="text-base font-bold text-primary-800">Rp ${Number(item.harga_perolehan).toLocaleString('id-ID')} / ${item.satuan}</div>
+            <span class="text-slate-500 font-medium">Harga Perolehan (Total):</span>
+            <div class="text-base font-bold text-primary-800">Rp ${Number(item.harga_perolehan).toLocaleString('id-ID')}</div>
+            <div class="text-[10px] text-slate-500">@ Rp ${Number(item.harga_perolehan / Math.max(1, item.jumlah)).toLocaleString('id-ID')} / ${item.satuan}</div>
         </div>
         ${item.keterangan ? `<div class="p-3 bg-slate-50 rounded-2xl"><span class="text-slate-400 block mb-1">Catatan Tambahan:</span><p class="text-slate-700">${item.keterangan}</p></div>` : ''}
     `;
@@ -714,3 +705,116 @@ function closeDetail() {
     selKelEdit.addEventListener('change', updatePreviewKodeEdit);
     selAngEdit.addEventListener('change', updatePreviewKodeEdit);
 </script>
+
+<div id="modal-detail-distribusi" class="fixed inset-0 z-[100] hidden flex items-center justify-center">
+    <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeModalDetailDistribusi()"></div>
+    <div class="bg-white w-full max-w-2xl rounded-3xl shadow-2xl relative z-10 max-h-[90vh] flex flex-col overflow-hidden">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+            <h3 class="text-base font-bold text-slate-800">Detail Distribusi & Peminjaman</h3>
+            <button onclick="closeModalDetailDistribusi()" class="p-2 rounded-full text-slate-400 hover:text-slate-600 hover:bg-white transition-colors text-xl font-bold">&times;</button>
+        </div>
+        <div class="p-6 overflow-y-auto" id="distribusi-content-body">
+            <div class="flex justify-center items-center py-10">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+            </div>
+        </div>
+        <div class="px-6 py-4 border-t border-slate-100 bg-slate-50 flex justify-end">
+            <button type="button" onclick="closeModalDetailDistribusi()" class="px-5 py-2.5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-sm font-bold rounded-xl transition-colors">Tutup</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openModalDetailDistribusi(id) {
+        const modal = document.getElementById('modal-detail-distribusi');
+        const body = document.getElementById('distribusi-content-body');
+        
+        modal.classList.remove('hidden');
+        body.innerHTML = '<div class="flex justify-center items-center py-10"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div></div>';
+        
+        fetch('<?= url('kelola-sarpras/barang/detail-distribusi') ?>?id=' + id)
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    renderDistribusiData(data.data);
+                } else {
+                    body.innerHTML = '<div class="text-center text-rose-500 py-10 font-bold">' + data.message + '</div>';
+                }
+            })
+            .catch(err => {
+                body.innerHTML = '<div class="text-center text-rose-500 py-10 font-bold">Terjadi kesalahan jaringan</div>';
+            });
+    }
+
+    function renderDistribusiData(data) {
+        const body = document.getElementById('distribusi-content-body');
+        
+        let html = `
+            <div class="mb-5 flex justify-between items-start">
+                <div>
+                    <h4 class="font-bold text-lg text-slate-800">${data.barang.nama_barang}</h4>
+                    <p class="text-xs text-slate-500 mt-1">${data.barang.kode_barang}</p>
+                </div>
+                <div class="text-right">
+                    <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Total Ketersediaan</p>
+                    <div class="flex items-end gap-3 text-sm">
+                        <div>Total: <span class="font-bold text-slate-800">${data.barang.jumlah}</span></div>
+                        <div>Sisa: <span class="font-bold text-emerald-600">${data.barang.sisa}</span></div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        html += '<h5 class="text-sm font-bold text-slate-700 mb-3 border-b border-slate-200 pb-2">Distribusi Ruangan</h5>';
+        if (data.distribusi.length > 0) {
+            html += '<ul class="space-y-3 mb-6">';
+            data.distribusi.forEach(item => {
+                let nama_bangunan = item.nama_bangunan || '-';
+                let ket = item.keterangan || '-';
+                html += `
+                    <li class="bg-slate-50 p-3 rounded-xl border border-slate-100 flex justify-between items-center">
+                        <div>
+                            <p class="font-bold text-sm text-slate-800">${item.nama_ruangan}</p>
+                            <p class="text-xs text-slate-500">Gedung: ${nama_bangunan} | Ket: ${ket}</p>
+                        </div>
+                        <div class="bg-white px-3 py-1.5 rounded-lg border border-slate-200 font-bold text-sm shadow-sm text-slate-700">
+                            ${item.jumlah} Unit
+                        </div>
+                    </li>
+                `;
+            });
+            html += '</ul>';
+        } else {
+            html += '<p class="text-xs text-slate-500 italic mb-6">Belum ada distribusi ke ruangan.</p>';
+        }
+        
+        html += '<h5 class="text-sm font-bold text-slate-700 mb-3 border-b border-slate-200 pb-2">Peminjaman Aktif</h5>';
+        if (data.peminjaman.length > 0) {
+            html += '<ul class="space-y-3">';
+            data.peminjaman.forEach(item => {
+                html += `
+                    <li class="bg-amber-50 p-3 rounded-xl border border-amber-100 flex justify-between items-center">
+                        <div>
+                            <p class="font-bold text-sm text-amber-900">${item.peminjam}</p>
+                            <p class="text-xs text-amber-700">Status: ${item.status}</p>
+                        </div>
+                        <div class="bg-white px-3 py-1.5 rounded-lg border border-amber-200 font-bold text-sm shadow-sm text-amber-800">
+                            ${item.jumlah} Unit
+                        </div>
+                    </li>
+                `;
+            });
+            html += '</ul>';
+        } else {
+            html += '<p class="text-xs text-slate-500 italic">Tidak ada peminjaman aktif.</p>';
+        }
+        
+        body.innerHTML = html;
+    }
+
+    function closeModalDetailDistribusi() {
+        const modal = document.getElementById('modal-detail-distribusi');
+        modal.classList.add('hidden');
+    }
+</script>
+
