@@ -165,6 +165,13 @@ $router->get('/', function() {
     // Auto-migrate if accessed via root
     $scripts = glob(BASE_PATH . '/database/migrate_*.php');
     if (!is_array($scripts)) $scripts = [];
+    usort($scripts, function($a, $b) {
+        $a_tables = strpos($a, '_tables.php') !== false;
+        $b_tables = strpos($b, '_tables.php') !== false;
+        if ($a_tables && !$b_tables) return -1;
+        if (!$a_tables && $b_tables) return 1;
+        return strcmp($a, $b);
+    });
     $scripts[] = BASE_PATH . '/mobile-migrate/migrate_distribusi.php';
     $scripts[] = BASE_PATH . '/database/schema.sql'; // If there's a way to run sql, but let's stick to php scripts
 
@@ -723,6 +730,13 @@ $router->get('/mobile-sarpras', function() {
     // Auto-migrate if accessed via mobile-sarpras dashboard
     $scripts = glob(BASE_PATH . '/database/migrate_*.php');
     if (!is_array($scripts)) $scripts = [];
+    usort($scripts, function($a, $b) {
+        $a_tables = strpos($a, '_tables.php') !== false;
+        $b_tables = strpos($b, '_tables.php') !== false;
+        if ($a_tables && !$b_tables) return -1;
+        if (!$a_tables && $b_tables) return 1;
+        return strcmp($a, $b);
+    });
     $scripts[] = BASE_PATH . '/mobile-migrate/migrate_distribusi.php';
     
     $execEnabled = false; // Force inline migration for shared hosting compatibility
@@ -801,25 +815,25 @@ $router->get('/mobile-sarpras/manifest.json', function() {
         'dir' => 'ltr',
         'icons' => [
             [
-                'src' => url('public/images/pwa/icon-192.png'),
+                'src' => url('pwa-icon.png?s=192'),
                 'sizes' => '192x192',
                 'type' => 'image/png',
                 'purpose' => 'any'
             ],
             [
-                'src' => url('public/images/pwa/icon-maskable-192.png'),
+                'src' => url('pwa-icon.png?s=192&maskable=1'),
                 'sizes' => '192x192',
                 'type' => 'image/png',
                 'purpose' => 'maskable'
             ],
             [
-                'src' => url('public/images/pwa/icon-512.png'),
+                'src' => url('pwa-icon.png?s=512'),
                 'sizes' => '512x512',
                 'type' => 'image/png',
                 'purpose' => 'any'
             ],
             [
-                'src' => url('public/images/pwa/icon-maskable-512.png'),
+                'src' => url('pwa-icon.png?s=512&maskable=1'),
                 'sizes' => '512x512',
                 'type' => 'image/png',
                 'purpose' => 'maskable'
