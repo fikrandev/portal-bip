@@ -847,12 +847,12 @@ $router->get('/mobile-sarpras/manifest.json', function() {
 // -- PWA Dynamic Icon Route (Always Prioritize App Icon Uploaded from Pengaturan Sistem) --
 $router->get('/pwa-icon.png', function() {
     $activeIcon = '';
-    if (defined('SYS_APP_FAVICON') && !empty(SYS_APP_FAVICON)) {
-        $cand = BASE_PATH . '/' . ltrim(SYS_APP_FAVICON, '/');
+    if (defined('SYS_APP_LOGO') && !empty(SYS_APP_LOGO)) {
+        $cand = BASE_PATH . '/' . ltrim(SYS_APP_LOGO, '/');
         if (file_exists($cand)) $activeIcon = $cand;
     }
-    if (empty($activeIcon) && defined('SYS_APP_LOGO') && !empty(SYS_APP_LOGO)) {
-        $cand = BASE_PATH . '/' . ltrim(SYS_APP_LOGO, '/');
+    if (empty($activeIcon) && defined('SYS_APP_FAVICON') && !empty(SYS_APP_FAVICON)) {
+        $cand = BASE_PATH . '/' . ltrim(SYS_APP_FAVICON, '/');
         if (file_exists($cand)) $activeIcon = $cand;
     }
     if (empty($activeIcon)) {
@@ -931,7 +931,10 @@ $router->get('/pwa-icon.png', function() {
         exit;
     }
 
-    header('Content-Type: image/png');
+    // Fallback if GD is missing or fails: serve original with correct mime
+    $mime = $ext === 'png' ? 'image/png' : ($ext === 'webp' ? 'image/webp' : ($ext === 'jpg' || $ext === 'jpeg' ? 'image/jpeg' : 'image/png'));
+    header('Content-Type: ' . $mime);
+    header('Cache-Control: public, max-age=86400');
     readfile($activeIcon);
     exit;
 });

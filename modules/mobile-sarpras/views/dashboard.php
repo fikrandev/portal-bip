@@ -1,8 +1,23 @@
 <div class="px-4 pt-6 space-y-6">
-    <!-- Header -->
-    <div>
-        <h2 class="text-2xl font-bold text-slate-800 tracking-tight">Dashboard Sarpras</h2>
-        <p class="text-sm text-slate-500 mt-1">Ringkasan aset dan pergerakan sarpras</p>
+    <!-- User Greeting Header -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h2 class="text-xl font-bold text-slate-800 tracking-tight">
+                Assalamu'alaikum, <?= htmlspecialchars(explode(' ', $nama ?? 'User')[0]) ?> 👋
+            </h2>
+            <p class="text-sm text-slate-500 font-medium mt-1">
+                <?= htmlspecialchars($jabatan ?? 'Administrator') ?>
+            </p>
+        </div>
+        <div class="w-12 h-12 bg-blue-100 rounded-full border-2 border-white shadow-sm flex items-center justify-center text-blue-600 font-bold text-lg shrink-0">
+            <?= strtoupper(substr($nama ?? 'U', 0, 1)) ?>
+        </div>
+    </div>
+
+    <!-- Title -->
+    <div class="pt-2">
+        <h3 class="text-lg font-bold text-slate-800 tracking-tight">Dashboard Sarpras</h3>
+        <p class="text-xs text-slate-500 mt-1">Ringkasan aset dan pergerakan sarpras</p>
     </div>
 
     <!-- Quick Stats Grid -->

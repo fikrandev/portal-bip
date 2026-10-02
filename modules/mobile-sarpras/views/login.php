@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#2563eb">
     <title><?= htmlspecialchars($pageTitle ?? 'Login Sarpras') ?></title>
     
-    <link rel="manifest" href="/manifest-sarpras.json">
+    <link rel="manifest" href="<?= url('mobile-sarpras/manifest.json') ?>">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -110,6 +110,16 @@
                 iconEye.classList.remove('hidden');
                 iconEyeOff.classList.add('hidden');
             }
+        }
+        
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('<?= url('sw-sarpras.js') ?>')
+                .then(function(reg) {
+                    console.log('[PWA] SW registered OK on login:', reg.scope);
+                })
+                .catch(function(err) {
+                    console.error('[PWA] SW registration FAILED:', err);
+                });
         }
     </script>
 </body>

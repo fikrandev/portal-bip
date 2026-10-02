@@ -41,11 +41,11 @@
             </div>
             <div class="flex justify-between items-center text-sm">
                 <span class="text-slate-500">Tahun Beli</span>
-                <span class="font-bold text-slate-800"><?= e($barang['tahun_pembelian'] ?: '-') ?></span>
+                <span class="font-bold text-slate-800"><?= e($barang['tahun_pengadaan'] ?? '-') ?></span>
             </div>
             <div class="flex justify-between items-center text-sm">
-                <span class="text-slate-500">Asal Anggaran</span>
-                <span class="font-bold text-slate-800"><?= e($barang['asal_anggaran'] ?: '-') ?></span>
+                <span class="text-slate-500">Sumber Dana</span>
+                <span class="font-bold text-slate-800"><?= e($barang['sumber_dana'] ?? '-') ?></span>
             </div>
         </div>
     </div>

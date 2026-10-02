@@ -27,11 +27,36 @@ class MobileSarprasController
     public static function dashboard(): void
     {
         $statistik = SarprasModel::getStatistik();
+        
+        $db = SarprasModel::db();
+        $userId = Auth::id();
+        $nama = Auth::user()['full_name'] ?? 'User';
+        $jabatan = 'Administrator';
+        
+        try {
+            $pegawai = $db->find("SELECT jabatan FROM pegawai WHERE user_id = ?", [$userId]);
+            if ($pegawai && !empty($pegawai['jabatan'])) {
+                $jabatan = $pegawai['jabatan'];
+            } else {
+                $role = $db->find("SELECT r.name FROM roles r JOIN user_roles ur ON r.id = ur.role_id WHERE ur.user_id = ? ORDER BY r.id ASC LIMIT 1", [$userId]);
+                if ($role && !empty($role['name'])) {
+                    $jabatan = $role['name'];
+                }
+            }
+        } catch (Throwable $e) {
+            $role = $db->find("SELECT r.name FROM roles r JOIN user_roles ur ON r.id = ur.role_id WHERE ur.user_id = ? ORDER BY r.id ASC LIMIT 1", [$userId]);
+            if ($role && !empty($role['name'])) {
+                $jabatan = $role['name'];
+            }
+        }
+
         // Custom mobile dashboard stats
         self::render('dashboard', [
             'pageTitle' => 'Dashboard Sarpras',
             'activeTab' => 'beranda',
-            'statistik' => $statistik
+            'statistik' => $statistik,
+            'nama'      => $nama,
+            'jabatan'   => $jabatan
         ]);
     }
 
