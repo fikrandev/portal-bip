@@ -54,6 +54,7 @@ class AutoMigrate
             '2026_01_01_000015_sync_all_sarpras_columns' => 'migration015SyncAllSarprasColumns',
             '2026_10_03_000016_fix_sarpras_barang_missing_cols' => 'migration016FixSarprasBarangMissingCols',
             '2026_10_03_000017_ensure_all_sarpras_schema_integrity' => 'migration016FixSarprasBarangMissingCols',
+            '2026_10_03_000018_wipe_all_dummy_sarpras_keep_kategori' => 'migration018WipeAllDummySarprasKeepKategori',
         ];
     }
 
@@ -1040,6 +1041,56 @@ class AutoMigrate
             }
             if (!self::hasColumn($pdo, 'sarpras_pemeliharaan', 'foto_kerusakan')) {
                 try { $pdo->exec("ALTER TABLE `sarpras_pemeliharaan` ADD COLUMN `foto_kerusakan` VARCHAR(255) DEFAULT NULL"); } catch (Throwable $e) {}
+            }
+        }
+    }
+
+    /**
+     * Migration 18: Reset dan bersihkan seluruh data dummy operasional Sarpras
+     * Menjamin data tanah, bangunan, ruangan, barang, distribusi, peminjaman, pemeliharaan 0 baris (bersih)
+     * Tetap mempertahankan sarpras_kategori dan tabel referensi (satuan, golongan, kelompok, asal anggaran).
+     */
+    private static function migration018WipeAllDummySarprasKeepKategori(PDO $pdo): void
+    {
+        $pdo->exec("SET FOREIGN_KEY_CHECKS = 0;");
+        $tablesToWipe = [
+            'sarpras_peminjaman',
+            'sarpras_pemeliharaan',
+            'sarpras_maintenance',
+            'sarpras_distribusi',
+            'sarpras_pengajuan',
+            'sarpras_barang',
+            'sarpras_ruangan',
+            'sarpras_bangunan',
+            'sarpras_tanah'
+        ];
+
+        foreach ($tablesToWipe as $tbl) {
+            try {
+                if (self::hasTable($pdo, $tbl)) {
+                    try {
+                        $pdo->exec("TRUNCATE TABLE `{$tbl}`;");
+                    } catch (Throwable $e) {
+                        $pdo->exec("DELETE FROM `{$tbl}`;");
+                        $pdo->exec("ALTER TABLE `{$tbl}` AUTO_INCREMENT = 1;");
+                    }
+                }
+            } catch (Throwable $e) {}
+        }
+        $pdo->exec("SET FOREIGN_KEY_CHECKS = 1;");
+
+        // Bersihkan foto barang dummy yang mungkin tersisa di public/uploads/sarpras
+        if (defined('BASE_PATH')) {
+            $uploadDir = BASE_PATH . '/public/uploads/sarpras';
+            if (is_dir($uploadDir)) {
+                $files = glob($uploadDir . '/sarpras_*.*');
+                if (is_array($files)) {
+                    foreach ($files as $f) {
+                        if (is_file($f)) {
+                            @unlink($f);
+                        }
+                    }
+                }
             }
         }
     }

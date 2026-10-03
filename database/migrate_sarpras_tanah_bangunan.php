@@ -100,76 +100,8 @@ try {
         echo "✓ Kolom dimensi 'panjang, lebar, luas' ditambahkan ke 'sarpras_ruangan'.\n";
     }
 
-    echo "=== 3. Mengisi Data Contoh Tanah & Bangunan ===\n";
-    $tanahCount = $pdo->query("SELECT COUNT(*) FROM sarpras_tanah")->fetchColumn();
-    if ((int)$tanahCount === 0) {
-        $pdo->exec("
-            INSERT INTO `sarpras_tanah` (
-                `kode_tanah`, `nama_tanah`, `no_sertifikat`, `status_kepemilikan`, 
-                `panjang`, `lebar`, `luas`, `tahun_perolehan`, `harga_perolehan`, 
-                `alamat_lokasi`, `keterangan`
-            ) VALUES 
-            (
-                'TNH-001', 'Tanah Kampus Terpadu BIP (Gedung Utama & Lapangan)', 
-                'SHM No. 04821/Tondo/2016', 'Sertifikat Hak Milik (SHM)', 
-                100.00, 50.00, 5000.00, '2016', 2500000000.00, 
-                'Jl. Soekarno Hatta No. 45, Kel. Tondo, Kec. Mantikulore, Kota Palu', 
-                'Area induk kampus terpadu menampung Gedung A, Gedung B, dan Masjid.'
-            ),
-            (
-                'TNH-002', 'Tanah Kampus Unit SMA & Laboratorium Terpadu', 
-                'SHM No. 07192/Tondo/2020', 'Wakaf Tunai Yayasan', 
-                60.00, 40.00, 2400.00, '2020', 1200000000.00, 
-                'Jl. Soekarno Hatta (Kompleks Belakang), Kel. Tondo, Kota Palu', 
-                'Pengembangan gedung pembelajaran baru dan fasilitas laboratorium sains.'
-            ),
-            (
-                'TNH-003', 'Tanah Sarana Olahraga & Lapangan Futsal Outdoor', 
-                'SHM No. 08831/Tondo/2022', 'Sertifikat Hak Milik (SHM)', 
-                45.00, 30.00, 1350.00, '2022', 750000000.00, 
-                'Sebelah Barat Kampus Utama, Kel. Tondo, Kota Palu', 
-                'Lapangan olahraga serbaguna futsal, basket, dan arena upacara bendera.'
-            )
-        ");
-        echo "✓ Seed 3 Bidang Tanah berhasil.\n";
-
-        // Seed Bangunan
-        $tanah1Id = $pdo->query("SELECT id FROM sarpras_tanah WHERE kode_tanah = 'TNH-001'")->fetchColumn();
-        $tanah2Id = $pdo->query("SELECT id FROM sarpras_tanah WHERE kode_tanah = 'TNH-002'")->fetchColumn();
-
-        if ($tanah1Id && $tanah2Id) {
-            $pdo->exec("
-                INSERT INTO `sarpras_bangunan` (
-                    `tanah_id`, `kode_bangunan`, `nama_bangunan`, `jumlah_lantai`, 
-                    `panjang`, `lebar`, `luas_bangunan`, `tahun_dibangun`, 
-                    `kondisi_bangunan`, `sumber_dana`, `biaya_pembangunan`, `keterangan`
-                ) VALUES 
-                (
-                    {$tanah1Id}, 'BGN-001', 'Gedung A (Kantor Yayasan, Aula & Perpustakaan)', 
-                    2, 40.00, 20.00, 800.00, '2017', 'Baik', 'Yayasan', 1850000000.00, 
-                    'Lantai 1 Kantor Yayasan & Aula, Lantai 2 Perpustakaan Terpadu.'
-                ),
-                (
-                    {$tanah1Id}, 'BGN-002', 'Gedung B (Ruang Belajar SD & SMP BIP)', 
-                    3, 45.00, 18.00, 810.00, '2018', 'Baik', 'BOS & Yayasan', 2400000000.00, 
-                    'Lantai 1 Kelas SD, Lantai 2 Kelas SMP, Lantai 3 Lab Komputer.'
-                ),
-                (
-                    {$tanah1Id}, 'BGN-003', 'Masjid Kampus Bina Insan Palu', 
-                    1, 20.00, 20.00, 400.00, '2019', 'Baik', 'Wakaf Wali Santri', 950000000.00, 
-                    'Sarana sholat berjamaah 5 waktu seluruh santri & dewan guru.'
-                ),
-                (
-                    {$tanah2Id}, 'BGN-004', 'Gedung C (Kelas SMA & Lab Sains)', 
-                    2, 35.00, 16.00, 560.00, '2021', 'Baik', 'Yayasan', 1450000000.00, 
-                    'Gedung pembelajaran khusus jenjang SMA dan Lab Biologi/Kimia.'
-                )
-            ");
-            echo "✓ Seed 4 Gedung / Bangunan berhasil.\n";
-        }
-    }
-
-    echo "\n🎉 MIGRASI TABEL TANAH & BANGUNAN SELESAI DENGAN SUKSES! 🎉\n";
+    // Seeding dinonaktifkan agar data sarpras selalu fresh dan bersih (0 baris) sesuai permintaan.
+    echo "\n🎉 MIGRASI STRUKTUR TABEL TANAH & BANGUNAN SELESAI DENGAN SUKSES! 🎉\n";
 
 } catch (Exception $e) {
     die("❌ Error: " . $e->getMessage() . "\n");
