@@ -51,6 +51,8 @@ class Database
      */
     private function __clone() {}
 
+    private static bool $isAutoHealing = false;
+
     /**
      * Get singleton instance
      */
@@ -58,6 +60,13 @@ class Database
     {
         if (self::$instance === null) {
             self::$instance = new self();
+            // Automatically ensure database schema is up-to-date on bootstrap
+            if (!class_exists('AutoMigrate') && defined('BASE_PATH') && file_exists(BASE_PATH . '/core/AutoMigrate.php')) {
+                require_once BASE_PATH . '/core/AutoMigrate.php';
+            }
+            if (class_exists('AutoMigrate')) {
+                AutoMigrate::run();
+            }
         }
         return self::$instance;
     }
@@ -92,6 +101,26 @@ class Database
             $stmt->execute($params);
             return $stmt;
         } catch (PDOException $e) {
+            // Self-healing: if column or table not found (SQLSTATE 42S22 or 42S02), auto-migrate and retry once!
+            if (($e->getCode() === '42S22' || $e->getCode() === '42S02' || str_contains($e->getMessage(), 'Unknown column') || str_contains($e->getMessage(), "doesn't exist")) && !self::$isAutoHealing) {
+                self::$isAutoHealing = true;
+                if (!class_exists('AutoMigrate') && defined('BASE_PATH') && file_exists(BASE_PATH . '/core/AutoMigrate.php')) {
+                    require_once BASE_PATH . '/core/AutoMigrate.php';
+                }
+                if (class_exists('AutoMigrate')) {
+                    try {
+                        AutoMigrate::run(true);
+                        $stmt = $this->pdo->prepare($sql);
+                        $stmt->execute($params);
+                        self::$isAutoHealing = false;
+                        return $stmt;
+                    } catch (Throwable $retryEx) {
+                        // Let original exception or error pass through
+                    }
+                }
+                self::$isAutoHealing = false;
+            }
+
             error_log('Query Error: ' . $e->getMessage() . ' | SQL: ' . $sql);
             throw $e;
         }

@@ -915,12 +915,43 @@ class SarprasModel
     // ==========================================
     // LAPORAN ASET BERKELOMPOK PER RUANGAN
     // ==========================================
+
+    /**
+     * Get SQL expression for kondisi from sarpras_distribusi with auto-heal
+     */
+    public static function getDistribusiKondisiExpr(): string
+    {
+        static $expr = null;
+        if ($expr === null) {
+            try {
+                $db = self::db();
+                $col = $db->query("SHOW COLUMNS FROM `sarpras_distribusi` LIKE 'kondisi'")->fetch();
+                if ($col) {
+                    $expr = "COALESCE(d.kondisi, b.kondisi)";
+                } else {
+                    // Auto-heal column immediately
+                    try {
+                        $db->query("ALTER TABLE `sarpras_distribusi` ADD COLUMN `kondisi` ENUM('Baik','Rusak Ringan','Rusak Berat') NOT NULL DEFAULT 'Baik' AFTER `jumlah`");
+                        $expr = "COALESCE(d.kondisi, b.kondisi)";
+                    } catch (Throwable $e) {
+                        $expr = "b.kondisi";
+                    }
+                }
+            } catch (Throwable $e) {
+                $expr = "b.kondisi";
+            }
+        }
+        return $expr;
+    }
+
     public static function getLaporanAsetGrouped(array $filters = []): array
     {
         $db = self::db();
         $ruanganId = $filters['ruangan_id'] ?? null;
         $kategoriId = !empty($filters['kategori_id']) ? (int)$filters['kategori_id'] : null;
         $kondisi = !empty($filters['kondisi']) ? $filters['kondisi'] : null;
+
+        $distKondisiExpr = self::getDistribusiKondisiExpr();
 
         // 1. Ambil daftar ruangan
         $ruanganQuery = "
@@ -961,7 +992,7 @@ class SarprasModel
                         b.nomor_seri,
                         d.jumlah,
                         b.satuan,
-                        COALESCE(d.kondisi, b.kondisi) as kondisi,
+                        {$distKondisiExpr} as kondisi,
                         b.status,
                         COALESCE(a.nama, b.sumber_dana, '-') as sumber_dana,
                         COALESCE(b.tahun_pengadaan, b.tanggal_perolehan, '-') as tahun_pengadaan,
@@ -981,7 +1012,7 @@ class SarprasModel
                     $distParams[] = $kategoriId;
                 }
                 if ($kondisi) {
-                    $sqlDist .= " AND COALESCE(d.kondisi, b.kondisi) = ?";
+                    $sqlDist .= " AND {$distKondisiExpr} = ?";
                     $distParams[] = $kondisi;
                 }
                 $distItems = $db->findAll($sqlDist, $distParams);

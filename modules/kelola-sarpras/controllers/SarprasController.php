@@ -1089,13 +1089,14 @@ class SarprasController
         $search = trim($_GET['search'] ?? '');
         $items = [];
         $db = Database::getInstance();
+        $kdExpr = SarprasModel::getDistribusiKondisiExpr();
 
         if ($ruanganId !== null && $ruanganId !== '') {
             if ($ruanganId === 'all') {
                 $distItems = $db->query("
                     SELECT d.id AS uid, 'distribusi' AS source_type, d.id AS distribusi_id,
                            b.id AS barang_id, b.nama_barang, b.kode_barang, b.merk_model AS merk,
-                           b.nomor_seri, d.jumlah, COALESCE(d.kondisi, b.kondisi) AS kondisi,
+                           b.nomor_seri, d.jumlah, {$kdExpr} AS kondisi,
                            r.nama_ruangan, d.ruangan_id, b.unit
                     FROM sarpras_distribusi d 
                     JOIN sarpras_barang b ON d.barang_id = b.id 
@@ -1121,7 +1122,7 @@ class SarprasController
                 $distItems = $db->query("
                     SELECT d.id AS uid, 'distribusi' AS source_type, d.id AS distribusi_id,
                            b.id AS barang_id, b.nama_barang, b.kode_barang, b.merk_model AS merk,
-                           b.nomor_seri, d.jumlah, COALESCE(d.kondisi, b.kondisi) AS kondisi,
+                           b.nomor_seri, d.jumlah, {$kdExpr} AS kondisi,
                            r.nama_ruangan, d.ruangan_id, b.unit
                     FROM sarpras_distribusi d 
                     JOIN sarpras_barang b ON d.barang_id = b.id 
@@ -1150,7 +1151,7 @@ class SarprasController
             $distItems = $db->query("
                 SELECT d.id AS uid, 'distribusi' AS source_type, d.id AS distribusi_id,
                        b.id AS barang_id, b.nama_barang, b.kode_barang, b.merk_model AS merk,
-                       b.nomor_seri, d.jumlah, COALESCE(d.kondisi, b.kondisi) AS kondisi,
+                       b.nomor_seri, d.jumlah, {$kdExpr} AS kondisi,
                        r.nama_ruangan, d.ruangan_id, b.unit
                 FROM sarpras_distribusi d 
                 JOIN sarpras_barang b ON d.barang_id = b.id 
@@ -1210,6 +1211,7 @@ class SarprasController
 
         $db = Database::getInstance();
         $items = [];
+        $kdExpr = SarprasModel::getDistribusiKondisiExpr();
 
         if ($barangId) {
             $items = $db->query("
@@ -1240,7 +1242,7 @@ class SarprasController
                 $distItems = $db->query("
                     SELECT d.id AS uid, 'distribusi' AS source_type, d.id AS distribusi_id,
                            b.id AS barang_id, b.nama_barang, b.kode_barang, b.merk_model AS merk,
-                           b.nomor_seri, d.jumlah, COALESCE(d.kondisi, b.kondisi) AS kondisi,
+                           b.nomor_seri, d.jumlah, {$kdExpr} AS kondisi,
                            r.nama_ruangan, d.ruangan_id, b.unit
                     FROM sarpras_distribusi d 
                     JOIN sarpras_barang b ON d.barang_id = b.id 
@@ -1268,7 +1270,7 @@ class SarprasController
                 $distItems = $db->query("
                     SELECT d.id AS uid, 'distribusi' AS source_type, d.id AS distribusi_id,
                            b.id AS barang_id, b.nama_barang, b.kode_barang, b.merk_model AS merk,
-                           b.nomor_seri, d.jumlah, COALESCE(d.kondisi, b.kondisi) AS kondisi,
+                           b.nomor_seri, d.jumlah, {$kdExpr} AS kondisi,
                            r.nama_ruangan, d.ruangan_id, b.unit
                     FROM sarpras_distribusi d 
                     JOIN sarpras_barang b ON d.barang_id = b.id 
@@ -1292,7 +1294,7 @@ class SarprasController
                 $distItems = $db->query("
                     SELECT d.id AS uid, 'distribusi' AS source_type, d.id AS distribusi_id,
                            b.id AS barang_id, b.nama_barang, b.kode_barang, b.merk_model AS merk,
-                           b.nomor_seri, d.jumlah, COALESCE(d.kondisi, b.kondisi) AS kondisi,
+                           b.nomor_seri, d.jumlah, {$kdExpr} AS kondisi,
                            r.nama_ruangan, d.ruangan_id, b.unit
                     FROM sarpras_distribusi d 
                     JOIN sarpras_barang b ON d.barang_id = b.id 

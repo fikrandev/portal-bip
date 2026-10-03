@@ -50,6 +50,7 @@ class AutoMigrate
             '2026_01_01_000011_sync_nilai_and_quran_tables' => 'migration011NilaiAndQuranTables',
             '2026_01_01_000012_sync_jadwal_and_perangkat_tables' => 'migration012JadwalAndPerangkatTables',
             '2026_01_01_000013_verify_full_database_integrity' => 'migration013FullDatabaseIntegrity',
+            '2026_01_01_000014_wipe_sarpras_dummy_data' => 'migration014WipeSarprasDummyData',
         ];
     }
 
@@ -875,6 +876,40 @@ class AutoMigrate
         // 5. Pegawai
         self::addColumnIfNotExists($pdo, 'pegawai', 'nik', 'VARCHAR(20) NULL', 'nama');
         self::addColumnIfNotExists($pdo, 'pegawai', 'no_wa', 'VARCHAR(20) NULL', 'alamat');
+    }
+
+    /**
+     * Migration 14: Kosongkan seluruh data dummy/bawaan Sarpras agar sistem bersih & fresh
+     */
+    private static function migration014WipeSarprasDummyData(PDO $pdo): void
+    {
+        $pdo->exec("SET FOREIGN_KEY_CHECKS = 0;");
+        $tablesToWipe = [
+            'sarpras_peminjaman',
+            'sarpras_pemeliharaan',
+            'sarpras_maintenance',
+            'sarpras_distribusi',
+            'sarpras_pengajuan',
+            'sarpras_barang',
+            'sarpras_ruangan',
+            'sarpras_bangunan',
+            'sarpras_tanah'
+        ];
+
+        foreach ($tablesToWipe as $tbl) {
+            try {
+                $check = $pdo->query("SHOW TABLES LIKE '$tbl'")->fetch();
+                if ($check) {
+                    $pdo->exec("TRUNCATE TABLE `$tbl`;");
+                }
+            } catch (Throwable $e) {
+                try {
+                    $pdo->exec("DELETE FROM `$tbl`;");
+                    $pdo->exec("ALTER TABLE `$tbl` AUTO_INCREMENT = 1;");
+                } catch (Throwable $ex) {}
+            }
+        }
+        $pdo->exec("SET FOREIGN_KEY_CHECKS = 1;");
     }
 }
 
