@@ -633,13 +633,31 @@ class SarprasModel
         if (empty($data['kode_tanah'])) {
             $data['kode_tanah'] = self::generateKodeTanah();
         }
-        return $db->insert('sarpras_tanah', $data);
+        try {
+            return $db->insert('sarpras_tanah', $data);
+        } catch (\PDOException $e) {
+            // Defensive: jika kolom no_sertifikat di server masih NOT NULL
+            if (strpos($e->getMessage(), 'no_sertifikat') !== false && (empty($data['no_sertifikat']) || $data['no_sertifikat'] === null)) {
+                $data['no_sertifikat'] = '-';
+                return $db->insert('sarpras_tanah', $data);
+            }
+            throw $e;
+        }
     }
 
     public static function updateTanah(int $id, array $data): bool
     {
         $db = self::db();
-        return $db->update('sarpras_tanah', $data, 'id = ?', [$id]);
+        try {
+            return $db->update('sarpras_tanah', $data, 'id = ?', [$id]);
+        } catch (\PDOException $e) {
+            // Defensive: jika kolom no_sertifikat di server masih NOT NULL
+            if (strpos($e->getMessage(), 'no_sertifikat') !== false && (empty($data['no_sertifikat']) || $data['no_sertifikat'] === null)) {
+                $data['no_sertifikat'] = '-';
+                return $db->update('sarpras_tanah', $data, 'id = ?', [$id]);
+            }
+            throw $e;
+        }
     }
 
     public static function deleteTanah(int $id): bool

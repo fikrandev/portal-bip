@@ -55,6 +55,7 @@ class AutoMigrate
             '2026_10_03_000016_fix_sarpras_barang_missing_cols' => 'migration016FixSarprasBarangMissingCols',
             '2026_10_03_000017_ensure_all_sarpras_schema_integrity' => 'migration016FixSarprasBarangMissingCols',
             '2026_10_03_000018_wipe_all_dummy_sarpras_keep_kategori' => 'migration018WipeAllDummySarprasKeepKategori',
+            '2026_10_03_000019_alter_sarpras_tanah_nullable_cols' => 'migration019AlterSarprasTanahNullableCols',
         ];
     }
 
@@ -429,8 +430,8 @@ class AutoMigrate
                 `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
                 `kode_tanah` VARCHAR(50) NOT NULL,
                 `nama_tanah` VARCHAR(200) NOT NULL,
-                `no_sertifikat` VARCHAR(150) NOT NULL,
-                `status_kepemilikan` VARCHAR(50) NOT NULL DEFAULT 'Milik Yayasan',
+                `no_sertifikat` VARCHAR(150) NULL DEFAULT NULL,
+                `status_kepemilikan` VARCHAR(50) NOT NULL DEFAULT 'SHM',
                 `panjang` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
                 `lebar` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
                 `luas` DECIMAL(12,2) NOT NULL DEFAULT 0.00,
@@ -1092,6 +1093,33 @@ class AutoMigrate
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * 019. Alter sarpras_tanah: jadikan no_sertifikat nullable dan default safe
+     */
+    private static function migration019AlterSarprasTanahNullableCols(PDO $pdo): void
+    {
+        if (self::hasTable($pdo, 'sarpras_tanah')) {
+            try {
+                $pdo->exec("ALTER TABLE `sarpras_tanah` MODIFY COLUMN `no_sertifikat` VARCHAR(150) NULL DEFAULT NULL;");
+            } catch (Throwable $e) {}
+            try {
+                $pdo->exec("ALTER TABLE `sarpras_tanah` MODIFY COLUMN `status_kepemilikan` VARCHAR(50) NOT NULL DEFAULT 'SHM';");
+            } catch (Throwable $e) {}
+            try {
+                $pdo->exec("ALTER TABLE `sarpras_tanah` MODIFY COLUMN `alamat_lokasi` TEXT NULL DEFAULT NULL;");
+            } catch (Throwable $e) {}
+            try {
+                $pdo->exec("ALTER TABLE `sarpras_tanah` MODIFY COLUMN `gambar_sertifikat` TEXT NULL DEFAULT NULL;");
+            } catch (Throwable $e) {}
+            try {
+                $pdo->exec("ALTER TABLE `sarpras_tanah` MODIFY COLUMN `keterangan` TEXT NULL DEFAULT NULL;");
+            } catch (Throwable $e) {}
+            try {
+                $pdo->exec("ALTER TABLE `sarpras_tanah` MODIFY COLUMN `tahun_perolehan` VARCHAR(4) NULL DEFAULT NULL;");
+            } catch (Throwable $e) {}
         }
     }
 }

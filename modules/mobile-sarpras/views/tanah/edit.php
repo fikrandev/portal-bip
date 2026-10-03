@@ -1,6 +1,7 @@
 <div class="px-4 pt-4 space-y-6">
     <div class="bg-white rounded-3xl p-5 shadow-sm border border-slate-100">
-        <form action="<?= url('kelola-sarpras/tanah/store') ?>" method="POST" enctype="multipart/form-data" class="space-y-4">`n            <input type="hidden" name="id" value="<?= $item['id'] ?>">
+        <form action="<?= url('kelola-sarpras/tanah/store') ?>" method="POST" enctype="multipart/form-data" class="space-y-4">
+            <input type="hidden" name="id" value="<?= $item['id'] ?>">
             <?= CSRF::field() ?>
             <input type="hidden" name="redirect_to" value="<?= url('mobile-sarpras/tanah') ?>">
 

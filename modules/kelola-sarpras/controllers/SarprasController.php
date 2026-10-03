@@ -1454,6 +1454,12 @@ class SarprasController
     {
         CSRF::validate();
 
+        $id = !empty($_POST['id']) ? (int)$_POST['id'] : null;
+        if ($id) {
+            self::tanahUpdate($id);
+            return;
+        }
+
         $nama = trim($_POST['nama_tanah'] ?? '');
         if (empty($nama)) {
             $_SESSION['flash_error'] = 'Nama bidang tanah wajib diisi!';
@@ -1499,7 +1505,7 @@ class SarprasController
         $data = [
             'nama_tanah' => $nama,
             'no_sertifikat' => trim($_POST['no_sertifikat'] ?? '') ?: null,
-            'status_kepemilikan' => trim($_POST['status_kepemilikan'] ?? 'SHM'),
+            'status_kepemilikan' => trim($_POST['status_kepemilikan'] ?? 'SHM') ?: 'SHM',
             'panjang' => $panjang,
             'lebar' => $lebar,
             'luas' => $luas,
@@ -1577,7 +1583,7 @@ class SarprasController
         $data = [
             'nama_tanah' => $nama,
             'no_sertifikat' => trim($_POST['no_sertifikat'] ?? '') ?: null,
-            'status_kepemilikan' => trim($_POST['status_kepemilikan'] ?? 'SHM'),
+            'status_kepemilikan' => trim($_POST['status_kepemilikan'] ?? 'SHM') ?: 'SHM',
             'panjang' => $panjang,
             'lebar' => $lebar,
             'luas' => $luas,
