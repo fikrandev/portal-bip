@@ -466,17 +466,52 @@ class SarprasController
     {
         $status = trim($_GET['status'] ?? '');
         $items = SarprasModel::getPemeliharaanList($status ?: null);
-        $barangList = SarprasModel::getBarangList([], 200, 0);
+        $barangList = SarprasModel::getBarangList([], 500, 0);
         $ruanganList = SarprasModel::getAllRuangan();
+
+        // Siapkan mapping barang per ruangan agar responsif instan
+        $db = Database::getInstance();
+        $barangDistribusi = $db->findAll("
+            SELECT d.ruangan_id, b.id, b.kode_barang, b.nama_barang, b.merk_model, b.satuan, b.kondisi, d.jumlah as stok_ruang, 'distribusi' as asal
+            FROM sarpras_distribusi d
+            JOIN sarpras_barang b ON d.barang_id = b.id
+            ORDER BY b.nama_barang ASC
+        ");
+        $barangDirect = $db->findAll("
+            SELECT b.ruangan_id, b.id, b.kode_barang, b.nama_barang, b.merk_model, b.satuan, b.kondisi, b.jumlah as stok_ruang, 'barang' as asal
+            FROM sarpras_barang b
+            WHERE b.ruangan_id IS NOT NULL AND b.ruangan_id > 0
+              AND b.id NOT IN (SELECT barang_id FROM sarpras_distribusi WHERE ruangan_id = b.ruangan_id)
+            ORDER BY b.nama_barang ASC
+        ");
+
+        $barangByRuangan = [];
+        foreach (array_merge($barangDistribusi, $barangDirect) as $row) {
+            $rId = (int)$row['ruangan_id'];
+            $barangByRuangan[$rId][] = $row;
+        }
 
         self::view('pemeliharaan/index', [
             'items' => $items,
             'status' => $status,
             'barangList' => $barangList,
-            'ruanganList' => $ruanganList
+            'ruanganList' => $ruanganList,
+            'barangByRuangan' => $barangByRuangan
         ], 'Pemeliharaan & Perbaikan Sarpras', [
             ['label' => 'Sarpras', 'url' => url('kelola-sarpras')],
             ['label' => 'Pemeliharaan']
+        ]);
+    }
+
+    public static function getBarangByRuanganJson(): void
+    {
+        $ruanganId = (int)($_GET['ruangan_id'] ?? 0);
+        $items = SarprasModel::getBarangByRuangan($ruanganId);
+        Response::json([
+            'status' => 'success',
+            'ruangan_id' => $ruanganId,
+            'count' => count($items),
+            'data' => $items
         ]);
     }
 
@@ -498,6 +533,22 @@ class SarprasController
             return;
         }
 
+        $fotoPath = null;
+        if (!empty($_FILES['foto_kerusakan']['name']) && $_FILES['foto_kerusakan']['error'] === UPLOAD_ERR_OK) {
+            $file = $_FILES['foto_kerusakan'];
+            $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+            if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp'])) {
+                $dir = BASE_PATH . '/public/uploads/sarpras/pemeliharaan';
+                if (!is_dir($dir)) {
+                    @mkdir($dir, 0777, true);
+                }
+                $filename = 'rusak_' . time() . '_' . substr(md5(uniqid()), 0, 6) . '.' . $ext;
+                if (move_uploaded_file($file['tmp_name'], $dir . '/' . $filename)) {
+                    $fotoPath = 'uploads/sarpras/pemeliharaan/' . $filename;
+                }
+            }
+        }
+
         $kodeMnt = 'MNT-' . date('Ymd') . '-' . substr(strtoupper(uniqid()), -4);
 
         SarprasModel::insertPemeliharaan([
@@ -510,7 +561,8 @@ class SarprasController
             'tingkat_urgensi' => $urgensi,
             'deskripsi_kerusakan' => $deskripsi,
             'status' => 'Menunggu',
-            'estimasi_biaya' => $estimasiBiaya
+            'estimasi_biaya' => $estimasiBiaya,
+            'foto_kerusakan' => $fotoPath
         ]);
 
         $_SESSION['flash_success'] = "Laporan pengaduan kerusakan berhasil diajukan ({$kodeMnt})!";

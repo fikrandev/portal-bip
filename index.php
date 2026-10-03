@@ -618,6 +618,7 @@ $router->post('/kelola-sarpras/peminjaman/kembali/{id}', [SarprasController::cla
 
 // Pemeliharaan
 $router->get('/kelola-sarpras/pemeliharaan', [SarprasController::class, 'pemeliharaanList'], [Middleware::permissionRequired('sarpras.view')]);
+$router->get('/kelola-sarpras/pemeliharaan/barang-by-ruangan', [SarprasController::class, 'getBarangByRuanganJson'], [Middleware::permissionRequired('sarpras.view')]);
 $router->post('/kelola-sarpras/pemeliharaan/store', [SarprasController::class, 'pemeliharaanStore'], [Middleware::permissionRequired('sarpras.create')]);
 $router->post('/kelola-sarpras/pemeliharaan/update-status/{id}', [SarprasController::class, 'pemeliharaanUpdate'], [Middleware::permissionRequired('sarpras.update')]);
 

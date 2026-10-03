@@ -432,9 +432,8 @@ class MobileSarprasController
     public static function apiGetBarangByRuangan(): void
     {
         header('Content-Type: application/json');
-        $ruangan_id = $_GET['ruangan_id'] ?? '';
-        $db = SarprasModel::db();
-        $barang = $db->findAll("SELECT id, kode_barang, nama_barang FROM sarpras_barang WHERE ruangan_id = ?", [$ruangan_id]);
+        $ruangan_id = (int)($_GET['ruangan_id'] ?? 0);
+        $barang = SarprasModel::getBarangByRuangan($ruangan_id);
         
         echo json_encode(['status' => 'success', 'data' => $barang]);
         exit;

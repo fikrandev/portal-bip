@@ -461,6 +461,44 @@ class SarprasModel
         return $mId;
     }
 
+    /**
+     * Ambil seluruh aset barang yang berlokasi di ruangan tertentu (distribusi & master)
+     */
+    public static function getBarangByRuangan(int $ruanganId): array
+    {
+        $db = self::db();
+        self::ensureSarprasSchema();
+
+        if ($ruanganId <= 0) {
+            return $db->findAll("
+                SELECT b.id, b.kode_barang, b.nama_barang, b.merk_model, b.satuan, b.kondisi, b.jumlah as stok_ruang, 'tanpa_ruangan' as asal
+                FROM sarpras_barang b
+                WHERE (b.ruangan_id IS NULL OR b.ruangan_id = 0)
+                ORDER BY b.nama_barang ASC
+            ");
+        }
+
+        // 1. Barang yang didistribusikan ke ruangan ini
+        $distBarang = $db->findAll("
+            SELECT b.id, b.kode_barang, b.nama_barang, b.merk_model, b.satuan, b.kondisi, d.jumlah as stok_ruang, 'distribusi' as asal
+            FROM sarpras_distribusi d
+            JOIN sarpras_barang b ON d.barang_id = b.id
+            WHERE d.ruangan_id = ?
+            ORDER BY b.nama_barang ASC
+        ", [$ruanganId]);
+
+        // 2. Barang yang ruangan_id-nya diset langsung ke ruangan ini tapi belum lewat distribusi
+        $directBarang = $db->findAll("
+            SELECT b.id, b.kode_barang, b.nama_barang, b.merk_model, b.satuan, b.kondisi, b.jumlah as stok_ruang, 'barang' as asal
+            FROM sarpras_barang b
+            WHERE b.ruangan_id = ?
+              AND b.id NOT IN (SELECT barang_id FROM sarpras_distribusi WHERE ruangan_id = ?)
+            ORDER BY b.nama_barang ASC
+        ", [$ruanganId, $ruanganId]);
+
+        return array_merge($distBarang, $directBarang);
+    }
+
     public static function updateStatusPemeliharaan(int $id, string $status, ?string $tindakan, float $biaya, ?string $teknisi): bool
     {
         $db = self::db();
@@ -917,25 +955,102 @@ class SarprasModel
     // ==========================================
 
     /**
+     * Ensure all tables and columns needed by Sarpras exist (self-healing)
+     */
+    public static function ensureSarprasSchema(): void
+    {
+        static $done = false;
+        if ($done) return;
+        $done = true;
+
+        try {
+            $pdo = self::db()->pdo();
+
+            // 1. sarpras_barang columns
+            $cols = $pdo->query("SHOW COLUMNS FROM `sarpras_barang`")->fetchAll(PDO::FETCH_COLUMN);
+            $cMap = array_flip($cols ?: []);
+
+            $alterBarang = [];
+            if (!isset($cMap['tanggal_perolehan'])) $alterBarang[] = "ADD COLUMN `tanggal_perolehan` DATE NULL";
+            if (!isset($cMap['tahun_pengadaan']))   $alterBarang[] = "ADD COLUMN `tahun_pengadaan` VARCHAR(4) NULL";
+            if (!isset($cMap['golongan_id']))       $alterBarang[] = "ADD COLUMN `golongan_id` INT NULL";
+            if (!isset($cMap['kelompok_id']))       $alterBarang[] = "ADD COLUMN `kelompok_id` INT NULL";
+            if (!isset($cMap['asal_anggaran_id']))   $alterBarang[] = "ADD COLUMN `asal_anggaran_id` INT NULL";
+            if (!isset($cMap['dipakai']))           $alterBarang[] = "ADD COLUMN `dipakai` INT DEFAULT 0";
+            if (!isset($cMap['masa_manfaat']))      $alterBarang[] = "ADD COLUMN `masa_manfaat` INT DEFAULT 5";
+            if (!isset($cMap['harga_perolehan']))   $alterBarang[] = "ADD COLUMN `harga_perolehan` DECIMAL(15,2) DEFAULT 0.00";
+            if (!isset($cMap['sumber_dana']))       $alterBarang[] = "ADD COLUMN `sumber_dana` VARCHAR(100) NULL";
+
+            if (!empty($alterBarang)) {
+                try {
+                    $pdo->exec("ALTER TABLE `sarpras_barang` " . implode(', ', $alterBarang));
+                } catch (Throwable $e) {
+                    foreach ($alterBarang as $act) {
+                        try { $pdo->exec("ALTER TABLE `sarpras_barang` " . $act); } catch (Throwable $ex) {}
+                    }
+                }
+            }
+
+            // 2. sarpras_distribusi columns
+            $dCols = $pdo->query("SHOW COLUMNS FROM `sarpras_distribusi`")->fetchAll(PDO::FETCH_COLUMN);
+            $dMap = array_flip($dCols ?: []);
+            $alterDist = [];
+            if (!isset($dMap['kondisi']))            $alterDist[] = "ADD COLUMN `kondisi` ENUM('Baik','Rusak Ringan','Rusak Berat') NOT NULL DEFAULT 'Baik'";
+            if (!isset($dMap['tanggal_distribusi'])) $alterDist[] = "ADD COLUMN `tanggal_distribusi` DATE NULL";
+            if (!empty($alterDist)) {
+                try {
+                    $pdo->exec("ALTER TABLE `sarpras_distribusi` " . implode(', ', $alterDist));
+                } catch (Throwable $e) {
+                    foreach ($alterDist as $act) {
+                        try { $pdo->exec("ALTER TABLE `sarpras_distribusi` " . $act); } catch (Throwable $ex) {}
+                    }
+                }
+            }
+
+            // 3. sarpras_ruangan columns
+            $rCols = $pdo->query("SHOW COLUMNS FROM `sarpras_ruangan`")->fetchAll(PDO::FETCH_COLUMN);
+            $rMap = array_flip($rCols ?: []);
+            $alterRuang = [];
+            if (!isset($rMap['bangunan_id']))   $alterRuang[] = "ADD COLUMN `bangunan_id` BIGINT UNSIGNED NULL";
+            if (!isset($rMap['lantai']))        $alterRuang[] = "ADD COLUMN `lantai` INT NOT NULL DEFAULT 1";
+            if (!isset($rMap['jenis_ruangan'])) $alterRuang[] = "ADD COLUMN `jenis_ruangan` VARCHAR(100) NOT NULL DEFAULT 'Ruang Kelas'";
+            if (!isset($rMap['panjang']))       $alterRuang[] = "ADD COLUMN `panjang` DECIMAL(10,2) DEFAULT 0.00";
+            if (!isset($rMap['lebar']))         $alterRuang[] = "ADD COLUMN `lebar` DECIMAL(10,2) DEFAULT 0.00";
+            if (!isset($rMap['luas']))          $alterRuang[] = "ADD COLUMN `luas` DECIMAL(10,2) DEFAULT 0.00";
+            if (!empty($alterRuang)) {
+                try {
+                    $pdo->exec("ALTER TABLE `sarpras_ruangan` " . implode(', ', $alterRuang));
+                } catch (Throwable $e) {
+                    foreach ($alterRuang as $act) {
+                        try { $pdo->exec("ALTER TABLE `sarpras_ruangan` " . $act); } catch (Throwable $ex) {}
+                    }
+                }
+            }
+
+            // 4. sarpras_bangunan columns
+            $bCols = $pdo->query("SHOW COLUMNS FROM `sarpras_bangunan`")->fetchAll(PDO::FETCH_COLUMN);
+            $bMap = array_flip($bCols ?: []);
+            if (!isset($bMap['tanah_id'])) {
+                try { $pdo->exec("ALTER TABLE `sarpras_bangunan` ADD COLUMN `tanah_id` BIGINT UNSIGNED NULL"); } catch (Throwable $e) {}
+            }
+        } catch (Throwable $e) {}
+    }
+
+    /**
      * Get SQL expression for kondisi from sarpras_distribusi with auto-heal
      */
     public static function getDistribusiKondisiExpr(): string
     {
         static $expr = null;
         if ($expr === null) {
+            self::ensureSarprasSchema();
             try {
                 $db = self::db();
                 $col = $db->query("SHOW COLUMNS FROM `sarpras_distribusi` LIKE 'kondisi'")->fetch();
                 if ($col) {
                     $expr = "COALESCE(d.kondisi, b.kondisi)";
                 } else {
-                    // Auto-heal column immediately
-                    try {
-                        $db->query("ALTER TABLE `sarpras_distribusi` ADD COLUMN `kondisi` ENUM('Baik','Rusak Ringan','Rusak Berat') NOT NULL DEFAULT 'Baik' AFTER `jumlah`");
-                        $expr = "COALESCE(d.kondisi, b.kondisi)";
-                    } catch (Throwable $e) {
-                        $expr = "b.kondisi";
-                    }
+                    $expr = "b.kondisi";
                 }
             } catch (Throwable $e) {
                 $expr = "b.kondisi";
@@ -944,14 +1059,76 @@ class SarprasModel
         return $expr;
     }
 
+    /**
+     * Get SQL expression for tahun_pengadaan / tanggal_perolehan with auto-heal
+     */
+    public static function getTahunPengadaanExpr(): string
+    {
+        static $expr = null;
+        if ($expr === null) {
+            self::ensureSarprasSchema();
+            try {
+                $db = self::db();
+                $hasTgl = (bool)$db->query("SHOW COLUMNS FROM `sarpras_barang` LIKE 'tanggal_perolehan'")->fetch();
+                $hasThn = (bool)$db->query("SHOW COLUMNS FROM `sarpras_barang` LIKE 'tahun_pengadaan'")->fetch();
+
+                if ($hasThn && $hasTgl) {
+                    $expr = "COALESCE(b.tahun_pengadaan, b.tanggal_perolehan, '-')";
+                } elseif ($hasThn) {
+                    $expr = "COALESCE(b.tahun_pengadaan, '-')";
+                } elseif ($hasTgl) {
+                    $expr = "COALESCE(b.tanggal_perolehan, '-')";
+                } else {
+                    $expr = "'-'";
+                }
+            } catch (Throwable $e) {
+                $expr = "'-'";
+            }
+        }
+        return $expr;
+    }
+
+    /**
+     * Get SQL expression for sumber_dana / asal_anggaran with auto-heal
+     */
+    public static function getSumberDanaExpr(): string
+    {
+        static $expr = null;
+        if ($expr === null) {
+            self::ensureSarprasSchema();
+            try {
+                $db = self::db();
+                $hasAsal = (bool)$db->query("SHOW TABLES LIKE 'sarpras_asal_anggaran'")->fetch();
+                $hasBarangAsal = (bool)$db->query("SHOW COLUMNS FROM `sarpras_barang` LIKE 'asal_anggaran_id'")->fetch();
+                $hasSumberDana = (bool)$db->query("SHOW COLUMNS FROM `sarpras_barang` LIKE 'sumber_dana'")->fetch();
+
+                if ($hasAsal && $hasBarangAsal && $hasSumberDana) {
+                    $expr = "COALESCE(a.nama, b.sumber_dana, '-')";
+                } elseif ($hasSumberDana) {
+                    $expr = "COALESCE(b.sumber_dana, '-')";
+                } elseif ($hasAsal && $hasBarangAsal) {
+                    $expr = "COALESCE(a.nama, '-')";
+                } else {
+                    $expr = "'-'";
+                }
+            } catch (Throwable $e) {
+                $expr = "'-'";
+            }
+        }
+        return $expr;
+    }
+
     public static function getLaporanAsetGrouped(array $filters = []): array
     {
+        self::ensureSarprasSchema();
         $db = self::db();
         $ruanganId = $filters['ruangan_id'] ?? null;
         $kategoriId = !empty($filters['kategori_id']) ? (int)$filters['kategori_id'] : null;
         $kondisi = !empty($filters['kondisi']) ? $filters['kondisi'] : null;
 
         $distKondisiExpr = self::getDistribusiKondisiExpr();
+        $thnExpr = self::getTahunPengadaanExpr();
+        $sumberDanaExpr = self::getSumberDanaExpr();
 
         // 1. Ambil daftar ruangan
         $ruanganQuery = "
@@ -994,8 +1171,8 @@ class SarprasModel
                         b.satuan,
                         {$distKondisiExpr} as kondisi,
                         b.status,
-                        COALESCE(a.nama, b.sumber_dana, '-') as sumber_dana,
-                        COALESCE(b.tahun_pengadaan, b.tanggal_perolehan, '-') as tahun_pengadaan,
+                        {$sumberDanaExpr} as sumber_dana,
+                        {$thnExpr} as tahun_pengadaan,
                         (b.harga_perolehan / GREATEST(b.jumlah, 1)) as harga_satuan,
                         (d.jumlah * (b.harga_perolehan / GREATEST(b.jumlah, 1))) as total_nilai,
                         k.nama_kategori,
@@ -1030,8 +1207,8 @@ class SarprasModel
                         b.satuan,
                         b.kondisi,
                         b.status,
-                        COALESCE(a.nama, b.sumber_dana, '-') as sumber_dana,
-                        COALESCE(b.tahun_pengadaan, b.tanggal_perolehan, '-') as tahun_pengadaan,
+                        {$sumberDanaExpr} as sumber_dana,
+                        {$thnExpr} as tahun_pengadaan,
                         (b.harga_perolehan / GREATEST(b.jumlah, 1)) as harga_satuan,
                         b.harga_perolehan as total_nilai,
                         k.nama_kategori,
@@ -1109,8 +1286,8 @@ class SarprasModel
                 b.satuan,
                 b.kondisi,
                 b.status,
-                COALESCE(a.nama, b.sumber_dana, '-') as sumber_dana,
-                COALESCE(b.tahun_pengadaan, b.tanggal_perolehan, '-') as tahun_pengadaan,
+                {$sumberDanaExpr} as sumber_dana,
+                {$thnExpr} as tahun_pengadaan,
                 (b.harga_perolehan / GREATEST(b.jumlah, 1)) as harga_satuan,
                 ((b.jumlah - COALESCE((SELECT SUM(jumlah) FROM sarpras_distribusi WHERE barang_id = b.id), 0)) * (b.harga_perolehan / GREATEST(b.jumlah, 1))) as total_nilai,
                 k.nama_kategori,

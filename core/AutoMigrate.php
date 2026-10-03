@@ -51,6 +51,7 @@ class AutoMigrate
             '2026_01_01_000012_sync_jadwal_and_perangkat_tables' => 'migration012JadwalAndPerangkatTables',
             '2026_01_01_000013_verify_full_database_integrity' => 'migration013FullDatabaseIntegrity',
             '2026_01_01_000014_wipe_sarpras_dummy_data' => 'migration014WipeSarprasDummyData',
+            '2026_01_01_000015_sync_all_sarpras_columns' => 'migration015SyncAllSarprasColumns',
         ];
     }
 
@@ -910,6 +911,45 @@ class AutoMigrate
             }
         }
         $pdo->exec("SET FOREIGN_KEY_CHECKS = 1;");
+    }
+
+    /**
+     * Migration 15: Sinkronisasi komprehensif seluruh kolom Sarpras
+     * Memastikan tanggal_perolehan, golongan_id, kelompok_id, dll selalu tersedia di server
+     */
+    private static function migration015SyncAllSarprasColumns(PDO $pdo): void
+    {
+        // 1. sarpras_barang
+        self::addColumnIfNotExists($pdo, 'sarpras_barang', 'golongan_id', 'INT NULL', 'nama_barang');
+        self::addColumnIfNotExists($pdo, 'sarpras_barang', 'kelompok_id', 'INT NULL', 'golongan_id');
+        self::addColumnIfNotExists($pdo, 'sarpras_barang', 'asal_anggaran_id', 'INT NULL', 'kelompok_id');
+        self::addColumnIfNotExists($pdo, 'sarpras_barang', 'dipakai', 'INT DEFAULT 0', 'jumlah');
+        self::addColumnIfNotExists($pdo, 'sarpras_barang', 'sumber_dana', 'VARCHAR(100) NULL', 'status');
+        self::addColumnIfNotExists($pdo, 'sarpras_barang', 'tanggal_perolehan', 'DATE NULL', 'sumber_dana');
+        self::addColumnIfNotExists($pdo, 'sarpras_barang', 'tahun_pengadaan', 'VARCHAR(4) NULL', 'tanggal_perolehan');
+        self::addColumnIfNotExists($pdo, 'sarpras_barang', 'harga_perolehan', 'DECIMAL(15,2) DEFAULT 0.00', 'tahun_pengadaan');
+        self::addColumnIfNotExists($pdo, 'sarpras_barang', 'masa_manfaat', 'INT DEFAULT 5', 'harga_perolehan');
+        self::modifyColumn($pdo, 'sarpras_barang', 'foto', 'TEXT NULL');
+
+        // 2. sarpras_distribusi
+        self::addColumnIfNotExists($pdo, 'sarpras_distribusi', 'kondisi', "ENUM('Baik', 'Rusak Ringan', 'Rusak Berat') NOT NULL DEFAULT 'Baik'", 'jumlah');
+        self::addColumnIfNotExists($pdo, 'sarpras_distribusi', 'tanggal_distribusi', 'DATE NULL', 'kondisi');
+
+        // 3. sarpras_ruangan
+        self::addColumnIfNotExists($pdo, 'sarpras_ruangan', 'bangunan_id', 'BIGINT UNSIGNED NULL', 'kode_ruangan');
+        self::addColumnIfNotExists($pdo, 'sarpras_ruangan', 'lantai', 'INT NOT NULL DEFAULT 1', 'bangunan_id');
+        self::addColumnIfNotExists($pdo, 'sarpras_ruangan', 'jenis_ruangan', "VARCHAR(100) NOT NULL DEFAULT 'Ruang Kelas'", 'nama_ruangan');
+        self::addColumnIfNotExists($pdo, 'sarpras_ruangan', 'panjang', 'DECIMAL(10,2) DEFAULT 0.00', 'kapasitas');
+        self::addColumnIfNotExists($pdo, 'sarpras_ruangan', 'lebar', 'DECIMAL(10,2) DEFAULT 0.00', 'panjang');
+        self::addColumnIfNotExists($pdo, 'sarpras_ruangan', 'luas', 'DECIMAL(10,2) DEFAULT 0.00', 'lebar');
+
+        // 4. sarpras_bangunan
+        self::addColumnIfNotExists($pdo, 'sarpras_bangunan', 'tanah_id', 'BIGINT UNSIGNED NULL', 'id');
+
+        // 5. sarpras_peminjaman
+        self::addColumnIfNotExists($pdo, 'sarpras_peminjaman', 'jumlah', 'INT NOT NULL DEFAULT 1', 'tanggal_kembali');
+        self::addColumnIfNotExists($pdo, 'sarpras_peminjaman', 'keterangan', 'TEXT NULL', 'catatan');
+        self::addColumnIfNotExists($pdo, 'sarpras_peminjaman', 'peminjam', 'VARCHAR(150) NULL', 'nama_peminjam');
     }
 }
 
