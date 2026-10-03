@@ -91,11 +91,14 @@ class SarprasModel
             if ($k['kondisi'] === 'Rusak Berat') $rusakBerat = (int)$k['qty'];
         }
 
-        $totalDipinjam = (int)$db->find("SELECT COUNT(*) as cnt FROM sarpras_peminjaman WHERE status = 'Dipinjam'")['cnt'];
-        // total pemeliharaan (asumsikan sarpras_maintenance)
-        $totalPemeliharaan = (int)$db->find("SELECT COUNT(*) as cnt FROM sarpras_maintenance WHERE status IN ('Menunggu', 'Dalam Perbaikan')")['cnt'];
-        $totalRuangan = (int)$db->find("SELECT COUNT(*) as cnt FROM sarpras_ruangan WHERE is_active = 1")['cnt'];
-        $totalKategori = (int)$db->find("SELECT COUNT(*) as cnt FROM sarpras_kategori")['cnt'];
+        $totalDipinjam = (int)($db->find("SELECT COUNT(*) as cnt FROM sarpras_peminjaman WHERE status = 'Dipinjam'")['cnt'] ?? 0);
+        // total pemeliharaan (sarpras_pemeliharaan)
+        $totalPemeliharaan = 0;
+        try {
+            $totalPemeliharaan = (int)($db->find("SELECT COUNT(*) as cnt FROM sarpras_pemeliharaan WHERE status IN ('Menunggu', 'Diproses')")['cnt'] ?? 0);
+        } catch (Throwable $e) {}
+        $totalRuangan = (int)($db->find("SELECT COUNT(*) as cnt FROM sarpras_ruangan WHERE is_active = 1")['cnt'] ?? 0);
+        $totalKategori = (int)($db->find("SELECT COUNT(*) as cnt FROM sarpras_kategori")['cnt'] ?? 0);
 
         // Per Kategori
         $perKategori = $db->findAll("

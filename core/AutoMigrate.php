@@ -52,6 +52,8 @@ class AutoMigrate
             '2026_01_01_000013_verify_full_database_integrity' => 'migration013FullDatabaseIntegrity',
             '2026_01_01_000014_wipe_sarpras_dummy_data' => 'migration014WipeSarprasDummyData',
             '2026_01_01_000015_sync_all_sarpras_columns' => 'migration015SyncAllSarprasColumns',
+            '2026_10_03_000016_fix_sarpras_barang_missing_cols' => 'migration016FixSarprasBarangMissingCols',
+            '2026_10_03_000017_ensure_all_sarpras_schema_integrity' => 'migration016FixSarprasBarangMissingCols',
         ];
     }
 
@@ -138,22 +140,33 @@ class AutoMigrate
     public static function hasTable(PDO $pdo, string $table): bool
     {
         try {
-            $stmt = $pdo->prepare("SHOW TABLES LIKE ?");
+            $stmt = $pdo->prepare("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = ?");
             $stmt->execute([$table]);
-            return (bool)$stmt->fetchColumn();
+            return (int)$stmt->fetchColumn() > 0;
         } catch (Throwable $e) {
-            return false;
+            try {
+                $clean = preg_replace('/[^a-zA-Z0-9_]/', '', $table);
+                return (bool)$pdo->query("SHOW TABLES LIKE '{$clean}'")->fetchColumn();
+            } catch (Throwable $e2) {
+                return false;
+            }
         }
     }
 
     public static function hasColumn(PDO $pdo, string $table, string $column): bool
     {
         try {
-            $stmt = $pdo->prepare("SHOW COLUMNS FROM `{$table}` LIKE ?");
-            $stmt->execute([$column]);
-            return (bool)$stmt->fetchColumn();
+            $stmt = $pdo->prepare("SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = ? AND column_name = ?");
+            $stmt->execute([$table, $column]);
+            return (int)$stmt->fetchColumn() > 0;
         } catch (Throwable $e) {
-            return false;
+            try {
+                $cleanTable = preg_replace('/[^a-zA-Z0-9_]/', '', $table);
+                $cleanCol = preg_replace('/[^a-zA-Z0-9_]/', '', $column);
+                return (bool)$pdo->query("SHOW COLUMNS FROM `{$cleanTable}` LIKE '{$cleanCol}'")->fetch();
+            } catch (Throwable $e2) {
+                return false;
+            }
         }
     }
 
@@ -163,9 +176,18 @@ class AutoMigrate
             return false;
         }
         if (!self::hasColumn($pdo, $table, $column)) {
-            $afterClause = $after ? " AFTER `{$after}`" : "";
-            $pdo->exec("ALTER TABLE `{$table}` ADD COLUMN `{$column}` {$definition}{$afterClause}");
-            return true;
+            if ($after && self::hasColumn($pdo, $table, $after)) {
+                try {
+                    $pdo->exec("ALTER TABLE `{$table}` ADD COLUMN `{$column}` {$definition} AFTER `{$after}`");
+                    return true;
+                } catch (Throwable $e) {}
+            }
+            try {
+                $pdo->exec("ALTER TABLE `{$table}` ADD COLUMN `{$column}` {$definition}");
+                return true;
+            } catch (Throwable $e) {
+                return false;
+            }
         }
         return false;
     }
@@ -950,6 +972,76 @@ class AutoMigrate
         self::addColumnIfNotExists($pdo, 'sarpras_peminjaman', 'jumlah', 'INT NOT NULL DEFAULT 1', 'tanggal_kembali');
         self::addColumnIfNotExists($pdo, 'sarpras_peminjaman', 'keterangan', 'TEXT NULL', 'catatan');
         self::addColumnIfNotExists($pdo, 'sarpras_peminjaman', 'peminjam', 'VARCHAR(150) NULL', 'nama_peminjam');
+    }
+
+    /**
+     * Migration 16: Re-verify critical sarpras_barang columns
+     * migration015 may have been recorded as applied on the server but the columns
+     * failed to be added (e.g. AFTER clause referenced a column that also didn't exist yet).
+     * This migration adds each column individually without AFTER to guarantee they exist.
+     */
+    private static function migration016FixSarprasBarangMissingCols(PDO $pdo): void
+    {
+        // sarpras_barang - add missing columns one by one (no AFTER to avoid dependency issues)
+        $barangCols = [
+            'tanggal_perolehan' => 'DATE NULL',
+            'tahun_pengadaan'   => 'VARCHAR(4) NULL',
+            'golongan_id'       => 'INT NULL',
+            'kelompok_id'       => 'INT NULL',
+            'asal_anggaran_id'  => 'INT NULL',
+            'dipakai'           => 'INT DEFAULT 0',
+            'masa_manfaat'      => 'INT DEFAULT 5',
+            'harga_perolehan'   => 'DECIMAL(15,2) DEFAULT 0.00',
+            'sumber_dana'       => 'VARCHAR(100) NULL',
+        ];
+        foreach ($barangCols as $col => $def) {
+            if (!self::hasColumn($pdo, 'sarpras_barang', $col)) {
+                try {
+                    $pdo->exec("ALTER TABLE `sarpras_barang` ADD COLUMN `{$col}` {$def}");
+                } catch (Throwable $e) {}
+            }
+        }
+
+        // sarpras_distribusi
+        if (!self::hasColumn($pdo, 'sarpras_distribusi', 'kondisi')) {
+            try { $pdo->exec("ALTER TABLE `sarpras_distribusi` ADD COLUMN `kondisi` ENUM('Baik','Rusak Ringan','Rusak Berat') NOT NULL DEFAULT 'Baik'"); } catch (Throwable $e) {}
+        }
+        if (!self::hasColumn($pdo, 'sarpras_distribusi', 'tanggal_distribusi')) {
+            try { $pdo->exec("ALTER TABLE `sarpras_distribusi` ADD COLUMN `tanggal_distribusi` DATE NULL"); } catch (Throwable $e) {}
+        }
+
+        // sarpras_ruangan
+        $ruanganCols = [
+            'bangunan_id'   => 'BIGINT UNSIGNED NULL',
+            'lantai'        => 'INT NOT NULL DEFAULT 1',
+            'jenis_ruangan' => "VARCHAR(100) NOT NULL DEFAULT 'Ruang Kelas'",
+            'panjang'       => 'DECIMAL(10,2) DEFAULT 0.00',
+            'lebar'         => 'DECIMAL(10,2) DEFAULT 0.00',
+            'luas'          => 'DECIMAL(10,2) DEFAULT 0.00',
+        ];
+        foreach ($ruanganCols as $col => $def) {
+            if (!self::hasColumn($pdo, 'sarpras_ruangan', $col)) {
+                try { $pdo->exec("ALTER TABLE `sarpras_ruangan` ADD COLUMN `{$col}` {$def}"); } catch (Throwable $e) {}
+            }
+        }
+
+        // sarpras_bangunan
+        if (!self::hasColumn($pdo, 'sarpras_bangunan', 'tanah_id')) {
+            try { $pdo->exec("ALTER TABLE `sarpras_bangunan` ADD COLUMN `tanah_id` BIGINT UNSIGNED NULL"); } catch (Throwable $e) {}
+        }
+
+        // sarpras_pemeliharaan
+        if (self::hasTable($pdo, 'sarpras_pemeliharaan')) {
+            if (!self::hasColumn($pdo, 'sarpras_pemeliharaan', 'judul_laporan')) {
+                try { $pdo->exec("ALTER TABLE `sarpras_pemeliharaan` ADD COLUMN `judul_laporan` VARCHAR(200) NOT NULL DEFAULT 'Laporan Kerusakan'"); } catch (Throwable $e) {}
+            }
+            if (!self::hasColumn($pdo, 'sarpras_pemeliharaan', 'ruangan_id')) {
+                try { $pdo->exec("ALTER TABLE `sarpras_pemeliharaan` ADD COLUMN `ruangan_id` INT DEFAULT NULL"); } catch (Throwable $e) {}
+            }
+            if (!self::hasColumn($pdo, 'sarpras_pemeliharaan', 'foto_kerusakan')) {
+                try { $pdo->exec("ALTER TABLE `sarpras_pemeliharaan` ADD COLUMN `foto_kerusakan` VARCHAR(255) DEFAULT NULL"); } catch (Throwable $e) {}
+            }
+        }
     }
 }
 
