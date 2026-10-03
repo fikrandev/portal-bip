@@ -97,7 +97,7 @@
                                     <?= date('d/m/Y', strtotime($d['tanggal_distribusi'])) ?>
                                 </td>
                                 <td class="py-3.5 px-4 text-center">
-                                    <form action="<?= url('kelola-sarpras/distribusi/delete/' . $d['id']) ?>" method="POST" onsubmit="return confirm('Tarik/Hapus <?= e($d['nama_barang']) ?> dari ruangan ini?')">
+                                    <form action="<?= url('kelola-sarpras/distribusi/delete/' . $d['id']) ?>" method="POST" onsubmit="return ModalHelper.confirm(event, this, 'Tarik Barang', 'Apakah Anda yakin ingin menarik/menghapus barang <?= htmlspecialchars($d['nama_barang'], ENT_QUOTES) ?> dari ruangan ini?', 'warning');">
                                         <?= CSRF::field() ?>
                                         <button type="submit" class="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50" title="Tarik dari Ruangan">
                                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" /></svg>

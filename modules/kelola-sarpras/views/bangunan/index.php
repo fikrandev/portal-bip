@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * View Data Aset Bangunan & Gedung
  * Modul Kelola Sarpras - Portal BIP
@@ -195,7 +195,7 @@
                                         <form action="<?= url('kelola-sarpras/bangunan/delete/' . $row['id']) ?>" 
                                               method="POST" 
                                               class="inline" 
-                                              onsubmit="return confirm('Apakah Anda yakin ingin menghapus bangunan <?= htmlspecialchars($row['nama_bangunan'], ENT_QUOTES) ?>?');">
+                                              onsubmit="return ModalHelper.confirm(event, this, 'Hapus Bangunan', 'Apakah Anda yakin ingin menghapus bangunan <?= htmlspecialchars($row['nama_bangunan'], ENT_QUOTES) ?>? Semua ruangan di dalamnya akan ikut terhapus.', 'danger');">
                                             <?= CSRF::field() ?>
                                             <button type="submit" 
                                                     class="p-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 transition-colors"
@@ -873,9 +873,10 @@ function calculateLuasRuang() {
 }
 
 function openModalTambahRuang(bangunanId, namaBangunan, totalLantai) {
-    currentBangunanForRuang = { id: bangunanId, nama: namaBangunan, lantai: totalLantai };
+    const cleanName = window.ModalHelper ? ModalHelper.cleanText(namaBangunan) : namaBangunan;
+    currentBangunanForRuang = { id: bangunanId, nama: cleanName, lantai: totalLantai };
     document.getElementById('ruang_bgn_id').value = bangunanId;
-    document.getElementById('ruang_bgn_nama_label').textContent = namaBangunan;
+    document.getElementById('ruang_bgn_nama_label').textContent = cleanName;
     document.getElementById('ruang_bgn_lantai_badge').textContent = (totalLantai || 1) + ' Lantai';
 
     // Populate lantai dropdown
@@ -913,9 +914,10 @@ function closeModalTambahRuang() {
 }
 
 function openModalListRuangan(bangunanId, namaBangunan, totalLantai) {
-    currentBangunanForRuang = { id: bangunanId, nama: namaBangunan, lantai: totalLantai };
-    document.getElementById('list_ruang_title').textContent = `Daftar Ruangan - ${namaBangunan}`;
-    document.getElementById('list_ruang_subtitle').textContent = `Gedung ${namaBangunan} (${totalLantai || 1} Lantai)`;
+    const cleanName = window.ModalHelper ? ModalHelper.cleanText(namaBangunan) : namaBangunan;
+    currentBangunanForRuang = { id: bangunanId, nama: cleanName, lantai: totalLantai };
+    document.getElementById('list_ruang_title').textContent = `Daftar Ruangan - ${cleanName}`;
+    document.getElementById('list_ruang_subtitle').textContent = `Gedung ${cleanName} (${totalLantai || 1} Lantai)`;
 
     const container = document.getElementById('list_ruang_container');
     const rooms = ruanganByBangunan[bangunanId] || [];

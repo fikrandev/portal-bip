@@ -136,8 +136,12 @@ const AppNotif = {
      * @param {string} text Teks konfirmasi (Opsional)
      */
     confirm: function(e, formElement, title = 'Apakah Anda Yakin?', text = 'Data yang dihapus tidak dapat dikembalikan!') {
-        // Hentikan submit langsung
-        e.preventDefault();
+        if (window.ModalHelper && typeof window.ModalHelper.confirm === 'function') {
+            return window.ModalHelper.confirm(e, formElement, title, text, 'danger');
+        }
+
+        // Fallback jika ModalHelper belum terdefinisi
+        if (e && e.preventDefault) e.preventDefault();
 
         this.modalMixin.fire({
             title: title,

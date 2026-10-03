@@ -322,8 +322,15 @@ $isMobile = !empty($isMobile);
         stopCamera();
 
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            // Browser doesn't support getUserMedia or is blocked by non-secure context
-            if (confirm("Kamera web langsung memerlukan koneksi HTTPS / localhost atau izin kamera.\n\nBuka pemilih kamera perangkat langsung?")) {
+            if (window.ModalHelper) {
+                const ok = await ModalHelper.confirm({
+                    title: 'Izin Kamera',
+                    message: 'Kamera web langsung memerlukan koneksi HTTPS / localhost atau izin kamera. Buka pemilih kamera perangkat langsung?',
+                    type: 'info',
+                    confirmText: 'Buka Kamera'
+                });
+                if (ok && fallbackCameraInput) fallbackCameraInput.click();
+            } else if (confirm("Kamera web langsung memerlukan koneksi HTTPS / localhost atau izin kamera.\n\nBuka pemilih kamera perangkat langsung?")) {
                 if (fallbackCameraInput) fallbackCameraInput.click();
             }
             return;

@@ -333,7 +333,7 @@
                                         <form action="<?= url('kelola-sarpras/tanah/delete/' . $row['id']) ?>" 
                                               method="POST" 
                                               class="inline" 
-                                              onsubmit="return confirm('Apakah Anda yakin ingin menghapus data tanah <?= htmlspecialchars($row['nama_tanah'], ENT_QUOTES) ?>?\n\nPeringatan: Semua gedung dan data terkait pada bidang tanah ini akan ikut terhapus!');">
+                                              onsubmit="return ModalHelper.confirm(event, this, 'Hapus Data Tanah', 'Apakah Anda yakin ingin menghapus data tanah <?= htmlspecialchars($row['nama_tanah'], ENT_QUOTES) ?>?\n\nPeringatan: Semua gedung dan data terkait pada bidang tanah ini akan ikut terhapus!', 'danger');">
                                             <?= CSRF::field() ?>
                                             <button type="submit" 
                                                     title="Hapus Data Tanah"
@@ -1504,7 +1504,7 @@ function closeModalEditTanah() {
 
 function openModalTambahBangunan(tanahId, tanahNama) {
     document.getElementById('bgn_tanah_id').value = tanahId;
-    document.getElementById('bgn_tanah_nama_label').textContent = tanahNama;
+    document.getElementById('bgn_tanah_nama_label').textContent = window.ModalHelper ? ModalHelper.cleanText(tanahNama) : tanahNama;
     document.getElementById('modalTambahBangunan').classList.remove('hidden');
 }
 function closeModalTambahBangunan() {
@@ -1512,7 +1512,8 @@ function closeModalTambahBangunan() {
 }
 
 function openGalleryModal(images, title) {
-    document.getElementById('galleryTitle').textContent = `Sertifikat: ${title}`;
+    const cleanTitle = window.ModalHelper ? ModalHelper.cleanText(title) : title;
+    document.getElementById('galleryTitle').textContent = `Sertifikat: ${cleanTitle}`;
     const content = document.getElementById('galleryContent');
     content.innerHTML = '';
 
@@ -1594,7 +1595,7 @@ function calculateLuasRuangInline() {
 
 function openModalTambahRuangInline(bangunanId, bangunanNama, maxLantai) {
     document.getElementById('inline_ruang_bgn_id').value = bangunanId;
-    document.getElementById('inline_ruang_bgn_nama_label').textContent = bangunanNama;
+    document.getElementById('inline_ruang_bgn_nama_label').textContent = window.ModalHelper ? ModalHelper.cleanText(bangunanNama) : bangunanNama;
     document.getElementById('inline_ruang_bgn_lantai_badge').textContent = (maxLantai || 1) + ' Lantai';
 
     const selectLantai = document.getElementById('inline_ruang_lantai_select');

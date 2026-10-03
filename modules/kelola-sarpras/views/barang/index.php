@@ -219,7 +219,7 @@
                                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125"/></svg>
                                         </button>
                                         <!-- Hapus -->
-                                        <form action="<?= url('kelola-sarpras/barang/delete/' . $b['id']) ?>" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus aset <?= e($b['nama_barang']) ?>?')">
+                                        <form action="<?= url('kelola-sarpras/barang/delete/' . $b['id']) ?>" method="POST" onsubmit="return ModalHelper.confirm(event, this, 'Hapus Aset Barang', 'Apakah Anda yakin ingin menghapus aset <?= htmlspecialchars($b['nama_barang'], ENT_QUOTES) ?>?', 'danger');">
                                             <?= CSRF::field() ?>
                                             <button type="submit" class="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors" title="Hapus Aset">
                                                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"/></svg>
@@ -649,14 +649,15 @@ function closeDetail() {
     function openModalEdit(item) {
         document.getElementById('formEditBarang').action = urlBaseEdit + item.id;
         
+        const clean = window.ModalHelper ? ModalHelper.cleanText : (str => str || '');
         document.getElementById('selGolonganEdit').value = item.golongan_id || '';
         document.getElementById('selKelompokEdit').value = item.kelompok_id || '';
         document.getElementById('selAnggaranEdit').value = item.asal_anggaran_id || '';
-        document.getElementById('editNamaBarang').value = item.nama_barang || '';
-        document.getElementById('editMerkModel').value = item.merk_model || '';
-        document.getElementById('editNomorSeri').value = item.nomor_seri || '';
+        document.getElementById('editNamaBarang').value = clean(item.nama_barang || '');
+        document.getElementById('editMerkModel').value = clean(item.merk_model || '');
+        document.getElementById('editNomorSeri').value = clean(item.nomor_seri || '');
         document.getElementById('editJumlah').value = item.jumlah || '1';
-        document.getElementById('editSatuan').value = item.satuan || '';
+        document.getElementById('editSatuan').value = clean(item.satuan || '');
         document.getElementById('editTanggal').value = item.tanggal_perolehan || '';
         document.getElementById('editMasaManfaat').value = item.masa_manfaat || '0';
         document.getElementById('editKondisi').value = item.kondisi || 'Baik';
@@ -799,12 +800,13 @@ function closeDetail() {
 
     function renderDistribusiData(data) {
         const body = document.getElementById('distribusi-content-body');
+        const clean = window.ModalHelper ? ModalHelper.cleanText : (str => str || '');
         
         let html = `
             <div class="mb-5 flex justify-between items-start">
                 <div>
-                    <h4 class="font-bold text-lg text-slate-800">${data.barang.nama_barang}</h4>
-                    <p class="text-xs text-slate-500 mt-1">${data.barang.kode_barang}</p>
+                    <h4 class="font-bold text-lg text-slate-800">${clean(data.barang.nama_barang)}</h4>
+                    <p class="text-xs text-slate-500 mt-1">${clean(data.barang.kode_barang)}</p>
                 </div>
                 <div class="text-right">
                     <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Total Ketersediaan</p>
@@ -820,12 +822,12 @@ function closeDetail() {
         if (data.distribusi.length > 0) {
             html += '<ul class="space-y-3 mb-6">';
             data.distribusi.forEach(item => {
-                let nama_bangunan = item.nama_bangunan || '-';
-                let ket = item.keterangan || '-';
+                let nama_bangunan = clean(item.nama_bangunan || '-');
+                let ket = clean(item.keterangan || '-');
                 html += `
                     <li class="bg-slate-50 p-3 rounded-xl border border-slate-100 flex justify-between items-center">
                         <div>
-                            <p class="font-bold text-sm text-slate-800">${item.nama_ruangan}</p>
+                            <p class="font-bold text-sm text-slate-800">${clean(item.nama_ruangan)}</p>
                             <p class="text-xs text-slate-500">Gedung: ${nama_bangunan} | Ket: ${ket}</p>
                         </div>
                         <div class="bg-white px-3 py-1.5 rounded-lg border border-slate-200 font-bold text-sm shadow-sm text-slate-700">
@@ -846,8 +848,8 @@ function closeDetail() {
                 html += `
                     <li class="bg-amber-50 p-3 rounded-xl border border-amber-100 flex justify-between items-center">
                         <div>
-                            <p class="font-bold text-sm text-amber-900">${item.peminjam}</p>
-                            <p class="text-xs text-amber-700">Status: ${item.status}</p>
+                            <p class="font-bold text-sm text-amber-900">${clean(item.peminjam)}</p>
+                            <p class="text-xs text-amber-700">Status: ${clean(item.status)}</p>
                         </div>
                         <div class="bg-white px-3 py-1.5 rounded-lg border border-amber-200 font-bold text-sm shadow-sm text-amber-800">
                             ${item.jumlah} Unit
