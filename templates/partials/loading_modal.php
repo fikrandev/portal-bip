@@ -145,6 +145,9 @@
         if (form.getAttribute('target') === '_blank') return;
         // Skip if marked with data-no-loading
         if (form.hasAttribute('data-no-loading')) return;
+        // Skip if form has confirmation handler (ModalHelper / confirm will show LoadingModal once confirmed)
+        var onsubmitAttr = (form.getAttribute('onsubmit') || '').toLowerCase();
+        if (onsubmitAttr.includes('confirm') || form.hasAttribute('data-confirm')) return;
 
         var text = form.getAttribute('data-loading-text');
         var sub = form.getAttribute('data-loading-sub');

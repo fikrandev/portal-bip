@@ -6,8 +6,8 @@
     
     <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="<?= asset('js/modal-helper.js') ?>"></script>
-    <script src="<?= asset('js/notif.js') ?>"></script>
+    <script src="<?= asset('js/modal-helper.js') ?>?v=<?= file_exists(PUBLIC_PATH . '/js/modal-helper.js') ? filemtime(PUBLIC_PATH . '/js/modal-helper.js') : '1.1' ?>"></script>
+    <script src="<?= asset('js/notif.js') ?>?v=<?= file_exists(PUBLIC_PATH . '/js/notif.js') ? filemtime(PUBLIC_PATH . '/js/notif.js') : '1.1' ?>"></script>
     <script src="<?= asset('js/searchable-select.js') ?>"></script>
     <?php if (isset($extraJs)): ?>
         <?= $extraJs ?>

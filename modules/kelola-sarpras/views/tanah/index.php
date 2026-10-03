@@ -333,7 +333,7 @@
                                         <form action="<?= url('kelola-sarpras/tanah/delete/' . $row['id']) ?>" 
                                               method="POST" 
                                               class="inline" 
-                                              onsubmit="return ModalHelper.confirm(event, this, 'Hapus Data Tanah', 'Apakah Anda yakin ingin menghapus data tanah <?= htmlspecialchars($row['nama_tanah'], ENT_QUOTES) ?>?\n\nPeringatan: Semua gedung dan data terkait pada bidang tanah ini akan ikut terhapus!', 'danger');">
+                                              onsubmit="return ModalHelper.confirm(event, this, 'Hapus Data Tanah', 'Apakah Anda yakin ingin menghapus data tanah <?= htmlspecialchars($row['nama_tanah'], ENT_QUOTES) ?>? Semua gedung dan data terkait pada bidang tanah ini akan ikut terhapus.', 'danger');">
                                             <?= CSRF::field() ?>
                                             <button type="submit" 
                                                     title="Hapus Data Tanah"
