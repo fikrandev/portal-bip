@@ -30,6 +30,40 @@ class SarprasModel
         }
     }
 
+    /**
+     * Parse foto column value to array of photo paths
+     * Supports JSON array string, plain path string, or empty/null
+     */
+    public static function getFotoList($rawFoto): array
+    {
+        if (empty($rawFoto)) {
+            return [];
+        }
+        if (is_array($rawFoto)) {
+            return array_values(array_filter($rawFoto));
+        }
+        $trimmed = trim((string)$rawFoto);
+        if ($trimmed === '') {
+            return [];
+        }
+        if (str_starts_with($trimmed, '[') && str_ends_with($trimmed, ']')) {
+            $decoded = json_decode($trimmed, true);
+            if (is_array($decoded)) {
+                return array_values(array_filter($decoded));
+            }
+        }
+        return [$trimmed];
+    }
+
+    /**
+     * Get primary/first photo from foto column
+     */
+    public static function getFirstFoto($rawFoto): ?string
+    {
+        $list = self::getFotoList($rawFoto);
+        return !empty($list) ? $list[0] : null;
+    }
+
     // ── STATISTIK KHUSUS MOBILE APP ────────────────────────────────
     public static function getStatistik(): array
     {
@@ -877,5 +911,335 @@ class SarprasModel
         }
         return $db->delete('sarpras_distribusi', 'id = ?', [$id]);
     }
+
+    // ==========================================
+    // LAPORAN ASET BERKELOMPOK PER RUANGAN
+    // ==========================================
+    public static function getLaporanAsetGrouped(array $filters = []): array
+    {
+        $db = self::db();
+        $ruanganId = $filters['ruangan_id'] ?? null;
+        $kategoriId = !empty($filters['kategori_id']) ? (int)$filters['kategori_id'] : null;
+        $kondisi = !empty($filters['kondisi']) ? $filters['kondisi'] : null;
+
+        // 1. Ambil daftar ruangan
+        $ruanganQuery = "
+            SELECT r.*, b.nama_bangunan, b.kode_bangunan
+            FROM sarpras_ruangan r
+            LEFT JOIN sarpras_bangunan b ON r.bangunan_id = b.id
+            WHERE r.is_active = 1
+        ";
+        $ruanganParams = [];
+        if (!empty($ruanganId) && is_numeric($ruanganId)) {
+            $ruanganQuery .= " AND r.id = ?";
+            $ruanganParams[] = (int)$ruanganId;
+        }
+        $ruanganQuery .= " ORDER BY r.unit ASC, r.nama_ruangan ASC";
+        $allRuangan = $db->findAll($ruanganQuery, $ruanganParams);
+
+        $resultRuangan = [];
+        $grandTotalItems = 0;
+        $grandTotalQty = 0;
+        $grandTotalNilai = 0.0;
+        $grandStatBaik = 0;
+        $grandStatRusakRingan = 0;
+        $grandStatRusakBerat = 0;
+
+        // Kumpulkan data per ruangan jika bukan filter khusus tanpa ruangan
+        if ($ruanganId !== 'tanpa_ruangan') {
+            foreach ($allRuangan as $r) {
+                $rid = (int)$r['id'];
+
+                // A. Aset dari distribusi ke ruangan ini
+                $sqlDist = "
+                    SELECT 
+                        d.id as distribusi_id,
+                        b.id as barang_id,
+                        b.kode_barang,
+                        b.nama_barang,
+                        b.merk_model,
+                        b.nomor_seri,
+                        d.jumlah,
+                        b.satuan,
+                        COALESCE(d.kondisi, b.kondisi) as kondisi,
+                        b.status,
+                        COALESCE(a.nama, b.sumber_dana, '-') as sumber_dana,
+                        COALESCE(b.tahun_pengadaan, b.tanggal_perolehan, '-') as tahun_pengadaan,
+                        (b.harga_perolehan / GREATEST(b.jumlah, 1)) as harga_satuan,
+                        (d.jumlah * (b.harga_perolehan / GREATEST(b.jumlah, 1))) as total_nilai,
+                        k.nama_kategori,
+                        'distribusi' as asal_data
+                    FROM sarpras_distribusi d
+                    JOIN sarpras_barang b ON d.barang_id = b.id
+                    LEFT JOIN sarpras_kategori k ON b.kategori_id = k.id
+                    LEFT JOIN sarpras_asal_anggaran a ON b.asal_anggaran_id = a.id
+                    WHERE d.ruangan_id = ?
+                ";
+                $distParams = [$rid];
+                if ($kategoriId) {
+                    $sqlDist .= " AND b.kategori_id = ?";
+                    $distParams[] = $kategoriId;
+                }
+                if ($kondisi) {
+                    $sqlDist .= " AND COALESCE(d.kondisi, b.kondisi) = ?";
+                    $distParams[] = $kondisi;
+                }
+                $distItems = $db->findAll($sqlDist, $distParams);
+
+                // B. Aset yang langsung diset ruangan_id pada sarpras_barang tapi belum didistribusikan lewat sarpras_distribusi
+                $sqlBrg = "
+                    SELECT 
+                        NULL as distribusi_id,
+                        b.id as barang_id,
+                        b.kode_barang,
+                        b.nama_barang,
+                        b.merk_model,
+                        b.nomor_seri,
+                        b.jumlah,
+                        b.satuan,
+                        b.kondisi,
+                        b.status,
+                        COALESCE(a.nama, b.sumber_dana, '-') as sumber_dana,
+                        COALESCE(b.tahun_pengadaan, b.tanggal_perolehan, '-') as tahun_pengadaan,
+                        (b.harga_perolehan / GREATEST(b.jumlah, 1)) as harga_satuan,
+                        b.harga_perolehan as total_nilai,
+                        k.nama_kategori,
+                        'barang_master' as asal_data
+                    FROM sarpras_barang b
+                    LEFT JOIN sarpras_kategori k ON b.kategori_id = k.id
+                    LEFT JOIN sarpras_asal_anggaran a ON b.asal_anggaran_id = a.id
+                    WHERE b.ruangan_id = ?
+                      AND b.id NOT IN (SELECT DISTINCT barang_id FROM sarpras_distribusi WHERE ruangan_id = ?)
+                ";
+                $brgParams = [$rid, $rid];
+                if ($kategoriId) {
+                    $sqlBrg .= " AND b.kategori_id = ?";
+                    $brgParams[] = $kategoriId;
+                }
+                if ($kondisi) {
+                    $sqlBrg .= " AND b.kondisi = ?";
+                    $brgParams[] = $kondisi;
+                }
+                $brgItems = $db->findAll($sqlBrg, $brgParams);
+
+                $roomItems = array_merge($distItems, $brgItems);
+
+                $rTotItem = count($roomItems);
+                $rTotQty = 0;
+                $rTotNilai = 0.0;
+                $rBaik = 0;
+                $rRusakRingan = 0;
+                $rRusakBerat = 0;
+
+                foreach ($roomItems as $it) {
+                    $qty = (int)$it['jumlah'];
+                    $rTotQty += $qty;
+                    $rTotNilai += (float)$it['total_nilai'];
+                    $kd = strtolower(trim((string)$it['kondisi']));
+                    if ($kd === 'baik') $rBaik += $qty;
+                    elseif (str_contains($kd, 'ringan')) $rRusakRingan += $qty;
+                    elseif (str_contains($kd, 'berat')) $rRusakBerat += $qty;
+                    else $rBaik += $qty;
+                }
+
+                $grandTotalItems += $rTotItem;
+                $grandTotalQty += $rTotQty;
+                $grandTotalNilai += $rTotNilai;
+                $grandStatBaik += $rBaik;
+                $grandStatRusakRingan += $rRusakRingan;
+                $grandStatRusakBerat += $rRusakBerat;
+
+                if ($rTotItem > 0 || (!empty($ruanganId) && is_numeric($ruanganId))) {
+                    $resultRuangan[] = [
+                        'ruangan' => $r,
+                        'items' => $roomItems,
+                        'total_item' => $rTotItem,
+                        'total_qty' => $rTotQty,
+                        'total_nilai' => $rTotNilai,
+                        'stat_baik' => $rBaik,
+                        'stat_rusak_ringan' => $rRusakRingan,
+                        'stat_rusak_berat' => $rRusakBerat,
+                    ];
+                }
+            }
+        }
+
+        // 2. Kumpulkan Aset Tanpa Ruangan / Belum Ditempatkan
+        $unassignedItems = [];
+        $sqlNoRoom = "
+            SELECT 
+                NULL as distribusi_id,
+                b.id as barang_id,
+                b.kode_barang,
+                b.nama_barang,
+                b.merk_model,
+                b.nomor_seri,
+                (b.jumlah - COALESCE((SELECT SUM(jumlah) FROM sarpras_distribusi WHERE barang_id = b.id), 0)) as jumlah,
+                b.satuan,
+                b.kondisi,
+                b.status,
+                COALESCE(a.nama, b.sumber_dana, '-') as sumber_dana,
+                COALESCE(b.tahun_pengadaan, b.tanggal_perolehan, '-') as tahun_pengadaan,
+                (b.harga_perolehan / GREATEST(b.jumlah, 1)) as harga_satuan,
+                ((b.jumlah - COALESCE((SELECT SUM(jumlah) FROM sarpras_distribusi WHERE barang_id = b.id), 0)) * (b.harga_perolehan / GREATEST(b.jumlah, 1))) as total_nilai,
+                k.nama_kategori,
+                'tanpa_ruangan' as asal_data
+            FROM sarpras_barang b
+            LEFT JOIN sarpras_kategori k ON b.kategori_id = k.id
+            LEFT JOIN sarpras_asal_anggaran a ON b.asal_anggaran_id = a.id
+            WHERE (
+                b.ruangan_id IS NULL 
+                OR b.ruangan_id = 0 
+                OR b.ruangan_id NOT IN (SELECT id FROM sarpras_ruangan)
+                OR (b.jumlah > COALESCE((SELECT SUM(jumlah) FROM sarpras_distribusi WHERE barang_id = b.id), 0) AND b.id IN (SELECT DISTINCT barang_id FROM sarpras_distribusi))
+            )
+            AND (b.jumlah - COALESCE((SELECT SUM(jumlah) FROM sarpras_distribusi WHERE barang_id = b.id), 0)) > 0
+        ";
+        $noRoomParams = [];
+        if ($kategoriId) {
+            $sqlNoRoom .= " AND b.kategori_id = ?";
+            $noRoomParams[] = $kategoriId;
+        }
+        if ($kondisi) {
+            $sqlNoRoom .= " AND b.kondisi = ?";
+            $noRoomParams[] = $kondisi;
+        }
+        $unassignedItems = $db->findAll($sqlNoRoom, $noRoomParams);
+
+        $uTotItem = count($unassignedItems);
+        $uTotQty = 0;
+        $uTotNilai = 0.0;
+        $uBaik = 0;
+        $uRusakRingan = 0;
+        $uRusakBerat = 0;
+
+        foreach ($unassignedItems as $it) {
+            $qty = (int)$it['jumlah'];
+            $uTotQty += $qty;
+            $uTotNilai += (float)$it['total_nilai'];
+            $kd = strtolower(trim((string)$it['kondisi']));
+            if ($kd === 'baik') $uBaik += $qty;
+            elseif (str_contains($kd, 'ringan')) $uRusakRingan += $qty;
+            elseif (str_contains($kd, 'berat')) $uRusakBerat += $qty;
+            else $uBaik += $qty;
+        }
+
+        if (empty($ruanganId) || $ruanganId === 'tanpa_ruangan') {
+            $grandTotalItems += $uTotItem;
+            $grandTotalQty += $uTotQty;
+            $grandTotalNilai += $uTotNilai;
+            $grandStatBaik += $uBaik;
+            $grandStatRusakRingan += $uRusakRingan;
+            $grandStatRusakBerat += $uRusakBerat;
+        }
+
+        return [
+            'ruangan_list' => $resultRuangan,
+            'unassigned' => [
+                'ruangan' => [
+                    'id' => 0,
+                    'nama_ruangan' => 'Belum Ditempatkan / Tanpa Ruangan',
+                    'kode_ruangan' => 'NON-ROOM',
+                    'lokasi_gedung' => 'Gudang Inventaris Cadangan',
+                    'unit' => 'Semua',
+                    'penanggung_jawab' => 'Petugas Gudang Sarpras'
+                ],
+                'items' => $unassignedItems,
+                'total_item' => $uTotItem,
+                'total_qty' => $uTotQty,
+                'total_nilai' => $uTotNilai,
+                'stat_baik' => $uBaik,
+                'stat_rusak_ringan' => $uRusakRingan,
+                'stat_rusak_berat' => $uRusakBerat
+            ],
+            'rekap' => [
+                'grand_total_items' => $grandTotalItems,
+                'grand_total_qty' => $grandTotalQty,
+                'grand_total_nilai' => $grandTotalNilai,
+                'grand_stat_baik' => $grandStatBaik,
+                'grand_stat_rusak_ringan' => $grandStatRusakRingan,
+                'grand_stat_rusak_berat' => $grandStatRusakBerat,
+                'total_active_ruangan' => count($resultRuangan)
+            ]
+        ];
+    }
+
+    /**
+     * Dapatkan daftar kelas per jenjang / unit dari data kelola siswa
+     */
+    public static function getKelasByUnit(): array
+    {
+        $db = self::db();
+        $result = [
+            'SD' => [],
+            'SMP' => [],
+            'SMA' => [],
+            'PAUD' => [],
+            'Yayasan' => [],
+            'Semua' => []
+        ];
+
+        try {
+            // Ambil dari data siswa aktif
+            $siswaClasses = $db->findAll("
+                SELECT DISTINCT UPPER(TRIM(jenjang)) as unit_val, TRIM(kelas) as nama_kelas
+                FROM siswa
+                WHERE kelas IS NOT NULL AND TRIM(kelas) != ''
+                ORDER BY unit_val ASC, nama_kelas ASC
+            ");
+            foreach ($siswaClasses as $sc) {
+                $u = strtoupper(trim($sc['unit_val'] ?? ''));
+                $k = trim($sc['nama_kelas'] ?? '');
+                if (!empty($u) && !empty($k)) {
+                    if (!isset($result[$u])) $result[$u] = [];
+                    if (!in_array($k, $result[$u], true)) {
+                        $result[$u][] = $k;
+                    }
+                }
+            }
+        } catch (Throwable $e) {}
+
+        // Ambil juga dari master kelas jika ada
+        try {
+            $masterClasses = $db->findAll("
+                SELECT DISTINCT TRIM(nama_kelas) as nama_kelas
+                FROM kelas
+                WHERE nama_kelas IS NOT NULL AND TRIM(nama_kelas) != '' AND is_active = 1
+                ORDER BY nama_kelas ASC
+            ");
+            foreach ($masterClasses as $mc) {
+                $k = trim($mc['nama_kelas'] ?? '');
+                if (!empty($k)) {
+                    $found = false;
+                    foreach ($result as $u => $list) {
+                        if (in_array($k, $list, true)) { $found = true; break; }
+                    }
+                    if (!$found) {
+                        $firstChar = substr($k, 0, 1);
+                        if (in_array($firstChar, ['1','2','3','4','5','6'])) {
+                            $result['SD'][] = $k;
+                        } elseif (in_array($firstChar, ['7','8','9'])) {
+                            $result['SMP'][] = $k;
+                        } elseif (in_array(substr($k, 0, 2), ['10','11','12'])) {
+                            $result['SMA'][] = $k;
+                        } elseif (stripos($k, 'TK') !== false || stripos($k, 'PAUD') !== false) {
+                            $result['PAUD'][] = $k;
+                        } else {
+                            $result['SD'][] = $k;
+                        }
+                    }
+                }
+            }
+        } catch (Throwable $e) {}
+
+        // Natsort untuk setiap unit agar urutan kelas alami (1, 2, 3... 10, 11)
+        foreach ($result as $u => &$list) {
+            natsort($list);
+            $list = array_values($list);
+        }
+
+        return $result;
+    }
 }
+
 

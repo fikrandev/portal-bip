@@ -27,10 +27,10 @@
                             
                             <div class="flex items-center gap-2 mt-2">
                                 <span class="px-2 py-0.5 rounded-lg border text-[10px] font-bold bg-purple-50 text-purple-700 border-purple-100/50">
-                                    Lantai <?= e($r['posisi_lantai'] ?? '-') ?>
+                                    Lantai <?= e($r['posisi_lantai'] ?? $r['lantai'] ?? '1') ?>
                                 </span>
                                 <span class="px-2 py-0.5 rounded-lg border text-[10px] font-bold bg-slate-50 text-slate-600 border-slate-200">
-                                    <?= floatval($r['luas_ruangan']) ?> m&sup2;
+                                    <?= floatval($r['luas'] ?? $r['luas_ruangan'] ?? 0) ?> m&sup2;
                                 </span>
                             </div>
                         

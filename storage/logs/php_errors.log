@@ -1059,3 +1059,65 @@ Stack trace:
 [02-Oct-2026 16:14:42 Asia/Makassar] PHP Parse error:  syntax error, unexpected token "<" in E:\xampp\mysql\data\portal-bip\modules\kelola-sarpras\views\sidebar.php on line 185
 [02-Oct-2026 16:15:51 Asia/Makassar] PHP Parse error:  syntax error, unexpected token "<" in E:\xampp\mysql\data\portal-bip\modules\kelola-sarpras\views\sidebar.php on line 185
 [02-Oct-2026 16:15:53 Asia/Makassar] PHP Parse error:  syntax error, unexpected token "<" in E:\xampp\mysql\data\portal-bip\modules\kelola-sarpras\views\sidebar.php on line 185
+[02-Oct-2026 16:19:02 Asia/Makassar] PHP Fatal error:  Uncaught Error: Call to undefined method SarprasController::db() in E:\xampp\mysql\data\portal-bip\modules\kelola-sarpras\controllers\SarprasController.php:924
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\core\Router.php(98): SarprasController::cetakLabelIndex()
+#1 E:\xampp\mysql\data\portal-bip\index.php(1069): Router->dispatch()
+#2 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\modules\kelola-sarpras\controllers\SarprasController.php on line 924
+[02-Oct-2026 16:19:57 Asia/Makassar] PHP Warning:  include(E:\xampp\mysql\data\portal-bip/templates/header.php): Failed to open stream: No such file or directory in E:\xampp\mysql\data\portal-bip\modules\kelola-sarpras\views\cetak-label\index.php on line 1
+[02-Oct-2026 16:19:57 Asia/Makassar] PHP Warning:  include(): Failed opening 'E:\xampp\mysql\data\portal-bip/templates/header.php' for inclusion (include_path='E:\xampp\php\PEAR') in E:\xampp\mysql\data\portal-bip\modules\kelola-sarpras\views\cetak-label\index.php on line 1
+[02-Oct-2026 16:19:57 Asia/Makassar] PHP Warning:  include(E:\xampp\mysql\data\portal-bip/templates/topbar.php): Failed to open stream: No such file or directory in E:\xampp\mysql\data\portal-bip\modules\kelola-sarpras\views\cetak-label\index.php on line 5
+[02-Oct-2026 16:19:57 Asia/Makassar] PHP Warning:  include(): Failed opening 'E:\xampp\mysql\data\portal-bip/templates/topbar.php' for inclusion (include_path='E:\xampp\php\PEAR') in E:\xampp\mysql\data\portal-bip\modules\kelola-sarpras\views\cetak-label\index.php on line 5
+[02-Oct-2026 16:19:57 Asia/Makassar] PHP Warning:  include(E:\xampp\mysql\data\portal-bip/templates/footer.php): Failed to open stream: No such file or directory in E:\xampp\mysql\data\portal-bip\modules\kelola-sarpras\views\cetak-label\index.php on line 141
+[02-Oct-2026 16:19:57 Asia/Makassar] PHP Warning:  include(): Failed opening 'E:\xampp\mysql\data\portal-bip/templates/footer.php' for inclusion (include_path='E:\xampp\php\PEAR') in E:\xampp\mysql\data\portal-bip\modules\kelola-sarpras\views\cetak-label\index.php on line 141
+[02-Oct-2026 16:33:43 Asia/Makassar] Query Error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'b.merk' in 'field list' | SQL: 
+                SELECT d.*, b.nama_barang, b.kode_barang, b.merk, r.nama_ruangan 
+                FROM sarpras_distribusi d 
+                JOIN sarpras_barang b ON d.barang_id = b.id 
+                JOIN sarpras_ruangan r ON d.ruangan_id = r.id 
+                WHERE d.ruangan_id = ?
+            
+[02-Oct-2026 16:33:43 Asia/Makassar] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'b.merk' in 'field list' in E:\xampp\mysql\data\portal-bip\core\Database.php:91
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\core\Database.php(91): PDO->prepare('\r\n             ...')
+#1 E:\xampp\mysql\data\portal-bip\modules\kelola-sarpras\controllers\SarprasController.php(922): Database->query('\r\n             ...', Array)
+#2 E:\xampp\mysql\data\portal-bip\core\Router.php(98): SarprasController::cetakLabelIndex()
+#3 E:\xampp\mysql\data\portal-bip\index.php(1069): Router->dispatch()
+#4 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\core\Database.php on line 91
+[02-Oct-2026 16:40:52 Asia/Makassar] PHP Warning:  include(E:\xampp\mysql\data\portal-bip/templates/header.php): Failed to open stream: No such file or directory in E:\xampp\mysql\data\portal-bip\modules\kelola-sarpras\views\cetak-label\index.php on line 1
+[02-Oct-2026 16:40:52 Asia/Makassar] PHP Warning:  include(): Failed opening 'E:\xampp\mysql\data\portal-bip/templates/header.php' for inclusion (include_path='E:\xampp\php\PEAR') in E:\xampp\mysql\data\portal-bip\modules\kelola-sarpras\views\cetak-label\index.php on line 1
+[02-Oct-2026 16:40:52 Asia/Makassar] PHP Warning:  include(E:\xampp\mysql\data\portal-bip/templates/topbar.php): Failed to open stream: No such file or directory in E:\xampp\mysql\data\portal-bip\modules\kelola-sarpras\views\cetak-label\index.php on line 5
+[02-Oct-2026 16:40:52 Asia/Makassar] PHP Warning:  include(): Failed opening 'E:\xampp\mysql\data\portal-bip/templates/topbar.php' for inclusion (include_path='E:\xampp\php\PEAR') in E:\xampp\mysql\data\portal-bip\modules\kelola-sarpras\views\cetak-label\index.php on line 5
+[02-Oct-2026 16:40:52 Asia/Makassar] PHP Warning:  include(E:\xampp\mysql\data\portal-bip/templates/footer.php): Failed to open stream: No such file or directory in E:\xampp\mysql\data\portal-bip\modules\kelola-sarpras\views\cetak-label\index.php on line 141
+[02-Oct-2026 16:40:52 Asia/Makassar] PHP Warning:  include(): Failed opening 'E:\xampp\mysql\data\portal-bip/templates/footer.php' for inclusion (include_path='E:\xampp\php\PEAR') in E:\xampp\mysql\data\portal-bip\modules\kelola-sarpras\views\cetak-label\index.php on line 141
+[03-Oct-2026 08:05:30 Asia/Makassar] PHP Warning:  include(E:\xampp\mysql\data\portal-bip/templates/header.php): Failed to open stream: No such file or directory in E:\xampp\mysql\data\portal-bip\modules\kelola-sarpras\views\cetak-label\index.php on line 1
+[03-Oct-2026 08:05:30 Asia/Makassar] PHP Warning:  include(): Failed opening 'E:\xampp\mysql\data\portal-bip/templates/header.php' for inclusion (include_path='E:\xampp\php\PEAR') in E:\xampp\mysql\data\portal-bip\modules\kelola-sarpras\views\cetak-label\index.php on line 1
+[03-Oct-2026 08:05:30 Asia/Makassar] PHP Warning:  include(E:\xampp\mysql\data\portal-bip/templates/topbar.php): Failed to open stream: No such file or directory in E:\xampp\mysql\data\portal-bip\modules\kelola-sarpras\views\cetak-label\index.php on line 5
+[03-Oct-2026 08:05:30 Asia/Makassar] PHP Warning:  include(): Failed opening 'E:\xampp\mysql\data\portal-bip/templates/topbar.php' for inclusion (include_path='E:\xampp\php\PEAR') in E:\xampp\mysql\data\portal-bip\modules\kelola-sarpras\views\cetak-label\index.php on line 5
+[03-Oct-2026 08:05:30 Asia/Makassar] PHP Warning:  include(E:\xampp\mysql\data\portal-bip/templates/footer.php): Failed to open stream: No such file or directory in E:\xampp\mysql\data\portal-bip\modules\kelola-sarpras\views\cetak-label\index.php on line 141
+[03-Oct-2026 08:05:30 Asia/Makassar] PHP Warning:  include(): Failed opening 'E:\xampp\mysql\data\portal-bip/templates/footer.php' for inclusion (include_path='E:\xampp\php\PEAR') in E:\xampp\mysql\data\portal-bip\modules\kelola-sarpras\views\cetak-label\index.php on line 141
+[03-Oct-2026 08:05:36 Asia/Makassar] Query Error: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'b.merk' in 'field list' | SQL: 
+                SELECT d.*, b.nama_barang, b.kode_barang, b.merk, r.nama_ruangan 
+                FROM sarpras_distribusi d 
+                JOIN sarpras_barang b ON d.barang_id = b.id 
+                JOIN sarpras_ruangan r ON d.ruangan_id = r.id 
+                WHERE d.ruangan_id = ?
+            
+[03-Oct-2026 08:05:36 Asia/Makassar] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'b.merk' in 'field list' in E:\xampp\mysql\data\portal-bip\core\Database.php:91
+Stack trace:
+#0 E:\xampp\mysql\data\portal-bip\core\Database.php(91): PDO->prepare('\r\n             ...')
+#1 E:\xampp\mysql\data\portal-bip\modules\kelola-sarpras\controllers\SarprasController.php(922): Database->query('\r\n             ...', Array)
+#2 E:\xampp\mysql\data\portal-bip\core\Router.php(98): SarprasController::cetakLabelIndex()
+#3 E:\xampp\mysql\data\portal-bip\index.php(1069): Router->dispatch()
+#4 {main}
+  thrown in E:\xampp\mysql\data\portal-bip\core\Database.php on line 91
+[03-Oct-2026 08:18:48 Asia/Makassar] PHP Warning:  Undefined array key "kondisi_barang" in E:\xampp\mysql\data\portal-bip\modules\kelola-sarpras\views\laporan\cetak.php on line 140
+[03-Oct-2026 08:35:16 Asia/Makassar] PHP Warning:  Cannot modify header information - headers already sent by (output started at E:\xampp\mysql\data\portal-bip\test_penyusutan.php:14) in E:\xampp\mysql\data\portal-bip\core\ExcelHelper.php on line 41
+[03-Oct-2026 08:35:16 Asia/Makassar] PHP Warning:  Cannot modify header information - headers already sent by (output started at E:\xampp\mysql\data\portal-bip\test_penyusutan.php:14) in E:\xampp\mysql\data\portal-bip\core\ExcelHelper.php on line 42
+[03-Oct-2026 08:35:16 Asia/Makassar] PHP Warning:  Cannot modify header information - headers already sent by (output started at E:\xampp\mysql\data\portal-bip\test_penyusutan.php:14) in E:\xampp\mysql\data\portal-bip\core\ExcelHelper.php on line 43
+[03-Oct-2026 08:35:16 Asia/Makassar] PHP Warning:  Cannot modify header information - headers already sent by (output started at E:\xampp\mysql\data\portal-bip\test_penyusutan.php:14) in E:\xampp\mysql\data\portal-bip\core\ExcelHelper.php on line 44
+[03-Oct-2026 08:58:38 Asia/Makassar] PHP Warning:  Cannot modify header information - headers already sent by (output started at E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\models\PerangkatModel.php:1) in E:\xampp\mysql\data\portal-bip\index.php on line 807
+[03-Oct-2026 08:58:38 Asia/Makassar] PHP Warning:  Cannot modify header information - headers already sent by (output started at E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\models\PerangkatModel.php:1) in E:\xampp\mysql\data\portal-bip\index.php on line 808
+[03-Oct-2026 08:58:38 Asia/Makassar] PHP Warning:  Cannot modify header information - headers already sent by (output started at E:\xampp\mysql\data\portal-bip\modules\kelola-perangkat-pembelajaran\models\PerangkatModel.php:1) in E:\xampp\mysql\data\portal-bip\index.php on line 809

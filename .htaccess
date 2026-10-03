@@ -5,8 +5,8 @@
     RewriteEngine On
     # RewriteBase is intentionally omitted so it adapts automatically to root or any subfolder
 
-    # Route manifest.json and pwa-icon.png dynamically to index.php
-    RewriteRule ^(manifest\.json|pwa-icon\.png)$ index.php [QSA,L]
+    # Route manifest.json, pwa-icon.png, and service workers dynamically to index.php
+    RewriteRule ^(manifest\.json|pwa-icon\.png|sw-sarpras\.js|sw\.js)$ index.php [QSA,L]
 
     # Skip rewriting for real files and directories
     RewriteCond %{REQUEST_FILENAME} !-f

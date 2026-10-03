@@ -136,9 +136,13 @@
                         <input type="number" name="masa_manfaat" value="<?= e($barang['masa_manfaat'] ?? 5) ?>" min="0" required class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:border-primary-500 outline-none">
                     </div>
 
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">Ganti Foto Barang (Biarkan kosong jika tidak diganti)</label>
-                        <input type="file" name="foto" accept="image/jpeg,image/png,image/webp" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-600 focus:bg-white file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100">
+                    <div class="sm:col-span-3 pt-2">
+                        <?php 
+                        $uploaderId = 'foto_barang_edit';
+                        $existingFotos = SarprasModel::getFotoList($barang['foto'] ?? '');
+                        $isMobile = false;
+                        include BASE_PATH . '/modules/kelola-sarpras/views/barang/_foto_uploader.php';
+                        ?>
                     </div>
 
                     <div>

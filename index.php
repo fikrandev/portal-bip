@@ -36,6 +36,10 @@ require_once BASE_PATH . '/core/ExcelHelper.php';
 require_once BASE_PATH . '/core/ModalHelper.php';
 require_once BASE_PATH . '/core/DropdownHelper.php';
 require_once BASE_PATH . '/core/KartuHelper.php';
+require_once BASE_PATH . '/core/AutoMigrate.php';
+
+// ── Auto Migrate Database (Pastikan struktur database server selalu mutakhir) ──
+AutoMigrate::run();
 
 // ── Global System Settings ──────────────────────────
 try {
@@ -632,6 +636,8 @@ $router->post('/kelola-sarpras/kategori/delete/{id}', [SarprasController::class,
 
 // Penyusutan Aset
 $router->get('/kelola-sarpras/penyusutan', [SarprasController::class, 'penyusutanList'], [Middleware::permissionRequired('sarpras.view')]);
+$router->get('/kelola-sarpras/penyusutan/cetak', [SarprasController::class, 'penyusutanCetak'], [Middleware::permissionRequired('sarpras.view')]);
+$router->get('/kelola-sarpras/penyusutan/export-excel', [SarprasController::class, 'penyusutanExportExcel'], [Middleware::permissionRequired('sarpras.view')]);
 
 // Laporan Aset (Kondisi & Filter)
 $router->get('/kelola-sarpras/laporan', [SarprasController::class, 'laporanList'], [Middleware::permissionRequired('sarpras.view')]);

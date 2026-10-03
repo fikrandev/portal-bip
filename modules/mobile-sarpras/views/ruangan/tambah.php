@@ -1,109 +1,164 @@
-<div class="px-4 pt-4 space-y-6">
+<div class="px-4 pt-4 space-y-6 pb-20">
     <div class="bg-white rounded-3xl p-5 shadow-sm border border-slate-100">
-        <form action="<?= url('kelola-sarpras/ruangan/store') ?>" method="POST" enctype="multipart/form-data" class="space-y-4">
+        <form action="<?= url('kelola-sarpras/ruangan/store') ?>" method="POST" enctype="multipart/form-data" class="space-y-4" onsubmit="return validateMobileRuanganForm()">
             <?= CSRF::field() ?>
             <input type="hidden" name="return_to" value="<?= url('mobile-sarpras/ruangan') ?>">
 
             <div class="space-y-4">
+                <!-- Gedung / Bangunan Lokasi -->
                 <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1">Pilih Gedung / Bangunan <span class="text-rose-500">*</span></label>
-                    <select name="bangunan_id" required class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-purple-500">
+                    <select name="bangunan_id" id="mobile_rng_bangunan" required onchange="onBangunanMobileChange(this.value)" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 outline-none focus:border-purple-500">
                         <option value="">-- Pilih Gedung --</option>
                         <?php foreach ($bangunanList as $b): ?>
                             <option value="<?= $b['id'] ?>"><?= e($b['nama_bangunan']) ?></option>
                         <?php endforeach; ?>
                     </select>
                 </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Nama Ruangan / Fasilitas <span class="text-rose-500">*</span></label>
-                    <input type="text" name="nama_ruangan" required class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-purple-500" placeholder="Cth: Ruang Kelas 1A">
-                </div>
-                
-                <div class="grid grid-cols-2 gap-3">
+
+                <!-- 1. Unit Dulu, Baru 2. Jenis Ruang -->
+                <div class="grid grid-cols-2 gap-3 p-3 bg-purple-50/50 rounded-2xl border border-purple-100">
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">Jenis Ruangan <span class="text-rose-500">*</span></label>
-                        <select name="jenis_ruangan" required class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-purple-500">
+                        <label class="block text-xs font-bold text-slate-700 mb-1">1. Unit / Jenjang <span class="text-rose-500">*</span></label>
+                        <select name="unit" id="mobile_rng_unit" onchange="onUnitOrJenisMobileChange()" class="w-full px-3 py-2.5 bg-white border border-purple-200 rounded-xl text-sm font-bold text-slate-800 outline-none focus:border-purple-500">
+                            <option value="SD" selected>SD</option>
+                            <option value="SMP">SMP</option>
+                            <option value="SMA">SMA</option>
+                            <option value="PAUD">PAUD</option>
+                            <option value="Yayasan">Yayasan</option>
+                            <option value="Semua">Semua / Umum</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">2. Jenis Ruang <span class="text-rose-500">*</span></label>
+                        <select name="jenis_ruangan" id="mobile_rng_jenis" onchange="onUnitOrJenisMobileChange()" class="w-full px-3 py-2.5 bg-white border border-purple-200 rounded-xl text-sm font-bold text-slate-800 outline-none focus:border-purple-500">
                             <option value="Ruang Kelas" selected>Ruang Kelas (Belajar)</option>
-                            <option value="Ruang Laboratorium">Ruang Laboratorium (Komputer/IPA/Bahasa)</option>
+                            <option value="Ruang Laboratorium">Ruang Laboratorium</option>
                             <option value="Ruang Kantor">Ruang Kantor / Administrasi</option>
                             <option value="Ruang Guru">Ruang Guru</option>
                             <option value="Ruang Pimpinan">Ruang Kepala Sekolah / Pimpinan</option>
                             <option value="Ruang Perpustakaan">Ruang Perpustakaan</option>
                             <option value="Ruang UKS">Ruang UKS / Medis</option>
-                            <option value="Ruang Ibadah">Ruang Ibadah / Masjid / Musholla</option>
+                            <option value="Ruang Ibadah">Ruang Ibadah / Masjid</option>
                             <option value="Ruang Aula">Ruang Aula / Serbaguna</option>
-                            <option value="Ruang Konseling / BK">Ruang Bimbingan Konseling (BK)</option>
-                            <option value="Ruang OSIS">Ruang OSIS / Ekstrakurikuler</option>
+                            <option value="Ruang Konseling / BK">Ruang BK</option>
+                            <option value="Ruang OSIS">Ruang OSIS</option>
                             <option value="Gudang">Gudang / Logistik</option>
                             <option value="Toilet">Toilet / Sanitasi</option>
                             <option value="Kantin">Kantin / Dapur</option>
                             <option value="Lainnya">Fasilitas Lainnya</option>
                         </select>
                     </div>
+                </div>
+
+                <!-- Nama Ruangan (Otomatis Dropdown dari Siswa jika Ruang Kelas) -->
+                <div>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label class="block text-xs font-bold text-slate-700">
+                            Nama Ruangan / Fasilitas <span class="text-rose-500">*</span>
+                        </label>
+                        <div class="flex items-center gap-1.5">
+                            <span id="mobile_nama_badge" class="text-[10px] px-2 py-0.5 rounded-full font-bold bg-purple-100 text-purple-700">
+                                Kelas: SD
+                            </span>
+                            <button type="button" id="mobile_toggle_manual_btn" onclick="toggleMobileManualNama()" class="text-[11px] font-semibold text-purple-600 hover:text-purple-800 transition-colors flex items-center gap-1">
+                                <span id="mobile_toggle_manual_icon">✏️</span>
+                                <span id="mobile_toggle_manual_text">Ketik Manual</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Mode Dropdown Kelas Siswa -->
+                    <div id="mobile_wrapper_nama_select">
+                        <select id="mobile_rng_nama_select" onchange="onMobileNamaSelectChange(this.value)" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 outline-none focus:border-purple-500 focus:bg-white">
+                            <option value="">-- Pilih Nama Kelas --</option>
+                        </select>
+                    </div>
+
+                    <!-- Mode Text Biasa -->
+                    <div id="mobile_wrapper_nama_text" class="hidden">
+                        <input type="text" id="mobile_rng_nama_text" oninput="onMobileNamaTextInput(this.value)" placeholder="Cth: Ruang Kelas 1A, Lab Komputer..." class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-purple-500 focus:bg-white">
+                    </div>
+
+                    <!-- Hidden input yang dikirim ke server -->
+                    <input type="hidden" name="nama_ruangan" id="mobile_rng_nama" required value="">
+
+                    <p id="mobile_nama_subtext" class="text-[11px] text-slate-500 mt-1 flex items-center gap-1">
+                        <svg class="w-3.5 h-3.5 text-purple-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        <span>Pilihan kelas otomatis dari data <strong>Kelola Siswa</strong>.</span>
+                    </p>
+                </div>
+
+                <!-- Posisi Lantai & Kode Ruangan -->
+                <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">Posisi Lantai</label>
-                        <input type="number" name="lantai" value="1" min="1" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-purple-500">
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Posisi Lantai <span class="text-rose-500">*</span></label>
+                        <select name="lantai" id="mobile_rng_lantai" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 outline-none focus:border-purple-500">
+                            <option value="1">Lantai 1</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Kode Ruangan</label>
+                        <input type="text" name="kode_ruangan" id="mobile_rng_kode" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-purple-500 font-mono" placeholder="Auto jika kosong">
                     </div>
                 </div>
             </div>
             
             <hr class="border-slate-100 my-4">
 
-            <div class="space-y-3 p-3 bg-purple-50/50 rounded-xl border border-purple-100">
-                <p class="text-xs font-bold text-purple-800 uppercase tracking-wider mb-2">Dimensi & Luas</p>
+            <!-- Dimensi & Kapasitas -->
+            <div class="space-y-3 p-3.5 bg-purple-50/50 rounded-2xl border border-purple-100">
+                <p class="text-xs font-bold text-purple-800 uppercase tracking-wider">Dimensi & Kapasitas</p>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs font-bold text-slate-700 mb-1">Panjang (m)</label>
-                        <input type="number" step="0.01" id="rng_panjang" name="panjang" placeholder="0.00" oninput="calculateLuasRng()" class="w-full px-3 py-2.5 bg-white border border-purple-200 rounded-xl text-sm font-bold outline-none focus:border-purple-500">
+                        <input type="number" step="0.01" id="rng_panjang" name="panjang" placeholder="0.00" oninput="calculateLuasRng()" class="w-full px-3 py-2 bg-white border border-purple-200 rounded-xl text-sm font-bold outline-none focus:border-purple-500">
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-slate-700 mb-1">Lebar (m)</label>
-                        <input type="number" step="0.01" id="rng_lebar" name="lebar" placeholder="0.00" oninput="calculateLuasRng()" class="w-full px-3 py-2.5 bg-white border border-purple-200 rounded-xl text-sm font-bold outline-none focus:border-purple-500">
+                        <input type="number" step="0.01" id="rng_lebar" name="lebar" placeholder="0.00" oninput="calculateLuasRng()" class="w-full px-3 py-2 bg-white border border-purple-200 rounded-xl text-sm font-bold outline-none focus:border-purple-500">
                     </div>
                 </div>
-                <div>
-                    <label class="block text-xs font-bold text-purple-900 mb-1">Luas Ruang (m²) <span class="text-purple-500 font-normal">(Otomatis)</span></label>
-                    <input type="number" step="0.01" id="rng_luas" name="luas" placeholder="0.00" class="w-full px-3 py-2.5 bg-purple-100 border border-purple-300 rounded-xl text-sm font-black text-purple-900 outline-none">
-                </div>
-            </div>
-
-            <div class="space-y-4 pt-2">
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">Unit / Jenjang</label>
-                        <select name="unit" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-purple-500">
-                            <option value="SD">SD</option>
-                            <option value="SMP">SMP</option>
-                            <option value="SMA">SMA</option>
-                            <option value="PAUD">PAUD</option>
-                            <option value="Yayasan">Yayasan</option>
-                            <option value="Semua" selected>Semua / Umum</option>
-                        </select>
+                        <label class="block text-xs font-bold text-purple-900 mb-1">Luas Ruang (m²)</label>
+                        <input type="number" step="0.01" id="rng_luas" name="luas" placeholder="0.00" class="w-full px-3 py-2 bg-purple-100 border border-purple-300 rounded-xl text-sm font-black text-purple-900 outline-none">
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-slate-700 mb-1">Kapasitas (Org)</label>
-                        <input type="number" name="kapasitas" min="0" value="30" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:border-purple-500">
+                        <input type="number" name="kapasitas" min="0" value="30" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold outline-none focus:border-purple-500">
                     </div>
                 </div>
+            </div>
 
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Kode Ruangan (Opsional)</label>
-                    <input type="text" name="kode_ruangan" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-purple-500 font-mono" placeholder="Otomatis jika kosong">
-                </div>
-
+            <!-- Penanggung Jawab & Keterangan -->
+            <div class="space-y-4 pt-1">
                 <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1">Penanggung Jawab (Opsional)</label>
-                    <input type="text" name="penanggung_jawab" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-purple-500" placeholder="Nama Guru / Pegawai">
+                    <input type="text" name="penanggung_jawab" list="mobile_pegawai_list" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-purple-500" placeholder="Pilih atau ketik nama guru / pegawai">
+                    <datalist id="mobile_pegawai_list">
+                        <?php if (!empty($pegawaiList)): ?>
+                            <?php foreach ($pegawaiList as $p): 
+                                $namaPJ = $p['nama'];
+                                if (!empty($p['gelar']) && !str_contains($p['nama'], $p['gelar'])) {
+                                    $namaPJ .= ', ' . $p['gelar'];
+                                }
+                                $ket = !empty($p['unit_tugas']) ? " ({$p['unit_tugas']})" : (!empty($p['jabatan']) ? " ({$p['jabatan']})" : "");
+                            ?>
+                                <option value="<?= e($namaPJ) ?>"><?= e($namaPJ . $ket) ?></option>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </datalist>
                 </div>
 
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Keterangan / Fungsi</label>
-                    <input type="text" name="keterangan" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-purple-500" placeholder="Keterangan tambahan">
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Keterangan / Fungsi (Opsional)</label>
+                    <input type="text" name="keterangan" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-purple-500" placeholder="Fasilitas AC, proyektor, dll...">
                 </div>
             </div>
 
             <div class="pt-4">
-                <button type="submit" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl py-3 shadow-md flex items-center justify-center gap-2">
+                <button type="submit" class="w-full bg-purple-600 hover:bg-purple-700 active:scale-[0.99] text-white font-bold rounded-2xl py-3.5 shadow-lg shadow-purple-600/25 flex items-center justify-center gap-2 transition-all">
                     <i data-lucide="save" class="w-5 h-5"></i> Simpan Ruangan
                 </button>
             </div>
@@ -112,10 +167,200 @@
 </div>
 
 <script>
-    function calculateLuasRng() {
-        const p = parseFloat(document.getElementById('rng_panjang').value) || 0;
-        const l = parseFloat(document.getElementById('rng_lebar').value) || 0;
-        document.getElementById('rng_luas').value = (p * l).toFixed(2);
-    }
-</script>
+const bangunanDataMobile = <?= json_encode($bangunanList ?? []) ?>;
+const kelasDataByUnitMobile = <?= json_encode($kelasListByUnit ?? []) ?>;
+let isMobileManualNama = false;
 
+function calculateLuasRng() {
+    const p = parseFloat(document.getElementById('rng_panjang').value) || 0;
+    const l = parseFloat(document.getElementById('rng_lebar').value) || 0;
+    document.getElementById('rng_luas').value = (p * l > 0) ? (p * l).toFixed(2) : '';
+}
+
+function onBangunanMobileChange(bangunanId, selectedLantai = 1) {
+    const sel = document.getElementById('mobile_rng_lantai');
+    if (!sel) return;
+    sel.innerHTML = '';
+    
+    let maxLt = 1;
+    if (bangunanId) {
+        const found = bangunanDataMobile.find(b => String(b.id) === String(bangunanId));
+        if (found && found.jumlah_lantai) {
+            maxLt = Math.max(1, parseInt(found.jumlah_lantai));
+        }
+    }
+    
+    for (let i = 1; i <= maxLt; i++) {
+        const opt = document.createElement('option');
+        opt.value = i;
+        opt.textContent = `Lantai ${i}`;
+        if (parseInt(i) === parseInt(selectedLantai)) opt.selected = true;
+        sel.appendChild(opt);
+    }
+}
+
+function onUnitOrJenisMobileChange(preferValue = '') {
+    const unitSel = document.getElementById('mobile_rng_unit');
+    const jenisSel = document.getElementById('mobile_rng_jenis');
+    const unit = unitSel ? (unitSel.value || 'SD') : 'SD';
+    const jenis = jenisSel ? (jenisSel.value || 'Ruang Kelas') : 'Ruang Kelas';
+    const isKelas = (jenis === 'Ruang Kelas');
+
+    const wrapperSelect = document.getElementById('mobile_wrapper_nama_select');
+    const wrapperText = document.getElementById('mobile_wrapper_nama_text');
+    const selectElem = document.getElementById('mobile_rng_nama_select');
+    const textElem = document.getElementById('mobile_rng_nama_text');
+    const finalInput = document.getElementById('mobile_rng_nama');
+    const toggleBtn = document.getElementById('mobile_toggle_manual_btn');
+    const badge = document.getElementById('mobile_nama_badge');
+    const subtext = document.getElementById('mobile_nama_subtext');
+
+    const kelasList = kelasDataByUnitMobile[unit] || kelasDataByUnitMobile[unit.toUpperCase()] || [];
+
+    if (isKelas) {
+        if (toggleBtn) toggleBtn.classList.remove('hidden');
+
+        if (!isMobileManualNama) {
+            // MODE DROPDOWN KELAS SISWA
+            wrapperSelect.classList.remove('hidden');
+            wrapperText.classList.add('hidden');
+            if (badge) {
+                badge.textContent = `Kelas: ${unit}`;
+                badge.classList.remove('hidden');
+            }
+            if (toggleBtn) {
+                document.getElementById('mobile_toggle_manual_icon').textContent = '✏️';
+                document.getElementById('mobile_toggle_manual_text').textContent = 'Ketik Manual';
+            }
+
+            selectElem.innerHTML = '';
+            const defOpt = document.createElement('option');
+            defOpt.value = '';
+            defOpt.textContent = `-- Pilih Nama Kelas (${unit}) --`;
+            selectElem.appendChild(defOpt);
+
+            let hasMatched = false;
+            const targetVal = preferValue || (finalInput ? finalInput.value : '');
+
+            if (kelasList.length > 0) {
+                kelasList.forEach(k => {
+                    const opt = document.createElement('option');
+                    opt.value = k;
+                    opt.textContent = k;
+                    if (targetVal && (k === targetVal || k.toLowerCase() === targetVal.toLowerCase())) {
+                        opt.selected = true;
+                        hasMatched = true;
+                    }
+                    selectElem.appendChild(opt);
+                });
+            } else {
+                const emptyOpt = document.createElement('option');
+                emptyOpt.value = '';
+                emptyOpt.textContent = `(Belum ada kelas siswa di ${unit})`;
+                emptyOpt.disabled = true;
+                selectElem.appendChild(emptyOpt);
+            }
+
+            const customOpt = document.createElement('option');
+            customOpt.value = '__MANUAL__';
+            customOpt.textContent = '✏️ + Ketik Nama Kelas Lainnya...';
+            selectElem.appendChild(customOpt);
+
+            if (hasMatched) {
+                finalInput.value = selectElem.value;
+                textElem.value = selectElem.value;
+            } else if (!targetVal) {
+                finalInput.value = '';
+                textElem.value = '';
+            }
+
+            if (subtext) {
+                subtext.innerHTML = `<svg class="w-3.5 h-3.5 text-purple-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg> <span>Pilihan kelas otomatis dari data <strong>Kelola Siswa (${unit})</strong>.</span>`;
+            }
+        } else {
+            // MODE KETIK MANUAL RUANG KELAS
+            wrapperSelect.classList.add('hidden');
+            wrapperText.classList.remove('hidden');
+            if (badge) {
+                badge.textContent = `Manual: ${unit}`;
+                badge.classList.remove('hidden');
+            }
+            if (toggleBtn) {
+                document.getElementById('mobile_toggle_manual_icon').textContent = '📋';
+                document.getElementById('mobile_toggle_manual_text').textContent = 'Pilih Dropdown';
+            }
+            textElem.placeholder = `Cth: Ruang Kelas 1A, Kelas Khusus...`;
+            if (subtext) {
+                subtext.innerHTML = `<svg class="w-3.5 h-3.5 text-amber-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg> <span>Mode ketik manual aktif. Silakan isi nama kelas kustom.</span>`;
+            }
+        }
+    } else {
+        // BUKAN RUANG KELAS
+        isMobileManualNama = true;
+        wrapperSelect.classList.add('hidden');
+        wrapperText.classList.remove('hidden');
+        if (toggleBtn) toggleBtn.classList.add('hidden');
+        if (badge) badge.classList.add('hidden');
+        textElem.placeholder = `Cth: ${jenis}, Lab Komputer, dll...`;
+        if (subtext) {
+            subtext.innerHTML = `<svg class="w-3.5 h-3.5 text-slate-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg> <span>Masukkan nama ruangan sesuai fungsi peruntukan.</span>`;
+        }
+    }
+}
+
+function onMobileNamaSelectChange(val) {
+    if (val === '__MANUAL__') {
+        toggleMobileManualNama(true);
+        return;
+    }
+    const finalInput = document.getElementById('mobile_rng_nama');
+    const textElem = document.getElementById('mobile_rng_nama_text');
+    if (finalInput) finalInput.value = val;
+    if (textElem) textElem.value = val;
+}
+
+function onMobileNamaTextInput(val) {
+    const finalInput = document.getElementById('mobile_rng_nama');
+    if (finalInput) finalInput.value = val;
+}
+
+function toggleMobileManualNama(forceManual = null) {
+    if (forceManual !== null) {
+        isMobileManualNama = forceManual;
+    } else {
+        isMobileManualNama = !isMobileManualNama;
+    }
+    const finalInput = document.getElementById('mobile_rng_nama');
+    onUnitOrJenisMobileChange(finalInput ? finalInput.value : '');
+    if (isMobileManualNama) {
+        const textElem = document.getElementById('mobile_rng_nama_text');
+        if (textElem) textElem.focus();
+    }
+}
+
+function validateMobileRuanganForm() {
+    const finalInput = document.getElementById('mobile_rng_nama');
+    const val = (finalInput ? finalInput.value : '').trim();
+    if (!val) {
+        alert('Silakan pilih atau isi Nama Ruangan / Fasilitas terlebih dahulu!');
+        const textElem = document.getElementById('mobile_rng_nama_text');
+        const selectElem = document.getElementById('mobile_rng_nama_select');
+        const wrapperSelect = document.getElementById('mobile_wrapper_nama_select');
+        if (wrapperSelect && !wrapperSelect.classList.contains('hidden')) {
+            selectElem.focus();
+        } else if (textElem) {
+            textElem.focus();
+        }
+        return false;
+    }
+    return true;
+}
+
+// Inisialisasi awal
+document.addEventListener('DOMContentLoaded', function() {
+    onUnitOrJenisMobileChange();
+    if (window.lucide) {
+        lucide.createIcons();
+    }
+});
+</script>

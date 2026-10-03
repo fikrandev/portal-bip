@@ -87,6 +87,13 @@
                     class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-500/30 transform active:scale-95 transition-all text-sm">
                 Masuk
             </button>
+
+            <!-- Tombol Install PWA di Halaman Login -->
+            <div id="login-pwa-install-wrapper" class="mt-4 pt-4 border-t border-slate-100 text-center hidden">
+                <button type="button" id="btn-login-install" class="w-full py-2.5 px-4 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 font-bold rounded-xl text-xs flex items-center justify-center gap-2 transition-all active:scale-95">
+                    <i data-lucide="download" class="w-4 h-4 text-blue-600"></i> Pasang Aplikasi di Layar Utama HP
+                </button>
+            </div>
         </form>
     </div>
     
@@ -112,6 +119,38 @@
             }
         }
         
+        // PWA Install on Login
+        let loginDeferredPrompt = null;
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            loginDeferredPrompt = e;
+            if (!isStandalone) {
+                const wrap = document.getElementById('login-pwa-install-wrapper');
+                if (wrap) {
+                    wrap.classList.remove('hidden');
+                    lucide.createIcons();
+                }
+            }
+        });
+
+        const btnLoginInstall = document.getElementById('btn-login-install');
+        if (btnLoginInstall) {
+            btnLoginInstall.addEventListener('click', async () => {
+                if (loginDeferredPrompt) {
+                    loginDeferredPrompt.prompt();
+                    const { outcome } = await loginDeferredPrompt.userChoice;
+                    if (outcome === 'accepted') {
+                        loginDeferredPrompt = null;
+                        document.getElementById('login-pwa-install-wrapper').classList.add('hidden');
+                    }
+                } else {
+                    alert('Untuk memasang di HP: Buka menu browser (titik 3 di Android atau tombol Share di iPhone Safari) lalu pilih "Tambahkan ke Layar Utama".');
+                }
+            });
+        }
+
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('<?= url('sw-sarpras.js') ?>')
                 .then(function(reg) {

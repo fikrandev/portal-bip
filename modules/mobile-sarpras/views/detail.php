@@ -1,19 +1,46 @@
 <div class="px-4 pt-4 space-y-6">
     <!-- Asset Image / Info Card -->
     <div class="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden relative">
-        <div class="h-32 bg-blue-600 relative">
-            <?php if (!empty($barang['foto'])): ?>
-                <img src="<?= asset('storage/sarpras/' . $barang['foto']) ?>" class="w-full h-full object-cover opacity-50 mix-blend-overlay">
-            <?php else: ?>
-                <div class="absolute inset-0 opacity-20 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4IiBoZWlnaHQ9IjgiPgo8cmVjdCB3aWR0aD0iOCIgaGVpZ2h0PSI4IiBmaWxsPSIjZmZmIj48L3JlY3Q+CjxwYXRoIGQ9Ik0wIDBMOCA4Wk04IDBMMCA4WiIgc3Ryb2tlPSIjMDAwIiBzdHJva2Utd2lkdGg9IjEiPjwvcGF0aD4KPC9zdmc+')]"></div>
-            <?php endif; ?>
-            <div class="absolute bottom-4 left-4 right-4 flex items-end justify-between">
-                <div>
-                    <span class="px-2 py-1 bg-white/20 backdrop-blur-md rounded-lg text-[10px] font-bold text-white uppercase tracking-wider mb-2 inline-block"><?= e($barang['nama_kategori'] ?? 'Aset') ?></span>
-                    <h2 class="text-xl font-bold text-white drop-shadow-md leading-tight"><?= e($barang['nama_barang']) ?></h2>
+        <?php 
+        $fotoList = SarprasModel::getFotoList($barang['foto'] ?? '');
+        $countFoto = count($fotoList);
+        ?>
+        <?php if ($countFoto > 1): ?>
+            <!-- Multi-Photo Gallery Horizontal Scroll -->
+            <div class="relative bg-slate-900 overflow-hidden">
+                <div class="flex overflow-x-auto snap-x snap-mandatory hide-scrollbar h-48">
+                    <?php foreach ($fotoList as $idx => $f): ?>
+                        <div class="snap-center shrink-0 w-full h-full relative">
+                            <img src="<?= url('public/' . ltrim($f, '/')) ?>" class="w-full h-full object-cover">
+                            <span class="absolute top-3 right-3 px-2 py-0.5 rounded-full bg-black/60 backdrop-blur-md text-[10px] font-bold text-white">
+                                <?= $idx + 1 ?> / <?= $countFoto ?>
+                            </span>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+                <div class="absolute bottom-3 left-4 right-4 flex items-end justify-between pointer-events-none">
+                    <div class="drop-shadow-md">
+                        <span class="px-2 py-1 bg-black/40 backdrop-blur-md rounded-lg text-[10px] font-bold text-white uppercase tracking-wider mb-1 inline-block"><?= e($barang['nama_kategori'] ?? 'Aset') ?></span>
+                        <h2 class="text-xl font-bold text-white leading-tight"><?= e($barang['nama_barang']) ?></h2>
+                    </div>
                 </div>
             </div>
-        </div>
+        <?php else: ?>
+            <div class="h-36 bg-blue-600 relative overflow-hidden">
+                <?php if (!empty($fotoList[0])): ?>
+                    <img src="<?= url('public/' . ltrim($fotoList[0], '/')) ?>" class="w-full h-full object-cover">
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent"></div>
+                <?php else: ?>
+                    <div class="absolute inset-0 opacity-20 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4IiBoZWlnaHQ9IjgiPgo8cmVjdCB3aWR0aD0iOCIgaGVpZ2h0PSI4IiBmaWxsPSIjZmZmIj48L3JlY3Q+CjxwYXRoIGQ9Ik0wIDBMOCA4Wk04IDBMMCA4WiIgc3Ryb2tlPSIjMDAwIiBzdHJva2Utd2lkdGg9IjEiPjwvcGF0aD4KPC9zdmc+')]"></div>
+                <?php endif; ?>
+                <div class="absolute bottom-3 left-4 right-4 flex items-end justify-between">
+                    <div>
+                        <span class="px-2 py-1 bg-white/20 backdrop-blur-md rounded-lg text-[10px] font-bold text-white uppercase tracking-wider mb-1 inline-block"><?= e($barang['nama_kategori'] ?? 'Aset') ?></span>
+                        <h2 class="text-xl font-bold text-white drop-shadow-md leading-tight"><?= e($barang['nama_barang']) ?></h2>
+                    </div>
+                </div>
+            </div>
+        <?php endif; ?>
         <div class="p-4 grid grid-cols-2 gap-4 border-b border-slate-100">
             <div>
                 <span class="block text-[10px] text-slate-400 font-bold uppercase">Kode Aset</span>

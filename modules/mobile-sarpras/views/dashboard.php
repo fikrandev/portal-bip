@@ -13,9 +13,25 @@
             <?= strtoupper(substr($nama ?? 'U', 0, 1)) ?>
         </div>
     </div>
+ 
+    <!-- PWA Install Banner Card (Hidden if already standalone) -->
+    <div id="pwa-dashboard-card" class="pwa-install-trigger bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl p-4 text-white shadow-lg shadow-blue-500/20 flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+            <div class="w-11 h-11 bg-white/20 rounded-2xl flex items-center justify-center shrink-0 backdrop-blur-xs">
+                <i data-lucide="download" class="w-6 h-6 text-white"></i>
+            </div>
+            <div>
+                <h4 class="font-bold text-sm leading-tight">Install Sarpras Mobile</h4>
+                <p class="text-xs text-blue-100 mt-0.5">Pasang aplikasi di layar utama HP</p>
+            </div>
+        </div>
+        <button type="button" onclick="triggerPwaInstall()" class="px-4 py-2 bg-white text-blue-600 rounded-2xl text-xs font-bold shadow hover:bg-blue-50 active:scale-95 transition-all shrink-0">
+            Install
+        </button>
+    </div>
 
     <!-- Title -->
-    <div class="pt-2">
+    <div class="pt-1">
         <h3 class="text-lg font-bold text-slate-800 tracking-tight">Dashboard Sarpras</h3>
         <p class="text-xs text-slate-500 mt-1">Ringkasan aset dan pergerakan sarpras</p>
     </div>

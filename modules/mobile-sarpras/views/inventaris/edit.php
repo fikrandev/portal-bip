@@ -1,6 +1,7 @@
 <div class="px-4 pt-4 space-y-6">
     <div class="bg-white rounded-3xl p-5 shadow-sm border border-slate-100">
-        <form action="<?= url('kelola-sarpras/barang/store') ?>" method="POST" enctype="multipart/form-data" class="space-y-4">`n            <input type="hidden" name="id" value="<?= $item['id'] ?>">
+        <form action="<?= url('kelola-sarpras/barang/update/' . $item['id']) ?>" method="POST" enctype="multipart/form-data" class="space-y-4">
+            <input type="hidden" name="id" value="<?= $item['id'] ?>">
             <?= CSRF::field() ?>
             <input type="hidden" name="redirect_to" value="<?= url('mobile-sarpras/inventaris') ?>">
 
@@ -88,9 +89,13 @@
                     </select>
                 </div>
 
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Foto Barang</label>
-                    <input type="file" name="foto" accept="image/jpeg,image/png,image/webp" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-500 file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-blue-100 file:text-blue-700">
+                <div class="pt-2">
+                    <?php 
+                    $uploaderId = 'foto_inventaris_edit';
+                    $existingFotos = SarprasModel::getFotoList($item['foto'] ?? '');
+                    $isMobile = true;
+                    include BASE_PATH . '/modules/kelola-sarpras/views/barang/_foto_uploader.php';
+                    ?>
                 </div>
             </div>
 

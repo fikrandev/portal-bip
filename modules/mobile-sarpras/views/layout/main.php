@@ -46,10 +46,15 @@
             background: linear-gradient(135deg, #1e40af, #3b82f6);
             border-radius: 1rem; padding: 1rem 1.25rem;
             box-shadow: 0 10px 40px rgba(37, 99, 235, 0.4);
-            display: none; /* hidden until beforeinstallprompt fires */
+            display: none;
             animation: slideUp 0.4s ease-out;
         }
         @keyframes slideUp { from { transform: translateX(-50%) translateY(100px); opacity: 0; } to { transform: translateX(-50%) translateY(0); opacity: 1; } }
+
+        /* Sembunyikan elemen install jika sudah terpasang sebagai aplikasi (standalone) */
+        @media all and (display-mode: standalone) {
+            .pwa-install-trigger { display: none !important; }
+        }
     </style>
 </head>
 <body class="h-full flex flex-col overflow-hidden bg-slate-50 relative">
@@ -77,45 +82,69 @@
         </div>
     </div>
     
-    <!-- PWA Install Banner (Auto Install for Chrome/Android) -->
-    <div id="pwa-install-banner" class="pwa-install-banner">
+    <!-- PWA Install Banner Floating (Auto-triggered when prompt is available) -->
+    <div id="pwa-install-banner" class="pwa-install-banner pwa-install-trigger">
         <div class="flex items-center gap-3 text-white">
             <div class="w-11 h-11 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
                 <i data-lucide="download" class="w-6 h-6"></i>
             </div>
             <div class="flex-1 min-w-0">
                 <p class="font-bold text-sm">Install Sarpras Mobile</p>
-                <p id="pwa-install-desc" class="text-xs text-white/70">Akses cepat langsung dari layar utama</p>
+                <p id="pwa-install-desc" class="text-xs text-white/80">Pasang ke Layar Utama HP Anda</p>
             </div>
-            <button id="pwa-install-btn" class="px-4 py-2 bg-white text-blue-600 font-bold text-sm rounded-xl shadow flex-shrink-0 active:scale-95 transition-transform">
+            <button type="button" onclick="triggerPwaInstall()" class="px-4 py-2 bg-white text-blue-600 font-bold text-xs rounded-xl shadow active:scale-95 transition-transform shrink-0">
                 Install
             </button>
-            <button id="pwa-install-close" class="p-1 text-white/60 hover:text-white flex-shrink-0">
+            <button type="button" onclick="dismissPwaBanner()" class="p-1 text-white/70 hover:text-white shrink-0">
                 <i data-lucide="x" class="w-5 h-5"></i>
             </button>
         </div>
     </div>
 
-    <!-- PWA Install Guide for iOS (manual) -->
-    <div id="pwa-ios-guide" class="pwa-install-banner" style="display:none;">
-        <div class="text-white">
-            <div class="flex items-center gap-3 mb-2">
-                <div class="w-11 h-11 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <i data-lucide="smartphone" class="w-6 h-6"></i>
+    <!-- PWA Install Modal Guide (Universal for Android & iOS) -->
+    <div id="pwa-install-modal" class="fixed inset-0 z-[9998] flex items-end sm:items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 opacity-0 pointer-events-none transition-all duration-200">
+        <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl space-y-4 transform translate-y-8 transition-transform duration-200">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center font-bold shadow-sm">
+                        <i data-lucide="download" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-slate-800 text-base">Install Sarpras Mobile</h3>
+                        <p class="text-xs text-slate-500">Aplikasi PWA Resmi Portal BIP</p>
+                    </div>
                 </div>
-                <div class="flex-1 min-w-0">
-                    <p class="font-bold text-sm">Install Sarpras Mobile</p>
-                    <p class="text-xs text-white/70">Ikuti langkah di bawah ini</p>
-                </div>
-                <button id="pwa-ios-close" class="p-1 text-white/60 hover:text-white flex-shrink-0">
+                <button type="button" onclick="closePwaModal()" class="p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
-            <div class="bg-white/10 rounded-lg p-3 text-xs space-y-1">
-                <p>1. Ketuk ikon <strong>⋮</strong> (titik tiga) atau <strong>Share ↑</strong></p>
-                <p>2. Pilih <strong>"Tambahkan ke Layar Utama"</strong></p>
-                <p>3. Ketuk <strong>"Tambahkan"</strong></p>
+
+            <div id="pwa-native-action" class="hidden">
+                <button type="button" onclick="executeNativeInstall()" class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2 transition-all active:scale-[0.98]">
+                    <i data-lucide="download" class="w-5 h-5"></i> Install Sekarang (1-Klik)
+                </button>
             </div>
+
+            <!-- Petunjuk Manual Jika Browser Butuh Langkah Tambahan -->
+            <div id="pwa-manual-guide" class="space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-100 text-xs text-slate-600">
+                <p class="font-bold text-slate-800 text-xs flex items-center gap-1.5">
+                    <i data-lucide="info" class="w-4 h-4 text-blue-600"></i> Cara Pasang di Layar Utama HP:
+                </p>
+                <div class="space-y-2">
+                    <div class="p-2.5 bg-white rounded-xl border border-slate-200/60">
+                        <span class="font-bold text-slate-800 block mb-0.5">📱 Android (Chrome / Edge):</span>
+                        <span>Ketuk menu titik tiga (<strong>⋮</strong>) di kanan atas browser &rarr; pilih <strong>"Install aplikasi"</strong> atau <strong>"Tambahkan ke Layar Utama"</strong>.</span>
+                    </div>
+                    <div class="p-2.5 bg-white rounded-xl border border-slate-200/60">
+                        <span class="font-bold text-slate-800 block mb-0.5">🍎 iPhone / iPad (Safari):</span>
+                        <span>Ketuk tombol Bagikan (<strong>Share <svg class="inline w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg></strong>) di bawah &rarr; pilih <strong>"Tambah ke Layar Utama"</strong>.</span>
+                    </div>
+                </div>
+            </div>
+
+            <button type="button" onclick="closePwaModal()" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs transition">
+                Tutup
+            </button>
         </div>
     </div>
 
@@ -131,6 +160,10 @@
                 <h1 class="text-lg font-bold truncate"><?= e($pageTitle ?? 'Sarpras Mobile') ?></h1>
             </div>
             <div class="flex items-center gap-2">
+                <button type="button" id="btn-header-install" onclick="triggerPwaInstall()" class="pwa-install-trigger px-2.5 py-1 bg-white/20 hover:bg-white/30 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 shadow-sm">
+                    <i data-lucide="download" class="w-4 h-4"></i>
+                    <span>Install</span>
+                </button>
                 <button id="btn-notification" class="p-1 rounded-full relative hover:bg-blue-700 transition">
                     <i data-lucide="bell" class="w-6 h-6"></i>
                     <span class="absolute top-1 right-1 w-2 h-2 bg-rose-500 rounded-full animate-ping"></span>
@@ -291,91 +324,102 @@
         })();
 
         // ============================================================
-        // PWA INSTALL — AUTO SHOW ON PAGE LOAD
+        // PWA INSTALL SYSTEM (PROMPT + UNIVERSAL MODAL)
         // ============================================================
         let deferredPrompt = null;
-        let promptFired = false;
-        const installBanner = document.getElementById('pwa-install-banner');
-        const installBtn = document.getElementById('pwa-install-btn');
-        const installClose = document.getElementById('pwa-install-close');
-        const iosGuide = document.getElementById('pwa-ios-guide');
-        const iosClose = document.getElementById('pwa-ios-close');
-
-        // Check if already installed as PWA (standalone mode)
         const isStandalone = window.matchMedia('(display-mode: standalone)').matches 
                           || window.navigator.standalone === true;
-        // Check if user dismissed today
-        const dismissKey = 'pwa_install_dismissed';
-        const lastDismiss = localStorage.getItem(dismissKey);
-        const dismissedToday = lastDismiss && (Date.now() - parseInt(lastDismiss)) < 86400000; // 24 hours
 
-        // Intercept beforeinstallprompt (Chrome/Edge Android)
+        function updateInstallUiState() {
+            if (isStandalone) {
+                document.querySelectorAll('.pwa-install-trigger').forEach(el => el.classList.add('hidden'));
+                const banner = document.getElementById('pwa-install-banner');
+                if (banner) banner.style.display = 'none';
+            }
+        }
+        updateInstallUiState();
+
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
-            promptFired = true;
+            console.log('[PWA] beforeinstallprompt captured successfully!');
 
-            // Show native install banner immediately
-            if (!isStandalone && !dismissedToday && installBanner) {
-                installBanner.style.display = 'block';
-                lucide.createIcons();
+            // Tampilkan tombol dan banner
+            if (!isStandalone) {
+                const banner = document.getElementById('pwa-install-banner');
+                const dismissed = sessionStorage.getItem('pwa_banner_dismissed');
+                if (banner && !dismissed) {
+                    banner.style.display = 'block';
+                    if (window.lucide) lucide.createIcons();
+                }
+                const nativeAction = document.getElementById('pwa-native-action');
+                if (nativeAction) nativeAction.classList.remove('hidden');
             }
-            console.log('[PWA] beforeinstallprompt fired');
         });
 
-        // If beforeinstallprompt doesn't fire within 2s, show manual guide
-        if (!isStandalone && !dismissedToday) {
-            setTimeout(() => {
-                if (!promptFired) {
-                    // Show manual guide (iOS Safari / Firefox / etc)
-                    if (iosGuide) {
-                        iosGuide.style.display = 'block';
-                        lucide.createIcons();
-                    }
-                    console.log('[PWA] No beforeinstallprompt, showing manual guide');
-                }
-            }, 2000);
-        }
-
-        // Install button click (native prompt)
-        if (installBtn) {
-            installBtn.addEventListener('click', async () => {
-                if (deferredPrompt) {
-                    deferredPrompt.prompt();
-                    const { outcome } = await deferredPrompt.userChoice;
-                    console.log('[PWA] User choice:', outcome);
+        window.triggerPwaInstall = async function() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                console.log('[PWA] User choice outcome:', outcome);
+                if (outcome === 'accepted') {
                     deferredPrompt = null;
-                    if (installBanner) installBanner.style.display = 'none';
-                } else {
-                    // No native prompt available, show manual guide
-                    if (installBanner) installBanner.style.display = 'none';
-                    if (iosGuide) {
-                        iosGuide.style.display = 'block';
-                        lucide.createIcons();
-                    }
+                    dismissPwaBanner();
+                    closePwaModal();
                 }
-            });
-        }
+            } else {
+                openPwaModal();
+            }
+        };
 
-        // Close buttons
-        if (installClose) {
-            installClose.addEventListener('click', () => {
-                if (installBanner) installBanner.style.display = 'none';
-                localStorage.setItem(dismissKey, Date.now().toString());
-            });
-        }
-        if (iosClose) {
-            iosClose.addEventListener('click', () => {
-                if (iosGuide) iosGuide.style.display = 'none';
-                localStorage.setItem(dismissKey, Date.now().toString());
-            });
-        }
+        window.executeNativeInstall = async function() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                console.log('[PWA] Native modal install outcome:', outcome);
+                if (outcome === 'accepted') {
+                    deferredPrompt = null;
+                    dismissPwaBanner();
+                    closePwaModal();
+                }
+            }
+        };
+
+        window.openPwaModal = function() {
+            const m = document.getElementById('pwa-install-modal');
+            if (!m) return;
+            const nativeAction = document.getElementById('pwa-native-action');
+            if (nativeAction) {
+                if (deferredPrompt) {
+                    nativeAction.classList.remove('hidden');
+                } else {
+                    nativeAction.classList.add('hidden');
+                }
+            }
+            m.classList.remove('opacity-0', 'pointer-events-none');
+            m.firstElementChild.classList.remove('translate-y-8');
+            if (window.lucide) lucide.createIcons();
+        };
+
+        window.closePwaModal = function() {
+            const m = document.getElementById('pwa-install-modal');
+            if (!m) return;
+            m.classList.add('opacity-0', 'pointer-events-none');
+            m.firstElementChild.classList.add('translate-y-8');
+        };
+
+        window.dismissPwaBanner = function() {
+            const banner = document.getElementById('pwa-install-banner');
+            if (banner) banner.style.display = 'none';
+            sessionStorage.setItem('pwa_banner_dismissed', '1');
+        };
 
         window.addEventListener('appinstalled', () => {
-            console.log('[PWA] App installed');
-            if (installBanner) installBanner.style.display = 'none';
-            if (iosGuide) iosGuide.style.display = 'none';
+            console.log('[PWA] App successfully installed!');
+            dismissPwaBanner();
+            closePwaModal();
             deferredPrompt = null;
+            document.querySelectorAll('.pwa-install-trigger').forEach(el => el.classList.add('hidden'));
         });
 
         // ============================================================

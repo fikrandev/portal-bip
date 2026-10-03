@@ -191,7 +191,7 @@ if (defined('SYS_APP_FAVICON') && !empty(SYS_APP_FAVICON)) {
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 6.75h.75v.75h-.75v-.75ZM6.75 16.5h.75v.75h-.75v-.75ZM16.5 6.75h.75v.75h-.75v-.75ZM13.5 13.5h.75v.75h-.75v-.75ZM13.5 19.5h.75v.75h-.75v-.75ZM19.5 13.5h.75v.75h-.75v-.75ZM19.5 19.5h.75v.75h-.75v-.75ZM16.5 16.5h.75v.75h-.75v-.75Z" />
                                 </svg>
                             </div>
-                            <span class="text-sm truncate">Cetak Label QR</span>
+                            <span class="text-sm truncate">Cetak Label Barcode &amp; QR</span>
                         </div>
                         <?php if (strpos($_SERVER['REQUEST_URI'] ?? '', 'kelola-sarpras/cetak-label') !== false): ?>
                             <span class="w-1.5 h-1.5 rounded-full bg-primary-400 animate-pulse"></span>

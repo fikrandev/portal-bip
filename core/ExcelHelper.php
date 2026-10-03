@@ -85,6 +85,16 @@ class ExcelHelper
                         <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/>
                     </Borders>
                 </Style>
+                <Style ss:ID="DataRowRight">
+                    <Alignment ss:Horizontal="Right" ss:Vertical="Center"/>
+                    <Borders>
+                        <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/>
+                        <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/>
+                        <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/>
+                        <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/>
+                    </Borders>
+                    <NumberFormat ss:Format="#,##0"/>
+                </Style>
             </Styles>
             <Worksheet ss:Name="<?= htmlspecialchars($title) ?>">
                 <Table>
@@ -98,8 +108,14 @@ class ExcelHelper
                     </Row>
                     <?php foreach ($data as $row): ?>
                         <Row ss:Height="22">
-                            <?php foreach ($row as $val): ?>
-                                <Cell ss:StyleID="DataRow"><Data ss:Type="String"><?= htmlspecialchars((string)($val ?? '')) ?></Data></Cell>
+                            <?php foreach ($row as $val): 
+                                $isNumeric = is_int($val) || is_float($val);
+                            ?>
+                                <?php if ($isNumeric): ?>
+                                    <Cell ss:StyleID="DataRowRight"><Data ss:Type="Number"><?= $val ?></Data></Cell>
+                                <?php else: ?>
+                                    <Cell ss:StyleID="DataRow"><Data ss:Type="String"><?= htmlspecialchars((string)($val ?? '')) ?></Data></Cell>
+                                <?php endif; ?>
                             <?php endforeach; ?>
                         </Row>
                     <?php endforeach; ?>

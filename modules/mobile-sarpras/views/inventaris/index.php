@@ -41,9 +41,19 @@
             <?php foreach ($barang as $b): ?>
                 <div class="block bg-white p-4 rounded-3xl shadow-sm border border-slate-100 active:scale-[0.98] transition-transform">
                     <div class="flex gap-4">
-                        <div class="w-16 h-16 bg-blue-50/50 rounded-2xl flex items-center justify-center flex-shrink-0 border border-blue-100/50 p-1">
-                            <?php if (!empty($b['foto'])): ?>
-                                <img src="<?= url('public/' . ltrim($b['foto'], '/')) ?>" alt="Foto" class="w-full h-full object-cover rounded-xl shadow-sm">
+                        <?php 
+                        $fotoList = SarprasModel::getFotoList($b['foto'] ?? '');
+                        $firstFoto = !empty($fotoList) ? $fotoList[0] : null;
+                        $countFoto = count($fotoList);
+                        ?>
+                        <div class="relative w-16 h-16 bg-blue-50/50 rounded-2xl flex items-center justify-center flex-shrink-0 border border-blue-100/50 p-1">
+                            <?php if ($firstFoto): ?>
+                                <img src="<?= url('public/' . ltrim($firstFoto, '/')) ?>" alt="Foto" class="w-full h-full object-cover rounded-xl shadow-sm">
+                                <?php if ($countFoto > 1): ?>
+                                    <span class="absolute -top-1 -right-1 px-1.5 py-0.5 rounded-full text-[8px] font-bold bg-blue-600 text-white shadow-sm border border-white">
+                                        +<?= $countFoto - 1 ?>
+                                    </span>
+                                <?php endif; ?>
                             <?php else: ?>
                                 <i data-lucide="monitor" class="w-7 h-7 text-blue-500"></i>
                             <?php endif; ?>

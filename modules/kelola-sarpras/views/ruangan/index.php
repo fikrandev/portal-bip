@@ -170,13 +170,14 @@
             <button onclick="closeModalRuangan()" class="p-2 rounded-full text-slate-400 hover:text-slate-600 hover:bg-white transition-colors text-xl font-bold">&times;</button>
         </div>
 
-        <form action="<?= url('kelola-sarpras/ruangan/store') ?>" method="POST" class="flex flex-col flex-1 overflow-hidden min-h-0">
+        <form action="<?= url('kelola-sarpras/ruangan/store') ?>" method="POST" onsubmit="return validateRuanganForm()" class="flex flex-col flex-1 overflow-hidden min-h-0">
             <?= CSRF::field() ?>
             <input type="hidden" name="id" id="ruangan-id" value="">
 
             <!-- Scrollable Body -->
             <div class="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar text-xs">
                 <!-- Gedung / Bangunan Lokasi (Sesuai Permintaan seperti Tambah Bangunan pilih Tanah) -->
+                <!-- Gedung / Bangunan Lokasi -->
                 <div>
                     <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 flex items-center justify-between">
                         <span>Gedung / Bangunan Lokasi <span class="text-rose-500">*</span></span>
@@ -198,16 +199,33 @@
                     </select>
                 </div>
 
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Nama Ruangan / Fasilitas <span class="text-rose-500">*</span></label>
-                    <input type="text" name="nama_ruangan" id="ruangan-nama" required placeholder="Contoh: Lab Bahasa, Ruang Kelas 2B, Perpustakaan..." class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 focus:bg-white focus:border-primary-500 outline-none">
-                </div>
-
-                <div class="grid grid-cols-2 gap-3">
+                <!-- 1. Unit Dulu, Baru 2. Jenis Ruang -->
+                <div class="grid grid-cols-2 gap-3 p-3 rounded-2xl bg-slate-50/80 border border-slate-200">
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Jenis Ruangan <span class="text-rose-500">*</span></label>
-                        <select name="jenis_ruangan" id="ruangan-jenis" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 focus:bg-white focus:border-primary-500 outline-none">
-                            <option value="Ruang Kelas">Ruang Kelas (Belajar)</option>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                            <span>1. Unit / Jenjang <span class="text-rose-500">*</span></span>
+                        </label>
+                        <select name="unit" 
+                                id="ruangan-unit" 
+                                onchange="onUnitOrJenisChange()"
+                                class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-2xl text-sm font-bold text-slate-800 focus:border-primary-500 outline-none">
+                            <option value="SD" selected>SD</option>
+                            <option value="SMP">SMP</option>
+                            <option value="SMA">SMA</option>
+                            <option value="PAUD">PAUD</option>
+                            <option value="Yayasan">Yayasan</option>
+                            <option value="Semua">Semua / Fasilitas Umum</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                            <span>2. Jenis Ruangan <span class="text-rose-500">*</span></span>
+                        </label>
+                        <select name="jenis_ruangan" 
+                                id="ruangan-jenis" 
+                                onchange="onUnitOrJenisChange()"
+                                class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-2xl text-sm font-bold text-slate-800 focus:border-primary-500 outline-none">
+                            <option value="Ruang Kelas" selected>Ruang Kelas (Belajar)</option>
                             <option value="Ruang Laboratorium">Ruang Laboratorium</option>
                             <option value="Ruang Kantor">Ruang Kantor / Administrasi</option>
                             <option value="Ruang Guru">Ruang Guru</option>
@@ -224,29 +242,65 @@
                             <option value="Lainnya">Fasilitas Lainnya</option>
                         </select>
                     </div>
+                </div>
+
+                <!-- Nama Ruangan / Fasilitas (Otomatis Dropdown jika Ruang Kelas dari data Siswa) -->
+                <div>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                            Nama Ruangan / Fasilitas <span class="text-rose-500">*</span>
+                        </label>
+                        <div class="flex items-center gap-2">
+                            <span id="nama-ruangan-badge" class="text-[10px] px-2 py-0.5 rounded-full font-bold bg-primary-100 text-primary-700 hidden">
+                                Kelas Siswa: SD
+                            </span>
+                            <button type="button" 
+                                    id="btn-toggle-manual-nama" 
+                                    onclick="toggleManualNamaInput()" 
+                                    class="text-[11px] font-semibold text-primary-600 hover:text-primary-800 flex items-center gap-1 transition-colors">
+                                <span id="toggle-manual-icon">✏️</span>
+                                <span id="toggle-manual-text">Ketik Manual</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Mode Dropdown Kelas Siswa -->
+                    <div id="wrapper-nama-select" class="relative">
+                        <select id="ruangan-nama-select" 
+                                onchange="onNamaKelasSelectChange(this.value)"
+                                class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold text-slate-800 focus:bg-white focus:border-primary-500 outline-none">
+                            <option value="">-- Pilih Nama Kelas --</option>
+                        </select>
+                    </div>
+
+                    <!-- Mode Text Biasa -->
+                    <div id="wrapper-nama-text" class="hidden">
+                        <input type="text" 
+                               id="ruangan-nama-text" 
+                               oninput="onNamaRuanganTextInput(this.value)" 
+                               placeholder="Contoh: Lab Bahasa, Ruang Kelas 2B, Perpustakaan..." 
+                               class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 focus:bg-white focus:border-primary-500 outline-none">
+                    </div>
+
+                    <!-- Hidden Input yang dikirim ke server -->
+                    <input type="hidden" name="nama_ruangan" id="ruangan-nama" required value="">
+
+                    <p id="nama-ruangan-subtext" class="text-[11px] text-slate-500 mt-1 flex items-center gap-1">
+                        <svg class="w-3.5 h-3.5 text-primary-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        <span id="nama-ruangan-subtext-msg">Pilih nama kelas yang terdaftar dari data kelola siswa.</span>
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Posisi Lantai <span class="text-rose-500">*</span></label>
                         <select name="lantai" id="ruangan-lantai" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 focus:bg-white focus:border-primary-500 outline-none font-bold">
                             <option value="1">Lantai 1</option>
                         </select>
                     </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Kode Ruangan</label>
                         <input type="text" name="kode_ruangan" id="ruangan-kode" placeholder="Auto jika kosong" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 font-mono focus:bg-white focus:border-primary-500 outline-none">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Unit / Jenjang</label>
-                        <select name="unit" id="ruangan-unit" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 focus:bg-white focus:border-primary-500 outline-none">
-                            <option value="SD">SD</option>
-                            <option value="SMP">SMP</option>
-                            <option value="SMA">SMA</option>
-                            <option value="PAUD">PAUD</option>
-                            <option value="Yayasan">Yayasan</option>
-                            <option value="Semua">Semua / Fasilitas Umum</option>
-                        </select>
                     </div>
                 </div>
 
@@ -323,6 +377,9 @@
 
 <script>
 const bangunanData = <?= json_encode($bangunanList ?? []) ?>;
+const kelasDataByUnit = <?= json_encode($kelasListByUnit ?? []) ?>;
+
+let isManualNamaRuang = false;
 
 function onBangunanChange(bangunanId, selectedLantai = 1) {
     const sel = document.getElementById('ruangan-lantai');
@@ -352,11 +409,172 @@ function calculateLuasMasterRuang() {
     document.getElementById('ruangan-luas').value = (p * l > 0) ? (p * l).toFixed(2) : '';
 }
 
+function onUnitOrJenisChange(preferValue = '') {
+    const unitSel = document.getElementById('ruangan-unit');
+    const jenisSel = document.getElementById('ruangan-jenis');
+    const unit = unitSel ? (unitSel.value || 'SD') : 'SD';
+    const jenis = jenisSel ? (jenisSel.value || 'Ruang Kelas') : 'Ruang Kelas';
+    const isKelas = (jenis === 'Ruang Kelas');
+
+    const wrapperSelect = document.getElementById('wrapper-nama-select');
+    const wrapperText = document.getElementById('wrapper-nama-text');
+    const selectElem = document.getElementById('ruangan-nama-select');
+    const textElem = document.getElementById('ruangan-nama-text');
+    const finalInput = document.getElementById('ruangan-nama');
+    const toggleBtn = document.getElementById('btn-toggle-manual-nama');
+    const badge = document.getElementById('nama-ruangan-badge');
+    const subtext = document.getElementById('nama-ruangan-subtext');
+
+    // Ambil daftar kelas dari data siswa untuk unit terpilih
+    const kelasList = kelasDataByUnit[unit] || kelasDataByUnit[unit.toUpperCase()] || [];
+
+    if (isKelas) {
+        if (toggleBtn) toggleBtn.classList.remove('hidden');
+
+        if (!isManualNamaRuang) {
+            // MODE DROPDOWN KELAS DARI DATA KELOLA SISWA
+            wrapperSelect.classList.remove('hidden');
+            wrapperText.classList.add('hidden');
+            if (badge) {
+                badge.textContent = `Kelas Siswa: ${unit}`;
+                badge.classList.remove('hidden');
+            }
+            if (toggleBtn) {
+                document.getElementById('toggle-manual-icon').textContent = '✏️';
+                document.getElementById('toggle-manual-text').textContent = 'Ketik Manual';
+            }
+
+            // Populate Dropdown
+            selectElem.innerHTML = '';
+            const defOpt = document.createElement('option');
+            defOpt.value = '';
+            defOpt.textContent = `-- Pilih Nama Kelas (${unit}) --`;
+            selectElem.appendChild(defOpt);
+
+            let hasMatched = false;
+            const targetVal = preferValue || (finalInput ? finalInput.value : '');
+
+            if (kelasList.length > 0) {
+                kelasList.forEach(k => {
+                    const opt = document.createElement('option');
+                    opt.value = k;
+                    opt.textContent = k;
+                    if (targetVal && (k === targetVal || k.toLowerCase() === targetVal.toLowerCase())) {
+                        opt.selected = true;
+                        hasMatched = true;
+                    }
+                    selectElem.appendChild(opt);
+                });
+            } else {
+                const emptyOpt = document.createElement('option');
+                emptyOpt.value = '';
+                emptyOpt.textContent = `(Belum ada data siswa di unit ${unit})`;
+                emptyOpt.disabled = true;
+                selectElem.appendChild(emptyOpt);
+            }
+
+            const customOpt = document.createElement('option');
+            customOpt.value = '__MANUAL__';
+            customOpt.textContent = '✏️ + Ketik Nama Kelas Lainnya (Manual)...';
+            selectElem.appendChild(customOpt);
+
+            if (hasMatched) {
+                finalInput.value = selectElem.value;
+                textElem.value = selectElem.value;
+            } else if (!targetVal) {
+                finalInput.value = '';
+                textElem.value = '';
+            }
+
+            if (subtext) {
+                subtext.innerHTML = `<svg class="w-3.5 h-3.5 text-primary-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg> Otomatis memuat daftar rombel/kelas dari data <strong class="text-primary-700">Kelola Siswa (${unit})</strong>.`;
+            }
+        } else {
+            // MODE KETIK MANUAL UNTUK RUANG KELAS
+            wrapperSelect.classList.add('hidden');
+            wrapperText.classList.remove('hidden');
+            if (badge) {
+                badge.textContent = `Manual: ${unit}`;
+                badge.classList.remove('hidden');
+            }
+            if (toggleBtn) {
+                document.getElementById('toggle-manual-icon').textContent = '📋';
+                document.getElementById('toggle-manual-text').textContent = 'Pilih Dropdown Kelas';
+            }
+            textElem.placeholder = `Contoh: Ruang Kelas 1A, Kelas Khusus Tahfidz...`;
+            if (subtext) {
+                subtext.innerHTML = `<svg class="w-3.5 h-3.5 text-amber-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg> Mode ketik manual aktif. Anda dapat mengetik nama kelas kustom.`;
+            }
+        }
+    } else {
+        // SELAIN RUANG KELAS (Laboratorium, Kantor, Guru, Perpustakaan, Toilet, dll)
+        isManualNamaRuang = true;
+        wrapperSelect.classList.add('hidden');
+        wrapperText.classList.remove('hidden');
+        if (toggleBtn) toggleBtn.classList.add('hidden');
+        if (badge) badge.classList.add('hidden');
+        textElem.placeholder = `Contoh: ${jenis}, Lab Komputer, Kantor TU, dll...`;
+        if (subtext) {
+            subtext.innerHTML = `<svg class="w-3.5 h-3.5 text-slate-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg> Masukkan nama ruangan atau fasilitas sesuai fungsi peruntukannya.`;
+        }
+    }
+}
+
+function onNamaKelasSelectChange(val) {
+    if (val === '__MANUAL__') {
+        toggleManualNamaInput(true);
+        return;
+    }
+    const finalInput = document.getElementById('ruangan-nama');
+    const textElem = document.getElementById('ruangan-nama-text');
+    if (finalInput) finalInput.value = val;
+    if (textElem) textElem.value = val;
+}
+
+function onNamaRuanganTextInput(val) {
+    const finalInput = document.getElementById('ruangan-nama');
+    if (finalInput) finalInput.value = val;
+}
+
+function toggleManualNamaInput(forceManual = null) {
+    if (forceManual !== null) {
+        isManualNamaRuang = forceManual;
+    } else {
+        isManualNamaRuang = !isManualNamaRuang;
+    }
+    const finalInput = document.getElementById('ruangan-nama');
+    onUnitOrJenisChange(finalInput ? finalInput.value : '');
+    if (isManualNamaRuang) {
+        const textElem = document.getElementById('ruangan-nama-text');
+        if (textElem) textElem.focus();
+    }
+}
+
+function validateRuanganForm() {
+    const finalInput = document.getElementById('ruangan-nama');
+    const val = (finalInput ? finalInput.value : '').trim();
+    if (!val) {
+        alert('Silakan tentukan atau pilih Nama Ruangan / Fasilitas terlebih dahulu!');
+        const textElem = document.getElementById('ruangan-nama-text');
+        const selectElem = document.getElementById('ruangan-nama-select');
+        const wrapperSelect = document.getElementById('wrapper-nama-select');
+        if (wrapperSelect && !wrapperSelect.classList.contains('hidden')) {
+            selectElem.focus();
+        } else if (textElem) {
+            textElem.focus();
+        }
+        return false;
+    }
+    return true;
+}
+
 function openModalRuangan() {
     document.getElementById('modal-ruangan-title').innerText = 'Tambah Ruangan Baru';
     document.getElementById('ruangan-id').value = '';
-    document.getElementById('ruangan-nama').value = '';
+    document.getElementById('ruangan-unit').value = 'SD';
     document.getElementById('ruangan-jenis').value = 'Ruang Kelas';
+    document.getElementById('ruangan-nama').value = '';
+    document.getElementById('ruangan-nama-text').value = '';
     document.getElementById('ruangan-kode').value = '';
     document.getElementById('ruangan-panjang').value = '';
     document.getElementById('ruangan-lebar').value = '';
@@ -365,6 +583,9 @@ function openModalRuangan() {
     onBangunanChange('', 1);
     document.getElementById('ruangan-kapasitas').value = '30';
     document.getElementById('ruangan-keterangan').value = '';
+
+    isManualNamaRuang = false;
+    onUnitOrJenisChange('');
 
     const pj = document.getElementById('ruangan-pj');
     if (pj) {
@@ -383,17 +604,30 @@ function openModalRuangan() {
 function editRuangan(item) {
     document.getElementById('modal-ruangan-title').innerText = 'Edit Ruangan';
     document.getElementById('ruangan-id').value = item.id;
-    document.getElementById('ruangan-nama').value = item.nama_ruangan;
+    document.getElementById('ruangan-unit').value = item.unit || 'SD';
     document.getElementById('ruangan-jenis').value = item.jenis_ruangan || 'Ruang Kelas';
-    document.getElementById('ruangan-kode').value = item.kode_ruangan;
-    document.getElementById('ruangan-unit').value = item.unit;
+    document.getElementById('ruangan-nama').value = item.nama_ruangan || '';
+    document.getElementById('ruangan-nama-text').value = item.nama_ruangan || '';
+    document.getElementById('ruangan-kode').value = item.kode_ruangan || '';
     document.getElementById('ruangan-panjang').value = parseFloat(item.panjang) > 0 ? item.panjang : '';
     document.getElementById('ruangan-lebar').value = parseFloat(item.lebar) > 0 ? item.lebar : '';
     document.getElementById('ruangan-luas').value = parseFloat(item.luas) > 0 ? item.luas : '';
     document.getElementById('ruangan-bangunan-id').value = item.bangunan_id || '';
     onBangunanChange(item.bangunan_id || '', item.lantai || 1);
-    document.getElementById('ruangan-kapasitas').value = item.kapasitas;
+    document.getElementById('ruangan-kapasitas').value = item.kapasitas || 30;
     document.getElementById('ruangan-keterangan').value = item.keterangan || '';
+
+    // Cek apakah nama ruangan terdaftar di daftar kelas siswa unit tersebut
+    const unit = item.unit || 'SD';
+    const kelasList = kelasDataByUnit[unit] || kelasDataByUnit[unit.toUpperCase()] || [];
+    const isKelas = (item.jenis_ruangan || 'Ruang Kelas') === 'Ruang Kelas';
+
+    if (isKelas && kelasList.includes(item.nama_ruangan)) {
+        isManualNamaRuang = false;
+    } else {
+        isManualNamaRuang = true;
+    }
+    onUnitOrJenisChange(item.nama_ruangan);
 
     const pj = document.getElementById('ruangan-pj');
     if (pj) {

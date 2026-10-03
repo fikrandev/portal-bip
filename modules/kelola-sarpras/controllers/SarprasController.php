@@ -108,9 +108,78 @@ class SarprasController
         ]);
     }
 
+    /**
+     * Process multiple photos from file upload and camera base64 capture
+     */
+    private static function handlePhotoUploads(array $existingPhotos = []): ?string
+    {
+        $uploadDir = BASE_PATH . '/public/uploads/sarpras/';
+        if (!is_dir($uploadDir)) {
+            @mkdir($uploadDir, 0755, true);
+        }
+
+        $allPhotos = array_values(array_filter($existingPhotos));
+
+        // 1. Process Base64 Captured Photos from Web Camera
+        if (!empty($_POST['foto_captured'])) {
+            $capturedList = is_array($_POST['foto_captured']) ? $_POST['foto_captured'] : [$_POST['foto_captured']];
+            foreach ($capturedList as $dataUrl) {
+                if (empty($dataUrl) || !is_string($dataUrl)) continue;
+                if (preg_match('/^data:image\/(\w+);base64,(.+)$/', $dataUrl, $matches)) {
+                    $ext = strtolower($matches[1]);
+                    if ($ext === 'jpeg') $ext = 'jpg';
+                    if (!in_array($ext, ['jpg', 'png', 'webp'])) {
+                        $ext = 'jpg';
+                    }
+                    $decoded = base64_decode($matches[2]);
+                    if ($decoded !== false && strlen($decoded) > 0) {
+                        $filename = 'sarpras_' . time() . '_' . substr(md5(uniqid()), 0, 6) . '.' . $ext;
+                        if (file_put_contents($uploadDir . $filename, $decoded)) {
+                            $allPhotos[] = 'uploads/sarpras/' . $filename;
+                        }
+                    }
+                }
+            }
+        }
+
+        // 2. Process File Uploads (Multiple or Single)
+        if (!empty($_FILES['foto']['name'])) {
+            $names = is_array($_FILES['foto']['name']) ? $_FILES['foto']['name'] : [$_FILES['foto']['name']];
+            $tmpNames = is_array($_FILES['foto']['tmp_name']) ? $_FILES['foto']['tmp_name'] : [$_FILES['foto']['tmp_name']];
+            $errors = is_array($_FILES['foto']['error']) ? $_FILES['foto']['error'] : [$_FILES['foto']['error']];
+
+            for ($i = 0; $i < count($names); $i++) {
+                if (empty($names[$i]) || ($errors[$i] ?? UPLOAD_ERR_OK) !== UPLOAD_ERR_OK) {
+                    continue;
+                }
+                $ext = strtolower(pathinfo($names[$i], PATHINFO_EXTENSION));
+                if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp'])) {
+                    if ($ext === 'jpeg') $ext = 'jpg';
+                    $filename = 'sarpras_' . time() . '_' . substr(md5(uniqid()), 0, 6) . '.' . $ext;
+                    if (move_uploaded_file($tmpNames[$i], $uploadDir . $filename)) {
+                        $allPhotos[] = 'uploads/sarpras/' . $filename;
+                    }
+                }
+            }
+        }
+
+        if (empty($allPhotos)) {
+            return null;
+        }
+
+        return json_encode(array_values(array_unique($allPhotos)));
+    }
+
     public static function barangStore(): void
     {
         CSRF::validate();
+
+        // Fallback jika form edit memposting ke store
+        $id = (int)($_POST['id'] ?? 0);
+        if ($id > 0) {
+            self::barangUpdate($id);
+            return;
+        }
 
         $namaBarang = trim($_POST['nama_barang'] ?? '');
         $golonganId = (int)($_POST['golongan_id'] ?? 0);
@@ -144,21 +213,8 @@ class SarprasController
         // Generate Kode Barang
         $kodeBarang = SarprasModel::generateKodeBarangCustom($golonganId, $kelompokId, $asalAnggaranId);
 
-        // Upload foto jika ada
-        $fotoPath = null;
-        if (!empty($_FILES['foto']['name']) && $_FILES['foto']['error'] === UPLOAD_ERR_OK) {
-            $uploadDir = BASE_PATH . '/public/uploads/sarpras/';
-            if (!is_dir($uploadDir)) {
-                @mkdir($uploadDir, 0755, true);
-            }
-            $ext = strtolower(pathinfo($_FILES['foto']['name'], PATHINFO_EXTENSION));
-            if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp'])) {
-                $fotoName = 'sarpras_' . time() . '_' . substr(md5(uniqid()), 0, 6) . '.' . $ext;
-                if (move_uploaded_file($_FILES['foto']['tmp_name'], $uploadDir . $fotoName)) {
-                    $fotoPath = 'uploads/sarpras/' . $fotoName;
-                }
-            }
-        }
+        // Upload foto (bisa banyak foto dari kamera atau file)
+        $fotoPath = self::handlePhotoUploads([]);
 
         try {
             SarprasModel::insertBarang([
@@ -256,20 +312,12 @@ class SarprasController
         }
         $keterangan = trim($_POST['keterangan'] ?? '');
 
-        $fotoPath = $barang['foto'];
-        if (!empty($_FILES['foto']['name']) && $_FILES['foto']['error'] === UPLOAD_ERR_OK) {
-            $uploadDir = BASE_PATH . '/public/uploads/sarpras/';
-            if (!is_dir($uploadDir)) {
-                @mkdir($uploadDir, 0755, true);
-            }
-            $ext = strtolower(pathinfo($_FILES['foto']['name'], PATHINFO_EXTENSION));
-            if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp'])) {
-                $fotoName = 'sarpras_' . time() . '_' . substr(md5(uniqid()), 0, 6) . '.' . $ext;
-                if (move_uploaded_file($_FILES['foto']['tmp_name'], $uploadDir . $fotoName)) {
-                    $fotoPath = 'uploads/sarpras/' . $fotoName;
-                }
-            }
-        }
+        // Foto yang dipertahankan
+        $existing = isset($_POST['existing_foto']) && is_array($_POST['existing_foto'])
+            ? $_POST['existing_foto']
+            : (isset($_POST['has_photo_interaction']) ? [] : SarprasModel::getFotoList($barang['foto']));
+
+        $fotoPath = self::handlePhotoUploads($existing);
 
         SarprasModel::updateBarang($id, [
             'nama_barang' => $namaBarang,
@@ -293,7 +341,8 @@ class SarprasController
         ]);
 
         $_SESSION['flash_success'] = "Data aset '{$namaBarang}' berhasil diperbarui!";
-        Response::redirect(url('kelola-sarpras/barang'));
+        $redirectUrl = !empty($_POST['redirect_to']) ? $_POST['redirect_to'] : url('kelola-sarpras/barang');
+        Response::redirect($redirectUrl);
     }
 
     public static function barangDelete(int $id): void
@@ -488,11 +537,13 @@ class SarprasController
         $items = SarprasModel::getAllRuangan();
         $bangunanList = SarprasModel::getBangunanList();
         $pegawaiList = SarprasModel::getPegawaiList();
+        $kelasListByUnit = SarprasModel::getKelasByUnit();
 
         self::view('ruangan/index', [
             'items' => $items,
             'bangunanList' => $bangunanList,
-            'pegawaiList' => $pegawaiList
+            'pegawaiList' => $pegawaiList,
+            'kelasListByUnit' => $kelasListByUnit
         ], 'Master Ruangan & Gedung', [
             ['label' => 'Sarpras', 'url' => url('kelola-sarpras')],
             ['label' => 'Data Ruangan']
@@ -695,21 +746,20 @@ class SarprasController
         ]);
     }
 
-    public static function penyusutanList(): void
+    public static function getPenyusutanCalculation(int $tahun, int $bulan): array
     {
-        $tahunF = $_GET['tahun'] ?? date('Y');
-        $bulanF = $_GET['bulan'] ?? date('m');
-        
-        // Dapatkan semua barang yang memiliki harga perolehan > 0
         $allBarang = SarprasModel::getBarangList([], 10000, 0);
         $items = [];
         
         $totalHargaAwal = 0;
+        $totalNilaiSisa = 0;
         $totalAkumulasi = 0;
         $totalNilaiBuku = 0;
+        $totalPenyusutanTahun = 0;
+        $totalPenyusutanBulan = 0;
         
-        $targetYear = (int)$tahunF;
-        $targetMonth = (int)$bulanF;
+        $targetYear = $tahun;
+        $targetMonth = $bulan;
         $targetDecimal = $targetYear + ($targetMonth / 12);
         
         foreach ($allBarang as $b) {
@@ -733,8 +783,9 @@ class SarprasController
             $umurPakaiTahun = $targetDecimal - $startDecimal;
             if ($umurPakaiTahun < 0) $umurPakaiTahun = 0;
             
-            $nilaiSisa = $hargaAwal * 0.1;
+            $nilaiSisa = $hargaAwal * 0.1; // 10% Nilai Residu
             $penyusutanPerTahun = ($hargaAwal - $nilaiSisa) / $masaManfaatTahun;
+            $penyusutanPerBulan = $penyusutanPerTahun / 12;
             
             $akumulasiPenyusutan = $penyusutanPerTahun * $umurPakaiTahun;
             if ($akumulasiPenyusutan > ($hargaAwal - $nilaiSisa)) {
@@ -744,76 +795,201 @@ class SarprasController
             $nilaiBuku = $hargaAwal - $akumulasiPenyusutan;
             
             $totalHargaAwal += $hargaAwal;
+            $totalNilaiSisa += $nilaiSisa;
             $totalAkumulasi += $akumulasiPenyusutan;
             $totalNilaiBuku += $nilaiBuku;
+            $totalPenyusutanTahun += $penyusutanPerTahun;
+            $totalPenyusutanBulan += $penyusutanPerBulan;
             
             $items[] = [
+                'id' => $b['id'] ?? null,
                 'kode_barang' => $b['kode_barang'],
                 'nama_barang' => $b['nama_barang'],
+                'merk' => $b['merk'] ?? '',
+                'spesifikasi' => $b['spesifikasi'] ?? '',
                 'kategori' => $b['nama_kategori'] ?? '-',
+                'ruangan' => $b['nama_ruangan'] ?? 'Tanpa Ruangan',
+                'lokasi_gedung' => $b['lokasi_gedung'] ?? '-',
+                'tanggal_perolehan' => !empty($b['tanggal_perolehan']) ? date('d/m/Y', strtotime($b['tanggal_perolehan'])) : (!empty($b['tahun_pengadaan']) ? (string)$b['tahun_pengadaan'] : '-'),
                 'harga_awal' => $hargaAwal,
+                'nilai_sisa' => $nilaiSisa,
                 'masa_manfaat' => $masaManfaatTahun,
+                'umur_pakai_tahun' => $umurPakaiTahun,
                 'penyusutan_per_tahun' => $penyusutanPerTahun,
+                'penyusutan_per_bulan' => $penyusutanPerBulan,
                 'akumulasi_penyusutan' => $akumulasiPenyusutan,
-                'nilai_buku' => $nilaiBuku,
-                'umur_pakai_tahun' => $umurPakaiTahun
+                'nilai_buku' => $nilaiBuku
             ];
         }
 
-        self::view('penyusutan/index', [
+        $months = [
+            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+            5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
+            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+        ];
+        $namaBulan = $months[$targetMonth] ?? ('Bulan ' . $targetMonth);
+
+        return [
             'items' => $items,
-            'tahun' => $tahunF,
-            'bulan' => $bulanF,
+            'tahun' => $targetYear,
+            'bulan' => str_pad((string)$targetMonth, 2, '0', STR_PAD_LEFT),
+            'namaBulan' => $namaBulan,
+            'totalItems' => count($items),
             'totalHargaAwal' => $totalHargaAwal,
+            'totalNilaiSisa' => $totalNilaiSisa,
             'totalAkumulasi' => $totalAkumulasi,
-            'totalNilaiBuku' => $totalNilaiBuku
-        ], 'Laporan Penyusutan Aset', [
+            'totalNilaiBuku' => $totalNilaiBuku,
+            'totalPenyusutanTahun' => $totalPenyusutanTahun,
+            'totalPenyusutanBulan' => $totalPenyusutanBulan,
+        ];
+    }
+
+    public static function penyusutanList(): void
+    {
+        $tahunF = (int)($_GET['tahun'] ?? date('Y'));
+        $bulanF = (int)($_GET['bulan'] ?? date('m'));
+        
+        $data = self::getPenyusutanCalculation($tahunF, $bulanF);
+
+        self::view('penyusutan/index', $data, 'Laporan Penyusutan Aset', [
             ['label' => 'Sarpras', 'url' => url('kelola-sarpras')],
             ['label' => 'Penyusutan Aset']
         ]);
+    }
+
+    public static function penyusutanCetak(): void
+    {
+        $tahunF = (int)($_GET['tahun'] ?? date('Y'));
+        $bulanF = (int)($_GET['bulan'] ?? date('m'));
+
+        $data = self::getPenyusutanCalculation($tahunF, $bulanF);
+
+        $kopSurat = SarprasModel::getSetting('sarpras_kop_surat');
+        $kepalaId = SarprasModel::getSetting('sarpras_kepala_id');
+        $namaKepalaSarpras = '';
+        $niyKepalaSarpras = '';
+        
+        if ($kepalaId) {
+            $db = Database::getInstance();
+            $peg = $db->find("SELECT nama, niy FROM pegawai WHERE id = ?", [$kepalaId]);
+            if ($peg) {
+                $namaKepalaSarpras = $peg['nama'];
+                $niyKepalaSarpras = $peg['niy'];
+            }
+        }
+
+        extract(array_merge($data, [
+            'kopSurat' => $kopSurat,
+            'namaKepalaSarpras' => $namaKepalaSarpras,
+            'niyKepalaSarpras' => $niyKepalaSarpras,
+        ]));
+
+        include BASE_PATH . '/modules/kelola-sarpras/views/penyusutan/cetak.php';
+        exit;
+    }
+
+    public static function penyusutanExportExcel(): void
+    {
+        $tahunF = (int)($_GET['tahun'] ?? date('Y'));
+        $bulanF = (int)($_GET['bulan'] ?? date('m'));
+
+        $data = self::getPenyusutanCalculation($tahunF, $bulanF);
+
+        $headers = [
+            'No',
+            'Kode Barang',
+            'Nama Aset',
+            'Merk / Model',
+            'Kategori',
+            'Ruangan / Lokasi',
+            'Tanggal Perolehan',
+            'Masa Manfaat (Tahun)',
+            'Umur Pakai (Tahun)',
+            'Harga Perolehan (Rp)',
+            'Nilai Residu 10% (Rp)',
+            'Penyusutan Per Tahun (Rp)',
+            'Penyusutan Per Bulan (Rp)',
+            'Akumulasi Penyusutan (Rp)',
+            'Nilai Buku Saat Ini (Rp)'
+        ];
+
+        $rows = [];
+        $no = 1;
+        foreach ($data['items'] as $item) {
+            $rows[] = [
+                'no' => $no++,
+                'kode_barang' => $item['kode_barang'],
+                'nama_barang' => $item['nama_barang'],
+                'merk' => !empty($item['merk']) ? $item['merk'] : '-',
+                'kategori' => $item['kategori'],
+                'ruangan' => $item['ruangan'],
+                'tanggal_perolehan' => $item['tanggal_perolehan'],
+                'masa_manfaat' => $item['masa_manfaat'],
+                'umur_pakai' => round($item['umur_pakai_tahun'], 2),
+                'harga_awal' => (float)$item['harga_awal'],
+                'nilai_sisa' => (float)$item['nilai_sisa'],
+                'penyusutan_tahun' => (float)$item['penyusutan_per_tahun'],
+                'penyusutan_bulan' => (float)$item['penyusutan_per_bulan'],
+                'akumulasi_penyusutan' => (float)$item['akumulasi_penyusutan'],
+                'nilai_buku' => (float)$item['nilai_buku']
+            ];
+        }
+
+        // Baris Total / Rekapitulasi di bagian bawah
+        $rows[] = [
+            'no' => '',
+            'kode_barang' => '',
+            'nama_barang' => 'TOTAL KESELURUHAN',
+            'merk' => '',
+            'kategori' => '',
+            'ruangan' => '',
+            'tanggal_perolehan' => '',
+            'masa_manfaat' => '',
+            'umur_pakai' => '',
+            'harga_awal' => (float)$data['totalHargaAwal'],
+            'nilai_sisa' => (float)$data['totalNilaiSisa'],
+            'penyusutan_tahun' => (float)$data['totalPenyusutanTahun'],
+            'penyusutan_bulan' => (float)$data['totalPenyusutanBulan'],
+            'akumulasi_penyusutan' => (float)$data['totalAkumulasi'],
+            'nilai_buku' => (float)$data['totalNilaiBuku']
+        ];
+
+        $filename = 'Laporan_Penyusutan_Aset_' . $data['bulan'] . '_' . $data['tahun'] . '.xls';
+        ExcelHelper::exportXLS($filename, $headers, $rows, 'Penyusutan Aset');
     }
 
     public static function laporanList(): void
     {
         $ruangan_id = $_GET['ruangan_id'] ?? '';
         $kategori_id = $_GET['kategori_id'] ?? '';
+        $view_mode = $_GET['view_mode'] ?? 'grouped'; // 'grouped' (per ruangan) or 'table'
         
         $filters = [];
         if (!empty($ruangan_id)) {
-            $filters['ruangan_id'] = (int)$ruangan_id;
+            $filters['ruangan_id'] = $ruangan_id;
         }
         if (!empty($kategori_id)) {
             $filters['kategori_id'] = (int)$kategori_id;
         }
         
-        $allBarang = SarprasModel::getBarangList($filters, 10000, 0);
-        
-        $statBaik = 0;
-        $statRusakRingan = 0;
-        $statRusakBerat = 0;
-        $totalAset = count($allBarang);
-        
-        foreach ($allBarang as $b) {
-            $kondisi = strtolower(trim($b['kondisi']));
-            if ($kondisi === 'baik') $statBaik++;
-            elseif (strpos($kondisi, 'ringan') !== false) $statRusakRingan++;
-            elseif (strpos($kondisi, 'berat') !== false) $statRusakBerat++;
-        }
-        
+        $laporanData = SarprasModel::getLaporanAsetGrouped($filters);
         $ruanganList = SarprasModel::getAllRuangan();
         $kategoriList = SarprasModel::getAllKategori();
         
         self::view('laporan/index', [
-            'items' => $allBarang,
+            'laporan' => $laporanData,
             'ruanganList' => $ruanganList,
             'kategoriList' => $kategoriList,
             'filter_ruangan' => $ruangan_id,
             'filter_kategori' => $kategori_id,
-            'statBaik' => $statBaik,
-            'statRusakRingan' => $statRusakRingan,
-            'statRusakBerat' => $statRusakBerat,
-            'totalAset' => $totalAset
-        ], 'Laporan Kondisi Aset', [
+            'view_mode' => $view_mode,
+            'statBaik' => $laporanData['rekap']['grand_stat_baik'],
+            'statRusakRingan' => $laporanData['rekap']['grand_stat_rusak_ringan'],
+            'statRusakBerat' => $laporanData['rekap']['grand_stat_rusak_berat'],
+            'totalAset' => $laporanData['rekap']['grand_total_items'],
+            'totalQty' => $laporanData['rekap']['grand_total_qty'],
+            'totalNilai' => $laporanData['rekap']['grand_total_nilai']
+        ], 'Laporan Kondisi & Inventaris Aset', [
             ['label' => 'Sarpras', 'url' => url('kelola-sarpras')],
             ['label' => 'Laporan Aset']
         ]);
@@ -910,23 +1086,110 @@ class SarprasController
     public static function cetakLabelIndex(): void
     {
         $ruanganId = $_GET['ruangan_id'] ?? null;
+        $search = trim($_GET['search'] ?? '');
         $items = [];
-        if ($ruanganId) {
-            $items = self::db()->query("
-                SELECT d.*, b.nama_barang, b.kode_barang, b.merk, r.nama_ruangan 
+        $db = Database::getInstance();
+
+        if ($ruanganId !== null && $ruanganId !== '') {
+            if ($ruanganId === 'all') {
+                $distItems = $db->query("
+                    SELECT d.id AS uid, 'distribusi' AS source_type, d.id AS distribusi_id,
+                           b.id AS barang_id, b.nama_barang, b.kode_barang, b.merk_model AS merk,
+                           b.nomor_seri, d.jumlah, COALESCE(d.kondisi, b.kondisi) AS kondisi,
+                           r.nama_ruangan, d.ruangan_id, b.unit
+                    FROM sarpras_distribusi d 
+                    JOIN sarpras_barang b ON d.barang_id = b.id 
+                    JOIN sarpras_ruangan r ON d.ruangan_id = r.id 
+                    " . ($search !== '' ? "WHERE (b.nama_barang LIKE ? OR b.kode_barang LIKE ? OR b.merk_model LIKE ?)" : "") . "
+                    ORDER BY r.nama_ruangan ASC, b.nama_barang ASC
+                ", $search !== '' ? ["%$search%", "%$search%", "%$search%"] : [])->fetchAll();
+
+                $brgItems = $db->query("
+                    SELECT b.id AS uid, 'barang' AS source_type, NULL AS distribusi_id,
+                           b.id AS barang_id, b.nama_barang, b.kode_barang, b.merk_model AS merk,
+                           b.nomor_seri, b.jumlah, b.kondisi,
+                           COALESCE(r.nama_ruangan, 'Belum Ditempatkan') AS nama_ruangan, b.ruangan_id, b.unit
+                    FROM sarpras_barang b 
+                    LEFT JOIN sarpras_ruangan r ON b.ruangan_id = r.id 
+                    WHERE b.id NOT IN (SELECT DISTINCT barang_id FROM sarpras_distribusi)
+                    " . ($search !== '' ? "AND (b.nama_barang LIKE ? OR b.kode_barang LIKE ? OR b.merk_model LIKE ?)" : "") . "
+                    ORDER BY b.nama_barang ASC
+                ", $search !== '' ? ["%$search%", "%$search%", "%$search%"] : [])->fetchAll();
+
+                $items = array_merge($distItems, $brgItems);
+            } else {
+                $distItems = $db->query("
+                    SELECT d.id AS uid, 'distribusi' AS source_type, d.id AS distribusi_id,
+                           b.id AS barang_id, b.nama_barang, b.kode_barang, b.merk_model AS merk,
+                           b.nomor_seri, d.jumlah, COALESCE(d.kondisi, b.kondisi) AS kondisi,
+                           r.nama_ruangan, d.ruangan_id, b.unit
+                    FROM sarpras_distribusi d 
+                    JOIN sarpras_barang b ON d.barang_id = b.id 
+                    JOIN sarpras_ruangan r ON d.ruangan_id = r.id 
+                    WHERE d.ruangan_id = ?
+                    " . ($search !== '' ? "AND (b.nama_barang LIKE ? OR b.kode_barang LIKE ? OR b.merk_model LIKE ?)" : "") . "
+                    ORDER BY b.nama_barang ASC
+                ", $search !== '' ? [$ruanganId, "%$search%", "%$search%", "%$search%"] : [$ruanganId])->fetchAll();
+
+                $brgItems = $db->query("
+                    SELECT b.id AS uid, 'barang' AS source_type, NULL AS distribusi_id,
+                           b.id AS barang_id, b.nama_barang, b.kode_barang, b.merk_model AS merk,
+                           b.nomor_seri, b.jumlah, b.kondisi,
+                           r.nama_ruangan, b.ruangan_id, b.unit
+                    FROM sarpras_barang b 
+                    JOIN sarpras_ruangan r ON b.ruangan_id = r.id 
+                    WHERE b.ruangan_id = ?
+                      AND b.id NOT IN (SELECT barang_id FROM sarpras_distribusi WHERE ruangan_id = ?)
+                    " . ($search !== '' ? "AND (b.nama_barang LIKE ? OR b.kode_barang LIKE ? OR b.merk_model LIKE ?)" : "") . "
+                    ORDER BY b.nama_barang ASC
+                ", $search !== '' ? [$ruanganId, $ruanganId, "%$search%", "%$search%", "%$search%"] : [$ruanganId, $ruanganId])->fetchAll();
+
+                $items = array_merge($distItems, $brgItems);
+            }
+        } elseif ($search !== '') {
+            $distItems = $db->query("
+                SELECT d.id AS uid, 'distribusi' AS source_type, d.id AS distribusi_id,
+                       b.id AS barang_id, b.nama_barang, b.kode_barang, b.merk_model AS merk,
+                       b.nomor_seri, d.jumlah, COALESCE(d.kondisi, b.kondisi) AS kondisi,
+                       r.nama_ruangan, d.ruangan_id, b.unit
                 FROM sarpras_distribusi d 
                 JOIN sarpras_barang b ON d.barang_id = b.id 
                 JOIN sarpras_ruangan r ON d.ruangan_id = r.id 
-                WHERE d.ruangan_id = ?
-            ", [$ruanganId])->fetchAll();
+                WHERE (b.nama_barang LIKE ? OR b.kode_barang LIKE ? OR b.merk_model LIKE ?)
+                ORDER BY r.nama_ruangan ASC, b.nama_barang ASC
+            ", ["%$search%", "%$search%", "%$search%"])->fetchAll();
+
+            $brgItems = $db->query("
+                SELECT b.id AS uid, 'barang' AS source_type, NULL AS distribusi_id,
+                       b.id AS barang_id, b.nama_barang, b.kode_barang, b.merk_model AS merk,
+                       b.nomor_seri, b.jumlah, b.kondisi,
+                       COALESCE(r.nama_ruangan, 'Belum Ditempatkan') AS nama_ruangan, b.ruangan_id, b.unit
+                FROM sarpras_barang b 
+                LEFT JOIN sarpras_ruangan r ON b.ruangan_id = r.id 
+                WHERE b.id NOT IN (SELECT DISTINCT barang_id FROM sarpras_distribusi)
+                  AND (b.nama_barang LIKE ? OR b.kode_barang LIKE ? OR b.merk_model LIKE ?)
+                ORDER BY b.nama_barang ASC
+            ", ["%$search%", "%$search%", "%$search%"])->fetchAll();
+
+            $items = array_merge($distItems, $brgItems);
         }
         
-        $ruangan = self::db()->query("SELECT id, nama_ruangan FROM sarpras_ruangan ORDER BY nama_ruangan")->fetchAll();
+        $ruangan = $db->query("
+            SELECT r.id, r.nama_ruangan,
+                   (SELECT COUNT(*) FROM sarpras_distribusi d WHERE d.ruangan_id = r.id) +
+                   (SELECT COUNT(*) FROM sarpras_barang b WHERE b.ruangan_id = r.id AND b.id NOT IN (SELECT barang_id FROM sarpras_distribusi WHERE ruangan_id = r.id)) AS total_items
+            FROM sarpras_ruangan r 
+            ORDER BY r.nama_ruangan
+        ")->fetchAll();
         
         self::view('cetak-label/index', [
             'ruangan' => $ruangan,
             'items' => $items,
-            'selectedRuangan' => $ruanganId
+            'selectedRuangan' => $ruanganId,
+            'search' => $search
+        ], 'Cetak Label Barcode & QR', [
+            ['label' => 'Sarpras', 'url' => url('kelola-sarpras')],
+            ['label' => 'Cetak Label Barcode & QR']
         ]);
     }
 
@@ -934,36 +1197,131 @@ class SarprasController
     {
         $ruanganId = $_GET['ruangan_id'] ?? null;
         $ids = $_GET['ids'] ?? '';
+        $barangId = $_GET['barang_id'] ?? null;
+        $format = $_GET['format'] ?? 'barcode'; // 'barcode', 'qr', 'both'
+        $mode = $_GET['mode'] ?? 'per_unit'; // 'per_unit' or 'per_item'
+        $size = $_GET['size'] ?? 'standard'; // 'standard', 'compact', 'thermal'
         
-        if (!$ruanganId && empty($ids)) {
-            $_SESSION['flash_error'] = 'Tidak ada barang yang dipilih!';
+        if (!$ruanganId && empty($ids) && !$barangId) {
+            $_SESSION['flash_error'] = 'Tidak ada barang yang dipilih untuk dicetak!';
             Response::redirect(url('kelola-sarpras/cetak-label'));
             return;
         }
 
-        $query = "
-            SELECT d.*, b.nama_barang, b.kode_barang, b.merk, r.nama_ruangan 
-            FROM sarpras_distribusi d 
-            JOIN sarpras_barang b ON d.barang_id = b.id 
-            JOIN sarpras_ruangan r ON d.ruangan_id = r.id 
-            WHERE 1=1
-        ";
-        $params = [];
+        $db = Database::getInstance();
+        $items = [];
 
-        if (!empty($ids)) {
+        if ($barangId) {
+            $items = $db->query("
+                SELECT b.id AS barang_id, b.id AS uid, 'barang' AS source_type,
+                       b.nama_barang, b.kode_barang, b.merk_model AS merk, b.nomor_seri,
+                       b.jumlah, b.kondisi, b.unit, COALESCE(r.nama_ruangan, '-') AS nama_ruangan
+                FROM sarpras_barang b
+                LEFT JOIN sarpras_ruangan r ON b.ruangan_id = r.id
+                WHERE b.id = ?
+            ", [$barangId])->fetchAll();
+        } elseif (!empty($ids)) {
             $idArray = array_filter(explode(',', $ids));
-            if (empty($idArray)) {
-                die("Invalid IDs");
+            $distIds = [];
+            $brgIds = [];
+            foreach ($idArray as $id) {
+                $id = trim($id);
+                if (str_starts_with($id, 'brg_')) {
+                    $brgIds[] = (int)substr($id, 4);
+                } elseif (str_starts_with($id, 'dist_')) {
+                    $distIds[] = (int)substr($id, 5);
+                } else {
+                    $distIds[] = (int)$id;
+                }
             }
-            $placeholders = str_repeat('?,', count($idArray) - 1) . '?';
-            $query .= " AND d.id IN ($placeholders)";
-            $params = $idArray;
-        } else {
-            $query .= " AND d.ruangan_id = ?";
-            $params[] = $ruanganId;
+
+            if (!empty($distIds)) {
+                $placeholders = str_repeat('?,', count($distIds) - 1) . '?';
+                $distItems = $db->query("
+                    SELECT d.id AS uid, 'distribusi' AS source_type, d.id AS distribusi_id,
+                           b.id AS barang_id, b.nama_barang, b.kode_barang, b.merk_model AS merk,
+                           b.nomor_seri, d.jumlah, COALESCE(d.kondisi, b.kondisi) AS kondisi,
+                           r.nama_ruangan, d.ruangan_id, b.unit
+                    FROM sarpras_distribusi d 
+                    JOIN sarpras_barang b ON d.barang_id = b.id 
+                    JOIN sarpras_ruangan r ON d.ruangan_id = r.id 
+                    WHERE d.id IN ($placeholders)
+                ", $distIds)->fetchAll();
+                $items = array_merge($items, $distItems);
+            }
+
+            if (!empty($brgIds)) {
+                $placeholders = str_repeat('?,', count($brgIds) - 1) . '?';
+                $brgItems = $db->query("
+                    SELECT b.id AS uid, 'barang' AS source_type, NULL AS distribusi_id,
+                           b.id AS barang_id, b.nama_barang, b.kode_barang, b.merk_model AS merk,
+                           b.nomor_seri, b.jumlah, b.kondisi,
+                           COALESCE(r.nama_ruangan, '-') AS nama_ruangan, b.ruangan_id, b.unit
+                    FROM sarpras_barang b 
+                    LEFT JOIN sarpras_ruangan r ON b.ruangan_id = r.id 
+                    WHERE b.id IN ($placeholders)
+                ", $brgIds)->fetchAll();
+                $items = array_merge($items, $brgItems);
+            }
+        } elseif ($ruanganId) {
+            if ($ruanganId === 'all') {
+                $distItems = $db->query("
+                    SELECT d.id AS uid, 'distribusi' AS source_type, d.id AS distribusi_id,
+                           b.id AS barang_id, b.nama_barang, b.kode_barang, b.merk_model AS merk,
+                           b.nomor_seri, d.jumlah, COALESCE(d.kondisi, b.kondisi) AS kondisi,
+                           r.nama_ruangan, d.ruangan_id, b.unit
+                    FROM sarpras_distribusi d 
+                    JOIN sarpras_barang b ON d.barang_id = b.id 
+                    JOIN sarpras_ruangan r ON d.ruangan_id = r.id 
+                    ORDER BY r.nama_ruangan ASC, b.nama_barang ASC
+                ")->fetchAll();
+
+                $brgItems = $db->query("
+                    SELECT b.id AS uid, 'barang' AS source_type, NULL AS distribusi_id,
+                           b.id AS barang_id, b.nama_barang, b.kode_barang, b.merk_model AS merk,
+                           b.nomor_seri, b.jumlah, b.kondisi,
+                           COALESCE(r.nama_ruangan, 'Belum Ditempatkan') AS nama_ruangan, b.ruangan_id, b.unit
+                    FROM sarpras_barang b 
+                    LEFT JOIN sarpras_ruangan r ON b.ruangan_id = r.id 
+                    WHERE b.id NOT IN (SELECT DISTINCT barang_id FROM sarpras_distribusi)
+                    ORDER BY b.nama_barang ASC
+                ")->fetchAll();
+
+                $items = array_merge($distItems, $brgItems);
+            } else {
+                $distItems = $db->query("
+                    SELECT d.id AS uid, 'distribusi' AS source_type, d.id AS distribusi_id,
+                           b.id AS barang_id, b.nama_barang, b.kode_barang, b.merk_model AS merk,
+                           b.nomor_seri, d.jumlah, COALESCE(d.kondisi, b.kondisi) AS kondisi,
+                           r.nama_ruangan, d.ruangan_id, b.unit
+                    FROM sarpras_distribusi d 
+                    JOIN sarpras_barang b ON d.barang_id = b.id 
+                    JOIN sarpras_ruangan r ON d.ruangan_id = r.id 
+                    WHERE d.ruangan_id = ?
+                    ORDER BY b.nama_barang ASC
+                ", [$ruanganId])->fetchAll();
+
+                $brgItems = $db->query("
+                    SELECT b.id AS uid, 'barang' AS source_type, NULL AS distribusi_id,
+                           b.id AS barang_id, b.nama_barang, b.kode_barang, b.merk_model AS merk,
+                           b.nomor_seri, b.jumlah, b.kondisi,
+                           r.nama_ruangan, b.ruangan_id, b.unit
+                    FROM sarpras_barang b 
+                    JOIN sarpras_ruangan r ON b.ruangan_id = r.id 
+                    WHERE b.ruangan_id = ?
+                      AND b.id NOT IN (SELECT barang_id FROM sarpras_distribusi WHERE ruangan_id = ?)
+                    ORDER BY b.nama_barang ASC
+                ", [$ruanganId, $ruanganId])->fetchAll();
+
+                $items = array_merge($distItems, $brgItems);
+            }
         }
 
-        $items = self::db()->query($query, $params)->fetchAll();
+        if (empty($items)) {
+            $_SESSION['flash_error'] = 'Tidak ada barang yang ditemukan untuk dicetak!';
+            Response::redirect(url('kelola-sarpras/cetak-label' . ($ruanganId ? '?ruangan_id=' . $ruanganId : '')));
+            return;
+        }
 
         include BASE_PATH . '/modules/kelola-sarpras/views/cetak-label/cetak_label.php';
         exit;
@@ -1573,35 +1931,14 @@ class SarprasController
         $kategori_id = $_GET['kategori_id'] ?? '';
         
         $filters = [];
-        $namaRuanganCetak = 'Semua Ruangan';
-        $namaPenanggungJawab = '';
-        $niyPenanggungJawab = '';
-
         if (!empty($ruangan_id)) {
-            $filters['ruangan_id'] = (int)$ruangan_id;
-            $ruangan = SarprasModel::getRuanganById((int)$ruangan_id);
-            if ($ruangan) {
-                $namaRuanganCetak = $ruangan['nama_ruangan'];
-                if (!empty($ruangan['penanggung_jawab_id'])) {
-                    $db = Database::getInstance();
-                    $peg = $db->find("SELECT nama, niy FROM pegawai WHERE id = ?", [$ruangan['penanggung_jawab_id']]);
-                    if ($peg) {
-                        $namaPenanggungJawab = $peg['nama'];
-                        $niyPenanggungJawab = $peg['niy'];
-                    } else {
-                        $namaPenanggungJawab = $ruangan['penanggung_jawab'] ?? '';
-                    }
-                } else {
-                    $namaPenanggungJawab = $ruangan['penanggung_jawab'] ?? '';
-                }
-            }
+            $filters['ruangan_id'] = $ruangan_id;
         }
-        
         if (!empty($kategori_id)) {
             $filters['kategori_id'] = (int)$kategori_id;
         }
-        
-        $allBarang = SarprasModel::getBarangList($filters, 10000, 0);
+
+        $laporanData = SarprasModel::getLaporanAsetGrouped($filters);
         
         $kopSurat = SarprasModel::getSetting('sarpras_kop_surat');
         $kepalaId = SarprasModel::getSetting('sarpras_kepala_id');
@@ -1617,15 +1954,26 @@ class SarprasController
             }
         }
 
-        self::view('laporan/cetak', [
-            'items' => $allBarang,
+        // Tentukan apakah cetak seluruh ruangan (berkelompok) atau ruangan tunggal
+        $isGrouped = empty($ruangan_id) || $ruangan_id === 'all';
+        $selectedRuanganData = null;
+        if (!empty($ruangan_id) && is_numeric($ruangan_id)) {
+            $selectedRuanganData = SarprasModel::getRuanganById((int)$ruangan_id);
+        }
+
+        extract([
+            'laporan' => $laporanData,
+            'isGrouped' => $isGrouped,
+            'filter_ruangan' => $ruangan_id,
+            'filter_kategori' => $kategori_id,
+            'selectedRuanganData' => $selectedRuanganData,
             'kopSurat' => $kopSurat,
-            'namaRuanganCetak' => $namaRuanganCetak,
-            'namaPenanggungJawab' => $namaPenanggungJawab,
-            'niyPenanggungJawab' => $niyPenanggungJawab,
             'namaKepalaSarpras' => $namaKepalaSarpras,
             'niyKepalaSarpras' => $niyKepalaSarpras,
-        ], 'Cetak Laporan', [], true);
+        ]);
+
+        include BASE_PATH . '/modules/kelola-sarpras/views/laporan/cetak.php';
+        exit;
     }
 
     public static function barangDetailDistribusiJson(): void

@@ -198,7 +198,9 @@ class MobileSarprasController
         self::render('ruangan/tambah', [
             'pageTitle' => 'Tambah Ruangan',
             'activeTab' => 'input',
-            'bangunanList' => SarprasModel::getBangunanList()
+            'bangunanList' => SarprasModel::getBangunanList(),
+            'pegawaiList' => SarprasModel::getPegawaiList(),
+            'kelasListByUnit' => SarprasModel::getKelasByUnit()
         ]);
     }
 
@@ -244,7 +246,9 @@ class MobileSarprasController
             'pageTitle' => 'Edit Ruangan',
             'activeTab' => 'input',
             'item' => $item,
-            'bangunanList' => SarprasModel::getBangunanList()
+            'bangunanList' => SarprasModel::getBangunanList(),
+            'pegawaiList' => SarprasModel::getPegawaiList(),
+            'kelasListByUnit' => SarprasModel::getKelasByUnit()
         ]);
     }
 

@@ -128,8 +128,20 @@
                                 <td class="py-3.5 px-4 text-center text-slate-400 font-medium"><?= $no++ ?></td>
                                 <td class="py-3.5 px-4">
                                     <div class="flex items-center gap-3">
-                                        <?php if (!empty($b['foto'])): ?>
-                                            <img src="<?= url('public/' . ltrim($b['foto'], '/')) ?>" alt="Foto" class="w-10 h-10 rounded-xl object-cover border border-slate-200 shrink-0">
+                                        <?php 
+                                        $fotoList = SarprasModel::getFotoList($b['foto'] ?? '');
+                                        $firstFoto = !empty($fotoList) ? $fotoList[0] : null;
+                                        $countFoto = count($fotoList);
+                                        ?>
+                                        <?php if ($firstFoto): ?>
+                                            <div class="relative cursor-pointer group shrink-0" onclick="openFotoGallery(<?= htmlspecialchars(json_encode($fotoList)) ?>, '<?= e(addslashes($b['nama_barang'])) ?>')" title="Klik untuk lihat <?= $countFoto ?> foto">
+                                                <img src="<?= url('public/' . ltrim($firstFoto, '/')) ?>" alt="Foto" class="w-10 h-10 rounded-xl object-cover border border-slate-200 group-hover:scale-105 transition-transform shadow-sm">
+                                                <?php if ($countFoto > 1): ?>
+                                                    <span class="absolute -top-1.5 -right-1.5 px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-blue-600 text-white shadow-sm border border-white">
+                                                        +<?= $countFoto - 1 ?>
+                                                    </span>
+                                                <?php endif; ?>
+                                            </div>
                                         <?php else: ?>
                                             <div class="w-10 h-10 rounded-xl bg-primary-50 border border-primary-100 flex items-center justify-center text-primary-600 text-lg shrink-0">
                                                 📦
@@ -196,6 +208,12 @@
                                 </td>
                                 <td class="py-3.5 px-4 text-center">
                                     <div class="flex items-center justify-center gap-1.5">
+                                        <!-- Cetak Label Barcode -->
+                                        <a href="<?= url('kelola-sarpras/cetak-label/print?barang_id=' . $b['id'] . '&format=barcode') ?>" target="_blank" class="p-1.5 rounded-lg text-slate-500 hover:text-primary-600 hover:bg-primary-50 transition-colors" title="Cetak Label Barcode">
+                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0 1 10.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0 .229 2.523a1.125 1.125 0 0 1-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0 0 21 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 0 0-1.913-.247M6.34 18H5.25A2.25 2.25 0 0 1 3 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 0 1 1.913-.247m10.5 0a48.536 48.536 0 0 0-10.5 0v2.796c0 1.18.91 2.164 2.09 2.201a51.964 51.964 0 0 0 6.32 0c1.18-.037 2.09-1.022 2.09-2.201V9.456Z" />
+                                            </svg>
+                                        </a>
                                         <!-- Edit -->
                                         <button type="button" onclick="openModalEdit(<?= htmlspecialchars(json_encode($b)) ?>)" class="p-1.5 rounded-lg text-slate-500 hover:text-amber-600 hover:bg-amber-50 transition-colors" title="Edit Aset">
                                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125"/></svg>
@@ -361,9 +379,13 @@
                         </select>
                     </div>
                     
-                    <div class="sm:col-span-2">
-                        <label class="block text-xs font-bold text-slate-700 mb-1">Foto Barang</label>
-                        <input type="file" name="foto" accept="image/jpeg,image/png,image/webp" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-primary-500 file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100">
+                    <div class="sm:col-span-2 pt-2">
+                        <?php 
+                        $uploaderId = 'foto_modal_tambah';
+                        $existingFotos = [];
+                        $isMobile = false;
+                        include BASE_PATH . '/modules/kelola-sarpras/views/barang/_foto_uploader.php';
+                        ?>
                     </div>
                 </div>
             </div>
@@ -383,6 +405,11 @@
 
 <script>
     function openModalTambah() {
+        const uploaderTambah = document.getElementById('foto_modal_tambah');
+        if (uploaderTambah && uploaderTambah.clearPhotos) {
+            uploaderTambah.clearPhotos();
+        }
+
         const modal = document.getElementById('modalTambah');
         const modalContent = document.getElementById('modalTambahContent');
         modal.classList.remove('hidden');
@@ -593,9 +620,13 @@ function closeDetail() {
                             </select>
                         </div>
                         
-                        <div class="sm:col-span-2">
-                            <label class="block text-xs font-bold text-slate-700 mb-1">Foto Barang (Abaikan jika tidak ingin mengubah foto)</label>
-                            <input type="file" name="foto" accept="image/jpeg,image/png,image/webp" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-primary-500 file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100">
+                        <div class="sm:col-span-2 pt-2">
+                            <?php 
+                            $uploaderId = 'foto_modal_edit';
+                            $existingFotos = [];
+                            $isMobile = false;
+                            include BASE_PATH . '/modules/kelola-sarpras/views/barang/_foto_uploader.php';
+                            ?>
                         </div>
                     </div>
             </div>
@@ -636,6 +667,26 @@ function closeDetail() {
         
         // Update Preview Kode
         updatePreviewKodeEdit(item.kode_barang);
+
+        // Load Existing Photos into uploader
+        let existingFotos = [];
+        if (item.foto) {
+            if (typeof item.foto === 'string' && item.foto.trim().startsWith('[')) {
+                try {
+                    existingFotos = JSON.parse(item.foto);
+                } catch(e) {
+                    existingFotos = [item.foto];
+                }
+            } else if (Array.isArray(item.foto)) {
+                existingFotos = item.foto;
+            } else if (typeof item.foto === 'string' && item.foto.trim() !== '') {
+                existingFotos = [item.foto.trim()];
+            }
+        }
+        const uploaderEdit = document.getElementById('foto_modal_edit');
+        if (uploaderEdit && uploaderEdit.loadExistingPhotos) {
+            uploaderEdit.loadExistingPhotos(existingFotos);
+        }
 
         const modal = document.getElementById('modalEdit');
         const modalContent = document.getElementById('modalEditContent');
@@ -816,5 +867,115 @@ function closeDetail() {
         const modal = document.getElementById('modal-detail-distribusi');
         modal.classList.add('hidden');
     }
+
+    // ── LIGHTBOX MODAL MULTI-FOTO ─────────────────────────────────
+    let currentGalleryPhotos = [];
+    let currentGalleryIndex = 0;
+
+    function openFotoGallery(photos, title) {
+        if (!photos || photos.length === 0) return;
+        currentGalleryPhotos = photos;
+        currentGalleryIndex = 0;
+
+        document.getElementById('gallery-title').textContent = title || 'Foto Inventaris';
+        renderGalleryImage();
+
+        const modal = document.getElementById('modal-foto-gallery');
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function renderGalleryImage() {
+        const img = document.getElementById('gallery-main-img');
+        const counter = document.getElementById('gallery-counter');
+        const thumbs = document.getElementById('gallery-thumbs');
+        const baseUrl = '<?= url('public/') ?>';
+
+        const cur = currentGalleryPhotos[currentGalleryIndex];
+        img.src = baseUrl + cur.replace(/^\//, '');
+        counter.textContent = `${currentGalleryIndex + 1} / ${currentGalleryPhotos.length}`;
+
+        thumbs.innerHTML = '';
+        currentGalleryPhotos.forEach((p, idx) => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = `w-12 h-12 rounded-xl overflow-hidden border-2 transition-all shrink-0 ${idx === currentGalleryIndex ? 'border-blue-500 scale-105 shadow-md' : 'border-transparent opacity-60 hover:opacity-100'}`;
+            btn.innerHTML = `<img src="${baseUrl + p.replace(/^\//, '')}" class="w-full h-full object-cover">`;
+            btn.onclick = () => {
+                currentGalleryIndex = idx;
+                renderGalleryImage();
+            };
+            thumbs.appendChild(btn);
+        });
+
+        // Hide prev/next if only 1 photo
+        const prevBtn = document.getElementById('gallery-prev-btn');
+        const nextBtn = document.getElementById('gallery-next-btn');
+        if (currentGalleryPhotos.length <= 1) {
+            prevBtn.classList.add('hidden');
+            nextBtn.classList.add('hidden');
+        } else {
+            prevBtn.classList.remove('hidden');
+            nextBtn.classList.remove('hidden');
+        }
+    }
+
+    function galleryPrev() {
+        if (currentGalleryPhotos.length <= 1) return;
+        currentGalleryIndex = (currentGalleryIndex - 1 + currentGalleryPhotos.length) % currentGalleryPhotos.length;
+        renderGalleryImage();
+    }
+
+    function galleryNext() {
+        if (currentGalleryPhotos.length <= 1) return;
+        currentGalleryIndex = (currentGalleryIndex + 1) % currentGalleryPhotos.length;
+        renderGalleryImage();
+    }
+
+    function closeFotoGallery() {
+        const modal = document.getElementById('modal-foto-gallery');
+        modal.classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+
+    // Keyboard support for gallery
+    document.addEventListener('keydown', function(e) {
+        const modal = document.getElementById('modal-foto-gallery');
+        if (modal && !modal.classList.contains('hidden')) {
+            if (e.key === 'Escape') closeFotoGallery();
+            if (e.key === 'ArrowLeft') galleryPrev();
+            if (e.key === 'ArrowRight') galleryNext();
+        }
+    });
 </script>
+
+<!-- Modal Lightbox Galeri Foto -->
+<div id="modal-foto-gallery" class="fixed inset-0 z-[1100] hidden bg-slate-950/90 backdrop-blur-md flex flex-col justify-between">
+    <!-- Header -->
+    <div class="px-6 py-4 flex items-center justify-between text-white border-b border-white/10 shrink-0">
+        <div>
+            <h3 id="gallery-title" class="font-bold text-sm sm:text-base leading-tight">Foto Inventaris</h3>
+            <p id="gallery-counter" class="text-xs text-white/60 font-mono mt-0.5">1 / 1</p>
+        </div>
+        <button type="button" onclick="closeFotoGallery()" class="p-2 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 text-white transition-all text-xl font-bold">
+            &times;
+        </button>
+    </div>
+
+    <!-- Main Image Stage -->
+    <div class="relative flex-1 flex items-center justify-center p-4 overflow-hidden">
+        <button id="gallery-prev-btn" type="button" onclick="galleryPrev()" class="absolute left-4 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white z-10 active:scale-90 transition-all backdrop-blur-sm">
+            &#10094;
+        </button>
+        <img id="gallery-main-img" src="" alt="Preview" class="max-h-[70vh] max-w-full rounded-2xl shadow-2xl object-contain border border-white/10">
+        <button id="gallery-next-btn" type="button" onclick="galleryNext()" class="absolute right-4 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white z-10 active:scale-90 transition-all backdrop-blur-sm">
+            &#10095;
+        </button>
+    </div>
+
+    <!-- Thumbnails Footer -->
+    <div class="p-4 bg-slate-900/60 backdrop-blur-md border-t border-white/10 shrink-0 flex justify-center">
+        <div id="gallery-thumbs" class="flex gap-2 overflow-x-auto max-w-full py-1"></div>
+    </div>
+</div>
 

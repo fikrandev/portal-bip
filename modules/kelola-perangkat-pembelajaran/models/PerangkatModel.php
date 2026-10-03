@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Perangkat Pembelajaran Model
  * 
