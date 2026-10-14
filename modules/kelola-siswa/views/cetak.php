@@ -91,8 +91,11 @@ $jenjang = strtoupper($siswa['jenjang'] ?? 'SD');
             background: #475569;
         }
         .paper-container {
-            max-width: 820px;
+            max-width: 215mm;
             margin: 20px auto 40px auto;
+            padding: 0;
+            background: transparent;
+            box-shadow: none;
         }
         @media print {
             @page {

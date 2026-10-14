@@ -19,6 +19,13 @@ $jenjangItem = $item['jenjang'] ?? 'SD';
 $kopGambarSetting = SpmbModel::getKopUnit($jenjangItem);
 $kopGambarUrl = !empty($kopGambarSetting) ? url(ltrim($kopGambarSetting, '/')) : '';
 
+// Mode Cetak Aktif (Default: kwitansi-2, atau biodata jika diakses via tombol Cetak Formulir)
+$activeMode = $_GET['mode'] ?? 'kwitansi-2';
+if (!in_array($activeMode, ['kwitansi-2', 'kwitansi-1', 'biodata', 'semua'], true)) {
+    $activeMode = 'kwitansi-2';
+}
+$isBiodataActive = in_array($activeMode, ['biodata', 'semua'], true);
+
 // Nama Akun Petugas yang Sedang Login
 $currentUser = Auth::user();
 $namaPetugasLogin = $currentUser['full_name'] 
@@ -377,6 +384,13 @@ if (!function_exists('renderKwitansiCard')) {
             box-shadow: 0 4px 20px rgba(15, 23, 42, 0.12);
             padding: 24px;
             border-radius: 4px;
+        }
+        .paper-container.is-biodata {
+            max-width: 215mm !important;
+            padding: 0 !important;
+            background: transparent !important;
+            box-shadow: none !important;
+            border-radius: 0 !important;
         }
 
         /* ── Kwitansi Card ── */
@@ -901,16 +915,16 @@ if (!function_exists('renderKwitansiCard')) {
         </div>
 
         <div class="toolbar-modes">
-            <button type="button" class="mode-btn active" data-mode="kwitansi-2" onclick="setMode('kwitansi-2')" title="Cetak Bukti Pendaftaran 2 Rangkap (Lembar Pendaftar & Lembar Panitia dalam 1 lembar A4)">
+            <button type="button" class="mode-btn <?= $activeMode === 'kwitansi-2' ? 'active' : '' ?>" data-mode="kwitansi-2" onclick="setMode('kwitansi-2')" title="Cetak Bukti Pendaftaran 2 Rangkap (Lembar Pendaftar & Lembar Panitia dalam 1 lembar A4)">
                 📋 Bukti (2 Rangkap)
             </button>
-            <button type="button" class="mode-btn" data-mode="kwitansi-1" onclick="setMode('kwitansi-1')" title="Cetak Bukti Pendaftaran 1 Rangkap">
+            <button type="button" class="mode-btn <?= $activeMode === 'kwitansi-1' ? 'active' : '' ?>" data-mode="kwitansi-1" onclick="setMode('kwitansi-1')" title="Cetak Bukti Pendaftaran 1 Rangkap">
                 📋 Bukti (1 Rangkap)
             </button>
-            <button type="button" class="mode-btn" data-mode="biodata" onclick="setMode('biodata')" title="Cetak Formulir Biodata Siswa Standar Dapodik Resmi (Semua Unit)">
+            <button type="button" class="mode-btn <?= $activeMode === 'biodata' ? 'active' : '' ?>" data-mode="biodata" onclick="setMode('biodata')" title="Cetak Formulir Biodata Siswa Standar Dapodik Resmi (Semua Unit)">
                 📄 Formulir Biodata Dapodik (3 Hal)
             </button>
-            <button type="button" class="mode-btn" data-mode="semua" onclick="setMode('semua')" title="Cetak Bukti Pendaftaran + Formulir Biodata Dapodik">
+            <button type="button" class="mode-btn <?= $activeMode === 'semua' ? 'active' : '' ?>" data-mode="semua" onclick="setMode('semua')" title="Cetak Bukti Pendaftaran + Formulir Biodata Dapodik">
                 📑 Lengkap (Bukti + Biodata)
             </button>
         </div>
@@ -922,10 +936,10 @@ if (!function_exists('renderKwitansiCard')) {
     </div>
 
     <!-- ── Paper Container ── -->
-    <div class="paper-container">
+    <div id="paperContainer" class="paper-container <?= $isBiodataActive ? 'is-biodata' : '' ?>">
 
-        <!-- 1. MODE: BUKTI PENDAFTARAN 2 RANGKAP (DEFAULT) -->
-        <div id="view-kwitansi-2">
+        <!-- 1. MODE: BUKTI PENDAFTARAN 2 RANGKAP -->
+        <div id="view-kwitansi-2" class="<?= $activeMode === 'kwitansi-2' ? '' : 'hidden-mode' ?>">
             <?php renderKwitansiCard($item, $logoUrl, $kopGambarUrl, 'LEMBAR 1 : UNTUK PENDAFTAR / ORANG TUA', true); ?>
 
             <div class="perforation-divider">
@@ -940,17 +954,17 @@ if (!function_exists('renderKwitansiCard')) {
         </div>
 
         <!-- 2. MODE: BUKTI PENDAFTARAN 1 RANGKAP -->
-        <div id="view-kwitansi-1" class="hidden-mode">
+        <div id="view-kwitansi-1" class="<?= $activeMode === 'kwitansi-1' ? '' : 'hidden-mode' ?>">
             <?php renderKwitansiCard($item, $logoUrl, $kopGambarUrl, 'TANDA BUKTI PENDAFTARAN SPMB', false); ?>
         </div>
 
         <!-- 3. MODE: FORMULIR BIODATA PENDAFTARAN (STANDAR DAPODIK RESMI SEMUA UNIT) -->
-        <div id="view-biodata" class="hidden-mode">
+        <div id="view-biodata" class="<?= $activeMode === 'biodata' ? '' : 'hidden-mode' ?>">
             <?php renderDapodikFormulirPesertaDidik($item); ?>
         </div>
 
         <!-- 4. MODE: LENGKAP (BUKTI PENDAFTARAN + FORMULIR BIODATA DAPODIK) -->
-        <div id="view-semua" class="hidden-mode">
+        <div id="view-semua" class="<?= $activeMode === 'semua' ? '' : 'hidden-mode' ?>">
             <?php renderKwitansiCard($item, $logoUrl, $kopGambarUrl, 'LEMBAR PENDAFTAR & ARSIP SPMB', false); ?>
             <div class="page-break" style="margin-top: 30px;"></div>
             <?php renderDapodikFormulirPesertaDidik($item); ?>
@@ -983,6 +997,21 @@ if (!function_exists('renderKwitansiCard')) {
                     }
                 }
             }
+
+            const container = document.getElementById('paperContainer');
+            if (container) {
+                if (mode === 'biodata' || mode === 'semua') {
+                    container.classList.add('is-biodata');
+                } else {
+                    container.classList.remove('is-biodata');
+                }
+            }
+
+            try {
+                const url = new URL(window.location.href);
+                url.searchParams.set('mode', mode);
+                window.history.replaceState({}, '', url.toString());
+            } catch (e) {}
         }
 
         const urlParams = new URLSearchParams(window.location.search);

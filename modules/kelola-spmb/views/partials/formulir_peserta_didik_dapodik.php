@@ -280,7 +280,8 @@ if (!function_exists('renderDapodikFormulirPesertaDidik')) {
                 position: relative;
                 width: 215mm;
                 max-width: 100%;
-                min-height: 310mm;
+                min-height: 330mm;
+                height: 330mm;
                 padding: 10mm;
                 margin: 0 auto 20px auto;
                 background: #ffffff;
@@ -291,7 +292,7 @@ if (!function_exists('renderDapodikFormulirPesertaDidik')) {
 
             @media print {
                 @page {
-                    size: 215mm 330mm; /* Standar Kertas F4 / Folio */
+                    size: 215mm 330mm; /* Standar Kertas F4 / Folio (21.5cm x 33cm) */
                     margin: 10mm;      /* Margin 1cm (kiri, kanan, bawah, atas) */
                 }
                 body {
@@ -317,19 +318,36 @@ if (!function_exists('renderDapodikFormulirPesertaDidik')) {
                     padding: 0 !important; /* Margin 10mm sudah ditangani @page */
                     width: 100% !important;
                     max-width: 195mm !important; /* 215mm - 20mm */
-                    min-height: 0 !important;
-                    height: auto !important;
-                    max-height: 310mm !important;
+                    min-height: 305mm !important;
+                    height: 305mm !important;
+                    max-height: 305mm !important;
                     page-break-after: always !important;
                     break-after: page !important;
                     page-break-inside: avoid !important;
                     break-inside: avoid !important;
                     box-sizing: border-box !important;
-                    overflow: hidden !important; /* Mencegah lembar ke-2 pecah menjadi 2 */
+                    overflow: hidden !important;
+                    position: relative !important;
                 }
                 .dapodik-page:last-child {
                     page-break-after: avoid !important;
                     break-after: avoid !important;
+                }
+                #dapodik-hal-1 {
+                    display: flex !important;
+                    flex-direction: column !important;
+                }
+                #dapodik-hal-1 .dp-table {
+                    flex: 1 1 auto !important;
+                    width: 100% !important;
+                }
+                .dp-footer-page,
+                #dapodik-hal-1 .dp-footer-page,
+                #dapodik-hal-2 .dp-footer-page,
+                #dapodik-hal-3 .dp-footer-page {
+                    position: absolute !important;
+                    bottom: 0 !important;
+                    right: 0 !important;
                 }
             }
 
@@ -596,15 +614,6 @@ if (!function_exists('renderDapodikFormulirPesertaDidik')) {
                 margin: 4px 0 3px 0 !important;
                 font-size: 8.8pt !important;
             }
-            #dapodik-hal-1 .dp-footer-page {
-                position: relative !important;
-                bottom: auto !important;
-                right: auto !important;
-                text-align: right;
-                margin-top: 3px;
-                font-size: 7.5pt;
-                font-weight: bold;
-            }
 
             /* ── HALAMAN 2 (DATA ORANG TUA KANDUNG & WALI) FULL-HEIGHT PER SPEC ── */
             #dapodik-hal-2 {
@@ -642,15 +651,6 @@ if (!function_exists('renderDapodikFormulirPesertaDidik')) {
                 color: #ffffff !important;
                 font-weight: bold !important;
                 line-height: 1.15;
-            }
-            #dapodik-hal-2 .dp-footer-page {
-                position: relative !important;
-                bottom: auto !important;
-                right: auto !important;
-                text-align: right;
-                margin-top: 2px;
-                font-size: 7.5pt;
-                font-weight: bold;
             }
 
             /* ── HALAMAN 3 (KONTAK, PERIODIK, & REGISTRASI) ── */
@@ -708,19 +708,6 @@ if (!function_exists('renderDapodikFormulirPesertaDidik')) {
                 text-align: right;
                 font-size: 7.5pt;
                 font-weight: bold;
-            }
-            @media print {
-                #dapodik-hal-3 {
-                    height: 305mm !important;
-                    min-height: 305mm !important;
-                    max-height: 305mm !important;
-                    position: relative !important;
-                }
-                #dapodik-hal-3 .dp-footer-page {
-                    position: absolute !important;
-                    bottom: 0 !important;
-                    right: 0 !important;
-                }
             }
         </style>
 
