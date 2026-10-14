@@ -118,3 +118,8 @@ if (!function_exists('csrf_field')) {
     }
 }
 
+if (!class_exists('Core\CSRF')) {
+    class_alias('CSRF', 'Core\CSRF');
+}
+
+

@@ -445,7 +445,7 @@ $filters = $filters ?? [];
                                                 <div class="px-3 py-1 text-[9.5px] font-extrabold text-slate-400 uppercase tracking-wider">Ubah Status Seleksi</div>
                                                 <?php if (($item['status_kelulusan'] ?? '') !== 'Lulus / Diterima'): ?>
                                                     <form method="POST" action="<?= url('kelola-spmb/siswa-baru/status/' . $item['id']) ?>" onsubmit="return confirm('Tetapkan calon siswa <?= addslashes(e($item['nama_lengkap'])) ?> sebagai LULUS / DITERIMA?');">
-                                                        <?= \Core\CSRF::token() ?>
+                                                        <?= CSRF::field() ?>
                                                         <input type="hidden" name="status_kelulusan" value="Lulus / Diterima">
                                                         <button type="submit" class="w-full flex items-center gap-2 px-3 py-1.5 text-xs font-bold text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors text-left cursor-pointer">
                                                             <span>🎓</span>
@@ -455,7 +455,7 @@ $filters = $filters ?? [];
                                                 <?php endif; ?>
                                                 <?php if (($item['status_kelulusan'] ?? '') !== 'Tidak Lulus'): ?>
                                                     <form method="POST" action="<?= url('kelola-spmb/siswa-baru/status/' . $item['id']) ?>" onsubmit="return confirm('Tetapkan calon siswa <?= addslashes(e($item['nama_lengkap'])) ?> sebagai TIDAK LULUS?');">
-                                                        <?= \Core\CSRF::token() ?>
+                                                        <?= CSRF::field() ?>
                                                         <input type="hidden" name="status_kelulusan" value="Tidak Lulus">
                                                         <button type="submit" class="w-full flex items-center gap-2 px-3 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-50 rounded-lg transition-colors text-left cursor-pointer">
                                                             <span>✕</span>
@@ -465,7 +465,7 @@ $filters = $filters ?? [];
                                                 <?php endif; ?>
                                                 <?php if (!empty($item['status_kelulusan']) && $item['status_kelulusan'] !== 'Menunggu Seleksi'): ?>
                                                     <form method="POST" action="<?= url('kelola-spmb/siswa-baru/status/' . $item['id']) ?>" onsubmit="return confirm('Kembalikan status calon siswa ke Menunggu Seleksi?');">
-                                                        <?= \Core\CSRF::token() ?>
+                                                        <?= CSRF::field() ?>
                                                         <input type="hidden" name="status_kelulusan" value="Menunggu Seleksi">
                                                         <button type="submit" class="w-full flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors text-left cursor-pointer">
                                                             <span>⏳</span>
