@@ -148,13 +148,13 @@ class MobileSarprasController
         self::render('inventaris/tambah', [
             'pageTitle' => 'Tambah Inventaris',
             'activeTab' => 'input',
+            'kategoriList' => SarprasModel::getAllKategori(),
             'golonganList' => SarprasModel::getAllGolongan(),
             'kelompokList' => SarprasModel::getAllKelompok(),
             'asalAnggaranList' => SarprasModel::getAllAsalAnggaran(),
             'satuanList' => SarprasModel::getAllSatuan()
         ]);
     }
-
 
     public static function inventarisEdit(int $id): void
     {
@@ -167,6 +167,7 @@ class MobileSarprasController
             'pageTitle' => 'Edit Inventaris',
             'activeTab' => 'input',
             'item' => $item,
+            'kategoriList' => SarprasModel::getAllKategori(),
             'golonganList' => SarprasModel::getAllGolongan(),
             'kelompokList' => SarprasModel::getAllKelompok(),
             'asalAnggaranList' => SarprasModel::getAllAsalAnggaran(),

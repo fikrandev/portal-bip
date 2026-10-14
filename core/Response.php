@@ -19,10 +19,13 @@ class Response
     }
 
     /**
-     * Redirect to a URL
+     * Redirect to a URL (optionally with flash message)
      */
-    public static function redirect(string $url): void
+    public static function redirect(string $url, ?string $message = null, string $type = 'success'): void
     {
+        if ($message !== null) {
+            $_SESSION['flash_' . $type] = $message;
+        }
         header('Location: ' . $url);
         exit;
     }

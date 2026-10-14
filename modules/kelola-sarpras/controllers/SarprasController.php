@@ -206,7 +206,8 @@ class SarprasController
 
         if (empty($namaBarang) || empty($golonganId) || empty($kelompokId) || empty($asalAnggaranId)) {
             $_SESSION['flash_error'] = 'Nama barang, Golongan, Kelompok, dan Asal Anggaran wajib diisi!';
-            Response::redirect(url('kelola-sarpras/barang/create'));
+            $fallbackUrl = !empty($_POST['redirect_to']) ? $_POST['redirect_to'] : url('kelola-sarpras/barang/create');
+            Response::redirect($fallbackUrl);
             return;
         }
 
@@ -285,17 +286,18 @@ class SarprasController
         $barang = SarprasModel::getBarangById($id);
         if (!$barang) {
             $_SESSION['flash_error'] = 'Barang tidak ditemukan!';
-            Response::redirect(url('kelola-sarpras/barang'));
+            $redirectUrl = !empty($_POST['redirect_to']) ? $_POST['redirect_to'] : url('kelola-sarpras/barang');
+            Response::redirect($redirectUrl);
             return;
         }
 
-        $namaBarang = trim($_POST['nama_barang'] ?? '');
-        $golonganId = (int)($_POST['golongan_id'] ?? 0);
-        $kelompokId = (int)($_POST['kelompok_id'] ?? 0);
-        $asalAnggaranId = (int)($_POST['asal_anggaran_id'] ?? 0);
-        $kategoriId = (int)($_POST['kategori_id'] ?? 1);
-        $ruanganId = (int)($_POST['ruangan_id'] ?? 1);
-        $unit = trim($_POST['unit'] ?? 'SD');
+        $namaBarang = trim($_POST['nama_barang'] ?? ($barang['nama_barang'] ?? ''));
+        $golonganId = !empty($_POST['golongan_id']) ? (int)$_POST['golongan_id'] : (int)($barang['golongan_id'] ?? 0);
+        $kelompokId = !empty($_POST['kelompok_id']) ? (int)$_POST['kelompok_id'] : (int)($barang['kelompok_id'] ?? 0);
+        $asalAnggaranId = !empty($_POST['asal_anggaran_id']) ? (int)$_POST['asal_anggaran_id'] : (int)($barang['asal_anggaran_id'] ?? 0);
+        $kategoriId = !empty($_POST['kategori_id']) ? (int)$_POST['kategori_id'] : (int)($barang['kategori_id'] ?? 1);
+        $ruanganId = !empty($_POST['ruangan_id']) ? (int)$_POST['ruangan_id'] : (int)($barang['ruangan_id'] ?? 1);
+        $unit = !empty($_POST['unit']) ? trim($_POST['unit']) : ($barang['unit'] ?? 'SD');
         $jumlah = max(1, (int)($_POST['jumlah'] ?? 1));
         $satuan = trim($_POST['satuan'] ?? 'Unit');
         $kondisi = trim($_POST['kondisi'] ?? 'Baik');
@@ -353,7 +355,8 @@ class SarprasController
             SarprasModel::deleteBarang($id);
             $_SESSION['flash_success'] = "Aset '{$barang['nama_barang']}' berhasil dihapus!";
         }
-        Response::redirect(url('kelola-sarpras/barang'));
+        $redirectUrl = !empty($_POST['redirect_to']) ? $_POST['redirect_to'] : (!empty($_POST['return_to']) ? $_POST['return_to'] : url('kelola-sarpras/barang'));
+        Response::redirect($redirectUrl);
     }
 
     // ΓöÇΓöÇ SIRKULASI PEMINJAMAN ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ

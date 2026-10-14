@@ -9,8 +9,13 @@
                 <?= htmlspecialchars($jabatan ?? 'Administrator') ?>
             </p>
         </div>
-        <div class="w-12 h-12 bg-blue-100 rounded-full border-2 border-white shadow-sm flex items-center justify-center text-blue-600 font-bold text-lg shrink-0">
-            <?= strtoupper(substr($nama ?? 'U', 0, 1)) ?>
+        <div class="flex items-center gap-2.5">
+            <a href="<?= url('mobile-sarpras/logout') ?>" onclick="return confirm('Apakah Anda yakin ingin keluar dari aplikasi Sarpras Mobile?')" title="Keluar / Ganti Akun" class="w-10 h-10 bg-white hover:bg-rose-50 text-slate-400 hover:text-rose-600 border border-slate-100 rounded-full flex items-center justify-center transition-colors shadow-xs active:scale-95" aria-label="Keluar">
+                <i data-lucide="log-out" class="w-4 h-4"></i>
+            </a>
+            <div class="w-12 h-12 bg-blue-100 rounded-full border-2 border-white shadow-sm flex items-center justify-center text-blue-600 font-bold text-lg shrink-0">
+                <?= strtoupper(substr($nama ?? 'U', 0, 1)) ?>
+            </div>
         </div>
     </div>
  

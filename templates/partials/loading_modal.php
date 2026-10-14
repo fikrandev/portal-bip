@@ -46,6 +46,10 @@
 </div>
 
 <style>
+/* Pastikan SweetAlert2 SELALU berada di layer paling atas melebihi loading modal & backdrop apapun */
+.swal2-container {
+    z-index: 100000000 !important;
+}
 #global-loading-modal.is-active {
     opacity: 1 !important;
     pointer-events: auto !important;
@@ -81,6 +85,15 @@
 
     var LoadingModal = {
         show: function(title, sub) {
+            // Jika ada modal konfirmasi SweetAlert2 aktif dan bukan state loading, jangan tumpuk/tutupi
+            if (window.Swal && typeof Swal.isVisible === 'function' && Swal.isVisible()) {
+                var swalPopup = Swal.getPopup ? Swal.getPopup() : null;
+                var isSwalLoading = swalPopup && (swalPopup.classList.contains('swal2-loading') || swalPopup.querySelector('.swal2-loading'));
+                if (!isSwalLoading) {
+                    return;
+                }
+            }
+
             if (!modal) modal = document.getElementById('global-loading-modal');
             if (!titleEl) titleEl = document.getElementById('global-loading-title');
             if (!subEl) subEl = document.getElementById('global-loading-sub');

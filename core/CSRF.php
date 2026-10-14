@@ -29,6 +29,14 @@ class CSRF
     }
 
     /**
+     * Alias for field()
+     */
+    public static function input(): string
+    {
+        return self::field();
+    }
+
+    /**
      * Generate a meta tag for AJAX requests
      */
     public static function meta(): string
@@ -87,3 +95,18 @@ class CSRF
         $_SESSION[CSRF_TOKEN_NAME] = bin2hex(random_bytes(32));
     }
 }
+
+if (!function_exists('csrf_token')) {
+    function csrf_token(): string
+    {
+        return CSRF::token();
+    }
+}
+
+if (!function_exists('csrf_field')) {
+    function csrf_field(): string
+    {
+        return CSRF::field();
+    }
+}
+

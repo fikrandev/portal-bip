@@ -329,6 +329,26 @@
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Unit / Jenjang <span class="text-rose-500">*</span></label>
+                        <select name="unit" id="selUnitTambah" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-primary-500 font-semibold text-slate-800">
+                            <?php foreach (['SD', 'SMP', 'SMA', 'PAUD', 'Yayasan', 'Semua'] as $u): ?>
+                                <option value="<?= $u ?>"><?= $u === 'Semua' ? 'Semua / Bersama' : $u ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Jenis / Kategori Sarpras <span class="text-rose-500">*</span></label>
+                        <select name="kategori_id" id="selKategoriTambah" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-primary-500 font-semibold text-slate-800">
+                            <option value="">-- Pilih Jenis / Kategori --</option>
+                            <?php foreach ($kategoriList as $k): ?>
+                                <option value="<?= $k['id'] ?>"><?= e($k['nama_kategori']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div class="sm:col-span-2">
                         <label class="block text-xs font-bold text-slate-700 mb-1">Nama Barang <span class="text-rose-500">*</span></label>
                         <input type="text" name="nama_barang" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-primary-500" placeholder="Contoh: Meja Siswa">
@@ -570,6 +590,26 @@ function closeDetail() {
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Unit / Jenjang <span class="text-rose-500">*</span></label>
+                            <select name="unit" id="selUnitEdit" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-primary-500 font-semibold text-slate-800">
+                                <?php foreach (['SD', 'SMP', 'SMA', 'PAUD', 'Yayasan', 'Semua'] as $u): ?>
+                                    <option value="<?= $u ?>"><?= $u === 'Semua' ? 'Semua / Bersama' : $u ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Jenis / Kategori Sarpras <span class="text-rose-500">*</span></label>
+                            <select name="kategori_id" id="selKategoriEdit" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-primary-500 font-semibold text-slate-800">
+                                <option value="">-- Pilih Jenis / Kategori --</option>
+                                <?php foreach ($kategoriList as $k): ?>
+                                    <option value="<?= $k['id'] ?>"><?= e($k['nama_kategori']) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div class="sm:col-span-2">
                             <label class="block text-xs font-bold text-slate-700 mb-1">Nama Barang <span class="text-rose-500">*</span></label>
                             <input type="text" name="nama_barang" id="editNamaBarang" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-primary-500">
@@ -653,6 +693,8 @@ function closeDetail() {
         document.getElementById('selGolonganEdit').value = item.golongan_id || '';
         document.getElementById('selKelompokEdit').value = item.kelompok_id || '';
         document.getElementById('selAnggaranEdit').value = item.asal_anggaran_id || '';
+        document.getElementById('selUnitEdit').value = item.unit || 'SD';
+        document.getElementById('selKategoriEdit').value = item.kategori_id || '';
         document.getElementById('editNamaBarang').value = clean(item.nama_barang || '');
         document.getElementById('editMerkModel').value = clean(item.merk_model || '');
         document.getElementById('editNomorSeri').value = clean(item.nomor_seri || '');

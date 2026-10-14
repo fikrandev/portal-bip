@@ -36,6 +36,8 @@ require_once BASE_PATH . '/core/ExcelHelper.php';
 require_once BASE_PATH . '/core/ModalHelper.php';
 require_once BASE_PATH . '/core/DropdownHelper.php';
 require_once BASE_PATH . '/core/KartuHelper.php';
+require_once BASE_PATH . '/core/WaGateway.php';
+require_once BASE_PATH . '/core/SignatureCrypto.php';
 require_once BASE_PATH . '/core/AutoMigrate.php';
 
 // ── Auto Migrate Database (Pastikan struktur database server selalu mutakhir) ──
@@ -163,6 +165,13 @@ $router->get('/logout', [AuthController::class, 'logout']);
 
 // -- Public Routes --
 $router->get('/validasi-kartu/{id}', [SiswaController::class, 'validasiKartu']);
+$router->get('/spmb/biodata/download-contoh-dapodik', [SpmbController::class, 'downloadContohDapodik']);
+$router->get('/spmb/biodata/{token}', [SpmbController::class, 'biodataPublic']);
+$router->post('/spmb/biodata/{token}/save-draft', [SpmbController::class, 'biodataSaveDraft']);
+$router->post('/spmb/biodata/{token}/submit', [SpmbController::class, 'biodataSubmit']);
+$router->get('/spmb/komitmen/{token}', [SpmbController::class, 'komitmenPublic']);
+$router->post('/spmb/komitmen/{token}/submit', [SpmbController::class, 'komitmenSubmit']);
+$router->get('/spmb/komitmen/{token}/cetak', [SpmbController::class, 'komitmenCetakPublic']);
 
 // -- Dashboard (requires auth) --
 $router->get('/', function() {
@@ -590,7 +599,71 @@ $router->get('/kelola-quran-pegawai', [QuranPegawaiController::class, 'index'], 
 $router->get('/kelola-cuti', [CutiController::class, 'index'], [Middleware::permissionRequired('cuti.view')]);
 $router->get('/kelola-kpi', [KpiController::class, 'index'], [Middleware::permissionRequired('kpi.view')]);
 $router->get('/kelola-ibadah-guru', [IbadahGuruController::class, 'index'], [Middleware::permissionRequired('ibadah_guru.view')]);
+// -- Kelola SPMB (Seleksi Penerimaan Murid Baru) --
+// 1. Dashboard
 $router->get('/kelola-spmb', [SpmbController::class, 'index'], [Middleware::permissionRequired('spmb.view')]);
+$router->get('/kelola-spmb/dashboard', [SpmbController::class, 'index'], [Middleware::permissionRequired('spmb.view')]);
+
+// 2. Siswa Baru
+$router->get('/kelola-spmb/siswa-baru', [SpmbController::class, 'siswaBaruIndex'], [Middleware::permissionRequired('spmb.view')]);
+$router->get('/kelola-spmb/siswa-baru/get-nomor', [SpmbController::class, 'getNomorAjax'], [Middleware::permissionRequired('spmb.view')]);
+$router->get('/kelola-spmb/siswa-baru/create', [SpmbController::class, 'siswaBaruCreate'], [Middleware::permissionRequired('spmb.create')]);
+$router->post('/kelola-spmb/siswa-baru/store', [SpmbController::class, 'siswaBaruStore'], [Middleware::permissionRequired('spmb.create')]);
+$router->get('/kelola-spmb/siswa-baru/edit/{id}', [SpmbController::class, 'siswaBaruEdit'], [Middleware::permissionRequired('spmb.update')]);
+$router->post('/kelola-spmb/siswa-baru/update/{id}', [SpmbController::class, 'siswaBaruUpdate'], [Middleware::permissionRequired('spmb.update')]);
+$router->get('/kelola-spmb/siswa-baru/detail/{id}', [SpmbController::class, 'siswaBaruDetail'], [Middleware::permissionRequired('spmb.view')]);
+$router->get('/kelola-spmb/siswa-baru/delete/{id}', [SpmbController::class, 'siswaBaruDelete'], [Middleware::permissionRequired('spmb.delete')]);
+$router->post('/kelola-spmb/siswa-baru/status/{id}', [SpmbController::class, 'siswaBaruStatus'], [Middleware::permissionRequired('spmb.approve')]);
+$router->get('/kelola-spmb/siswa-baru/cetak/{id}', [SpmbController::class, 'siswaBaruCetak'], [Middleware::permissionRequired('spmb.view')]);
+$router->get('/kelola-spmb/siswa-baru/export', [SpmbController::class, 'siswaBaruExport'], [Middleware::permissionRequired('spmb.view')]);
+
+// 3. Pindahan
+$router->get('/kelola-spmb/pindahan', [SpmbController::class, 'pindahanIndex'], [Middleware::permissionRequired('spmb.view')]);
+$router->get('/kelola-spmb/pindahan/get-nomor', [SpmbController::class, 'pindahanGetNomorAjax'], [Middleware::permissionRequired('spmb.view')]);
+$router->get('/kelola-spmb/pindahan/create', [SpmbController::class, 'pindahanCreate'], [Middleware::permissionRequired('spmb.create')]);
+$router->post('/kelola-spmb/pindahan/store', [SpmbController::class, 'pindahanStore'], [Middleware::permissionRequired('spmb.create')]);
+$router->get('/kelola-spmb/pindahan/edit/{id}', [SpmbController::class, 'pindahanEdit'], [Middleware::permissionRequired('spmb.update')]);
+$router->post('/kelola-spmb/pindahan/update/{id}', [SpmbController::class, 'pindahanUpdate'], [Middleware::permissionRequired('spmb.update')]);
+$router->get('/kelola-spmb/pindahan/detail/{id}', [SpmbController::class, 'pindahanDetail'], [Middleware::permissionRequired('spmb.view')]);
+$router->get('/kelola-spmb/pindahan/delete/{id}', [SpmbController::class, 'pindahanDelete'], [Middleware::permissionRequired('spmb.delete')]);
+$router->post('/kelola-spmb/pindahan/status/{id}', [SpmbController::class, 'pindahanStatus'], [Middleware::permissionRequired('spmb.approve')]);
+$router->get('/kelola-spmb/pindahan/cetak/{id}', [SpmbController::class, 'pindahanCetak'], [Middleware::permissionRequired('spmb.view')]);
+$router->get('/kelola-spmb/pindahan/export', [SpmbController::class, 'pindahanExport'], [Middleware::permissionRequired('spmb.view')]);
+
+// 4. Daftar Tunggu
+$router->get('/kelola-spmb/daftar-tunggu', [SpmbController::class, 'daftarTungguIndex'], [Middleware::permissionRequired('spmb.view')]);
+$router->get('/kelola-spmb/daftar-tunggu/get-nomor', [SpmbController::class, 'daftarTungguGetNomorAjax'], [Middleware::permissionRequired('spmb.view')]);
+$router->get('/kelola-spmb/daftar-tunggu/create', [SpmbController::class, 'daftarTungguCreate'], [Middleware::permissionRequired('spmb.create')]);
+$router->post('/kelola-spmb/daftar-tunggu/store', [SpmbController::class, 'daftarTungguStore'], [Middleware::permissionRequired('spmb.create')]);
+$router->get('/kelola-spmb/daftar-tunggu/edit/{id}', [SpmbController::class, 'daftarTungguEdit'], [Middleware::permissionRequired('spmb.update')]);
+$router->post('/kelola-spmb/daftar-tunggu/update/{id}', [SpmbController::class, 'daftarTungguUpdate'], [Middleware::permissionRequired('spmb.update')]);
+$router->get('/kelola-spmb/daftar-tunggu/detail/{id}', [SpmbController::class, 'daftarTungguDetail'], [Middleware::permissionRequired('spmb.view')]);
+$router->get('/kelola-spmb/daftar-tunggu/delete/{id}', [SpmbController::class, 'daftarTungguDelete'], [Middleware::permissionRequired('spmb.delete')]);
+$router->post('/kelola-spmb/daftar-tunggu/status/{id}', [SpmbController::class, 'daftarTungguStatus'], [Middleware::permissionRequired('spmb.approve')]);
+$router->get('/kelola-spmb/daftar-tunggu/cetak/{id}', [SpmbController::class, 'daftarTungguCetak'], [Middleware::permissionRequired('spmb.view')]);
+$router->get('/kelola-spmb/daftar-tunggu/export', [SpmbController::class, 'daftarTungguExport'], [Middleware::permissionRequired('spmb.view')]);
+
+// 5. Pengaturan Tahun Group SPMB
+$router->get('/kelola-spmb/pengaturan', [SpmbController::class, 'pengaturanIndex'], [Middleware::permissionRequired('spmb.view')]);
+$router->post('/kelola-spmb/pengaturan/store', [SpmbController::class, 'pengaturanStore'], [Middleware::permissionRequired('spmb.create')]);
+$router->post('/kelola-spmb/pengaturan/update/{id}', [SpmbController::class, 'pengaturanUpdate'], [Middleware::permissionRequired('spmb.update')]);
+$router->get('/kelola-spmb/pengaturan/set-active/{id}', [SpmbController::class, 'pengaturanSetActive'], [Middleware::permissionRequired('spmb.update')]);
+$router->get('/kelola-spmb/pengaturan/delete/{id}', [SpmbController::class, 'pengaturanDelete'], [Middleware::permissionRequired('spmb.delete')]);
+$router->post('/kelola-spmb/pengaturan/upload-kop', [SpmbController::class, 'pengaturanUploadKop'], [Middleware::permissionRequired('spmb.update')]);
+$router->post('/kelola-spmb/pengaturan/hapus-kop', [SpmbController::class, 'pengaturanHapusKop'], [Middleware::permissionRequired('spmb.update')]);
+$router->post('/kelola-spmb/pengaturan/save-options', [SpmbController::class, 'pengaturanSaveOptions'], [Middleware::permissionRequired('spmb.update')]);
+$router->post('/kelola-spmb/pengaturan/upload-contoh-dapodik', [SpmbController::class, 'pengaturanUploadContohDapodik'], [Middleware::permissionRequired('spmb.update')]);
+$router->post('/kelola-spmb/kirim-wa-biodata/{id}', [SpmbController::class, 'kirimWaBiodata'], [Middleware::permissionRequired('spmb.update')]);
+$router->get('/kelola-spmb/surat-pernyataan', [SpmbController::class, 'suratPernyataanIndex'], [Middleware::permissionRequired('spmb.view')]);
+$router->post('/kelola-spmb/surat-pernyataan/update', [SpmbController::class, 'suratPernyataanUpdate'], [Middleware::permissionRequired('spmb.update')]);
+$router->post('/kelola-spmb/surat-pernyataan/upload-kop', [SpmbController::class, 'suratPernyataanUploadKop'], [Middleware::permissionRequired('spmb.update')]);
+$router->post('/kelola-spmb/surat-pernyataan/hapus-kop', [SpmbController::class, 'suratPernyataanHapusKop'], [Middleware::permissionRequired('spmb.update')]);
+$router->post('/kelola-spmb/surat-pernyataan/reset', [SpmbController::class, 'suratPernyataanReset'], [Middleware::permissionRequired('spmb.update')]);
+$router->get('/kelola-spmb/surat-pernyataan/cetak/{id}', [SpmbController::class, 'suratPernyataanCetakAdmin'], [Middleware::permissionRequired('spmb.view')]);
+$router->post('/kelola-spmb/surat-pernyataan/reset-ttd/{id}', [SpmbController::class, 'suratPernyataanResetTtd'], [Middleware::permissionRequired('spmb.update')]);
+$router->post('/kelola-spmb/kirim-wa-komitmen/{id}', [SpmbController::class, 'kirimWaKomitmen'], [Middleware::permissionRequired('spmb.update')]);
+$router->get('/kelola-spmb/verifikasi-berkas/get/{id}', [SpmbController::class, 'getVerifikasiBerkasAjax'], [Middleware::permissionRequired('spmb.view')]);
+$router->post('/kelola-spmb/verifikasi-berkas/submit', [SpmbController::class, 'submitVerifikasiBerkas'], [Middleware::permissionRequired('spmb.update')]);
 $router->get('/kelola-pelanggaran-siswa', [PelanggaranSiswaController::class, 'index'], [Middleware::permissionRequired('pelanggaran_siswa.view')]);
 $router->get('/kelola-izin-guru', [IzinGuruController::class, 'index'], [Middleware::permissionRequired('izin_guru.view')]);
 $router->get('/kelola-buku-angkatan-siswa', [BukuAngkatanSiswaController::class, 'index'], [Middleware::permissionRequired('buku_angkatan.view')]);
@@ -704,6 +777,16 @@ $router->post('/pengaturan-sistem/update', [SettingsController::class, 'update']
 $router->post('/pengaturan-sistem/reset-data/process', [SettingsController::class, 'resetData'], [Middleware::permissionRequired('settings.update')]);
 $router->post('/pengaturan-sistem/reset', [SettingsController::class, 'resetData'], [Middleware::permissionRequired('settings.reset')]);
 
+// -- Server WA Gateway eportal --
+$router->get('/pengaturan-sistem/wa-gateway', [SettingsController::class, 'waGateway'], [Middleware::permissionRequired('settings.view')]);
+$router->get('/pengaturan-sistem/wa-gateway/status-ajax', [SettingsController::class, 'waStatusAjax'], [Middleware::permissionRequired('settings.view')]);
+$router->get('/pengaturan-sistem/wa-gateway/qr-ajax', [SettingsController::class, 'waQrAjax'], [Middleware::permissionRequired('settings.view')]);
+$router->post('/pengaturan-sistem/wa-gateway/logout-ajax', [SettingsController::class, 'waLogoutAjax'], [Middleware::permissionRequired('settings.update')]);
+$router->post('/pengaturan-sistem/wa-gateway/start-server', [SettingsController::class, 'waStartServerAjax'], [Middleware::permissionRequired('settings.update')]);
+$router->post('/pengaturan-sistem/wa-gateway/update', [SettingsController::class, 'updateWaGateway'], [Middleware::permissionRequired('settings.update')]);
+$router->post('/pengaturan-sistem/wa-gateway/test', [SettingsController::class, 'testSendWaGateway'], [Middleware::permissionRequired('settings.update')]);
+$router->post('/pengaturan-sistem/wa-gateway/clear-logs', [SettingsController::class, 'clearWaLogs'], [Middleware::permissionRequired('settings.update')]);
+
 // -- Portal Guru Mobile (PWA) --
 $router->get('/mobile', [PortalGuruController::class, 'beranda'], [[Middleware::class, 'authRequired']]);
 $router->get('/portal-guru', [PortalGuruController::class, 'beranda'], [[Middleware::class, 'authRequired']]);
@@ -734,6 +817,7 @@ require_once MODULES_PATH . '/mobile-sarpras/controllers/MobileSarprasAuthContro
 $router->get('/mobile-sarpras/login', [MobileSarprasAuthController::class, 'showLogin'], [[MobileSarprasAuthController::class, 'guestOnly']]);
 $router->post('/mobile-sarpras/login', [MobileSarprasAuthController::class, 'login']);
 $router->get('/mobile-sarpras/logout', [MobileSarprasAuthController::class, 'logout']);
+$router->post('/mobile-sarpras/api/token-login', [MobileSarprasAuthController::class, 'tokenLogin']);
 
 $router->get('/mobile-sarpras', function() {
     // Auto-migrate if accessed via mobile-sarpras dashboard
@@ -786,6 +870,7 @@ $router->get('/mobile-sarpras/bangunan', [MobileSarprasController::class, 'bangu
 $router->get('/mobile-sarpras/ruangan', [MobileSarprasController::class, 'ruanganList'], [[MobileSarprasAuthController::class, 'authRequired']]);
 
 $router->get('/mobile-sarpras/inventaris/tambah', [MobileSarprasController::class, 'inventarisTambah'], [[MobileSarprasAuthController::class, 'authRequired']]);
+$router->get('/mobile-sarpras/inventaris/edit/{id}', [MobileSarprasController::class, 'inventarisEdit'], [[MobileSarprasAuthController::class, 'authRequired']]);
 $router->get('/mobile-sarpras/tanah/tambah', [MobileSarprasController::class, 'tanahTambah'], [[MobileSarprasAuthController::class, 'authRequired']]);
 $router->get('/mobile-sarpras/tanah/edit/{id}', [MobileSarprasController::class, 'tanahEdit'], [[MobileSarprasAuthController::class, 'authRequired']]);
 $router->get('/mobile-sarpras/bangunan/tambah', [MobileSarprasController::class, 'bangunanTambah'], [[MobileSarprasAuthController::class, 'authRequired']]);
@@ -801,6 +886,8 @@ $router->get('/mobile-sarpras/pengajuan/tambah', [MobileSarprasController::class
 $router->get('/mobile-sarpras/api/barang-by-kode', [MobileSarprasController::class, 'apiGetBarangByKode'], [[MobileSarprasAuthController::class, 'authRequired']]);
 $router->get('/mobile-sarpras/api/barang-by-ruangan', [MobileSarprasController::class, 'apiGetBarangByRuangan'], [[MobileSarprasAuthController::class, 'authRequired']]);
 
+$router->post('/mobile-sarpras/inventaris/store', [SarprasController::class, 'barangStore'], [[MobileSarprasAuthController::class, 'authRequired']]);
+$router->post('/mobile-sarpras/inventaris/update/{id}', [SarprasController::class, 'barangUpdate'], [[MobileSarprasAuthController::class, 'authRequired']]);
 $router->post('/mobile-sarpras/maintenance/store', [MobileSarprasController::class, 'maintenanceStore'], [[MobileSarprasAuthController::class, 'authRequired']]);
 $router->post('/mobile-sarpras/peminjaman/store', [MobileSarprasController::class, 'peminjamanStore'], [[MobileSarprasAuthController::class, 'authRequired']]);
 $router->post('/mobile-sarpras/peminjaman/update/{id}', [MobileSarprasController::class, 'peminjamanUpdate'], [[MobileSarprasAuthController::class, 'authRequired']]);

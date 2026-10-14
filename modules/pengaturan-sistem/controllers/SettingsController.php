@@ -636,6 +636,181 @@ class SettingsController
     }
 
     /**
+     * Server WA Gateway eportal View
+     */
+    public static function waGateway(): void
+    {
+        $pageTitle = 'Server WA Gateway eportal';
+        $breadcrumbs = [['label' => 'Pengaturan', 'url' => url('pengaturan-sistem')], ['label' => 'Server WA Gateway']];
+        
+        $settings = WaGateway::getSettings();
+        $connection = WaGateway::checkConnection();
+        $logs = WaGateway::getRecentLogs(30);
+
+        ob_start();
+        include MODULES_PATH . '/pengaturan-sistem/views/wa-gateway.php';
+        $content = ob_get_clean();
+        
+        $customSidebar = MODULES_PATH . '/pengaturan-sistem/views/sidebar.php';
+        include TEMPLATES_PATH . '/layouts/app.php';
+    }
+
+    /**
+     * AJAX: Cek Status Koneksi Live WA Gateway Server
+     */
+    public static function waStatusAjax(): void
+    {
+        header('Content-Type: application/json');
+        $status = WaGateway::checkLocalServerStatus();
+        echo json_encode($status);
+        exit;
+    }
+
+    /**
+     * AJAX: Ambil Gambar QR Code Live
+     */
+    public static function waQrAjax(): void
+    {
+        header('Content-Type: application/json');
+        $qr = WaGateway::getLocalQrCode();
+        echo json_encode($qr);
+        exit;
+    }
+
+    /**
+     * AJAX: Logout / Putuskan Perangkat WhatsApp
+     */
+    public static function waLogoutAjax(): void
+    {
+        header('Content-Type: application/json');
+        if (!CSRF::validate()) {
+            echo json_encode(['success' => false, 'message' => 'Token CSRF tidak valid.']);
+            exit;
+        }
+        $res = WaGateway::logoutLocalServer();
+        echo json_encode($res);
+        exit;
+    }
+
+    /**
+     * AJAX: Jalankan Server Node.js di Background
+     */
+    public static function waStartServerAjax(): void
+    {
+        header('Content-Type: application/json');
+        if (!CSRF::validate()) {
+            echo json_encode(['success' => false, 'message' => 'Token CSRF tidak valid.']);
+            exit;
+        }
+        $res = WaGateway::startLocalServer();
+        echo json_encode($res);
+        exit;
+    }
+
+    /**
+     * Simpan Perubahan Pengaturan Server WA Gateway
+     */
+    public static function updateWaGateway(): void
+    {
+        if (!CSRF::validate()) { 
+            $_SESSION['flash_error'] = 'Token CSRF tidak valid.';
+            header('Location: ' . url('pengaturan-sistem/wa-gateway'));
+            exit;
+        }
+
+        $db = Database::getInstance();
+        $keys = [
+            'wa_gateway_enabled'       => !empty($_POST['wa_gateway_enabled']) ? '1' : '0',
+            'wa_gateway_server_name'   => trim($_POST['wa_gateway_server_name'] ?? 'WA Gateway eportal') ?: 'WA Gateway eportal',
+            'wa_gateway_provider'      => trim($_POST['wa_gateway_provider'] ?? 'fonnte'),
+            'wa_gateway_api_url'       => trim($_POST['wa_gateway_api_url'] ?? ''),
+            'wa_gateway_api_key'       => trim($_POST['wa_gateway_api_key'] ?? ''),
+            'wa_gateway_sender_number' => trim($_POST['wa_gateway_sender_number'] ?? ''),
+            'wa_gateway_footer_note'   => trim($_POST['wa_gateway_footer_note'] ?? '')
+        ];
+
+        foreach ($keys as $key => $val) {
+            $exists = $db->find("SELECT 1 FROM settings WHERE setting_key = ?", [$key]);
+            if ($exists) {
+                $db->query("UPDATE settings SET setting_value = ? WHERE setting_key = ?", [$val, $key]);
+            } else {
+                $db->query("INSERT INTO settings (setting_key, setting_value) VALUES (?, ?)", [$key, $val]);
+            }
+        }
+
+        $db->query("INSERT INTO audit_logs (user_id, action, entity_type, created_at) VALUES (?, ?, ?, NOW())", [
+            Auth::id(), 'UPDATE', 'wa_gateway_settings'
+        ]);
+
+        $_SESSION['flash_success'] = 'Konfigurasi Server WA Gateway eportal berhasil diperbarui.';
+        header('Location: ' . url('pengaturan-sistem/wa-gateway'));
+        exit;
+    }
+
+    /**
+     * Uji Coba Pengiriman Pesan WhatsApp (Test Send)
+     */
+    public static function testSendWaGateway(): void
+    {
+        if (!CSRF::validate()) { 
+            if (!empty($_POST['ajax'])) {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'message' => 'Token CSRF tidak valid.']);
+                exit;
+            }
+            $_SESSION['flash_error'] = 'Token CSRF tidak valid.';
+            header('Location: ' . url('pengaturan-sistem/wa-gateway'));
+            exit;
+        }
+
+        $target = trim($_POST['target_phone'] ?? '');
+        $message = trim($_POST['message'] ?? '');
+
+        if (empty($target)) {
+            $resp = ['success' => false, 'message' => 'Nomor WhatsApp tujuan wajib diisi.'];
+        } elseif (empty($message)) {
+            $resp = ['success' => false, 'message' => 'Isi pesan uji coba tidak boleh kosong.'];
+        } else {
+            $resp = WaGateway::send($target, $message, [
+                'module'         => 'wa-gateway-test',
+                'include_footer' => true
+            ]);
+        }
+
+        if (!empty($_POST['ajax']) || (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest')) {
+            header('Content-Type: application/json');
+            echo json_encode($resp);
+            exit;
+        }
+
+        if ($resp['success']) {
+            $_SESSION['flash_success'] = $resp['message'];
+        } else {
+            $_SESSION['flash_error'] = $resp['message'];
+        }
+
+        header('Location: ' . url('pengaturan-sistem/wa-gateway'));
+        exit;
+    }
+
+    /**
+     * Bersihkan Seluruh Riwayat Log Pesan WA Gateway
+     */
+    public static function clearWaLogs(): void
+    {
+        if (!CSRF::validate()) { 
+            $_SESSION['flash_error'] = 'Token CSRF tidak valid.';
+            header('Location: ' . url('pengaturan-sistem/wa-gateway'));
+            exit;
+        }
+
+        WaGateway::clearLogs();
+        $_SESSION['flash_success'] = 'Seluruh riwayat log pengiriman WhatsApp berhasil dibersihkan.';
+        header('Location: ' . url('pengaturan-sistem/wa-gateway'));
+        exit;
+    }
+
+    /**
      * Reset Data logic
      */
     public static function resetData(): void

@@ -1,0 +1,9 @@
+node_modules/
+wa-server/node_modules/
+wa-server/auth_info_baileys/
+storage/sessions/sess_*
+public/uploads/spmb/berkas/*
+!public/uploads/spmb/berkas/.gitkeep
+.vscode/
+.idea/
+*.tmp

@@ -75,6 +75,56 @@ class Auth
     }
 
     /**
+     * Log in a user directly by user ID (used for persistent auto-login / remember tokens)
+     *
+     * @param int $userId
+     * @return bool
+     */
+    public static function loginUsingId(int $userId): bool
+    {
+        $db = Database::getInstance();
+        $user = $db->find(
+            "SELECT u.*, GROUP_CONCAT(r.slug) as role_slugs 
+             FROM users u 
+             LEFT JOIN user_roles ur ON u.id = ur.user_id 
+             LEFT JOIN roles r ON ur.role_id = r.id 
+             WHERE u.id = ? AND u.is_active = 1 
+             GROUP BY u.id",
+            [$userId]
+        );
+
+        if (!$user) {
+            return false;
+        }
+
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+
+        // Regenerate session ID
+        session_regenerate_id(true);
+
+        $_SESSION['user_id'] = $user['id'];
+        $_SESSION['user_uuid'] = $user['uuid'];
+        $_SESSION['user_name'] = $user['full_name'];
+        $_SESSION['user_username'] = $user['username'];
+        $_SESSION['user_roles'] = $user['role_slugs'] ? explode(',', $user['role_slugs']) : [];
+        $_SESSION['login_time'] = time();
+        $_SESSION['ip_address'] = $_SERVER['REMOTE_ADDR'] ?? '';
+
+        // Reset static cache
+        self::$currentUser = null;
+
+        // Update last login
+        $db->update('users', ['last_login' => date('Y-m-d H:i:s')], 'id = ?', [$user['id']]);
+
+        // Audit log
+        self::logAudit('LOGIN_PERSISTENT', 'user', $user['id']);
+
+        return true;
+    }
+
+    /**
      * Log out the current user
      */
     public static function logout(): void

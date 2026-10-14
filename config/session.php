@@ -14,9 +14,18 @@ if (!defined('BASE_PATH')) {
 ini_set('session.use_strict_mode', '1');
 ini_set('session.use_only_cookies', '1');
 ini_set('session.cookie_httponly', '1');
-ini_set('session.cookie_samesite', 'Strict');
-ini_set('session.gc_maxlifetime', 31536000); // 1 year
-ini_set('session.cookie_lifetime', 31536000);   // 1 year
+ini_set('session.cookie_samesite', 'Lax'); // 'Lax' allows cookie preservation on PWA launch and top-level navigation
+ini_set('session.gc_maxlifetime', 315360000); // 10 years
+ini_set('session.cookie_lifetime', 315360000);   // 10 years
+
+// Save sessions inside project storage/sessions if possible to prevent OS /tmp cleanup wipes
+$sessionDir = BASE_PATH . '/storage/sessions';
+if (!is_dir($sessionDir)) {
+    @mkdir($sessionDir, 0755, true);
+}
+if (is_dir($sessionDir) && is_writable($sessionDir)) {
+    session_save_path($sessionDir);
+}
 
 // HTTPS only in production (supports reverse proxy & Cloudflare)
 $isSecure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
@@ -31,7 +40,15 @@ if ($isSecure) {
 // Set session name
 session_name('PORTAL_BIP_SESSION');
 
-// Start session if not already started
+// Apply explicit cookie parameters before starting session
 if (session_status() === PHP_SESSION_NONE) {
+    session_set_cookie_params([
+        'lifetime' => 315360000,
+        'path'     => '/',
+        'domain'   => '',
+        'secure'   => $isSecure,
+        'httponly' => true,
+        'samesite' => 'Lax'
+    ]);
     session_start();
 }

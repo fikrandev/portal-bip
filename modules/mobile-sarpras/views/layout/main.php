@@ -169,6 +169,9 @@
                     <span class="absolute top-1 right-1 w-2 h-2 bg-rose-500 rounded-full animate-ping"></span>
                     <span class="absolute top-1 right-1 w-2 h-2 bg-rose-500 rounded-full"></span>
                 </button>
+                <a href="<?= url('mobile-sarpras/logout') ?>" onclick="return confirm('Apakah Anda yakin ingin keluar dari aplikasi?')" title="Keluar / Logout" class="p-1.5 rounded-full hover:bg-blue-700 text-white/90 hover:text-white transition active:scale-95" aria-label="Keluar">
+                    <i data-lucide="log-out" class="w-5 h-5"></i>
+                </a>
             </div>
         </div>
     </header>
@@ -454,5 +457,16 @@
             }
         });
     </script>
+
+    <?php
+        $activeSarprasToken = $_COOKIE['sarpras_mobile_token'] ?? ($_SESSION['active_sarpras_token'] ?? '');
+    ?>
+    <?php if (!empty($activeSarprasToken)): ?>
+    <script>
+        try {
+            localStorage.setItem('sarpras_mobile_token', <?= json_encode($activeSarprasToken) ?>);
+        } catch (e) {}
+    </script>
+    <?php endif; ?>
 </body>
 </html>

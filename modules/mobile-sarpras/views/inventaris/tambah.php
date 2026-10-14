@@ -2,7 +2,28 @@
     <div class="bg-white rounded-3xl p-5 shadow-sm border border-slate-100">
         <form action="<?= url('kelola-sarpras/barang/store') ?>" method="POST" enctype="multipart/form-data" class="space-y-4">
             <?= CSRF::field() ?>
-            <input type="hidden" name="redirect_to" value="<?= url('mobile-sarpras') ?>">
+            <input type="hidden" name="redirect_to" value="<?= url('mobile-sarpras/inventaris') ?>">
+
+            <!-- Unit & Kategori -->
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Unit / Jenjang <span class="text-rose-500">*</span></label>
+                    <select name="unit" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500 font-medium">
+                        <?php foreach (['SD', 'SMP', 'SMA', 'PAUD', 'Yayasan', 'Semua'] as $u): ?>
+                            <option value="<?= $u ?>" <?= $u === 'SD' ? 'selected' : '' ?>><?= $u === 'Semua' ? 'Semua / Fasilitas Bersama' : $u ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Jenis / Kategori Sarpras <span class="text-rose-500">*</span></label>
+                    <select name="kategori_id" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500 font-medium">
+                        <option value="">-- Pilih Jenis / Kategori --</option>
+                        <?php foreach ($kategoriList as $k): ?>
+                            <option value="<?= $k['id'] ?>"><?= e($k['nama_kategori']) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+            </div>
 
             <!-- Golongan & Kelompok -->
             <div class="space-y-4">
