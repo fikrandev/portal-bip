@@ -350,7 +350,7 @@
             : '<?= url('kelola-spmb/siswa-baru/bulk-status') ?>';
 
         const formData = new FormData();
-        formData.append('csrf_token', '<?= CSRF::getToken() ?>');
+        formData.append('csrf_token', '<?= CSRF::token() ?>');
         formData.append('mode', mode);
         if (mode === 'selected') {
             selectedIds.forEach(id => formData.append('ids[]', id));
@@ -474,7 +474,7 @@
         }
 
         const formData = new FormData();
-        formData.append('csrf_token', '<?= CSRF::getToken() ?>');
+        formData.append('csrf_token', '<?= CSRF::token() ?>');
 
         fetch('<?= url('kelola-spmb/kirim-wa-kelulusan-bulk') ?>', {
             method: 'POST',
@@ -512,7 +512,7 @@
         }
 
         const formData = new FormData();
-        formData.append('csrf_token', '<?= CSRF::getToken() ?>');
+        formData.append('csrf_token', '<?= CSRF::token() ?>');
 
         fetch('<?= url('kelola-spmb/kirim-wa-kelulusan/') ?>' + id, {
             method: 'POST',

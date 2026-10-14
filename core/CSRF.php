@@ -20,6 +20,14 @@ class CSRF
     }
 
     /**
+     * Alias for token()
+     */
+    public static function getToken(): string
+    {
+        return self::token();
+    }
+
+    /**
      * Generate a hidden input field with the CSRF token
      */
     public static function field(): string
