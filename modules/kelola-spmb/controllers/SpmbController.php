@@ -269,10 +269,20 @@ class SpmbController
 
     public static function siswaBaruStatus(int $id): void
     {
-        CSRF::validate();
+        $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) || (isset($_SERVER['HTTP_ACCEPT']) && str_contains($_SERVER['HTTP_ACCEPT'], 'application/json'));
+        if (!CSRF::validate(false)) {
+            if ($isAjax) {
+                Response::json(['success' => false, 'message' => 'Token CSRF tidak valid.'], 403);
+            }
+            Response::redirect(url('kelola-spmb/siswa-baru'), 'Token CSRF tidak valid.', 'error');
+        }
         $status = $_POST['status_kelulusan'] ?? 'Menunggu Seleksi';
         SpmbModel::updateStatusPendaftar($id, $status);
-        Response::redirect(url('kelola-spmb/siswa-baru/detail/' . $id), "Status seleksi berhasil diubah menjadi: $status", 'success');
+        if ($isAjax) {
+            Response::json(['success' => true, 'message' => "Status seleksi berhasil diubah menjadi: $status", 'status' => $status]);
+        }
+        $redirectUrl = $_SERVER['HTTP_REFERER'] ?? url('kelola-spmb/siswa-baru');
+        Response::redirect($redirectUrl, "Status seleksi berhasil diubah menjadi: $status", 'success');
     }
 
     /**
@@ -693,10 +703,20 @@ class SpmbController
 
     public static function pindahanStatus(int $id): void
     {
-        CSRF::validate();
+        $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) || (isset($_SERVER['HTTP_ACCEPT']) && str_contains($_SERVER['HTTP_ACCEPT'], 'application/json'));
+        if (!CSRF::validate(false)) {
+            if ($isAjax) {
+                Response::json(['success' => false, 'message' => 'Token CSRF tidak valid.'], 403);
+            }
+            Response::redirect(url('kelola-spmb/pindahan'), 'Token CSRF tidak valid.', 'error');
+        }
         $status = $_POST['status_kelulusan'] ?? 'Menunggu Seleksi';
         SpmbModel::updateStatusPendaftar($id, $status);
-        Response::redirect(url('kelola-spmb/pindahan/detail/' . $id), "Status kelulusan berhasil diubah menjadi: $status", 'success');
+        if ($isAjax) {
+            Response::json(['success' => true, 'message' => "Status kelulusan berhasil diubah menjadi: $status", 'status' => $status]);
+        }
+        $redirectUrl = $_SERVER['HTTP_REFERER'] ?? url('kelola-spmb/pindahan');
+        Response::redirect($redirectUrl, "Status kelulusan berhasil diubah menjadi: $status", 'success');
     }
 
     /**

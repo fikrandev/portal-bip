@@ -200,7 +200,8 @@ $filters = $filters ?? [];
                         <th class="py-3 px-4">Jenjang & Kelas Dituju</th>
                         <th class="py-3 px-4">Kontak Ortu</th>
                         <th class="py-3 px-4">Tgl Daftar</th>
-                        <th class="py-3 px-4">Bayar & Berkas</th>
+                        <th class="py-3 px-4">Berkas</th>
+                        <th class="py-3 px-4">Status</th>
                         <th class="py-3 px-4">Kategori Pendaftar</th>
                         <th class="py-3 px-4 text-center">Aksi</th>
                     </tr>
@@ -208,7 +209,7 @@ $filters = $filters ?? [];
                 <tbody class="divide-y divide-slate-100">
                     <?php if (empty($list)): ?>
                         <tr>
-                            <td colspan="11" class="py-12 text-center text-slate-400">
+                            <td colspan="12" class="py-12 text-center text-slate-400">
                                 <div class="max-w-xs mx-auto space-y-2">
                                     <div class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-400 flex items-center justify-center mx-auto">
                                         <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21 3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" /></svg>
@@ -259,88 +260,113 @@ $filters = $filters ?? [];
                                 <td class="py-3 px-4 text-slate-600 whitespace-nowrap">
                                     <?= date('d/m/Y', strtotime($item['tanggal_daftar'])) ?>
                                 </td>
-                                <td class="py-3 px-4 space-y-1">
-                                    <div class="font-mono font-bold text-slate-800 text-[11px]">
-                                        Rp <?= number_format($item['biaya_pendaftaran'] ?? 0, 0, ',', '.') ?>
-                                    </div>
-                                    <div>
-                                        <?php
-                                        $spStyle = 'bg-rose-100 text-rose-800';
-                                        if ($item['status_pembayaran'] === 'Lunas') {
-                                            $spStyle = 'bg-emerald-100 text-emerald-800';
-                                        } elseif ($item['status_pembayaran'] === 'Gratis') {
-                                            $spStyle = 'bg-teal-100 text-teal-800';
-                                        }
-                                        ?>
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold <?= $spStyle ?>">
-                                            <?= e($item['status_pembayaran']) ?>
-                                        </span>
-                                    </div>
-                                    <div>
-                                        <?php
-                                        $bioSt = $item['biodata_status'] ?? 'belum_diisi';
-                                        $bioBadge = match($bioSt) {
-                                            'lengkap' => 'bg-emerald-100 text-emerald-800 font-bold',
-                                            'draft'   => 'bg-amber-100 text-amber-800 font-semibold',
-                                            default   => 'bg-slate-100 text-slate-500'
-                                        };
-                                        $bioLabel = match($bioSt) {
-                                            'lengkap' => '✓ Biodata Lengkap',
-                                            'draft'   => '⏱ Biodata Draft',
-                                            default   => 'Biodata Belum Diisi'
-                                        };
-                                        ?>
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] <?= $bioBadge ?>">
-                                            <?= $bioLabel ?>
-                                        </span>
-                                                     <!-- Penanda Wajib: Status TTD Komitmen Orang Tua -->
-                                    <div>
-                                        <?php
-                                        $ttdSt = $item['status_ttd_komitmen'] ?? 'Belum TTD';
-                                        if ($ttdSt === 'Sudah TTD'): ?>
-                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300" title="Surat Komitmen telah ditandatangani secara sah (Terenkripsi)">
-                                                <svg class="w-3 h-3 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                                                <span>✓ TTD Komitmen</span>
-                                            </span>
-                                        <?php else: ?>
-                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-100 text-rose-700 border border-rose-300 animate-pulse shadow-sm" title="PERHATIAN WAJIB: Orang Tua/Wali Belum TTD Surat Pernyataan Komitmen!">
-                                                <svg class="w-3 h-3 text-rose-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-                                                <span>⚠️ Belum TTD</span>
-                                            </span>
-                                        <?php endif; ?>
-                                    </div>
-
-                                    <!-- Pengembalian Berkas & Surat Kesanggupan -->
-                                    <div class="pt-1 border-t border-slate-100">
-                                        <?php
-                                        $stBerkas = $item['status_berkas'] ?? 'Belum Dikembalikan';
-                                        $berkasBadgeClass = match($stBerkas) {
-                                            'Lengkap' => 'bg-emerald-50 text-emerald-800 border-emerald-200 font-bold',
-                                            'Perlu Perbaikan' => 'bg-rose-50 text-rose-800 border-rose-200 font-bold',
-                                            default => 'bg-amber-50 text-amber-800 border-amber-200 font-medium'
-                                        };
-                                        $berkasIcon = match($stBerkas) {
-                                            'Lengkap' => '✓',
-                                            'Perlu Perbaikan' => '⚠️',
-                                            default => '⏳'
-                                        };
-                                        ?>
-                                        <button type="button" 
-                                                onclick="bukaModalVerifikasi(<?= $item['id'] ?>)" 
-                                                title="Klik untuk Verifikasi & Upload Surat Kesanggupan"
-                                                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] border transition-transform hover:scale-105 cursor-pointer <?= $berkasBadgeClass ?>">
-                                            <span><?= $berkasIcon ?></span>
-                                            <span>Berkas: <?= e($stBerkas) ?></span>
-                                        </button>
-                                    </div>
-                                    <!-- Status Penetapan Kelulusan SPMB -->
-                                    <?php if (($item['status_kelulusan'] ?? '') === 'Lulus / Diterima'): ?>
+                                <td class="py-3 px-4">
+                                    <div class="flex flex-col gap-1 items-start">
+                                        <!-- Tombol Cek & Verifikasi Berkas Fisik -->
                                         <div>
-                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-600 text-white shadow-2xs" title="Resmi Dinyatakan Lulus / Diterima">
-                                                🎓 Diterima (Lulus)
+                                            <?php
+                                            $stBerkas = $item['status_berkas'] ?? 'Belum Dikembalikan';
+                                            $berkasBadgeClass = match($stBerkas) {
+                                                'Lengkap' => 'bg-emerald-100 text-emerald-800 border-emerald-300 font-bold',
+                                                'Perlu Perbaikan' => 'bg-rose-100 text-rose-800 border-rose-300 font-bold',
+                                                default => 'bg-slate-100 text-slate-600 border-slate-300 font-medium'
+                                            };
+                                            $berkasIcon = match($stBerkas) {
+                                                'Lengkap' => '✓ Berkas Lengkap',
+                                                'Perlu Perbaikan' => '⚠️ Perlu Perbaikan',
+                                                default => '⏳ Belum Kembali'
+                                            };
+                                            ?>
+                                            <button type="button" 
+                                                    onclick="bukaModalVerifikasi(<?= $item['id'] ?>)" 
+                                                    title="Klik untuk Verifikasi & Upload Surat Kesanggupan"
+                                                    class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] border <?= $berkasBadgeClass ?> hover:opacity-85 transition-opacity cursor-pointer shadow-2xs">
+                                                <span><?= $berkasIcon ?></span>
+                                                <?php if (!empty($item['surat_kesanggupan'])): ?>
+                                                    <span class="text-[9px] bg-white/70 px-1 rounded-sm ml-0.5">📎</span>
+                                                <?php endif; ?>
+                                            </button>
+                                        </div>
+                                        <!-- Penanda Wajib: Status TTD Komitmen Orang Tua -->
+                                        <div>
+                                            <?php
+                                            $ttdSt = $item['status_ttd_komitmen'] ?? 'Belum TTD';
+                                            if ($ttdSt === 'Sudah TTD'): ?>
+                                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200" title="Surat Komitmen telah ditandatangani secara sah (Terenkripsi)">
+                                                    <svg class="w-3 h-3 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                                    <span>✓ TTD Komitmen</span>
+                                                </span>
+                                            <?php else: ?>
+                                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-50 text-rose-700 border border-rose-300 animate-pulse" title="PERHATIAN WAJIB: Orang Tua/Wali Belum TTD Surat Pernyataan Komitmen!">
+                                                    <svg class="w-3 h-3 text-rose-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                                                    <span>⚠️ Belum TTD</span>
+                                                </span>
+                                            <?php endif; ?>
+                                        </div>
+                                        <!-- Status Pengisian Biodata -->
+                                        <div>
+                                            <?php
+                                            $bioSt = $item['biodata_status'] ?? 'belum_diisi';
+                                            $bioBadge = match($bioSt) {
+                                                'lengkap' => 'bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold',
+                                                'draft'   => 'bg-amber-50 text-amber-700 border border-amber-200 font-semibold',
+                                                default   => 'bg-slate-50 text-slate-500 border border-slate-200'
+                                            };
+                                            $bioLabel = match($bioSt) {
+                                                'lengkap' => '✓ Biodata Lengkap',
+                                                'draft'   => '⏱ Biodata Draft',
+                                                default   => 'Biodata Belum Diisi'
+                                            };
+                                            ?>
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] <?= $bioBadge ?>">
+                                                <?= $bioLabel ?>
                                             </span>
                                         </div>
-                                    <?php endif; ?>
+                                    </div>
+                                </td>
+                                <!-- Kolom Status Kelulusan (BARU) -->
+                                <td class="py-3 px-4 whitespace-nowrap">
+                                    <?php
+                                    $stLulus = $item['status_kelulusan'] ?? 'Menunggu Seleksi';
+                                    if (empty($stLulus)) $stLulus = 'Menunggu Seleksi';
+
+                                    $statusBadge = match($stLulus) {
+                                        'Lulus / Diterima' => [
+                                            'bg'    => 'bg-emerald-100 text-emerald-800 border-emerald-300',
+                                            'icon'  => '🎓',
+                                            'label' => 'Lulus / Diterima'
+                                        ],
+                                        'Tidak Lulus' => [
+                                            'bg'    => 'bg-rose-100 text-rose-800 border-rose-300',
+                                            'icon'  => '✕',
+                                            'label' => 'Tidak Lulus'
+                                        ],
+                                        'Lolos Berkas' => [
+                                            'bg'    => 'bg-blue-100 text-blue-800 border-blue-300',
+                                            'icon'  => '📋',
+                                            'label' => 'Lolos Berkas'
+                                        ],
+                                        'Cadangan' => [
+                                            'bg'    => 'bg-amber-100 text-amber-800 border-amber-300',
+                                            'icon'  => '⏳',
+                                            'label' => 'Cadangan'
+                                        ],
+                                        'Dibatalkan' => [
+                                            'bg'    => 'bg-slate-100 text-slate-700 border-slate-300',
+                                            'icon'  => '🚫',
+                                            'label' => 'Dibatalkan'
+                                        ],
+                                        default => [
+                                            'bg'    => 'bg-slate-100 text-slate-600 border-slate-200',
+                                            'icon'  => '⏳',
+                                            'label' => 'Menunggu Seleksi'
+                                        ]
+                                    };
+                                    ?>
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-extrabold border shadow-2xs <?= $statusBadge['bg'] ?>" title="Status Kelulusan: <?= e($stLulus) ?>">
+                                        <span><?= $statusBadge['icon'] ?></span>
+                                        <span><?= e($statusBadge['label']) ?></span>
+                                    </span>
                                 </td>
                                 <td class="py-3 px-4 whitespace-nowrap">
                                     <?php 
@@ -417,6 +443,41 @@ $filters = $filters ?? [];
                                                     <svg class="w-4 h-4 text-amber-500" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" /></svg>
                                                     <span>Edit Data Siswa</span>
                                                 </a>
+                                            </div>
+
+                                            <!-- Ubah Status Seleksi Satuan -->
+                                            <div class="p-1 space-y-0.5">
+                                                <div class="px-3 py-1 text-[9.5px] font-extrabold text-slate-400 uppercase tracking-wider">Ubah Status Seleksi</div>
+                                                <?php if (($item['status_kelulusan'] ?? '') !== 'Lulus / Diterima'): ?>
+                                                    <form method="POST" action="<?= url('kelola-spmb/pindahan/status/' . $item['id']) ?>" onsubmit="return confirm('Tetapkan calon siswa <?= addslashes(e($item['nama_lengkap'])) ?> sebagai LULUS / DITERIMA?');">
+                                                        <?= \Core\CSRF::token() ?>
+                                                        <input type="hidden" name="status_kelulusan" value="Lulus / Diterima">
+                                                        <button type="submit" class="w-full flex items-center gap-2 px-3 py-1.5 text-xs font-bold text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors text-left cursor-pointer">
+                                                            <span>🎓</span>
+                                                            <span>Tetapkan Lulus / Diterima</span>
+                                                        </button>
+                                                    </form>
+                                                <?php endif; ?>
+                                                <?php if (($item['status_kelulusan'] ?? '') !== 'Tidak Lulus'): ?>
+                                                    <form method="POST" action="<?= url('kelola-spmb/pindahan/status/' . $item['id']) ?>" onsubmit="return confirm('Tetapkan calon siswa <?= addslashes(e($item['nama_lengkap'])) ?> sebagai TIDAK LULUS?');">
+                                                        <?= \Core\CSRF::token() ?>
+                                                        <input type="hidden" name="status_kelulusan" value="Tidak Lulus">
+                                                        <button type="submit" class="w-full flex items-center gap-2 px-3 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-50 rounded-lg transition-colors text-left cursor-pointer">
+                                                            <span>✕</span>
+                                                            <span>Tetapkan Tidak Lulus</span>
+                                                        </button>
+                                                    </form>
+                                                <?php endif; ?>
+                                                <?php if (!empty($item['status_kelulusan']) && $item['status_kelulusan'] !== 'Menunggu Seleksi'): ?>
+                                                    <form method="POST" action="<?= url('kelola-spmb/pindahan/status/' . $item['id']) ?>" onsubmit="return confirm('Kembalikan status calon siswa ke Menunggu Seleksi?');">
+                                                        <?= \Core\CSRF::token() ?>
+                                                        <input type="hidden" name="status_kelulusan" value="Menunggu Seleksi">
+                                                        <button type="submit" class="w-full flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors text-left cursor-pointer">
+                                                            <span>⏳</span>
+                                                            <span>Set Menunggu Seleksi</span>
+                                                        </button>
+                                                    </form>
+                                                <?php endif; ?>
                                             </div>
 
                                             <!-- Cetak Dokumen -->
