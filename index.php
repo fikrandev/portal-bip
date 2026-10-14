@@ -614,6 +614,7 @@ $router->post('/kelola-spmb/siswa-baru/update/{id}', [SpmbController::class, 'si
 $router->get('/kelola-spmb/siswa-baru/detail/{id}', [SpmbController::class, 'siswaBaruDetail'], [Middleware::permissionRequired('spmb.view')]);
 $router->get('/kelola-spmb/siswa-baru/delete/{id}', [SpmbController::class, 'siswaBaruDelete'], [Middleware::permissionRequired('spmb.delete')]);
 $router->post('/kelola-spmb/siswa-baru/status/{id}', [SpmbController::class, 'siswaBaruStatus'], [Middleware::permissionRequired('spmb.approve')]);
+$router->post('/kelola-spmb/siswa-baru/bulk-status', [SpmbController::class, 'siswaBaruBulkStatus'], [Middleware::permissionRequired('spmb.approve')]);
 $router->get('/kelola-spmb/siswa-baru/cetak/{id}', [SpmbController::class, 'siswaBaruCetak'], [Middleware::permissionRequired('spmb.view')]);
 $router->get('/kelola-spmb/siswa-baru/export', [SpmbController::class, 'siswaBaruExport'], [Middleware::permissionRequired('spmb.view')]);
 
@@ -627,6 +628,7 @@ $router->post('/kelola-spmb/pindahan/update/{id}', [SpmbController::class, 'pind
 $router->get('/kelola-spmb/pindahan/detail/{id}', [SpmbController::class, 'pindahanDetail'], [Middleware::permissionRequired('spmb.view')]);
 $router->get('/kelola-spmb/pindahan/delete/{id}', [SpmbController::class, 'pindahanDelete'], [Middleware::permissionRequired('spmb.delete')]);
 $router->post('/kelola-spmb/pindahan/status/{id}', [SpmbController::class, 'pindahanStatus'], [Middleware::permissionRequired('spmb.approve')]);
+$router->post('/kelola-spmb/pindahan/bulk-status', [SpmbController::class, 'pindahanBulkStatus'], [Middleware::permissionRequired('spmb.approve')]);
 $router->get('/kelola-spmb/pindahan/cetak/{id}', [SpmbController::class, 'pindahanCetak'], [Middleware::permissionRequired('spmb.view')]);
 $router->get('/kelola-spmb/pindahan/export', [SpmbController::class, 'pindahanExport'], [Middleware::permissionRequired('spmb.view')]);
 
@@ -664,6 +666,10 @@ $router->post('/kelola-spmb/surat-pernyataan/reset-ttd/{id}', [SpmbController::c
 $router->post('/kelola-spmb/kirim-wa-komitmen/{id}', [SpmbController::class, 'kirimWaKomitmen'], [Middleware::permissionRequired('spmb.update')]);
 $router->get('/kelola-spmb/verifikasi-berkas/get/{id}', [SpmbController::class, 'getVerifikasiBerkasAjax'], [Middleware::permissionRequired('spmb.view')]);
 $router->post('/kelola-spmb/verifikasi-berkas/submit', [SpmbController::class, 'submitVerifikasiBerkas'], [Middleware::permissionRequired('spmb.update')]);
+$router->get('/kelola-spmb/pengumuman-kelulusan/cetak', [SpmbController::class, 'pengumumanKelulusanCetak'], [Middleware::permissionRequired('spmb.view')]);
+$router->get('/kelola-spmb/pengumuman-kelulusan/get-teks-wa', [SpmbController::class, 'getTeksPengumumanGrupAjax'], [Middleware::permissionRequired('spmb.view')]);
+$router->post('/kelola-spmb/kirim-wa-kelulusan/{id}', [SpmbController::class, 'kirimWaKelulusan'], [Middleware::permissionRequired('spmb.update')]);
+$router->post('/kelola-spmb/kirim-wa-kelulusan-bulk', [SpmbController::class, 'kirimWaKelulusanBulk'], [Middleware::permissionRequired('spmb.update')]);
 $router->get('/kelola-pelanggaran-siswa', [PelanggaranSiswaController::class, 'index'], [Middleware::permissionRequired('pelanggaran_siswa.view')]);
 $router->get('/kelola-izin-guru', [IzinGuruController::class, 'index'], [Middleware::permissionRequired('izin_guru.view')]);
 $router->get('/kelola-buku-angkatan-siswa', [BukuAngkatanSiswaController::class, 'index'], [Middleware::permissionRequired('buku_angkatan.view')]);

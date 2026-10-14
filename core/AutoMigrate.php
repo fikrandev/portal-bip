@@ -64,6 +64,7 @@ class AutoMigrate
             '2026_10_13_000026_add_spmb_group_biaya_pindahan' => 'migration026AddSpmbGroupBiayaPindahan',
             '2026_10_13_000027_add_spmb_surat_komitmen_features' => 'migration027AddSpmbSuratKomitmenFeatures',
             '2026_10_13_000028_add_pengembalian_berkas_features' => 'migration028AddPengembalianBerkasFeatures',
+            '2026_10_14_000029_add_spmb_kelulusan_features' => 'migration029AddSpmbKelulusanFeatures',
         ];
     }
     /**
@@ -1675,6 +1676,14 @@ class AutoMigrate
             $pdo->exec("ALTER TABLE `spmb_pendaftar` MODIFY COLUMN `status_berkas` ENUM('Belum Dikembalikan', 'Belum Lengkap', 'Lengkap', 'Perlu Perbaikan') DEFAULT 'Belum Dikembalikan'");
             $pdo->exec("UPDATE `spmb_pendaftar` SET `status_berkas` = 'Belum Dikembalikan' WHERE `status_berkas` = 'Belum Lengkap' OR `status_berkas` IS NULL");
         } catch (Throwable $e) {}
+    }
+
+    /**
+     * Migration 029: Fitur Penetapan Kelulusan & Notifikasi WA SPMB
+     */
+    private static function migration029AddSpmbKelulusanFeatures(PDO $pdo): void
+    {
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'wa_kelulusan_sent_at', 'DATETIME NULL', 'status_kelulusan');
     }
 }
 

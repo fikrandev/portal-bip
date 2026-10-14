@@ -275,6 +275,166 @@ class SpmbController
         Response::redirect(url('kelola-spmb/siswa-baru/detail/' . $id), "Status seleksi berhasil diubah menjadi: $status", 'success');
     }
 
+    /**
+     * Update Massal Status Kelulusan Siswa Baru (Terima Massal)
+     */
+    public static function siswaBaruBulkStatus(): void
+    {
+        $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) || (isset($_SERVER['HTTP_ACCEPT']) && str_contains($_SERVER['HTTP_ACCEPT'], 'application/json'));
+        if (!CSRF::validate(false)) {
+            if ($isAjax) {
+                Response::json(['success' => false, 'message' => 'Token CSRF tidak valid.'], 403);
+            }
+            Response::redirect(url('kelola-spmb/siswa-baru'), 'Token CSRF tidak valid.', 'error');
+        }
+
+        $mode = $_POST['mode'] ?? 'lengkap';
+        $activeGroup = SpmbModel::getActiveGroup();
+        $groupId = $activeGroup['id'] ?? null;
+
+        try {
+            if ($mode === 'selected') {
+                $ids = $_POST['ids'] ?? [];
+                if (empty($ids) || !is_array($ids)) {
+                    Response::json(['success' => false, 'message' => 'Tidak ada calon siswa yang dipilih.'], 400);
+                }
+                $count = SpmbModel::bulkUpdateStatus($ids, 'Lulus / Diterima');
+                $msg = "Sebanyak $count calon siswa terpilih berhasil ditetapkan statusnya menjadi: Lulus / Diterima!";
+            } else {
+                $count = SpmbModel::bulkAcceptBerkasLengkap($groupId, null, 'Siswa Baru');
+                $msg = "Sebanyak $count calon siswa baru yang berkasnya lengkap berhasil ditetapkan statusnya menjadi: Lulus / Diterima!";
+            }
+
+            if ($isAjax) {
+                Response::json(['success' => true, 'message' => $msg, 'count' => $count]);
+            }
+            Response::redirect(url('kelola-spmb/siswa-baru'), $msg, 'success');
+        } catch (Throwable $e) {
+            if ($isAjax) {
+                Response::json(['success' => false, 'message' => 'Gagal memperbarui status: ' . $e->getMessage()], 500);
+            }
+            Response::redirect(url('kelola-spmb/siswa-baru'), 'Gagal: ' . $e->getMessage(), 'error');
+        }
+    }
+
+    /**
+     * Cetak Dokumen Pengumuman Hasil Kelulusan SPMB Resmi (Format PDF)
+     */
+    public static function pengumumanKelulusanCetak(): void
+    {
+        $activeGroup = SpmbModel::getActiveGroup();
+        include BASE_PATH . '/modules/kelola-spmb/views/pengumuman/cetak_kelulusan.php';
+        exit;
+    }
+
+    /**
+     * Kirim Notifikasi WhatsApp Kelulusan Personal (Japri) ke Orang Tua Siswa
+     */
+    public static function kirimWaKelulusan(int $id): void
+    {
+        $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) || !empty($_POST['is_ajax']);
+        if (!CSRF::validate(false)) {
+            if ($isAjax) {
+                Response::json(['success' => false, 'message' => 'Token CSRF tidak valid.'], 403);
+            }
+            Response::redirect(url('kelola-spmb/siswa-baru/detail/' . $id), 'Token CSRF tidak valid.', 'error');
+        }
+
+        $res = SpmbModel::sendWaKelulusanNotification($id);
+
+        if ($isAjax) {
+            Response::json($res);
+        }
+
+        if (!empty($res['success'])) {
+            $_SESSION['flash_success'] = 'Pesan WhatsApp pengumuman kelulusan berhasil dikirim ke orang tua!';
+        } else {
+            $_SESSION['flash_error'] = 'Gagal mengirim WhatsApp: ' . ($res['message'] ?? 'Kesalahan gateway.');
+        }
+
+        $referer = $_SERVER['HTTP_REFERER'] ?? url('kelola-spmb/siswa-baru/detail/' . $id);
+        header('Location: ' . $referer);
+        exit;
+    }
+
+    /**
+     * Kirim Notifikasi WhatsApp Kelulusan Massal (Broadcast Japri)
+     */
+    public static function kirimWaKelulusanBulk(): void
+    {
+        $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) || (isset($_SERVER['HTTP_ACCEPT']) && str_contains($_SERVER['HTTP_ACCEPT'], 'application/json'));
+        if (!CSRF::validate(false)) {
+            Response::json(['success' => false, 'message' => 'Token CSRF tidak valid.'], 403);
+        }
+
+        $activeGroup = SpmbModel::getActiveGroup();
+        $jenjang = trim($_POST['jenjang'] ?? '');
+        $jenis = trim($_POST['jenis'] ?? '');
+
+        $list = SpmbModel::getDaftarKelulusan([
+            'group_id' => $activeGroup['id'] ?? null,
+            'jenjang'  => $jenjang,
+            'jenis_pendaftaran' => $jenis
+        ]);
+
+        if (empty($list)) {
+            Response::json(['success' => false, 'message' => 'Tidak ada calon siswa dengan status Lulus / Diterima untuk dikirimi WhatsApp.'], 400);
+        }
+
+        $results = [];
+        $successCount = 0;
+        $failCount = 0;
+
+        foreach ($list as $s) {
+            $res = SpmbModel::sendWaKelulusanNotification((int)$s['id']);
+            $targetPhone = !empty($s['no_wa']) ? $s['no_wa'] : (!empty($s['no_hp']) ? $s['no_hp'] : '-');
+            if (!empty($res['success'])) {
+                $successCount++;
+                $results[] = [
+                    'id'      => $s['id'],
+                    'nama'    => $s['nama_lengkap'],
+                    'phone'   => $targetPhone,
+                    'success' => true,
+                    'message' => 'Terkirim'
+                ];
+            } else {
+                $failCount++;
+                $results[] = [
+                    'id'      => $s['id'],
+                    'nama'    => $s['nama_lengkap'],
+                    'phone'   => $targetPhone,
+                    'success' => false,
+                    'message' => $res['message'] ?? 'Gagal'
+                ];
+            }
+        }
+
+        Response::json([
+            'success'      => true,
+            'message'      => "Broadcast selesai! Berhasil: {$successCount}, Gagal: {$failCount}.",
+            'successCount' => $successCount,
+            'failCount'    => $failCount,
+            'results'      => $results
+        ]);
+    }
+
+    /**
+     * Dapatkan Teks Pengumuman Resmi Format WhatsApp untuk Grup Orang Tua
+     */
+    public static function getTeksPengumumanGrupAjax(): void
+    {
+        $jenjang = trim($_GET['jenjang'] ?? 'SD');
+        $jenis = trim($_GET['jenis'] ?? 'Siswa Baru');
+        $activeGroup = SpmbModel::getActiveGroup();
+
+        $text = SpmbModel::generateTeksPengumumanGrup($jenjang, $activeGroup['id'] ?? null, $jenis);
+        Response::json([
+            'success' => true,
+            'jenjang' => $jenjang,
+            'text'    => $text
+        ]);
+    }
+
     public static function siswaBaruCetak(int $id): void
     {
         $pendaftar = SpmbModel::getPendaftarById($id);
@@ -537,6 +697,48 @@ class SpmbController
         $status = $_POST['status_kelulusan'] ?? 'Menunggu Seleksi';
         SpmbModel::updateStatusPendaftar($id, $status);
         Response::redirect(url('kelola-spmb/pindahan/detail/' . $id), "Status kelulusan berhasil diubah menjadi: $status", 'success');
+    }
+
+    /**
+     * Update Massal Status Kelulusan Siswa Pindahan (Terima Massal)
+     */
+    public static function pindahanBulkStatus(): void
+    {
+        $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) || (isset($_SERVER['HTTP_ACCEPT']) && str_contains($_SERVER['HTTP_ACCEPT'], 'application/json'));
+        if (!CSRF::validate(false)) {
+            if ($isAjax) {
+                Response::json(['success' => false, 'message' => 'Token CSRF tidak valid.'], 403);
+            }
+            Response::redirect(url('kelola-spmb/pindahan'), 'Token CSRF tidak valid.', 'error');
+        }
+
+        $mode = $_POST['mode'] ?? 'lengkap';
+        $activeGroup = SpmbModel::getActiveGroup();
+        $groupId = $activeGroup['id'] ?? null;
+
+        try {
+            if ($mode === 'selected') {
+                $ids = $_POST['ids'] ?? [];
+                if (empty($ids) || !is_array($ids)) {
+                    Response::json(['success' => false, 'message' => 'Tidak ada calon siswa yang dipilih.'], 400);
+                }
+                $count = SpmbModel::bulkUpdateStatus($ids, 'Lulus / Diterima');
+                $msg = "Sebanyak $count calon siswa pindahan terpilih berhasil ditetapkan menjadi: Lulus / Diterima!";
+            } else {
+                $count = SpmbModel::bulkAcceptBerkasLengkap($groupId, null, 'Pindahan');
+                $msg = "Sebanyak $count calon siswa pindahan yang berkasnya lengkap berhasil ditetapkan menjadi: Lulus / Diterima!";
+            }
+
+            if ($isAjax) {
+                Response::json(['success' => true, 'message' => $msg, 'count' => $count]);
+            }
+            Response::redirect(url('kelola-spmb/pindahan'), $msg, 'success');
+        } catch (Throwable $e) {
+            if ($isAjax) {
+                Response::json(['success' => false, 'message' => 'Gagal memperbarui status: ' . $e->getMessage()], 500);
+            }
+            Response::redirect(url('kelola-spmb/pindahan'), 'Gagal: ' . $e->getMessage(), 'error');
+        }
     }
 
     public static function pindahanCetak(int $id): void

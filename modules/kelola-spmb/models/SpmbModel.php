@@ -1097,6 +1097,213 @@ class SpmbModel
     }
 
     /**
+     * Update massal status kelulusan untuk banyak ID pendaftar
+     */
+    public static function bulkUpdateStatus(array $ids, string $statusKelulusan, ?string $catatan = null): int
+    {
+        $ids = array_filter(array_map('intval', $ids));
+        if (empty($ids)) return 0;
+
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $params = [$statusKelulusan];
+        if ($catatan !== null) {
+            $params[] = $catatan;
+            $sql = "UPDATE `spmb_pendaftar` SET `status_kelulusan` = ?, `catatan` = ? WHERE `id` IN ($placeholders)";
+        } else {
+            $sql = "UPDATE `spmb_pendaftar` SET `status_kelulusan` = ? WHERE `id` IN ($placeholders)";
+        }
+        $params = array_merge($params, $ids);
+        return self::db()->query($sql, $params)->rowCount();
+    }
+
+    /**
+     * Terima Massal (1-Klik) untuk seluruh pendaftar yang status berkasnya sudah 'Lengkap'
+     */
+    public static function bulkAcceptBerkasLengkap(?int $groupId = null, ?string $jenjang = null, ?string $jenisPendaftaran = null): int
+    {
+        $where = ["`status_berkas` = 'Lengkap'", "`status_kelulusan` != 'Lulus / Diterima'"];
+        $params = ['Lulus / Diterima'];
+
+        if ($groupId) {
+            $where[] = "`group_id` = ?";
+            $params[] = $groupId;
+        }
+        if (!empty($jenjang)) {
+            $where[] = "`jenjang` = ?";
+            $params[] = $jenjang;
+        }
+        if (!empty($jenisPendaftaran)) {
+            $where[] = "`jenis_pendaftaran` = ?";
+            $params[] = $jenisPendaftaran;
+        }
+
+        $whereClause = implode(' AND ', $where);
+        $sql = "UPDATE `spmb_pendaftar` SET `status_kelulusan` = ? WHERE $whereClause";
+        return self::db()->query($sql, $params)->rowCount();
+    }
+
+    /**
+     * Ambil daftar calon siswa yang dinyatakan 'Lulus / Diterima' untuk pengumuman resmi
+     */
+    public static function getDaftarKelulusan(array $filters = []): array
+    {
+        $where = ["p.`status_kelulusan` = 'Lulus / Diterima'"];
+        $params = [];
+
+        if (!empty($filters['group_id'])) {
+            $where[] = "p.`group_id` = ?";
+            $params[] = (int)$filters['group_id'];
+        }
+        if (!empty($filters['jenjang']) && $filters['jenjang'] !== 'SEMUA') {
+            $where[] = "p.`jenjang` = ?";
+            $params[] = trim($filters['jenjang']);
+        }
+        if (!empty($filters['jenis_pendaftaran'])) {
+            $where[] = "p.`jenis_pendaftaran` = ?";
+            $params[] = trim($filters['jenis_pendaftaran']);
+        }
+        if (!empty($filters['gelombang'])) {
+            $where[] = "p.`gelombang` = ?";
+            $params[] = trim($filters['gelombang']);
+        }
+
+        $whereClause = implode(' AND ', $where);
+        return self::db()->findAll("
+            SELECT p.*, g.nama_group, g.tahun_ajaran
+            FROM `spmb_pendaftar` p
+            LEFT JOIN `spmb_group` g ON g.id = p.group_id
+            WHERE $whereClause
+            ORDER BY FIELD(p.jenjang, 'PAUD', 'SD', 'SMP', 'SMA'), p.nomor_pendaftaran ASC, p.nama_lengkap ASC
+        ", $params);
+    }
+
+    /**
+     * Nama resmi unit sekolah berdasarkan jenjang
+     */
+    public static function getNamaSekolahByJenjang(string $jenjang): string
+    {
+        $jenjang = strtoupper(trim($jenjang));
+        return match($jenjang) {
+            'PAUD', 'TK' => 'PAUD IT Bina Insan Palu',
+            'SD'         => 'SD Islam Terpadu Bina Insan Palu',
+            'SMP'        => 'SMP Islam Terpadu Bina Insan Palu',
+            'SMA'        => 'SMA Islam Terpadu Bina Insan Palu',
+            default      => 'SIT Bina Insan Palu'
+        };
+    }
+
+    /**
+     * Kirim Notifikasi WhatsApp Pengumuman Kelulusan / Resmi Diterima ke Orang Tua
+     */
+    public static function sendWaKelulusanNotification(int $pendaftarId): array
+    {
+        $pendaftar = self::getPendaftarById($pendaftarId);
+        if (!$pendaftar) {
+            return ['success' => false, 'message' => 'Data pendaftar tidak ditemukan.'];
+        }
+
+        $targetPhone = !empty($pendaftar['no_wa']) ? $pendaftar['no_wa'] :
+                      (!empty($pendaftar['no_hp']) ? $pendaftar['no_hp'] :
+                      (!empty($pendaftar['no_hp_ayah']) ? $pendaftar['no_hp_ayah'] :
+                      (!empty($pendaftar['no_hp_ibu']) ? $pendaftar['no_hp_ibu'] : '')));
+
+        if (empty($targetPhone)) {
+            return [
+                'success' => false,
+                'message' => 'Nomor WhatsApp atau No HP pendaftar / orang tua belum diisi.'
+            ];
+        }
+
+        $group = !empty($pendaftar['group_id']) ? self::getGroupById((int)$pendaftar['group_id']) : self::getActiveGroup();
+        $tahunAjaran = $group['tahun_ajaran'] ?? ($group['nama_group'] ?? '2026/2027');
+        $namaUnit = self::getNamaSekolahByJenjang($pendaftar['jenjang'] ?? 'SD');
+
+        $template = self::getSetting('spmb_wa_template_kelulusan');
+        if (empty($template)) {
+            $template = "Assalamu'alaikum Warahmatullahi Wabarakatuh.\n\nYth. Bapak/Ibu Orang Tua/Wali dari ananda:\n👤 Nama: *{nama_siswa}*\n📋 No. Pendaftaran: *{nomor_pendaftaran}*\n🏫 Unit: *{nama_sekolah}*\n\nAlhamdulillah, kami mengucapkan *SELAMAT!* 🎉\nBerdasarkan hasil verifikasi berkas dan seleksi masuk SPMB, ananda dinyatakan:\n\n⭐ *RESMI DITERIMA* ⭐\nsebagai Murid Baru Tahun Ajaran *{tahun_ajaran}*.\n\n📌 *Langkah Selanjutnya:*\nDimohon Bapak/Ibu untuk menyelesaikan administrasi daftar ulang dan pengukuran seragam di Sekretariat SPMB SIT Bina Insan Palu.\n\nInformasi lebih lanjut dapat menghubungi Panitia SPMB.\n\nTerima kasih atas kepercayaan dan amanah Bapak/Ibu kepada Yayasan Bina Insan Palu.\n\nWassalamu'alaikum Warahmatullahi Wabarakatuh.\n_Panitia SPMB Yayasan Bina Insan Palu_";
+        }
+
+        $replacements = [
+            '{nama_siswa}'        => $pendaftar['nama_lengkap'],
+            '{nomor_pendaftaran}' => $pendaftar['nomor_pendaftaran'],
+            '{no_daftar}'         => $pendaftar['nomor_pendaftaran'],
+            '{jenjang}'           => $pendaftar['jenjang'],
+            '{nama_sekolah}'      => $namaUnit,
+            '{tahun_ajaran}'      => $tahunAjaran,
+            '{gelombang}'         => $pendaftar['gelombang'] ?? 'Gelombang 1',
+            '{jalur}'             => $pendaftar['jalur_pendaftaran'] ?? 'Reguler'
+        ];
+
+        $pesan = str_replace(array_keys($replacements), array_values($replacements), $template);
+
+        $res = WaGateway::send($targetPhone, $pesan, [
+            'module'         => 'spmb_kelulusan',
+            'include_footer' => true
+        ]);
+
+        if (!empty($res['success'])) {
+            self::db()->query(
+                "UPDATE `spmb_pendaftar` SET `wa_kelulusan_sent_at` = NOW() WHERE `id` = ?",
+                [$pendaftarId]
+            );
+        }
+
+        return $res;
+    }
+
+    /**
+     * Generate Teks Pengumuman Resmi Format WhatsApp untuk Dibagikan ke Grup Orang Tua
+     */
+    public static function generateTeksPengumumanGrup(string $jenjang = 'SD', ?int $groupId = null, string $jenisPendaftaran = 'Siswa Baru'): string
+    {
+        $group = $groupId ? self::getGroupById($groupId) : self::getActiveGroup();
+        $ta = $group['tahun_ajaran'] ?? ($group['nama_group'] ?? '2026/2027');
+        $namaUnit = self::getNamaSekolahByJenjang($jenjang);
+
+        $list = self::getDaftarKelulusan([
+            'group_id'          => $group['id'] ?? null,
+            'jenjang'           => $jenjang,
+            'jenis_pendaftaran' => $jenisPendaftaran
+        ]);
+
+        $total = count($list);
+        $tglIndo = self::formatTglIndo(date('Y-m-d'));
+
+        $text = "📢 *PENGUMUMAN HASIL SELEKSI SPMB*\n";
+        $text .= "*YAYASAN BINA INSAN PALU*\n";
+        $text .= "*TAHUN AJARAN {$ta}*\n";
+        $text .= "══════════════════════════\n\n";
+        $text .= "🏫 Unit: *{$namaUnit}*\n";
+        $text .= "📅 Tanggal Pengumuman: {$tglIndo}\n";
+        $text .= "👥 Total Calon Siswa Diterima: *{$total} Orang*\n\n";
+        $text .= "Alhamdulillah, puji dan syukur kita panjatkan ke hadirat Allah SWT. Berdasarkan hasil verifikasi berkas dan kelayakan administrasi, berikut adalah calon murid baru yang dinyatakan:\n\n";
+        $text .= "🎉 *RESMI DITERIMA* 🎉\n";
+        $text .= "──────────────────────────\n";
+
+        if (empty($list)) {
+            $text .= "_(Belum ada calon siswa dengan status Diterima pada jenjang ini)_\n";
+        } else {
+            $no = 1;
+            foreach ($list as $s) {
+                $lp = ($s['jenis_kelamin'] === 'L') ? 'Laki-laki' : 'Perempuan';
+                $text .= sprintf("%02d. [%s] *%s* (%s)\n", $no, $s['nomor_pendaftaran'], $s['nama_lengkap'], $lp);
+                $no++;
+            }
+        }
+
+        $text .= "──────────────────────────\n\n";
+        $text .= "📌 *INFORMASI & TAHAPAN SELANJUTNYA:*\n";
+        $text .= "1. Orang tua/wali yang anandanya tercantum di atas dimohon untuk menyelesaikan administrasi daftar ulang.\n";
+        $text .= "2. Dokumen resmi Surat Keputusan (SK) Kelulusan bertanda tangan panitia terlampir pada file PDF berikut.\n";
+        $text .= "3. Kontak Sekretariat SPMB: Hubungi Panitia SPMB SIT Bina Insan Palu.\n\n";
+        $text .= "Selamat bergabung di keluarga besar SIT Bina Insan Palu! 🌟\n\n";
+        $text .= "Wassalamu'alaikum Warahmatullahi Wabarakatuh.\n";
+        $text .= "_Panitia SPMB Yayasan Bina Insan Palu_";
+
+        return $text;
+    }
+
+    /**
      * Hapus pendaftar
      */
     public static function deletePendaftar(int $id): bool

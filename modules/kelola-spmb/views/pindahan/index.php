@@ -28,6 +28,21 @@ $filters = $filters ?? [];
             </p>
         </div>
         <div class="flex flex-wrap items-center gap-2.5">
+            <a href="<?= url('kelola-spmb/pengumuman-kelulusan/cetak?jenjang=' . (!empty($filters['jenjang']) ? $filters['jenjang'] : 'SD') . '&jenis=Pindahan') ?>" target="_blank"
+               class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 font-semibold text-xs transition-colors" title="Cetak Surat Keputusan Pengumuman Kelulusan Resmi Format PDF">
+                <svg class="w-4 h-4 text-purple-600" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" /></svg>
+                <span>Cetak SK Pengumuman (PDF)</span>
+            </a>
+            <button type="button" onclick="bukaModalBroadcastKelulusan()" 
+               class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 font-semibold text-xs transition-colors cursor-pointer" title="Bagikan ke Grup WA atau Broadcast Japri">
+                <svg class="w-4 h-4 text-sky-600" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 0 1-2.555-.337A5.972 5.972 0 0 1 5.41 20.97a5.969 5.969 0 0 1-.474-.065 4.48 4.48 0 0 0 .978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z" /></svg>
+                <span>Broadcast & Pengumuman WA</span>
+            </button>
+            <button type="button" onclick="bukaModalBulkAccept()" 
+               class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold text-xs shadow-md shadow-emerald-600/20 transition-all cursor-pointer">
+                <span>🎓</span>
+                <span>Tetapkan Siswa Diterima</span>
+            </button>
             <a href="<?= url('kelola-spmb/pindahan/export?' . http_build_query($filters)) ?>" 
                class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-colors">
                 <svg class="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" /></svg>
@@ -41,26 +56,37 @@ $filters = $filters ?? [];
         </div>
     </div>
 
-    <!-- Quick Filter Tabs Status Berkas -->
+    <!-- Quick Filter Tabs Status Berkas & Kelulusan -->
     <div class="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
-        <a href="<?= url('kelola-spmb/pindahan?' . http_build_query(array_merge($filters, ['status_berkas' => '', 'page' => 1]))) ?>" 
-           class="px-3.5 py-1.5 rounded-xl font-bold transition-all whitespace-nowrap <?= empty($filters['status_berkas']) ? 'bg-blue-600 text-white shadow-xs' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200' ?>">
+        <?php
+        $currBerkas = $filters['status_berkas'] ?? '';
+        $currLulus = $filters['status_kelulusan'] ?? '';
+        $cleanParams = $_GET;
+        unset($cleanParams['status_berkas'], $cleanParams['status_kelulusan'], $cleanParams['page']);
+        ?>
+        <a href="<?= url('kelola-spmb/pindahan?' . http_build_query(array_merge($cleanParams, ['page' => 1]))) ?>" 
+           class="px-3.5 py-1.5 rounded-xl font-bold transition-all whitespace-nowrap <?= (empty($currBerkas) && empty($currLulus)) ? 'bg-blue-600 text-white shadow-xs' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200' ?>">
             Semua Pendaftar
         </a>
-        <a href="<?= url('kelola-spmb/pindahan?' . http_build_query(array_merge($filters, ['status_berkas' => 'Belum Dikembalikan', 'page' => 1]))) ?>" 
-           class="px-3.5 py-1.5 rounded-xl font-bold transition-all whitespace-nowrap flex items-center gap-1.5 <?= (($filters['status_berkas'] ?? '') === 'Belum Dikembalikan') ? 'bg-amber-600 text-white shadow-xs' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200' ?>">
+        <a href="<?= url('kelola-spmb/pindahan?' . http_build_query(array_merge($cleanParams, ['status_berkas' => 'Belum Dikembalikan', 'page' => 1]))) ?>" 
+           class="px-3.5 py-1.5 rounded-xl font-bold transition-all whitespace-nowrap flex items-center gap-1.5 <?= (($currBerkas === 'Belum Dikembalikan') && empty($currLulus)) ? 'bg-amber-600 text-white shadow-xs' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200' ?>">
             <span>⏳</span>
             <span>Menunggu Pengembalian</span>
         </a>
-        <a href="<?= url('kelola-spmb/pindahan?' . http_build_query(array_merge($filters, ['status_berkas' => 'Lengkap', 'page' => 1]))) ?>" 
-           class="px-3.5 py-1.5 rounded-xl font-bold transition-all whitespace-nowrap flex items-center gap-1.5 <?= (($filters['status_berkas'] ?? '') === 'Lengkap') ? 'bg-emerald-600 text-white shadow-xs' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200' ?>">
+        <a href="<?= url('kelola-spmb/pindahan?' . http_build_query(array_merge($cleanParams, ['status_berkas' => 'Lengkap', 'page' => 1]))) ?>" 
+           class="px-3.5 py-1.5 rounded-xl font-bold transition-all whitespace-nowrap flex items-center gap-1.5 <?= (($currBerkas === 'Lengkap') && empty($currLulus)) ? 'bg-emerald-600 text-white shadow-xs' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200' ?>">
             <span>✓</span>
             <span>Berkas Lengkap</span>
         </a>
-        <a href="<?= url('kelola-spmb/pindahan?' . http_build_query(array_merge($filters, ['status_berkas' => 'Perlu Perbaikan', 'page' => 1]))) ?>" 
-           class="px-3.5 py-1.5 rounded-xl font-bold transition-all whitespace-nowrap flex items-center gap-1.5 <?= (($filters['status_berkas'] ?? '') === 'Perlu Perbaikan') ? 'bg-rose-600 text-white shadow-xs' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200' ?>">
+        <a href="<?= url('kelola-spmb/pindahan?' . http_build_query(array_merge($cleanParams, ['status_berkas' => 'Perlu Perbaikan', 'page' => 1]))) ?>" 
+           class="px-3.5 py-1.5 rounded-xl font-bold transition-all whitespace-nowrap flex items-center gap-1.5 <?= (($currBerkas === 'Perlu Perbaikan') && empty($currLulus)) ? 'bg-rose-600 text-white shadow-xs' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200' ?>">
             <span>⚠️</span>
             <span>Perlu Perbaikan</span>
+        </a>
+        <a href="<?= url('kelola-spmb/pindahan?' . http_build_query(array_merge($cleanParams, ['status_kelulusan' => 'Lulus / Diterima', 'page' => 1]))) ?>" 
+           class="px-3.5 py-1.5 rounded-xl font-bold transition-all whitespace-nowrap flex items-center gap-1.5 <?= ($currLulus === 'Lulus / Diterima') ? 'bg-emerald-600 text-white shadow-xs' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200' ?>">
+            <span>🎓</span>
+            <span>Fix Diterima (Lulus)</span>
         </a>
     </div>
 
@@ -131,6 +157,28 @@ $filters = $filters ?? [];
         </form>
     </div>
 
+    <!-- Selected Items Actions Bar (Muncul saat ada checkbox dicentang) -->
+    <div id="selectedActionsBar" class="hidden bg-gradient-to-r from-emerald-600 via-teal-600 to-blue-700 text-white p-4 rounded-2xl shadow-lg border border-emerald-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in slide-in-from-top-2 duration-200">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-lg shrink-0">
+                🎓
+            </div>
+            <div>
+                <strong class="text-sm font-extrabold tracking-tight"><span id="selectedItemsCount">0</span> Calon Siswa Pindahan Terpilih</strong>
+                <p class="text-[11px] text-emerald-100">Tetapkan calon siswa pindahan yang dicentang menjadi resmi diterima (lulus seleksi).</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2 self-end sm:self-auto">
+            <button type="button" onclick="bukaModalBulkAccept()" class="px-4 py-2 bg-white text-emerald-800 hover:bg-emerald-50 rounded-xl text-xs font-extrabold transition-all shadow-sm flex items-center gap-1.5 cursor-pointer">
+                <span>✓</span>
+                <span>Tetapkan Diterima</span>
+            </button>
+            <button type="button" onclick="document.querySelectorAll('.cb-pendaftar-item').forEach(c => c.checked = false); const m = document.getElementById('cbSelectAllMaster'); if (m) m.checked = false; updateBulkBarState();" class="px-3 py-2 bg-black/20 hover:bg-black/30 text-white rounded-xl text-xs font-semibold transition-all cursor-pointer">
+                Batal Pilihan
+            </button>
+        </div>
+    </div>
+
     <!-- Table Card -->
     <div class="bg-white rounded-2xl border border-primary-100/70 shadow-sm overflow-hidden">
         <div class="p-4 border-b border-slate-100 flex items-center justify-between text-xs text-slate-500">
@@ -142,7 +190,10 @@ $filters = $filters ?? [];
             <table class="w-full text-left text-xs">
                 <thead class="bg-slate-50/75 text-slate-500 border-b border-slate-100 uppercase tracking-wider font-semibold">
                     <tr>
-                        <th class="py-3 px-4 w-12 text-center">No</th>
+                        <th class="py-3 px-3 w-10 text-center">
+                            <input type="checkbox" id="cbSelectAllMaster" onchange="toggleSelectAll(this)" class="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer" title="Centang / Batal Semua">
+                        </th>
+                        <th class="py-3 px-3 w-12 text-center">No</th>
                         <th class="py-3 px-4">No. Pendaftaran</th>
                         <th class="py-3 px-4">Calon Siswa Pindahan</th>
                         <th class="py-3 px-4">Sekolah Asal</th>
@@ -157,7 +208,7 @@ $filters = $filters ?? [];
                 <tbody class="divide-y divide-slate-100">
                     <?php if (empty($list)): ?>
                         <tr>
-                            <td colspan="10" class="py-12 text-center text-slate-400">
+                            <td colspan="11" class="py-12 text-center text-slate-400">
                                 <div class="max-w-xs mx-auto space-y-2">
                                     <div class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-400 flex items-center justify-center mx-auto">
                                         <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21 3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" /></svg>
@@ -173,7 +224,10 @@ $filters = $filters ?? [];
                         foreach ($list as $item): 
                         ?>
                             <tr class="hover:bg-slate-50/70 transition-colors">
-                                <td class="py-3 px-4 text-center font-medium text-slate-400"><?= $no++ ?></td>
+                                <td class="py-3 px-3 text-center">
+                                    <input type="checkbox" class="cb-pendaftar-item w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer" value="<?= $item['id'] ?>" onchange="updateBulkBarState()">
+                                </td>
+                                <td class="py-3 px-3 text-center font-medium text-slate-400"><?= $no++ ?></td>
                                 <td class="py-3 px-4">
                                     <a href="<?= url('kelola-spmb/pindahan/detail/' . $item['id']) ?>" class="font-mono font-bold text-blue-700 hover:underline">
                                         <?= e($item['nomor_pendaftaran']) ?>
@@ -279,6 +333,14 @@ $filters = $filters ?? [];
                                             <span>Berkas: <?= e($stBerkas) ?></span>
                                         </button>
                                     </div>
+                                    <!-- Status Penetapan Kelulusan SPMB -->
+                                    <?php if (($item['status_kelulusan'] ?? '') === 'Lulus / Diterima'): ?>
+                                        <div>
+                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-600 text-white shadow-2xs" title="Resmi Dinyatakan Lulus / Diterima">
+                                                🎓 Diterima (Lulus)
+                                            </span>
+                                        </div>
+                                    <?php endif; ?>
                                 </td>
                                 <td class="py-3 px-4 whitespace-nowrap">
                                     <?php 
@@ -316,6 +378,23 @@ $filters = $filters ?? [];
                                         <div id="menu-<?= $item['id'] ?>" 
                                              class="action-menu-dropdown hidden absolute right-0 z-30 w-56 rounded-xl bg-white shadow-xl ring-1 ring-slate-900/10 divide-y divide-slate-100 text-left transition-all">
                                             
+                                            <!-- Action: Kirim WA Kelulusan jika sudah diterima -->
+                                            <?php if (($item['status_kelulusan'] ?? '') === 'Lulus / Diterima'): ?>
+                                                <div class="p-1">
+                                                    <button type="button" 
+                                                            onclick="kirimWaKelulusanSingle(<?= $item['id'] ?>, '<?= addslashes(e($item['nama_lengkap'])) ?>')"
+                                                            class="w-full flex items-center justify-between px-3 py-2 text-xs font-bold text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors group">
+                                                        <div class="flex items-center gap-2">
+                                                            <span class="text-sm">📲</span>
+                                                            <span>Kirim WA Kelulusan</span>
+                                                        </div>
+                                                        <?php if (!empty($item['wa_kelulusan_sent_at'])): ?>
+                                                            <span class="text-[9px] font-semibold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">Terkirim ✓</span>
+                                                        <?php endif; ?>
+                                                    </button>
+                                                </div>
+                                            <?php endif; ?>
+
                                             <!-- Quick Primary Action: Cek & Terima Berkas -->
                                             <div class="p-1">
                                                 <button type="button" 
@@ -1263,3 +1342,4 @@ function salinLinkKomitmen(url) {
 </script>
 
 <?php include BASE_PATH . '/modules/kelola-spmb/views/partials/modal_verifikasi_berkas.php'; ?>
+<?php include BASE_PATH . '/modules/kelola-spmb/views/partials/modal_kelulusan_spmb.php'; ?>
