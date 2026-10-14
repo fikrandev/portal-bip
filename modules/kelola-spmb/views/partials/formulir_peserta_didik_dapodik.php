@@ -66,6 +66,22 @@ if (!function_exists('renderDapodikFormulirPesertaDidik')) {
             ],
         ];
 
+        // Dynamic Kop Unit dari Pengaturan
+        $unitKopPath = class_exists('SpmbModel') ? SpmbModel::getKopUnit($unitKey) : null;
+        $unitKopUrl = !empty($unitKopPath) ? url(ltrim($unitKopPath, '/')) : '';
+
+        // Dynamic logo dan nama unit dari settings
+        if (class_exists('SpmbModel')) {
+            $dynLogo = SpmbModel::getSetting('logo_unit_' . strtoupper($unitKey));
+            if (!empty($dynLogo)) {
+                $unitConfigs[$unitKey]['logo'] = url(ltrim($dynLogo, '/'));
+            }
+            $dynNama = SpmbModel::getSetting('nama_sekolah_' . strtoupper($unitKey));
+            if (!empty($dynNama)) {
+                $unitConfigs[$unitKey]['nama'] = $dynNama;
+            }
+        }
+
         $unit = $unitConfigs[$unitKey] ?? $unitConfigs['sd'];
 
         // Helper date splitting
@@ -318,6 +334,20 @@ if (!function_exists('renderDapodikFormulirPesertaDidik')) {
             }
 
             /* Header Kop Unit */
+            .dp-header-kop-custom {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin-bottom: 2px;
+                width: 100%;
+                overflow: hidden;
+            }
+            .dp-header-kop-banner {
+                max-height: 48px;
+                max-width: 100%;
+                object-fit: contain;
+                display: block;
+            }
             .dp-header-kop {
                 display: flex;
                 align-items: flex-start;
@@ -702,20 +732,26 @@ if (!function_exists('renderDapodikFormulirPesertaDidik')) {
             <div class="dapodik-page" id="dapodik-hal-1">
                 
                 <!-- Kop Unit Sekolah -->
-                <div class="dp-header-kop">
-                    <?php if (!empty($unit['logo'])): ?>
-                        <img src="<?= $unit['logo'] ?>" alt="Logo Unit" class="dp-header-logo">
-                    <?php endif; ?>
-                    <div class="dp-header-info">
-                        <div class="dp-header-title">
-                            <?= strtoupper($unit['nama']) ?>
-                        </div>
-                        <div class="dp-header-meta">
-                            NPSN : <?= $unit['npsn'] ?><br>
-                            NAJSIT : <?= $unit['najsit'] ?>
+                <?php if (!empty($unitKopUrl)): ?>
+                    <div class="dp-header-kop-custom">
+                        <img src="<?= e($unitKopUrl) ?>" alt="Kop <?= e(strtoupper($unitKey)) ?>" class="dp-header-kop-banner">
+                    </div>
+                <?php else: ?>
+                    <div class="dp-header-kop">
+                        <?php if (!empty($unit['logo'])): ?>
+                            <img src="<?= $unit['logo'] ?>" alt="Logo Unit" class="dp-header-logo">
+                        <?php endif; ?>
+                        <div class="dp-header-info">
+                            <div class="dp-header-title">
+                                <?= strtoupper($unit['nama']) ?>
+                            </div>
+                            <div class="dp-header-meta">
+                                NPSN : <?= $unit['npsn'] ?><br>
+                                NAJSIT : <?= $unit['najsit'] ?>
+                            </div>
                         </div>
                     </div>
-                </div>
+                <?php endif; ?>
 
                 <!-- Judul Formulir -->
                 <div class="dp-title-bar">FORMULIR PESERTA DIDIK</div>

@@ -857,7 +857,9 @@ class SpmbController
         $groups = SpmbModel::getAllGroups();
         $activeGroup = SpmbModel::getActiveGroup();
         $kopGambar = SpmbModel::getSetting('spmb_kop_gambar');
+        $kopGambar = SpmbModel::getSetting('spmb_kop_gambar');
         $spmbOptions = SpmbModel::getSpmbOptions();
+        $allKopUnits = SpmbModel::getAllKopUnits();
 
         self::view(
             'pengaturan/index',
@@ -865,6 +867,7 @@ class SpmbController
                 'groups'      => $groups,
                 'activeGroup' => $activeGroup,
                 'kopGambar'   => $kopGambar,
+                'allKopUnits' => $allKopUnits,
                 'spmbOptions' => $spmbOptions
             ],
             'Pengaturan SPMB',
@@ -875,6 +878,8 @@ class SpmbController
     public static function pengaturanUploadKop(): void
     {
         CSRF::validate();
+
+        $unit = strtoupper(trim($_POST['unit'] ?? 'GLOBAL'));
 
         if (empty($_FILES['kop_gambar']['name']) || $_FILES['kop_gambar']['error'] !== UPLOAD_ERR_OK) {
             Response::redirect(url('kelola-spmb/pengaturan'), 'Pilih file gambar kop surat terlebih dahulu.', 'error');
@@ -900,18 +905,40 @@ class SpmbController
             mkdir($targetDir, 0755, true);
         }
 
-        // Hapus file lama jika ada
-        $oldFile = SpmbModel::getSetting('spmb_kop_gambar');
+        $isUnitSpecific = in_array($unit, ['PAUD', 'SD', 'SMP', 'SMA']);
+        $oldFile = null;
+        if ($isUnitSpecific) {
+            $spec1 = SpmbModel::getSetting('spmb_kop_' . strtolower($unit));
+            $spec2 = SpmbModel::getSetting('kop_unit_' . $unit);
+            $tpl = SpmbModel::getSuratTemplate($unit);
+            $spec3 = $tpl['kop_gambar'] ?? null;
+            $globalKop = SpmbModel::getSetting('spmb_kop_gambar');
+            
+            // Pilih file yang benar-benar milik unit dan bukan file global
+            if (!empty($spec1) && $spec1 !== $globalKop) $oldFile = $spec1;
+            elseif (!empty($spec2) && $spec2 !== $globalKop) $oldFile = $spec2;
+            elseif (!empty($spec3) && $spec3 !== $globalKop) $oldFile = $spec3;
+        } else {
+            $oldFile = SpmbModel::getSetting('spmb_kop_gambar');
+        }
+
         if (!empty($oldFile) && file_exists(BASE_PATH . '/public/' . ltrim($oldFile, '/'))) {
             @unlink(BASE_PATH . '/public/' . ltrim($oldFile, '/'));
         }
 
-        $fileName = 'kop_spmb_' . time() . '_' . uniqid() . '.' . $ext;
+        $prefix = $isUnitSpecific ? 'kop_' . strtolower($unit) . '_' : 'kop_spmb_';
+        $fileName = $prefix . time() . '_' . uniqid() . '.' . $ext;
         $targetPath = $targetDir . '/' . $fileName;
 
         if (move_uploaded_file($file['tmp_name'], $targetPath)) {
-            SpmbModel::setSetting('spmb_kop_gambar', 'uploads/spmb/' . $fileName);
-            Response::redirect(url('kelola-spmb/pengaturan'), 'Kop gambar SPMB berhasil diunggah dan disimpan!', 'success');
+            $savedPath = 'uploads/spmb/' . $fileName;
+            if ($isUnitSpecific) {
+                SpmbModel::setKopUnit($unit, $savedPath);
+                Response::redirect(url('kelola-spmb/pengaturan?tab_kop=' . strtolower($unit)), "Kop formulir cetak untuk Unit $unit berhasil diunggah dan disimpan!", 'success');
+            } else {
+                SpmbModel::setSetting('spmb_kop_gambar', $savedPath);
+                Response::redirect(url('kelola-spmb/pengaturan?tab_kop=global'), 'Kop gambar utama SPMB berhasil diunggah dan disimpan!', 'success');
+            }
         } else {
             Response::redirect(url('kelola-spmb/pengaturan'), 'Gagal mengunggah file ke server. Periksa izin folder uploads.', 'error');
         }
@@ -921,13 +948,35 @@ class SpmbController
     {
         CSRF::validate();
 
-        $oldFile = SpmbModel::getSetting('spmb_kop_gambar');
+        $unit = strtoupper(trim($_POST['unit'] ?? 'GLOBAL'));
+        $isUnitSpecific = in_array($unit, ['PAUD', 'SD', 'SMP', 'SMA']);
+
+        $oldFile = null;
+        if ($isUnitSpecific) {
+            $spec1 = SpmbModel::getSetting('spmb_kop_' . strtolower($unit));
+            $spec2 = SpmbModel::getSetting('kop_unit_' . $unit);
+            $tpl = SpmbModel::getSuratTemplate($unit);
+            $spec3 = $tpl['kop_gambar'] ?? null;
+            $globalKop = SpmbModel::getSetting('spmb_kop_gambar');
+
+            if (!empty($spec1) && $spec1 !== $globalKop) $oldFile = $spec1;
+            elseif (!empty($spec2) && $spec2 !== $globalKop) $oldFile = $spec2;
+            elseif (!empty($spec3) && $spec3 !== $globalKop) $oldFile = $spec3;
+        } else {
+            $oldFile = SpmbModel::getSetting('spmb_kop_gambar');
+        }
+
         if (!empty($oldFile) && file_exists(BASE_PATH . '/public/' . ltrim($oldFile, '/'))) {
             @unlink(BASE_PATH . '/public/' . ltrim($oldFile, '/'));
         }
 
-        SpmbModel::setSetting('spmb_kop_gambar', '');
-        Response::redirect(url('kelola-spmb/pengaturan'), 'Kop gambar berhasil dihapus. Dokumen akan kembali menggunakan kop teks bawaan.', 'success');
+        if ($isUnitSpecific) {
+            SpmbModel::setKopUnit($unit, null);
+            Response::redirect(url('kelola-spmb/pengaturan?tab_kop=' . strtolower($unit)), "Kop formulir Unit $unit berhasil dihapus dan kembali ke standar.", 'success');
+        } else {
+            SpmbModel::setSetting('spmb_kop_gambar', '');
+            Response::redirect(url('kelola-spmb/pengaturan?tab_kop=global'), 'Kop gambar utama berhasil dihapus. Dokumen akan kembali menggunakan kop teks bawaan.', 'success');
+        }
     }
 
     public static function pengaturanStore(): void

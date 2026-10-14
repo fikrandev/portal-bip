@@ -12,8 +12,9 @@ if (defined('SYS_APP_LOGO') && !empty(SYS_APP_LOGO)) {
     $logoUrl = url(ltrim(SYS_APP_FAVICON, '/'));
 }
 
-// Cek Kop Gambar Banner dari Pengaturan SPMB
-$kopGambarSetting = SpmbModel::getSetting('spmb_kop_gambar');
+// Cek Kop Gambar Banner dari Pengaturan SPMB (Bisa per Jenjang PAUD-SMA atau Global)
+$jenjangItem = $item['jenjang'] ?? 'SD';
+$kopGambarSetting = SpmbModel::getKopUnit($jenjangItem);
 $kopGambarUrl = !empty($kopGambarSetting) ? url(ltrim($kopGambarSetting, '/')) : '';
 
 // Nama Akun Petugas yang Sedang Login

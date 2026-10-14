@@ -1221,6 +1221,75 @@ class SpmbModel
         }
     }
 
+    /**
+     * Ambil path file kop gambar untuk unit tertentu (PAUD, SD, SMP, SMA)
+     * Dengan fallback ke template surat atau kop global SPMB
+     */
+    public static function getKopUnit(string $jenjang): ?string
+    {
+        $jenjang = strtoupper(trim($jenjang));
+        if ($jenjang === 'TK' || str_contains($jenjang, 'PAUD') || str_contains($jenjang, 'TK')) {
+            $jenjang = 'PAUD';
+        }
+        
+        // 1. Cek setting spesifik kop unit (spmb_kop_{jenjang})
+        $val = self::getSetting('spmb_kop_' . strtolower($jenjang));
+        if (!empty($val)) return $val;
+
+        // 2. Cek setting kop_unit_{jenjang} dari pengaturan sistem identitas
+        $valSys = self::getSetting('kop_unit_' . $jenjang);
+        if (!empty($valSys)) return $valSys;
+
+        // 3. Cek di tabel spmb_surat_template
+        $tpl = self::getSuratTemplate($jenjang);
+        if (!empty($tpl['kop_gambar'])) return $tpl['kop_gambar'];
+
+        // 4. Fallback ke global kop SPMB
+        $global = self::getSetting('spmb_kop_gambar');
+        if (!empty($global)) return $global;
+
+        return null;
+    }
+
+    /**
+     * Simpan / perbarui kop gambar unit
+     */
+    public static function setKopUnit(string $jenjang, ?string $path): void
+    {
+        $jenjang = strtoupper(trim($jenjang));
+        if ($jenjang === 'TK' || str_contains($jenjang, 'PAUD') || str_contains($jenjang, 'TK')) {
+            $jenjang = 'PAUD';
+        }
+
+        self::setSetting('spmb_kop_' . strtolower($jenjang), $path ?? '');
+        self::setSetting('kop_unit_' . $jenjang, $path ?? '');
+        self::updateKopTemplate($jenjang, $path);
+    }
+
+    /**
+     * Ambil seluruh data kop unit untuk keperluan view pengaturan
+     */
+    public static function getAllKopUnits(): array
+    {
+        $units = ['PAUD', 'SD', 'SMP', 'SMA'];
+        $result = [
+            'GLOBAL' => self::getSetting('spmb_kop_gambar') ?: ''
+        ];
+        foreach ($units as $u) {
+            // Ambil spesifik unit tanpa fallback global jika untuk preview manajemen
+            $spec = self::getSetting('spmb_kop_' . strtolower($u));
+            if (empty($spec)) {
+                $tpl = self::getSuratTemplate($u);
+                $spec = !empty($tpl['kop_gambar']) ? $tpl['kop_gambar'] : '';
+            }
+            if (empty($spec)) {
+                $spec = self::getSetting('kop_unit_' . $u) ?: '';
+            }
+            $result[$u] = $spec;
+        }
+        return $result;
+    }
+
     // ═════════════════════════════════════════════════════════════════════════
     // 8. SURAT PERNYATAAN KOMITMEN ORANG TUA & TTD DIGITAL TERENKRIPSI
     // ═════════════════════════════════════════════════════════════════════════

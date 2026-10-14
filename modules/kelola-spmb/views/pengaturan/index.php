@@ -97,108 +97,281 @@ $templateDapodik = $spmbOptions['template_dapodik'] ?? '';
         </div>
     <?php endif; ?>
 
-    <!-- ── Card Pengaturan Kop Surat (Gambar Kop Banner) ── -->
-    <div class="bg-white rounded-2xl border border-primary-100/70 shadow-sm p-6 space-y-5">
+    <!-- ── Card Pengaturan Kop Surat Dokumen Cetak PAUD - SMA (Gambar Banner) ── -->
+    <?php
+    $unitKopTabs = [
+        'paud' => [
+            'key'         => 'PAUD',
+            'label'       => 'PAUD / TK IT',
+            'nama_resmi'  => 'PAUD ISLAM TERPADU BINA INSAN PALU',
+            'sub'         => 'TK IT BINA INSAN PALU',
+            'icon'        => '🎒',
+            'npsn'        => '70037291',
+            'najsit'      => '7060102003',
+            'color'       => 'amber',
+            'tab_active'  => 'border-amber-600 text-amber-700 bg-amber-50/80',
+            'btn_color'   => 'from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 shadow-amber-600/20',
+        ],
+        'sd' => [
+            'key'         => 'SD',
+            'label'       => 'SD IT',
+            'nama_resmi'  => 'SD ISLAM TERPADU BINA INSAN PALU',
+            'sub'         => 'SD IT BINA INSAN PALU',
+            'icon'        => '🏫',
+            'npsn'        => '69979223',
+            'najsit'      => '7060102003',
+            'color'       => 'emerald',
+            'tab_active'  => 'border-emerald-600 text-emerald-700 bg-emerald-50/80',
+            'btn_color'   => 'from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600 shadow-emerald-600/20',
+        ],
+        'smp' => [
+            'key'         => 'SMP',
+            'label'       => 'SMP IT',
+            'nama_resmi'  => 'SMP ISLAM TERPADU BINA INSAN PALU',
+            'sub'         => 'SMP IT BINA INSAN PALU',
+            'icon'        => '🏢',
+            'npsn'        => '70031371',
+            'najsit'      => '7060102003',
+            'color'       => 'sky',
+            'tab_active'  => 'border-sky-600 text-sky-700 bg-sky-50/80',
+            'btn_color'   => 'from-sky-600 to-blue-700 hover:from-sky-500 hover:to-blue-600 shadow-sky-600/20',
+        ],
+        'sma' => [
+            'key'         => 'SMA',
+            'label'       => 'SMA IT',
+            'nama_resmi'  => 'SMA ISLAM TERPADU BINA INSAN PALU',
+            'sub'         => 'SMA IT BINA INSAN PALU',
+            'icon'        => '🏛️',
+            'npsn'        => '70058217',
+            'najsit'      => '7060102003',
+            'color'       => 'indigo',
+            'tab_active'  => 'border-indigo-600 text-indigo-700 bg-indigo-50/80',
+            'btn_color'   => 'from-indigo-600 to-purple-700 hover:from-indigo-500 hover:to-purple-600 shadow-indigo-600/20',
+        ],
+        'global' => [
+            'key'         => 'GLOBAL',
+            'label'       => 'Global / Fallback',
+            'nama_resmi'  => 'Kop SPMB Yayasan (Fallback Umum)',
+            'sub'         => 'Berlaku jika unit belum memiliki kop khusus',
+            'icon'        => '🌐',
+            'npsn'        => '-',
+            'najsit'      => '-',
+            'color'       => 'slate',
+            'tab_active'  => 'border-slate-800 text-slate-900 bg-slate-100',
+            'btn_color'   => 'from-slate-700 to-slate-900 hover:from-slate-600 hover:to-slate-800 shadow-slate-700/20',
+        ],
+    ];
+
+    $allKopUnits = $allKopUnits ?? (class_exists('SpmbModel') ? SpmbModel::getAllKopUnits() : []);
+    $activeKopTab = strtolower(trim($_GET['tab_kop'] ?? 'paud'));
+    if (!isset($unitKopTabs[$activeKopTab])) {
+        $activeKopTab = 'paud';
+    }
+    $globalKopPath = $allKopUnits['GLOBAL'] ?? ($kopGambar ?? '');
+    ?>
+
+    <div class="bg-white rounded-2xl border border-primary-100/70 shadow-sm p-6 space-y-6">
+        <!-- Section Header -->
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-sky-100 text-sky-700 flex items-center justify-center text-xl shrink-0">
+                <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-sky-500 to-blue-600 text-white flex items-center justify-center text-xl shadow-md shadow-sky-500/20 shrink-0">
                     🖼️
                 </div>
                 <div>
-                    <h3 class="font-bold text-slate-900 text-base">Kop Surat Gambar SPMB</h3>
-                    <p class="text-xs text-slate-500">
-                        Unggah gambar banner kop resmi yayasan/sekolah untuk dicetak pada Kwitansi Pembayaran, Formulir Biodata, dan dokumen SPMB lainnya.
+                    <h3 class="font-extrabold text-slate-900 text-base sm:text-lg">Kop Surat Formulir & Cetak SPMB (Per Unit)</h3>
+                    <p class="text-xs text-slate-500 mt-0.5">
+                        Unggah gambar banner kop resmi masing-masing unit sekolah (<strong>PAUD / TK</strong>, <strong>SD</strong>, <strong>SMP</strong>, <strong>SMA</strong>) untuk dicetak pada Formulir Peserta Didik Dapodik (F4 3 Lembar), Kwitansi, dan Tanda Bukti.
                     </p>
                 </div>
             </div>
-            <?php if (!empty($kopGambar)): ?>
-                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 shrink-0">
-                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                    Kop Gambar Aktif
+            <div class="flex items-center gap-2">
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-sky-50 text-sky-800 border border-sky-200">
+                    <span>📐</span> F4 Folio 3 Lembar
                 </span>
-            <?php else: ?>
-                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 shrink-0">
-                    Kop Teks Standar
-                </span>
-            <?php endif; ?>
+            </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-            <!-- Kolom Preview -->
-            <div class="lg:col-span-7 space-y-3">
-                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                    Preview Kop Surat Dokumen Cetak
-                </label>
+        <!-- Unit Tabs Bar -->
+        <div class="flex items-center gap-2 overflow-x-auto pb-1 border-b border-slate-200">
+            <?php foreach ($unitKopTabs as $tabKey => $cfg): 
+                $specPath = $allKopUnits[$cfg['key']] ?? '';
+                $hasCustom = !empty($specPath);
+                $isGlobalActive = empty($specPath) && !empty($globalKopPath) && $tabKey !== 'global';
+            ?>
+                <button type="button"
+                        onclick="switchKopTab('<?= $tabKey ?>')"
+                        id="tab_btn_<?= $tabKey ?>"
+                        class="kop-tab-btn flex items-center gap-2 px-4 py-2.5 rounded-t-xl text-xs font-bold border-b-2 transition-all whitespace-nowrap cursor-pointer <?= $tabKey === $activeKopTab ? $cfg['tab_active'] : 'border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-50' ?>">
+                    <span class="text-base"><?= $cfg['icon'] ?></span>
+                    <span><?= $cfg['label'] ?></span>
+                    <?php if ($hasCustom): ?>
+                        <span class="w-2 h-2 rounded-full bg-emerald-500" title="Kop Khusus Aktif"></span>
+                    <?php elseif ($isGlobalActive): ?>
+                        <span class="w-2 h-2 rounded-full bg-amber-400" title="Menggunakan Kop Global"></span>
+                    <?php else: ?>
+                        <span class="w-2 h-2 rounded-full bg-slate-300" title="Kop Standar"></span>
+                    <?php endif; ?>
+                </button>
+            <?php endforeach; ?>
+        </div>
+
+        <!-- Unit Tab Panels -->
+        <?php foreach ($unitKopTabs as $tabKey => $cfg): 
+            $specPath = $allKopUnits[$cfg['key']] ?? '';
+            $effectivePath = !empty($specPath) ? $specPath : ($tabKey !== 'global' ? $globalKopPath : '');
+            $hasCustom = !empty($specPath);
+            $hasEffective = !empty($effectivePath);
+        ?>
+            <div id="tab_panel_<?= $tabKey ?>" class="kop-tab-panel <?= $tabKey === $activeKopTab ? '' : 'hidden' ?> space-y-5">
                 
-                <?php if (!empty($kopGambar)): ?>
-                    <div class="p-4 bg-slate-50 rounded-2xl border-2 border-slate-200 text-center relative group">
-                        <img src="<?= url(ltrim($kopGambar, '/')) ?>" 
-                             alt="Kop Surat SPMB" 
-                             class="w-full max-h-40 object-contain mx-auto rounded-lg shadow-xs bg-white p-2">
-                        <div class="mt-3 flex items-center justify-center gap-3">
-                            <a href="<?= url(ltrim($kopGambar, '/')) ?>" target="_blank" class="text-xs text-sky-600 hover:text-sky-700 font-bold underline">
-                                🔍 Lihat Ukuran Asli
-                            </a>
-                            <span class="text-slate-300">&bull;</span>
-                            <form action="<?= url('kelola-spmb/pengaturan/hapus-kop') ?>" method="POST" onsubmit="return confirm('Yakin ingin menghapus gambar kop ini dan kembali ke kop teks standar?');" class="inline">
-                                <?= CSRF::field() ?>
-                                <button type="submit" class="text-xs text-rose-600 hover:text-rose-700 font-bold underline">
-                                    🗑️ Hapus / Reset ke Kop Standar
-                                </button>
-                            </form>
+                <!-- Unit Status Bar -->
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-slate-50/90 rounded-2xl border border-slate-200/80">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-lg"><?= $cfg['icon'] ?></span>
+                            <h4 class="font-bold text-slate-900 text-sm"><?= $cfg['nama_resmi'] ?></h4>
                         </div>
-                    </div>
-                <?php else: ?>
-                    <div class="p-6 bg-slate-50/80 rounded-2xl border-2 border-dashed border-slate-200 text-center space-y-2">
-                        <div class="text-3xl text-slate-300">📄</div>
-                        <p class="text-xs font-bold text-slate-700">Belum Ada Kop Gambar yang Diunggah</p>
-                        <p class="text-[11px] text-slate-500 max-w-md mx-auto">
-                            Saat ini dokumen cetak (Kwitansi & Formulir) menggunakan susunan kop teks standar. Unggah gambar banner kop resmi yayasan Anda di samping untuk menerapkan kop gambar secara otomatis.
+                        <p class="text-xs text-slate-500 mt-0.5">
+                            <?= $cfg['sub'] ?> 
+                            <?php if ($cfg['npsn'] !== '-'): ?>
+                                &bull; NPSN: <strong><?= $cfg['npsn'] ?></strong> &bull; NAJSIT: <strong><?= $cfg['najsit'] ?></strong>
+                            <?php endif; ?>
                         </p>
                     </div>
-                <?php endif; ?>
-            </div>
-
-            <!-- Kolom Form Upload -->
-            <div class="lg:col-span-5 bg-slate-50/70 p-5 rounded-2xl border border-slate-200/80 space-y-4">
-                <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider">
-                    <?= !empty($kopGambar) ? 'Ganti Kop Gambar' : 'Upload Kop Gambar Baru' ?>
-                </h4>
-
-                <form action="<?= url('kelola-spmb/pengaturan/upload-kop') ?>" method="POST" enctype="multipart/form-data" class="space-y-4">
-                    <?= CSRF::field() ?>
-
                     <div>
-                        <label class="block text-xs font-semibold text-slate-700 mb-1.5">
-                            Pilih File Gambar Banner Kop Surat
+                        <?php if ($hasCustom): ?>
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                Kop Khusus Unit Aktif
+                            </span>
+                        <?php elseif ($hasEffective && $tabKey !== 'global'): ?>
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-900 border border-amber-200">
+                                <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                                Menggunakan Kop Global (Fallback)
+                            </span>
+                        <?php else: ?>
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-200 text-slate-700">
+                                <span class="w-2 h-2 rounded-full bg-slate-400"></span>
+                                Kop Teks Bawaan Sistem
+                            </span>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                    <!-- Kolom Preview -->
+                    <div class="lg:col-span-7 space-y-3">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                            Preview Kop Dokumen Cetak (<?= $cfg['label'] ?>)
                         </label>
-                        <input type="file" 
-                               name="kop_gambar" 
-                               id="inputKopGambar"
-                               accept="image/png, image/jpeg, image/jpg, image/webp"
-                               required
-                               class="w-full text-xs text-slate-600 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-sky-50 file:text-sky-700 hover:file:bg-sky-100 cursor-pointer border border-slate-200 bg-white rounded-xl p-1.5">
+
+                        <?php if ($hasEffective): ?>
+                            <div class="p-4 bg-slate-50 rounded-2xl border-2 border-slate-200 text-center relative group">
+                                <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-xs flex items-center justify-center min-h-[90px]">
+                                    <img src="<?= url(ltrim($effectivePath, '/')) ?>" 
+                                         alt="Kop <?= $cfg['label'] ?>" 
+                                         class="max-h-24 w-auto max-w-full object-contain mx-auto">
+                                </div>
+
+                                <div class="mt-3 flex items-center justify-center gap-3 text-xs">
+                                    <a href="<?= url(ltrim($effectivePath, '/')) ?>" target="_blank" class="text-sky-600 hover:text-sky-700 font-bold underline">
+                                        🔍 Lihat Ukuran Asli
+                                    </a>
+                                    <?php if ($hasCustom): ?>
+                                        <span class="text-slate-300">&bull;</span>
+                                        <form action="<?= url('kelola-spmb/pengaturan/hapus-kop') ?>" method="POST" onsubmit="return confirm('Hapus kop khusus <?= $cfg['label'] ?> dan kembali ke kop standar?');" class="inline">
+                                            <?= CSRF::field() ?>
+                                            <input type="hidden" name="unit" value="<?= $cfg['key'] ?>">
+                                            <button type="submit" class="text-rose-600 hover:text-rose-700 font-bold underline cursor-pointer">
+                                                🗑️ Hapus Kop Khusus <?= $cfg['label'] ?>
+                                            </button>
+                                        </form>
+                                    <?php elseif ($tabKey !== 'global'): ?>
+                                        <span class="text-slate-300">&bull;</span>
+                                        <span class="text-amber-700 italic text-[11px]">
+                                            (Mewarisi gambar dari Kop Global)
+                                        </span>
+                                    <?php else: ?>
+                                        <span class="text-slate-300">&bull;</span>
+                                        <form action="<?= url('kelola-spmb/pengaturan/hapus-kop') ?>" method="POST" onsubmit="return confirm('Hapus kop global ini?');" class="inline">
+                                            <?= CSRF::field() ?>
+                                            <input type="hidden" name="unit" value="GLOBAL">
+                                            <button type="submit" class="text-rose-600 hover:text-rose-700 font-bold underline cursor-pointer">
+                                                🗑️ Hapus Kop Global
+                                            </button>
+                                        </form>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        <?php else: ?>
+                            <div class="p-6 bg-slate-50/80 rounded-2xl border-2 border-dashed border-slate-200 text-center space-y-2">
+                                <div class="text-3xl text-slate-300">📄</div>
+                                <p class="text-xs font-bold text-slate-700">Belum Ada Kop Gambar untuk Unit <?= $cfg['label'] ?></p>
+                                <p class="text-[11px] text-slate-500 max-w-md mx-auto">
+                                    Saat ini cetak Formulir Peserta Didik (F4 3 Lembar), Kwitansi, dan Tanda Bukti menggunakan format teks bawaan (Logo Sekolah resmi + Nomor NPSN/NAJSIT). Unggah banner kop di samping untuk menggantikannya.
+                                </p>
+                            </div>
+                        <?php endif; ?>
                     </div>
 
-                    <div class="p-3 bg-amber-50/80 rounded-xl border border-amber-200 text-[11px] text-amber-800 space-y-1">
-                        <div class="font-bold flex items-center gap-1 text-amber-900">
-                            <span>💡</span> Rekomendasi Format Kop:
+                    <!-- Kolom Form Upload -->
+                    <div class="lg:col-span-5 bg-slate-50/80 p-5 rounded-2xl border border-slate-200 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                                <?= $hasCustom ? 'Ganti Kop ' . $cfg['label'] : 'Upload Kop ' . $cfg['label'] ?>
+                            </h4>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-200 text-slate-700">
+                                UNIT: <?= $cfg['key'] ?>
+                            </span>
                         </div>
-                        <ul class="list-disc list-inside space-y-0.5 text-[10.5px] text-amber-700">
-                            <li>Format: <strong>PNG</strong> (latar transparan) atau <strong>JPG/WEBP</strong>.</li>
-                            <li>Bentuk: <strong>Horizontal / Memanjang</strong> (Banner Kop Lengkap).</li>
-                            <li>Lebar resolusi: <strong>800 px - 1200 px</strong> (rasio ~ 5:1 atau 6:1).</li>
-                            <li>Maksimal ukuran file: <strong>4 MB</strong>.</li>
-                        </ul>
-                    </div>
 
-                    <button type="submit" 
-                            class="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-500 hover:to-blue-500 text-white font-bold text-xs shadow-md shadow-sky-600/20 transition-all text-center">
-                        💾 Unggah & Terapkan Kop Gambar
-                    </button>
-                </form>
+                        <form action="<?= url('kelola-spmb/pengaturan/upload-kop') ?>" method="POST" enctype="multipart/form-data" class="space-y-4">
+                            <?= CSRF::field() ?>
+                            <input type="hidden" name="unit" value="<?= $cfg['key'] ?>">
+
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1.5">
+                                    Pilih File Banner Kop Surat <?= $cfg['label'] ?>
+                                </label>
+                                <input type="file" 
+                                       name="kop_gambar" 
+                                       id="file_kop_<?= $tabKey ?>"
+                                       accept="image/png, image/jpeg, image/jpg, image/webp"
+                                       required
+                                       onchange="previewKopUpload(event, '<?= $tabKey ?>')"
+                                       class="w-full text-xs text-slate-600 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-sky-50 file:text-sky-700 hover:file:bg-sky-100 cursor-pointer border border-slate-200 bg-white rounded-xl p-1.5">
+                            </div>
+
+                            <!-- Live preview container when file selected -->
+                            <div id="live_preview_box_<?= $tabKey ?>" class="hidden p-3 bg-sky-50/60 rounded-xl border border-sky-200 space-y-1.5 text-center">
+                                <div class="text-[11px] font-bold text-sky-900 flex items-center justify-center gap-1">
+                                    <span>👁️</span> Pratinjau File yang Dipilih:
+                                </div>
+                                <img id="live_preview_img_<?= $tabKey ?>" src="" alt="Pratinjau" class="max-h-20 w-auto max-w-full object-contain mx-auto bg-white p-1 rounded border border-sky-200">
+                                <div id="live_preview_name_<?= $tabKey ?>" class="text-[10.5px] text-slate-500 truncate"></div>
+                            </div>
+
+                            <div class="p-3 bg-amber-50/80 rounded-xl border border-amber-200 text-[11px] text-amber-800 space-y-1">
+                                <div class="font-bold flex items-center gap-1 text-amber-900">
+                                    <span>💡</span> Rekomendasi Format Banner Kop:
+                                </div>
+                                <ul class="list-disc list-inside space-y-0.5 text-[10.5px] text-amber-700">
+                                    <li>Format: <strong>PNG</strong> (latar transparan) atau <strong>JPG/WEBP</strong>.</li>
+                                    <li>Bentuk: <strong>Horizontal Memanjang</strong> (Full Banner Kop).</li>
+                                    <li>Lebar: <strong>800 px - 1200 px</strong> (tinggi proporsional ~80-140 px).</li>
+                                    <li>Maksimal file: <strong>4 MB</strong>.</li>
+                                </ul>
+                            </div>
+
+                            <button type="submit" 
+                                    class="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r <?= $cfg['btn_color'] ?> text-white font-bold text-xs shadow-md transition-all text-center cursor-pointer">
+                                💾 Unggah & Terapkan Kop <?= $cfg['label'] ?>
+                            </button>
+                        </form>
+                    </div>
+                </div>
             </div>
-        </div>
+        <?php endforeach; ?>
     </div>
 
     <!-- Table of All SPMB Groups -->
@@ -811,6 +984,65 @@ $templateDapodik = $spmbOptions['template_dapodik'] ?? '';
 </div>
 
 <script>
+function switchKopTab(key) {
+    const tabClasses = {
+        'paud': ['border-amber-600', 'text-amber-700', 'bg-amber-50/80'],
+        'sd': ['border-emerald-600', 'text-emerald-700', 'bg-emerald-50/80'],
+        'smp': ['border-sky-600', 'text-sky-700', 'bg-sky-50/80'],
+        'sma': ['border-indigo-600', 'text-indigo-700', 'bg-indigo-50/80'],
+        'global': ['border-slate-800', 'text-slate-900', 'bg-slate-100']
+    };
+
+    const allActiveClasses = [
+        'border-amber-600', 'text-amber-700', 'bg-amber-50/80',
+        'border-emerald-600', 'text-emerald-700', 'bg-emerald-50/80',
+        'border-sky-600', 'text-sky-700', 'bg-sky-50/80',
+        'border-indigo-600', 'text-indigo-700', 'bg-indigo-50/80',
+        'border-slate-800', 'text-slate-900', 'bg-slate-100'
+    ];
+
+    document.querySelectorAll('.kop-tab-btn').forEach(btn => {
+        btn.classList.remove(...allActiveClasses);
+        btn.classList.add('border-transparent', 'text-slate-500');
+    });
+
+    const activeBtn = document.getElementById('tab_btn_' + key);
+    if (activeBtn) {
+        activeBtn.classList.remove('border-transparent', 'text-slate-500');
+        const toAdd = tabClasses[key] || tabClasses['paud'];
+        activeBtn.classList.add(...toAdd);
+    }
+
+    document.querySelectorAll('.kop-tab-panel').forEach(panel => {
+        panel.classList.add('hidden');
+    });
+    const activePanel = document.getElementById('tab_panel_' + key);
+    if (activePanel) {
+        activePanel.classList.remove('hidden');
+    }
+
+    // Update URL query string
+    try {
+        const url = new URL(window.location);
+        url.searchParams.set('tab_kop', key);
+        window.history.replaceState({}, '', url);
+    } catch (e) {}
+}
+
+function previewKopUpload(e, key) {
+    const file = e.target.files ? e.target.files[0] : null;
+    if (file) {
+        const box = document.getElementById('live_preview_box_' + key);
+        const img = document.getElementById('live_preview_img_' + key);
+        const nameEl = document.getElementById('live_preview_name_' + key);
+        if (box && img) {
+            img.src = URL.createObjectURL(file);
+            if (nameEl) nameEl.textContent = file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)';
+            box.classList.remove('hidden');
+        }
+    }
+}
+
 function openModalTambahGroup() {
     document.getElementById('modalTambahGroup').classList.remove('hidden');
 }
