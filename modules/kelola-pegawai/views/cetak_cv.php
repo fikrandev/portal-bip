@@ -42,6 +42,8 @@ if (!empty($pegawai['tanggal_lahir'])) {
 <!DOCTYPE html>
 <html lang="id">
 <head>
+    <!-- Favicon -->
+    <?= function_exists('renderFaviconTags') ? renderFaviconTags() : '' ?>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CV - <?= e($pegawai['nama']) ?><?= !empty($pegawai['gelar']) ? ', ' . e($pegawai['gelar']) : '' ?></title>

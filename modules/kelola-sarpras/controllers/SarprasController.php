@@ -125,13 +125,15 @@ class SarprasController
             $capturedList = is_array($_POST['foto_captured']) ? $_POST['foto_captured'] : [$_POST['foto_captured']];
             foreach ($capturedList as $dataUrl) {
                 if (empty($dataUrl) || !is_string($dataUrl)) continue;
-                if (preg_match('/^data:image\/(\w+);base64,(.+)$/', $dataUrl, $matches)) {
-                    $ext = strtolower($matches[1]);
+                if (strpos($dataUrl, 'data:image/') === 0 && strpos($dataUrl, ';base64,') !== false) {
+                    $parts = explode(';base64,', $dataUrl, 2);
+                    $mimePart = str_replace('data:image/', '', $parts[0]);
+                    $ext = strtolower($mimePart);
                     if ($ext === 'jpeg') $ext = 'jpg';
                     if (!in_array($ext, ['jpg', 'png', 'webp'])) {
                         $ext = 'jpg';
                     }
-                    $decoded = base64_decode($matches[2]);
+                    $decoded = base64_decode($parts[1], true);
                     if ($decoded !== false && strlen($decoded) > 0) {
                         $filename = 'sarpras_' . time() . '_' . substr(md5(uniqid()), 0, 6) . '.' . $ext;
                         if (file_put_contents($uploadDir . $filename, $decoded)) {

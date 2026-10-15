@@ -282,6 +282,41 @@ $isMobile = !empty($isMobile);
         }
     });
 
+    // ── IMAGE COMPRESSION HELPER (PREVENTS LARGE POST OVERFLOW) ─
+    function compressImageFile(file, maxWidth, quality, callback) {
+        maxWidth = maxWidth || 1600;
+        quality = quality || 0.85;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                let w = img.width;
+                let h = img.height;
+                if (w > maxWidth || h > maxWidth) {
+                    if (w > h) {
+                        h = Math.round((h * maxWidth) / w);
+                        w = maxWidth;
+                    } else {
+                        w = Math.round((w * maxWidth) / h);
+                        h = maxWidth;
+                    }
+                }
+                canvas.width = w;
+                canvas.height = h;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, w, h);
+                const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+                callback(compressedDataUrl);
+            };
+            img.onerror = function() {
+                callback(e.target.result);
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
     // ── FILE PICKER (LAPTOP / DESKTOP) ───────────────────────────
     if (btnPickFile && fileInput) {
         btnPickFile.addEventListener('click', () => {
@@ -292,11 +327,9 @@ $isMobile = !empty($isMobile);
             if (!this.files || this.files.length === 0) return;
             Array.from(this.files).forEach(file => {
                 if (!file.type.match('image.*')) return;
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    addPhotoItem(e.target.result, false);
-                };
-                reader.readAsDataURL(file);
+                compressImageFile(file, 1600, 0.85, function(dataUrl) {
+                    addPhotoItem(dataUrl, false);
+                });
             });
             this.value = ''; // Reset input
         });
@@ -307,11 +340,9 @@ $isMobile = !empty($isMobile);
         fallbackCameraInput.addEventListener('change', function() {
             if (!this.files || this.files.length === 0) return;
             Array.from(this.files).forEach(file => {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    addPhotoItem(e.target.result, false);
-                };
-                reader.readAsDataURL(file);
+                compressImageFile(file, 1600, 0.85, function(dataUrl) {
+                    addPhotoItem(dataUrl, false);
+                });
             });
             this.value = '';
         });

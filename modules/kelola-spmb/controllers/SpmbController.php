@@ -2240,4 +2240,983 @@ class SpmbController
         include MODULES_PATH . '/kelola-spmb/views/surat_pernyataan/cetak.php';
         exit;
     }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // 9. HASIL SCREENING PSIKOLOG (GALERI FILE PDF)
+    // ═════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Halaman Utama Galeri File Hasil Screening Psikolog Siswa
+     */
+    public static function screeningPsikologIndex(): void
+    {
+        $activeGroup = SpmbModel::getActiveGroup();
+        $groupId = $activeGroup['id'] ?? null;
+
+        $filters = [
+            'group_id'           => $groupId,
+            'jenjang'            => trim($_GET['unit'] ?? ($_GET['jenjang'] ?? '')),
+            'jenis_pendaftaran'  => trim($_GET['jenis_pendaftaran'] ?? ''),
+            'status_kelulusan'   => 'Lulus / Diterima', // Khusus Hasil Psikolog: Hanya siswa yang Lulus / Diterima
+            'status_screening'   => trim($_GET['status_screening'] ?? ''),
+            'status_rekomendasi' => trim($_GET['status_rekomendasi'] ?? ''),
+            'search'             => trim($_GET['search'] ?? '')
+        ];
+
+        $page = max(1, (int)($_GET['page'] ?? 1));
+        $limit = 24; // 24 kartu per halaman agar pas di grid 2, 3, atau 4 kolom
+        $offset = ($page - 1) * $limit;
+
+        $totalItems = SpmbModel::countScreeningPsikolog($filters);
+        $totalPages = max(1, ceil($totalItems / $limit));
+        $items = SpmbModel::getScreeningPsikologList($filters, $limit, $offset);
+        $stats = SpmbModel::getScreeningPsikologStats($groupId);
+
+        // Ambil list ringkas pendaftar (hanya yang Lulus/Diterima) untuk autocomplete di modal upload
+        $allPendaftar = Database::getInstance()->findAll("
+            SELECT id, nomor_pendaftaran, nama_lengkap, jenjang, jenis_pendaftaran, file_screening_psikolog
+            FROM `spmb_pendaftar`
+            WHERE group_id = ? AND status_kelulusan = 'Lulus / Diterima'
+            ORDER BY nama_lengkap ASC
+        ", [$groupId]);
+
+        self::view(
+            'screening_psikolog/index',
+            [
+                'activeGroup'   => $activeGroup,
+                'items'         => $items,
+                'stats'         => $stats,
+                'filters'       => $filters,
+                'page'          => $page,
+                'totalPages'    => $totalPages,
+                'totalItems'    => $totalItems,
+                'limit'         => $limit,
+                'allPendaftar'  => $allPendaftar
+            ],
+            'Hasil Screening Psikolog',
+            [['label' => 'Kelola SPMB', 'url' => url('kelola-spmb')], ['label' => 'Hasil Psikolog']]
+        );
+    }
+
+    /**
+     * Handler Upload File PDF Hasil Screening Psikolog
+     */
+    public static function screeningPsikologUpload(): void
+    {
+        CSRF::validate();
+
+        $pendaftarId = (int)($_POST['pendaftar_id'] ?? 0);
+        $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+
+        if ($pendaftarId <= 0) {
+            if ($isAjax) {
+                Response::json(['success' => false, 'message' => 'Pilih data siswa terlebih dahulu.'], 400);
+            }
+            $_SESSION['flash_error'] = 'Pilih data siswa terlebih dahulu.';
+            Response::redirect(url('kelola-spmb/screening-psikolog'));
+            return;
+        }
+
+        $pendaftar = SpmbModel::getPendaftarById($pendaftarId);
+        if (!$pendaftar) {
+            if ($isAjax) {
+                Response::json(['success' => false, 'message' => 'Data calon siswa tidak ditemukan.'], 404);
+            }
+            $_SESSION['flash_error'] = 'Data calon siswa tidak ditemukan.';
+            Response::redirect(url('kelola-spmb/screening-psikolog'));
+            return;
+        }
+
+        $existing = SpmbModel::getScreeningByPendaftarId($pendaftarId);
+        $uploadedPath = null;
+        $originalName = null;
+        $fileSize = 0;
+
+        // Cek file upload PDF
+        if (!empty($_FILES['file_pdf']['name'])) {
+            $file = $_FILES['file_pdf'];
+            if ($file['error'] !== UPLOAD_ERR_OK) {
+                $errMsg = 'Terjadi kesalahan saat mengunggah berkas PDF (kode: ' . $file['error'] . ').';
+                if ($isAjax) Response::json(['success' => false, 'message' => $errMsg], 400);
+                $_SESSION['flash_error'] = $errMsg;
+                Response::redirect(url('kelola-spmb/screening-psikolog'));
+                return;
+            }
+
+            // Validasi format ekstensi
+            $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+            if ($ext !== 'pdf') {
+                $errMsg = 'Format berkas tidak valid! Hanya file berekstensi .PDF yang diperbolehkan.';
+                if ($isAjax) Response::json(['success' => false, 'message' => $errMsg], 400);
+                $_SESSION['flash_error'] = $errMsg;
+                Response::redirect(url('kelola-spmb/screening-psikolog'));
+                return;
+            }
+
+            // Validasi ukuran maks 20 MB
+            if ($file['size'] > 20 * 1024 * 1024) {
+                $errMsg = 'Ukuran berkas terlalu besar! Maksimal 20 MB.';
+                if ($isAjax) Response::json(['success' => false, 'message' => $errMsg], 400);
+                $_SESSION['flash_error'] = $errMsg;
+                Response::redirect(url('kelola-spmb/screening-psikolog'));
+                return;
+            }
+
+            $uploadDir = BASE_PATH . '/public/uploads/spmb/psikolog/';
+            if (!is_dir($uploadDir)) {
+                @mkdir($uploadDir, 0777, true);
+            }
+
+            // Hapus file lama jika ada penggantian
+            if ($existing && !empty($existing['file_pdf'])) {
+                $oldPath = BASE_PATH . '/public/' . ltrim($existing['file_pdf'], '/');
+                if (file_exists($oldPath)) {
+                    @unlink($oldPath);
+                }
+            }
+
+            $safeNo = preg_replace('/[^a-zA-Z0-9_-]/', '_', $pendaftar['nomor_pendaftaran']);
+            $newFileName = 'psikolog_' . $safeNo . '_' . time() . '_' . substr(md5(uniqid()), 0, 6) . '.pdf';
+            $targetPath = $uploadDir . $newFileName;
+
+            if (!move_uploaded_file($file['tmp_name'], $targetPath)) {
+                $errMsg = 'Gagal menyimpan berkas PDF ke direktori server.';
+                if ($isAjax) Response::json(['success' => false, 'message' => $errMsg], 500);
+                $_SESSION['flash_error'] = $errMsg;
+                Response::redirect(url('kelola-spmb/screening-psikolog'));
+                return;
+            }
+
+            $uploadedPath = 'uploads/spmb/psikolog/' . $newFileName;
+            $originalName = pathinfo($file['name'], PATHINFO_BASENAME);
+            $fileSize = $file['size'];
+        }
+
+        $statusRekomendasi = trim($_POST['status_rekomendasi'] ?? 'Direkomendasikan');
+        if (!in_array($statusRekomendasi, ['Direkomendasikan', 'Dipertimbangkan', 'Tidak Direkomendasikan', 'Belum Ada Hasil'])) {
+            $statusRekomendasi = 'Direkomendasikan';
+        }
+
+        $tanggalScreening = !empty($_POST['tanggal_screening']) ? trim($_POST['tanggal_screening']) : date('Y-m-d');
+        $namaPsikolog     = trim($_POST['nama_psikolog'] ?? '');
+        $catatan          = trim($_POST['catatan'] ?? '');
+
+        // Jika tidak upload file baru dan belum ada file sebelumnya
+        if (!$uploadedPath && (!$existing || empty($existing['file_pdf']))) {
+            $errMsg = 'Silakan pilih file PDF hasil screening psikolog terlebih dahulu.';
+            if ($isAjax) Response::json(['success' => false, 'message' => $errMsg], 400);
+            $_SESSION['flash_error'] = $errMsg;
+            Response::redirect(url('kelola-spmb/screening-psikolog'));
+            return;
+        }
+
+        $dataSave = [
+            'status_rekomendasi' => $statusRekomendasi,
+            'catatan'            => $catatan ?: null,
+            'nama_psikolog'      => $namaPsikolog ?: null,
+            'tanggal_screening'  => $tanggalScreening,
+            'uploaded_by'        => Auth::id() ?: null
+        ];
+
+        if ($uploadedPath) {
+            $dataSave['file_pdf']           = $uploadedPath;
+            $dataSave['file_name_original'] = $originalName;
+            $dataSave['file_size']          = $fileSize;
+        }
+
+        SpmbModel::saveScreeningPsikolog($pendaftarId, $dataSave);
+
+        $successMsg = "Alhamdulillah! File PDF hasil screening psikolog untuk siswa '{$pendaftar['nama_lengkap']}' ({$pendaftar['nomor_pendaftaran']}) berhasil disimpan!";
+
+        if ($isAjax) {
+            Response::json([
+                'success' => true,
+                'message' => $successMsg,
+                'pendaftar_id' => $pendaftarId
+            ]);
+            return;
+        }
+
+        $_SESSION['flash_success'] = $successMsg;
+        $returnUrl = !empty($_POST['return_url']) ? $_POST['return_url'] : url('kelola-spmb/screening-psikolog');
+        Response::redirect($returnUrl);
+    }
+
+    /**
+     * Hapus Berkas Hasil Screening Psikolog
+     */
+    public static function screeningPsikologHapus(int $id): void
+    {
+        CSRF::validate();
+        $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+
+        $pendaftar = SpmbModel::getPendaftarById($id);
+        if (!$pendaftar) {
+            if ($isAjax) Response::json(['success' => false, 'message' => 'Data tidak ditemukan.'], 404);
+            $_SESSION['flash_error'] = 'Data calon siswa tidak ditemukan.';
+            Response::redirect(url('kelola-spmb/screening-psikolog'));
+            return;
+        }
+
+        SpmbModel::deleteScreeningPsikolog($id);
+
+        $msg = "File PDF hasil screening psikolog siswa '{$pendaftar['nama_lengkap']}' berhasil dihapus.";
+        if ($isAjax) {
+            Response::json(['success' => true, 'message' => $msg]);
+            return;
+        }
+
+        $_SESSION['flash_success'] = $msg;
+        Response::redirect(url('kelola-spmb/screening-psikolog'));
+    }
+
+    /**
+     * Tampilkan File PDF Langsung Inline di Browser (Preview)
+     */
+    public static function screeningPsikologView(int $id): void
+    {
+        $screening = SpmbModel::getScreeningByPendaftarId($id);
+        if (!$screening || empty($screening['file_pdf'])) {
+            http_response_code(404);
+            die("File PDF hasil screening psikolog belum tersedia untuk siswa ini.");
+        }
+
+        $fullPath = BASE_PATH . '/public/' . ltrim($screening['file_pdf'], '/');
+        if (!file_exists($fullPath)) {
+            http_response_code(404);
+            die("Berkas PDF tidak ditemukan pada server penyimpanan.");
+        }
+
+        $filename = $screening['file_name_original'] ?: basename($fullPath);
+
+        // Bersihkan output buffer sebelum kirim file biner
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
+
+        header('Content-Type: application/pdf');
+        header('Content-Disposition: inline; filename="' . str_replace('"', '', $filename) . '"');
+        header('Content-Length: ' . filesize($fullPath));
+        header('Cache-Control: public, max-age=86400');
+        readfile($fullPath);
+        exit;
+    }
+
+    /**
+     * Download File PDF dengan Nama Rapi
+     */
+    public static function screeningPsikologDownload(int $id): void
+    {
+        $screening = SpmbModel::getScreeningByPendaftarId($id);
+        if (!$screening || empty($screening['file_pdf'])) {
+            http_response_code(404);
+            die("File PDF hasil screening psikolog belum tersedia untuk siswa ini.");
+        }
+
+        $fullPath = BASE_PATH . '/public/' . ltrim($screening['file_pdf'], '/');
+        if (!file_exists($fullPath)) {
+            http_response_code(404);
+            die("Berkas PDF tidak ditemukan pada server penyimpanan.");
+        }
+
+        $cleanNomor = preg_replace('/[^a-zA-Z0-9_-]/', '_', $screening['nomor_pendaftaran']);
+        $cleanNama  = preg_replace('/[^a-zA-Z0-9_\s-]/', '', $screening['nama_lengkap']);
+        $cleanNama  = str_replace(' ', '_', $cleanNama);
+        $downloadName = "Hasil_Screening_Psikolog_{$cleanNomor}_{$cleanNama}.pdf";
+
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
+
+        header('Content-Description: File Transfer');
+        header('Content-Type: application/pdf');
+        header('Content-Disposition: attachment; filename="' . $downloadName . '"');
+        header('Expires: 0');
+        header('Cache-Control: must-revalidate');
+        header('Pragma: public');
+        header('Content-Length: ' . filesize($fullPath));
+        readfile($fullPath);
+        exit;
+    }
+
+    /**
+     * Export Rekapan Status Hasil Screening Psikolog ke CSV / Excel
+     */
+    public static function screeningPsikologExport(): void
+    {
+        $activeGroup = SpmbModel::getActiveGroup();
+        $groupId = $activeGroup['id'] ?? null;
+
+        $filters = [
+            'group_id'           => $groupId,
+            'jenjang'            => trim($_GET['unit'] ?? ($_GET['jenjang'] ?? '')),
+            'jenis_pendaftaran'  => trim($_GET['jenis_pendaftaran'] ?? ''),
+            'status_kelulusan'   => 'Lulus / Diterima',
+            'status_screening'   => trim($_GET['status_screening'] ?? ''),
+            'status_rekomendasi' => trim($_GET['status_rekomendasi'] ?? ''),
+            'search'             => trim($_GET['search'] ?? '')
+        ];
+
+        // Ambil semua tanpa pagination
+        $items = SpmbModel::getScreeningPsikologList($filters, 10000, 0);
+
+        $filename = 'Rekap_Screening_Psikolog_' . date('Ymd_His') . '.csv';
+
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
+
+        header('Content-Type: text/csv; charset=UTF-8');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+
+        $out = fopen('php://output', 'w');
+        // BOM untuk Excel UTF-8
+        fprintf($out, chr(0xEF).chr(0xBB).chr(0xBF));
+
+        fputcsv($out, [
+            'No',
+            'No. Pendaftaran',
+            'Nama Lengkap',
+            'Unit / Jenjang',
+            'Jenis Pendaftaran',
+            'Status Kelulusan SPMB',
+            'Status Berkas PDF',
+            'Hasil Rekomendasi Psikolog',
+            'Nama Psikolog / Lembaga',
+            'Tanggal Screening',
+            'Catatan / Rekomendasi',
+            'Tanggal Upload'
+        ]);
+
+        $no = 1;
+        foreach ($items as $it) {
+            $hasPdf = !empty($it['file_pdf']);
+            fputcsv($out, [
+                $no++,
+                $it['nomor_pendaftaran'],
+                $it['nama_lengkap'],
+                $it['jenjang'],
+                $it['jenis_pendaftaran'],
+                $it['status_kelulusan'] ?: 'Menunggu Seleksi',
+                $hasPdf ? 'Sudah Diunggah (PDF)' : 'Belum Diunggah',
+                $hasPdf ? ($it['status_rekomendasi'] ?: 'Direkomendasikan') : '-',
+                $it['nama_psikolog'] ?: '-',
+                $it['tanggal_screening'] ? date('d/m/Y', strtotime($it['tanggal_screening'])) : '-',
+                $it['catatan_psikolog'] ?: '-',
+                $it['screening_created_at'] ? date('d/m/Y H:i', strtotime($it['screening_created_at'])) : '-'
+            ]);
+        }
+
+        fclose($out);
+        exit;
+    }
+
+    /**
+     * Dapatkan Data Siswa Penerima Broadcast WA Hasil Psikolog (AJAX)
+     */
+    public static function screeningPsikologBroadcastData(): void
+    {
+        $activeGroup = SpmbModel::getActiveGroup();
+        $filters = [
+            'group_id'           => $activeGroup['id'] ?? null,
+            'jenjang'            => trim($_GET['jenjang'] ?? ''),
+            'status_rekomendasi' => trim($_GET['status_rekomendasi'] ?? ''),
+            'status_wa'          => trim($_GET['status_wa'] ?? 'belum'),
+            'limit'              => !empty($_GET['limit']) ? (int)$_GET['limit'] : 0,
+        ];
+
+        $items = SpmbModel::getDaftarScreeningPsikologBroadcast($filters);
+
+        Response::json([
+            'success'         => true,
+            'total'           => count($items),
+            'items'           => $items,
+            'defaultTemplate' => SpmbModel::getDefaultWaPsikologTemplate()
+        ]);
+    }
+
+    /**
+     * Kirim Pesan WhatsApp Berkas Hasil Psikolog Satuan (Bisa dipanggil loop AJAX broadcast atau tombol tunggal)
+     */
+    public static function screeningPsikologSendWaSingle(int $id = 0): void
+    {
+        if (!CSRF::validate(false)) {
+            Response::json(['success' => false, 'message' => 'Token CSRF tidak valid.'], 403);
+            return;
+        }
+
+        $pendaftarId = $id > 0 ? $id : (int)($_POST['pendaftar_id'] ?? 0);
+        if ($pendaftarId <= 0) {
+            Response::json(['success' => false, 'message' => 'ID calon siswa tidak valid.'], 400);
+            return;
+        }
+
+        $customTemplate = !empty($_POST['pesan_custom']) ? trim($_POST['pesan_custom']) : null;
+
+        $res = SpmbModel::sendWaScreeningPsikolog($pendaftarId, $customTemplate);
+
+        $httpCode = !empty($res['success']) ? 200 : 400;
+        Response::json($res, $httpCode);
+    }
+
+    /**
+     * Halaman Publik Hasil Screening Psikolog (Akses Tanpa Login via WhatsApp / Token)
+     */
+    public static function screeningPsikologPublicView(string $token): void
+    {
+        $token = trim($token);
+        $pendaftar = SpmbModel::getPendaftarByPsikologToken($token);
+
+        if (!$pendaftar || empty($pendaftar['file_pdf'])) {
+            http_response_code(404);
+            $pageTitle = 'Berkas Tidak Ditemukan - SPMB SIT Bina Insan Palu';
+            include MODULES_PATH . '/kelola-spmb/views/biodata_invalid.php';
+            exit;
+        }
+
+        $fullPath = BASE_PATH . '/public/' . ltrim($pendaftar['file_pdf'], '/');
+        if (!file_exists($fullPath)) {
+            http_response_code(404);
+            $pageTitle = 'Berkas Belum Tersedia - SPMB SIT Bina Insan Palu';
+            include MODULES_PATH . '/kelola-spmb/views/biodata_invalid.php';
+            exit;
+        }
+
+        $pageTitle = 'Hasil Screening Psikolog - ' . $pendaftar['nama_lengkap'];
+        include MODULES_PATH . '/kelola-spmb/views/screening_psikolog/public_view.php';
+        exit;
+    }
+
+    /**
+     * Unduh Berkas PDF Hasil Screening Psikolog (Akses Publik via Token)
+     */
+    public static function screeningPsikologPublicDownload(string $token): void
+    {
+        $token = trim($token);
+        $pendaftar = SpmbModel::getPendaftarByPsikologToken($token);
+
+        if (!$pendaftar || empty($pendaftar['file_pdf'])) {
+            http_response_code(404);
+            die("Berkas PDF hasil screening psikolog belum tersedia atau tautan tidak valid.");
+        }
+
+        $fullPath = BASE_PATH . '/public/' . ltrim($pendaftar['file_pdf'], '/');
+        if (!file_exists($fullPath)) {
+            http_response_code(404);
+            die("Berkas PDF tidak ditemukan pada server penyimpanan.");
+        }
+
+        $safeName = preg_replace('/[^a-zA-Z0-9_-]/', '_', $pendaftar['nama_lengkap']);
+        $safeNo   = preg_replace('/[^a-zA-Z0-9_-]/', '_', $pendaftar['nomor_pendaftaran']);
+        $downloadName = "Hasil_Psikolog_{$safeNo}_{$safeName}.pdf";
+
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
+
+        header('Content-Type: application/pdf');
+        header('Content-Disposition: attachment; filename="' . $downloadName . '"');
+        header('Content-Length: ' . filesize($fullPath));
+        header('Cache-Control: public, max-age=86400');
+        readfile($fullPath);
+        exit;
+    }
+
+    /**
+     * Streaming PDF Inline Langsung (Akses Publik via Token)
+     */
+    public static function screeningPsikologPublicRaw(string $token): void
+    {
+        $token = trim($token);
+        $pendaftar = SpmbModel::getPendaftarByPsikologToken($token);
+
+        if (!$pendaftar || empty($pendaftar['file_pdf'])) {
+            http_response_code(404);
+            die("Berkas PDF belum tersedia.");
+        }
+
+        $fullPath = BASE_PATH . '/public/' . ltrim($pendaftar['file_pdf'], '/');
+        if (!file_exists($fullPath)) {
+            http_response_code(404);
+            die("Berkas PDF fisik tidak ditemukan.");
+        }
+
+        $safeName = preg_replace('/[^a-zA-Z0-9_-]/', '_', $pendaftar['nama_lengkap']);
+        $filename = "Hasil_Psikolog_{$safeName}.pdf";
+
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
+
+        header('Content-Type: application/pdf');
+        header('Content-Disposition: inline; filename="' . $filename . '"');
+        header('Content-Length: ' . filesize($fullPath));
+        header('Cache-Control: public, max-age=86400');
+        readfile($fullPath);
+        exit;
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // 7. OBSERVASI AWAL SPMB
+    // ═════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Halaman Utama Rekap & Hasil Observasi Awal Calon Siswa (Admin)
+     */
+    public static function observasiAwalIndex(): void
+    {
+        $activeGroup = SpmbModel::getActiveGroup();
+        $groupId = $activeGroup['id'] ?? null;
+        $page = max(1, (int)($_GET['page'] ?? 1));
+        $limit = 25;
+        $offset = ($page - 1) * $limit;
+
+        $filters = [
+            'group_id'         => $groupId,
+            'jenjang'          => trim($_GET['jenjang'] ?? ''),
+            'status_observasi' => trim($_GET['status_observasi'] ?? ''),
+            'search'           => trim($_GET['search'] ?? '')
+        ];
+
+        $totalItems = SpmbModel::countDaftarHasilObservasiAwal($filters);
+        $totalPages = max(1, ceil($totalItems / $limit));
+        $items = SpmbModel::getDaftarHasilObservasiAwal($filters, $limit, $offset);
+        $stats = SpmbModel::getObservasiStats($groupId);
+
+        self::view(
+            'observasi_awal/index',
+            [
+                'activeGroup'   => $activeGroup,
+                'items'         => $items,
+                'stats'         => $stats,
+                'filters'       => $filters,
+                'page'          => $page,
+                'totalPages'    => $totalPages,
+                'totalItems'    => $totalItems,
+                'limit'         => $limit,
+            ],
+            'Hasil Observasi Awal Siswa',
+            [['label' => 'Kelola SPMB', 'url' => url('kelola-spmb')], ['label' => 'Observasi Awal']]
+        );
+    }
+
+    /**
+     * Halaman Pengaturan Instrumen Pertanyaan & Group Observasi Awal (Admin)
+     */
+    public static function observasiAwalPengaturan(): void
+    {
+        $activeGroup = SpmbModel::getActiveGroup();
+        $jenjang = strtoupper(trim($_GET['jenjang'] ?? 'SD'));
+        $validJenjang = ['PAUD', 'SD', 'SMP', 'SMA'];
+        if (!in_array($jenjang, $validJenjang)) {
+            $jenjang = 'SD';
+        }
+
+        $groups = SpmbModel::getObservasiGroups($jenjang, false);
+        $allQuestions = SpmbModel::getObservasiPertanyaanList($jenjang, null, false);
+
+        // Petakan pertanyaan per group
+        $questionsByGroup = [];
+        foreach ($allQuestions as $q) {
+            $gId = (int)$q['group_id'];
+            $questionsByGroup[$gId][] = $q;
+        }
+
+        self::view(
+            'observasi_awal/pengaturan',
+            [
+                'activeGroup'      => $activeGroup,
+                'currentJenjang'   => $jenjang,
+                'validJenjang'     => $validJenjang,
+                'groups'           => $groups,
+                'questionsByGroup' => $questionsByGroup,
+            ],
+            'Pengaturan Pertanyaan Observasi Awal - ' . $jenjang,
+            [
+                ['label' => 'Kelola SPMB', 'url' => url('kelola-spmb')],
+                ['label' => 'Observasi Awal', 'url' => url('kelola-spmb/observasi-awal')],
+                ['label' => 'Pengaturan Pertanyaan']
+            ]
+        );
+    }
+
+    /**
+     * Simpan / Perbarui Group Pertanyaan
+     */
+    public static function observasiAwalGroupStore(): void
+    {
+        $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+        $jenjang = strtoupper(trim($_POST['jenjang'] ?? 'SD'));
+
+        if (!CSRF::validate(false)) {
+            if ($isAjax) Response::json(['success' => false, 'message' => 'Token CSRF tidak valid.'], 403);
+            $_SESSION['flash_error'] = 'Token CSRF tidak valid.';
+            Response::redirect(url('kelola-spmb/observasi-awal/pengaturan?jenjang=' . $jenjang));
+            return;
+        }
+
+        $id = !empty($_POST['id']) ? (int)$_POST['id'] : null;
+        $namaGroup = trim($_POST['nama_group'] ?? '');
+        $deskripsi = trim($_POST['deskripsi'] ?? '');
+        $urutan = (int)($_POST['urutan'] ?? 1);
+        $isActive = isset($_POST['is_active']) ? 1 : 0;
+
+        if (empty($namaGroup)) {
+            if ($isAjax) Response::json(['success' => false, 'message' => 'Nama group pertanyaan wajib diisi.'], 400);
+            $_SESSION['flash_error'] = 'Nama group pertanyaan wajib diisi.';
+            Response::redirect(url('kelola-spmb/observasi-awal/pengaturan?jenjang=' . $jenjang));
+            return;
+        }
+
+        $savedId = SpmbModel::saveObservasiGroup([
+            'jenjang'    => $jenjang,
+            'nama_group' => $namaGroup,
+            'deskripsi'  => $deskripsi,
+            'urutan'     => $urutan,
+            'is_active'  => $isActive
+        ], $id);
+
+        $msg = $id ? 'Group pertanyaan berhasil diperbarui.' : 'Group pertanyaan baru berhasil ditambahkan.';
+        if ($isAjax) {
+            Response::json(['success' => true, 'message' => $msg, 'id' => $savedId]);
+        }
+        $_SESSION['flash_success'] = $msg;
+        Response::redirect(url('kelola-spmb/observasi-awal/pengaturan?jenjang=' . $jenjang));
+    }
+
+    /**
+     * Hapus Group Pertanyaan
+     */
+    public static function observasiAwalGroupDelete(int $id): void
+    {
+        $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+        $jenjang = strtoupper(trim($_POST['jenjang'] ?? 'SD'));
+
+        if (!CSRF::validate(false)) {
+            if ($isAjax) Response::json(['success' => false, 'message' => 'Token CSRF tidak valid.'], 403);
+            $_SESSION['flash_error'] = 'Token CSRF tidak valid.';
+            Response::redirect(url('kelola-spmb/observasi-awal/pengaturan?jenjang=' . $jenjang));
+            return;
+        }
+
+        SpmbModel::deleteObservasiGroup($id);
+
+        if ($isAjax) {
+            Response::json(['success' => true, 'message' => 'Group pertanyaan dan butir pertanyaan di dalamnya berhasil dihapus.']);
+        }
+        $_SESSION['flash_success'] = 'Group pertanyaan berhasil dihapus.';
+        Response::redirect(url('kelola-spmb/observasi-awal/pengaturan?jenjang=' . $jenjang));
+    }
+
+    /**
+     * Simpan / Perbarui Butir Pertanyaan
+     */
+    public static function observasiAwalPertanyaanStore(): void
+    {
+        $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+        $jenjang = strtoupper(trim($_POST['jenjang'] ?? 'SD'));
+
+        if (!CSRF::validate(false)) {
+            if ($isAjax) Response::json(['success' => false, 'message' => 'Token CSRF tidak valid.'], 403);
+            $_SESSION['flash_error'] = 'Token CSRF tidak valid.';
+            Response::redirect(url('kelola-spmb/observasi-awal/pengaturan?jenjang=' . $jenjang));
+            return;
+        }
+
+        $id = !empty($_POST['id']) ? (int)$_POST['id'] : null;
+        $groupId = (int)($_POST['group_id'] ?? 0);
+        $pertanyaan = trim($_POST['pertanyaan'] ?? '');
+        $indikator = trim($_POST['indikator'] ?? '');
+        $urutan = (int)($_POST['urutan'] ?? 1);
+        $isActive = isset($_POST['is_active']) ? 1 : 0;
+
+        if ($groupId <= 0 || empty($pertanyaan)) {
+            if ($isAjax) Response::json(['success' => false, 'message' => 'Pilih group dan isi teks pertanyaan dengan benar.'], 400);
+            $_SESSION['flash_error'] = 'Pilih group dan isi teks pertanyaan dengan benar.';
+            Response::redirect(url('kelola-spmb/observasi-awal/pengaturan?jenjang=' . $jenjang));
+            return;
+        }
+
+        // Susun opsi jawaban kustom dari array form
+        $opsi = [];
+        $opsiLabels = $_POST['opsi_label'] ?? [];
+        $opsiSkors  = $_POST['opsi_skor'] ?? [];
+
+        if (is_array($opsiLabels)) {
+            foreach ($opsiLabels as $idx => $label) {
+                $trimmed = trim($label);
+                if ($trimmed !== '') {
+                    $skor = isset($opsiSkors[$idx]) ? (int)$opsiSkors[$idx] : 0;
+                    $opsi[] = [
+                        'label' => $trimmed,
+                        'skor'  => $skor
+                    ];
+                }
+            }
+        }
+
+        // Jika opsi kosong, berikan opsi standar 4 skala
+        if (empty($opsi)) {
+            $opsi = [
+                ['label' => 'Sangat Sesuai', 'skor' => 4],
+                ['label' => 'Sesuai', 'skor' => 3],
+                ['label' => 'Cukup Sesuai', 'skor' => 2],
+                ['label' => 'Kurang / Tidak Sesuai', 'skor' => 1],
+            ];
+        }
+
+        $savedId = SpmbModel::saveObservasiPertanyaan([
+            'group_id'     => $groupId,
+            'jenjang'      => $jenjang,
+            'pertanyaan'   => $pertanyaan,
+            'indikator'    => $indikator,
+            'tipe_jawaban' => 'skala',
+            'opsi_jawaban' => $opsi,
+            'urutan'       => $urutan,
+            'is_active'    => $isActive
+        ], $id);
+
+        $msg = $id ? 'Butir pertanyaan berhasil diperbarui.' : 'Butir pertanyaan baru berhasil ditambahkan.';
+        if ($isAjax) {
+            Response::json(['success' => true, 'message' => $msg, 'id' => $savedId]);
+        }
+        $_SESSION['flash_success'] = $msg;
+        Response::redirect(url('kelola-spmb/observasi-awal/pengaturan?jenjang=' . $jenjang));
+    }
+
+    /**
+     * Hapus Butir Pertanyaan
+     */
+    public static function observasiAwalPertanyaanDelete(int $id): void
+    {
+        $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+        $jenjang = strtoupper(trim($_POST['jenjang'] ?? 'SD'));
+
+        if (!CSRF::validate(false)) {
+            if ($isAjax) Response::json(['success' => false, 'message' => 'Token CSRF tidak valid.'], 403);
+            $_SESSION['flash_error'] = 'Token CSRF tidak valid.';
+            Response::redirect(url('kelola-spmb/observasi-awal/pengaturan?jenjang=' . $jenjang));
+            return;
+        }
+
+        SpmbModel::deleteObservasiPertanyaan($id);
+
+        if ($isAjax) {
+            Response::json(['success' => true, 'message' => 'Butir pertanyaan berhasil dihapus.']);
+        }
+        $_SESSION['flash_success'] = 'Butir pertanyaan berhasil dihapus.';
+        Response::redirect(url('kelola-spmb/observasi-awal/pengaturan?jenjang=' . $jenjang));
+    }
+
+    /**
+     * Ambil Detail Jawaban Observasi Calon Siswa (AJAX)
+     */
+    public static function observasiAwalDetail(int $id): void
+    {
+        $detail = SpmbModel::getObservasiDetail($id);
+        if (!$detail) {
+            Response::json(['success' => false, 'message' => 'Data observasi tidak ditemukan.'], 404);
+            return;
+        }
+
+        Response::json([
+            'success' => true,
+            'data'    => $detail
+        ]);
+    }
+
+    /**
+     * Kirim Tautan Observasi Awal ke WhatsApp Orang Tua (Satuan)
+     */
+    public static function observasiAwalSendWaSingle(int $id = 0): void
+    {
+        if (!CSRF::validate(false)) {
+            Response::json(['success' => false, 'message' => 'Token CSRF tidak valid.'], 403);
+            return;
+        }
+
+        $pendaftarId = $id > 0 ? $id : (int)($_POST['pendaftar_id'] ?? 0);
+        if ($pendaftarId <= 0) {
+            Response::json(['success' => false, 'message' => 'ID calon siswa tidak valid.'], 400);
+            return;
+        }
+
+        $customTemplate = !empty($_POST['pesan_custom']) ? trim($_POST['pesan_custom']) : null;
+        $res = SpmbModel::sendWaLinkObservasi($pendaftarId, $customTemplate);
+
+        $httpCode = !empty($res['success']) ? 200 : 400;
+        Response::json($res, $httpCode);
+    }
+
+    /**
+     * Dapatkan Data Siswa Penerima Broadcast Link Observasi (AJAX)
+     */
+    public static function observasiAwalBroadcastData(): void
+    {
+        $activeGroup = SpmbModel::getActiveGroup();
+        $filters = [
+            'group_id'         => $activeGroup['id'] ?? null,
+            'jenjang'          => trim($_GET['jenjang'] ?? ''),
+            'status_observasi' => trim($_GET['status_observasi'] ?? 'belum'),
+        ];
+
+        $items = SpmbModel::getDaftarHasilObservasiAwal($filters, 1000, 0);
+
+        Response::json([
+            'success'         => true,
+            'total'           => count($items),
+            'items'           => $items,
+            'defaultTemplate' => SpmbModel::getDefaultWaObservasiTemplate()
+        ]);
+    }
+
+    /**
+     * Export Rekap Hasil Observasi Awal ke CSV / Excel
+     */
+    public static function observasiAwalExport(): void
+    {
+        $activeGroup = SpmbModel::getActiveGroup();
+        $groupId = $activeGroup['id'] ?? null;
+
+        $filters = [
+            'group_id'         => $groupId,
+            'jenjang'          => trim($_GET['jenjang'] ?? ''),
+            'status_observasi' => trim($_GET['status_observasi'] ?? ''),
+            'search'           => trim($_GET['search'] ?? '')
+        ];
+
+        $items = SpmbModel::getDaftarHasilObservasiAwal($filters, 10000, 0);
+        $filename = 'Rekap_Observasi_Awal_' . date('Ymd_His') . '.csv';
+
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
+
+        header('Content-Type: text/csv; charset=UTF-8');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+
+        $out = fopen('php://output', 'w');
+        fprintf($out, chr(0xEF).chr(0xBB).chr(0xBF));
+
+        fputcsv($out, [
+            'No',
+            'No. Pendaftaran',
+            'Nama Lengkap',
+            'Unit / Jenjang',
+            'Jenis Pendaftaran',
+            'Status Observasi',
+            'Total Skor',
+            'Skor Maksimal',
+            'Persentase',
+            'Nama Pengisi',
+            'Hubungan Pengisi',
+            'No. WA Pengisi',
+            'Tanggal Observasi',
+            'Tautan Kuesioner Observasi'
+        ]);
+
+        $no = 1;
+        foreach ($items as $it) {
+            $isSudah = ($it['status_observasi'] === 'Sudah Mengisi');
+            fputcsv($out, [
+                $no++,
+                $it['nomor_pendaftaran'],
+                $it['nama_lengkap'],
+                $it['jenjang'],
+                $it['jenis_pendaftaran'],
+                $isSudah ? 'Sudah Mengisi' : 'Belum Mengisi',
+                $isSudah ? $it['total_skor'] : '-',
+                $isSudah ? $it['skor_maksimal'] : '-',
+                $isSudah ? ($it['persentase'] . '%') : '-',
+                $isSudah ? ($it['nama_pengisi'] ?: '-') : '-',
+                $isSudah ? ($it['hubungan_pengisi'] ?: '-') : '-',
+                $it['target_phone'] ?: '-',
+                $it['submitted_at'] ? date('d/m/Y H:i', strtotime($it['submitted_at'])) : '-',
+                $it['public_url']
+            ]);
+        }
+
+        fclose($out);
+        exit;
+    }
+
+    /**
+     * Cetak Lembar Observasi Awal Calon Siswa (A4 Print / PDF Preview)
+     */
+    public static function observasiAwalCetak(int $id): void
+    {
+        $detail = SpmbModel::getObservasiDetail($id);
+        if (!$detail) {
+            http_response_code(404);
+            die("Data observasi awal tidak ditemukan.");
+        }
+
+        $pendaftar = $detail['pendaftar'];
+        $respon = $detail['respon'];
+        $groupBreakdown = $detail['group_breakdown'];
+        $answers = $detail['answers'];
+
+        include MODULES_PATH . '/kelola-spmb/views/observasi_awal/cetak.php';
+        exit;
+    }
+
+    /**
+     * Formulir Publik Observasi Awal yang diisi oleh Orang Tua / Wali
+     */
+    public static function observasiAwalPublicForm(string $token): void
+    {
+        $token = trim($token);
+        $pendaftar = SpmbModel::getPendaftarByObservasiToken($token);
+
+        if (!$pendaftar) {
+            http_response_code(404);
+            include MODULES_PATH . '/kelola-spmb/views/biodata_invalid.php';
+            exit;
+        }
+
+        $jenjang = $pendaftar['jenjang'] ?? 'SD';
+        $structure = SpmbModel::getObservasiFormStructure($jenjang);
+        $detail = SpmbModel::getObservasiDetail($pendaftar['id']);
+
+        $sudahMengisi = ($pendaftar['status_observasi'] === 'Sudah Mengisi' && !empty($detail['respon']));
+
+        include MODULES_PATH . '/kelola-spmb/views/observasi_awal/public_form.php';
+        exit;
+    }
+
+    /**
+     * Submit Formulir Publik Observasi Awal oleh Orang Tua / Wali
+     */
+    public static function observasiAwalPublicSubmit(string $token): void
+    {
+        $token = trim($token);
+        $pendaftar = SpmbModel::getPendaftarByObservasiToken($token);
+
+        if (!$pendaftar) {
+            http_response_code(404);
+            Response::json(['success' => false, 'message' => 'Data pendaftar tidak valid atau token kedaluwarsa.'], 404);
+            return;
+        }
+
+        $ip = $_SERVER['REMOTE_ADDR'] ?? null;
+        $ua = $_SERVER['HTTP_USER_AGENT'] ?? null;
+
+        $res = SpmbModel::submitObservasiRespon($pendaftar['id'], $_POST, $ip, $ua);
+
+        $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+        if ($isAjax) {
+            Response::json($res, $res['success'] ? 200 : 400);
+            return;
+        }
+
+        if ($res['success']) {
+            $_SESSION['flash_success'] = $res['message'];
+            Response::redirect(url('spmb/observasi/' . $token . '?sukses=1'));
+        } else {
+            $_SESSION['flash_error'] = $res['message'];
+            Response::redirect(url('spmb/observasi/' . $token));
+        }
+    }
 }
+
+

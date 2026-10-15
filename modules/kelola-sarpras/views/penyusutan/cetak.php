@@ -41,6 +41,8 @@ $tglCetak = date('d') . ' ' . ($bulanIndo[(int)date('m')] ?? date('F')) . ' ' . 
 <!DOCTYPE html>
 <html lang="id">
 <head>
+    <!-- Favicon -->
+    <?= function_exists('renderFaviconTags') ? renderFaviconTags() : '' ?>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Laporan Penyusutan Aset - <?= e($namaBulan) ?> <?= e($tahun) ?> - <?= defined('SYS_APP_NAME') ? SYS_APP_NAME : 'Portal BIP' ?></title>

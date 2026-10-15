@@ -9,6 +9,9 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title><?= e($pageTitle ?? 'Sarpras Mobile') ?></title>
     
+    <!-- Favicon -->
+    <?= function_exists('renderFaviconTags') ? renderFaviconTags() : '' ?>
+    
     <link rel="manifest" href="<?= url('mobile-sarpras/manifest.json') ?>">
     <link rel="apple-touch-icon" href="<?= url('pwa-icon.png') ?>?s=192">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">

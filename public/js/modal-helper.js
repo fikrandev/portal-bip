@@ -108,6 +108,9 @@
                 content.classList.add('scale-95');
             }
             document.body.style.overflow = '';
+            if (window.LoadingModal && typeof window.LoadingModal.hide === 'function') {
+                window.LoadingModal.hide();
+            }
         },
 
         /**
@@ -234,6 +237,9 @@
                             }
                             resolve(true);
                         } else {
+                            if (window.LoadingModal && typeof window.LoadingModal.hide === 'function') {
+                                window.LoadingModal.hide();
+                            }
                             resolve(false);
                         }
                     });
@@ -249,6 +255,9 @@
                     formElement.submit();
                 }
                 return true;
+            }
+            if (window.LoadingModal && typeof window.LoadingModal.hide === 'function') {
+                window.LoadingModal.hide();
             }
             return false;
         },

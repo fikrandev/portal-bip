@@ -222,12 +222,22 @@ $activeTab = $_GET['tab'] ?? 'golongan';
 
                 <!-- Tabel Data -->
                 <div class="lg:col-span-3">
-                    <!-- Search -->
-                    <div class="relative mb-3">
-                        <svg class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"/></svg>
-                        <input type="text" id="search-kelompok" placeholder="Cari kode atau nama kelompok..."
-                               class="w-full pl-9 pr-3 py-2 text-xs border border-slate-200 rounded-xl bg-white text-slate-700 focus:border-primary-400 outline-none"
-                               oninput="filterKelompok(this.value)">
+                    <!-- Search & Filter Golongan -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
+                        <div>
+                            <select id="filter-golongan-tabel" class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white text-slate-700 focus:border-primary-400 outline-none font-medium" onchange="filterKelompokCombined()">
+                                <option value="">Semua Golongan</option>
+                                <?php foreach ($golonganList as $g): ?>
+                                    <option value="<?= $g['id'] ?>"><?= htmlspecialchars($g['kode'] . ' - ' . $g['nama_golongan']) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="sm:col-span-2 relative">
+                            <svg class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"/></svg>
+                            <input type="text" id="search-kelompok" placeholder="Cari kode atau nama kelompok..."
+                                   class="w-full pl-9 pr-3 py-2 text-xs border border-slate-200 rounded-xl bg-white text-slate-700 focus:border-primary-400 outline-none"
+                                   oninput="filterKelompokCombined()">
+                        </div>
                     </div>
                     <div class="overflow-x-auto rounded-2xl border border-slate-200">
                         <table class="w-full text-left text-xs text-slate-700" id="table-kelompok">
@@ -245,6 +255,7 @@ $activeTab = $_GET['tab'] ?? 'golongan';
                                     <tr><td colspan="5" class="py-10 text-center text-slate-400">Belum ada data kode kelompok.</td></tr>
                                 <?php else: $no = 1; foreach ($kelompokList as $k): ?>
                                     <tr class="hover:bg-slate-50/70 transition-colors kelompok-row"
+                                        data-golongan="<?= $k['golongan_id'] ?>"
                                         data-search="<?= strtolower(htmlspecialchars($k['kode'] . ' ' . $k['nama_kelompok'] . ' ' . $k['nama_golongan'])) ?>">
                                         <td class="py-3 px-4 text-center text-slate-400"><?= $no++ ?></td>
                                         <td class="py-3 px-4">
@@ -277,7 +288,7 @@ $activeTab = $_GET['tab'] ?? 'golongan';
                             </tbody>
                         </table>
                     </div>
-                    <p class="text-[11px] text-slate-400 mt-2 px-1">Total: <?= count($kelompokList) ?> kode kelompok terdaftar</p>
+                    <p class="text-[11px] text-slate-400 mt-2 px-1" id="kelompok-count-text">Total: <?= count($kelompokList) ?> kode kelompok terdaftar</p>
                 </div>
             </div>
             <?php endif; /* end tab kelompok */ ?>
@@ -454,12 +465,35 @@ function resetFormKelompok() {
     document.getElementById('kelompok-nama').value       = '';
     document.getElementById('kelompok-keterangan').value = '';
 }
-function filterKelompok(q) {
-    q = q.toLowerCase();
+function filterKelompokCombined() {
+    const q = (document.getElementById('search-kelompok')?.value || '').toLowerCase().trim();
+    const g = document.getElementById('filter-golongan-tabel')?.value || '';
+    let visibleCount = 0;
+    
     document.querySelectorAll('.kelompok-row').forEach(function(row) {
         const text = row.getAttribute('data-search') || '';
-        row.style.display = text.includes(q) ? '' : 'none';
+        const rowGol = row.getAttribute('data-golongan') || '';
+        const matchText = !q || text.includes(q);
+        const matchGol = !g || rowGol === g;
+        if (matchText && matchGol) {
+            row.style.display = '';
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+        }
     });
+
+    const countEl = document.getElementById('kelompok-count-text');
+    if (countEl) {
+        if (q || g) {
+            countEl.textContent = `Menampilkan ${visibleCount} kode kelompok tersaring`;
+        } else {
+            countEl.textContent = `Total: ${visibleCount} kode kelompok terdaftar`;
+        }
+    }
+}
+function filterKelompok(q) {
+    filterKelompokCombined();
 }
 
 /* ── ASAL ANGGARAN ──────────────────────────── */

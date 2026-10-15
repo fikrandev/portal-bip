@@ -313,7 +313,7 @@
                         <select name="kelompok_id" id="selKelompok" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-primary-500">
                             <option value="" data-kode="00">-- Pilih --</option>
                             <?php foreach ($kelompokList as $k): ?>
-                                <option value="<?= $k['id'] ?>" data-kode="<?= e($k['kode']) ?>"><?= e($k['kode']) ?> - <?= e($k['nama_kelompok']) ?></option>
+                                <option value="<?= $k['id'] ?>" data-golongan="<?= $k['golongan_id'] ?>" data-kode="<?= e($k['kode']) ?>"><?= e($k['kode']) ?> - <?= e($k['nama_kelompok']) ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>
@@ -434,6 +434,11 @@
         const modalContent = document.getElementById('modalTambahContent');
         modal.classList.remove('hidden');
         
+        // Sync dependent kelompok on open
+        if (typeof filterKelompokTambah === 'function') {
+            filterKelompokTambah(document.getElementById('selKelompok')?.value || '');
+        }
+        
         // Trigger reflow
         void modal.offsetWidth;
         
@@ -476,6 +481,98 @@
         hiddenHarga.value = value.replace(/\./g, '').replace(',', '.');
     });
 
+    // Helper Dependent Golongan & Kelompok
+    function initDependentGolonganKelompok(selGolId, selKelId, onUpdatePreview = null) {
+        const selGol = document.getElementById(selGolId);
+        const selKel = document.getElementById(selKelId);
+        if (!selGol || !selKel) return () => {};
+
+        if (!selKel._masterKelompokOptions) {
+            selKel._masterKelompokOptions = Array.from(selKel.options)
+                .filter(opt => opt.value !== '')
+                .map(opt => ({
+                    value: opt.value,
+                    text: opt.textContent,
+                    golonganId: opt.getAttribute('data-golongan') || '',
+                    kode: opt.getAttribute('data-kode') || ''
+                }));
+        }
+
+        function applyFilter(selectedKelompokId = null) {
+            const golId = selGol.value;
+            const targetId = (selectedKelompokId !== null && selectedKelompokId !== undefined) 
+                ? String(selectedKelompokId) 
+                : selKel.value;
+
+            selKel.innerHTML = '';
+
+            if (!golId) {
+                const opt = document.createElement('option');
+                opt.value = '';
+                opt.dataset.kode = '...';
+                opt.textContent = '-- Pilih Golongan Terlebih Dahulu --';
+                selKel.appendChild(opt);
+                selKel.disabled = true;
+                selKel.value = '';
+                if (onUpdatePreview) onUpdatePreview();
+                return;
+            }
+
+            const filtered = selKel._masterKelompokOptions.filter(item => String(item.golonganId) === String(golId));
+
+            if (filtered.length === 0) {
+                const opt = document.createElement('option');
+                opt.value = '';
+                opt.dataset.kode = '...';
+                opt.textContent = '-- Belum Ada Kelompok di Golongan Ini --';
+                selKel.appendChild(opt);
+                selKel.disabled = true;
+                selKel.value = '';
+            } else {
+                selKel.disabled = false;
+                const placeholder = document.createElement('option');
+                placeholder.value = '';
+                placeholder.dataset.kode = '...';
+                placeholder.textContent = '-- Pilih Kelompok --';
+                selKel.appendChild(placeholder);
+
+                let hasSelected = false;
+                filtered.forEach(item => {
+                    const opt = document.createElement('option');
+                    opt.value = item.value;
+                    opt.dataset.kode = item.kode;
+                    opt.dataset.golongan = item.golonganId;
+                    opt.textContent = item.text;
+                    if (targetId && String(item.value) === targetId) {
+                        opt.selected = true;
+                        hasSelected = true;
+                    }
+                    selKel.appendChild(opt);
+                });
+
+                if (hasSelected && targetId) {
+                    selKel.value = targetId;
+                } else {
+                    selKel.value = '';
+                }
+            }
+
+            if (onUpdatePreview) onUpdatePreview();
+        }
+
+        selGol.addEventListener('change', function() {
+            applyFilter('');
+        });
+
+        selKel.addEventListener('change', function() {
+            if (onUpdatePreview) onUpdatePreview();
+        });
+
+        applyFilter(selKel.value || null);
+
+        return applyFilter;
+    }
+
     // Preview Kode Barang
     const selGol = document.getElementById('selGolongan');
     const selKel = document.getElementById('selKelompok');
@@ -489,8 +586,8 @@
         previewKode.textContent = `${kGol}.${kKel}.${kAng}.001`;
     }
 
-    selGol.addEventListener('change', updatePreviewKode);
-    selKel.addEventListener('change', updatePreviewKode);
+    const filterKelompokTambah = initDependentGolonganKelompok('selGolongan', 'selKelompok', updatePreviewKode);
+
     selAng.addEventListener('change', updatePreviewKode);
 </script>
 
@@ -574,7 +671,7 @@ function closeDetail() {
                             <select name="kelompok_id" id="selKelompokEdit" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-primary-500">
                                 <option value="" data-kode="00">-- Pilih --</option>
                                 <?php foreach ($kelompokList as $k): ?>
-                                    <option value="<?= $k['id'] ?>" data-kode="<?= e($k['kode']) ?>"><?= e($k['kode']) ?> - <?= e($k['nama_kelompok']) ?></option>
+                                    <option value="<?= $k['id'] ?>" data-golongan="<?= $k['golongan_id'] ?>" data-kode="<?= e($k['kode']) ?>"><?= e($k['kode']) ?> - <?= e($k['nama_kelompok']) ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -691,7 +788,11 @@ function closeDetail() {
         
         const clean = window.ModalHelper ? ModalHelper.cleanText : (str => str || '');
         document.getElementById('selGolonganEdit').value = item.golongan_id || '';
-        document.getElementById('selKelompokEdit').value = item.kelompok_id || '';
+        if (typeof filterKelompokEdit === 'function') {
+            filterKelompokEdit(item.kelompok_id || '');
+        } else {
+            document.getElementById('selKelompokEdit').value = item.kelompok_id || '';
+        }
         document.getElementById('selAnggaranEdit').value = item.asal_anggaran_id || '';
         document.getElementById('selUnitEdit').value = item.unit || 'SD';
         document.getElementById('selKategoriEdit').value = item.kategori_id || '';
@@ -795,8 +896,8 @@ function closeDetail() {
         previewKodeEdit.textContent = `${kGol}.${kKel}.${kAng}.${urutan}`;
     }
 
-    selGolEdit.addEventListener('change', updatePreviewKodeEdit);
-    selKelEdit.addEventListener('change', updatePreviewKodeEdit);
+    const filterKelompokEdit = initDependentGolonganKelompok('selGolonganEdit', 'selKelompokEdit', updatePreviewKodeEdit);
+
     selAngEdit.addEventListener('change', updatePreviewKodeEdit);
 </script>
 

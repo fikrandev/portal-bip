@@ -25,6 +25,8 @@ $selectedRuanganData = $selectedRuanganData ?? null;
 <!DOCTYPE html>
 <html lang="id">
 <head>
+    <!-- Favicon -->
+    <?= function_exists('renderFaviconTags') ? renderFaviconTags() : '' ?>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Laporan Inventaris Aset Sarpras - <?= defined('SYS_APP_NAME') ? SYS_APP_NAME : 'Portal BIP' ?></title>

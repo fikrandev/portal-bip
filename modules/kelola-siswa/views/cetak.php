@@ -12,6 +12,8 @@ $jenjang = strtoupper($siswa['jenjang'] ?? 'SD');
 <!DOCTYPE html>
 <html lang="id">
 <head>
+    <!-- Favicon -->
+    <?= function_exists('renderFaviconTags') ? renderFaviconTags() : '' ?>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Formulir_Biodata_Dapodik_<?= preg_replace('/[^a-zA-Z0-9]/', '_', $namaSiswa) ?></title>

@@ -11,6 +11,8 @@ $semesterLabel = ($item['semester'] === 'Ganjil') ? 'I (Ganjil)' : 'II (Genap)';
 <!DOCTYPE html>
 <html lang="id">
 <head>
+    <!-- Favicon -->
+    <?= function_exists('renderFaviconTags') ? renderFaviconTags() : '' ?>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RPP - <?= e($item['mata_pelajaran']) ?> - <?= e($item['tingkat_kelas']) ?></title>

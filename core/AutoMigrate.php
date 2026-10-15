@@ -65,6 +65,10 @@ class AutoMigrate
             '2026_10_13_000027_add_spmb_surat_komitmen_features' => 'migration027AddSpmbSuratKomitmenFeatures',
             '2026_10_13_000028_add_pengembalian_berkas_features' => 'migration028AddPengembalianBerkasFeatures',
             '2026_10_14_000029_add_spmb_kelulusan_features' => 'migration029AddSpmbKelulusanFeatures',
+            '2026_10_15_000030_add_spmb_screening_psikolog' => 'migration030AddSpmbScreeningPsikolog',
+            '2026_10_15_000031_fix_sarpras_barang_foto_and_ruangan' => 'migration031FixSarprasBarangFotoAndRuangan',
+            '2026_10_15_000032_add_spmb_screening_psikolog_wa_broadcast' => 'migration032AddSpmbScreeningPsikologWaBroadcast',
+            '2026_10_15_000033_add_spmb_observasi_awal'                   => 'migration033AddSpmbObservasiAwal',
         ];
     }
     /**
@@ -1684,6 +1688,238 @@ class AutoMigrate
     private static function migration029AddSpmbKelulusanFeatures(PDO $pdo): void
     {
         self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'wa_kelulusan_sent_at', 'DATETIME NULL', 'status_kelulusan');
+    }
+
+    /**
+     * Migration 030: Fitur Hasil Screening Psikolog SPMB (Berkas PDF & Status)
+     */
+    private static function migration030AddSpmbScreeningPsikolog(PDO $pdo): void
+    {
+        // 1. Buat tabel spmb_screening_psikolog jika belum ada
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `spmb_screening_psikolog` (
+                `id` INT AUTO_INCREMENT PRIMARY KEY,
+                `pendaftar_id` INT NOT NULL UNIQUE,
+                `file_pdf` VARCHAR(255) NOT NULL,
+                `file_name_original` VARCHAR(255) NULL,
+                `file_size` INT NULL DEFAULT 0,
+                `status_rekomendasi` VARCHAR(50) DEFAULT 'Direkomendasikan',
+                `catatan` TEXT NULL,
+                `nama_psikolog` VARCHAR(150) NULL,
+                `tanggal_screening` DATE NULL,
+                `uploaded_by` INT NULL,
+                `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+                `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                INDEX `idx_pendaftar_id` (`pendaftar_id`),
+                INDEX `idx_status_rekomendasi` (`status_rekomendasi`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
+
+        // 2. Tambah kolom di spmb_pendaftar untuk lookup cepat
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'file_screening_psikolog', 'VARCHAR(255) NULL', 'status_kelulusan');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'status_screening_psikolog', 'VARCHAR(50) NULL', 'file_screening_psikolog');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'catatan_screening_psikolog', 'TEXT NULL', 'status_screening_psikolog');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'tgl_screening_psikolog', 'DATE NULL', 'catatan_screening_psikolog');
+    }
+
+    /**
+     * Migration 031: Fix sarpras_barang nullable ruangan_id & longtext foto
+     */
+    private static function migration031FixSarprasBarangFotoAndRuangan(PDO $pdo): void
+    {
+        if (self::hasTable($pdo, 'sarpras_barang')) {
+            try {
+                $pdo->exec("ALTER TABLE `sarpras_barang` MODIFY COLUMN `ruangan_id` INT NULL DEFAULT NULL");
+            } catch (Throwable $e) {}
+            try {
+                $pdo->exec("ALTER TABLE `sarpras_barang` MODIFY COLUMN `foto` LONGTEXT NULL");
+            } catch (Throwable $e) {}
+        }
+    }
+
+    /**
+     * Migration 032: Tambah kolom riwayat broadcast WA link hasil psikolog
+     */
+    private static function migration032AddSpmbScreeningPsikologWaBroadcast(PDO $pdo): void
+    {
+        if (self::hasTable($pdo, 'spmb_screening_psikolog')) {
+            self::addColumnIfNotExists($pdo, 'spmb_screening_psikolog', 'wa_sent_at', 'DATETIME NULL', 'catatan');
+            self::addColumnIfNotExists($pdo, 'spmb_screening_psikolog', 'wa_sent_count', 'INT NOT NULL DEFAULT 0', 'wa_sent_at');
+            self::addColumnIfNotExists($pdo, 'spmb_screening_psikolog', 'last_wa_phone', 'VARCHAR(30) NULL', 'wa_sent_count');
+            self::addColumnIfNotExists($pdo, 'spmb_screening_psikolog', 'last_wa_status', 'VARCHAR(50) NULL', 'last_wa_phone');
+        }
+        if (self::hasTable($pdo, 'spmb_pendaftar')) {
+            self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'wa_psikolog_sent_at', 'DATETIME NULL', 'tgl_screening_psikolog');
+        }
+    }
+
+    /**
+     * Migration 033: Fitur Observasi Awal SPMB (Grup Pertanyaan, Butir Pertanyaan, Respon & Jawaban Orang Tua)
+     */
+    private static function migration033AddSpmbObservasiAwal(PDO $pdo): void
+    {
+        // 1. Tabel Grup Pertanyaan Observasi Awal per Unit
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `spmb_observasi_group` (
+                `id` INT AUTO_INCREMENT PRIMARY KEY,
+                `jenjang` VARCHAR(20) NOT NULL DEFAULT 'ALL',
+                `nama_group` VARCHAR(150) NOT NULL,
+                `deskripsi` TEXT NULL,
+                `urutan` INT NOT NULL DEFAULT 1,
+                `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+                `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                INDEX `idx_jenjang_urutan` (`jenjang`, `urutan`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
+
+        // 2. Tabel Butir Pertanyaan Observasi Awal (Dapat dikustomisasi pilihan jawaban & bobot skor)
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `spmb_observasi_pertanyaan` (
+                `id` INT AUTO_INCREMENT PRIMARY KEY,
+                `group_id` INT NOT NULL,
+                `jenjang` VARCHAR(20) NOT NULL DEFAULT 'ALL',
+                `pertanyaan` TEXT NOT NULL,
+                `indikator` VARCHAR(255) NULL,
+                `tipe_jawaban` VARCHAR(30) NOT NULL DEFAULT 'skala',
+                `opsi_jawaban` TEXT NULL,
+                `skor_maksimal` INT NOT NULL DEFAULT 4,
+                `urutan` INT NOT NULL DEFAULT 1,
+                `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+                `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                INDEX `idx_group_urutan` (`group_id`, `urutan`),
+                INDEX `idx_jenjang` (`jenjang`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
+
+        // 3. Tabel Sesi Respon Observasi Calon Siswa (Diisi Orang Tua)
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `spmb_observasi_respon` (
+                `id` INT AUTO_INCREMENT PRIMARY KEY,
+                `pendaftar_id` INT NOT NULL,
+                `token` VARCHAR(64) NOT NULL UNIQUE,
+                `status` VARCHAR(20) NOT NULL DEFAULT 'selesai',
+                `nama_pengisi` VARCHAR(150) NULL,
+                `hubungan_pengisi` VARCHAR(50) NULL,
+                `no_wa_pengisi` VARCHAR(30) NULL,
+                `total_skor` INT NOT NULL DEFAULT 0,
+                `skor_maksimal` INT NOT NULL DEFAULT 0,
+                `persentase` DECIMAL(5,2) NOT NULL DEFAULT 0.00,
+                `kategori_hasil` VARCHAR(50) NULL,
+                `catatan_orang_tua` TEXT NULL,
+                `catatan_sekolah` TEXT NULL,
+                `submitted_at` DATETIME NULL,
+                `ip_address` VARCHAR(45) NULL,
+                `user_agent` TEXT NULL,
+                `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                INDEX `idx_pendaftar` (`pendaftar_id`),
+                INDEX `idx_token` (`token`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
+
+        // 4. Tabel Detail Jawaban Observasi per Pertanyaan
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `spmb_observasi_jawaban` (
+                `id` INT AUTO_INCREMENT PRIMARY KEY,
+                `respon_id` INT NOT NULL,
+                `pendaftar_id` INT NOT NULL,
+                `pertanyaan_id` INT NOT NULL,
+                `group_id` INT NOT NULL,
+                `pilihan_jawaban` VARCHAR(255) NOT NULL,
+                `skor` INT NOT NULL DEFAULT 0,
+                `catatan_jawaban` TEXT NULL,
+                `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                INDEX `idx_respon` (`respon_id`),
+                INDEX `idx_pendaftar_pertanyaan` (`pendaftar_id`, `pertanyaan_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
+
+        // 5. Tambah kolom token & status observasi awal pada spmb_pendaftar
+        if (self::hasTable($pdo, 'spmb_pendaftar')) {
+            self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'observasi_token', 'VARCHAR(64) NULL', 'biodata_token');
+            self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'status_observasi', 'VARCHAR(50) NOT NULL DEFAULT "Belum Mengisi"', 'observasi_token');
+            self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'skor_observasi', 'INT NOT NULL DEFAULT 0', 'status_observasi');
+            self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'kategori_observasi', 'VARCHAR(50) NULL', 'skor_observasi');
+            self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'tgl_observasi', 'DATETIME NULL', 'kategori_observasi');
+        }
+
+        // 6. Seed Data Awal Pertanyaan Observasi jika tabel masih kosong
+        $countGroup = (int)$pdo->query("SELECT COUNT(*) FROM `spmb_observasi_group`")->fetchColumn();
+        if ($countGroup === 0) {
+            $defaultOptions = json_encode([
+                ['label' => 'Sangat Sesuai', 'skor' => 4],
+                ['label' => 'Sesuai', 'skor' => 3],
+                ['label' => 'Cukup Sesuai', 'skor' => 2],
+                ['label' => 'Kurang Sesuai', 'skor' => 1]
+            ], JSON_UNESCAPED_UNICODE);
+
+            $defaultOptionsMandiri = json_encode([
+                ['label' => 'Selalu Mandiri', 'skor' => 4],
+                ['label' => 'Sering Mandiri', 'skor' => 3],
+                ['label' => 'Kadang Dibantu', 'skor' => 2],
+                ['label' => 'Belum Mandiri', 'skor' => 1]
+            ], JSON_UNESCAPED_UNICODE);
+
+            // Group PAUD
+            $insertGroup = $pdo->prepare("INSERT INTO `spmb_observasi_group` (`jenjang`, `nama_group`, `deskripsi`, `urutan`) VALUES (?, ?, ?, ?)");
+            $insertQ = $pdo->prepare("INSERT INTO `spmb_observasi_pertanyaan` (`group_id`, `jenjang`, `pertanyaan`, `indikator`, `tipe_jawaban`, `opsi_jawaban`, `skor_maksimal`, `urutan`) VALUES (?, ?, ?, ?, 'skala', ?, 4, ?)");
+
+            // --- PAUD ---
+            foreach (['PAUD'] as $jPaud) {
+                $insertGroup->execute([$jPaud, 'Kemandirian & Toilet Training', 'Observasi kesiapan fisik, makan, dan toilet mandiri', 1]);
+                $gId1 = (int)$pdo->lastInsertId();
+                $insertQ->execute([$gId1, $jPaud, 'Ananda mampu buang air kecil dan besar secara mandiri ke toilet (toilet training)?', 'Toilet Training', $defaultOptionsMandiri, 1]);
+                $insertQ->execute([$gId1, $jPaud, 'Ananda dapat makan dan minum sendiri tanpa perlu selalu disuapi?', 'Makan Mandiri', $defaultOptionsMandiri, 2]);
+                $insertQ->execute([$gId1, $jPaud, 'Ananda mampu memakai dan melepas sepatu/sandal atau baju sendiri?', 'Bina Diri', $defaultOptionsMandiri, 3]);
+
+                $insertGroup->execute([$jPaud, 'Sosialisasi & Regulasi Emosi', 'Kemampuan beradaptasi, berpisah dengan orang tua, dan interaksi', 2]);
+                $gId2 = (int)$pdo->lastInsertId();
+                $insertQ->execute([$gId2, $jPaud, 'Ananda mudah beradaptasi dan tidak menangis berlebihan saat berpisah dengan orang tua?', 'Adaptasi Lingkungan Baru', $defaultOptions, 1]);
+                $insertQ->execute([$gId2, $jPaud, 'Ananda dapat mengungkapkan keinginan atau rasa tidak nyaman dengan kata-kata (bukan tantrum berkepanjangan)?', 'Regulasi Emosi', $defaultOptions, 2]);
+                $insertQ->execute([$gId2, $jPaud, 'Ananda mau berbagi dan bermain bersama dengan teman sebaya?', 'Keterampilan Sosial', $defaultOptions, 3]);
+
+                $insertGroup->execute([$jPaud, 'Karakter & Pembiasaan Islami', 'Adab santun dan ketertarikan ibadah', 3]);
+                $gId3 = (int)$pdo->lastInsertId();
+                $insertQ->execute([$gId3, $jPaud, 'Ananda terbiasa mengucap salam dan kata-kata santun (terima kasih, tolong, maaf)?', 'Adab & Kesantunan', $defaultOptions, 1]);
+                $insertQ->execute([$gId3, $jPaud, 'Ananda antusias mengikuti kegiatan ibadah sederhana (doa sebelum makan/tidur, gerakan shalat)?', 'Antusiasme Ibadah', $defaultOptions, 2]);
+            }
+
+            // --- SD ---
+            $insertGroup->execute(['SD', 'Kemandirian & Tanggung Jawab Belajar', 'Kesiapan merapikan alat belajar, konsentrasi, dan tugas', 1]);
+            $gSd1 = (int)$pdo->lastInsertId();
+            $insertQ->execute([$gSd1, 'SD', 'Ananda terbiasa menyiapkan dan merapikan perlengkapan sekolah serta mainan sendiri?', 'Tanggung Jawab Perlengkapan', $defaultOptions, 1]);
+            $insertQ->execute([$gSd1, 'SD', 'Ananda mampu fokus menyelesaikan kegiatan atau tugas belajar selama 15-20 menit?', 'Rentang Konsentrasi', $defaultOptions, 2]);
+            $insertQ->execute([$gSd1, 'SD', 'Ananda dapat memahami dan melaksanakan instruksi 2-3 langkah yang diberikan orang tua/guru?', 'Daya Tangkap Instruksi', $defaultOptions, 3]);
+
+            $insertGroup->execute(['SD', 'Sosialisasi & Regulasi Diri', 'Kematangan emosi, interaksi pertemanan, dan resolusi konflik sederhana', 2]);
+            $gSd2 = (int)$pdo->lastInsertId();
+            $insertQ->execute([$gSd2, 'SD', 'Ananda dapat mengendalikan emosi dengan wajar saat keinginannya belum terpenuhi atau saat bermain bersama?', 'Kontrol Diri', $defaultOptions, 1]);
+            $insertQ->execute([$gSd2, 'SD', 'Ananda percaya diri berbicara, bertanya, atau mengemukakan pendapat di depan orang lain?', 'Kepercayaan Diri', $defaultOptions, 2]);
+
+            $insertGroup->execute(['SD', 'Pembiasaan Ibadah & Al-Qur\'an', 'Kesiapan mengaji, hafalan, dan shalat berjamaah', 3]);
+            $gSd3 = (int)$pdo->lastInsertId();
+            $insertQ->execute([$gSd3, 'SD', 'Ananda sudah terbiasa belajar mengenal huruf hijaiyah, membaca jilid/iqro, atau hafalan surat pendek?', 'Literasi Al-Qur\'an', $defaultOptions, 1]);
+            $insertQ->execute([$gSd3, 'SD', 'Ananda terbiasa diajak melaksanakan shalat berjamaah di rumah atau di masjid?', 'Kebiasaan Shalat', $defaultOptions, 2]);
+
+            // --- SMP & SMA ---
+            foreach (['SMP', 'SMA'] as $jSmp) {
+                $insertGroup->execute([$jSmp, 'Kedisiplinan & Manajemen Diri', 'Kemandirian belajar, kedisiplinan waktu, dan kontrol gadget', 1]);
+                $gMid1 = (int)$pdo->lastInsertId();
+                $insertQ->execute([$gMid1, $jSmp, 'Ananda memiliki kesadaran dan inisiatif belajar tanpa harus selalu disuruh atau diawasi ketat?', 'Inisiatif Belajar Mandiri', $defaultOptions, 1]);
+                $insertQ->execute([$gMid1, $jSmp, 'Ananda mampu membatasi penggunaan gawai/gadget dan media sosial sesuai kesepakatan keluarga?', 'Manajemen Waktu & Gawai', $defaultOptions, 2]);
+
+                $insertGroup->execute([$jSmp, 'Karakter Spiritual & Akhlak', 'Komitmen ibadah fardhu, adab, dan kejujuran', 2]);
+                $gMid2 = (int)$pdo->lastInsertId();
+                $insertQ->execute([$gMid2, $jSmp, 'Ananda menjaga pelaksanaan shalat fardhu 5 waktu secara tertib dan mandiri?', 'Tertib Shalat Fardhu', $defaultOptions, 1]);
+                $insertQ->execute([$gMid2, $jSmp, 'Ananda bersikap santun, terbuka dalam berkomunikasi, dan menghormati orang tua serta guru?', 'Adab Terhadap Orang Tua & Guru', $defaultOptions, 2]);
+
+                $insertGroup->execute([$jSmp, 'Sosialisasi & Kepemimpinan', 'Kematangan bergaul, kepedulian lingkungan, dan kerja tim', 3]);
+                $gMid3 = (int)$pdo->lastInsertId();
+                $insertQ->execute([$gMid3, $jSmp, 'Ananda mudah bekerja sama dalam kelompok dan memiliki kepedulian sosial terhadap teman?', 'Kerja Sama & Empati', $defaultOptions, 1]);
+            }
+        }
     }
 }
 

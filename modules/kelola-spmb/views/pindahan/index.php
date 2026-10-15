@@ -44,6 +44,9 @@ $filters = $filters ?? [];
                 <span>Tetapkan Siswa Diterima</span>
             </button>
             <a href="<?= url('kelola-spmb/pindahan/export?' . http_build_query($filters)) ?>" 
+               data-download="true"
+               data-no-loading="true"
+               download="Data_Siswa_Pindahan_SPMB.xlsx"
                class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-colors">
                 <svg class="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" /></svg>
                 <span>Export Excel</span>

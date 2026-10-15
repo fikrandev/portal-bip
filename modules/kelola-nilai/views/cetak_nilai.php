@@ -11,6 +11,8 @@ $sekolahNama = 'SD Islam Terpadu Bina Insan Palu';
 <!DOCTYPE html>
 <html lang="id">
 <head>
+    <!-- Favicon -->
+    <?= function_exists('renderFaviconTags') ? renderFaviconTags() : '' ?>
     <meta charset="UTF-8">
     <title>Daftar Nilai — <?= e($doc['mata_pelajaran']) ?> (<?= e($doc['tingkat_kelas']) ?>)</title>
     <style>

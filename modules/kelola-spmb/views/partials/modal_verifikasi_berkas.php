@@ -686,9 +686,17 @@ function bukaModalVerifikasi(id) {
 
 function tutupModalVerifikasi() {
     const modal = document.getElementById('modalVerifikasiBerkas');
-    modal.classList.add('hidden');
-    modal.classList.remove('flex');
-    document.getElementById('formVerifikasiBerkas').reset();
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+    const form = document.getElementById('formVerifikasiBerkas');
+    if (form) form.reset();
+    const loading = document.getElementById('modalVerifikasiLoading');
+    if (loading) loading.classList.add('hidden');
+    if (window.LoadingModal && typeof LoadingModal.hide === 'function') {
+        LoadingModal.hide();
+    }
 }
 
 function submitFormVerifikasiBerkas(e) {

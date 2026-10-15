@@ -54,6 +54,8 @@ $namaPetugasLogin = $currentUser['full_name']
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pengumuman_Kelulusan_SPMB_<?= htmlspecialchars($selectedJenjang) ?>_<?= date('Ymd') ?></title>
+    <!-- Favicon -->
+    <?= function_exists('renderFaviconTags') ? renderFaviconTags() : '' ?>
     <style>
         * {
             box-sizing: border-box;

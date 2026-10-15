@@ -61,6 +61,8 @@ class CSRF
     public static function validate(bool $regenerate = true): bool
     {
         $submittedToken = $_POST[CSRF_TOKEN_NAME] 
+            ?? $_POST['csrf_token']
+            ?? $_POST['_token']
             ?? $_SERVER['HTTP_X_CSRF_TOKEN'] 
             ?? '';
 
@@ -68,8 +70,8 @@ class CSRF
             $rawInput = file_get_contents('php://input');
             if (!empty($rawInput)) {
                 $json = json_decode($rawInput, true);
-                if (is_array($json) && !empty($json[CSRF_TOKEN_NAME])) {
-                    $submittedToken = $json[CSRF_TOKEN_NAME];
+                if (is_array($json)) {
+                    $submittedToken = $json[CSRF_TOKEN_NAME] ?? $json['csrf_token'] ?? $json['_token'] ?? '';
                 }
             }
         }

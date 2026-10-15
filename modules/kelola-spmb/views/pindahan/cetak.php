@@ -265,6 +265,8 @@ if (!function_exists('renderKwitansiCard')) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tanda Bukti Pendaftaran Siswa Pindahan - <?= e($item['nomor_pendaftaran'] ?? '') ?> - <?= e($item['nama_lengkap'] ?? '') ?></title>
+    <!-- Favicon -->
+    <?= function_exists('renderFaviconTags') ? renderFaviconTags() : '' ?>
     <style>
         * {
             box-sizing: border-box;

@@ -10,16 +10,8 @@
     <meta name="description" content="<?= e($pageDescription ?? APP_DESCRIPTION) ?>">
     <meta name="robots" content="noindex, nofollow">
     
-    <?php 
-    $headerFavicon = '';
-    if (defined('SYS_APP_FAVICON') && SYS_APP_FAVICON) {
-        $headerFavicon = url(ltrim(SYS_APP_FAVICON, '/'));
-    } elseif (defined('SYS_APP_LOGO') && SYS_APP_LOGO) {
-        $headerFavicon = url(ltrim(SYS_APP_LOGO, '/'));
-    }
-    if ($headerFavicon): ?>
-    <link rel="icon" href="<?= $headerFavicon ?>">
-    <?php endif; ?>
+    <!-- Favicon -->
+    <?= function_exists('renderFaviconTags') ? renderFaviconTags() : '' ?>
     
     <!-- CSRF Token for AJAX -->
     <?= CSRF::meta() ?>

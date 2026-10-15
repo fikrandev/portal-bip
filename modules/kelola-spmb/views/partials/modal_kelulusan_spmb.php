@@ -300,6 +300,9 @@
             modal.classList.add('hidden');
             modal.classList.remove('flex');
         }
+        if (window.LoadingModal && typeof LoadingModal.hide === 'function') {
+            LoadingModal.hide();
+        }
     }
 
     function getSelectedPendaftarIds() {
@@ -401,6 +404,9 @@
         if (modal) {
             modal.classList.add('hidden');
             modal.classList.remove('flex');
+        }
+        if (window.LoadingModal && typeof LoadingModal.hide === 'function') {
+            LoadingModal.hide();
         }
     }
 

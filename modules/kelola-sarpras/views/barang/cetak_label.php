@@ -8,6 +8,8 @@ $qrText = url('kelola-sarpras/barang?search=' . urlencode($barang['kode_barang']
 <!DOCTYPE html>
 <html lang="id">
 <head>
+    <!-- Favicon -->
+    <?= function_exists('renderFaviconTags') ? renderFaviconTags() : '' ?>
     <meta charset="UTF-8">
     <title>Label Aset - <?= e($barang['kode_barang']) ?></title>
     <style>

@@ -57,7 +57,7 @@
 
                     <div>
                         <label class="block text-xs font-bold text-slate-700 mb-1">Pilih Golongan <span class="text-rose-500">*</span></label>
-                        <select name="golongan_id" required class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:border-primary-500 outline-none">
+                        <select name="golongan_id" id="selGolonganCreate" required class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:border-primary-500 outline-none">
                             <option value="">-- Pilih Golongan --</option>
                             <?php foreach ($golonganList as $g): ?>
                                 <option value="<?= $g['id'] ?>"><?= e($g['kode']) ?> - <?= e($g['nama_golongan']) ?></option>
@@ -67,10 +67,10 @@
 
                     <div>
                         <label class="block text-xs font-bold text-slate-700 mb-1">Pilih Kelompok <span class="text-rose-500">*</span></label>
-                        <select name="kelompok_id" required class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:border-primary-500 outline-none">
+                        <select name="kelompok_id" id="selKelompokCreate" required class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:border-primary-500 outline-none">
                             <option value="">-- Pilih Kelompok --</option>
                             <?php foreach ($kelompokList as $k): ?>
-                                <option value="<?= $k['id'] ?>"><?= e($k['kode']) ?> - <?= e($k['nama_kelompok']) ?></option>
+                                <option value="<?= $k['id'] ?>" data-golongan="<?= $k['golongan_id'] ?>"><?= e($k['kode']) ?> - <?= e($k['nama_kelompok']) ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>
@@ -178,3 +178,78 @@
         </form>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const selGol = document.getElementById('selGolonganCreate');
+    const selKel = document.getElementById('selKelompokCreate');
+    if (!selGol || !selKel) return;
+
+    const masterOptions = Array.from(selKel.options)
+        .filter(opt => opt.value !== '')
+        .map(opt => ({
+            value: opt.value,
+            text: opt.textContent,
+            golonganId: opt.getAttribute('data-golongan') || ''
+        }));
+
+    function applyFilter(selectedKelompokId = null) {
+        const golId = selGol.value;
+        const targetId = (selectedKelompokId !== null && selectedKelompokId !== undefined) ? String(selectedKelompokId) : selKel.value;
+
+        selKel.innerHTML = '';
+
+        if (!golId) {
+            const opt = document.createElement('option');
+            opt.value = '';
+            opt.textContent = '-- Pilih Golongan Terlebih Dahulu --';
+            selKel.appendChild(opt);
+            selKel.disabled = true;
+            selKel.value = '';
+            return;
+        }
+
+        const filtered = masterOptions.filter(item => String(item.golonganId) === String(golId));
+
+        if (filtered.length === 0) {
+            const opt = document.createElement('option');
+            opt.value = '';
+            opt.textContent = '-- Belum Ada Kelompok di Golongan Ini --';
+            selKel.appendChild(opt);
+            selKel.disabled = true;
+            selKel.value = '';
+        } else {
+            selKel.disabled = false;
+            const placeholder = document.createElement('option');
+            placeholder.value = '';
+            placeholder.textContent = '-- Pilih Kelompok --';
+            selKel.appendChild(placeholder);
+
+            let hasSelected = false;
+            filtered.forEach(item => {
+                const opt = document.createElement('option');
+                opt.value = item.value;
+                opt.dataset.golongan = item.golonganId;
+                opt.textContent = item.text;
+                if (targetId && String(item.value) === targetId) {
+                    opt.selected = true;
+                    hasSelected = true;
+                }
+                selKel.appendChild(opt);
+            });
+
+            if (hasSelected && targetId) {
+                selKel.value = targetId;
+            } else {
+                selKel.value = '';
+            }
+        }
+    }
+
+    selGol.addEventListener('change', function() {
+        applyFilter('');
+    });
+
+    applyFilter(selKel.value || null);
+});
+</script>

@@ -6,7 +6,7 @@
 
 class SpmbModel
 {
-    private static function db(): Database
+    public static function db(): Database
     {
         return Database::getInstance();
     }
@@ -1751,5 +1751,1248 @@ class SpmbModel
         ", [$pendaftarId]);
         return true;
     }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // 9. SCREENING PSIKOLOG
+    // ═════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Ambil list pendaftar beserta status file hasil screening psikolog
+     */
+    public static function getScreeningPsikologList(array $filters = [], int $limit = 50, int $offset = 0): array
+    {
+        $conditions = [];
+        $params = [];
+
+        if (!empty($filters['group_id'])) {
+            $conditions[] = "p.group_id = ?";
+            $params[] = (int)$filters['group_id'];
+        }
+
+        if (!empty($filters['jenjang'])) {
+            $conditions[] = "p.jenjang = ?";
+            $params[] = strtoupper(trim($filters['jenjang']));
+        }
+
+        if (!empty($filters['jenis_pendaftaran'])) {
+            $conditions[] = "p.jenis_pendaftaran = ?";
+            $params[] = $filters['jenis_pendaftaran'];
+        }
+
+        // Khusus Fitur Hasil Psikolog: Hanya siswa yang sudah Lulus / Diterima
+        $statusKelulusan = !empty($filters['status_kelulusan']) ? $filters['status_kelulusan'] : 'Lulus / Diterima';
+        $conditions[] = "p.status_kelulusan = ?";
+        $params[] = $statusKelulusan;
+
+        if (!empty($filters['status_screening'])) {
+            if ($filters['status_screening'] === 'sudah') {
+                $conditions[] = "(sc.file_pdf IS NOT NULL AND sc.file_pdf != '')";
+            } elseif ($filters['status_screening'] === 'belum') {
+                $conditions[] = "(sc.file_pdf IS NULL OR sc.file_pdf = '')";
+            }
+        }
+
+        if (!empty($filters['status_rekomendasi'])) {
+            $conditions[] = "sc.status_rekomendasi = ?";
+            $params[] = $filters['status_rekomendasi'];
+        }
+
+        if (!empty($filters['search'])) {
+            $term = '%' . trim($filters['search']) . '%';
+            $conditions[] = "(p.nama_lengkap LIKE ? OR p.nomor_pendaftaran LIKE ? OR p.nisn LIKE ? OR p.asal_sekolah LIKE ? OR sc.nama_psikolog LIKE ?)";
+            $params[] = $term;
+            $params[] = $term;
+            $params[] = $term;
+            $params[] = $term;
+            $params[] = $term;
+        }
+
+        $whereClause = !empty($conditions) ? "WHERE " . implode(" AND ", $conditions) : "";
+
+        $sql = "
+            SELECT p.id as pendaftar_id, p.id, p.nomor_pendaftaran, p.nama_lengkap, p.nama_panggilan,
+                   p.jenjang, p.jenis_pendaftaran, p.gelombang, p.kategori_pendaftar, p.foto,
+                   p.status_kelulusan, p.status_berkas, p.status_pembayaran, p.no_wa, p.no_hp, p.no_hp_ayah, p.no_hp_ibu,
+                   p.asal_sekolah, p.biodata_token, p.wa_psikolog_sent_at,
+                   sc.id as screening_id, sc.file_pdf, sc.file_name_original, sc.file_size,
+                   sc.status_rekomendasi, sc.catatan as catatan_psikolog, sc.nama_psikolog,
+                   sc.tanggal_screening, sc.created_at as screening_created_at, sc.updated_at as screening_updated_at,
+                   sc.wa_sent_at, sc.wa_sent_count, sc.last_wa_phone, sc.last_wa_status
+            FROM `spmb_pendaftar` p
+            LEFT JOIN `spmb_screening_psikolog` sc ON sc.pendaftar_id = p.id
+            $whereClause
+            ORDER BY 
+                p.nomor_pendaftaran ASC, p.id DESC
+            LIMIT ? OFFSET ?
+        ";
+
+        $params[] = $limit;
+        $params[] = $offset;
+
+        $rows = self::db()->findAll($sql, $params);
+        foreach ($rows as &$r) {
+            if (empty($r['biodata_token'])) {
+                $newToken = bin2hex(random_bytes(24));
+                self::db()->query("UPDATE `spmb_pendaftar` SET `biodata_token` = ? WHERE `id` = ?", [$newToken, $r['pendaftar_id']]);
+                $r['biodata_token'] = $newToken;
+            }
+        }
+        unset($r);
+
+        return $rows;
+    }
+
+    /**
+     * Hitung total pendaftar untuk screening psikolog (Hanya yang Lulus / Diterima)
+     */
+    public static function countScreeningPsikolog(array $filters = []): int
+    {
+        $conditions = [];
+        $params = [];
+
+        if (!empty($filters['group_id'])) {
+            $conditions[] = "p.group_id = ?";
+            $params[] = (int)$filters['group_id'];
+        }
+
+        if (!empty($filters['jenjang'])) {
+            $conditions[] = "p.jenjang = ?";
+            $params[] = strtoupper(trim($filters['jenjang']));
+        }
+
+        if (!empty($filters['jenis_pendaftaran'])) {
+            $conditions[] = "p.jenis_pendaftaran = ?";
+            $params[] = $filters['jenis_pendaftaran'];
+        }
+
+        // Khusus Fitur Hasil Psikolog: Hanya siswa yang sudah Lulus / Diterima
+        $statusKelulusan = !empty($filters['status_kelulusan']) ? $filters['status_kelulusan'] : 'Lulus / Diterima';
+        $conditions[] = "p.status_kelulusan = ?";
+        $params[] = $statusKelulusan;
+
+        if (!empty($filters['status_screening'])) {
+            if ($filters['status_screening'] === 'sudah') {
+                $conditions[] = "(sc.file_pdf IS NOT NULL AND sc.file_pdf != '')";
+            } elseif ($filters['status_screening'] === 'belum') {
+                $conditions[] = "(sc.file_pdf IS NULL OR sc.file_pdf = '')";
+            }
+        }
+
+        if (!empty($filters['status_rekomendasi'])) {
+            $conditions[] = "sc.status_rekomendasi = ?";
+            $params[] = $filters['status_rekomendasi'];
+        }
+
+        if (!empty($filters['search'])) {
+            $term = '%' . trim($filters['search']) . '%';
+            $conditions[] = "(p.nama_lengkap LIKE ? OR p.nomor_pendaftaran LIKE ? OR p.nisn LIKE ? OR p.asal_sekolah LIKE ? OR sc.nama_psikolog LIKE ?)";
+            $params[] = $term;
+            $params[] = $term;
+            $params[] = $term;
+            $params[] = $term;
+            $params[] = $term;
+        }
+
+        $whereClause = !empty($conditions) ? "WHERE " . implode(" AND ", $conditions) : "";
+
+        $sql = "
+            SELECT COUNT(p.id) as total
+            FROM `spmb_pendaftar` p
+            LEFT JOIN `spmb_screening_psikolog` sc ON sc.pendaftar_id = p.id
+            $whereClause
+        ";
+
+        $res = self::db()->find($sql, $params);
+        return (int)($res['total'] ?? 0);
+    }
+
+    /**
+     * Hitung statistik ringkasan screening psikolog (Hanya yang Lulus / Diterima)
+     */
+    public static function getScreeningPsikologStats(?int $groupId = null): array
+    {
+        $params = [];
+        $conditions = ["p.status_kelulusan = 'Lulus / Diterima'"];
+        if (!empty($groupId)) {
+            $conditions[] = "p.group_id = ?";
+            $params[] = $groupId;
+        }
+        $where = "WHERE " . implode(" AND ", $conditions);
+
+        $sql = "
+            SELECT 
+                COUNT(p.id) as total_siswa,
+                SUM(CASE WHEN sc.file_pdf IS NOT NULL AND sc.file_pdf != '' THEN 1 ELSE 0 END) as total_sudah_upload,
+                SUM(CASE WHEN sc.file_pdf IS NULL OR sc.file_pdf = '' THEN 1 ELSE 0 END) as total_belum_upload,
+                SUM(CASE WHEN sc.status_rekomendasi = 'Direkomendasikan' THEN 1 ELSE 0 END) as total_direkomendasikan,
+                SUM(CASE WHEN sc.status_rekomendasi = 'Dipertimbangkan' THEN 1 ELSE 0 END) as total_dipertimbangkan,
+                SUM(CASE WHEN sc.status_rekomendasi = 'Tidak Direkomendasikan' THEN 1 ELSE 0 END) as total_tidak_direkomendasikan
+            FROM `spmb_pendaftar` p
+            LEFT JOIN `spmb_screening_psikolog` sc ON sc.pendaftar_id = p.id
+            $where
+        ";
+
+        $res = self::db()->find($sql, $params);
+        $totalSiswa = (int)($res['total_siswa'] ?? 0);
+        $sudah = (int)($res['total_sudah_upload'] ?? 0);
+        $belum = (int)($res['total_belum_upload'] ?? 0);
+        $persen = $totalSiswa > 0 ? round(($sudah / $totalSiswa) * 100, 1) : 0;
+
+        return [
+            'total_siswa'               => $totalSiswa,
+            'total_sudah_upload'        => $sudah,
+            'total_belum_upload'        => $belum,
+            'persen_selesai'            => $persen,
+            'total_direkomendasikan'    => (int)($res['total_direkomendasikan'] ?? 0),
+            'total_dipertimbangkan'     => (int)($res['total_dipertimbangkan'] ?? 0),
+            'total_tidak_direkomendasikan' => (int)($res['total_tidak_direkomendasikan'] ?? 0),
+        ];
+    }
+
+    /**
+     * Ambil data screening psikolog berdasarkan pendaftar ID
+     */
+    public static function getScreeningByPendaftarId(int $pendaftarId): ?array
+    {
+        return self::db()->find("
+            SELECT sc.*, p.nomor_pendaftaran, p.nama_lengkap, p.jenjang, p.jenis_pendaftaran
+            FROM `spmb_screening_psikolog` sc
+            JOIN `spmb_pendaftar` p ON p.id = sc.pendaftar_id
+            WHERE sc.pendaftar_id = ?
+        ", [$pendaftarId]);
+    }
+
+    /**
+     * Simpan / Perbarui data hasil screening psikolog (UPSERT)
+     */
+    public static function saveScreeningPsikolog(int $pendaftarId, array $data): bool
+    {
+        $existing = self::db()->find("SELECT id, file_pdf FROM `spmb_screening_psikolog` WHERE `pendaftar_id` = ?", [$pendaftarId]);
+
+        $filePath = $data['file_pdf'] ?? ($existing['file_pdf'] ?? null);
+        $origName = $data['file_name_original'] ?? null;
+        $fSize    = (int)($data['file_size'] ?? 0);
+        $rekom    = $data['status_rekomendasi'] ?? 'Direkomendasikan';
+        $catatan  = $data['catatan'] ?? null;
+        $namaPsi  = $data['nama_psikolog'] ?? null;
+        $tgl      = !empty($data['tanggal_screening']) ? $data['tanggal_screening'] : date('Y-m-d');
+        $userId   = !empty($data['uploaded_by']) ? (int)$data['uploaded_by'] : null;
+
+        if ($existing) {
+            $sql = "UPDATE `spmb_screening_psikolog` SET
+                        `file_pdf` = ?,
+                        `file_name_original` = COALESCE(?, `file_name_original`),
+                        `file_size` = CASE WHEN ? > 0 THEN ? ELSE `file_size` END,
+                        `status_rekomendasi` = ?,
+                        `catatan` = ?,
+                        `nama_psikolog` = ?,
+                        `tanggal_screening` = ?,
+                        `uploaded_by` = COALESCE(?, `uploaded_by`),
+                        `updated_at` = NOW()
+                    WHERE `id` = ?";
+            self::db()->query($sql, [
+                $filePath,
+                $origName,
+                $fSize,
+                $fSize,
+                $rekom,
+                $catatan,
+                $namaPsi,
+                $tgl,
+                $userId,
+                $existing['id']
+            ]);
+        } else {
+            $sql = "INSERT INTO `spmb_screening_psikolog` (
+                        `pendaftar_id`, `file_pdf`, `file_name_original`, `file_size`,
+                        `status_rekomendasi`, `catatan`, `nama_psikolog`, `tanggal_screening`,
+                        `uploaded_by`, `created_at`, `updated_at`
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())";
+            self::db()->query($sql, [
+                $pendaftarId,
+                $filePath,
+                $origName,
+                $fSize,
+                $rekom,
+                $catatan,
+                $namaPsi,
+                $tgl,
+                $userId
+            ]);
+        }
+
+        // Sinkronkan juga ke tabel spmb_pendaftar
+        self::db()->query("
+            UPDATE `spmb_pendaftar` SET
+                `file_screening_psikolog` = ?,
+                `status_screening_psikolog` = ?,
+                `catatan_screening_psikolog` = ?,
+                `tgl_screening_psikolog` = ?
+            WHERE `id` = ?
+        ", [$filePath, $rekom, $catatan, $tgl, $pendaftarId]);
+
+        return true;
+    }
+
+    /**
+     * Hapus file dan data screening psikolog siswa
+     */
+    public static function deleteScreeningPsikolog(int $pendaftarId): bool
+    {
+        $existing = self::db()->find("SELECT id, file_pdf FROM `spmb_screening_psikolog` WHERE `pendaftar_id` = ?", [$pendaftarId]);
+        if ($existing && !empty($existing['file_pdf'])) {
+            $fullPath = BASE_PATH . '/public/' . ltrim($existing['file_pdf'], '/');
+            if (file_exists($fullPath)) {
+                @unlink($fullPath);
+            }
+        }
+
+        self::db()->query("DELETE FROM `spmb_screening_psikolog` WHERE `pendaftar_id` = ?", [$pendaftarId]);
+
+        // Reset kolom di spmb_pendaftar
+        self::db()->query("
+            UPDATE `spmb_pendaftar` SET
+                `file_screening_psikolog` = NULL,
+                `status_screening_psikolog` = NULL,
+                `catatan_screening_psikolog` = NULL,
+                `tgl_screening_psikolog` = NULL
+            WHERE `id` = ?
+        ", [$pendaftarId]);
+
+        return true;
+    }
+
+    /**
+     * Ambil data pendaftar dan hasil screening psikolog berdasarkan biodata_token
+     */
+    public static function getPendaftarByPsikologToken(string $token): ?array
+    {
+        $token = trim($token);
+        if (empty($token)) return null;
+
+        $sql = "
+            SELECT p.*, 
+                   sc.id as screening_id, sc.file_pdf, sc.file_name_original, sc.file_size,
+                   sc.status_rekomendasi, sc.catatan as catatan_psikolog, sc.nama_psikolog,
+                   sc.tanggal_screening, sc.wa_sent_at, sc.wa_sent_count,
+                   g.nama_group, g.tahun_ajaran as group_tahun_ajaran
+            FROM `spmb_pendaftar` p
+            LEFT JOIN `spmb_screening_psikolog` sc ON sc.pendaftar_id = p.id
+            LEFT JOIN `spmb_group` g ON g.id = p.group_id
+            WHERE p.biodata_token = ?
+            LIMIT 1
+        ";
+        return self::db()->find($sql, [$token]) ?: null;
+    }
+
+    /**
+     * Ambil daftar pendaftar yang siap dikirimi Broadcast WA link hasil psikolog (Filter unit, status kirim, limit)
+     */
+    public static function getDaftarScreeningPsikologBroadcast(array $filters = []): array
+    {
+        $conditions = [
+            "p.status_kelulusan = 'Lulus / Diterima'",
+            "(sc.file_pdf IS NOT NULL AND sc.file_pdf != '')"
+        ];
+        $params = [];
+
+        if (!empty($filters['group_id'])) {
+            $conditions[] = "p.group_id = ?";
+            $params[] = (int)$filters['group_id'];
+        }
+
+        if (!empty($filters['jenjang']) && strtoupper(trim($filters['jenjang'])) !== 'ALL') {
+            $conditions[] = "p.jenjang = ?";
+            $params[] = strtoupper(trim($filters['jenjang']));
+        }
+
+        if (!empty($filters['status_rekomendasi']) && strtoupper(trim($filters['status_rekomendasi'])) !== 'ALL') {
+            $conditions[] = "sc.status_rekomendasi = ?";
+            $params[] = $filters['status_rekomendasi'];
+        }
+
+        $statusWa = $filters['status_wa'] ?? 'belum';
+        if ($statusWa === 'belum') {
+            $conditions[] = "(sc.wa_sent_at IS NULL OR sc.wa_sent_count = 0)";
+        } elseif ($statusWa === 'sudah') {
+            $conditions[] = "(sc.wa_sent_at IS NOT NULL AND sc.wa_sent_count > 0)";
+        }
+
+        $whereClause = "WHERE " . implode(" AND ", $conditions);
+
+        $limitClause = "";
+        if (!empty($filters['limit']) && (int)$filters['limit'] > 0) {
+            $limitClause = "LIMIT " . (int)$filters['limit'];
+        }
+
+        $sql = "
+            SELECT p.id as pendaftar_id, p.id, p.nomor_pendaftaran, p.nama_lengkap, p.jenjang,
+                   p.no_wa, p.no_hp, p.no_hp_ayah, p.no_hp_ibu, p.biodata_token,
+                   sc.file_pdf, sc.file_name_original, sc.status_rekomendasi, sc.wa_sent_at, sc.wa_sent_count, sc.last_wa_phone
+            FROM `spmb_pendaftar` p
+            JOIN `spmb_screening_psikolog` sc ON sc.pendaftar_id = p.id
+            $whereClause
+            ORDER BY p.nomor_pendaftaran ASC
+            $limitClause
+        ";
+
+        $rows = self::db()->findAll($sql, $params);
+        foreach ($rows as &$r) {
+            if (empty($r['biodata_token'])) {
+                $newToken = bin2hex(random_bytes(24));
+                self::db()->query("UPDATE `spmb_pendaftar` SET `biodata_token` = ? WHERE `id` = ?", [$newToken, $r['pendaftar_id']]);
+                $r['biodata_token'] = $newToken;
+            }
+            $targetPhone = !empty($r['no_wa']) ? $r['no_wa'] : (!empty($r['no_hp']) ? $r['no_hp'] : (!empty($r['no_hp_ayah']) ? $r['no_hp_ayah'] : (!empty($r['no_hp_ibu']) ? $r['no_hp_ibu'] : '')));
+            $r['target_phone'] = $targetPhone;
+            $r['public_url'] = self::makeUrl('spmb/psikolog/' . $r['biodata_token']);
+        }
+        unset($r);
+
+        return $rows;
+    }
+
+    /**
+     * Helper URL builder aman untuk context web maupun CLI/Cron
+     */
+    public static function makeUrl(string $path = ''): string
+    {
+        if (function_exists('url')) {
+            return url($path);
+        }
+        $base = defined('BASE_URL') ? BASE_URL : '';
+        return rtrim($base, '/') . '/' . ltrim($path, '/');
+    }
+
+    /**
+     * Kirim Pesan WhatsApp Link Hasil Screening Psikolog ke Orang Tua Siswa
+     */
+    public static function sendWaScreeningPsikolog(int $pendaftarId, ?string $customTemplate = null): array
+    {
+        $pendaftar = self::getPendaftarById($pendaftarId);
+        if (!$pendaftar) {
+            return ['success' => false, 'message' => 'Data calon siswa tidak ditemukan.'];
+        }
+
+        $screening = self::getScreeningByPendaftarId($pendaftarId);
+        if (!$screening || empty($screening['file_pdf'])) {
+            return ['success' => false, 'message' => 'Berkas PDF hasil psikolog belum diunggah untuk siswa ini.'];
+        }
+
+        // Pastikan token tersedia
+        if (empty($pendaftar['biodata_token'])) {
+            $newToken = bin2hex(random_bytes(24));
+            self::db()->query("UPDATE `spmb_pendaftar` SET `biodata_token` = ? WHERE `id` = ?", [$newToken, $pendaftarId]);
+            $pendaftar['biodata_token'] = $newToken;
+        }
+
+        $targetPhone = !empty($pendaftar['no_wa']) ? $pendaftar['no_wa'] :
+                      (!empty($pendaftar['no_hp']) ? $pendaftar['no_hp'] :
+                      (!empty($pendaftar['no_hp_ayah']) ? $pendaftar['no_hp_ayah'] :
+                      (!empty($pendaftar['no_hp_ibu']) ? $pendaftar['no_hp_ibu'] : '')));
+
+        if (empty($targetPhone)) {
+            return ['success' => false, 'message' => 'Nomor WhatsApp atau No HP orang tua/wali belum diisi pada formulir pendaftaran.'];
+        }
+
+        $group = !empty($pendaftar['group_id']) ? self::getGroupById((int)$pendaftar['group_id']) : self::getActiveGroup();
+        $tahunAjaran = $group['tahun_ajaran'] ?? ($group['nama_group'] ?? '2026/2027');
+        $namaUnit = self::getNamaSekolahByJenjang($pendaftar['jenjang'] ?? 'SD');
+        $publicUrl = self::makeUrl('spmb/psikolog/' . $pendaftar['biodata_token']);
+
+        $template = !empty(trim($customTemplate ?? '')) ? $customTemplate : self::getDefaultWaPsikologTemplate();
+
+        $replacements = [
+            '{nama_siswa}'          => $pendaftar['nama_lengkap'],
+            '{nomor_pendaftaran}'   => $pendaftar['nomor_pendaftaran'],
+            '{no_daftar}'           => $pendaftar['nomor_pendaftaran'],
+            '{nama_sekolah}'        => $namaUnit,
+            '{nama_unit}'           => $namaUnit,
+            '{jenjang}'             => $pendaftar['jenjang'],
+            '{tahun_ajaran}'        => $tahunAjaran,
+            '{rekomendasi}'         => $screening['status_rekomendasi'] ?: 'Direkomendasikan',
+            '{link_hasil_psikolog}' => $publicUrl,
+            '{link_file}'           => $publicUrl,
+        ];
+
+        $pesan = str_replace(array_keys($replacements), array_values($replacements), $template);
+
+        // Kirim melalui WaGateway terpusat
+        $res = WaGateway::send($targetPhone, $pesan, [
+            'module'         => 'spmb_psikolog',
+            'include_footer' => true
+        ]);
+
+        if (!empty($res['success'])) {
+            self::db()->query("
+                UPDATE `spmb_screening_psikolog` SET
+                    `wa_sent_at` = NOW(),
+                    `wa_sent_count` = `wa_sent_count` + 1,
+                    `last_wa_phone` = ?,
+                    `last_wa_status` = 'Success'
+                WHERE `pendaftar_id` = ?
+            ", [$targetPhone, $pendaftarId]);
+
+            self::db()->query("
+                UPDATE `spmb_pendaftar` SET `wa_psikolog_sent_at` = NOW() WHERE `id` = ?
+            ", [$pendaftarId]);
+        } else {
+            self::db()->query("
+                UPDATE `spmb_screening_psikolog` SET
+                    `last_wa_phone` = ?,
+                    `last_wa_status` = 'Failed'
+                WHERE `pendaftar_id` = ?
+            ", [$targetPhone, $pendaftarId]);
+        }
+
+        return $res;
+    }
+
+    /**
+     * Template standar pesan WhatsApp Laporan Hasil Psikolog
+     */
+    public static function getDefaultWaPsikologTemplate(): string
+    {
+        return "Assalamu'alaikum Warahmatullahi Wabarakatuh.\n\n"
+             . "Yth. Bapak/Ibu Orang Tua/Wali dari ananda:\n"
+             . "👤 Nama: *{nama_siswa}*\n"
+             . "📋 No. Pendaftaran: *{nomor_pendaftaran}*\n"
+             . "🏫 Unit: *{nama_sekolah}*\n\n"
+             . "Alhamdulillah, kami sampaikan Laporan & Berkas Resmi Hasil Screening / Tes Psikolog Calon Murid Baru Tahun Ajaran *{tahun_ajaran}*.\n\n"
+             . "📊 *Hasil Rekomendasi:* *{rekomendasi}*\n\n"
+             . "Silakan klik tautan resmi di bawah ini untuk melihat dan mengunduh berkas laporan hasil psikolog ananda:\n"
+             . "🔗 *Tautan Berkas Hasil Psikolog:*\n"
+             . "{link_hasil_psikolog}\n\n"
+             . "_(Tautan di atas dapat dibuka langsung melalui smartphone atau komputer tanpa perlu login)_\n\n"
+             . "Terima kasih atas kerja sama dan kepercayaan Bapak/Ibu kepada Yayasan Bina Insan Palu.\n\n"
+             . "Wassalamu'alaikum Warahmatullahi Wabarakatuh.\n"
+             . "_Panitia SPMB SIT Bina Insan Palu_";
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // 10. OBSERVASI AWAL SPMB (INSTRUMEN, PENGISIAN ORANG TUA & HASIL)
+    // ═════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Ambil daftar grup pertanyaan observasi awal
+     */
+    public static function getObservasiGroups(?string $jenjang = null, bool $onlyActive = true): array
+    {
+        $conditions = [];
+        $params = [];
+
+        if ($onlyActive) {
+            $conditions[] = "`is_active` = 1";
+        }
+
+        if (!empty($jenjang) && strtoupper(trim($jenjang)) !== 'ALL') {
+            $conditions[] = "(`jenjang` = ? OR `jenjang` = 'ALL')";
+            $params[] = strtoupper(trim($jenjang));
+        }
+
+        $where = !empty($conditions) ? "WHERE " . implode(" AND ", $conditions) : "";
+        $sql = "SELECT * FROM `spmb_observasi_group` $where ORDER BY FIELD(jenjang, 'PAUD', 'SD', 'SMP', 'SMA', 'ALL'), `urutan` ASC, `id` ASC";
+
+        return self::db()->findAll($sql, $params);
+    }
+
+    /**
+     * Ambil detail grup pertanyaan observasi awal berdasarkan ID
+     */
+    public static function getObservasiGroupById(int $id): ?array
+    {
+        return self::db()->find("SELECT * FROM `spmb_observasi_group` WHERE `id` = ?", [$id]);
+    }
+
+    /**
+     * Simpan / Perbarui Grup Pertanyaan Observasi
+     */
+    public static function saveObservasiGroup(array $data, ?int $id = null): int
+    {
+        $jenjang   = strtoupper(trim($data['jenjang'] ?? 'ALL'));
+        $namaGroup = trim($data['nama_group'] ?? '');
+        $deskripsi = trim($data['deskripsi'] ?? '');
+        $urutan    = (int)($data['urutan'] ?? 1);
+        $isActive  = isset($data['is_active']) ? (int)$data['is_active'] : 1;
+
+        if ($id && $id > 0) {
+            self::db()->query("
+                UPDATE `spmb_observasi_group` SET
+                    `jenjang` = ?, `nama_group` = ?, `deskripsi` = ?, `urutan` = ?, `is_active` = ?, `updated_at` = NOW()
+                WHERE `id` = ?
+            ", [$jenjang, $namaGroup, $deskripsi, $urutan, $isActive, $id]);
+            return $id;
+        }
+
+        self::db()->query("
+            INSERT INTO `spmb_observasi_group` (`jenjang`, `nama_group`, `deskripsi`, `urutan`, `is_active`, `created_at`, `updated_at`)
+            VALUES (?, ?, ?, ?, ?, NOW(), NOW())
+        ", [$jenjang, $namaGroup, $deskripsi, $urutan, $isActive]);
+
+        return (int)self::db()->lastInsertId();
+    }
+
+    /**
+     * Hapus Grup Pertanyaan Observasi beserta butir pertanyaannya
+     */
+    public static function deleteObservasiGroup(int $id): bool
+    {
+        self::db()->query("DELETE FROM `spmb_observasi_pertanyaan` WHERE `group_id` = ?", [$id]);
+        self::db()->query("DELETE FROM `spmb_observasi_group` WHERE `id` = ?", [$id]);
+        return true;
+    }
+
+    /**
+     * Ambil daftar butir pertanyaan observasi awal
+     */
+    public static function getObservasiPertanyaanList(?string $jenjang = null, ?int $groupId = null, bool $onlyActive = true): array
+    {
+        $conditions = [];
+        $params = [];
+
+        if ($onlyActive) {
+            $conditions[] = "p.`is_active` = 1";
+        }
+
+        if (!empty($jenjang) && strtoupper(trim($jenjang)) !== 'ALL') {
+            $conditions[] = "(p.`jenjang` = ? OR p.`jenjang` = 'ALL')";
+            $params[] = strtoupper(trim($jenjang));
+        }
+
+        if (!empty($groupId)) {
+            $conditions[] = "p.`group_id` = ?";
+            $params[] = (int)$groupId;
+        }
+
+        $where = !empty($conditions) ? "WHERE " . implode(" AND ", $conditions) : "";
+        $sql = "
+            SELECT p.*, g.nama_group, g.urutan as group_urutan
+            FROM `spmb_observasi_pertanyaan` p
+            JOIN `spmb_observasi_group` g ON g.id = p.group_id
+            $where
+            ORDER BY FIELD(p.jenjang, 'PAUD', 'SD', 'SMP', 'SMA', 'ALL'), g.urutan ASC, p.urutan ASC, p.id ASC
+        ";
+
+        $rows = self::db()->findAll($sql, $params);
+        foreach ($rows as &$r) {
+            $parsed = !empty($r['opsi_jawaban']) ? json_decode($r['opsi_jawaban'], true) : [];
+            $r['opsi_parsed'] = is_array($parsed) ? $parsed : [];
+        }
+        unset($r);
+
+        return $rows;
+    }
+
+    /**
+     * Ambil butir pertanyaan berdasarkan ID
+     */
+    public static function getObservasiPertanyaanById(int $id): ?array
+    {
+        $r = self::db()->find("
+            SELECT p.*, g.nama_group 
+            FROM `spmb_observasi_pertanyaan` p 
+            JOIN `spmb_observasi_group` g ON g.id = p.group_id 
+            WHERE p.`id` = ?
+        ", [$id]);
+
+        if ($r) {
+            $parsed = !empty($r['opsi_jawaban']) ? json_decode($r['opsi_jawaban'], true) : [];
+            $r['opsi_parsed'] = is_array($parsed) ? $parsed : [];
+        }
+        return $r ?: null;
+    }
+
+    /**
+     * Simpan / Perbarui Butir Pertanyaan Observasi
+     */
+    public static function saveObservasiPertanyaan(array $data, ?int $id = null): int
+    {
+        $groupId    = (int)($data['group_id'] ?? 0);
+        $jenjang    = strtoupper(trim($data['jenjang'] ?? 'ALL'));
+        $pertanyaan = trim($data['pertanyaan'] ?? '');
+        $indikator  = trim($data['indikator'] ?? '');
+        $tipe       = $data['tipe_jawaban'] ?? 'skala';
+        $urutan     = (int)($data['urutan'] ?? 1);
+        $isActive   = isset($data['is_active']) ? (int)$data['is_active'] : 1;
+
+        // Ambil opsi jawaban (baik berupa JSON string atau array dari form)
+        $opsi = [];
+        if (!empty($data['opsi_jawaban'])) {
+            if (is_array($data['opsi_jawaban'])) {
+                $opsi = $data['opsi_jawaban'];
+            } else {
+                $decoded = json_decode($data['opsi_jawaban'], true);
+                $opsi = is_array($decoded) ? $decoded : [];
+            }
+        }
+
+        // Hitung skor maksimal dari opsi tertinggi
+        $skorMaks = 4;
+        if (!empty($opsi)) {
+            $maxVal = 0;
+            foreach ($opsi as $op) {
+                $val = (int)($op['skor'] ?? 0);
+                if ($val > $maxVal) $maxVal = $val;
+            }
+            if ($maxVal > 0) $skorMaks = $maxVal;
+        }
+
+        $opsiJson = json_encode($opsi, JSON_UNESCAPED_UNICODE);
+
+        if ($id && $id > 0) {
+            self::db()->query("
+                UPDATE `spmb_observasi_pertanyaan` SET
+                    `group_id` = ?, `jenjang` = ?, `pertanyaan` = ?, `indikator` = ?,
+                    `tipe_jawaban` = ?, `opsi_jawaban` = ?, `skor_maksimal` = ?,
+                    `urutan` = ?, `is_active` = ?, `updated_at` = NOW()
+                WHERE `id` = ?
+            ", [$groupId, $jenjang, $pertanyaan, $indikator, $tipe, $opsiJson, $skorMaks, $urutan, $isActive, $id]);
+            return $id;
+        }
+
+        self::db()->query("
+            INSERT INTO `spmb_observasi_pertanyaan` (
+                `group_id`, `jenjang`, `pertanyaan`, `indikator`, `tipe_jawaban`,
+                `opsi_jawaban`, `skor_maksimal`, `urutan`, `is_active`, `created_at`, `updated_at`
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+        ", [$groupId, $jenjang, $pertanyaan, $indikator, $tipe, $opsiJson, $skorMaks, $urutan, $isActive]);
+
+        return (int)self::db()->lastInsertId();
+    }
+
+    /**
+     * Hapus Butir Pertanyaan Observasi
+     */
+    public static function deleteObservasiPertanyaan(int $id): bool
+    {
+        self::db()->query("DELETE FROM `spmb_observasi_pertanyaan` WHERE `id` = ?", [$id]);
+        return true;
+    }
+
+    /**
+     * Ambil data calon siswa berdasarkan observasi_token (atau biodata_token)
+     */
+    public static function getPendaftarByObservasiToken(string $token): ?array
+    {
+        $token = trim($token);
+        if (empty($token)) return null;
+
+        $sql = "
+            SELECT p.*,
+                   obs.id as respon_id, obs.status as respon_status, obs.nama_pengisi, obs.hubungan_pengisi,
+                   obs.no_wa_pengisi, obs.total_skor, obs.skor_maksimal, obs.persentase, obs.kategori_hasil,
+                   obs.catatan_orang_tua, obs.submitted_at as observasi_submitted_at,
+                   g.nama_group, g.tahun_ajaran as group_tahun_ajaran
+            FROM `spmb_pendaftar` p
+            LEFT JOIN `spmb_observasi_respon` obs ON obs.pendaftar_id = p.id
+            LEFT JOIN `spmb_group` g ON g.id = p.group_id
+            WHERE p.observasi_token = ? OR p.biodata_token = ?
+            LIMIT 1
+        ";
+
+        $pendaftar = self::db()->find($sql, [$token, $token]);
+        if (!$pendaftar) return null;
+
+        // Pastikan kolom observasi_token terisi
+        if (empty($pendaftar['observasi_token'])) {
+            $newToken = bin2hex(random_bytes(24));
+            self::db()->query("UPDATE `spmb_pendaftar` SET `observasi_token` = ? WHERE `id` = ?", [$newToken, $pendaftar['id']]);
+            $pendaftar['observasi_token'] = $newToken;
+        }
+
+        return $pendaftar;
+    }
+
+    /**
+     * Ambil struktur formulir observasi awal terkelompok per grup pertanyaan untuk unit/jenjang siswa
+     */
+    public static function getObservasiFormStructure(string $jenjang): array
+    {
+        $groups = self::getObservasiGroups($jenjang, true);
+        $questions = self::getObservasiPertanyaanList($jenjang, null, true);
+
+        // Petakan pertanyaan ke masing-masing group
+        $groupQuestions = [];
+        foreach ($questions as $q) {
+            $gId = (int)$q['group_id'];
+            if (!isset($groupQuestions[$gId])) {
+                $groupQuestions[$gId] = [];
+            }
+            $groupQuestions[$gId][] = $q;
+        }
+
+        $result = [];
+        foreach ($groups as $g) {
+            $gId = (int)$g['id'];
+            $items = $groupQuestions[$gId] ?? [];
+            if (!empty($items)) {
+                $g['pertanyaan'] = $items;
+                $result[] = $g;
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * Simpan pengisian observasi awal oleh orang tua calon siswa
+     */
+    public static function submitObservasiRespon(int $pendaftarId, array $postData, ?string $ip = null, ?string $ua = null): array
+    {
+        $pendaftar = self::getPendaftarById($pendaftarId);
+        if (!$pendaftar) {
+            return ['success' => false, 'message' => 'Data calon siswa tidak ditemukan.'];
+        }
+
+        $jenjang = $pendaftar['jenjang'] ?? 'SD';
+        $structure = self::getObservasiFormStructure($jenjang);
+        if (empty($structure)) {
+            return ['success' => false, 'message' => 'Instrumen pertanyaan observasi awal belum dikonfigurasi untuk unit ' . $jenjang];
+        }
+
+        // Info pengisi
+        $namaPengisi     = trim($postData['nama_pengisi'] ?? '');
+        $hubunganPengisi = trim($postData['hubungan_pengisi'] ?? 'Orang Tua / Wali');
+        $noWaPengisi     = trim($postData['no_wa_pengisi'] ?? ($pendaftar['no_wa'] ?: ''));
+        $catatanOrtu     = trim($postData['catatan_orang_tua'] ?? '');
+
+        if (empty($namaPengisi)) {
+            return ['success' => false, 'message' => 'Mohon isi nama lengkap Ayah/Ibu/Wali yang mengisi formulir.'];
+        }
+
+        $answers = $postData['answers'] ?? [];
+        $totalSkor = 0;
+        $skorMaksTotal = 0;
+        $parsedAnswers = [];
+
+        foreach ($structure as $grp) {
+            foreach ($grp['pertanyaan'] as $q) {
+                $qId = (int)$q['id'];
+                $valChosen = $answers[$qId] ?? null;
+
+                $labelChosen = '';
+                $skorItem = 0;
+                $skorMaksItem = (int)($q['skor_maksimal'] ?? 4);
+
+                if (!empty($q['opsi_parsed']) && is_array($q['opsi_parsed'])) {
+                    // Cari opsi yang dipilih
+                    foreach ($q['opsi_parsed'] as $idx => $op) {
+                        $opVal = (string)($op['skor'] ?? $idx);
+                        if ((string)$valChosen === (string)$op['skor'] || (string)$valChosen === (string)$idx || (string)$valChosen === (string)$op['label']) {
+                            $labelChosen = $op['label'];
+                            $skorItem = (int)$op['skor'];
+                            break;
+                        }
+                    }
+                }
+
+                // Jika belum terpilih, defaultkan ke opsi pertama atau 0
+                if (empty($labelChosen) && !empty($q['opsi_parsed'][0])) {
+                    $labelChosen = $q['opsi_parsed'][0]['label'] ?? 'Tidak Dijawab';
+                    $skorItem = (int)($q['opsi_parsed'][0]['skor'] ?? 0);
+                }
+
+                $totalSkor += $skorItem;
+                $skorMaksTotal += $skorMaksItem;
+
+                $parsedAnswers[] = [
+                    'pertanyaan_id'   => $qId,
+                    'group_id'        => (int)$grp['id'],
+                    'pilihan_jawaban' => $labelChosen,
+                    'skor'            => $skorItem
+                ];
+            }
+        }
+
+        $persentase = $skorMaksTotal > 0 ? round(($totalSkor / $skorMaksTotal) * 100, 2) : 0.00;
+
+        // Kategori Hasil Observasi
+        $kategoriHasil = 'Perlu Pendampingan';
+        if ($persentase >= 85) {
+            $kategoriHasil = 'Sangat Baik / Mandiri';
+        } elseif ($persentase >= 70) {
+            $kategoriHasil = 'Baik / Berkembang';
+        } elseif ($persentase >= 55) {
+            $kategoriHasil = 'Cukup';
+        }
+
+        $tokenRespon = $pendaftar['observasi_token'] ?: bin2hex(random_bytes(24));
+
+        // Cek respon yang sudah ada (UPSERT)
+        $existing = self::db()->find("SELECT id FROM `spmb_observasi_respon` WHERE `pendaftar_id` = ?", [$pendaftarId]);
+        if ($existing) {
+            $responId = (int)$existing['id'];
+            self::db()->query("
+                UPDATE `spmb_observasi_respon` SET
+                    `status` = 'selesai',
+                    `nama_pengisi` = ?,
+                    `hubungan_pengisi` = ?,
+                    `no_wa_pengisi` = ?,
+                    `total_skor` = ?,
+                    `skor_maksimal` = ?,
+                    `persentase` = ?,
+                    `kategori_hasil` = ?,
+                    `catatan_orang_tua` = ?,
+                    `submitted_at` = NOW(),
+                    `ip_address` = ?,
+                    `user_agent` = ?,
+                    `updated_at` = NOW()
+                WHERE `id` = ?
+            ", [
+                $namaPengisi, $hubunganPengisi, $noWaPengisi,
+                $totalSkor, $skorMaksTotal, $persentase, $kategoriHasil,
+                $catatanOrtu, $ip, $ua, $responId
+            ]);
+
+            // Hapus jawaban lama dan simpan yang baru
+            self::db()->query("DELETE FROM `spmb_observasi_jawaban` WHERE `respon_id` = ?", [$responId]);
+        } else {
+            self::db()->query("
+                INSERT INTO `spmb_observasi_respon` (
+                    `pendaftar_id`, `token`, `status`, `nama_pengisi`, `hubungan_pengisi`,
+                    `no_wa_pengisi`, `total_skor`, `skor_maksimal`, `persentase`, `kategori_hasil`,
+                    `catatan_orang_tua`, `submitted_at`, `ip_address`, `user_agent`, `created_at`, `updated_at`
+                ) VALUES (?, ?, 'selesai', ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, NOW(), NOW())
+            ", [
+                $pendaftarId, $tokenRespon, $namaPengisi, $hubunganPengisi,
+                $noWaPengisi, $totalSkor, $skorMaksTotal, $persentase, $kategoriHasil,
+                $catatanOrtu, $ip, $ua
+            ]);
+            $responId = (int)self::db()->lastInsertId();
+        }
+
+        // Insert jawaban per pertanyaan
+        $insertAnswer = self::db()->getConnection()->prepare("
+            INSERT INTO `spmb_observasi_jawaban` (`respon_id`, `pendaftar_id`, `pertanyaan_id`, `group_id`, `pilihan_jawaban`, `skor`, `created_at`)
+            VALUES (?, ?, ?, ?, ?, ?, NOW())
+        ");
+
+        foreach ($parsedAnswers as $ans) {
+            $insertAnswer->execute([
+                $responId,
+                $pendaftarId,
+                $ans['pertanyaan_id'],
+                $ans['group_id'],
+                $ans['pilihan_jawaban'],
+                $ans['skor']
+            ]);
+        }
+
+        // Perbarui ringkasan di tabel spmb_pendaftar
+        self::db()->query("
+            UPDATE `spmb_pendaftar` SET
+                `status_observasi` = 'Sudah Mengisi',
+                `skor_observasi` = ?,
+                `kategori_observasi` = ?,
+                `tgl_observasi` = NOW()
+            WHERE `id` = ?
+        ", [$totalSkor, $kategoriHasil, $pendaftarId]);
+
+        return [
+            'success'        => true,
+            'message'        => 'Alhamdulillah, data observasi awal berhasil disimpan!',
+            'respon_id'      => $responId,
+            'total_skor'     => $totalSkor,
+            'skor_maksimal'  => $skorMaksTotal,
+            'persentase'     => $persentase,
+            'kategori_hasil' => $kategoriHasil
+        ];
+    }
+
+    /**
+     * Ambil daftar hasil observasi awal calon siswa (Admin list)
+     */
+    public static function getDaftarHasilObservasiAwal(array $filters = [], int $limit = 50, int $offset = 0): array
+    {
+        $conditions = [];
+        $params = [];
+
+        if (!empty($filters['group_id'])) {
+            $conditions[] = "p.group_id = ?";
+            $params[] = (int)$filters['group_id'];
+        }
+
+        if (!empty($filters['jenjang']) && strtoupper(trim($filters['jenjang'])) !== 'ALL') {
+            $conditions[] = "p.jenjang = ?";
+            $params[] = strtoupper(trim($filters['jenjang']));
+        }
+
+        if (!empty($filters['status_observasi'])) {
+            if ($filters['status_observasi'] === 'sudah') {
+                $conditions[] = "p.status_observasi = 'Sudah Mengisi'";
+            } elseif ($filters['status_observasi'] === 'belum') {
+                $conditions[] = "(p.status_observasi IS NULL OR p.status_observasi != 'Sudah Mengisi')";
+            }
+        }
+
+        if (!empty($filters['search'])) {
+            $term = '%' . trim($filters['search']) . '%';
+            $conditions[] = "(p.nama_lengkap LIKE ? OR p.nomor_pendaftaran LIKE ? OR p.nisn LIKE ? OR obs.nama_pengisi LIKE ?)";
+            $params[] = $term;
+            $params[] = $term;
+            $params[] = $term;
+            $params[] = $term;
+        }
+
+        $whereClause = !empty($conditions) ? "WHERE " . implode(" AND ", $conditions) : "";
+
+        $sql = "
+            SELECT p.id as pendaftar_id, p.id, p.nomor_pendaftaran, p.nama_lengkap, p.nama_panggilan,
+                   p.jenjang, p.jenis_pendaftaran, p.no_wa, p.no_hp, p.no_hp_ayah, p.no_hp_ibu,
+                   p.observasi_token, p.biodata_token, p.status_observasi, p.skor_observasi, p.kategori_observasi, p.tgl_observasi,
+                   obs.id as respon_id, obs.nama_pengisi, obs.hubungan_pengisi, obs.total_skor, obs.skor_maksimal, obs.persentase,
+                   obs.kategori_hasil, obs.submitted_at
+            FROM `spmb_pendaftar` p
+            LEFT JOIN `spmb_observasi_respon` obs ON obs.pendaftar_id = p.id
+            $whereClause
+            ORDER BY 
+                p.nomor_pendaftaran ASC, p.id DESC
+            LIMIT ? OFFSET ?
+        ";
+
+        $params[] = $limit;
+        $params[] = $offset;
+
+        $rows = self::db()->findAll($sql, $params);
+        foreach ($rows as &$r) {
+            if (empty($r['observasi_token'])) {
+                $newToken = bin2hex(random_bytes(24));
+                self::db()->query("UPDATE `spmb_pendaftar` SET `observasi_token` = ? WHERE `id` = ?", [$newToken, $r['pendaftar_id']]);
+                $r['observasi_token'] = $newToken;
+            }
+            $targetPhone = !empty($r['no_wa']) ? $r['no_wa'] : (!empty($r['no_hp']) ? $r['no_hp'] : (!empty($r['no_hp_ayah']) ? $r['no_hp_ayah'] : (!empty($r['no_hp_ibu']) ? $r['no_hp_ibu'] : '')));
+            $r['target_phone'] = $targetPhone;
+            $r['public_url'] = self::makeUrl('spmb/observasi/' . $r['observasi_token']);
+        }
+        unset($r);
+
+        return $rows;
+    }
+
+    /**
+     * Hitung total pendaftar untuk hasil observasi awal
+     */
+    public static function countDaftarHasilObservasiAwal(array $filters = []): int
+    {
+        $conditions = [];
+        $params = [];
+
+        if (!empty($filters['group_id'])) {
+            $conditions[] = "p.group_id = ?";
+            $params[] = (int)$filters['group_id'];
+        }
+
+        if (!empty($filters['jenjang']) && strtoupper(trim($filters['jenjang'])) !== 'ALL') {
+            $conditions[] = "p.jenjang = ?";
+            $params[] = strtoupper(trim($filters['jenjang']));
+        }
+
+        if (!empty($filters['status_observasi'])) {
+            if ($filters['status_observasi'] === 'sudah') {
+                $conditions[] = "p.status_observasi = 'Sudah Mengisi'";
+            } elseif ($filters['status_observasi'] === 'belum') {
+                $conditions[] = "(p.status_observasi IS NULL OR p.status_observasi != 'Sudah Mengisi')";
+            }
+        }
+
+        if (!empty($filters['search'])) {
+            $term = '%' . trim($filters['search']) . '%';
+            $conditions[] = "(p.nama_lengkap LIKE ? OR p.nomor_pendaftaran LIKE ? OR p.nisn LIKE ? OR obs.nama_pengisi LIKE ?)";
+            $params[] = $term;
+            $params[] = $term;
+            $params[] = $term;
+            $params[] = $term;
+        }
+
+        $whereClause = !empty($conditions) ? "WHERE " . implode(" AND ", $conditions) : "";
+        $sql = "
+            SELECT COUNT(p.id) as total
+            FROM `spmb_pendaftar` p
+            LEFT JOIN `spmb_observasi_respon` obs ON obs.pendaftar_id = p.id
+            $whereClause
+        ";
+
+        $res = self::db()->find($sql, $params);
+        return (int)($res['total'] ?? 0);
+    }
+
+    /**
+     * Hitung statistik ringkasan observasi awal
+     */
+    public static function getObservasiStats(?int $groupId = null): array
+    {
+        $params = [];
+        $conditions = [];
+        if (!empty($groupId)) {
+            $conditions[] = "p.group_id = ?";
+            $params[] = $groupId;
+        }
+        $where = !empty($conditions) ? "WHERE " . implode(" AND ", $conditions) : "";
+
+        $sql = "
+            SELECT 
+                COUNT(p.id) as total_siswa,
+                SUM(CASE WHEN p.status_observasi = 'Sudah Mengisi' THEN 1 ELSE 0 END) as total_sudah,
+                SUM(CASE WHEN p.status_observasi IS NULL OR p.status_observasi != 'Sudah Mengisi' THEN 1 ELSE 0 END) as total_belum,
+                AVG(CASE WHEN obs.persentase > 0 THEN obs.persentase ELSE NULL END) as rata_persentase,
+                SUM(CASE WHEN obs.kategori_hasil = 'Sangat Baik / Mandiri' THEN 1 ELSE 0 END) as total_sangat_baik,
+                SUM(CASE WHEN obs.kategori_hasil = 'Baik / Berkembang' THEN 1 ELSE 0 END) as total_baik,
+                SUM(CASE WHEN obs.kategori_hasil = 'Cukup' THEN 1 ELSE 0 END) as total_cukup,
+                SUM(CASE WHEN obs.kategori_hasil = 'Perlu Pendampingan' THEN 1 ELSE 0 END) as total_kurang
+            FROM `spmb_pendaftar` p
+            LEFT JOIN `spmb_observasi_respon` obs ON obs.pendaftar_id = p.id
+            $where
+        ";
+
+        $res = self::db()->find($sql, $params);
+        $totalSiswa = (int)($res['total_siswa'] ?? 0);
+        $sudah = (int)($res['total_sudah'] ?? 0);
+        $belum = (int)($res['total_belum'] ?? 0);
+        $persen = $totalSiswa > 0 ? round(($sudah / $totalSiswa) * 100, 1) : 0;
+        $rataPersen = round((float)($res['rata_persentase'] ?? 0), 1);
+
+        return [
+            'total_siswa'       => $totalSiswa,
+            'total_sudah'       => $sudah,
+            'total_belum'       => $belum,
+            'persen_selesai'    => $persen,
+            'rata_persentase'   => $rataPersen,
+            'total_sangat_baik' => (int)($res['total_sangat_baik'] ?? 0),
+            'total_baik'        => (int)($res['total_baik'] ?? 0),
+            'total_cukup'       => (int)($res['total_cukup'] ?? 0),
+            'total_kurang'      => (int)($res['total_kurang'] ?? 0),
+        ];
+    }
+
+    /**
+     * Ambil rincian jawaban observasi awal calon siswa (untuk modal detail & cetak)
+     */
+    public static function getObservasiDetail(int $pendaftarId): ?array
+    {
+        $pendaftar = self::getPendaftarById($pendaftarId);
+        if (!$pendaftar) return null;
+
+        $respon = self::db()->find("
+            SELECT * FROM `spmb_observasi_respon` WHERE `pendaftar_id` = ? LIMIT 1
+        ", [$pendaftarId]);
+
+        $groupBreakdown = [];
+        $answers = [];
+
+        if ($respon) {
+            $jawabanRows = self::db()->findAll("
+                SELECT j.*, p.pertanyaan, p.indikator, p.skor_maksimal, g.nama_group, g.urutan as group_urutan
+                FROM `spmb_observasi_jawaban` j
+                JOIN `spmb_observasi_pertanyaan` p ON p.id = j.pertanyaan_id
+                JOIN `spmb_observasi_group` g ON g.id = j.group_id
+                WHERE j.`respon_id` = ?
+                ORDER BY g.urutan ASC, p.urutan ASC
+            ", [(int)$respon['id']]);
+
+            foreach ($jawabanRows as $j) {
+                $gName = $j['nama_group'];
+                if (!isset($groupBreakdown[$gName])) {
+                    $groupBreakdown[$gName] = [
+                        'nama_group' => $gName,
+                        'total_skor' => 0,
+                        'skor_maks'  => 0,
+                        'items'      => []
+                    ];
+                }
+                $groupBreakdown[$gName]['total_skor'] += (int)$j['skor'];
+                $groupBreakdown[$gName]['skor_maks']  += (int)$j['skor_maksimal'];
+                $groupBreakdown[$gName]['items'][] = $j;
+            }
+
+            foreach ($groupBreakdown as &$gb) {
+                $gb['persen'] = $gb['skor_maks'] > 0 ? round(($gb['total_skor'] / $gb['skor_maks']) * 100, 1) : 0;
+            }
+            unset($gb);
+
+            $answers = $jawabanRows;
+        }
+
+        return [
+            'pendaftar'       => $pendaftar,
+            'respon'          => $respon,
+            'group_breakdown' => $groupBreakdown,
+            'answers'         => $answers
+        ];
+    }
+
+    /**
+     * Kirim link observasi awal ke nomor WhatsApp orang tua
+     */
+    public static function sendWaLinkObservasi(int $pendaftarId, ?string $customTemplate = null): array
+    {
+        $pendaftar = self::getPendaftarById($pendaftarId);
+        if (!$pendaftar) {
+            return ['success' => false, 'message' => 'Data calon siswa tidak ditemukan.'];
+        }
+
+        // Pastikan token observasi terisi
+        if (empty($pendaftar['observasi_token'])) {
+            $newToken = bin2hex(random_bytes(24));
+            self::db()->query("UPDATE `spmb_pendaftar` SET `observasi_token` = ? WHERE `id` = ?", [$newToken, $pendaftarId]);
+            $pendaftar['observasi_token'] = $newToken;
+        }
+
+        $targetPhone = !empty($pendaftar['no_wa']) ? $pendaftar['no_wa'] :
+                      (!empty($pendaftar['no_hp']) ? $pendaftar['no_hp'] :
+                      (!empty($pendaftar['no_hp_ayah']) ? $pendaftar['no_hp_ayah'] :
+                      (!empty($pendaftar['no_hp_ibu']) ? $pendaftar['no_hp_ibu'] : '')));
+
+        if (empty($targetPhone)) {
+            return ['success' => false, 'message' => 'Nomor WhatsApp atau No HP orang tua/wali belum diisi pada formulir pendaftaran.'];
+        }
+
+        $group = !empty($pendaftar['group_id']) ? self::getGroupById((int)$pendaftar['group_id']) : self::getActiveGroup();
+        $tahunAjaran = $group['tahun_ajaran'] ?? ($group['nama_group'] ?? '2026/2027');
+        $namaUnit = self::getNamaSekolahByJenjang($pendaftar['jenjang'] ?? 'SD');
+        $publicUrl = self::makeUrl('spmb/observasi/' . $pendaftar['observasi_token']);
+
+        $template = !empty(trim($customTemplate ?? '')) ? $customTemplate : self::getDefaultWaObservasiTemplate();
+
+        $replacements = [
+            '{nama_siswa}'          => $pendaftar['nama_lengkap'],
+            '{nomor_pendaftaran}'   => $pendaftar['nomor_pendaftaran'],
+            '{no_daftar}'           => $pendaftar['nomor_pendaftaran'],
+            '{nama_sekolah}'        => $namaUnit,
+            '{nama_unit}'           => $namaUnit,
+            '{jenjang}'             => $pendaftar['jenjang'],
+            '{tahun_ajaran}'        => $tahunAjaran,
+            '{link_observasi}'      => $publicUrl,
+            '{link_file}'           => $publicUrl,
+        ];
+
+        $pesan = str_replace(array_keys($replacements), array_values($replacements), $template);
+
+        return WaGateway::send($targetPhone, $pesan, [
+            'module'         => 'spmb_observasi',
+            'include_footer' => true
+        ]);
+    }
+
+    /**
+     * Template standar pesan WhatsApp Tautan Kuesioner Observasi Awal
+     */
+    public static function getDefaultWaObservasiTemplate(): string
+    {
+        return "Assalamu'alaikum Warahmatullahi Wabarakatuh.\n\n"
+             . "Yth. Bapak/Ibu Orang Tua/Wali dari ananda:\n"
+             . "👤 Nama: *{nama_siswa}*\n"
+             . "📋 No. Pendaftaran: *{nomor_pendaftaran}*\n"
+             . "🏫 Unit: *{nama_sekolah}*\n\n"
+             . "Sebagai tahapan awal pengenalan potensi, kemandirian, dan karakter calon murid baru Tahun Ajaran *{tahun_ajaran}*, kami mohon kesediaan Bapak/Ibu untuk mengisi *Kuesioner Observasi Awal* melalui tautan khusus di bawah ini:\n\n"
+             . "📝 *Tautan Pengisian Observasi Awal:*\n"
+             . "{link_observasi}\n\n"
+             . "_(Tautan ini terhubung langsung dengan data pendaftaran ananda dan dapat diisi dengan nyaman melalui smartphone)_\n\n"
+             . "Pengisian observasi awal ini sangat bermanfaat bagi tim pendidik dalam mendampingi tumbuh kembang ananda secara optimal sejak hari pertama bersekolah.\n\n"
+             . "Terima kasih atas kerja sama dan kepercayaan Bapak/Ibu kepada SIT Bina Insan Palu.\n\n"
+             . "Wassalamu'alaikum Warahmatullahi Wabarakatuh.\n"
+             . "_Panitia SPMB SIT Bina Insan Palu_";
+    }
 }
+
+
 

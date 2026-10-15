@@ -95,6 +95,44 @@ function asset(string $path): string {
 }
 
 /**
+ * Get active Favicon URL with auto cache-busting
+ */
+function getFaviconUrl(): string {
+    if (defined('SYS_APP_FAVICON') && !empty(SYS_APP_FAVICON)) {
+        $cand = BASE_PATH . '/' . ltrim(SYS_APP_FAVICON, '/');
+        if (file_exists($cand)) {
+            return url(ltrim(SYS_APP_FAVICON, '/')) . '?v=' . filemtime($cand);
+        }
+    }
+    if (file_exists(BASE_PATH . '/favicon.ico')) {
+        return url('favicon.ico') . '?v=' . filemtime(BASE_PATH . '/favicon.ico');
+    }
+    if (defined('SYS_APP_LOGO') && !empty(SYS_APP_LOGO)) {
+        $cand = BASE_PATH . '/' . ltrim(SYS_APP_LOGO, '/');
+        if (file_exists($cand)) {
+            return url(ltrim(SYS_APP_LOGO, '/')) . '?v=' . filemtime($cand);
+        }
+    }
+    return url('favicon.ico');
+}
+
+/**
+ * Render standard HTML <link> tags for favicon across all browsers
+ */
+function renderFaviconTags(): string {
+    $favUrl = getFaviconUrl();
+    $cleanPath = parse_url($favUrl, PHP_URL_PATH) ?? '';
+    $ext = strtolower(pathinfo($cleanPath, PATHINFO_EXTENSION));
+    $mime = ($ext === 'png') ? 'image/png' : (($ext === 'svg') ? 'image/svg+xml' : 'image/x-icon');
+    $escapedUrl = htmlspecialchars($favUrl, ENT_QUOTES, 'UTF-8');
+
+    $html  = '<link rel="shortcut icon" href="' . $escapedUrl . '">' . "\n";
+    $html .= '    <link rel="icon" type="' . $mime . '" href="' . $escapedUrl . '">' . "\n";
+    $html .= '    <link rel="apple-touch-icon" href="' . $escapedUrl . '">';
+    return $html;
+}
+
+/**
  * Get old input value (for form repopulation)
  */
 function old(string $field, mixed $default = ''): string {
@@ -172,6 +210,11 @@ $router->post('/spmb/biodata/{token}/submit', [SpmbController::class, 'biodataSu
 $router->get('/spmb/komitmen/{token}', [SpmbController::class, 'komitmenPublic']);
 $router->post('/spmb/komitmen/{token}/submit', [SpmbController::class, 'komitmenSubmit']);
 $router->get('/spmb/komitmen/{token}/cetak', [SpmbController::class, 'komitmenCetakPublic']);
+$router->get('/spmb/psikolog/{token}', [SpmbController::class, 'screeningPsikologPublicView']);
+$router->get('/spmb/psikolog/{token}/download', [SpmbController::class, 'screeningPsikologPublicDownload']);
+$router->get('/spmb/psikolog/{token}/raw', [SpmbController::class, 'screeningPsikologPublicRaw']);
+$router->get('/spmb/observasi/{token}', [SpmbController::class, 'observasiAwalPublicForm']);
+$router->post('/spmb/observasi/{token}/submit', [SpmbController::class, 'observasiAwalPublicSubmit']);
 
 // -- Dashboard (requires auth) --
 $router->get('/', function() {
@@ -670,6 +713,31 @@ $router->get('/kelola-spmb/pengumuman-kelulusan/cetak', [SpmbController::class, 
 $router->get('/kelola-spmb/pengumuman-kelulusan/get-teks-wa', [SpmbController::class, 'getTeksPengumumanGrupAjax'], [Middleware::permissionRequired('spmb.view')]);
 $router->post('/kelola-spmb/kirim-wa-kelulusan/{id}', [SpmbController::class, 'kirimWaKelulusan'], [Middleware::permissionRequired('spmb.update')]);
 $router->post('/kelola-spmb/kirim-wa-kelulusan-bulk', [SpmbController::class, 'kirimWaKelulusanBulk'], [Middleware::permissionRequired('spmb.update')]);
+
+// 6. Screening Psikolog (Galeri File PDF)
+$router->get('/kelola-spmb/screening-psikolog', [SpmbController::class, 'screeningPsikologIndex'], [Middleware::permissionRequired('spmb.view')]);
+$router->post('/kelola-spmb/screening-psikolog/upload', [SpmbController::class, 'screeningPsikologUpload'], [Middleware::permissionRequired('spmb.update')]);
+$router->post('/kelola-spmb/screening-psikolog/hapus/{id}', [SpmbController::class, 'screeningPsikologHapus'], [Middleware::permissionRequired('spmb.update')]);
+$router->get('/kelola-spmb/screening-psikolog/view/{id}', [SpmbController::class, 'screeningPsikologView'], [Middleware::permissionRequired('spmb.view')]);
+$router->get('/kelola-spmb/screening-psikolog/download/{id}', [SpmbController::class, 'screeningPsikologDownload'], [Middleware::permissionRequired('spmb.view')]);
+$router->get('/kelola-spmb/screening-psikolog/export', [SpmbController::class, 'screeningPsikologExport'], [Middleware::permissionRequired('spmb.view')]);
+$router->get('/kelola-spmb/screening-psikolog/broadcast-data', [SpmbController::class, 'screeningPsikologBroadcastData'], [Middleware::permissionRequired('spmb.view')]);
+$router->post('/kelola-spmb/screening-psikolog/send-wa/{id}', [SpmbController::class, 'screeningPsikologSendWaSingle'], [Middleware::permissionRequired('spmb.update')]);
+$router->post('/kelola-spmb/screening-psikolog/broadcast-send-single', [SpmbController::class, 'screeningPsikologSendWaSingle'], [Middleware::permissionRequired('spmb.update')]);
+
+// 7. Observasi Awal SPMB
+$router->get('/kelola-spmb/observasi-awal', [SpmbController::class, 'observasiAwalIndex'], [Middleware::permissionRequired('spmb.view')]);
+$router->get('/kelola-spmb/observasi-awal/pengaturan', [SpmbController::class, 'observasiAwalPengaturan'], [Middleware::permissionRequired('spmb.update')]);
+$router->post('/kelola-spmb/observasi-awal/group/store', [SpmbController::class, 'observasiAwalGroupStore'], [Middleware::permissionRequired('spmb.update')]);
+$router->post('/kelola-spmb/observasi-awal/group/delete/{id}', [SpmbController::class, 'observasiAwalGroupDelete'], [Middleware::permissionRequired('spmb.update')]);
+$router->post('/kelola-spmb/observasi-awal/pertanyaan/store', [SpmbController::class, 'observasiAwalPertanyaanStore'], [Middleware::permissionRequired('spmb.update')]);
+$router->post('/kelola-spmb/observasi-awal/pertanyaan/delete/{id}', [SpmbController::class, 'observasiAwalPertanyaanDelete'], [Middleware::permissionRequired('spmb.update')]);
+$router->get('/kelola-spmb/observasi-awal/detail/{id}', [SpmbController::class, 'observasiAwalDetail'], [Middleware::permissionRequired('spmb.view')]);
+$router->post('/kelola-spmb/observasi-awal/send-wa/{id}', [SpmbController::class, 'observasiAwalSendWaSingle'], [Middleware::permissionRequired('spmb.update')]);
+$router->get('/kelola-spmb/observasi-awal/broadcast-data', [SpmbController::class, 'observasiAwalBroadcastData'], [Middleware::permissionRequired('spmb.view')]);
+$router->post('/kelola-spmb/observasi-awal/broadcast-send-single', [SpmbController::class, 'observasiAwalSendWaSingle'], [Middleware::permissionRequired('spmb.update')]);
+$router->get('/kelola-spmb/observasi-awal/export', [SpmbController::class, 'observasiAwalExport'], [Middleware::permissionRequired('spmb.view')]);
+$router->get('/kelola-spmb/observasi-awal/cetak/{id}', [SpmbController::class, 'observasiAwalCetak'], [Middleware::permissionRequired('spmb.view')]);
 $router->get('/kelola-pelanggaran-siswa', [PelanggaranSiswaController::class, 'index'], [Middleware::permissionRequired('pelanggaran_siswa.view')]);
 $router->get('/kelola-izin-guru', [IzinGuruController::class, 'index'], [Middleware::permissionRequired('izin_guru.view')]);
 $router->get('/kelola-buku-angkatan-siswa', [BukuAngkatanSiswaController::class, 'index'], [Middleware::permissionRequired('buku_angkatan.view')]);
@@ -1044,6 +1112,44 @@ $router->get('/pwa-icon.png', function() {
     readfile($activeIcon);
     exit;
 });
+
+// -- Dynamic Favicon Route (Always serve active favicon or fallback with proper headers) --
+$router->get('/favicon.ico', function() {
+    $favPath = '';
+    if (defined('SYS_APP_FAVICON') && !empty(SYS_APP_FAVICON)) {
+        $cand = BASE_PATH . '/' . ltrim(SYS_APP_FAVICON, '/');
+        if (file_exists($cand)) $favPath = $cand;
+    }
+    if (empty($favPath)) {
+        $uploadDir = BASE_PATH . '/public/uploads/settings/';
+        $favs = glob($uploadDir . 'favicon_*.*');
+        if (!empty($favs)) $favPath = end($favs);
+    }
+    if (empty($favPath) && file_exists(BASE_PATH . '/favicon.ico')) {
+        $favPath = BASE_PATH . '/favicon.ico';
+    }
+    if (empty($favPath) && file_exists(PUBLIC_PATH . '/favicon.ico')) {
+        $favPath = PUBLIC_PATH . '/favicon.ico';
+    }
+    if (empty($favPath) && defined('SYS_APP_LOGO') && !empty(SYS_APP_LOGO)) {
+        $cand = BASE_PATH . '/' . ltrim(SYS_APP_LOGO, '/');
+        if (file_exists($cand)) $favPath = $cand;
+    }
+    if (empty($favPath) || !file_exists($favPath)) {
+        http_response_code(404);
+        exit;
+    }
+
+    $ext = strtolower(pathinfo($favPath, PATHINFO_EXTENSION));
+    $mime = ($ext === 'ico') ? 'image/x-icon' : ($ext === 'png' ? 'image/png' : ($ext === 'svg' ? 'image/svg+xml' : 'image/x-icon'));
+    
+    header('Content-Type: ' . $mime);
+    header('Cache-Control: public, max-age=604800');
+    header('Last-Modified: ' . gmdate('D, d M Y H:i:s', filemtime($favPath)) . ' GMT');
+    readfile($favPath);
+    exit;
+});
+
 
 // -- PWA Manifest & Service Worker Routes --
 $router->get('/manifest.json', function() {

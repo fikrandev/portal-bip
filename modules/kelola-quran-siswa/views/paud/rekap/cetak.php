@@ -9,6 +9,8 @@ $katLabel = ($filterKategori === 'tahsin') ? 'a. Tahsin Al-Qur\'an (Iqro)' : (($
 <!DOCTYPE html>
 <html lang="id">
 <head>
+    <!-- Favicon -->
+    <?= function_exists('renderFaviconTags') ? renderFaviconTags() : '' ?>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rekap Nilai Qur'an PAUD - <?= SYS_APP_NAME ?></title>

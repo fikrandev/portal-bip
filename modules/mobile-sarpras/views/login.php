@@ -6,6 +6,9 @@
     <meta name="theme-color" content="#2563eb">
     <title><?= htmlspecialchars($pageTitle ?? 'Login Sarpras') ?></title>
     
+    <!-- Favicon -->
+    <?= function_exists('renderFaviconTags') ? renderFaviconTags() : '' ?>
+    
     <link rel="manifest" href="<?= url('mobile-sarpras/manifest.json') ?>">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>

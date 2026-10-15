@@ -11,6 +11,8 @@ $teacherTitle = !empty($itemsToPrint[0]['guru']['nama']) ? $itemsToPrint[0]['gur
 <!DOCTYPE html>
 <html lang="id">
 <head>
+    <!-- Favicon -->
+    <?= function_exists('renderFaviconTags') ? renderFaviconTags() : '' ?>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rincian Hari Efektif - <?= e($teacherTitle) ?></title>

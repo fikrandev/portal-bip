@@ -31,6 +31,9 @@ $sudahTtd  = ($pendaftar['status_ttd_komitmen'] ?? '') === 'Sudah TTD';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= htmlspecialchars($pageTitle ?? 'Cetak Surat Komitmen Orang Tua') ?></title>
     
+    <!-- Favicon -->
+    <?= function_exists('renderFaviconTags') ? renderFaviconTags() : '' ?>
+    
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
