@@ -419,13 +419,18 @@ class WaGateway
             ];
         }
 
-        // Jalankan background via WScript / VBScript atau cmd start /B
+        // Jalankan background via WScript / VBScript atau cmd start /B (Windows) atau PM2 / nohup (Linux / aaPanel)
         try {
-            $vbsFile = $serverDir . '/start-background.vbs';
-            if (file_exists($vbsFile)) {
-                pclose(popen("wscript \"" . $vbsFile . "\"", "r"));
+            if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+                $vbsFile = $serverDir . '/start-background.vbs';
+                if (file_exists($vbsFile)) {
+                    pclose(popen("wscript \"" . $vbsFile . "\"", "r"));
+                } else {
+                    pclose(popen("cd /d \"" . $serverDir . "\" && start /B node server.js >nul 2>&1", "r"));
+                }
             } else {
-                pclose(popen("cd /d \"" . $serverDir . "\" && start /B node server.js >nul 2>&1", "r"));
+                // Linux / aaPanel: Coba PM2 terlebih dahulu jika ada, atau fallback ke nohup
+                pclose(popen("cd \"" . $serverDir . "\" && (pm2 start ecosystem.config.js || nohup node server.js > /dev/null 2>&1 &)", "r"));
             }
 
             // Tunggu 1.5 detik
