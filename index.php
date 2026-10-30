@@ -1261,6 +1261,97 @@ $router->get('/mobile-migrate', function() {
     exit;
 }, [Middleware::roleRequired('super_admin')]);
 
+$router->any('/auto-migrate', function() {
+    $res = AutoMigrate::run(true);
+    
+    if (isset($_GET['format']) && $_GET['format'] === 'json') {
+        Response::json([
+            'success' => empty($res['errors']),
+            'results' => $res
+        ]);
+        exit;
+    }
+    
+    header('Content-Type: text/html; charset=utf-8');
+    ?>
+    <!DOCTYPE html>
+    <html lang="id">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Portal BIP — Sinkronisasi Database Otomatis</title>
+        <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+        <style>body { font-family: 'Inter', sans-serif; }</style>
+    </head>
+    <body class="bg-slate-900 text-slate-100 min-h-screen flex items-center justify-center p-4">
+        <div class="max-w-xl w-full bg-slate-800/90 backdrop-blur border border-slate-700/80 rounded-3xl p-6 sm:p-8 shadow-2xl">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center text-2xl font-bold">
+                    ⚡
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-white">Sinkronisasi Database Portal BIP</h1>
+                    <p class="text-xs text-slate-400">AutoMigrate Engine (Zero Downtime Synchronizer)</p>
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <div class="p-4 rounded-2xl bg-slate-900/60 border border-slate-700/60 flex items-center justify-between">
+                    <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Migrasi Baru Diterapkan:</span>
+                    <span class="px-3 py-1 rounded-xl text-xs font-bold <?= !empty($res['applied']) ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' : 'bg-slate-800 text-slate-400' ?>">
+                        <?= count($res['applied'] ?? []) ?> Task
+                    </span>
+                </div>
+
+                <div class="p-4 rounded-2xl bg-slate-900/60 border border-slate-700/60 flex items-center justify-between">
+                    <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Sudah Up-to-Date (Skipped):</span>
+                    <span class="px-3 py-1 rounded-xl text-xs font-bold bg-blue-500/20 text-blue-400 border border-blue-500/40">
+                        <?= count($res['skipped'] ?? []) ?> Task
+                    </span>
+                </div>
+
+                <?php if (!empty($res['errors'])): ?>
+                <div class="p-4 rounded-2xl bg-rose-950/40 border border-rose-500/40 text-rose-300 text-xs space-y-1">
+                    <div class="font-bold">⚠️ Terdapat <?= count($res['errors']) ?> kendala:</div>
+                    <pre class="overflow-x-auto text-[11px] p-2 bg-slate-950/80 rounded-xl"><?= htmlspecialchars(print_r($res['errors'], true)) ?></pre>
+                </div>
+                <?php else: ?>
+                <div class="p-4 rounded-2xl bg-emerald-950/30 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2">
+                    <span>✓</span>
+                    <span>Seluruh tabel dan struktur database 100% mutakhir dan sinkron!</span>
+                </div>
+                <?php endif; ?>
+
+                <?php if (!empty($res['applied'])): ?>
+                <div class="space-y-1.5 mt-2">
+                    <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Detail Migrasi Baru:</div>
+                    <div class="max-h-48 overflow-y-auto space-y-1 pr-1">
+                        <?php foreach ($res['applied'] as $appItem): ?>
+                            <div class="px-3 py-2 rounded-xl bg-slate-900/40 border border-slate-800 text-xs text-slate-300 font-mono flex items-center gap-2">
+                                <span class="text-emerald-400">✓</span> <?= htmlspecialchars($appItem) ?>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <?php endif; ?>
+            </div>
+
+            <div class="mt-8 flex gap-3">
+                <a href="<?= url('auto-migrate') ?>" class="flex-1 text-center px-4 py-2.5 rounded-2xl bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold transition-all">
+                    Jalankan Ulang
+                </a>
+                <a href="<?= url('dashboard') ?>" class="flex-1 text-center px-4 py-2.5 rounded-2xl bg-primary-600 hover:bg-primary-500 text-white text-xs font-bold shadow-lg shadow-primary-600/30 transition-all">
+                    Kembali ke Dashboard
+                </a>
+            </div>
+        </div>
+    </body>
+    </html>
+    <?php
+    exit;
+});
+
 // -- API Routes (JSON) --
 $router->get('/api/quran/surat', [PortalGuruController::class, 'apiSuratList']);
 $router->get('/api/quran/surat/{nomor}', [PortalGuruController::class, 'apiSuratDetail']);

@@ -69,6 +69,13 @@ class AutoMigrate
             '2026_10_15_000031_fix_sarpras_barang_foto_and_ruangan' => 'migration031FixSarprasBarangFotoAndRuangan',
             '2026_10_15_000032_add_spmb_screening_psikolog_wa_broadcast' => 'migration032AddSpmbScreeningPsikologWaBroadcast',
             '2026_10_15_000033_add_spmb_observasi_awal'                   => 'migration033AddSpmbObservasiAwal',
+            '2026_10_20_000034_sync_absen_siswa_tables'                   => 'migration034SyncAbsenSiswaTables',
+            '2026_10_20_000035_sync_quran_siswa_sd_smp_sma'              => 'migration035SyncQuranSiswaSdSmpSma',
+            '2026_10_20_000036_sync_quran_paud_tables'                    => 'migration036SyncQuranPaudTables',
+            '2026_10_20_000037_sync_nilai_cp_atp_v2'                      => 'migration037SyncNilaiCpAtpV2',
+            '2026_10_20_000038_sync_pegawai_penugasan_tables'             => 'migration038SyncPegawaiPenugasanTables',
+            '2026_10_20_000039_sync_rbac_and_modules_registry'            => 'migration039SyncRbacAndModulesRegistry',
+            '2026_10_20_000040_sync_spmb_full_integrity'                  => 'migration040SyncSpmbFullIntegrity',
         ];
     }
     /**
@@ -1345,8 +1352,12 @@ class AutoMigrate
     {
         if (self::hasTable($pdo, 'spmb_pendaftar')) {
             // Data Calon Siswa
+            self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'kategori_pendaftar', "VARCHAR(80) NULL DEFAULT 'Umum (Luar Bina Insan)'", 'jalur_pendaftaran');
+            self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'nama_rekomendasi', 'VARCHAR(150) NULL', 'kategori_pendaftar');
             self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'no_kk', 'VARCHAR(30) NULL', 'nik');
+            self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'umur', 'VARCHAR(50) NULL', 'tanggal_lahir');
             self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'no_akta_lahir', 'VARCHAR(60) NULL', 'umur');
+            self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'metode_pembayaran', "VARCHAR(50) NOT NULL DEFAULT 'Tunai'", 'status_pembayaran');
             self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'alergi', 'VARCHAR(150) NULL', 'jumlah_saudara');
             self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'tinggi_badan', 'INT NULL', 'alergi');
             self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'berat_badan', 'INT NULL', 'tinggi_badan');
@@ -1447,27 +1458,34 @@ class AutoMigrate
             // Pastikan group yang sudah ada terisi tanggal_patokan_umur = '2027-07-01'
             $pdo->exec("UPDATE `spmb_group` SET `tanggal_patokan_umur` = '2027-07-01' WHERE `tanggal_patokan_umur` IS NULL OR `tanggal_patokan_umur` = '0000-00-00'");
 
-            // Sinkronkan / perbarui umur calon siswa yang sudah terdaftar berdasarkan patokan umur group-nya
-            $pendaftarRows = $pdo->query("
-                SELECT p.id, p.tanggal_lahir, g.tanggal_patokan_umur
-                FROM `spmb_pendaftar` p
-                LEFT JOIN `spmb_group` g ON g.id = p.group_id
-                WHERE p.tanggal_lahir IS NOT NULL AND p.tanggal_lahir != ''
-            ")->fetchAll(PDO::FETCH_ASSOC);
+            // Pastikan kolom umur pada spmb_pendaftar sudah ada
+            if (self::hasTable($pdo, 'spmb_pendaftar')) {
+                self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'umur', 'VARCHAR(50) NULL', 'tanggal_lahir');
 
-            if (!empty($pendaftarRows)) {
-                $stmtUpdateUmur = $pdo->prepare("UPDATE `spmb_pendaftar` SET `umur` = ? WHERE `id` = ?");
-                foreach ($pendaftarRows as $row) {
-                    try {
-                        $tglLahir = new DateTime($row['tanggal_lahir']);
-                        $patokan = new DateTime(!empty($row['tanggal_patokan_umur']) ? $row['tanggal_patokan_umur'] : '2027-07-01');
-                        if ($tglLahir <= $patokan) {
-                            $diff = $patokan->diff($tglLahir);
-                            $umurStr = $diff->y . ' Tahun' . ($diff->m > 0 ? ' ' . $diff->m . ' Bulan' : '');
-                            $stmtUpdateUmur->execute([$umurStr, $row['id']]);
+                // Sinkronkan / perbarui umur calon siswa yang sudah terdaftar berdasarkan patokan umur group-nya
+                try {
+                    $pendaftarRows = $pdo->query("
+                        SELECT p.id, p.tanggal_lahir, g.tanggal_patokan_umur
+                        FROM `spmb_pendaftar` p
+                        LEFT JOIN `spmb_group` g ON g.id = p.group_id
+                        WHERE p.tanggal_lahir IS NOT NULL AND p.tanggal_lahir != ''
+                    ")->fetchAll(PDO::FETCH_ASSOC);
+
+                    if (!empty($pendaftarRows)) {
+                        $stmtUpdateUmur = $pdo->prepare("UPDATE `spmb_pendaftar` SET `umur` = ? WHERE `id` = ?");
+                        foreach ($pendaftarRows as $row) {
+                            try {
+                                $tglLahir = new DateTime($row['tanggal_lahir']);
+                                $patokan = new DateTime(!empty($row['tanggal_patokan_umur']) ? $row['tanggal_patokan_umur'] : '2027-07-01');
+                                if ($tglLahir <= $patokan) {
+                                    $diff = $patokan->diff($tglLahir);
+                                    $umurStr = $diff->y . ' Tahun' . ($diff->m > 0 ? ' ' . $diff->m . ' Bulan' : '');
+                                    $stmtUpdateUmur->execute([$umurStr, $row['id']]);
+                                }
+                            } catch (Throwable $e) {}
                         }
-                    } catch (Throwable $e) {}
-                }
+                    }
+                } catch (Throwable $e) {}
             }
         }
     }
@@ -1920,6 +1938,869 @@ class AutoMigrate
                 $insertQ->execute([$gMid3, $jSmp, 'Ananda mudah bekerja sama dalam kelompok dan memiliki kepedulian sosial terhadap teman?', 'Kerja Sama & Empati', $defaultOptions, 1]);
             }
         }
+    }
+
+    /**
+     * 034. Presensi & Absen Siswa Modern Tables & Columns
+     */
+    private static function migration034SyncAbsenSiswaTables(PDO $pdo): void
+    {
+        // 1. Buat Tabel absen_group jika belum ada
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `absen_group` (
+                `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+                `unit` varchar(50) NOT NULL,
+                `tahun_akademik_id` int(11) NOT NULL DEFAULT 1,
+                `semester` varchar(20) NOT NULL DEFAULT 'Ganjil',
+                `tipe` enum('mapel','kelas','umum') NOT NULL DEFAULT 'mapel',
+                `kelas` varchar(100) DEFAULT NULL,
+                `mata_pelajaran` varchar(150) DEFAULT NULL,
+                `guru_id` bigint(20) UNSIGNED DEFAULT NULL,
+                `judul` varchar(255) NOT NULL,
+                `deskripsi` text DEFAULT NULL,
+                `tanggal_mulai` date DEFAULT NULL,
+                `tanggal_selesai` date DEFAULT NULL,
+                `is_active` tinyint(1) NOT NULL DEFAULT 1,
+                `created_by` bigint(20) UNSIGNED DEFAULT NULL,
+                `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                `deleted_at` datetime DEFAULT NULL,
+                PRIMARY KEY (`id`),
+                KEY `idx_absen_group_unit` (`unit`),
+                KEY `idx_absen_group_guru` (`guru_id`),
+                KEY `idx_absen_group_active` (`is_active`, `deleted_at`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
+
+        // 2. Tambah kolom-kolom baru ke presensi_kelas
+        if (self::hasTable($pdo, 'presensi_kelas')) {
+            self::addColumnIfNotExists($pdo, 'presensi_kelas', 'group_id', 'bigint(20) UNSIGNED DEFAULT NULL', 'id');
+            self::addColumnIfNotExists($pdo, 'presensi_kelas', 'tipe_presensi', "enum('mapel','kelas') NOT NULL DEFAULT 'mapel'", 'group_id');
+            self::addColumnIfNotExists($pdo, 'presensi_kelas', 'mata_pelajaran', 'varchar(150) DEFAULT NULL', 'kelas');
+            self::addColumnIfNotExists($pdo, 'presensi_kelas', 'pertemuan_ke', 'int(11) DEFAULT 1', 'tanggal');
+            self::addColumnIfNotExists($pdo, 'presensi_kelas', 'materi', 'varchar(255) DEFAULT NULL', 'jp');
+            self::addColumnIfNotExists($pdo, 'presensi_kelas', 'catatan', 'text DEFAULT NULL', 'materi');
+            self::addColumnIfNotExists($pdo, 'presensi_kelas', 'created_by', 'bigint(20) UNSIGNED DEFAULT NULL', 'catatan');
+            self::addColumnIfNotExists($pdo, 'presensi_kelas', 'created_at', 'datetime DEFAULT CURRENT_TIMESTAMP', 'waktu_presensi');
+            self::addColumnIfNotExists($pdo, 'presensi_kelas', 'updated_at', 'datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP', 'created_at');
+        }
+
+        // 3. Update presensi_kelas_detail enum & index
+        if (self::hasTable($pdo, 'presensi_kelas_detail')) {
+            self::modifyColumn($pdo, 'presensi_kelas_detail', 'status', "enum('H','S','I','A','T') NOT NULL DEFAULT 'H'");
+            self::addIndexIfNotExists($pdo, 'presensi_kelas_detail', 'uq_presensi_siswa', '`presensi_kelas_id`, `siswa_id`', true);
+        }
+
+        // 4. RBAC Permission absen_siswa.rekap
+        try {
+            if (self::hasTable($pdo, 'permissions')) {
+                $check = $pdo->prepare("SELECT id FROM permissions WHERE slug = ?");
+                $check->execute(['absen_siswa.rekap']);
+                $permId = $check->fetchColumn();
+                if (!$permId) {
+                    $insertP = $pdo->prepare("INSERT INTO permissions (name, slug, description, created_at) VALUES (?, ?, ?, NOW())");
+                    $insertP->execute(['Rekap Absen Siswa', 'absen_siswa.rekap', 'Melihat dan mencetak rekapitulasi presensi siswa (per kelas & per mapel)']);
+                    $permId = $pdo->lastInsertId();
+                }
+
+                if ($permId && self::hasTable($pdo, 'role_permissions') && self::hasTable($pdo, 'roles')) {
+                    $roles = $pdo->query("SELECT id FROM roles WHERE slug IN ('super_admin', 'admin', 'kepala_sekolah', 'waka_kurikulum', 'guru')")->fetchAll(PDO::FETCH_COLUMN);
+                    $insRp = $pdo->prepare("INSERT IGNORE INTO role_permissions (role_id, permission_id) VALUES (?, ?)");
+                    foreach ($roles as $rId) {
+                        $insRp->execute([$rId, $permId]);
+                    }
+                }
+            }
+        } catch (Throwable $e) {}
+    }
+
+    /**
+     * 035. Qur'an Siswa SD, SMP/SMA & Central Hub
+     */
+    private static function migration035SyncQuranSiswaSdSmpSma(PDO $pdo): void
+    {
+        // 1. Buat atau perbarui quran_siswa_setoran
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `quran_siswa_setoran` (
+                `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+                `siswa_id` bigint(20) UNSIGNED NOT NULL,
+                `guru_id` bigint(20) UNSIGNED DEFAULT NULL,
+                `tahun_akademik_id` int(11) DEFAULT NULL,
+                `jenjang` enum('PAUD','SD','SMP_SMA') NOT NULL DEFAULT 'SD',
+                `tanggal` date NOT NULL,
+                `jenis_setoran` enum('ziyadah','murojaah','iqro','tasmi','munaqasyah','ujian') NOT NULL DEFAULT 'ziyadah',
+                `iqro_jilid` tinyint(4) DEFAULT NULL,
+                `iqro_halaman` smallint(6) DEFAULT NULL,
+                `surah_nomor` tinyint(4) DEFAULT NULL,
+                `surah_nama` varchar(100) DEFAULT NULL,
+                `ayat_awal` smallint(6) DEFAULT NULL,
+                `ayat_akhir` smallint(6) DEFAULT NULL,
+                `juz` tinyint(4) DEFAULT NULL,
+                `halaman_quran` smallint(6) DEFAULT NULL,
+                `nilai_kelancaran` enum('A','B','C','D') NOT NULL DEFAULT 'A',
+                `nilai_tajwid` enum('A','B','C','D') NOT NULL DEFAULT 'A',
+                `nilai_makhorij` enum('A','B','C','D') NOT NULL DEFAULT 'A',
+                `status_lulus` enum('lancar','ulang','mutqin','perlu_bimbingan') NOT NULL DEFAULT 'lancar',
+                `catatan` text DEFAULT NULL,
+                `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+                `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+                PRIMARY KEY (`id`),
+                KEY `idx_qsetoran_siswa` (`siswa_id`),
+                KEY `idx_qsetoran_jenjang` (`jenjang`),
+                KEY `idx_qsetoran_tanggal` (`tanggal`),
+                KEY `idx_qsetoran_jenis` (`jenis_setoran`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
+
+        self::addColumnIfNotExists($pdo, 'quran_siswa_setoran', 'jenjang', "enum('PAUD','SD','SMP_SMA') NOT NULL DEFAULT 'SD'", 'tahun_akademik_id');
+        self::addColumnIfNotExists($pdo, 'quran_siswa_setoran', 'iqro_jilid', 'tinyint(4) DEFAULT NULL', 'jenis_setoran');
+        self::addColumnIfNotExists($pdo, 'quran_siswa_setoran', 'iqro_halaman', 'smallint(6) DEFAULT NULL', 'iqro_jilid');
+        self::addColumnIfNotExists($pdo, 'quran_siswa_setoran', 'surah_nomor', 'tinyint(4) DEFAULT NULL', 'iqro_halaman');
+        self::addColumnIfNotExists($pdo, 'quran_siswa_setoran', 'surah_nama', 'varchar(100) DEFAULT NULL', 'surah_nomor');
+        self::addColumnIfNotExists($pdo, 'quran_siswa_setoran', 'ayat_awal', 'smallint(6) DEFAULT NULL', 'surah_nama');
+        self::addColumnIfNotExists($pdo, 'quran_siswa_setoran', 'ayat_akhir', 'smallint(6) DEFAULT NULL', 'ayat_awal');
+        self::addColumnIfNotExists($pdo, 'quran_siswa_setoran', 'juz', 'tinyint(4) DEFAULT NULL', 'ayat_akhir');
+        self::addColumnIfNotExists($pdo, 'quran_siswa_setoran', 'halaman_quran', 'smallint(6) DEFAULT NULL', 'juz');
+        self::addColumnIfNotExists($pdo, 'quran_siswa_setoran', 'nilai_makhorij', "enum('A','B','C','D') NOT NULL DEFAULT 'A'", 'nilai_tajwid');
+        self::addColumnIfNotExists($pdo, 'quran_siswa_setoran', 'status_lulus', "enum('lancar','ulang','mutqin','perlu_bimbingan') NOT NULL DEFAULT 'lancar'", 'nilai_makhorij');
+        self::addColumnIfNotExists($pdo, 'quran_siswa_setoran', 'updated_at', 'datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()', 'created_at');
+
+        // 2. Buat atau perbarui quran_siswa_target
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `quran_siswa_target` (
+                `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+                `siswa_id` bigint(20) UNSIGNED NOT NULL,
+                `jenjang` enum('PAUD','SD','SMP_SMA') NOT NULL DEFAULT 'SD',
+                `target_juz` varchar(100) DEFAULT NULL,
+                `target_iqro` varchar(50) DEFAULT NULL,
+                `capaian_terakhir` varchar(150) DEFAULT NULL,
+                `total_juz_selesai` decimal(4,2) NOT NULL DEFAULT 0.00,
+                `predikat` enum('Mumtaz','Jayyid Jiddan','Jayyid','Maqbul','Proses') NOT NULL DEFAULT 'Proses',
+                `status` enum('Aktif','Tercapai') NOT NULL DEFAULT 'Aktif',
+                `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+                PRIMARY KEY (`id`),
+                KEY `idx_qtarget_jenjang` (`jenjang`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
+
+        self::addColumnIfNotExists($pdo, 'quran_siswa_target', 'jenjang', "enum('PAUD','SD','SMP_SMA') NOT NULL DEFAULT 'SD'", 'siswa_id');
+        self::addColumnIfNotExists($pdo, 'quran_siswa_target', 'target_iqro', 'varchar(50) DEFAULT NULL', 'target_juz');
+        self::addColumnIfNotExists($pdo, 'quran_siswa_target', 'capaian_terakhir', 'varchar(150) DEFAULT NULL', 'target_iqro');
+        self::addColumnIfNotExists($pdo, 'quran_siswa_target', 'total_juz_selesai', 'decimal(4,2) NOT NULL DEFAULT 0.00', 'capaian_terakhir');
+        self::addColumnIfNotExists($pdo, 'quran_siswa_target', 'predikat', "enum('Mumtaz','Jayyid Jiddan','Jayyid','Maqbul','Proses') NOT NULL DEFAULT 'Proses'", 'total_juz_selesai');
+        self::addColumnIfNotExists($pdo, 'quran_siswa_target', 'status', "enum('Aktif','Tercapai') NOT NULL DEFAULT 'Aktif'", 'predikat');
+        self::addIndexIfNotExists($pdo, 'quran_siswa_target', 'uk_qtarget_siswa_jenjang', '`siswa_id`, `jenjang`', true);
+
+        // 3. Register modules in modules table
+        try {
+            if (self::hasTable($pdo, 'modules')) {
+                $icon = '<svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\" stroke-width=\"1.5\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25\" /></svg>';
+                
+                $checkSD = $pdo->prepare("SELECT id FROM modules WHERE slug = ?");
+                $checkSD->execute(['kelola-quran-siswa-sd']);
+                if (!$checkSD->fetchColumn()) {
+                    $pdo->prepare("INSERT INTO modules (name, slug, description, module_group, icon_svg, color, route, sort_order, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)")
+                        ->execute(["Qur'an Siswa SD", 'kelola-quran-siswa-sd', "Ziyadah, Muroja'ah Juz 30/29 & Tilawah Siswa SD IT", 'Administrasi Guru', $icon, '#10B981', '/kelola-quran-siswa-sd', 14]);
+                }
+
+                $checkSMP = $pdo->prepare("SELECT id FROM modules WHERE slug = ?");
+                $checkSMP->execute(['kelola-quran-siswa-smp-sma']);
+                if (!$checkSMP->fetchColumn()) {
+                    $pdo->prepare("INSERT INTO modules (name, slug, description, module_group, icon_svg, color, route, sort_order, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)")
+                        ->execute(["Qur'an Siswa SMP & SMA", 'kelola-quran-siswa-smp-sma', "Ziyadah Mandiri, Muroja'ah & Ujian Tahfidz SMP-SMA IT", 'Administrasi Guru', $icon, '#6366F1', '/kelola-quran-siswa-smp-sma', 15]);
+                }
+            }
+        } catch (Throwable $e) {}
+    }
+
+    /**
+     * 036. Qur'an Siswa PAUD Tables & Sample Seed
+     */
+    private static function migration036SyncQuranPaudTables(PDO $pdo): void
+    {
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `quran_paud_group` (
+                `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+                `nama_grup` varchar(150) NOT NULL,
+                `kategori` varchar(50) NOT NULL DEFAULT 'all',
+                `tahun_akademik_id` int(11) DEFAULT NULL,
+                `semester` enum('Ganjil','Genap') NOT NULL DEFAULT 'Ganjil',
+                `kelas` varchar(100) NOT NULL,
+                `guru_id` bigint(20) UNSIGNED DEFAULT NULL,
+                `guru_nama` varchar(150) DEFAULT NULL,
+                `target_materi` text DEFAULT NULL COMMENT 'JSON rincian target tahsin dan tahfidz',
+                `deskripsi` text DEFAULT NULL,
+                `is_active` tinyint(1) NOT NULL DEFAULT 1,
+                `created_by` bigint(20) UNSIGNED DEFAULT NULL,
+                `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                `deleted_at` datetime DEFAULT NULL,
+                PRIMARY KEY (`id`),
+                KEY `idx_qpaud_kategori` (`kategori`),
+                KEY `idx_qpaud_kelas` (`kelas`),
+                KEY `idx_qpaud_ta` (`tahun_akademik_id`),
+                KEY `idx_qpaud_guru` (`guru_id`),
+                KEY `idx_qpaud_active` (`is_active`, `deleted_at`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
+        self::modifyColumn($pdo, 'quran_paud_group', 'kategori', "varchar(50) NOT NULL DEFAULT 'all'");
+
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `quran_paud_nilai` (
+                `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+                `group_id` bigint(20) UNSIGNED NOT NULL,
+                `siswa_id` bigint(20) UNSIGNED NOT NULL,
+                `tanggal_penilaian` date NOT NULL,
+                `materi_dinilai` varchar(150) NOT NULL,
+                `nilai_kelancaran` enum('A','B','C','D') NOT NULL DEFAULT 'A',
+                `nilai_makhraj` enum('A','B','C','D') NOT NULL DEFAULT 'A',
+                `nilai_adab` enum('A','B','C','D') NOT NULL DEFAULT 'A',
+                `bintang` tinyint(4) NOT NULL DEFAULT 5 COMMENT '1 sampai 5 bintang',
+                `status_lulus` enum('Mutqin','Lancar','Ulang','Perlu Bimbingan') NOT NULL DEFAULT 'Lancar',
+                `catatan` text DEFAULT NULL,
+                `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (`id`),
+                KEY `idx_qpnilai_group` (`group_id`),
+                KEY `idx_qpnilai_siswa` (`siswa_id`),
+                KEY `idx_qpnilai_tanggal` (`tanggal_penilaian`),
+                KEY `idx_qpnilai_status` (`status_lulus`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
+
+        // Register PAUD Quran module in modules table
+        try {
+            if (self::hasTable($pdo, 'modules')) {
+                $checkPaud = $pdo->prepare("SELECT id FROM modules WHERE slug = ?");
+                $checkPaud->execute(['kelola-quran-siswa-paud']);
+                if (!$checkPaud->fetchColumn()) {
+                    $iconPAUD = '<svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\" stroke-width=\"1.5\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25\" /><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M12 9v3m0 0v3m0-3h3m-3 0H9\" /></svg>';
+                    $pdo->prepare("INSERT INTO modules (name, slug, description, module_group, icon_svg, color, route, sort_order, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)")
+                        ->execute(["Qur'an Siswa PAUD", 'kelola-quran-siswa-paud', "Iqro', Tilawati & Hafalan Surah Pendek Siswa PAUD/TK", 'Administrasi Guru', $iconPAUD, '#F59E0B', '/kelola-quran-siswa-paud', 13]);
+                }
+            }
+        } catch (Throwable $e) {}
+    }
+
+    /**
+     * 037. Upgrade Nilai Tables for CP-based grading V2
+     */
+    private static function migration037SyncNilaiCpAtpV2(PDO $pdo): void
+    {
+        // 1. Buat nilai_group jika belum ada
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `nilai_group` (
+                `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+                `unit` varchar(50) NOT NULL DEFAULT 'SD',
+                `tahun_akademik_id` int(11) NOT NULL DEFAULT 1,
+                `semester` varchar(20) NOT NULL DEFAULT 'Ganjil',
+                `kelas_id` bigint(20) UNSIGNED NOT NULL DEFAULT 1,
+                `mata_pelajaran` varchar(150) NOT NULL DEFAULT '',
+                `jenis_penilaian` varchar(100) NOT NULL DEFAULT 'Sumatif',
+                `guru_id` bigint(20) UNSIGNED DEFAULT NULL,
+                `judul` varchar(255) NOT NULL DEFAULT '',
+                `tanggal` date DEFAULT NULL,
+                `is_active` tinyint(1) NOT NULL DEFAULT 1,
+                `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (`id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
+
+        // 2. Buat nilai_detail jika belum ada
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `nilai_detail` (
+                `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+                `group_id` bigint(20) UNSIGNED NOT NULL,
+                `siswa_id` bigint(20) UNSIGNED NOT NULL,
+                `nilai` decimal(5,2) DEFAULT NULL,
+                `catatan` text DEFAULT NULL,
+                `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (`id`),
+                KEY `idx_nilai_detail_group` (`group_id`),
+                KEY `idx_nilai_detail_siswa` (`siswa_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
+
+        // 3. Tambah kolom CP/ATP ke nilai_group & nilai_detail
+        self::addColumnIfNotExists($pdo, 'nilai_group', 'cpatp_id', 'BIGINT UNSIGNED DEFAULT NULL', 'jenis_penilaian');
+        self::addColumnIfNotExists($pdo, 'nilai_group', 'cpatp_doc_id', 'BIGINT UNSIGNED DEFAULT NULL', 'cpatp_id');
+        self::addColumnIfNotExists($pdo, 'nilai_detail', 'cpatp_row_index', 'INT NOT NULL DEFAULT 0', 'group_id');
+
+        // 4. Pastikan unique constraint uq_nilai_per_cp
+        self::addIndexIfNotExists($pdo, 'nilai_detail', 'uq_nilai_per_cp', '`group_id`, `siswa_id`, `cpatp_row_index`', true);
+    }
+
+    /**
+     * 038. Master Unit Tugas, Master Jabatan & Pegawai Penugasan
+     */
+    private static function migration038SyncPegawaiPenugasanTables(PDO $pdo): void
+    {
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `master_unit_tugas` (
+                `id` int(11) NOT NULL AUTO_INCREMENT,
+                `nama_unit` varchar(100) NOT NULL,
+                `deskripsi` text DEFAULT NULL,
+                `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (`id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
+
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `master_jabatan` (
+                `id` int(11) NOT NULL AUTO_INCREMENT,
+                `nama_jabatan` varchar(100) NOT NULL,
+                `kategori` varchar(50) DEFAULT NULL,
+                `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (`id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
+
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `pegawai_penugasan` (
+                `id` int(11) NOT NULL AUTO_INCREMENT,
+                `pegawai_id` bigint(20) UNSIGNED NOT NULL,
+                `no_sk` varchar(100) NOT NULL,
+                `tanggal_sk` date NOT NULL,
+                `unit_tugas_id` int(11) NOT NULL,
+                `jabatan_id` int(11) NOT NULL,
+                `tmt_mulai` date NOT NULL,
+                `tst_selesai` date DEFAULT NULL,
+                `file_sk` varchar(255) DEFAULT NULL,
+                `status` enum('Aktif','Tidak Aktif') NOT NULL DEFAULT 'Aktif',
+                `keterangan` text DEFAULT NULL,
+                `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (`id`),
+                KEY `idx_penugasan_pegawai` (`pegawai_id`),
+                KEY `idx_penugasan_unit` (`unit_tugas_id`),
+                KEY `idx_penugasan_jabatan` (`jabatan_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
+
+        // Seed default unit tugas & jabatan if empty
+        try {
+            $cntUnit = (int)$pdo->query("SELECT COUNT(*) FROM master_unit_tugas")->fetchColumn();
+            if ($cntUnit === 0) {
+                $units = ['Yayasan Bina Insan Palu', 'PAUD IT Bina Insan', 'SD IT Bina Insan', 'SMP IT Bina Insan', 'SMA IT Bina Insan'];
+                $stmt = $pdo->prepare("INSERT INTO master_unit_tugas (nama_unit) VALUES (?)");
+                foreach ($units as $u) {
+                    $stmt->execute([$u]);
+                }
+            }
+
+            $cntJab = (int)$pdo->query("SELECT COUNT(*) FROM master_jabatan")->fetchColumn();
+            if ($cntJab === 0) {
+                $jabs = ['Kepala Sekolah', 'Wakil Kepala Sekolah', 'Guru Kelas', 'Guru Mata Pelajaran', 'Guru Al-Qur\'an', 'Tenaga Administrasi', 'Petugas Sarpras'];
+                $stmt = $pdo->prepare("INSERT INTO master_jabatan (nama_jabatan) VALUES (?)");
+                foreach ($jabs as $j) {
+                    $stmt->execute([$j]);
+                }
+            }
+        } catch (Throwable $e) {}
+    }
+
+    /**
+     * 039. Sync Granular RBAC Permissions & Module Registry
+     */
+    private static function migration039SyncRbacAndModulesRegistry(PDO $pdo): void
+    {
+        if (!self::hasTable($pdo, 'permissions') || !self::hasTable($pdo, 'roles')) {
+            return;
+        }
+
+        $allPermissions = [
+            // Absen
+            ['absen_siswa.view', 'Lihat Absen Siswa', 'Melihat daftar dan rekap absensi siswa'],
+            ['absen_siswa.create', 'Input Absen Siswa', 'Mencatat kehadiran harian atau mapel siswa'],
+            ['absen_siswa.rekap', 'Rekap Absen Siswa', 'Melihat dan mencetak rekapitulasi presensi siswa'],
+            // Quran
+            ['quran_siswa.view', 'Lihat Quran Siswa', 'Melihat catatan setoran dan target Quran siswa'],
+            ['quran_siswa.create', 'Input Setoran Quran', 'Mencatat setoran ziyadah/murojaah siswa'],
+            ['quran_siswa.rekap', 'Rekap Quran Siswa', 'Mencetak laporan kemajuan Quran santri'],
+            // Nilai
+            ['nilai.view', 'Lihat Nilai', 'Melihat daftar nilai siswa'],
+            ['nilai.create', 'Input Nilai', 'Menginput nilai formatif/sumatif CP & ATP'],
+            // Pegawai Penugasan
+            ['pegawai.penugasan', 'Kelola Penugasan Pegawai', 'Mengatur SK penugasan dan beban kerja guru']
+        ];
+
+        try {
+            $stmtCheck = $pdo->prepare("SELECT id FROM permissions WHERE slug = ?");
+            $stmtInsert = $pdo->prepare("INSERT INTO permissions (name, slug, description, created_at) VALUES (?, ?, ?, NOW())");
+            
+            $adminRoles = $pdo->query("SELECT id FROM roles WHERE slug IN ('super_admin', 'admin')")->fetchAll(PDO::FETCH_COLUMN);
+            $stmtRp = $pdo->prepare("INSERT IGNORE INTO role_permissions (role_id, permission_id) VALUES (?, ?)");
+
+            foreach ($allPermissions as [$pName, $pSlug, $pDesc]) {
+                $stmtCheck->execute([$pSlug]);
+                $pId = $stmtCheck->fetchColumn();
+                if (!$pId) {
+                    $stmtInsert->execute([$pName, $pSlug, $pDesc]);
+                    $pId = $pdo->lastInsertId();
+                }
+                if ($pId && !empty($adminRoles)) {
+                    foreach ($adminRoles as $rId) {
+                        $stmtRp->execute([$rId, $pId]);
+                    }
+                }
+            }
+        } catch (Throwable $e) {}
+    }
+
+    /**
+     * 040. Full Integrity Synchronizer for Kelola SPMB Module
+     * Menjamin 100% kelengkapan tabel, kolom, default data, template surat,
+     * modul registry, dan RBAC permissions untuk modul SPMB di server.
+     */
+    private static function migration040SyncSpmbFullIntegrity(PDO $pdo): void
+    {
+        // 1. Pastikan tabel spmb_group ada dan lengkap
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `spmb_group` (
+                `id` INT AUTO_INCREMENT PRIMARY KEY,
+                `nama_group` VARCHAR(150) NOT NULL,
+                `tahun_ajaran` VARCHAR(50) NOT NULL,
+                `gelombang_default` VARCHAR(50) DEFAULT 'Gelombang 1',
+                `biaya_formulir` DECIMAL(12,2) DEFAULT 0,
+                `biaya_pindahan` DECIMAL(12,2) DEFAULT 0,
+                `kuota_paud` INT DEFAULT 0,
+                `kuota_sd` INT DEFAULT 0,
+                `kuota_smp` INT DEFAULT 0,
+                `kuota_sma` INT DEFAULT 0,
+                `tanggal_buka` DATE NULL,
+                `tanggal_tutup` DATE NULL,
+                `tanggal_patokan_umur` DATE NULL DEFAULT '2027-07-01',
+                `is_active` TINYINT(1) DEFAULT 1,
+                `keterangan` TEXT NULL,
+                `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+                `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                INDEX `idx_spmb_group_active` (`is_active`),
+                INDEX `idx_spmb_group_ta` (`tahun_ajaran`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
+        self::addColumnIfNotExists($pdo, 'spmb_group', 'biaya_pindahan', 'DECIMAL(12,2) DEFAULT 0', 'biaya_formulir');
+        self::addColumnIfNotExists($pdo, 'spmb_group', 'tanggal_patokan_umur', "DATE NULL DEFAULT '2027-07-01'", 'tanggal_tutup');
+
+        // Seed default group jika kosong
+        try {
+            $cntG = (int)$pdo->query("SELECT COUNT(*) FROM `spmb_group`")->fetchColumn();
+            if ($cntG === 0) {
+                $pdo->exec("
+                    INSERT INTO `spmb_group` (
+                        `nama_group`, `tahun_ajaran`, `gelombang_default`, `biaya_formulir`, `biaya_pindahan`,
+                        `kuota_paud`, `kuota_sd`, `kuota_smp`, `kuota_sma`,
+                        `tanggal_buka`, `tanggal_tutup`, `tanggal_patokan_umur`, `is_active`, `keterangan`
+                    ) VALUES (
+                        'SPMB 2026/2027', '2026/2027', 'Gelombang 1', 250000.00, 250000.00,
+                        50, 100, 100, 100,
+                        '2026-01-01', '2026-07-31', '2027-07-01', 1, 'Penerimaan Siswa Baru Tahun Pelajaran 2026/2027 SIT Bina Insan Palu'
+                    );
+                ");
+            }
+        } catch (Throwable $e) {}
+
+        // 2. Pastikan tabel spmb_pendaftar ada dan lengkap
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `spmb_pendaftar` (
+                `id` INT AUTO_INCREMENT PRIMARY KEY,
+                `group_id` INT NOT NULL,
+                `jenis_pendaftaran` ENUM('Siswa Baru', 'Pindahan', 'Daftar Tunggu') NOT NULL DEFAULT 'Siswa Baru',
+                `nomor_pendaftaran` VARCHAR(50) NOT NULL UNIQUE,
+                `tanggal_daftar` DATE NOT NULL,
+                `gelombang` VARCHAR(50) DEFAULT 'Gelombang 1',
+                `jenjang` ENUM('PAUD', 'SD', 'SMP', 'SMA') NOT NULL,
+                `jalur_pendaftaran` VARCHAR(50) DEFAULT 'Reguler',
+                `kategori_pendaftar` VARCHAR(80) NULL DEFAULT 'Umum (Luar Bina Insan)',
+                `nama_rekomendasi` VARCHAR(150) NULL,
+                `nisn` VARCHAR(20) NULL,
+                `nik` VARCHAR(20) NULL,
+                `no_kk` VARCHAR(30) NULL,
+                `nama_lengkap` VARCHAR(150) NOT NULL,
+                `nama_panggilan` VARCHAR(50) NULL,
+                `jenis_kelamin` ENUM('L', 'P') NOT NULL,
+                `tempat_lahir` VARCHAR(100) NULL,
+                `tanggal_lahir` DATE NULL,
+                `umur` VARCHAR(50) NULL,
+                `no_akta_lahir` VARCHAR(60) NULL,
+                `agama` VARCHAR(50) DEFAULT 'Islam',
+                `anak_ke` INT NULL,
+                `jumlah_saudara` INT NULL,
+                `alergi` VARCHAR(150) NULL,
+                `tinggi_badan` INT NULL,
+                `berat_badan` INT NULL,
+                `lingkar_kepala` INT NULL,
+                `hobi` VARCHAR(100) NULL,
+                `cita_cita` VARCHAR(100) NULL,
+                `alamat` TEXT NULL,
+                `rt` VARCHAR(10) NULL,
+                `rw` VARCHAR(10) NULL,
+                `dusun` VARCHAR(100) NULL,
+                `kelurahan` VARCHAR(100) NULL,
+                `kecamatan` VARCHAR(100) NULL,
+                `kota` VARCHAR(100) DEFAULT 'Palu',
+                `provinsi` VARCHAR(100) DEFAULT 'Sulawesi Tengah',
+                `kode_pos` VARCHAR(10) NULL,
+                `lintang` VARCHAR(50) NULL,
+                `bujur` VARCHAR(50) NULL,
+                `tempat_tinggal` VARCHAR(100) NULL,
+                `moda_transportasi` VARCHAR(100) NULL,
+                `no_hp` VARCHAR(30) NULL,
+                `no_wa` VARCHAR(35) NULL,
+                `email` VARCHAR(100) NULL,
+                `foto` VARCHAR(255) NULL,
+                `asal_sekolah` VARCHAR(150) NULL,
+                `npsn_asal` VARCHAR(20) NULL,
+                `alamat_sekolah_asal` TEXT NULL,
+                `file_screenshot_dapodik` VARCHAR(255) NULL,
+                `kelas_tujuan` VARCHAR(50) NULL,
+                `alasan_pindah` TEXT NULL,
+                `nomor_surat_pindah` VARCHAR(100) NULL,
+                `nama_ayah` VARCHAR(150) NULL,
+                `nik_ayah` VARCHAR(30) NULL,
+                `tahun_lahir_ayah` VARCHAR(10) NULL,
+                `pendidikan_ayah` VARCHAR(50) NULL,
+                `pekerjaan_ayah` VARCHAR(100) NULL,
+                `penghasilan_ayah` VARCHAR(50) NULL,
+                `kantor_ayah` VARCHAR(150) NULL,
+                `jabatan_ayah` VARCHAR(100) NULL,
+                `kebutuhan_khusus_ayah` VARCHAR(100) NULL,
+                `no_hp_ayah` VARCHAR(30) NULL,
+                `nama_ibu` VARCHAR(150) NULL,
+                `nik_ibu` VARCHAR(30) NULL,
+                `tahun_lahir_ibu` VARCHAR(10) NULL,
+                `pendidikan_ibu` VARCHAR(50) NULL,
+                `pekerjaan_ibu` VARCHAR(100) NULL,
+                `penghasilan_ibu` VARCHAR(50) NULL,
+                `kantor_ibu` VARCHAR(150) NULL,
+                `jabatan_ibu` VARCHAR(100) NULL,
+                `kebutuhan_khusus_ibu` VARCHAR(100) NULL,
+                `no_hp_ibu` VARCHAR(30) NULL,
+                `nama_wali` VARCHAR(150) NULL,
+                `pekerjaan_wali` VARCHAR(100) NULL,
+                `no_hp_wali` VARCHAR(30) NULL,
+                `biaya_pendaftaran` DECIMAL(12,2) DEFAULT 0,
+                `status_pembayaran` ENUM('Belum Lunas', 'Lunas', 'Gratis') DEFAULT 'Belum Lunas',
+                `metode_pembayaran` VARCHAR(50) NOT NULL DEFAULT 'Tunai',
+                `bukti_bayar` VARCHAR(255) NULL,
+                `berkas_kk` VARCHAR(255) NULL,
+                `berkas_akta` VARCHAR(255) NULL,
+                `berkas_ktp_ayah` VARCHAR(255) NULL,
+                `berkas_ktp_ibu` VARCHAR(255) NULL,
+                `biodata_token` VARCHAR(64) NULL,
+                `biodata_status` ENUM('Belum Diisi', 'Draft', 'Lengkap') NOT NULL DEFAULT 'Belum Diisi',
+                `biodata_step` INT NOT NULL DEFAULT 1,
+                `persetujuan_data` TINYINT(1) NOT NULL DEFAULT 0,
+                `biodata_submitted_at` DATETIME NULL,
+                `status_berkas` ENUM('Belum Dikembalikan', 'Belum Lengkap', 'Lengkap', 'Perlu Perbaikan') DEFAULT 'Belum Dikembalikan',
+                `surat_kesanggupan` VARCHAR(255) NULL,
+                `tanggal_kembali_berkas` DATETIME NULL,
+                `catatan_berkas` TEXT NULL,
+                `petugas_verifikasi_berkas` VARCHAR(100) NULL,
+                `is_data_sesuai` TINYINT(1) DEFAULT 0,
+                `status_kelulusan` ENUM('Menunggu Seleksi', 'Lolos Berkas', 'Lulus / Diterima', 'Cadangan', 'Tidak Lulus', 'Dibatalkan') DEFAULT 'Menunggu Seleksi',
+                `wa_kelulusan_sent_at` DATETIME NULL,
+                `status_ttd_komitmen` ENUM('Belum TTD','Sudah TTD') NOT NULL DEFAULT 'Belum TTD',
+                `ttd_ayah` MEDIUMTEXT NULL,
+                `ttd_ibu` MEDIUMTEXT NULL,
+                `ttd_nama_ayah` VARCHAR(150) NULL,
+                `ttd_nama_ibu` VARCHAR(150) NULL,
+                `ttd_submitted_at` DATETIME NULL,
+                `ttd_ip_address` VARCHAR(45) NULL,
+                `ttd_user_agent` TEXT NULL,
+                `ttd_catatan` TEXT NULL,
+                `file_screening_psikolog` VARCHAR(255) NULL,
+                `status_screening_psikolog` VARCHAR(50) NULL,
+                `catatan_screening_psikolog` TEXT NULL,
+                `tgl_screening_psikolog` DATE NULL,
+                `wa_psikolog_sent_at` DATETIME NULL,
+                `observasi_token` VARCHAR(64) NULL,
+                `status_observasi` VARCHAR(50) NOT NULL DEFAULT 'Belum Mengisi',
+                `skor_observasi` INT NOT NULL DEFAULT 0,
+                `kategori_observasi` VARCHAR(50) NULL,
+                `tgl_observasi` DATETIME NULL,
+                `catatan` TEXT NULL,
+                `created_by` BIGINT UNSIGNED NULL,
+                `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+                `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                INDEX `idx_spmb_pendaftar_group` (`group_id`),
+                INDEX `idx_spmb_pendaftar_jenis` (`jenis_pendaftaran`),
+                INDEX `idx_spmb_pendaftar_jenjang` (`jenjang`),
+                INDEX `idx_spmb_pendaftar_status` (`status_kelulusan`),
+                INDEX `idx_spmb_pendaftar_tgl` (`tanggal_daftar`),
+                INDEX `idx_spmb_biodata_token` (`biodata_token`),
+                INDEX `idx_spmb_observasi_token` (`observasi_token`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
+
+        // Pastikan seluruh kolom spmb_pendaftar ada jika tabel sudah dibuat sebelumnya
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'kategori_pendaftar', "VARCHAR(80) NULL DEFAULT 'Umum (Luar Bina Insan)'", 'jalur_pendaftaran');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'nama_rekomendasi', 'VARCHAR(150) NULL', 'kategori_pendaftar');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'no_kk', 'VARCHAR(30) NULL', 'nik');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'umur', 'VARCHAR(50) NULL', 'tanggal_lahir');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'no_akta_lahir', 'VARCHAR(60) NULL', 'umur');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'metode_pembayaran', "VARCHAR(50) NOT NULL DEFAULT 'Tunai'", 'status_pembayaran');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'alergi', 'VARCHAR(150) NULL', 'jumlah_saudara');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'tinggi_badan', 'INT NULL', 'alergi');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'berat_badan', 'INT NULL', 'tinggi_badan');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'lingkar_kepala', 'INT NULL', 'berat_badan');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'hobi', 'VARCHAR(100) NULL', 'lingkar_kepala');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'cita_cita', 'VARCHAR(100) NULL', 'hobi');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'alamat_sekolah_asal', 'TEXT NULL', 'npsn_asal');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'file_screenshot_dapodik', 'VARCHAR(255) NULL', 'alamat_sekolah_asal');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'dusun', 'VARCHAR(100) NULL', 'rw');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'lintang', 'VARCHAR(50) NULL', 'kode_pos');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'bujur', 'VARCHAR(50) NULL', 'lintang');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'tempat_tinggal', 'VARCHAR(100) NULL', 'bujur');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'moda_transportasi', 'VARCHAR(100) NULL', 'tempat_tinggal');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'nik_ibu', 'VARCHAR(30) NULL', 'nama_ibu');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'tahun_lahir_ibu', 'VARCHAR(10) NULL', 'nik_ibu');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'pendidikan_ibu', 'VARCHAR(50) NULL', 'tahun_lahir_ibu');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'kantor_ibu', 'VARCHAR(150) NULL', 'penghasilan_ibu');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'jabatan_ibu', 'VARCHAR(100) NULL', 'kantor_ibu');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'kebutuhan_khusus_ibu', 'VARCHAR(100) NULL', 'jabatan_ibu');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'nik_ayah', 'VARCHAR(30) NULL', 'nama_ayah');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'tahun_lahir_ayah', 'VARCHAR(10) NULL', 'nik_ayah');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'pendidikan_ayah', 'VARCHAR(50) NULL', 'tahun_lahir_ayah');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'kantor_ayah', 'VARCHAR(150) NULL', 'penghasilan_ayah');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'jabatan_ayah', 'VARCHAR(100) NULL', 'kantor_ayah');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'kebutuhan_khusus_ayah', 'VARCHAR(100) NULL', 'jabatan_ayah');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'no_wa', 'VARCHAR(35) NULL', 'no_hp');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'berkas_kk', 'VARCHAR(255) NULL', 'bukti_bayar');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'berkas_akta', 'VARCHAR(255) NULL', 'berkas_kk');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'berkas_ktp_ayah', 'VARCHAR(255) NULL', 'berkas_akta');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'berkas_ktp_ibu', 'VARCHAR(255) NULL', 'berkas_ktp_ayah');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'biodata_token', 'VARCHAR(64) NULL', 'berkas_ktp_ibu');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'biodata_status', "ENUM('Belum Diisi', 'Draft', 'Lengkap') NOT NULL DEFAULT 'Belum Diisi'", 'biodata_token');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'biodata_step', 'INT NOT NULL DEFAULT 1', 'biodata_status');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'persetujuan_data', 'TINYINT(1) NOT NULL DEFAULT 0', 'biodata_step');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'biodata_submitted_at', 'DATETIME NULL', 'persetujuan_data');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'surat_kesanggupan', 'VARCHAR(255) NULL', 'status_berkas');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'tanggal_kembali_berkas', 'DATETIME NULL', 'surat_kesanggupan');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'catatan_berkas', 'TEXT NULL', 'tanggal_kembali_berkas');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'petugas_verifikasi_berkas', 'VARCHAR(100) NULL', 'catatan_berkas');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'is_data_sesuai', 'TINYINT(1) DEFAULT 0', 'petugas_verifikasi_berkas');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'wa_kelulusan_sent_at', 'DATETIME NULL', 'status_kelulusan');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'status_ttd_komitmen', "ENUM('Belum TTD','Sudah TTD') NOT NULL DEFAULT 'Belum TTD'", 'biodata_submitted_at');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'ttd_ayah', 'MEDIUMTEXT NULL', 'status_ttd_komitmen');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'ttd_ibu', 'MEDIUMTEXT NULL', 'ttd_ayah');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'ttd_nama_ayah', 'VARCHAR(150) NULL', 'ttd_ibu');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'ttd_nama_ibu', 'VARCHAR(150) NULL', 'ttd_nama_ayah');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'ttd_submitted_at', 'DATETIME NULL', 'ttd_nama_ibu');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'ttd_ip_address', 'VARCHAR(45) NULL', 'ttd_submitted_at');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'ttd_user_agent', 'TEXT NULL', 'ttd_ip_address');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'ttd_catatan', 'TEXT NULL', 'ttd_user_agent');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'file_screening_psikolog', 'VARCHAR(255) NULL', 'status_kelulusan');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'status_screening_psikolog', 'VARCHAR(50) NULL', 'file_screening_psikolog');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'catatan_screening_psikolog', 'TEXT NULL', 'status_screening_psikolog');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'tgl_screening_psikolog', 'DATE NULL', 'catatan_screening_psikolog');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'wa_psikolog_sent_at', 'DATETIME NULL', 'tgl_screening_psikolog');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'observasi_token', 'VARCHAR(64) NULL', 'biodata_token');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'status_observasi', 'VARCHAR(50) NOT NULL DEFAULT "Belum Mengisi"', 'observasi_token');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'skor_observasi', 'INT NOT NULL DEFAULT 0', 'status_observasi');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'kategori_observasi', 'VARCHAR(50) NULL', 'skor_observasi');
+        self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'tgl_observasi', 'DATETIME NULL', 'kategori_observasi');
+
+        self::addIndexIfNotExists($pdo, 'spmb_pendaftar', 'idx_spmb_biodata_token', 'biodata_token');
+        self::addIndexIfNotExists($pdo, 'spmb_pendaftar', 'idx_spmb_observasi_token', 'observasi_token');
+
+        // Pastikan token terisi untuk pendaftar yang belum memiliki token
+        try {
+            $emptyTokens = $pdo->query("SELECT id FROM `spmb_pendaftar` WHERE `biodata_token` IS NULL OR `biodata_token` = ''")->fetchAll(PDO::FETCH_COLUMN);
+            if (!empty($emptyTokens)) {
+                $stmtTok = $pdo->prepare("UPDATE `spmb_pendaftar` SET `biodata_token` = ? WHERE `id` = ?");
+                foreach ($emptyTokens as $pId) {
+                    $token = bin2hex(random_bytes(24));
+                    $stmtTok->execute([$token, $pId]);
+                }
+            }
+        } catch (Throwable $e) {}
+
+        // 3. Pastikan tabel spmb_pengembalian ada
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `spmb_pengembalian` (
+                `id` INT AUTO_INCREMENT PRIMARY KEY,
+                `pendaftar_id` INT NOT NULL,
+                `nomor_pengembalian` VARCHAR(50) NOT NULL UNIQUE,
+                `tanggal_pengembalian` DATE NOT NULL,
+                `jenis_pengembalian` ENUM('Pengembalian Formulir', 'Pengembalian Berkas', 'Pengembalian Dana / Refund', 'Pembatalan Pendaftaran') DEFAULT 'Pengembalian Formulir',
+                `alasan` TEXT NOT NULL,
+                `nominal_refund` DECIMAL(12,2) DEFAULT 0,
+                `status` ENUM('Diajukan', 'Diproses', 'Selesai', 'Ditolak') DEFAULT 'Selesai',
+                `penerima_berkas` VARCHAR(150) NULL,
+                `petugas_penerima` VARCHAR(150) NULL,
+                `dokumen_bukti` VARCHAR(255) NULL,
+                `catatan` TEXT NULL,
+                `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+                `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                INDEX `idx_spmb_pengembalian_pendaftar` (`pendaftar_id`),
+                INDEX `idx_spmb_pengembalian_tgl` (`tanggal_pengembalian`),
+                INDEX `idx_spmb_pengembalian_status` (`status`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
+
+        // 4. Pastikan tabel spmb_surat_template ada
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `spmb_surat_template` (
+                `id` INT AUTO_INCREMENT PRIMARY KEY,
+                `jenjang` ENUM('PAUD', 'SD', 'SMP', 'SMA') NOT NULL UNIQUE,
+                `judul_surat` VARCHAR(255) NOT NULL,
+                `nama_sekolah` VARCHAR(255) NOT NULL,
+                `kop_gambar` VARCHAR(255) NULL,
+                `isi_template` LONGTEXT NOT NULL,
+                `catatan_bawah` TEXT NULL,
+                `created_at` DATETIME NULL,
+                `updated_at` DATETIME NULL
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
+
+        // 5. Pastikan tabel spmb_screening_psikolog ada
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `spmb_screening_psikolog` (
+                `id` INT AUTO_INCREMENT PRIMARY KEY,
+                `pendaftar_id` INT NOT NULL UNIQUE,
+                `file_pdf` VARCHAR(255) NOT NULL,
+                `file_name_original` VARCHAR(255) NULL,
+                `file_size` INT NULL DEFAULT 0,
+                `status_rekomendasi` VARCHAR(50) DEFAULT 'Direkomendasikan',
+                `catatan` TEXT NULL,
+                `nama_psikolog` VARCHAR(150) NULL,
+                `tanggal_screening` DATE NULL,
+                `uploaded_by` INT NULL,
+                `wa_sent_at` DATETIME NULL,
+                `wa_sent_count` INT NOT NULL DEFAULT 0,
+                `last_wa_phone` VARCHAR(30) NULL,
+                `last_wa_status` VARCHAR(50) NULL,
+                `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+                `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                INDEX `idx_pendaftar_id` (`pendaftar_id`),
+                INDEX `idx_status_rekomendasi` (`status_rekomendasi`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
+
+        // 6. Pastikan tabel observasi ada
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `spmb_observasi_group` (
+                `id` INT AUTO_INCREMENT PRIMARY KEY,
+                `jenjang` VARCHAR(20) NOT NULL DEFAULT 'ALL',
+                `nama_group` VARCHAR(150) NOT NULL,
+                `deskripsi` TEXT NULL,
+                `urutan` INT NOT NULL DEFAULT 1,
+                `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+                `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                INDEX `idx_jenjang_urutan` (`jenjang`, `urutan`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
+
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `spmb_observasi_pertanyaan` (
+                `id` INT AUTO_INCREMENT PRIMARY KEY,
+                `group_id` INT NOT NULL,
+                `jenjang` VARCHAR(20) NOT NULL DEFAULT 'ALL',
+                `pertanyaan` TEXT NOT NULL,
+                `indikator` VARCHAR(255) NULL,
+                `tipe_jawaban` VARCHAR(30) NOT NULL DEFAULT 'skala',
+                `opsi_jawaban` TEXT NULL,
+                `skor_maksimal` INT NOT NULL DEFAULT 4,
+                `urutan` INT NOT NULL DEFAULT 1,
+                `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+                `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                INDEX `idx_group_urutan` (`group_id`, `urutan`),
+                INDEX `idx_jenjang` (`jenjang`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
+
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `spmb_observasi_respon` (
+                `id` INT AUTO_INCREMENT PRIMARY KEY,
+                `pendaftar_id` INT NOT NULL,
+                `token` VARCHAR(64) NOT NULL UNIQUE,
+                `status` VARCHAR(20) NOT NULL DEFAULT 'selesai',
+                `nama_pengisi` VARCHAR(150) NULL,
+                `hubungan_pengisi` VARCHAR(50) NULL,
+                `no_wa_pengisi` VARCHAR(30) NULL,
+                `total_skor` INT NOT NULL DEFAULT 0,
+                `skor_maksimal` INT NOT NULL DEFAULT 0,
+                `persentase` DECIMAL(5,2) NOT NULL DEFAULT 0.00,
+                `kategori_hasil` VARCHAR(50) NULL,
+                `catatan_orang_tua` TEXT NULL,
+                `catatan_sekolah` TEXT NULL,
+                `submitted_at` DATETIME NULL,
+                `ip_address` VARCHAR(45) NULL,
+                `user_agent` TEXT NULL,
+                `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                INDEX `idx_pendaftar` (`pendaftar_id`),
+                INDEX `idx_token` (`token`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
+
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `spmb_observasi_jawaban` (
+                `id` INT AUTO_INCREMENT PRIMARY KEY,
+                `respon_id` INT NOT NULL,
+                `pendaftar_id` INT NOT NULL,
+                `pertanyaan_id` INT NOT NULL,
+                `group_id` INT NOT NULL,
+                `pilihan_jawaban` VARCHAR(255) NOT NULL,
+                `skor` INT NOT NULL DEFAULT 0,
+                `catatan_jawaban` TEXT NULL,
+                `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                INDEX `idx_respon` (`respon_id`),
+                INDEX `idx_pendaftar_pertanyaan` (`pendaftar_id`, `pertanyaan_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
+
+        // 7. Daftarkan Modul kelola-spmb pada tabel modules
+        try {
+            if (self::hasTable($pdo, 'modules')) {
+                $checkSpmb = $pdo->prepare("SELECT id FROM modules WHERE slug = ?");
+                $checkSpmb->execute(['kelola-spmb']);
+                if (!$checkSpmb->fetchColumn()) {
+                    $iconSPMB = '<svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\" stroke-width=\"1.5\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.333M4.5 21V10.333\" /></svg>';
+                    $pdo->prepare("INSERT INTO modules (name, slug, description, module_group, icon_svg, color, route, sort_order, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)")
+                        ->execute(['Kelola SPMB', 'kelola-spmb', 'Penerimaan Peserta Didik Baru & Siswa Pindahan (PAUD, SD, SMP, SMA)', 'Kesiswaan', $iconSPMB, '#0284C7', '/kelola-spmb', 3]);
+                }
+            }
+        } catch (Throwable $e) {}
+
+        // 8. Daftarkan Hak Akses (Permissions) SPMB & Petakan ke Super Admin & Admin
+        try {
+            if (self::hasTable($pdo, 'permissions') && self::hasTable($pdo, 'roles')) {
+                $spmbPerms = [
+                    ['spmb.view', 'Lihat Data SPMB', 'Melihat dashboard, pendaftar, dan laporan SPMB'],
+                    ['spmb.create', 'Input Pendaftar SPMB', 'Mendaftarkan calon siswa baru dan pindahan'],
+                    ['spmb.update', 'Ubah Data SPMB', 'Mengedit biodata, berkas, dan status SPMB'],
+                    ['spmb.delete', 'Hapus Data SPMB', 'Menghapus data pendaftar SPMB'],
+                    ['spmb.approve', 'Verifikasi & Status SPMB', 'Verifikasi berkas dan persetujuan status pendaftar'],
+                    ['spmb.kelulusan', 'Kelulusan SPMB', 'Menetapkan status kelulusan & kirim notifikasi'],
+                    ['spmb.psikolog', 'Screening Psikolog SPMB', 'Upload dan kelola hasil screening psikolog'],
+                    ['spmb.observasi', 'Observasi Awal SPMB', 'Kelola formulir observasi awal orang tua'],
+                    ['spmb.export', 'Export Data SPMB', 'Export data pendaftar ke format Excel/PDF']
+                ];
+                $stmtCheck = $pdo->prepare("SELECT id FROM permissions WHERE slug = ?");
+                $stmtInsert = $pdo->prepare("INSERT INTO permissions (name, slug, description, created_at) VALUES (?, ?, ?, NOW())");
+                $adminRoles = $pdo->query("SELECT id FROM roles WHERE slug IN ('super_admin', 'admin')")->fetchAll(PDO::FETCH_COLUMN);
+                $stmtRp = $pdo->prepare("INSERT IGNORE INTO role_permissions (role_id, permission_id) VALUES (?, ?)");
+
+                foreach ($spmbPerms as [$pName, $pSlug, $pDesc]) {
+                    $stmtCheck->execute([$pSlug]);
+                    $pId = $stmtCheck->fetchColumn();
+                    if (!$pId) {
+                        $stmtInsert->execute([$pName, $pSlug, $pDesc]);
+                        $pId = $pdo->lastInsertId();
+                    }
+                    if ($pId && !empty($adminRoles)) {
+                        foreach ($adminRoles as $rId) {
+                            $stmtRp->execute([$rId, $pId]);
+                        }
+                    }
+                }
+            }
+        } catch (Throwable $e) {}
     }
 }
 
