@@ -414,7 +414,8 @@ $connectedPhone = $connection['phone'] ?? null;
                     <?= CSRF::field() ?>
                     <input type="hidden" name="wa_gateway_enabled" value="1">
                     <input type="hidden" name="wa_gateway_server_name" value="<?= e($serverName) ?>">
-                    <input type="hidden" name="wa_gateway_provider" value="<?= e($providerNow) ?>">
+                    <input type="hidden" name="wa_gateway_provider" value="self_hosted">
+                    <input type="hidden" name="wa_gateway_api_url" value="http://127.0.0.1:8001">
 
                     <div>
                         <textarea name="wa_gateway_footer_note" rows="2"

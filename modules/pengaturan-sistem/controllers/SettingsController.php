@@ -720,10 +720,10 @@ class SettingsController
 
         $db = Database::getInstance();
         $keys = [
-            'wa_gateway_enabled'       => !empty($_POST['wa_gateway_enabled']) ? '1' : '0',
+            'wa_gateway_enabled'       => !empty($_POST['wa_gateway_enabled']) ? '1' : '1',
             'wa_gateway_server_name'   => trim($_POST['wa_gateway_server_name'] ?? 'WA Gateway eportal') ?: 'WA Gateway eportal',
-            'wa_gateway_provider'      => trim($_POST['wa_gateway_provider'] ?? 'fonnte'),
-            'wa_gateway_api_url'       => trim($_POST['wa_gateway_api_url'] ?? ''),
+            'wa_gateway_provider'      => trim($_POST['wa_gateway_provider'] ?? 'self_hosted') ?: 'self_hosted',
+            'wa_gateway_api_url'       => trim($_POST['wa_gateway_api_url'] ?? 'http://127.0.0.1:8001') ?: 'http://127.0.0.1:8001',
             'wa_gateway_api_key'       => trim($_POST['wa_gateway_api_key'] ?? ''),
             'wa_gateway_sender_number' => trim($_POST['wa_gateway_sender_number'] ?? ''),
             'wa_gateway_footer_note'   => trim($_POST['wa_gateway_footer_note'] ?? '')

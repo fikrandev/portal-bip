@@ -76,6 +76,7 @@ class AutoMigrate
             '2026_10_20_000038_sync_pegawai_penugasan_tables'             => 'migration038SyncPegawaiPenugasanTables',
             '2026_10_20_000039_sync_rbac_and_modules_registry'            => 'migration039SyncRbacAndModulesRegistry',
             '2026_10_20_000040_sync_spmb_full_integrity'                  => 'migration040SyncSpmbFullIntegrity',
+            '2026_10_31_000041_enable_self_hosted_wa_gateway'             => 'migration041EnableSelfHostedWaGateway',
         ];
     }
     /**
@@ -2801,6 +2802,49 @@ class AutoMigrate
                 }
             }
         } catch (Throwable $e) {}
+    }
+
+    /**
+     * Migration 041: Pastikan tabel settings memiliki wa_gateway_enabled = 1 dan wa_gateway_provider = self_hosted
+     */
+    private static function migration041EnableSelfHostedWaGateway(PDO $pdo): void
+    {
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `settings` (
+                `id` INT AUTO_INCREMENT PRIMARY KEY,
+                `setting_key` VARCHAR(100) NOT NULL UNIQUE,
+                `setting_value` TEXT,
+                `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+                `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
+
+        $updates = [
+            'wa_gateway_enabled'     => '1',
+            'wa_gateway_provider'    => 'self_hosted',
+            'wa_gateway_server_name' => 'WA Gateway eportal',
+            'wa_gateway_api_url'     => 'http://127.0.0.1:8001'
+        ];
+
+        $stmtCheck = $pdo->prepare("SELECT `setting_value` FROM `settings` WHERE `setting_key` = ?");
+        $stmtInsert = $pdo->prepare("INSERT INTO `settings` (`setting_key`, `setting_value`) VALUES (?, ?)");
+        $stmtUpdate = $pdo->prepare("UPDATE `settings` SET `setting_value` = ? WHERE `setting_key` = ?");
+
+        foreach ($updates as $k => $v) {
+            $stmtCheck->execute([$k]);
+            $existing = $stmtCheck->fetch(PDO::FETCH_ASSOC);
+            if ($existing) {
+                if ($k === 'wa_gateway_enabled' && ($existing['setting_value'] === '0' || empty($existing['setting_value']))) {
+                    $stmtUpdate->execute(['1', $k]);
+                } elseif ($k === 'wa_gateway_provider' && ($existing['setting_value'] === 'fonnte' || empty($existing['setting_value']))) {
+                    $stmtUpdate->execute(['self_hosted', $k]);
+                } elseif ($k === 'wa_gateway_api_url' && empty($existing['setting_value'])) {
+                    $stmtUpdate->execute(['http://127.0.0.1:8001', $k]);
+                }
+            } else {
+                $stmtInsert->execute([$k, $v]);
+            }
+        }
     }
 }
 

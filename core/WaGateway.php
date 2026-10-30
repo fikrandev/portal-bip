@@ -39,8 +39,8 @@ class WaGateway
             $settings[$r['setting_key']] = $r['setting_value'];
         }
 
-        // Pastikan default provider self_hosted jika belum diatur
-        if (empty($settings['wa_gateway_provider'])) {
+        // Pastikan default provider self_hosted jika belum diatur atau jika fonnte tanpa API key
+        if (empty($settings['wa_gateway_provider']) || ($settings['wa_gateway_provider'] === 'fonnte' && empty($settings['wa_gateway_api_key']))) {
             $settings['wa_gateway_provider'] = 'self_hosted';
         }
 
@@ -53,17 +53,53 @@ class WaGateway
     public static function isEnabled(): bool
     {
         $cfg = self::getSettings();
-        $enabled = ($cfg['wa_gateway_enabled'] === '1' || $cfg['wa_gateway_enabled'] === 1);
-        if (!$enabled) return false;
+        $provider = strtolower(trim($cfg['wa_gateway_provider'] ?? 'self_hosted'));
 
-        $provider = strtolower(trim($cfg['wa_gateway_provider']));
+        // Mode mandiri (self_hosted / baileys)
         if ($provider === 'self_hosted' || $provider === 'baileys' || empty($provider)) {
-            // Mode mandiri hanya butuh diaktifkan
-            return true;
+            // Jika wa_gateway_enabled bukan '0', default aktif (true)
+            if ($cfg['wa_gateway_enabled'] === '1' || $cfg['wa_gateway_enabled'] === 1 || !isset($cfg['wa_gateway_enabled'])) {
+                return true;
+            }
+            // Jika eksplisit '0', cek apakah server lokal connected. Jika connected, aktifkan otomatis
+            $local = self::checkLocalServerStatus();
+            if (!empty($local['connected'])) {
+                self::forceEnableSelfHosted();
+                return true;
+            }
+            return false;
         }
 
         // Mode provider eksternal (Fonnte/Wablas) butuh API Key
-        return !empty(trim($cfg['wa_gateway_api_key']));
+        $enabled = ($cfg['wa_gateway_enabled'] === '1' || $cfg['wa_gateway_enabled'] === 1);
+        if (!$enabled) return false;
+        return !empty(trim($cfg['wa_gateway_api_key'] ?? ''));
+    }
+
+    /**
+     * Pastikan pengaturan WA Gateway tersimpan aktif dan mode self_hosted di database
+     */
+    public static function forceEnableSelfHosted(): void
+    {
+        try {
+            $db = Database::getInstance();
+            $keys = [
+                'wa_gateway_enabled'     => '1',
+                'wa_gateway_provider'    => 'self_hosted',
+                'wa_gateway_api_url'     => self::LOCAL_SERVER_URL,
+                'wa_gateway_server_name' => 'WA Gateway eportal'
+            ];
+            foreach ($keys as $k => $v) {
+                $exists = $db->find("SELECT 1 FROM settings WHERE setting_key = ?", [$k]);
+                if ($exists) {
+                    $db->query("UPDATE settings SET setting_value = ? WHERE setting_key = ?", [$v, $k]);
+                } else {
+                    $db->query("INSERT INTO settings (setting_key, setting_value) VALUES (?, ?)", [$k, $v]);
+                }
+            }
+        } catch (\Throwable $e) {
+            // Ignore jika database sementara tidak dapat diakses
+        }
     }
 
     /**
@@ -126,13 +162,18 @@ class WaGateway
 
         // Cek status aktif
         if (!self::isEnabled()) {
-            $err = "Server {$serverName} sedang NONAKTIF pada pengaturan sistem.";
-            self::saveLog($formattedTarget, $message, $module, 'failed', ['error' => $err], $userId);
-            return [
-                'success' => false,
-                'message' => $err,
-                'target'  => $formattedTarget
-            ];
+            $local = self::checkLocalServerStatus();
+            if (!empty($local['connected'])) {
+                self::forceEnableSelfHosted();
+            } else {
+                $err = "Server {$serverName} sedang NONAKTIF pada pengaturan sistem.";
+                self::saveLog($formattedTarget, $message, $module, 'failed', ['error' => $err], $userId);
+                return [
+                    'success' => false,
+                    'message' => $err,
+                    'target'  => $formattedTarget
+                ];
+            }
         }
 
         // Susun pesan lengkap (tambahkan footer note jika diinginkan)
@@ -210,6 +251,11 @@ class WaGateway
         $serverName = self::getServerName();
         $provider = strtolower(trim($cfg['wa_gateway_provider'] ?? 'self_hosted'));
 
+        // 1. Mode Mandiri (Self-Hosted Baileys QR Scan) - Cek langsung ke server Node.js lokal
+        if ($provider === 'self_hosted' || $provider === 'baileys' || empty($provider)) {
+            return self::checkLocalServerStatus();
+        }
+
         if ($cfg['wa_gateway_enabled'] !== '1' && $cfg['wa_gateway_enabled'] !== 1) {
             return [
                 'connected'   => false,
@@ -219,11 +265,6 @@ class WaGateway
                 'message'     => "Server {$serverName} saat ini dalam status NONAKTIF.",
                 'raw'         => null
             ];
-        }
-
-        // 1. Mode Mandiri (Self-Hosted Baileys QR Scan)
-        if ($provider === 'self_hosted' || $provider === 'baileys') {
-            return self::checkLocalServerStatus();
         }
 
         // 2. Mode Fonnte
@@ -300,6 +341,11 @@ class WaGateway
                 $isConnected = ($status === 'connected');
                 $phone = $data['phone'] ?? null;
                 $formattedPhone = $phone ? ('+' . $phone) : null;
+
+                // Jika terhubung, otomatis pastikan konfigurasi di database aktif & mode self_hosted
+                if ($isConnected) {
+                    self::forceEnableSelfHosted();
+                }
 
                 $msg = match ($status) {
                     'connected'   => "Terhubung! Akun WhatsApp {$formattedPhone} aktif pada server {$serverName}.",
