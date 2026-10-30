@@ -42,21 +42,27 @@ $group = $stats['activeGroup'] ?? null;
                 </div>
             </div>
 
-            <!-- Quick Action Buttons -->
+            <!-- Quick Action Buttons (Sinkron dengan Menu Fitur Sidebar) -->
             <div class="flex flex-col sm:flex-row gap-2.5 shrink-0">
-                <a href="<?= url('kelola-spmb/siswa-baru/create') ?>" 
+                <a href="<?= url('kelola-spmb/siswa-baru') ?>" 
                    class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-semibold text-xs shadow-lg shadow-sky-500/25 transition-all transform hover:-translate-y-0.5">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M18 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0ZM3 19.235v-.11a6.375 6.375 0 0 1 12.75 0v.109A12.318 12.318 0 0 1 9.374 21c-2.331 0-4.512-.645-6.374-1.766Z" />
+                    </svg>
                     <span>Siswa Baru</span>
                 </a>
-                <a href="<?= url('kelola-spmb/pindahan/create') ?>" 
+                <a href="<?= url('kelola-spmb/pindahan') ?>" 
                    class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-semibold text-xs border border-white/20 backdrop-blur-sm transition-all transform hover:-translate-y-0.5">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21 3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" /></svg>
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21 3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
+                    </svg>
                     <span>Pindahan</span>
                 </a>
-                <a href="<?= url('kelola-spmb/daftar-tunggu/create') ?>" 
+                <a href="<?= url('kelola-spmb/daftar-tunggu') ?>" 
                    class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 hover:text-white font-semibold text-xs border border-amber-400/30 backdrop-blur-sm transition-all transform hover:-translate-y-0.5">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                    </svg>
                     <span>Daftar Tunggu</span>
                 </a>
             </div>
@@ -174,7 +180,105 @@ $group = $stats['activeGroup'] ?? null;
         </div>
     </div>
 
-    <!-- Kuota Jenjang & Visual Grid -->
+    <!-- Aksi Cepat Menu Fitur SPMB (100% Selaras dengan Sidebar) -->
+    <div class="bg-white rounded-3xl p-5 sm:p-6 border border-primary-100/70 shadow-sm">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 pb-3 border-b border-slate-100">
+            <div>
+                <h3 class="font-extrabold text-slate-900 text-sm sm:text-base flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-sky-500"></span>
+                    <span>Menu Fitur SPMB</span>
+                </h3>
+                <p class="text-xs text-slate-500">Pintasan navigasi langsung ke seluruh modul dan menu fitur di sidebar</p>
+            </div>
+            <span class="text-[11px] font-semibold text-slate-400 self-start sm:self-auto">7 Fitur Aktif</span>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+            <!-- 1. Siswa Baru -->
+            <a href="<?= url('kelola-spmb/siswa-baru') ?>" 
+               class="group p-3.5 rounded-2xl bg-slate-50/70 hover:bg-sky-50/80 border border-slate-200/80 hover:border-sky-300 transition-all text-center flex flex-col items-center justify-between shadow-xs hover:shadow-sm">
+                <div class="w-10 h-10 rounded-xl bg-sky-100 text-sky-600 group-hover:scale-110 flex items-center justify-center transition-transform mb-2">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M18 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0ZM3 19.235v-.11a6.375 6.375 0 0 1 12.75 0v.109A12.318 12.318 0 0 1 9.374 21c-2.331 0-4.512-.645-6.374-1.766Z" />
+                    </svg>
+                </div>
+                <div class="font-bold text-slate-800 group-hover:text-sky-700 text-xs">Siswa Baru</div>
+                <span class="text-[10px] text-slate-400 mt-0.5">Kelola & Verifikasi</span>
+            </a>
+
+            <!-- 2. Pindahan -->
+            <a href="<?= url('kelola-spmb/pindahan') ?>" 
+               class="group p-3.5 rounded-2xl bg-slate-50/70 hover:bg-blue-50/80 border border-slate-200/80 hover:border-blue-300 transition-all text-center flex flex-col items-center justify-between shadow-xs hover:shadow-sm">
+                <div class="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 group-hover:scale-110 flex items-center justify-center transition-transform mb-2">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21 3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
+                    </svg>
+                </div>
+                <div class="font-bold text-slate-800 group-hover:text-blue-700 text-xs">Pindahan</div>
+                <span class="text-[10px] text-slate-400 mt-0.5">Mutasi Masuk</span>
+            </a>
+
+            <!-- 3. Daftar Tunggu -->
+            <a href="<?= url('kelola-spmb/daftar-tunggu') ?>" 
+               class="group p-3.5 rounded-2xl bg-slate-50/70 hover:bg-amber-50/80 border border-slate-200/80 hover:border-amber-300 transition-all text-center flex flex-col items-center justify-between shadow-xs hover:shadow-sm">
+                <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 group-hover:scale-110 flex items-center justify-center transition-transform mb-2">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                    </svg>
+                </div>
+                <div class="font-bold text-slate-800 group-hover:text-amber-700 text-xs">Daftar Tunggu</div>
+                <span class="text-[10px] text-slate-400 mt-0.5">Waiting List</span>
+            </a>
+
+            <!-- 4. Surat Pernyataan -->
+            <a href="<?= url('kelola-spmb/surat-pernyataan') ?>" 
+               class="group p-3.5 rounded-2xl bg-slate-50/70 hover:bg-emerald-50/80 border border-slate-200/80 hover:border-emerald-300 transition-all text-center flex flex-col items-center justify-between shadow-xs hover:shadow-sm">
+                <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 group-hover:scale-110 flex items-center justify-center transition-transform mb-2">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                    </svg>
+                </div>
+                <div class="font-bold text-slate-800 group-hover:text-emerald-700 text-xs truncate w-full">Surat Pernyataan</div>
+                <span class="text-[10px] text-slate-400 mt-0.5">Komitmen & TTD</span>
+            </a>
+
+            <!-- 5. Hasil Psikolog -->
+            <a href="<?= url('kelola-spmb/screening-psikolog') ?>" 
+               class="group p-3.5 rounded-2xl bg-slate-50/70 hover:bg-purple-50/80 border border-slate-200/80 hover:border-purple-300 transition-all text-center flex flex-col items-center justify-between shadow-xs hover:shadow-sm">
+                <div class="w-10 h-10 rounded-xl bg-purple-100 text-purple-600 group-hover:scale-110 flex items-center justify-center transition-transform mb-2">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25ZM6.75 12h.008v.008H6.75V12Zm0 3h.008v.008H6.75V15Zm0 3h.008v.008H6.75V18Z" />
+                    </svg>
+                </div>
+                <div class="font-bold text-slate-800 group-hover:text-purple-700 text-xs">Hasil Psikolog</div>
+                <span class="text-[10px] text-slate-400 mt-0.5">Screening PDF</span>
+            </a>
+
+            <!-- 6. Observasi Awal -->
+            <a href="<?= url('kelola-spmb/observasi-awal') ?>" 
+               class="group p-3.5 rounded-2xl bg-slate-50/70 hover:bg-teal-50/80 border border-slate-200/80 hover:border-teal-300 transition-all text-center flex flex-col items-center justify-between shadow-xs hover:shadow-sm">
+                <div class="w-10 h-10 rounded-xl bg-teal-100 text-teal-600 group-hover:scale-110 flex items-center justify-center transition-transform mb-2">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                    </svg>
+                </div>
+                <div class="font-bold text-slate-800 group-hover:text-teal-700 text-xs">Observasi Awal</div>
+                <span class="text-[10px] text-slate-400 mt-0.5">Kuesioner Ortu</span>
+            </a>
+
+            <!-- 7. Pengaturan -->
+            <a href="<?= url('kelola-spmb/pengaturan') ?>" 
+               class="group p-3.5 rounded-2xl bg-slate-50/70 hover:bg-slate-100 border border-slate-200/80 hover:border-slate-300 transition-all text-center flex flex-col items-center justify-between shadow-xs hover:shadow-sm">
+                <div class="w-10 h-10 rounded-xl bg-slate-200 text-slate-700 group-hover:scale-110 flex items-center justify-center transition-transform mb-2">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 1 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
+                    </svg>
+                </div>
+                <div class="font-bold text-slate-800 group-hover:text-slate-900 text-xs">Pengaturan</div>
+                <span class="text-[10px] text-slate-400 mt-0.5">Group & Biaya</span>
+            </a>
+        </div>
+    </div>
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Kuota per Jenjang -->
         <div class="bg-white rounded-2xl p-6 border border-primary-100/70 shadow-sm">
