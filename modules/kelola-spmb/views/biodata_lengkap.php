@@ -565,6 +565,10 @@ function val($arr, $key, $default = '') {
             padding: 28px 24px;
             box-shadow: var(--shadow-md);
             position: relative;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+            overflow: hidden;
         }
 
         @media (min-width: 768px) {
@@ -600,14 +604,18 @@ function val($arr, $key, $default = '') {
         /* ── Grid System ───────────────────────────────────────── */
         .form-grid {
             display: grid;
-            grid-template-columns: 1fr;
+            grid-template-columns: 100%;
             gap: 18px 20px;
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
+            box-sizing: border-box;
         }
 
         @media (min-width: 640px) {
-            .form-grid.grid-2 { grid-template-columns: repeat(2, 1fr); }
-            .form-grid.grid-3 { grid-template-columns: repeat(3, 1fr); }
-            .form-grid.grid-4 { grid-template-columns: repeat(4, 1fr); }
+            .form-grid.grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .form-grid.grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+            .form-grid.grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
             .col-span-2 { grid-column: span 2; }
             .col-span-3 { grid-column: span 3; }
             .col-span-4 { grid-column: span 4; }
@@ -789,6 +797,23 @@ function val($arr, $key, $default = '') {
         }
 
         /* ── Unified Modern Document Upload & Preview Components ─────────── */
+        .doc-upload-grid {
+            display: grid;
+            grid-template-columns: 100%;
+            gap: 16px;
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
+            box-sizing: border-box;
+        }
+
+        @media (min-width: 768px) {
+            .doc-upload-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+                gap: 18px 20px;
+            }
+        }
+
         .doc-upload-box {
             position: relative;
             background: #ffffff;
@@ -800,6 +825,11 @@ function val($arr, $key, $default = '') {
             display: flex;
             flex-direction: column;
             justify-content: space-between;
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
+            box-sizing: border-box;
+            overflow: hidden;
         }
 
         .doc-upload-box:hover {
@@ -814,6 +844,8 @@ function val($arr, $key, $default = '') {
 
         .doc-header-block {
             margin-bottom: 12px;
+            width: 100%;
+            min-width: 0;
         }
 
         .doc-title-text {
@@ -823,6 +855,9 @@ function val($arr, $key, $default = '') {
             display: flex;
             align-items: center;
             gap: 6px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .doc-title-text .req {
@@ -835,6 +870,7 @@ function val($arr, $key, $default = '') {
             color: var(--slate-500);
             margin-top: 3px;
             line-height: 1.4;
+            white-space: normal;
         }
 
         /* Dropzone State (When file is not yet selected) */
@@ -852,6 +888,9 @@ function val($arr, $key, $default = '') {
             justify-content: center;
             gap: 6px;
             user-select: none;
+            width: 100%;
+            min-width: 0;
+            box-sizing: border-box;
         }
 
         .doc-dropzone-area:hover {
@@ -882,22 +921,36 @@ function val($arr, $key, $default = '') {
             color: var(--slate-500);
         }
 
-        /* Preview Card State (When file is selected / exists) */
+        /* Preview Card State (When file is selected / exists) - Clean 2-Tier Stack */
         .doc-preview-card {
             display: flex;
-            align-items: center;
-            gap: 12px;
+            flex-direction: column;
+            gap: 10px;
             padding: 12px;
             background: #ffffff;
             border: 1.5px solid #bbf7d0;
             border-radius: 12px;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
             transition: all 0.2s ease;
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
+            box-sizing: border-box;
+        }
+
+        .doc-preview-top {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
+            box-sizing: border-box;
         }
 
         .doc-thumb-box {
-            width: 52px;
-            height: 52px;
+            width: 48px;
+            height: 48px;
             border-radius: 10px;
             overflow: hidden;
             flex-shrink: 0;
@@ -923,7 +976,7 @@ function val($arr, $key, $default = '') {
         .doc-thumb-box.pdf-badge {
             background: #fee2e2;
             color: #dc2626;
-            font-size: 22px;
+            font-size: 20px;
         }
 
         .doc-info-block {
@@ -932,6 +985,7 @@ function val($arr, $key, $default = '') {
             display: flex;
             flex-direction: column;
             gap: 4px;
+            overflow: hidden;
         }
 
         .doc-filename {
@@ -941,6 +995,9 @@ function val($arr, $key, $default = '') {
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            width: 100%;
+            max-width: 100%;
+            display: block;
         }
 
         .doc-meta-row {
@@ -948,11 +1005,13 @@ function val($arr, $key, $default = '') {
             align-items: center;
             gap: 8px;
             flex-wrap: wrap;
+            min-width: 0;
         }
 
         .doc-filesize {
             font-size: 11px;
             color: var(--slate-500);
+            white-space: nowrap;
         }
 
         .doc-badge {
@@ -987,24 +1046,38 @@ function val($arr, $key, $default = '') {
         .doc-actions-group {
             display: flex;
             align-items: center;
-            gap: 6px;
-            flex-shrink: 0;
+            gap: 8px;
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
+            border-top: 1px dashed var(--slate-200);
+            padding-top: 8px;
+            margin-top: 2px;
+            box-sizing: border-box;
         }
 
-        .btn-doc-view {
-            padding: 6px 12px;
+        .btn-doc-view, .btn-doc-reselect {
+            flex: 1;
+            min-width: 0;
+            padding: 7px 10px;
             font-size: 11.5px;
             font-weight: 700;
             border-radius: 8px;
-            background: #f8fafc;
-            border: 1px solid var(--slate-300);
-            color: var(--slate-700);
             display: inline-flex;
             align-items: center;
-            gap: 5px;
+            justify-content: center;
+            gap: 6px;
             text-decoration: none;
             cursor: pointer;
             transition: all 0.15s ease;
+            box-sizing: border-box;
+            white-space: nowrap;
+        }
+
+        .btn-doc-view {
+            background: #f8fafc;
+            border: 1px solid var(--slate-300);
+            color: var(--slate-700);
         }
 
         .btn-doc-view:hover {
@@ -1014,18 +1087,9 @@ function val($arr, $key, $default = '') {
         }
 
         .btn-doc-reselect {
-            padding: 6px 12px;
-            font-size: 11.5px;
-            font-weight: 700;
-            border-radius: 8px;
             background: #eff6ff;
             border: 1px solid #bfdbfe;
             color: var(--primary);
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            cursor: pointer;
-            transition: all 0.15s ease;
         }
 
         .btn-doc-reselect:hover {
@@ -2110,28 +2174,30 @@ function val($arr, $key, $default = '') {
 
                             <!-- Preview Card (File Sudah Dipilih / Tersimpan) -->
                             <div class="doc-preview-card" id="previewDapodik" style="display: <?= $hasDapodik ? 'flex' : 'none' ?>;">
-                                <div class="doc-thumb-box <?= $isDapodikPdf ? 'pdf-badge' : '' ?>" id="thumb_previewDapodik">
-                                    <?php if ($hasDapodik && $isDapodikPdf): ?>
-                                        <i class="fa-solid fa-file-pdf"></i>
-                                    <?php elseif ($hasDapodik): ?>
-                                        <img src="<?= htmlspecialchars($dapodikUrl) ?>" alt="Screenshot Dapodik" onclick="window.open('<?= htmlspecialchars($dapodikUrl) ?>', '_blank')">
-                                    <?php endif; ?>
-                                </div>
-                                <div class="doc-info-block">
-                                    <div class="doc-filename" id="name_previewDapodik" title="<?= htmlspecialchars($dapodikName) ?>"><?= htmlspecialchars($dapodikName ?: 'screenshot_dapodik') ?></div>
-                                    <div class="doc-meta-row">
-                                        <span class="doc-filesize" id="size_previewDapodik"><?= $isDapodikPdf ? 'Dokumen PDF' : 'Foto Screenshot' ?></span>
-                                        <span class="doc-badge saved" id="badge_previewDapodik">
-                                            <i class="fa-solid fa-circle-check"></i> Tersimpan di Server
-                                        </span>
+                                <div class="doc-preview-top">
+                                    <div class="doc-thumb-box <?= $isDapodikPdf ? 'pdf-badge' : '' ?>" id="thumb_previewDapodik">
+                                        <?php if ($hasDapodik && $isDapodikPdf): ?>
+                                            <i class="fa-solid fa-file-pdf"></i>
+                                        <?php elseif ($hasDapodik): ?>
+                                            <img src="<?= htmlspecialchars($dapodikUrl) ?>" alt="Screenshot Dapodik" onclick="window.open('<?= htmlspecialchars($dapodikUrl) ?>', '_blank')">
+                                        <?php endif; ?>
+                                    </div>
+                                    <div class="doc-info-block">
+                                        <div class="doc-filename" id="name_previewDapodik" title="<?= htmlspecialchars($dapodikName) ?>"><?= htmlspecialchars($dapodikName ?: 'screenshot_dapodik') ?></div>
+                                        <div class="doc-meta-row">
+                                            <span class="doc-filesize" id="size_previewDapodik"><?= $isDapodikPdf ? 'Dokumen PDF' : 'Foto Screenshot' ?></span>
+                                            <span class="doc-badge saved" id="badge_previewDapodik">
+                                                <i class="fa-solid fa-circle-check"></i> Tersimpan di Server
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="doc-actions-group">
                                     <a href="<?= htmlspecialchars($dapodikUrl) ?>" target="_blank" class="btn-doc-view" id="link_previewDapodik">
-                                        <i class="fa-solid fa-arrow-up-right-from-square"></i> Lihat
+                                        <i class="fa-solid fa-arrow-up-right-from-square"></i> Lihat File
                                     </a>
                                     <button type="button" class="btn-doc-reselect" onclick="document.getElementById('input_previewDapodik').click()">
-                                        <i class="fa-solid fa-arrows-rotate"></i> Ganti
+                                        <i class="fa-solid fa-arrows-rotate"></i> Ganti File
                                     </button>
                                 </div>
                             </div>
@@ -2540,36 +2606,38 @@ function val($arr, $key, $default = '') {
 
                         <!-- Preview Card (Saat File Terpilih / Sudah Ada) -->
                         <div class="doc-preview-card" id="<?= $previewId ?>" style="display: <?= $hasFile ? 'flex' : 'none' ?>;">
-                            <div class="doc-thumb-box <?= $isPdf ? 'pdf-badge' : '' ?>" id="thumb_<?= $previewId ?>">
-                                <?php if ($hasFile && $isPdf): ?>
-                                    <i class="fa-solid fa-file-pdf"></i>
-                                <?php elseif ($hasFile): ?>
-                                    <img src="<?= htmlspecialchars($fileUrl) ?>" alt="<?= htmlspecialchars($label) ?>" onclick="window.open('<?= htmlspecialchars($fileUrl) ?>', '_blank')">
-                                <?php endif; ?>
-                            </div>
-                            <div class="doc-info-block">
-                                <div class="doc-filename" id="name_<?= $previewId ?>" title="<?= htmlspecialchars($fileName) ?>"><?= htmlspecialchars($fileName ?: 'dokumen') ?></div>
-                                <div class="doc-meta-row">
-                                    <span class="doc-filesize" id="size_<?= $previewId ?>"><?= $isPdf ? 'Dokumen PDF' : 'Foto Dokumen' ?></span>
-                                    <span class="doc-badge saved" id="badge_<?= $previewId ?>">
-                                        <i class="fa-solid fa-circle-check"></i> Tersimpan di Server
-                                    </span>
+                            <div class="doc-preview-top">
+                                <div class="doc-thumb-box <?= $isPdf ? 'pdf-badge' : '' ?>" id="thumb_<?= $previewId ?>">
+                                    <?php if ($hasFile && $isPdf): ?>
+                                        <i class="fa-solid fa-file-pdf"></i>
+                                    <?php elseif ($hasFile): ?>
+                                        <img src="<?= htmlspecialchars($fileUrl) ?>" alt="<?= htmlspecialchars($label) ?>" onclick="window.open('<?= htmlspecialchars($fileUrl) ?>', '_blank')">
+                                    <?php endif; ?>
+                                </div>
+                                <div class="doc-info-block">
+                                    <div class="doc-filename" id="name_<?= $previewId ?>" title="<?= htmlspecialchars($fileName) ?>"><?= htmlspecialchars($fileName ?: 'dokumen') ?></div>
+                                    <div class="doc-meta-row">
+                                        <span class="doc-filesize" id="size_<?= $previewId ?>"><?= $isPdf ? 'Dokumen PDF' : 'Foto Dokumen' ?></span>
+                                        <span class="doc-badge saved" id="badge_<?= $previewId ?>">
+                                            <i class="fa-solid fa-circle-check"></i> Tersimpan di Server
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                             <div class="doc-actions-group">
                                 <a href="<?= htmlspecialchars($fileUrl) ?>" target="_blank" class="btn-doc-view" id="link_<?= $previewId ?>">
-                                    <i class="fa-solid fa-arrow-up-right-from-square"></i> Lihat
+                                    <i class="fa-solid fa-arrow-up-right-from-square"></i> Lihat File
                                 </a>
                                 <button type="button" class="btn-doc-reselect" onclick="document.getElementById('input_<?= $previewId ?>').click()">
-                                    <i class="fa-solid fa-arrows-rotate"></i> Ganti
+                                    <i class="fa-solid fa-arrows-rotate"></i> Ganti File
                                 </button>
                             </div>
                         </div>
                     </div>
                 <?php }; ?>
 
-                <!-- Upload Cards 2x2 Grid -->
-                <div class="form-grid grid-2" style="margin-bottom:32px;">
+                <!-- Upload Cards 2x2 Grid (Strictly Clamped to Frame) -->
+                <div class="doc-upload-grid" style="margin-bottom:32px;">
                     <!-- 1. Kartu Keluarga -->
                     <?php $renderBerkasCard('berkas_kk', '1. Foto Kartu Keluarga (KK)', 'Pastikan seluruh nomor NIK dan tulisan terbaca jelas', 'fa-solid fa-users', 'previewKk'); ?>
 
