@@ -71,6 +71,13 @@ function val($arr, $key, $default = '') {
             --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
         }
 
+        html, body {
+            overflow-x: hidden !important;
+            width: 100%;
+            max-width: 100%;
+            -webkit-text-size-adjust: 100%;
+        }
+
         * {
             box-sizing: border-box;
             margin: 0;
@@ -1737,27 +1744,490 @@ function val($arr, $key, $default = '') {
 
         .subheading-divider i { color: var(--primary); }
 
-        /* Responsive Breakpoints */
+        /* ── Surat Komitmen Banner Alert ───────────────────────── */
+        .komitmen-alert-banner {
+            border-radius: var(--radius-lg);
+            padding: 18px 22px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+            box-sizing: border-box;
+            width: 100%;
+        }
+        .komitmen-alert-banner.status-selesai {
+            background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+            border: 1.5px solid #6ee7b7;
+            box-shadow: var(--shadow-sm);
+        }
+        .komitmen-alert-banner.status-pending {
+            background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%);
+            border: 2px solid #fda4af;
+            box-shadow: 0 4px 14px rgba(225, 29, 72, 0.1);
+        }
+
+        /* ── Stepper Tab Labels ────────────────────────────────── */
+        .tab-text-short {
+            display: none;
+        }
+        .tab-text-full {
+            display: inline;
+        }
+
+        /* ── Action Button Group ───────────────────────────────── */
+        .action-btn-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        /* ── Responsive Mobile Breakpoints ─────────────────────── */
         @media (max-width: 768px) {
-            .mobile-step-card { display: block; }
+            .mobile-step-card {
+                display: block;
+            }
+            .form-grid.grid-2,
+            .form-grid.grid-3,
+            .form-grid.grid-4 {
+                grid-template-columns: 100% !important;
+            }
+            .col-span-2,
+            .col-span-3,
+            .col-span-4 {
+                grid-column: span 1 !important;
+            }
         }
 
         @media (max-width: 640px) {
-            .countdown-date-hint { display: none; }
-            .countdown-title { font-size: 11px; }
-            .countdown-ticker .cd-box { padding: 2px 4px; min-width: 22px; }
-            .countdown-ticker .cd-number { font-size: 11px; }
-            .countdown-ticker .cd-text { font-size: 8px; }
-            .countdown-ticker .cd-colon { font-size: 10px; margin: 0 1px; }
-            .fixed-countdown-bar { height: 44px; }
-            body { padding-top: 44px; }
-            .header-bar { padding: 18px 14px 34px; }
-            .brand-titles h1 { font-size: 16px; }
-            .summary-banner { flex-direction: column; align-items: flex-start; }
-            .stepper-nav { border-radius: var(--radius-md); padding: 6px 4px; }
-            .tab-btn { min-width: 138px; font-size: 12px; padding: 9px 10px; gap: 8px; }
-            .action-bar { flex-direction: column; }
-            .btn-action { width: 100%; }
+            /* 1. Root & Container Padding */
+            .fixed-countdown-bar {
+                height: 42px;
+            }
+            body {
+                padding-top: 42px;
+            }
+            .countdown-bar-inner {
+                padding: 0 10px;
+                gap: 6px;
+            }
+            .countdown-pulse-icon {
+                width: 22px;
+                height: 22px;
+                font-size: 10px;
+            }
+            .countdown-title {
+                font-size: 11px;
+            }
+            .countdown-date-hint {
+                display: none !important;
+            }
+            .countdown-ticker {
+                gap: 2px;
+            }
+            .countdown-ticker .cd-box {
+                padding: 2px 4px;
+                min-width: 24px;
+                border-radius: 4px;
+            }
+            .countdown-ticker .cd-number {
+                font-size: 11px;
+            }
+            .countdown-ticker .cd-text {
+                font-size: 8px;
+            }
+            .countdown-ticker .cd-colon {
+                font-size: 10px;
+                margin: 0 1px;
+            }
+            .countdown-expired-badge {
+                font-size: 10px;
+                padding: 2px 8px;
+            }
+
+            /* 2. Header Bar */
+            .header-bar {
+                padding: 16px 12px 32px;
+            }
+            .header-container {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+                width: 100%;
+            }
+            .brand-info {
+                width: 100%;
+                gap: 10px;
+            }
+            .brand-logo-icon {
+                width: 40px;
+                height: 40px;
+                font-size: 18px;
+                border-radius: 10px;
+            }
+            .brand-titles h1 {
+                font-size: 15px;
+                line-height: 1.25;
+            }
+            .brand-titles p {
+                font-size: 11.5px;
+            }
+            .reg-badge {
+                width: 100%;
+                box-sizing: border-box;
+                justify-content: flex-start;
+                font-size: 12px;
+                padding: 6px 12px;
+                background: rgba(0, 0, 0, 0.25);
+                border-radius: 8px;
+                white-space: normal;
+                word-break: break-all;
+            }
+
+            /* 3. Main Wrapper & Summary Banner */
+            .main-wrapper {
+                padding: 0 8px 30px;
+                width: 100%;
+                max-width: 100%;
+                box-sizing: border-box;
+            }
+            .summary-banner {
+                padding: 12px 14px;
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
+                border-radius: 14px;
+            }
+            .student-meta {
+                gap: 12px;
+                align-items: center;
+            }
+            .student-avatar {
+                width: 38px;
+                height: 38px;
+                font-size: 16px;
+                flex-shrink: 0;
+            }
+            .student-details h2 {
+                font-size: 14.5px;
+                word-break: break-word;
+            }
+            .student-tags {
+                font-size: 11px;
+                gap: 6px;
+            }
+            .summary-banner .badge-pill {
+                display: block;
+                text-align: center;
+                padding: 4px 8px;
+            }
+
+            /* 4. Komitmen Banner */
+            .komitmen-alert-banner {
+                flex-direction: column !important;
+                align-items: stretch !important;
+                padding: 14px 12px !important;
+                gap: 12px !important;
+                border-radius: 14px !important;
+            }
+            .komitmen-alert-banner > div:first-child {
+                gap: 10px !important;
+            }
+            .komitmen-alert-banner a {
+                width: 100% !important;
+                justify-content: center !important;
+                box-sizing: border-box !important;
+                padding: 11px !important;
+                font-size: 12.5px !important;
+            }
+            .komitmen-alert-banner > div:last-child {
+                width: 100% !important;
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 8px !important;
+            }
+
+            /* 5. Stepper Navigation */
+            .mobile-step-card {
+                display: block;
+                margin-bottom: 10px;
+                padding: 10px 12px;
+                border-radius: 12px;
+            }
+            .mobile-step-name {
+                font-size: 12.5px;
+            }
+            .stepper-container-wrapper {
+                margin-bottom: 16px;
+            }
+            .stepper-nav {
+                border-radius: 12px;
+                padding: 4px !important;
+                gap: 4px !important;
+                display: flex !important;
+                width: 100% !important;
+                box-sizing: border-box !important;
+                overflow: hidden !important;
+                scrollbar-width: none !important;
+            }
+            .stepper-nav::-webkit-scrollbar {
+                display: none !important;
+            }
+            .tab-btn {
+                flex: 1 1 0 !important;
+                min-width: 0 !important;
+                padding: 6px 2px !important;
+                flex-direction: column !important;
+                gap: 3px !important;
+                border-radius: 8px !important;
+            }
+            .tab-btn .step-num {
+                width: 22px !important;
+                height: 22px !important;
+                font-size: 11px !important;
+            }
+            .tab-text-full {
+                display: none !important;
+            }
+            .tab-text-short {
+                display: block !important;
+                font-size: 10px !important;
+                font-weight: 700 !important;
+                text-align: center !important;
+                white-space: nowrap !important;
+                overflow: hidden !important;
+                text-overflow: ellipsis !important;
+                max-width: 100% !important;
+            }
+
+            /* 6. Form Card & Fields */
+            .form-card {
+                padding: 16px 12px !important;
+                border-radius: 16px !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                box-sizing: border-box !important;
+                overflow: hidden !important;
+            }
+            .tab-section-header {
+                margin-bottom: 16px !important;
+                padding-bottom: 12px !important;
+                gap: 8px !important;
+            }
+            .tab-section-title h3 {
+                font-size: 15px !important;
+                line-height: 1.3 !important;
+            }
+            .tab-section-title p {
+                font-size: 12px !important;
+                line-height: 1.4 !important;
+                margin-top: 2px !important;
+            }
+            .form-grid {
+                gap: 14px 12px !important;
+            }
+            .form-label {
+                font-size: 12.5px !important;
+                flex-wrap: wrap !important;
+                line-height: 1.35 !important;
+            }
+            .form-label .hint {
+                font-size: 10.5px !important;
+                width: 100% !important;
+                margin-left: 0 !important;
+                margin-top: 2px !important;
+            }
+            .form-control, .form-select {
+                font-size: 16px !important; /* Mencegah auto-zoom Safari di iPhone */
+                height: 44px !important;
+                min-height: 44px !important;
+                padding: 8px 12px !important;
+                border-radius: 10px !important;
+                box-sizing: border-box !important;
+                width: 100% !important;
+            }
+            textarea.form-control {
+                min-height: 72px !important;
+            }
+            .subheading-divider {
+                font-size: 13px !important;
+                margin-top: 8px !important;
+                padding-bottom: 6px !important;
+            }
+
+            /* 7. GPS Banner */
+            .gps-banner {
+                flex-direction: column !important;
+                align-items: stretch !important;
+                padding: 14px 12px !important;
+                gap: 12px !important;
+                border-radius: 12px !important;
+            }
+            .gps-desc {
+                gap: 10px !important;
+            }
+            .gps-icon {
+                width: 36px !important;
+                height: 36px !important;
+                font-size: 16px !important;
+                border-radius: 10px !important;
+            }
+            .btn-gps {
+                width: 100% !important;
+                justify-content: center !important;
+                padding: 12px !important;
+                font-size: 13.5px !important;
+            }
+
+            /* 8. Berkas Dokumen & Live Previews */
+            .doc-upload-grid {
+                grid-template-columns: 100% !important;
+                gap: 14px !important;
+            }
+            .doc-upload-box {
+                padding: 12px 10px !important;
+                border-radius: 12px !important;
+            }
+            .doc-title-text {
+                font-size: 13px !important;
+            }
+            .doc-desc-text {
+                font-size: 11px !important;
+            }
+            .doc-dropzone-area {
+                padding: 16px 10px !important;
+            }
+            .doc-dropzone-prompt {
+                font-size: 12px !important;
+            }
+            .doc-preview-card {
+                padding: 10px !important;
+                gap: 8px !important;
+            }
+            .doc-thumb-box {
+                width: 44px !important;
+                height: 44px !important;
+                border-radius: 8px !important;
+            }
+            .doc-filename {
+                font-size: 12px !important;
+            }
+            .doc-actions-group {
+                gap: 6px !important;
+                padding-top: 6px !important;
+            }
+            .btn-doc-view, .btn-doc-reselect {
+                font-size: 11px !important;
+                padding: 8px 6px !important;
+                min-height: 38px !important;
+            }
+            .privacy-box-container {
+                padding: 12px 10px !important;
+                border-radius: 12px !important;
+            }
+            .checkbox-container {
+                padding: 12px 10px !important;
+                gap: 10px !important;
+                border-radius: 10px !important;
+            }
+            .checkbox-container input[type="checkbox"] {
+                width: 20px !important;
+                height: 20px !important;
+            }
+            .checkbox-label {
+                font-size: 12px !important;
+                line-height: 1.45 !important;
+            }
+
+            /* 9. Bottom Action Bar */
+            .action-bar {
+                flex-direction: column !important;
+                gap: 10px !important;
+                margin-top: 20px !important;
+                padding-top: 14px !important;
+                width: 100% !important;
+            }
+            .action-bar > div:empty {
+                display: none !important;
+            }
+            .action-btn-group {
+                width: 100% !important;
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 8px !important;
+            }
+            .btn-action {
+                width: 100% !important;
+                justify-content: center !important;
+                padding: 12px 16px !important;
+                font-size: 14px !important;
+                min-height: 46px !important;
+                border-radius: 12px !important;
+            }
+            .btn-action.btn-next, .btn-action.btn-submit {
+                order: 1 !important;
+            }
+            .btn-action.btn-draft {
+                order: 2 !important;
+            }
+            .btn-action.btn-prev {
+                order: 3 !important;
+            }
+
+            /* 10. Modals */
+            .modal-card,
+            .privacy-modal-card,
+            .confirm-modal-card,
+            .incomplete-modal-card,
+            .contoh-dapodik-card {
+                width: 95vw !important;
+                max-width: 95vw !important;
+                max-height: 90vh !important;
+                border-radius: 16px !important;
+                margin: 6px auto !important;
+            }
+            .privacy-modal-header,
+            .confirm-modal-header {
+                padding: 12px 14px !important;
+            }
+            .privacy-modal-body,
+            .confirm-modal-body {
+                padding: 14px 12px !important;
+                font-size: 12px !important;
+            }
+            .privacy-modal-footer,
+            .confirm-modal-footer,
+            .modal-actions {
+                flex-direction: column-reverse !important;
+                width: 100% !important;
+                gap: 8px !important;
+                padding: 12px 14px !important;
+            }
+            .privacy-modal-footer .btn-action,
+            .confirm-modal-footer .btn-action,
+            .modal-actions .btn-action {
+                width: 100% !important;
+                justify-content: center !important;
+                min-height: 44px !important;
+                margin: 0 !important;
+            }
+            .confirm-grid {
+                grid-template-columns: 1fr !important;
+                gap: 8px !important;
+            }
+
+            /* 11. Toast Notifications */
+            .toast-notif {
+                left: 12px !important;
+                right: 12px !important;
+                bottom: 14px !important;
+                max-width: calc(100vw - 24px) !important;
+                border-radius: 12px !important;
+                font-size: 12px !important;
+                padding: 10px 14px !important;
+            }
         }
     </style>
 </head>
@@ -1874,7 +2344,7 @@ function val($arr, $key, $default = '') {
         $linkKomitmen = url('spmb/komitmen/' . $tokenKomitmen);
         ?>
         <?php if ($statusTtdKomitmen === 'Sudah TTD'): ?>
-            <div style="background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); border: 1.5px solid #6ee7b7; border-radius: var(--radius-lg); padding: 18px 22px; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; box-shadow: var(--shadow-sm);">
+            <div class="komitmen-alert-banner status-selesai">
                 <div style="display: flex; align-items: center; gap: 14px;">
                     <div style="width: 44px; height: 44px; border-radius: 12px; background: #059669; color: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0;">
                         <i class="fa-solid fa-file-circle-check"></i>
@@ -1898,7 +2368,7 @@ function val($arr, $key, $default = '') {
                 </div>
             </div>
         <?php else: ?>
-            <div style="background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%); border: 2px solid #fda4af; border-radius: var(--radius-lg); padding: 20px 22px; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; box-shadow: 0 4px 14px rgba(225, 29, 72, 0.1);">
+            <div class="komitmen-alert-banner status-pending">
                 <div style="display: flex; align-items: flex-start; gap: 14px; max-width: 620px;">
                     <div style="width: 44px; height: 44px; border-radius: 12px; background: #e11d48; color: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; box-shadow: 0 4px 10px rgba(225, 29, 72, 0.3);">
                         <i class="fa-solid fa-file-signature"></i>
@@ -1948,23 +2418,38 @@ function val($arr, $key, $default = '') {
             <nav class="stepper-nav" aria-label="Tahapan Biodata">
                 <button type="button" class="tab-btn <?= $activeTab === 1 ? 'active' : '' ?>" onclick="switchTab(1)">
                     <span class="step-num">1</span>
-                    <span>Data Calon Siswa</span>
+                    <span class="tab-label-text">
+                        <span class="tab-text-full">Data Calon Siswa</span>
+                        <span class="tab-text-short">Siswa</span>
+                    </span>
                 </button>
                 <button type="button" class="tab-btn <?= $activeTab === 2 ? 'active' : '' ?>" onclick="switchTab(2)">
                     <span class="step-num">2</span>
-                    <span>Sekolah Sebelumnya</span>
+                    <span class="tab-label-text">
+                        <span class="tab-text-full">Sekolah Sebelumnya</span>
+                        <span class="tab-text-short">Sekolah</span>
+                    </span>
                 </button>
                 <button type="button" class="tab-btn <?= $activeTab === 3 ? 'active' : '' ?>" onclick="switchTab(3)">
                     <span class="step-num">3</span>
-                    <span>Tempat Tinggal</span>
+                    <span class="tab-label-text">
+                        <span class="tab-text-full">Tempat Tinggal</span>
+                        <span class="tab-text-short">Alamat</span>
+                    </span>
                 </button>
                 <button type="button" class="tab-btn <?= $activeTab === 4 ? 'active' : '' ?>" onclick="switchTab(4)">
                     <span class="step-num">4</span>
-                    <span>Data Orang Tua</span>
+                    <span class="tab-label-text">
+                        <span class="tab-text-full">Data Orang Tua</span>
+                        <span class="tab-text-short">Ortu</span>
+                    </span>
                 </button>
                 <button type="button" class="tab-btn <?= $activeTab === 5 ? 'active' : '' ?>" onclick="switchTab(5)">
                     <span class="step-num">5</span>
-                    <span>Berkas & Keamanan</span>
+                    <span class="tab-label-text">
+                        <span class="tab-text-full">Berkas & Keamanan</span>
+                        <span class="tab-text-short">Berkas</span>
+                    </span>
                 </button>
             </nav>
         </div>
@@ -2100,7 +2585,7 @@ function val($arr, $key, $default = '') {
                 <!-- Action Bar Tab 1 -->
                 <div class="action-bar">
                     <div></div>
-                    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                    <div class="action-btn-group">
                         <button type="button" class="btn-action btn-draft" onclick="simpanDraftTab(1)">
                             <i class="fa-solid fa-floppy-disk"></i> Simpan Draft
                         </button>
@@ -2210,7 +2695,7 @@ function val($arr, $key, $default = '') {
                     <button type="button" class="btn-action btn-prev" onclick="switchTab(1)">
                         <i class="fa-solid fa-arrow-left"></i> Kembali: Data Siswa
                     </button>
-                    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                    <div class="action-btn-group">
                         <button type="button" class="btn-action btn-draft" onclick="simpanDraftTab(2)">
                             <i class="fa-solid fa-floppy-disk"></i> Simpan Draft
                         </button>
@@ -2339,7 +2824,7 @@ function val($arr, $key, $default = '') {
                     <button type="button" class="btn-action btn-prev" onclick="switchTab(2)">
                         <i class="fa-solid fa-arrow-left"></i> Kembali: Sekolah Sebelumnya
                     </button>
-                    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                    <div class="action-btn-group">
                         <button type="button" class="btn-action btn-draft" onclick="simpanDraftTab(3)">
                             <i class="fa-solid fa-floppy-disk"></i> Simpan Draft
                         </button>
@@ -2552,7 +3037,7 @@ function val($arr, $key, $default = '') {
                     <button type="button" class="btn-action btn-prev" onclick="switchTab(3)">
                         <i class="fa-solid fa-arrow-left"></i> Kembali: Tempat Tinggal
                     </button>
-                    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                    <div class="action-btn-group">
                         <button type="button" class="btn-action btn-draft" onclick="simpanDraftTab(4)">
                             <i class="fa-solid fa-floppy-disk"></i> Simpan Draft
                         </button>
@@ -2696,7 +3181,7 @@ function val($arr, $key, $default = '') {
                     <button type="button" class="btn-action btn-prev" onclick="switchTab(4)">
                         <i class="fa-solid fa-arrow-left"></i> Kembali: Data Orang Tua
                     </button>
-                    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                    <div class="action-btn-group">
                         <button type="button" class="btn-action btn-draft" onclick="simpanDraftTab(5)">
                             <i class="fa-solid fa-floppy-disk"></i> Simpan Draft
                         </button>
