@@ -1299,9 +1299,13 @@ class SpmbController
 
             foreach ($fileFields as $fieldName => $prefix) {
                 if (!empty($_FILES[$fieldName]['name']) && $_FILES[$fieldName]['error'] === UPLOAD_ERR_OK) {
-                    $saved = self::saveCompressedUpload($_FILES[$fieldName], $prefix, 500);
-                    if ($saved) {
-                        $data[$fieldName] = $saved;
+                    $savedResult = self::saveCompressedUploadDetailed($_FILES[$fieldName], $prefix, 500);
+                    if ($savedResult['success'] && !empty($savedResult['path'])) {
+                        $data[$fieldName] = $savedResult['path'];
+                    } else {
+                        $errDetail = $savedResult['error'] ?? 'Gagal memproses berkas.';
+                        echo json_encode(['success' => false, 'message' => "Gagal mengunggah {$fieldName}: {$errDetail}"]);
+                        exit;
                     }
                 }
             }
@@ -1384,14 +1388,16 @@ class SpmbController
                 exit;
             }
 
-            $savedPath = self::saveCompressedUpload($file, $prefix, 500);
-            if (!$savedPath) {
+            $savedResult = self::saveCompressedUploadDetailed($file, $prefix, 500);
+            if (!$savedResult['success']) {
                 echo json_encode([
                     'success' => false,
-                    'message' => 'Gagal memproses berkas. Pastikan file berformat JPG, PNG, WEBP, atau PDF, dan folder uploads memiliki izin tulis.'
+                    'message' => $savedResult['error']
                 ]);
                 exit;
             }
+
+            $savedPath = $savedResult['path'];
 
             // Simpan langsung ke database untuk pendaftar bersangkutan
             $updateOk = SpmbModel::updateBiodataByToken($token, [$fieldName => $savedPath], false);
@@ -1518,19 +1524,33 @@ class SpmbController
         foreach ($fileFields as $fieldName => $prefix) {
             if (!empty($_FILES[$fieldName]['name'])) {
                 if ($_FILES[$fieldName]['error'] === UPLOAD_ERR_OK) {
-                    $saved = self::saveCompressedUpload($_FILES[$fieldName], $prefix, 500);
-                    if ($saved) {
-                        $data[$fieldName] = $saved;
-                    }
-                } elseif ($_FILES[$fieldName]['error'] !== UPLOAD_ERR_NO_FILE) {
-                    if ($_FILES[$fieldName]['error'] === UPLOAD_ERR_INI_SIZE) {
-                        $errMsg = 'Ukuran berkas ' . $fieldName . ' melebihi batas upload_max_filesize di server PHP. Silakan kompres atau perkecil file Anda.';
+                    $savedResult = self::saveCompressedUploadDetailed($_FILES[$fieldName], $prefix, 500);
+                    if ($savedResult['success'] && !empty($savedResult['path'])) {
+                        $data[$fieldName] = $savedResult['path'];
+                    } else {
+                        $errDetail = $savedResult['error'] ?? 'Gagal memproses berkas.';
                         if ($isAjax) {
                             header('Content-Type: application/json');
-                            echo json_encode(['success' => false, 'message' => $errMsg]);
+                            echo json_encode(['success' => false, 'message' => "Gagal mengunggah berkas ({$fieldName}): {$errDetail}"]);
                             exit;
                         }
+                        Response::redirect(url('spmb/biodata/' . $token . '?tab=5'), "Gagal mengunggah berkas: {$errDetail}", 'error');
                     }
+                } elseif ($_FILES[$fieldName]['error'] !== UPLOAD_ERR_NO_FILE) {
+                    $errMap = [
+                        UPLOAD_ERR_INI_SIZE   => 'Ukuran berkas ' . $fieldName . ' melebihi batas upload_max_filesize di server PHP. Silakan kompres atau perkecil file Anda.',
+                        UPLOAD_ERR_FORM_SIZE  => 'Ukuran berkas ' . $fieldName . ' melebihi batas form.',
+                        UPLOAD_ERR_PARTIAL    => 'Berkas ' . $fieldName . ' hanya terunggah sebagian.',
+                        UPLOAD_ERR_NO_TMP_DIR => 'Server tidak menemukan folder sementara untuk upload.',
+                        UPLOAD_ERR_CANT_WRITE => 'Gagal menulis berkas ke disk server.',
+                    ];
+                    $errMsg = $errMap[$_FILES[$fieldName]['error']] ?? ('Gagal mengunggah berkas ' . $fieldName);
+                    if ($isAjax) {
+                        header('Content-Type: application/json');
+                        echo json_encode(['success' => false, 'message' => $errMsg]);
+                        exit;
+                    }
+                    Response::redirect(url('spmb/biodata/' . $token . '?tab=5'), $errMsg, 'error');
                 }
             }
         }
@@ -1611,24 +1631,59 @@ class SpmbController
             exit;
         }
 
-        // Jika belum ada file yang diunggah admin, generate gambar petunjuk dinamis
-        header('Content-Type: image/png');
-        $img = imagecreatetruecolor(800, 450);
-        $bg = imagecolorallocate($img, 15, 23, 42); // slate-900
-        $teal = imagecolorallocate($img, 16, 185, 129); // emerald-500
-        $white = imagecolorallocate($img, 255, 255, 255);
-        $gray = imagecolorallocate($img, 148, 163, 184);
+        // Jika belum ada file yang diunggah admin, tampilkan SVG petunjuk resmi beresolusi tinggi (bebas dependensi GD)
+        header('Content-Type: image/svg+xml');
+        header('Content-Disposition: inline; filename="Contoh_Screenshot_Dapodik.svg"');
+        echo <<<SVG
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 520" width="100%" height="100%">
+    <defs>
+        <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#0f172a" />
+            <stop offset="100%" stop-color="#1e293b" />
+        </linearGradient>
+    </defs>
+    <rect width="900" height="520" fill="url(#bg)" rx="16" />
+    <rect x="24" y="24" width="852" height="472" fill="none" stroke="#0ea5e9" stroke-width="2" stroke-dasharray="6,6" rx="12" />
+    <circle cx="60" cy="58" r="7" fill="#ef4444" />
+    <circle cx="80" cy="58" r="7" fill="#f59e0b" />
+    <circle cx="100" cy="58" r="7" fill="#10b981" />
+    <text x="450" y="64" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="13" font-weight="bold" text-anchor="middle">Browser: Profil Peserta Didik (Dapodik Kemendikbudristek / EMIS Kemenag)</text>
+    
+    <!-- Header Card -->
+    <rect x="50" y="90" width="800" height="70" fill="#1e293b" stroke="#334155" stroke-width="1.5" rx="8" />
+    <text x="80" y="125" fill="#38bdf8" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">CONTOH SCREENSHOT PROFIL DAPODIK / EMIS</text>
+    <text x="80" y="146" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="12">SIT Bina Insan Palu - Pastikan 4 data di bawah ini terbaca jelas pada foto</text>
 
-        imagefilledrectangle($img, 0, 0, 800, 450, $bg);
-        imagerectangle($img, 10, 10, 789, 439, $teal);
-        imagestring($img, 5, 220, 120, "CONTOH SCREENSHOT PROFIL DAPODIK", $teal);
-        imagestring($img, 4, 180, 170, "Pastikan screenshot menampilkan NISN, NIK,", $white);
-        imagestring($img, 4, 180, 195, "Nama Lengkap Siswa, dan Nama Ibu Kandung", $white);
-        imagestring($img, 3, 200, 240, "Contoh gambar belum diunggah oleh Admin di Pengaturan SPMB.", $gray);
-        imagestring($img, 3, 270, 350, "Portal SPMB SIT Bina Insan Palu", $teal);
+    <!-- Table mockup -->
+    <rect x="50" y="175" width="800" height="255" fill="#0f172a" stroke="#334155" stroke-width="1.5" rx="8" />
+    
+    <!-- Item 1: Nama -->
+    <rect x="70" y="195" width="760" height="46" fill="#1e293b" rx="6" stroke="#10b981" stroke-width="1.5" />
+    <text x="90" y="224" fill="#6ee7b7" font-family="system-ui, sans-serif" font-size="13.5" font-weight="bold">1. NAMA LENGKAP SISWA</text>
+    <text x="360" y="224" fill="#ffffff" font-family="system-ui, sans-serif" font-size="13.5">Contoh: MUHAMMAD FATIH AR-RAYYAN</text>
+    <text x="740" y="224" fill="#10b981" font-family="system-ui, sans-serif" font-size="11.5" font-weight="bold">[ WAJIB JELAS ]</text>
 
-        imagepng($img);
-        imagedestroy($img);
+    <!-- Item 2: NISN -->
+    <rect x="70" y="250" width="760" height="46" fill="#1e293b" rx="6" stroke="#10b981" stroke-width="1.5" />
+    <text x="90" y="279" fill="#6ee7b7" font-family="system-ui, sans-serif" font-size="13.5" font-weight="bold">2. NISN (10 Digit Angka)</text>
+    <text x="360" y="279" fill="#ffffff" font-family="system-ui, sans-serif" font-size="13.5">Contoh: 3165278910</text>
+    <text x="740" y="279" fill="#10b981" font-family="system-ui, sans-serif" font-size="11.5" font-weight="bold">[ WAJIB JELAS ]</text>
+
+    <!-- Item 3: NIK Siswa -->
+    <rect x="70" y="305" width="760" height="46" fill="#1e293b" rx="6" stroke="#10b981" stroke-width="1.5" />
+    <text x="90" y="334" fill="#6ee7b7" font-family="system-ui, sans-serif" font-size="13.5" font-weight="bold">3. NIK / NO. KITAS</text>
+    <text x="360" y="334" fill="#ffffff" font-family="system-ui, sans-serif" font-size="13.5">Contoh: 7271011508160002</text>
+    <text x="740" y="334" fill="#10b981" font-family="system-ui, sans-serif" font-size="11.5" font-weight="bold">[ WAJIB JELAS ]</text>
+
+    <!-- Item 4: Nama Ibu Kandung -->
+    <rect x="70" y="360" width="760" height="46" fill="#1e293b" rx="6" stroke="#10b981" stroke-width="1.5" />
+    <text x="90" y="389" fill="#6ee7b7" font-family="system-ui, sans-serif" font-size="13.5" font-weight="bold">4. NAMA IBU KANDUNG</text>
+    <text x="360" y="389" fill="#ffffff" font-family="system-ui, sans-serif" font-size="13.5">Contoh: SITI FATIMAH</text>
+    <text x="740" y="389" fill="#10b981" font-family="system-ui, sans-serif" font-size="11.5" font-weight="bold">[ WAJIB JELAS ]</text>
+
+    <text x="450" y="470" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle">Tips: Screenshot ini bisa diminta langsung kepada Operator Sekolah / Guru di sekolah asal anak.</text>
+</svg>
+SVG;
         exit;
     }
 
@@ -1748,25 +1803,56 @@ class SpmbController
 
     /**
      * Helper: Simpan File Berkas Upload Aman & Terkompresi Maksimal 500 KB (GD)
+     * Mengembalikan array detail status ['success' => bool, 'path' => ?string, 'error' => ?string]
      */
-    public static function saveCompressedUpload(array $file, string $prefix, int $maxKB = 500): ?string
+    public static function saveCompressedUploadDetailed(array $file, string $prefix, int $maxKB = 500): array
     {
         try {
-            if (empty($file['name']) || $file['error'] !== UPLOAD_ERR_OK) {
-                return null;
+            if (empty($file['name'])) {
+                return ['success' => false, 'path' => null, 'error' => 'Tidak ada file yang dipilih untuk diunggah.'];
+            }
+
+            if ($file['error'] !== UPLOAD_ERR_OK) {
+                $errMap = [
+                    UPLOAD_ERR_INI_SIZE   => 'Ukuran file melebihi batas upload server (upload_max_filesize). Silakan kompres atau perkecil file Anda.',
+                    UPLOAD_ERR_FORM_SIZE  => 'Ukuran file melebihi batas form.',
+                    UPLOAD_ERR_PARTIAL    => 'File hanya terunggah sebagian. Silakan pilih kembali file Anda.',
+                    UPLOAD_ERR_NO_FILE    => 'Tidak ada file yang dipilih.',
+                    UPLOAD_ERR_NO_TMP_DIR => 'Server tidak menemukan folder sementara untuk upload.',
+                    UPLOAD_ERR_CANT_WRITE => 'Gagal menulis file ke disk server (I/O error).',
+                ];
+                return ['success' => false, 'path' => null, 'error' => $errMap[$file['error']] ?? ('Gagal mengunggah file (Kode: ' . $file['error'] . ')')];
             }
 
             $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
             $allowed = ['jpg', 'jpeg', 'png', 'webp', 'pdf'];
             if (!in_array($ext, $allowed)) {
-                return null;
+                return ['success' => false, 'path' => null, 'error' => "Format file .{$ext} tidak didukung. Harap pilih file JPG, JPEG, PNG, WEBP, atau PDF."];
             }
 
             $targetDir = BASE_PATH . '/public/uploads/spmb/berkas';
             if (!is_dir($targetDir)) {
+                $old = umask(0);
                 @mkdir($targetDir, 0777, true);
+                umask($old);
             }
             @chmod($targetDir, 0777);
+
+            // Cek apakah direktori dapat ditulisi oleh PHP server
+            if (!is_writable($targetDir)) {
+                @chmod(BASE_PATH . '/public/uploads', 0777);
+                @chmod(BASE_PATH . '/public/uploads/spmb', 0777);
+                @chmod($targetDir, 0777);
+                clearstatcache(true, $targetDir);
+
+                if (!is_writable($targetDir)) {
+                    return [
+                        'success' => false,
+                        'path'    => null,
+                        'error'   => "Izin folder di server VPS belum terbuka (Permission Denied pada folder 'public/uploads/spmb/berkas'). Silakan jalankan perintah ini di Terminal aaPanel: chmod -R 777 /www/wwwroot/eportal.binainsanpalu.sch.id/public/uploads"
+                    ];
+                }
+            }
 
             $safeName = $prefix . '_' . time() . '_' . bin2hex(random_bytes(8)) . '.' . ($ext === 'pdf' ? 'pdf' : 'jpg');
             $destPath = $targetDir . '/' . $safeName;
@@ -1775,26 +1861,28 @@ class SpmbController
             if ($ext === 'pdf') {
                 if (@move_uploaded_file($file['tmp_name'], $destPath) || @copy($file['tmp_name'], $destPath)) {
                     @chmod($destPath, 0666);
-                    return 'uploads/spmb/berkas/' . $safeName;
+                    return ['success' => true, 'path' => 'uploads/spmb/berkas/' . $safeName, 'error' => null];
                 }
-                return null;
+                $lastErr = error_get_last()['message'] ?? 'Gagal memindahkan file PDF ke folder tujuan.';
+                return ['success' => false, 'path' => null, 'error' => "Gagal menyimpan file PDF ke server: $lastErr"];
             }
 
             // Jika file gambar: proses kompresi otomatis <= 500 KB menggunakan GD jika tersedia
             $tmp = $file['tmp_name'];
             if (!file_exists($tmp)) {
-                return null;
+                return ['success' => false, 'path' => null, 'error' => 'File sementara tidak ditemukan di server. Silakan coba upload ulang.'];
             }
 
             $raw = @file_get_contents($tmp);
-            $src = $raw ? @imagecreatefromstring($raw) : false;
+            $src = ($raw && function_exists('imagecreatefromstring')) ? @imagecreatefromstring($raw) : false;
 
             if (!$src) {
                 if (@move_uploaded_file($tmp, $destPath) || @copy($tmp, $destPath)) {
                     @chmod($destPath, 0666);
-                    return 'uploads/spmb/berkas/' . $safeName;
+                    return ['success' => true, 'path' => 'uploads/spmb/berkas/' . $safeName, 'error' => null];
                 }
-                return null;
+                $lastErr = error_get_last()['message'] ?? 'Gagal memindahkan file gambar.';
+                return ['success' => false, 'path' => null, 'error' => "Gagal menyimpan file gambar ke server: $lastErr"];
             }
 
             $origW = imagesx($src);
@@ -1830,22 +1918,32 @@ class SpmbController
                 }
                 @chmod($destPath, 0666);
                 imagedestroy($src);
-                return 'uploads/spmb/berkas/' . $safeName;
+                return ['success' => true, 'path' => 'uploads/spmb/berkas/' . $safeName, 'error' => null];
             }
 
             // Fallback jika imagejpeg gagal menulis langsung
             if (@move_uploaded_file($tmp, $destPath) || @copy($tmp, $destPath)) {
                 @chmod($destPath, 0666);
                 imagedestroy($src);
-                return 'uploads/spmb/berkas/' . $safeName;
+                return ['success' => true, 'path' => 'uploads/spmb/berkas/' . $safeName, 'error' => null];
             }
 
+            $lastErr = error_get_last()['message'] ?? 'Folder tidak mengizinkan penulisan file.';
             imagedestroy($src);
-            return null;
+            return ['success' => false, 'path' => null, 'error' => "Gagal menulis file gambar ke server: $lastErr"];
         } catch (\Throwable $e) {
-            error_log("saveCompressedUpload error: " . $e->getMessage());
-            return null;
+            error_log("saveCompressedUploadDetailed error: " . $e->getMessage());
+            return ['success' => false, 'path' => null, 'error' => 'Terjadi kesalahan sistem saat memproses berkas: ' . $e->getMessage()];
         }
+    }
+
+    /**
+     * Helper legacy: Simpan File Berkas Upload (Mengembalikan path atau null)
+     */
+    public static function saveCompressedUpload(array $file, string $prefix, int $maxKB = 500): ?string
+    {
+        $res = self::saveCompressedUploadDetailed($file, $prefix, $maxKB);
+        return $res['success'] ? $res['path'] : null;
     }
 
     // ═════════════════════════════════════════════════════════════════════════
