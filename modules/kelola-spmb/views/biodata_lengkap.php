@@ -2999,14 +2999,14 @@ function val($arr, $key, $default = '') {
 
         // 4. Client-side Image Compression (Canvas <= 500 KB)
         async function compressImageFile(file, maxKB = 500) {
-            if (!file.type.startsWith('image/')) return file; // PDF don't compress via canvas
+            if (!file || !file.type || !file.type.startsWith('image/')) return file; // PDF don't compress via canvas
 
             return new Promise((resolve) => {
                 const reader = new FileReader();
-                reader.readAsDataURL(file);
+                reader.onerror = () => resolve(file);
                 reader.onload = (e) => {
                     const img = new Image();
-                    img.src = e.target.result;
+                    img.onerror = () => resolve(file);
                     img.onload = () => {
                         const canvas = document.createElement('canvas');
                         let width = img.width;
@@ -3041,9 +3041,15 @@ function val($arr, $key, $default = '') {
                             }
                         }, 'image/jpeg', quality);
                     };
+                    img.src = e.target.result;
                 };
+                reader.readAsDataURL(file);
             });
         }
+
+        // Global store untuk menampung file hasil kompresi browser
+        window.COMPRESSED_FILES = window.COMPRESSED_FILES || {};
+        window.UPLOADING_COMPRESSION_PROMISES = window.UPLOADING_COMPRESSION_PROMISES || {};
 
         // 5. File Upload Preview & Compress
         async function previewUpload(input, previewBoxId) {
@@ -3051,24 +3057,52 @@ function val($arr, $key, $default = '') {
             if (!input.files || !input.files[0]) return;
 
             const file = input.files[0];
+            const fieldName = input.name;
             const sizeKB = Math.round(file.size / 1024);
 
             previewBox.style.display = 'block';
             previewBox.innerHTML = `
                 <div class="file-info-badge">
-                    <i class="fa-solid fa-spinner fa-spin"></i> Memproses ${file.name} (${sizeKB} KB)...
+                    <i class="fa-solid fa-spinner fa-spin"></i> Mengompres ${file.name} (${sizeKB} KB)...
                 </div>
             `;
 
-            // Auto-compress
-            const compressed = await compressImageFile(file, 500);
-            const compSizeKB = Math.round(compressed.size / 1024);
+            // Proses kompresi file di background dan simpan janjinya
+            const compPromise = (async () => {
+                try {
+                    const compressed = await compressImageFile(file, 500);
+                    const compSizeKB = Math.round(compressed.size / 1024);
+                    window.COMPRESSED_FILES[fieldName] = compressed;
 
-            previewBox.innerHTML = `
-                <div class="file-info-badge">
-                    <i class="fa-solid fa-circle-check"></i> Siap diupload: ${compressed.name} (~${compSizeKB} KB)
-                </div>
-            `;
+                    // Update input.files jika browser mendukung DataTransfer
+                    try {
+                        if (window.DataTransfer) {
+                            const dt = new DataTransfer();
+                            dt.items.add(compressed);
+                            input.files = dt.files;
+                        }
+                    } catch (dtErr) {}
+
+                    previewBox.innerHTML = `
+                        <div class="file-info-badge">
+                            <i class="fa-solid fa-circle-check"></i> Siap diupload: ${compressed.name} (~${compSizeKB} KB)
+                        </div>
+                    `;
+                    return compressed;
+                } catch (err) {
+                    console.warn("Compression fallback:", err);
+                    window.COMPRESSED_FILES[fieldName] = file;
+                    previewBox.innerHTML = `
+                        <div class="file-info-badge">
+                            <i class="fa-solid fa-circle-check"></i> Siap diupload: ${file.name} (${sizeKB} KB)
+                        </div>
+                    `;
+                    return file;
+                }
+            })();
+
+            window.UPLOADING_COMPRESSION_PROMISES[fieldName] = compPromise;
+            await compPromise;
         }
 
         // 6. Privacy Agreement Modal & Checkbox Handler
@@ -3194,9 +3228,26 @@ function val($arr, $key, $default = '') {
         async function simpanDraftTab(tabNumber, callback = null) {
             showToast("Menyimpan draft...", "info");
 
+            // Tunggu jika ada file yang sedang dalam proses kompresi
+            if (window.UPLOADING_COMPRESSION_PROMISES) {
+                const activePromises = Object.values(window.UPLOADING_COMPRESSION_PROMISES);
+                if (activePromises.length > 0) {
+                    await Promise.allSettled(activePromises);
+                }
+            }
+
             const form = document.getElementById('biodataForm');
             const formData = new FormData(form);
             formData.append('biodata_step', tabNumber);
+
+            // Ganti file di formData dengan file yang sudah dikompresi (< 500 KB) jika ada
+            if (window.COMPRESSED_FILES) {
+                for (const [key, compFile] of Object.entries(window.COMPRESSED_FILES)) {
+                    if (compFile) {
+                        formData.set(key, compFile, compFile.name);
+                    }
+                }
+            }
 
             try {
                 const response = await fetch(SAVE_DRAFT_URL, {
@@ -3205,16 +3256,35 @@ function val($arr, $key, $default = '') {
                     body: formData
                 });
 
-                const res = await response.json();
+                const text = await response.text();
+                let res;
+                try {
+                    res = JSON.parse(text);
+                } catch (parseErr) {
+                    console.error("Non-JSON response from server:", text);
+                    res = { 
+                        success: false, 
+                        message: "Respon server tidak valid (" + response.status + ")" 
+                    };
+                }
+
                 if (res.success) {
                     showToast("Draft tersimpan pukul " + (res.last_saved || "baru saja"), "success");
                     if (typeof callback === 'function') callback();
                 } else {
                     showToast(res.message || "Gagal menyimpan draft", "error");
+                    // Tetap izinkan berpindah tab jika ada callback agar pengguna tidak terhenti
+                    if (typeof callback === 'function') {
+                        setTimeout(() => callback(), 500);
+                    }
                 }
             } catch (err) {
                 console.error("Draft save error:", err);
-                showToast("Terjadi kesalahan koneksi", "error");
+                showToast("Koneksi terganggu saat menyimpan draft. Melanjutkan ke tahap berikutnya...", "warning");
+                // Tetap izinkan berpindah tab jika ada callback
+                if (typeof callback === 'function') {
+                    setTimeout(() => callback(), 500);
+                }
             }
         }
 
@@ -3503,9 +3573,26 @@ function val($arr, $key, $default = '') {
             }
             if (btnCancel) btnCancel.disabled = true;
 
+            // Tunggu jika ada file yang sedang dalam proses kompresi
+            if (window.UPLOADING_COMPRESSION_PROMISES) {
+                const activePromises = Object.values(window.UPLOADING_COMPRESSION_PROMISES);
+                if (activePromises.length > 0) {
+                    await Promise.allSettled(activePromises);
+                }
+            }
+
             const form = document.getElementById('biodataForm');
             const formData = new FormData(form);
             formData.append('is_ajax', '1');
+
+            // Ganti file di formData dengan file yang sudah dikompresi (< 500 KB) jika ada
+            if (window.COMPRESSED_FILES) {
+                for (const [key, compFile] of Object.entries(window.COMPRESSED_FILES)) {
+                    if (compFile) {
+                        formData.set(key, compFile, compFile.name);
+                    }
+                }
+            }
 
             try {
                 const response = await fetch(SUBMIT_URL, {
@@ -3514,7 +3601,15 @@ function val($arr, $key, $default = '') {
                     body: formData
                 });
 
-                const res = await response.json();
+                const text = await response.text();
+                let res;
+                try {
+                    res = JSON.parse(text);
+                } catch (parseErr) {
+                    console.error("Non-JSON submit response:", text);
+                    res = { success: false, message: "Respon server tidak valid (" + response.status + ")" };
+                }
+
                 if (res.success) {
                     if (modalFooter) modalFooter.style.display = 'none';
                     if (modalBody) {

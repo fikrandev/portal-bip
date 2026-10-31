@@ -862,16 +862,31 @@ class SpmbModel
         foreach ($allowedCols as $col) {
             if (array_key_exists($col, $data)) {
                 $val = $data[$col];
+
+                // Jangan timpa file berkas yang sudah ada dengan string kosong atau null
+                if (in_array($col, ['file_screenshot_dapodik', 'berkas_kk', 'berkas_akta', 'berkas_ktp_ayah', 'berkas_ktp_ibu', 'foto'])) {
+                    if (empty($val)) {
+                        continue;
+                    }
+                }
+
+                // Konversi angka integer
                 if (in_array($col, ['tinggi_badan', 'berat_badan', 'lingkar_kepala', 'anak_ke', 'jumlah_saudara'])) {
                     $val = ($val !== '' && $val !== null) ? (int)$val : null;
                 }
+
+                // Konversi tanggal / string yang jika kosong harus disimpan NULL agar tidak error di MySQL strict mode
+                if (in_array($col, ['tanggal_lahir', 'tahun_lahir_ibu', 'tahun_lahir_ayah', 'lintang', 'bujur', 'kode_pos', 'rt', 'rw', 'npsn_asal', 'nisn'])) {
+                    $val = ($val !== '' && $val !== null && trim((string)$val) !== '') ? trim((string)$val) : null;
+                }
+
                 $sets[] = "`$col` = ?";
                 $values[] = $val;
             }
         }
 
         // Hitung umur otomatis jika tanggal lahir ada berdasarkan patokan group
-        if (!empty($data['tanggal_lahir'])) {
+        if (!empty($data['tanggal_lahir']) && trim((string)$data['tanggal_lahir']) !== '') {
             $patokanDate = !empty($pendaftar['tanggal_patokan_umur']) ? $pendaftar['tanggal_patokan_umur'] : '2027-07-01';
             $calculatedUmur = self::hitungUmur($data['tanggal_lahir'], $patokanDate);
             $sets[] = "`umur` = ?";
@@ -904,10 +919,15 @@ class SpmbModel
 
         if (empty($sets)) return true;
 
-        $values[] = $pendaftar['id'];
-        $sql = "UPDATE `spmb_pendaftar` SET " . implode(", ", $sets) . " WHERE `id` = ?";
-        self::db()->query($sql, $values);
-        return true;
+        try {
+            $values[] = $pendaftar['id'];
+            $sql = "UPDATE `spmb_pendaftar` SET " . implode(", ", $sets) . " WHERE `id` = ?";
+            self::db()->query($sql, $values);
+            return true;
+        } catch (\Throwable $e) {
+            error_log("updateBiodataByToken error: " . $e->getMessage());
+            return false;
+        }
     }
 
     /**

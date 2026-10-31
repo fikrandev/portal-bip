@@ -1279,43 +1279,51 @@ class SpmbController
     public static function biodataSaveDraft(string $token): void
     {
         header('Content-Type: application/json');
-        $pendaftar = SpmbModel::getPendaftarByBiodataToken($token);
-        if (!$pendaftar) {
-            echo json_encode(['success' => false, 'message' => 'Tautan pengisian tidak valid.']);
-            exit;
-        }
+        try {
+            $pendaftar = SpmbModel::getPendaftarByBiodataToken($token);
+            if (!$pendaftar) {
+                echo json_encode(['success' => false, 'message' => 'Tautan pengisian tidak valid atau telah kedaluwarsa.']);
+                exit;
+            }
 
-        $data = $_POST;
+            $data = $_POST;
 
-        // Proses upload berkas jika ada file yang dikirim
-        $fileFields = [
-            'file_screenshot_dapodik' => 'dapodik',
-            'berkas_kk'               => 'kk',
-            'berkas_akta'             => 'akta',
-            'berkas_ktp_ayah'         => 'ktp_ayah',
-            'berkas_ktp_ibu'          => 'ktp_ibu'
-        ];
+            // Proses upload berkas jika ada file yang dikirim
+            $fileFields = [
+                'file_screenshot_dapodik' => 'dapodik',
+                'berkas_kk'               => 'kk',
+                'berkas_akta'             => 'akta',
+                'berkas_ktp_ayah'         => 'ktp_ayah',
+                'berkas_ktp_ibu'          => 'ktp_ibu'
+            ];
 
-        foreach ($fileFields as $fieldName => $prefix) {
-            if (!empty($_FILES[$fieldName]['name']) && $_FILES[$fieldName]['error'] === UPLOAD_ERR_OK) {
-                $saved = self::saveCompressedUpload($_FILES[$fieldName], $prefix, 500);
-                if ($saved) {
-                    $data[$fieldName] = $saved;
+            foreach ($fileFields as $fieldName => $prefix) {
+                if (!empty($_FILES[$fieldName]['name']) && $_FILES[$fieldName]['error'] === UPLOAD_ERR_OK) {
+                    $saved = self::saveCompressedUpload($_FILES[$fieldName], $prefix, 500);
+                    if ($saved) {
+                        $data[$fieldName] = $saved;
+                    }
                 }
             }
-        }
 
-        $savedOk = SpmbModel::updateBiodataByToken($token, $data, false);
+            $savedOk = SpmbModel::updateBiodataByToken($token, $data, false);
 
-        if ($savedOk) {
+            if ($savedOk) {
+                echo json_encode([
+                    'success'    => true,
+                    'message'    => 'Draft berhasil disimpan!',
+                    'last_saved' => date('H:i:s'),
+                    'uploaded'   => array_intersect_key($data, $fileFields)
+                ]);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Gagal menyimpan draft ke database.']);
+            }
+        } catch (\Throwable $e) {
+            error_log("biodataSaveDraft error: " . $e->getMessage());
             echo json_encode([
-                'success'    => true,
-                'message'    => 'Draft berhasil disimpan!',
-                'last_saved' => date('H:i:s'),
-                'uploaded'   => array_intersect_key($data, $fileFields)
+                'success' => false,
+                'message' => 'Terjadi kendala saat menyimpan draft: ' . $e->getMessage()
             ]);
-        } else {
-            echo json_encode(['success' => false, 'message' => 'Gagal menyimpan draft ke database.']);
         }
         exit;
     }
@@ -1633,77 +1641,88 @@ class SpmbController
      */
     public static function saveCompressedUpload(array $file, string $prefix, int $maxKB = 500): ?string
     {
-        if (empty($file['name']) || $file['error'] !== UPLOAD_ERR_OK) {
-            return null;
-        }
-
-        $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-        $allowed = ['jpg', 'jpeg', 'png', 'webp', 'pdf'];
-        if (!in_array($ext, $allowed)) {
-            return null;
-        }
-
-        $targetDir = BASE_PATH . '/public/uploads/spmb/berkas';
-        if (!is_dir($targetDir)) {
-            mkdir($targetDir, 0755, true);
-        }
-
-        $safeName = $prefix . '_' . time() . '_' . bin2hex(random_bytes(10)) . '.' . ($ext === 'pdf' ? 'pdf' : 'jpg');
-        $destPath = $targetDir . '/' . $safeName;
-
-        // Jika file PDF, pindahkan langsung
-        if ($ext === 'pdf') {
-            if (move_uploaded_file($file['tmp_name'], $destPath)) {
-                return 'uploads/spmb/berkas/' . $safeName;
+        try {
+            if (empty($file['name']) || $file['error'] !== UPLOAD_ERR_OK) {
+                return null;
             }
-            return null;
-        }
 
-        // Jika file gambar: proses kompresi otomatis <= 500 KB menggunakan GD
-        $tmp = $file['tmp_name'];
-        $raw = file_get_contents($tmp);
-        $src = @imagecreatefromstring($raw);
-
-        if (!$src) {
-            if (move_uploaded_file($tmp, $destPath)) {
-                return 'uploads/spmb/berkas/' . $safeName;
+            $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+            $allowed = ['jpg', 'jpeg', 'png', 'webp', 'pdf'];
+            if (!in_array($ext, $allowed)) {
+                return null;
             }
-            return null;
-        }
 
-        $origW = imagesx($src);
-        $origH = imagesy($src);
-
-        // Batasi dimensi maksimal 1800px agar proporsional dan tidak memberatkan memori
-        $maxDim = 1800;
-        if ($origW > $maxDim || $origH > $maxDim) {
-            if ($origW >= $origH) {
-                $newW = $maxDim;
-                $newH = (int)($origH * ($maxDim / $origW));
-            } else {
-                $newH = $maxDim;
-                $newW = (int)($origW * ($maxDim / $origH));
+            $targetDir = BASE_PATH . '/public/uploads/spmb/berkas';
+            if (!is_dir($targetDir)) {
+                @mkdir($targetDir, 0755, true);
             }
-            $resized = imagecreatetruecolor($newW, $newH);
-            imagecopyresampled($resized, $src, 0, 0, 0, 0, $newW, $newH, $origW, $origH);
+
+            $safeName = $prefix . '_' . time() . '_' . bin2hex(random_bytes(8)) . '.' . ($ext === 'pdf' ? 'pdf' : 'jpg');
+            $destPath = $targetDir . '/' . $safeName;
+
+            // Jika file PDF, pindahkan langsung
+            if ($ext === 'pdf') {
+                if (@move_uploaded_file($file['tmp_name'], $destPath)) {
+                    return 'uploads/spmb/berkas/' . $safeName;
+                }
+                return null;
+            }
+
+            // Jika file gambar: proses kompresi otomatis <= 500 KB menggunakan GD jika tersedia
+            $tmp = $file['tmp_name'];
+            if (!file_exists($tmp)) {
+                return null;
+            }
+
+            $raw = @file_get_contents($tmp);
+            $src = $raw ? @imagecreatefromstring($raw) : false;
+
+            if (!$src) {
+                if (@move_uploaded_file($tmp, $destPath)) {
+                    return 'uploads/spmb/berkas/' . $safeName;
+                }
+                return null;
+            }
+
+            $origW = imagesx($src);
+            $origH = imagesy($src);
+
+            // Batasi dimensi maksimal 1800px agar proporsional dan tidak memberatkan memori
+            $maxDim = 1800;
+            if ($origW > $maxDim || $origH > $maxDim) {
+                if ($origW >= $origH) {
+                    $newW = $maxDim;
+                    $newH = (int)($origH * ($maxDim / $origW));
+                } else {
+                    $newH = $maxDim;
+                    $newW = (int)($origW * ($maxDim / $origH));
+                }
+                $resized = imagecreatetruecolor($newW, $newH);
+                imagecopyresampled($resized, $src, 0, 0, 0, 0, $newW, $newH, $origW, $origH);
+                imagedestroy($src);
+                $src = $resized;
+            }
+
+            // Kompresi bertahap hingga file di bawah 500 KB
+            $quality = 85;
+            @imagejpeg($src, $destPath, $quality);
+
+            if (file_exists($destPath)) {
+                $fSize = filesize($destPath);
+                while ($fSize > ($maxKB * 1024) && $quality > 35) {
+                    $quality -= 10;
+                    @imagejpeg($src, $destPath, $quality);
+                    clearstatcache(true, $destPath);
+                    $fSize = filesize($destPath);
+                }
+            }
+
             imagedestroy($src);
-            $src = $resized;
+            return file_exists($destPath) ? 'uploads/spmb/berkas/' . $safeName : null;
+        } catch (\Throwable $e) {
+            error_log("saveCompressedUpload error: " . $e->getMessage());
+            return null;
         }
-
-        // Kompresi bertahap hingga file di bawah 500 KB
-        $quality = 85;
-        imagejpeg($src, $destPath, $quality);
-        $fSize = filesize($destPath);
-
-        while ($fSize > ($maxKB * 1024) && $quality > 35) {
-            $quality -= 10;
-            imagejpeg($src, $destPath, $quality);
-            clearstatcache(true, $destPath);
-            $fSize = filesize($destPath);
-        }
-
-        imagedestroy($src);
-        return 'uploads/spmb/berkas/' . $safeName;
     }
 
     // ═════════════════════════════════════════════════════════════════════════
