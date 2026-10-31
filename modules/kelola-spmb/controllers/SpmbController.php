@@ -1329,6 +1329,102 @@ class SpmbController
     }
 
     /**
+     * Upload & Simpan Langsung Berkas Tunggal (KK, Akta, KTP Ayah, KTP Ibu, Dapodik)
+     * Langsung tersimpan di database dan mengembalikan URL untuk Live Preview
+     */
+    public static function biodataUploadSingleBerkas(string $token): void
+    {
+        header('Content-Type: application/json');
+        try {
+            $pendaftar = SpmbModel::getPendaftarByBiodataToken($token);
+            if (!$pendaftar) {
+                echo json_encode(['success' => false, 'message' => 'Tautan pengisian tidak valid atau telah kedaluwarsa.']);
+                exit;
+            }
+
+            $allowedFields = [
+                'file_screenshot_dapodik' => 'dapodik',
+                'berkas_kk'               => 'kk',
+                'berkas_akta'             => 'akta',
+                'berkas_ktp_ayah'         => 'ktp_ayah',
+                'berkas_ktp_ibu'          => 'ktp_ibu'
+            ];
+
+            $fieldName = $_POST['field_name'] ?? '';
+            if (!isset($allowedFields[$fieldName])) {
+                echo json_encode(['success' => false, 'message' => 'Kolom berkas tidak dikenali.']);
+                exit;
+            }
+
+            $prefix = $allowedFields[$fieldName];
+            $file = $_FILES['file'] ?? ($_FILES[$fieldName] ?? null);
+
+            if (!$file || empty($file['name'])) {
+                echo json_encode(['success' => false, 'message' => 'Tidak ada file yang dipilih untuk diunggah.']);
+                exit;
+            }
+
+            if ($file['error'] !== UPLOAD_ERR_OK) {
+                $errMap = [
+                    UPLOAD_ERR_INI_SIZE   => 'Ukuran file melebihi batas upload_max_filesize di server PHP. Silakan kompres atau perkecil file Anda.',
+                    UPLOAD_ERR_FORM_SIZE  => 'Ukuran file melebihi batas form.',
+                    UPLOAD_ERR_PARTIAL    => 'File hanya terunggah sebagian. Silakan coba pilih kembali file Anda.',
+                    UPLOAD_ERR_NO_FILE    => 'Tidak ada file yang dipilih.',
+                    UPLOAD_ERR_NO_TMP_DIR => 'Server tidak menemukan folder sementara untuk upload.',
+                    UPLOAD_ERR_CANT_WRITE => 'Gagal menulis file ke disk server (I/O error).',
+                ];
+                $errMsg = $errMap[$file['error']] ?? 'Gagal mengunggah file (Kode error: ' . $file['error'] . ')';
+                echo json_encode(['success' => false, 'message' => $errMsg]);
+                exit;
+            }
+
+            // Batas ukuran 10 MB untuk PDF / Gambar
+            if ($file['size'] > 10 * 1024 * 1024) {
+                echo json_encode(['success' => false, 'message' => 'Ukuran file melebihi 10 MB. Silakan kompres atau perkecil file Anda.']);
+                exit;
+            }
+
+            $savedPath = self::saveCompressedUpload($file, $prefix, 500);
+            if (!$savedPath) {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Gagal memproses berkas. Pastikan file berformat JPG, PNG, WEBP, atau PDF, dan folder uploads memiliki izin tulis.'
+                ]);
+                exit;
+            }
+
+            // Simpan langsung ke database untuk pendaftar bersangkutan
+            $updateOk = SpmbModel::updateBiodataByToken($token, [$fieldName => $savedPath], false);
+
+            if ($updateOk) {
+                $ext = strtolower(pathinfo($savedPath, PATHINFO_EXTENSION));
+                $fullDest = BASE_PATH . '/public/' . $savedPath;
+                $finalSizeKB = file_exists($fullDest) ? round(filesize($fullDest) / 1024) : round($file['size'] / 1024);
+
+                echo json_encode([
+                    'success'    => true,
+                    'message'    => 'Berkas berhasil diunggah & tersimpan di server!',
+                    'field'      => $fieldName,
+                    'file_path'  => $savedPath,
+                    'file_url'   => asset($savedPath),
+                    'is_pdf'     => ($ext === 'pdf'),
+                    'filename'   => basename($file['name']),
+                    'filesize'   => $finalSizeKB
+                ]);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Berkas tersimpan di folder tetapi gagal mengupdate data ke server.']);
+            }
+        } catch (\Throwable $e) {
+            error_log("biodataUploadSingleBerkas error: " . $e->getMessage());
+            echo json_encode([
+                'success' => false,
+                'message' => 'Terjadi kesalahan sistem saat memproses berkas: ' . $e->getMessage()
+            ]);
+        }
+        exit;
+    }
+
+    /**
      * Submit Final Formulir Biodata Lengkap
      */
     public static function biodataSubmit(string $token): void
@@ -1407,6 +1503,9 @@ class SpmbController
             }
         }
 
+        // Refresh pendaftar dari database agar berkas yang sudah terupload via AJAX langsung terbaca
+        $pendaftar = SpmbModel::getPendaftarByBiodataToken($token) ?: $pendaftar;
+
         // Proses upload berkas jika ada file yang dikirim
         $fileFields = [
             'file_screenshot_dapodik' => 'dapodik',
@@ -1417,10 +1516,21 @@ class SpmbController
         ];
 
         foreach ($fileFields as $fieldName => $prefix) {
-            if (!empty($_FILES[$fieldName]['name']) && $_FILES[$fieldName]['error'] === UPLOAD_ERR_OK) {
-                $saved = self::saveCompressedUpload($_FILES[$fieldName], $prefix, 500);
-                if ($saved) {
-                    $data[$fieldName] = $saved;
+            if (!empty($_FILES[$fieldName]['name'])) {
+                if ($_FILES[$fieldName]['error'] === UPLOAD_ERR_OK) {
+                    $saved = self::saveCompressedUpload($_FILES[$fieldName], $prefix, 500);
+                    if ($saved) {
+                        $data[$fieldName] = $saved;
+                    }
+                } elseif ($_FILES[$fieldName]['error'] !== UPLOAD_ERR_NO_FILE) {
+                    if ($_FILES[$fieldName]['error'] === UPLOAD_ERR_INI_SIZE) {
+                        $errMsg = 'Ukuran berkas ' . $fieldName . ' melebihi batas upload_max_filesize di server PHP. Silakan kompres atau perkecil file Anda.';
+                        if ($isAjax) {
+                            header('Content-Type: application/json');
+                            echo json_encode(['success' => false, 'message' => $errMsg]);
+                            exit;
+                        }
+                    }
                 }
             }
         }
@@ -1654,15 +1764,17 @@ class SpmbController
 
             $targetDir = BASE_PATH . '/public/uploads/spmb/berkas';
             if (!is_dir($targetDir)) {
-                @mkdir($targetDir, 0755, true);
+                @mkdir($targetDir, 0777, true);
             }
+            @chmod($targetDir, 0777);
 
             $safeName = $prefix . '_' . time() . '_' . bin2hex(random_bytes(8)) . '.' . ($ext === 'pdf' ? 'pdf' : 'jpg');
             $destPath = $targetDir . '/' . $safeName;
 
             // Jika file PDF, pindahkan langsung
             if ($ext === 'pdf') {
-                if (@move_uploaded_file($file['tmp_name'], $destPath)) {
+                if (@move_uploaded_file($file['tmp_name'], $destPath) || @copy($file['tmp_name'], $destPath)) {
+                    @chmod($destPath, 0666);
                     return 'uploads/spmb/berkas/' . $safeName;
                 }
                 return null;
@@ -1678,7 +1790,8 @@ class SpmbController
             $src = $raw ? @imagecreatefromstring($raw) : false;
 
             if (!$src) {
-                if (@move_uploaded_file($tmp, $destPath)) {
+                if (@move_uploaded_file($tmp, $destPath) || @copy($tmp, $destPath)) {
+                    @chmod($destPath, 0666);
                     return 'uploads/spmb/berkas/' . $safeName;
                 }
                 return null;
@@ -1715,10 +1828,20 @@ class SpmbController
                     clearstatcache(true, $destPath);
                     $fSize = filesize($destPath);
                 }
+                @chmod($destPath, 0666);
+                imagedestroy($src);
+                return 'uploads/spmb/berkas/' . $safeName;
+            }
+
+            // Fallback jika imagejpeg gagal menulis langsung
+            if (@move_uploaded_file($tmp, $destPath) || @copy($tmp, $destPath)) {
+                @chmod($destPath, 0666);
+                imagedestroy($src);
+                return 'uploads/spmb/berkas/' . $safeName;
             }
 
             imagedestroy($src);
-            return file_exists($destPath) ? 'uploads/spmb/berkas/' . $safeName : null;
+            return null;
         } catch (\Throwable $e) {
             error_log("saveCompressedUpload error: " . $e->getMessage());
             return null;

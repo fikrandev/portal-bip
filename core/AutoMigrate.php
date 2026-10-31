@@ -77,6 +77,7 @@ class AutoMigrate
             '2026_10_20_000039_sync_rbac_and_modules_registry'            => 'migration039SyncRbacAndModulesRegistry',
             '2026_10_20_000040_sync_spmb_full_integrity'                  => 'migration040SyncSpmbFullIntegrity',
             '2026_10_31_000041_enable_self_hosted_wa_gateway'             => 'migration041EnableSelfHostedWaGateway',
+            '2026_10_31_000042_ensure_spmb_upload_permissions'            => 'migration042EnsureSpmbUploadPermissions',
         ];
     }
     /**
@@ -2844,6 +2845,25 @@ class AutoMigrate
             } else {
                 $stmtInsert->execute([$k, $v]);
             }
+        }
+    }
+
+    /**
+     * Migration 042: Memastikan direktori upload SPMB & berkas ada dan berizin penuh (0777 di Linux/aaPanel)
+     */
+    protected static function migration042EnsureSpmbUploadPermissions(PDO $pdo): void
+    {
+        $uploadDirs = [
+            BASE_PATH . '/public/uploads',
+            BASE_PATH . '/public/uploads/spmb',
+            BASE_PATH . '/public/uploads/spmb/berkas',
+            BASE_PATH . '/public/uploads/spmb/psikolog',
+        ];
+        foreach ($uploadDirs as $dir) {
+            if (!is_dir($dir)) {
+                @mkdir($dir, 0777, true);
+            }
+            @chmod($dir, 0777);
         }
     }
 }

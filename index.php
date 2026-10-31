@@ -206,6 +206,7 @@ $router->get('/validasi-kartu/{id}', [SiswaController::class, 'validasiKartu']);
 $router->get('/spmb/biodata/download-contoh-dapodik', [SpmbController::class, 'downloadContohDapodik']);
 $router->get('/spmb/biodata/{token}', [SpmbController::class, 'biodataPublic']);
 $router->post('/spmb/biodata/{token}/save-draft', [SpmbController::class, 'biodataSaveDraft']);
+$router->post('/spmb/biodata/{token}/upload-berkas', [SpmbController::class, 'biodataUploadSingleBerkas']);
 $router->post('/spmb/biodata/{token}/submit', [SpmbController::class, 'biodataSubmit']);
 $router->get('/spmb/komitmen/{token}', [SpmbController::class, 'komitmenPublic']);
 $router->post('/spmb/komitmen/{token}/submit', [SpmbController::class, 'komitmenSubmit']);

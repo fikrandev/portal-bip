@@ -797,34 +797,225 @@ function val($arr, $key, $default = '') {
             height: 100%;
         }
 
+        .upload-card.has-file {
+            border-color: #10b981;
+            background: #f0fdf4;
+        }
+
+        .upload-card.has-file .upload-icon {
+            color: #10b981;
+        }
+
         .upload-preview-box {
             display: none;
-            margin-top: 12px;
-            padding-top: 12px;
+            margin-top: 14px;
+            padding-top: 14px;
             border-top: 1px dashed var(--slate-200);
             text-align: left;
+            position: relative;
+            z-index: 10;
         }
 
-        .preview-img {
-            max-height: 120px;
+        /* ── Live Document Preview (Images & PDFs) ─────────────────── */
+        .live-doc-card {
+            background: #ffffff;
+            border-radius: 12px;
+            border: 1.5px solid #e2e8f0;
+            padding: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .live-doc-card.is-pdf {
+            border-color: #fca5a5;
+            background: linear-gradient(135deg, #fff5f5 0%, #ffffff 100%);
+        }
+
+        .live-doc-card.is-img {
+            border-color: #bfdbfe;
+            background: linear-gradient(135deg, #f0f9ff 0%, #ffffff 100%);
+        }
+
+        .doc-thumb-container {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #0f172a08;
             border-radius: 8px;
-            border: 1px solid var(--slate-200);
-            object-fit: cover;
-            display: block;
-            margin: 0 auto;
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+            min-height: 100px;
+            max-height: 170px;
+            position: relative;
         }
 
-        .file-info-badge {
+        .doc-thumb-container img {
+            max-width: 100%;
+            max-height: 170px;
+            object-fit: contain;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .doc-thumb-container img:hover {
+            transform: scale(1.03);
+        }
+
+        .pdf-embed-wrapper {
+            width: 100%;
+            height: 160px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #fecaca;
+            background: #ffffff;
+            position: relative;
+        }
+
+        .pdf-embed-wrapper iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .doc-meta-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .doc-name-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 0;
+            flex: 1;
+        }
+
+        .doc-type-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        .doc-type-icon.pdf {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .doc-type-icon.img {
+            background: #e0f2fe;
+            color: #0284c7;
+        }
+
+        .doc-info-text {
+            min-width: 0;
+        }
+
+        .doc-filename {
+            font-size: 12.5px;
+            font-weight: 700;
+            color: var(--slate-800);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 180px;
+        }
+
+        .doc-filesize {
+            font-size: 11px;
+            color: var(--slate-500);
+        }
+
+        .doc-badge {
             display: inline-flex;
             align-items: center;
-            gap: 6px;
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--primary-dark);
-            background: var(--primary-light);
-            padding: 4px 10px;
+            gap: 5px;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 3px 8px;
             border-radius: 6px;
-            margin-top: 8px;
+            white-space: nowrap;
+        }
+
+        .doc-badge.uploading {
+            background: #eff6ff;
+            color: #1d4ed8;
+            border: 1px solid #bfdbfe;
+        }
+
+        .doc-badge.saved {
+            background: #ecfdf5;
+            color: #047857;
+            border: 1px solid #a7f3d0;
+        }
+
+        .doc-badge.error {
+            background: #fef2f2;
+            color: #b91c1c;
+            border: 1px solid #fecaca;
+        }
+
+        .doc-actions-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 2px;
+            flex-wrap: wrap;
+        }
+
+        .btn-doc-view {
+            padding: 5px 11px;
+            font-size: 11.5px;
+            font-weight: 700;
+            border-radius: 6px;
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            color: #0f172a;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .btn-doc-view:hover {
+            background: #f1f5f9;
+            color: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .btn-doc-reselect {
+            padding: 5px 11px;
+            font-size: 11.5px;
+            font-weight: 700;
+            border-radius: 6px;
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            color: #64748b;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+            transition: all 0.15s;
+            position: relative;
+        }
+
+        .btn-doc-reselect:hover {
+            background: #f8fafc;
+            color: #0f172a;
         }
 
         /* ── Tab 5: Privacy & Terms Scroll Box ─────────────────── */
@@ -1871,19 +2062,49 @@ function val($arr, $key, $default = '') {
                             <span style="font-size:12px; color:var(--slate-500);"><i class="fa-solid fa-circle-info"></i> Bisa diminta ke operator sekolah asal jika ada.</span>
                         </div>
 
-                        <div class="upload-card">
+                        <div class="upload-card <?= !empty($pendaftar['file_screenshot_dapodik']) ? 'has-file' : '' ?>">
                             <i class="fa-solid fa-cloud-arrow-up upload-icon"></i>
                             <div class="upload-title">Klik atau Seret Screenshot Profil Dapodik ke Sini</div>
-                            <div class="upload-subtitle">Foto otomatis dikompres maksimal 500 KB</div>
+                            <div class="upload-subtitle">Format JPG, PNG, atau PDF (Maks. 5 MB)</div>
                             <input type="file" name="file_screenshot_dapodik" class="upload-input" accept="image/*,.pdf" onchange="previewUpload(this, 'previewDapodik')">
                             
                             <div id="previewDapodik" class="upload-preview-box" <?= !empty($pendaftar['file_screenshot_dapodik']) ? 'style="display:block;"' : '' ?>>
-                                <?php if (!empty($pendaftar['file_screenshot_dapodik'])): ?>
-                                    <div class="file-info-badge">
-                                        <i class="fa-solid fa-file-check"></i> File sudah tersimpan: <?= htmlspecialchars(basename($pendaftar['file_screenshot_dapodik'])) ?>
-                                    </div>
-                                    <div style="margin-top:6px;">
-                                        <a href="<?= htmlspecialchars(asset($pendaftar['file_screenshot_dapodik'])) ?>" target="_blank" style="font-size:12px; color:var(--primary); font-weight:600;">Lihat File Tersimpan</a>
+                                <?php if (!empty($pendaftar['file_screenshot_dapodik'])): 
+                                    $dapodikFile = $pendaftar['file_screenshot_dapodik'];
+                                    $isDapodikPdf = strtolower(pathinfo($dapodikFile, PATHINFO_EXTENSION)) === 'pdf';
+                                    $dapodikUrl = asset($dapodikFile);
+                                ?>
+                                    <div class="live-doc-card <?= $isDapodikPdf ? 'is-pdf' : 'is-img' ?>">
+                                        <?php if ($isDapodikPdf): ?>
+                                            <div class="pdf-embed-wrapper">
+                                                <iframe src="<?= htmlspecialchars($dapodikUrl) ?>#toolbar=0"></iframe>
+                                            </div>
+                                        <?php else: ?>
+                                            <div class="doc-thumb-container">
+                                                <img src="<?= htmlspecialchars($dapodikUrl) ?>" alt="Screenshot Dapodik" onclick="window.open('<?= htmlspecialchars($dapodikUrl) ?>', '_blank')">
+                                            </div>
+                                        <?php endif; ?>
+                                        <div class="doc-meta-row">
+                                            <div class="doc-name-group">
+                                                <div class="doc-type-icon <?= $isDapodikPdf ? 'pdf' : 'img' ?>">
+                                                    <i class="fa-solid <?= $isDapodikPdf ? 'fa-file-pdf' : 'fa-image' ?>"></i>
+                                                </div>
+                                                <div class="doc-info-text">
+                                                    <div class="doc-filename"><?= htmlspecialchars(basename($dapodikFile)) ?></div>
+                                                    <div class="doc-filesize"><?= $isDapodikPdf ? 'Dokumen PDF' : 'Gambar Screenshot' ?></div>
+                                                </div>
+                                            </div>
+                                            <span class="doc-badge saved"><i class="fa-solid fa-circle-check"></i> Tersimpan di Server</span>
+                                        </div>
+                                        <div class="doc-actions-row">
+                                            <a href="<?= htmlspecialchars($dapodikUrl) ?>" target="_blank" class="btn-doc-view">
+                                                <i class="fa-solid fa-arrow-up-right-from-square"></i> Buka File
+                                            </a>
+                                            <label class="btn-doc-reselect">
+                                                <i class="fa-solid fa-arrows-rotate"></i> Ganti File
+                                                <input type="file" style="display:none;" accept="image/*,.pdf" onchange="const mainInput = document.querySelector('input[name=file_screenshot_dapodik]'); if(mainInput){mainInput.files=this.files; previewUpload(mainInput, 'previewDapodik');}">
+                                            </label>
+                                        </div>
                                     </div>
                                 <?php endif; ?>
                             </div>
@@ -2260,63 +2481,72 @@ function val($arr, $key, $default = '') {
                     </div>
                 </div>
 
+                <!-- Helper PHP untuk Render Kartu Berkas Live Preview -->
+                <?php
+                $renderBerkasCard = function(string $fieldName, string $label, string $subLabel, string $iconClass, string $previewId) use ($pendaftar) {
+                    $hasFile = !empty($pendaftar[$fieldName]);
+                    $filePath = $hasFile ? $pendaftar[$fieldName] : '';
+                    $isPdf = $hasFile && (strtolower(pathinfo($filePath, PATHINFO_EXTENSION)) === 'pdf');
+                    $fileUrl = $hasFile ? asset($filePath) : '';
+                    $fileName = $hasFile ? basename($filePath) : '';
+                ?>
+                    <div class="upload-card <?= $hasFile ? 'has-file' : '' ?>" id="card_<?= $previewId ?>">
+                        <i class="<?= $iconClass ?> upload-icon"></i>
+                        <div class="upload-title"><?= $label ?> <span class="req">*</span></div>
+                        <div class="upload-subtitle"><?= $subLabel ?> (Maks. 5 MB)</div>
+                        <input type="file" name="<?= $fieldName ?>" class="upload-input" accept="image/*,.pdf" onchange="previewUpload(this, '<?= $previewId ?>')">
+                        <div id="<?= $previewId ?>" class="upload-preview-box" <?= $hasFile ? 'style="display:block;"' : '' ?>>
+                            <?php if ($hasFile): ?>
+                                <div class="live-doc-card <?= $isPdf ? 'is-pdf' : 'is-img' ?>">
+                                    <?php if ($isPdf): ?>
+                                        <div class="pdf-embed-wrapper">
+                                            <iframe src="<?= htmlspecialchars($fileUrl) ?>#toolbar=0"></iframe>
+                                        </div>
+                                    <?php else: ?>
+                                        <div class="doc-thumb-container">
+                                            <img src="<?= htmlspecialchars($fileUrl) ?>" alt="<?= htmlspecialchars($label) ?>" onclick="window.open('<?= htmlspecialchars($fileUrl) ?>', '_blank')">
+                                        </div>
+                                    <?php endif; ?>
+                                    <div class="doc-meta-row">
+                                        <div class="doc-name-group">
+                                            <div class="doc-type-icon <?= $isPdf ? 'pdf' : 'img' ?>">
+                                                <i class="fa-solid <?= $isPdf ? 'fa-file-pdf' : 'fa-image' ?>"></i>
+                                            </div>
+                                            <div class="doc-info-text">
+                                                <div class="doc-filename" title="<?= htmlspecialchars($fileName) ?>"><?= htmlspecialchars($fileName) ?></div>
+                                                <div class="doc-filesize"><?= $isPdf ? 'Dokumen PDF' : 'Foto Dokumen' ?></div>
+                                            </div>
+                                        </div>
+                                        <span class="doc-badge saved"><i class="fa-solid fa-circle-check"></i> Tersimpan di Server</span>
+                                    </div>
+                                    <div class="doc-actions-row">
+                                        <a href="<?= htmlspecialchars($fileUrl) ?>" target="_blank" class="btn-doc-view">
+                                            <i class="fa-solid fa-arrow-up-right-from-square"></i> Buka <?= $isPdf ? 'PDF' : 'Foto' ?>
+                                        </a>
+                                        <label class="btn-doc-reselect">
+                                            <i class="fa-solid fa-arrows-rotate"></i> Ganti File
+                                            <input type="file" style="display:none;" accept="image/*,.pdf" onchange="const m=document.querySelector('input[name=<?= $fieldName ?>]'); if(m){m.files=this.files; previewUpload(m, '<?= $previewId ?>');}">
+                                        </label>
+                                    </div>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                <?php }; ?>
+
                 <!-- Upload Cards 2x2 Grid -->
                 <div class="form-grid grid-2" style="margin-bottom:32px;">
                     <!-- 1. Kartu Keluarga -->
-                    <div class="upload-card">
-                        <i class="fa-solid fa-users upload-icon"></i>
-                        <div class="upload-title">1. Foto Kartu Keluarga (KK) <span class="req">*</span></div>
-                        <div class="upload-subtitle">Pastikan seluruh nomor NIK dan tulisan terbaca jelas (Maks. 500 KB)</div>
-                        <input type="file" name="berkas_kk" class="upload-input" accept="image/*,.pdf" onchange="previewUpload(this, 'previewKk')">
-                        <div id="previewKk" class="upload-preview-box" <?= !empty($pendaftar['berkas_kk']) ? 'style="display:block;"' : '' ?>>
-                            <?php if (!empty($pendaftar['berkas_kk'])): ?>
-                                <div class="file-info-badge"><i class="fa-solid fa-check-circle"></i> KK Tersimpan</div>
-                                <div style="margin-top:6px;"><a href="<?= htmlspecialchars(asset($pendaftar['berkas_kk'])) ?>" target="_blank" style="font-size:12px; color:var(--primary); font-weight:600;">Lihat Berkas</a></div>
-                            <?php endif; ?>
-                        </div>
-                    </div>
+                    <?php $renderBerkasCard('berkas_kk', '1. Foto Kartu Keluarga (KK)', 'Pastikan seluruh nomor NIK dan tulisan terbaca jelas', 'fa-solid fa-users', 'previewKk'); ?>
 
                     <!-- 2. Akta Kelahiran -->
-                    <div class="upload-card">
-                        <i class="fa-solid fa-certificate upload-icon"></i>
-                        <div class="upload-title">2. Foto Akta Kelahiran <span class="req">*</span></div>
-                        <div class="upload-subtitle">Nomor registrasi akta dan nama orang tua terbaca jelas (Maks. 500 KB)</div>
-                        <input type="file" name="berkas_akta" class="upload-input" accept="image/*,.pdf" onchange="previewUpload(this, 'previewAkta')">
-                        <div id="previewAkta" class="upload-preview-box" <?= !empty($pendaftar['berkas_akta']) ? 'style="display:block;"' : '' ?>>
-                            <?php if (!empty($pendaftar['berkas_akta'])): ?>
-                                <div class="file-info-badge"><i class="fa-solid fa-check-circle"></i> Akta Tersimpan</div>
-                                <div style="margin-top:6px;"><a href="<?= htmlspecialchars(asset($pendaftar['berkas_akta'])) ?>" target="_blank" style="font-size:12px; color:var(--primary); font-weight:600;">Lihat Berkas</a></div>
-                            <?php endif; ?>
-                        </div>
-                    </div>
+                    <?php $renderBerkasCard('berkas_akta', '2. Foto Akta Kelahiran', 'Nomor registrasi akta dan nama orang tua terbaca jelas', 'fa-solid fa-certificate', 'previewAkta'); ?>
 
                     <!-- 3. KTP Ayah -->
-                    <div class="upload-card">
-                        <i class="fa-solid fa-id-card upload-icon"></i>
-                        <div class="upload-title">3. Foto KTP Ayah Kandung <span class="req">*</span></div>
-                        <div class="upload-subtitle">Foto bagian depan e-KTP Ayah (Maks. 500 KB)</div>
-                        <input type="file" name="berkas_ktp_ayah" class="upload-input" accept="image/*,.pdf" onchange="previewUpload(this, 'previewKtpAyah')">
-                        <div id="previewKtpAyah" class="upload-preview-box" <?= !empty($pendaftar['berkas_ktp_ayah']) ? 'style="display:block;"' : '' ?>>
-                            <?php if (!empty($pendaftar['berkas_ktp_ayah'])): ?>
-                                <div class="file-info-badge"><i class="fa-solid fa-check-circle"></i> KTP Ayah Tersimpan</div>
-                                <div style="margin-top:6px;"><a href="<?= htmlspecialchars(asset($pendaftar['berkas_ktp_ayah'])) ?>" target="_blank" style="font-size:12px; color:var(--primary); font-weight:600;">Lihat Berkas</a></div>
-                            <?php endif; ?>
-                        </div>
-                    </div>
+                    <?php $renderBerkasCard('berkas_ktp_ayah', '3. Foto KTP Ayah Kandung', 'Foto bagian depan e-KTP Ayah', 'fa-solid fa-id-card', 'previewKtpAyah'); ?>
 
                     <!-- 4. KTP Ibu -->
-                    <div class="upload-card">
-                        <i class="fa-solid fa-id-card upload-icon"></i>
-                        <div class="upload-title">4. Foto KTP Ibu Kandung <span class="req">*</span></div>
-                        <div class="upload-subtitle">Foto bagian depan e-KTP Ibu (Maks. 500 KB)</div>
-                        <input type="file" name="berkas_ktp_ibu" class="upload-input" accept="image/*,.pdf" onchange="previewUpload(this, 'previewKtpIbu')">
-                        <div id="previewKtpIbu" class="upload-preview-box" <?= !empty($pendaftar['berkas_ktp_ibu']) ? 'style="display:block;"' : '' ?>>
-                            <?php if (!empty($pendaftar['berkas_ktp_ibu'])): ?>
-                                <div class="file-info-badge"><i class="fa-solid fa-check-circle"></i> KTP Ibu Tersimpan</div>
-                                <div style="margin-top:6px;"><a href="<?= htmlspecialchars(asset($pendaftar['berkas_ktp_ibu'])) ?>" target="_blank" style="font-size:12px; color:var(--primary); font-weight:600;">Lihat Berkas</a></div>
-                            <?php endif; ?>
-                        </div>
-                    </div>
+                    <?php $renderBerkasCard('berkas_ktp_ibu', '4. Foto KTP Ibu Kandung', 'Foto bagian depan e-KTP Ibu', 'fa-solid fa-id-card', 'previewKtpIbu'); ?>
                 </div>
 
                 <!-- ══════════════════════════════════════════════════════════════
@@ -2666,6 +2896,7 @@ function val($arr, $key, $default = '') {
     <script>
         const TOKEN = <?= json_encode($token) ?>;
         const SAVE_DRAFT_URL = <?= json_encode(url('spmb/biodata/' . $token . '/save-draft')) ?>;
+        const UPLOAD_BERKAS_URL = <?= json_encode(url('spmb/biodata/' . $token . '/upload-berkas')) ?>;
         const SUBMIT_URL = <?= json_encode(url('spmb/biodata/' . $token . '/submit')) ?>;
         const DEADLINE_TIMESTAMP = <?= (int)$batasTimestamp ?>;
         const STEP_NAMES = [
@@ -3051,7 +3282,7 @@ function val($arr, $key, $default = '') {
         window.COMPRESSED_FILES = window.COMPRESSED_FILES || {};
         window.UPLOADING_COMPRESSION_PROMISES = window.UPLOADING_COMPRESSION_PROMISES || {};
 
-        // 5. File Upload Preview & Compress
+        // 5. File Upload Preview & Auto-Upload Background
         async function previewUpload(input, previewBoxId) {
             const previewBox = document.getElementById(previewBoxId);
             if (!input.files || !input.files[0]) return;
@@ -3059,50 +3290,111 @@ function val($arr, $key, $default = '') {
             const file = input.files[0];
             const fieldName = input.name;
             const sizeKB = Math.round(file.size / 1024);
+            const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+            const localBlobUrl = URL.createObjectURL(file);
+            const shortName = file.name.length > 24 ? file.name.substring(0, 22) + '...' : file.name;
+
+            const card = input.closest('.upload-card');
+            if (card) card.classList.add('has-file');
 
             previewBox.style.display = 'block';
+
+            // 1. Tampilkan Live Preview Instan (Sebelum Upload Selesai)
             previewBox.innerHTML = `
-                <div class="file-info-badge">
-                    <i class="fa-solid fa-spinner fa-spin"></i> Mengompres ${file.name} (${sizeKB} KB)...
+                <div class="live-doc-card ${isPdf ? 'is-pdf' : 'is-img'}">
+                    ${isPdf ? `
+                        <div class="pdf-embed-wrapper">
+                            <iframe src="${localBlobUrl}#toolbar=0"></iframe>
+                        </div>
+                    ` : `
+                        <div class="doc-thumb-container">
+                            <img src="${localBlobUrl}" alt="${file.name}" onclick="window.open('${localBlobUrl}', '_blank')">
+                        </div>
+                    `}
+                    <div class="doc-meta-row">
+                        <div class="doc-name-group">
+                            <div class="doc-type-icon ${isPdf ? 'pdf' : 'img'}">
+                                <i class="fa-solid ${isPdf ? 'fa-file-pdf' : 'fa-image'}"></i>
+                            </div>
+                            <div class="doc-info-text">
+                                <div class="doc-filename" title="${file.name}">${shortName}</div>
+                                <div class="doc-filesize">${sizeKB} KB &bull; ${isPdf ? 'Dokumen PDF' : 'Gambar'}</div>
+                            </div>
+                        </div>
+                        <span class="doc-badge uploading" id="badge_${previewBoxId}">
+                            <i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...
+                        </span>
+                    </div>
+                    <div class="doc-actions-row">
+                        <a href="${localBlobUrl}" target="_blank" class="btn-doc-view" id="link_${previewBoxId}">
+                            <i class="fa-solid fa-arrow-up-right-from-square"></i> Buka ${isPdf ? 'PDF' : 'Foto'}
+                        </a>
+                        <label class="btn-doc-reselect">
+                            <i class="fa-solid fa-arrows-rotate"></i> Ganti File
+                            <input type="file" style="display:none;" accept="image/*,.pdf" onchange="input.files = this.files; previewUpload(input, '${previewBoxId}');">
+                        </label>
+                    </div>
                 </div>
             `;
 
-            // Proses kompresi file di background dan simpan janjinya
-            const compPromise = (async () => {
+            // 2. Jika Gambar, kompres di background
+            let fileToUpload = file;
+            if (!isPdf && file.type.startsWith('image/')) {
                 try {
-                    const compressed = await compressImageFile(file, 500);
-                    const compSizeKB = Math.round(compressed.size / 1024);
-                    window.COMPRESSED_FILES[fieldName] = compressed;
+                    fileToUpload = await compressImageFile(file, 500);
+                    window.COMPRESSED_FILES[fieldName] = fileToUpload;
+                } catch (e) {
+                    fileToUpload = file;
+                }
+            }
 
-                    // Update input.files jika browser mendukung DataTransfer
-                    try {
-                        if (window.DataTransfer) {
-                            const dt = new DataTransfer();
-                            dt.items.add(compressed);
-                            input.files = dt.files;
+            // 3. Kirim ke Server Secara Background (Auto Upload Single Berkas)
+            const uploadPromise = (async () => {
+                try {
+                    const formData = new FormData();
+                    formData.append('field_name', fieldName);
+                    formData.append('file', fileToUpload, fileToUpload.name);
+
+                    const response = await fetch(UPLOAD_BERKAS_URL, {
+                        method: 'POST',
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                        body: formData
+                    });
+
+                    const res = await response.json();
+                    const badgeEl = document.getElementById('badge_' + previewBoxId);
+                    const linkEl = document.getElementById('link_' + previewBoxId);
+
+                    if (res.success) {
+                        if (badgeEl) {
+                            badgeEl.className = 'doc-badge saved';
+                            badgeEl.innerHTML = '<i class="fa-solid fa-circle-check"></i> Tersimpan di Server';
                         }
-                    } catch (dtErr) {}
-
-                    previewBox.innerHTML = `
-                        <div class="file-info-badge">
-                            <i class="fa-solid fa-circle-check"></i> Siap diupload: ${compressed.name} (~${compSizeKB} KB)
-                        </div>
-                    `;
-                    return compressed;
+                        if (linkEl && res.file_url) {
+                            linkEl.href = res.file_url;
+                        }
+                        EXISTING_FILES[fieldName] = true;
+                        showToast("Berkas berhasil disimpan di server!", "success");
+                    } else {
+                        if (badgeEl) {
+                            badgeEl.className = 'doc-badge error';
+                            badgeEl.innerHTML = '<i class="fa-solid fa-circle-xmark"></i> ' + (res.message || 'Gagal');
+                        }
+                        showToast(res.message || "Gagal mengunggah berkas", "warning");
+                    }
                 } catch (err) {
-                    console.warn("Compression fallback:", err);
-                    window.COMPRESSED_FILES[fieldName] = file;
-                    previewBox.innerHTML = `
-                        <div class="file-info-badge">
-                            <i class="fa-solid fa-circle-check"></i> Siap diupload: ${file.name} (${sizeKB} KB)
-                        </div>
-                    `;
-                    return file;
+                    console.error("Auto upload berkas error:", err);
+                    const badgeEl = document.getElementById('badge_' + previewBoxId);
+                    if (badgeEl) {
+                        badgeEl.className = 'doc-badge error';
+                        badgeEl.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Gangguan Koneksi';
+                    }
+                    showToast("Koneksi terganggu saat mengunggah berkas.", "warning");
                 }
             })();
 
-            window.UPLOADING_COMPRESSION_PROMISES[fieldName] = compPromise;
-            await compPromise;
+            window.UPLOADING_COMPRESSION_PROMISES[fieldName] = uploadPromise;
+            await uploadPromise;
         }
 
         // 6. Privacy Agreement Modal & Checkbox Handler
@@ -3315,6 +3607,12 @@ function val($arr, $key, $default = '') {
         }
 
         function getFileStatusInfo(fieldName) {
+            if (EXISTING_FILES[fieldName]) {
+                return {
+                    isOk: true,
+                    text: 'Sudah tersimpan di server'
+                };
+            }
             const input = document.querySelector(`input[name="${fieldName}"]`);
             if (input && input.files && input.files.length > 0) {
                 const fName = input.files[0].name;
@@ -3322,12 +3620,6 @@ function val($arr, $key, $default = '') {
                 return {
                     isOk: true,
                     text: `File baru: ${shortName}`
-                };
-            }
-            if (EXISTING_FILES[fieldName]) {
-                return {
-                    isOk: true,
-                    text: 'Sudah tersimpan di server'
                 };
             }
             return {
