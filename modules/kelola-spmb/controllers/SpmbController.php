@@ -1155,7 +1155,7 @@ class SpmbController
         if (move_uploaded_file($file['tmp_name'], $targetPath)) {
             $savedPath = 'uploads/spmb/' . $fileName;
             if ($isUnitSpecific) {
-                SpmbModel::setKopUnit($unit, $savedPath);
+                SpmbModel::setKopFormulir($unit, $savedPath);
                 Response::redirect(url('kelola-spmb/pengaturan?tab_kop=' . strtolower($unit)), "Kop formulir cetak untuk Unit $unit berhasil diunggah dan disimpan!", 'success');
             } else {
                 SpmbModel::setSetting('spmb_kop_gambar', $savedPath);
@@ -1177,13 +1177,10 @@ class SpmbController
         if ($isUnitSpecific) {
             $spec1 = SpmbModel::getSetting('spmb_kop_' . strtolower($unit));
             $spec2 = SpmbModel::getSetting('kop_unit_' . $unit);
-            $tpl = SpmbModel::getSuratTemplate($unit);
-            $spec3 = $tpl['kop_gambar'] ?? null;
             $globalKop = SpmbModel::getSetting('spmb_kop_gambar');
 
             if (!empty($spec1) && $spec1 !== $globalKop) $oldFile = $spec1;
             elseif (!empty($spec2) && $spec2 !== $globalKop) $oldFile = $spec2;
-            elseif (!empty($spec3) && $spec3 !== $globalKop) $oldFile = $spec3;
         } else {
             $oldFile = SpmbModel::getSetting('spmb_kop_gambar');
         }
@@ -1193,7 +1190,7 @@ class SpmbController
         }
 
         if ($isUnitSpecific) {
-            SpmbModel::setKopUnit($unit, null);
+            SpmbModel::setKopFormulir($unit, null);
             Response::redirect(url('kelola-spmb/pengaturan?tab_kop=' . strtolower($unit)), "Kop formulir Unit $unit berhasil dihapus dan kembali ke standar.", 'success');
         } else {
             SpmbModel::setSetting('spmb_kop_gambar', '');
@@ -1962,7 +1959,7 @@ SVG;
 
         $allTemplates = SpmbModel::getAllSuratTemplates();
         $activeTemplate = $allTemplates[$unit] ?? SpmbModel::getSuratTemplate($unit);
-        $kopGambar = SpmbModel::getKopUnit($unit);
+        $kopGambar = SpmbModel::getKopSuratKomitmen($unit);
         $kopUrl = SpmbModel::getKopUrl($kopGambar);
         $globalKop = SpmbModel::getSetting('spmb_kop_gambar');
 
@@ -2029,7 +2026,7 @@ SVG;
 
         $saved = self::saveCompressedUpload($_FILES['kop_gambar'], 'kop_unit_' . strtolower($jenjang), 1024);
         if ($saved) {
-            SpmbModel::setKopUnit($jenjang, $saved);
+            SpmbModel::setKopSuratKomitmen($jenjang, $saved);
             $_SESSION['flash_success'] = "Gambar banner kop surat unit $jenjang berhasil diunggah!";
         } else {
             $_SESSION['flash_error'] = "Gagal mengunggah banner kop unit. Pastikan format PNG/JPG/WEBP.";
@@ -2050,7 +2047,7 @@ SVG;
             $jenjang = 'SD';
         }
 
-        SpmbModel::setKopUnit($jenjang, null);
+        SpmbModel::setKopSuratKomitmen($jenjang, null);
         $_SESSION['flash_success'] = "Banner kop unit $jenjang telah direset ke kop utama SPMB.";
         header('Location: ' . url('kelola-spmb/surat-pernyataan?unit=' . $jenjang));
         exit;

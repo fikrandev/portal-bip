@@ -1487,10 +1487,17 @@ class SpmbModel
     }
 
     /**
-     * Ambil path file kop gambar untuk unit tertentu (PAUD, SD, SMP, SMA)
-     * Dengan sinkronisasi menyeluruh antara tabel settings, spmb_surat_template, dan file fisik
+     * Ambil path file kop gambar khusus Formulir Biodata Dapodik (diatur di menu Pengaturan SPMB)
      */
     public static function getKopUnit(string $jenjang): ?string
+    {
+        return self::getKopFormulir($jenjang);
+    }
+
+    /**
+     * Ambil path file kop gambar khusus Formulir Biodata Dapodik (diatur di menu Pengaturan SPMB)
+     */
+    public static function getKopFormulir(string $jenjang): ?string
     {
         $jenjang = strtoupper(trim($jenjang));
         if ($jenjang === 'TK' || str_contains($jenjang, 'PAUD') || str_contains($jenjang, 'TK')) {
@@ -1513,24 +1520,19 @@ class SpmbModel
             return false;
         };
 
-        // 1. Cek setting spesifik kop unit (spmb_kop_{jenjang})
+        // 1. Cek setting spesifik kop formulir unit (spmb_kop_{jenjang}) dari menu Pengaturan SPMB
         $val = self::getSetting('spmb_kop_' . strtolower($jenjang));
         if (!empty($val) && $checkExists($val)) return $val;
 
-        // 2. Cek di tabel spmb_surat_template
-        $tpl = self::getSuratTemplate($jenjang);
-        if (!empty($tpl['kop_gambar']) && $checkExists($tpl['kop_gambar'])) return $tpl['kop_gambar'];
-
-        // 3. Cek setting kop_unit_{jenjang} dari pengaturan sistem identitas
+        // 2. Cek setting kop_unit_{jenjang} dari pengaturan sistem
         $valSys = self::getSetting('kop_unit_' . $jenjang);
         if (!empty($valSys) && $checkExists($valSys)) return $valSys;
 
         // Fallback jika ada value string walau file_exists false (antisipasi symlink/path VPS)
         if (!empty($val)) return $val;
-        if (!empty($tpl['kop_gambar'])) return $tpl['kop_gambar'];
         if (!empty($valSys)) return $valSys;
 
-        // 4. Fallback ke global kop SPMB
+        // 3. Fallback ke global kop SPMB
         $global = self::getSetting('spmb_kop_gambar');
         if (!empty($global)) return $global;
 
@@ -1538,9 +1540,17 @@ class SpmbModel
     }
 
     /**
-     * Simpan / perbarui kop gambar unit di semua tempat agar sinkron (settings & spmb_surat_template)
+     * Simpan / perbarui kop gambar khusus Formulir Biodata Dapodik di tabel settings
      */
     public static function setKopUnit(string $jenjang, ?string $path): void
+    {
+        self::setKopFormulir($jenjang, $path);
+    }
+
+    /**
+     * Simpan / perbarui kop gambar khusus Formulir Biodata Dapodik di tabel settings
+     */
+    public static function setKopFormulir(string $jenjang, ?string $path): void
     {
         $jenjang = strtoupper(trim($jenjang));
         if ($jenjang === 'TK' || str_contains($jenjang, 'PAUD') || str_contains($jenjang, 'TK')) {
@@ -1555,11 +1565,74 @@ class SpmbModel
 
         self::setSetting('spmb_kop_' . strtolower($jenjang), $path ?? '');
         self::setSetting('kop_unit_' . $jenjang, $path ?? '');
-        self::updateKopTemplate($jenjang, $path);
+        // Catatan: Tidak menyentuh spmb_surat_template agar kop formulir terpisah dari surat pernyataan
     }
 
     /**
-     * Ambil seluruh data kop unit untuk keperluan view pengaturan
+     * Ambil path file kop gambar khusus Surat Pernyataan Komitmen (diatur di menu Surat Pernyataan)
+     */
+    public static function getKopSuratKomitmen(string $jenjang): ?string
+    {
+        $jenjang = strtoupper(trim($jenjang));
+        if ($jenjang === 'TK' || str_contains($jenjang, 'PAUD') || str_contains($jenjang, 'TK')) {
+            $jenjang = 'PAUD';
+        } elseif (str_contains($jenjang, 'SD')) {
+            $jenjang = 'SD';
+        } elseif (str_contains($jenjang, 'SMP')) {
+            $jenjang = 'SMP';
+        } elseif (str_contains($jenjang, 'SMA')) {
+            $jenjang = 'SMA';
+        }
+
+        $checkExists = function(?string $p): bool {
+            if (empty($p)) return false;
+            $clean = ltrim($p, '/');
+            if (file_exists(BASE_PATH . '/public/' . $clean)) return true;
+            if (file_exists(BASE_PATH . '/' . $clean)) return true;
+            if (str_starts_with($p, 'http://') || str_starts_with($p, 'https://') || str_starts_with($p, 'data:')) return true;
+            return false;
+        };
+
+        // 1. Cek langsung dari tabel spmb_surat_template
+        $tpl = self::getSuratTemplate($jenjang);
+        if (!empty($tpl['kop_gambar']) && $checkExists($tpl['kop_gambar'])) {
+            return $tpl['kop_gambar'];
+        }
+        if (!empty($tpl['kop_gambar'])) {
+            return $tpl['kop_gambar'];
+        }
+
+        // 2. Fallback jika template belum memiliki kop khusus, gunakan kop global SPMB
+        $global = self::getSetting('spmb_kop_gambar');
+        if (!empty($global) && $checkExists($global)) {
+            return $global;
+        }
+
+        return !empty($global) ? $global : null;
+    }
+
+    /**
+     * Simpan / perbarui gambar kop khusus Surat Pernyataan Komitmen
+     */
+    public static function setKopSuratKomitmen(string $jenjang, ?string $path): void
+    {
+        $jenjang = strtoupper(trim($jenjang));
+        if ($jenjang === 'TK' || str_contains($jenjang, 'PAUD') || str_contains($jenjang, 'TK')) {
+            $jenjang = 'PAUD';
+        } elseif (str_contains($jenjang, 'SD')) {
+            $jenjang = 'SD';
+        } elseif (str_contains($jenjang, 'SMP')) {
+            $jenjang = 'SMP';
+        } elseif (str_contains($jenjang, 'SMA')) {
+            $jenjang = 'SMA';
+        }
+
+        self::updateKopTemplate($jenjang, $path);
+        // Catatan: Tidak menyentuh tabel settings agar tidak mengubah kop formulir biodata
+    }
+
+    /**
+     * Ambil seluruh data kop unit untuk keperluan view pengaturan (Formulir Biodata)
      */
     public static function getAllKopUnits(): array
     {
@@ -1568,12 +1641,7 @@ class SpmbModel
             'GLOBAL' => self::getSetting('spmb_kop_gambar') ?: ''
         ];
         foreach ($units as $u) {
-            // Ambil spesifik unit tanpa fallback global jika untuk preview manajemen
             $spec = self::getSetting('spmb_kop_' . strtolower($u));
-            if (empty($spec)) {
-                $tpl = self::getSuratTemplate($u);
-                $spec = !empty($tpl['kop_gambar']) ? $tpl['kop_gambar'] : '';
-            }
             if (empty($spec)) {
                 $spec = self::getSetting('kop_unit_' . $u) ?: '';
             }
@@ -1679,7 +1747,7 @@ class SpmbModel
         $judulSurat  = $template['judul_surat'] ?? 'PERNYATAAN KOMITMEN ORANG TUA/WALI MURID';
         $isiRaw      = $template['isi_template'] ?? '';
         $catatan     = $template['catatan_bawah'] ?? '';
-        $kopGambar   = self::getKopUnit($jenjang);
+        $kopGambar   = self::getKopSuratKomitmen($jenjang);
         $kopUrl      = self::getKopUrl($kopGambar);
 
         // Format tanggal hari ini / tanggal pendaftaran

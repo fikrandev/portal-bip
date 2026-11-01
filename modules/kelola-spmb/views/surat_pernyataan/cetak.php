@@ -26,7 +26,7 @@ $sudahTtd  = ($pendaftar['status_ttd_komitmen'] ?? '') === 'Sudah TTD';
 if (!empty($kopUrl) && class_exists('SpmbModel')) {
     $kopUrl = SpmbModel::getKopUrl($kopUrl);
 } elseif (empty($kopUrl) && class_exists('SpmbModel')) {
-    $kopUrl = SpmbModel::getKopUrl(SpmbModel::getKopUnit($jenjang));
+    $kopUrl = SpmbModel::getKopUrl(SpmbModel::getKopSuratKomitmen($jenjang));
 }
 ?>
 <!DOCTYPE html>
