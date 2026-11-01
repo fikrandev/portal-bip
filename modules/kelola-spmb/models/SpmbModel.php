@@ -412,7 +412,7 @@ class SpmbModel
     public static function getPendaftarById(int $id): ?array
     {
         $sql = "
-            SELECT p.*, g.nama_group, g.tahun_ajaran as group_tahun_ajaran, g.biaya_formulir as group_biaya_formulir, g.biaya_pindahan as group_biaya_pindahan, g.tanggal_patokan_umur
+            SELECT p.*, g.nama_group, g.tahun_ajaran as group_tahun_ajaran, g.biaya_formulir as group_biaya_formulir, g.biaya_pindahan as group_biaya_pindahan, g.tanggal_patokan_umur, g.tanggal_buka, g.tanggal_tutup
             FROM `spmb_pendaftar` p
             LEFT JOIN `spmb_group` g ON g.id = p.group_id
             WHERE p.id = ?
@@ -818,13 +818,29 @@ class SpmbModel
     {
         if (empty(trim($token))) return null;
         $sql = "
-            SELECT p.*, g.nama_group, g.tahun_ajaran as group_tahun_ajaran, g.tanggal_patokan_umur
+            SELECT p.*, g.nama_group, g.tahun_ajaran as group_tahun_ajaran, g.tanggal_patokan_umur, g.tanggal_buka, g.tanggal_tutup, g.gelombang_default as group_gelombang
             FROM `spmb_pendaftar` p
             LEFT JOIN `spmb_group` g ON g.id = p.group_id
             WHERE p.biodata_token = ?
             LIMIT 1
         ";
-        return self::db()->find($sql, [trim($token)]) ?: null;
+        $pendaftar = self::db()->find($sql, [trim($token)]) ?: null;
+        if ($pendaftar) {
+            // Fallback ke group aktif jika data tanggal buka / tutup di group pendaftar masih kosong
+            if (empty($pendaftar['tanggal_buka']) || empty($pendaftar['tanggal_tutup'])) {
+                try {
+                    $activeGroup = self::getActiveGroup();
+                    if ($activeGroup) {
+                        if (empty($pendaftar['tanggal_buka'])) $pendaftar['tanggal_buka'] = $activeGroup['tanggal_buka'] ?? null;
+                        if (empty($pendaftar['tanggal_tutup'])) $pendaftar['tanggal_tutup'] = $activeGroup['tanggal_tutup'] ?? null;
+                        if (empty($pendaftar['tanggal_patokan_umur'])) $pendaftar['tanggal_patokan_umur'] = $activeGroup['tanggal_patokan_umur'] ?? '2027-07-01';
+                        if (empty($pendaftar['nama_group'])) $pendaftar['nama_group'] = $activeGroup['nama_group'] ?? null;
+                        if (empty($pendaftar['group_tahun_ajaran'])) $pendaftar['group_tahun_ajaran'] = $activeGroup['tahun_ajaran'] ?? null;
+                    }
+                } catch (Throwable $e) {}
+            }
+        }
+        return $pendaftar;
     }
 
     /**
@@ -1449,27 +1465,70 @@ class SpmbModel
     }
 
     /**
+     * Konversi path file kop gambar (relatif atau absolut) ke format Web URL yang valid dan dapat diakses publik
+     */
+    public static function getKopUrl(?string $path): string
+    {
+        if (empty($path)) return '';
+        $path = trim((string)$path);
+        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://') || str_starts_with($path, 'data:')) {
+            return $path;
+        }
+        $clean = ltrim($path, '/');
+        // Jika path sudah berawalan 'public/', gunakan url()
+        if (str_starts_with($clean, 'public/')) {
+            return url($clean);
+        }
+        // Jika path berupa uploads/..., fisik file berada di public/uploads/...
+        if (function_exists('asset')) {
+            return asset($clean);
+        }
+        return url('public/' . $clean);
+    }
+
+    /**
      * Ambil path file kop gambar untuk unit tertentu (PAUD, SD, SMP, SMA)
-     * Dengan fallback ke template surat atau kop global SPMB
+     * Dengan sinkronisasi menyeluruh antara tabel settings, spmb_surat_template, dan file fisik
      */
     public static function getKopUnit(string $jenjang): ?string
     {
         $jenjang = strtoupper(trim($jenjang));
         if ($jenjang === 'TK' || str_contains($jenjang, 'PAUD') || str_contains($jenjang, 'TK')) {
             $jenjang = 'PAUD';
+        } elseif (str_contains($jenjang, 'SD')) {
+            $jenjang = 'SD';
+        } elseif (str_contains($jenjang, 'SMP')) {
+            $jenjang = 'SMP';
+        } elseif (str_contains($jenjang, 'SMA')) {
+            $jenjang = 'SMA';
         }
-        
+
+        // Helper cek keberadaan file fisik di disk
+        $checkExists = function(?string $p): bool {
+            if (empty($p)) return false;
+            $clean = ltrim($p, '/');
+            if (file_exists(BASE_PATH . '/public/' . $clean)) return true;
+            if (file_exists(BASE_PATH . '/' . $clean)) return true;
+            if (str_starts_with($p, 'http://') || str_starts_with($p, 'https://') || str_starts_with($p, 'data:')) return true;
+            return false;
+        };
+
         // 1. Cek setting spesifik kop unit (spmb_kop_{jenjang})
         $val = self::getSetting('spmb_kop_' . strtolower($jenjang));
-        if (!empty($val)) return $val;
+        if (!empty($val) && $checkExists($val)) return $val;
 
-        // 2. Cek setting kop_unit_{jenjang} dari pengaturan sistem identitas
-        $valSys = self::getSetting('kop_unit_' . $jenjang);
-        if (!empty($valSys)) return $valSys;
-
-        // 3. Cek di tabel spmb_surat_template
+        // 2. Cek di tabel spmb_surat_template
         $tpl = self::getSuratTemplate($jenjang);
+        if (!empty($tpl['kop_gambar']) && $checkExists($tpl['kop_gambar'])) return $tpl['kop_gambar'];
+
+        // 3. Cek setting kop_unit_{jenjang} dari pengaturan sistem identitas
+        $valSys = self::getSetting('kop_unit_' . $jenjang);
+        if (!empty($valSys) && $checkExists($valSys)) return $valSys;
+
+        // Fallback jika ada value string walau file_exists false (antisipasi symlink/path VPS)
+        if (!empty($val)) return $val;
         if (!empty($tpl['kop_gambar'])) return $tpl['kop_gambar'];
+        if (!empty($valSys)) return $valSys;
 
         // 4. Fallback ke global kop SPMB
         $global = self::getSetting('spmb_kop_gambar');
@@ -1479,13 +1538,19 @@ class SpmbModel
     }
 
     /**
-     * Simpan / perbarui kop gambar unit
+     * Simpan / perbarui kop gambar unit di semua tempat agar sinkron (settings & spmb_surat_template)
      */
     public static function setKopUnit(string $jenjang, ?string $path): void
     {
         $jenjang = strtoupper(trim($jenjang));
         if ($jenjang === 'TK' || str_contains($jenjang, 'PAUD') || str_contains($jenjang, 'TK')) {
             $jenjang = 'PAUD';
+        } elseif (str_contains($jenjang, 'SD')) {
+            $jenjang = 'SD';
+        } elseif (str_contains($jenjang, 'SMP')) {
+            $jenjang = 'SMP';
+        } elseif (str_contains($jenjang, 'SMA')) {
+            $jenjang = 'SMA';
         }
 
         self::setSetting('spmb_kop_' . strtolower($jenjang), $path ?? '');
@@ -1588,7 +1653,15 @@ class SpmbModel
     public static function updateKopTemplate(string $jenjang, ?string $kopGambar): bool
     {
         $jenjang = strtoupper(trim($jenjang));
-        self::db()->query("UPDATE `spmb_surat_template` SET `kop_gambar` = ?, `updated_at` = NOW() WHERE `jenjang` = ?", [$kopGambar, $jenjang]);
+        $exists = self::db()->find("SELECT id FROM `spmb_surat_template` WHERE `jenjang` = ?", [$jenjang]);
+        if ($exists) {
+            self::db()->query("UPDATE `spmb_surat_template` SET `kop_gambar` = ?, `updated_at` = NOW() WHERE `jenjang` = ?", [$kopGambar, $jenjang]);
+        } else {
+            self::db()->query(
+                "INSERT INTO `spmb_surat_template` (`jenjang`, `judul_surat`, `nama_sekolah`, `kop_gambar`, `isi_template`, `created_at`, `updated_at`) VALUES (?, 'PERNYATAAN KOMITMEN ORANG TUA/WALI MURID', ?, ?, '', NOW(), NOW())",
+                [$jenjang, $jenjang . ' Islam Terpadu Bina Insan Palu', $kopGambar]
+            );
+        }
         return true;
     }
 
@@ -1606,7 +1679,8 @@ class SpmbModel
         $judulSurat  = $template['judul_surat'] ?? 'PERNYATAAN KOMITMEN ORANG TUA/WALI MURID';
         $isiRaw      = $template['isi_template'] ?? '';
         $catatan     = $template['catatan_bawah'] ?? '';
-        $kopGambar   = !empty($template['kop_gambar']) ? $template['kop_gambar'] : self::getSetting('spmb_kop_gambar');
+        $kopGambar   = self::getKopUnit($jenjang);
+        $kopUrl      = self::getKopUrl($kopGambar);
 
         // Format tanggal hari ini / tanggal pendaftaran
         $tglDaftar = !empty($pendaftar['tanggal_daftar']) ? self::formatTglIndo($pendaftar['tanggal_daftar']) : date('d/m/Y');
@@ -1643,6 +1717,7 @@ class SpmbModel
             'judul_surat'    => $judulSurat,
             'nama_sekolah'   => $namaSekolah,
             'kop_gambar'     => $kopGambar,
+            'kop_url'        => $kopUrl,
             'isi_rendered'   => $isiRendered,
             'catatan_bawah'  => $catatan,
             'tanggal_teks'   => $tglHariIni,
@@ -2095,7 +2170,7 @@ class SpmbModel
                    sc.id as screening_id, sc.file_pdf, sc.file_name_original, sc.file_size,
                    sc.status_rekomendasi, sc.catatan as catatan_psikolog, sc.nama_psikolog,
                    sc.tanggal_screening, sc.wa_sent_at, sc.wa_sent_count,
-                   g.nama_group, g.tahun_ajaran as group_tahun_ajaran
+                   g.nama_group, g.tahun_ajaran as group_tahun_ajaran, g.tanggal_buka, g.tanggal_tutup, g.tanggal_patokan_umur
             FROM `spmb_pendaftar` p
             LEFT JOIN `spmb_screening_psikolog` sc ON sc.pendaftar_id = p.id
             LEFT JOIN `spmb_group` g ON g.id = p.group_id
@@ -2502,7 +2577,7 @@ class SpmbModel
                    obs.id as respon_id, obs.status as respon_status, obs.nama_pengisi, obs.hubungan_pengisi,
                    obs.no_wa_pengisi, obs.total_skor, obs.skor_maksimal, obs.persentase, obs.kategori_hasil,
                    obs.catatan_orang_tua, obs.submitted_at as observasi_submitted_at,
-                   g.nama_group, g.tahun_ajaran as group_tahun_ajaran
+                   g.nama_group, g.tahun_ajaran as group_tahun_ajaran, g.tanggal_buka, g.tanggal_tutup, g.tanggal_patokan_umur
             FROM `spmb_pendaftar` p
             LEFT JOIN `spmb_observasi_respon` obs ON obs.pendaftar_id = p.id
             LEFT JOIN `spmb_group` g ON g.id = p.group_id

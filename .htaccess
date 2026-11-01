@@ -8,6 +8,9 @@
     # Route manifest.json, pwa-icon.png, favicon.ico, and service workers dynamically to index.php
     RewriteRule ^(manifest\.json|pwa-icon\.png|favicon\.ico|sw-sarpras\.js|sw\.js)$ index.php [QSA,L]
 
+    # Route direct /uploads requests to public/uploads
+    RewriteRule ^uploads/(.*)$ public/uploads/$1 [L]
+
     # Skip rewriting for real files and directories
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d

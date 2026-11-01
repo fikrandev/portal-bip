@@ -17,7 +17,7 @@ if (defined('SYS_APP_LOGO') && !empty(SYS_APP_LOGO)) {
 // Cek Kop Gambar Banner dari Pengaturan SPMB (Bisa per Jenjang PAUD-SMA atau Global)
 $jenjangItem = $item['jenjang'] ?? 'SD';
 $kopGambarSetting = SpmbModel::getKopUnit($jenjangItem);
-$kopGambarUrl = !empty($kopGambarSetting) ? url(ltrim($kopGambarSetting, '/')) : '';
+$kopGambarUrl = !empty($kopGambarSetting) ? SpmbModel::getKopUrl($kopGambarSetting) : '';
 
 // Mode Cetak Aktif (Default: kwitansi-2, atau biodata jika diakses via tombol Cetak Formulir)
 $activeMode = $_GET['mode'] ?? 'kwitansi-2';
@@ -123,7 +123,7 @@ if (!function_exists('renderKwitansiCard')) {
                         <h2>YAYASAN BINA INSAN PALU</h2>
                         <h3>PANITIA PENERIMAAN MURID BARU (SPMB)</h3>
                         <div class="k-sub-instansi">TK IT &bull; SD IT &bull; SMP IT &bull; SMA IT BINA INSAN PALU</div>
-                        <div class="k-address">Jl. Garuda No. 34, Kota Palu, Sulawesi Tengah | WA: 0812-3456-7890 | portal-bip.sch.id</div>
+                        <div class="k-address">Jl. Garuda No. 34, Kota Palu, Sulawesi Tengah | WA: 0812-3456-7890 | binainsanpalu.sch.id</div>
                     </div>
                     <div class="k-header-badge">
                         <span class="lembar-tag"><?= e($lembarLabel) ?></span>
@@ -229,7 +229,7 @@ if (!function_exists('renderKwitansiCard')) {
             </div>
 
             <div class="k-footer-print-time">
-                Dicetak melalui Portal BIP &bull; <?= date('d/m/Y H:i') ?> WITA
+                Dicetak melalui binainsanpalu.sch.id &bull; <?= date('d/m/Y H:i') ?> WITA
             </div>
         </div>
         <?php

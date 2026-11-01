@@ -28,13 +28,13 @@ $kopGambarUrl = '';
 if ($selectedJenjang !== 'SEMUA') {
     $kopSetting = SpmbModel::getKopUnit($selectedJenjang);
     if (!empty($kopSetting)) {
-        $kopGambarUrl = url(ltrim($kopSetting, '/'));
+        $kopGambarUrl = SpmbModel::getKopUrl($kopSetting);
     }
 }
 if (empty($kopGambarUrl)) {
     $kopGlobal = SpmbModel::getSetting('spmb_kop_gambar');
     if (!empty($kopGlobal)) {
-        $kopGambarUrl = url(ltrim($kopGlobal, '/'));
+        $kopGambarUrl = SpmbModel::getKopUrl($kopGlobal);
     }
 }
 
@@ -564,7 +564,7 @@ $namaPetugasLogin = $currentUser['full_name']
 
         <!-- Dokumen Footer -->
         <div class="doc-footer">
-            <span>Dicetak secara otomatis melalui Portal BIP &bull; <?= date('d/m/Y H:i') ?> WITA</span>
+            <span>Dicetak secara otomatis melalui binainsanpalu.sch.id &bull; <?= date('d/m/Y H:i') ?> WITA</span>
             <span>Halaman Resmi Hasil Seleksi SPMB &bull; Yayasan Bina Insan Palu</span>
         </div>
     </div>

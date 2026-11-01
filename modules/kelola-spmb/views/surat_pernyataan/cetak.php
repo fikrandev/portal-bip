@@ -23,6 +23,11 @@ $tglTtd    = !empty($pendaftar['ttd_submitted_at'])
     : date('d F Y');
 $ipTtd     = htmlspecialchars($pendaftar['ttd_ip_address'] ?? '');
 $sudahTtd  = ($pendaftar['status_ttd_komitmen'] ?? '') === 'Sudah TTD';
+if (!empty($kopUrl) && class_exists('SpmbModel')) {
+    $kopUrl = SpmbModel::getKopUrl($kopUrl);
+} elseif (empty($kopUrl) && class_exists('SpmbModel')) {
+    $kopUrl = SpmbModel::getKopUrl(SpmbModel::getKopUnit($jenjang));
+}
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -433,7 +438,7 @@ $sudahTtd  = ($pendaftar['status_ttd_komitmen'] ?? '') === 'Sudah TTD';
                             <div class="kop-header-text">
                                 <h1><?= htmlspecialchars($template['nama_sekolah'] ?? 'SD ISLAM TERPADU BINA INSAN PALU') ?></h1>
                                 <p>Jl. Agatis No. 1 Kel. Nunu Kec. Tatanga, Palu 94222 Sulawesi Tengah</p>
-                                <p>Email: sditbinainsanpalu2019@gmail.com | Blog: sditbinainsanpalu.blogspot.com</p>
+                                <p>Email: spmb@binainsanpalu.sch.id | Website: binainsanpalu.sch.id</p>
                             </div>
                         </div>
                         <div class="kop-meta">
@@ -515,7 +520,7 @@ $sudahTtd  = ($pendaftar['status_ttd_komitmen'] ?? '') === 'Sudah TTD';
             <div class="sheet-footer">
                 <div class="footer-left">
                     Jl. Agatis No. 1 Kel. Nunu Kec. Tatanga Palu 94222 Sulawesi Tengah<br>
-                    Email: sditbinainsanpalu2019@gmail.com &bull; Website: sditbinainsanpalu.blogspot.com
+                    Email: spmb@binainsanpalu.sch.id &bull; Website: binainsanpalu.sch.id
                 </div>
                 <div class="footer-right">
                     No. Reg: <?= $nomorDaft ?><br>

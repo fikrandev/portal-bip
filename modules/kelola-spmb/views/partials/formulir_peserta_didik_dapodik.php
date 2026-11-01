@@ -68,13 +68,13 @@ if (!function_exists('renderDapodikFormulirPesertaDidik')) {
 
         // Dynamic Kop Unit dari Pengaturan
         $unitKopPath = class_exists('SpmbModel') ? SpmbModel::getKopUnit($unitKey) : null;
-        $unitKopUrl = !empty($unitKopPath) ? url(ltrim($unitKopPath, '/')) : '';
+        $unitKopUrl = !empty($unitKopPath) ? (class_exists('SpmbModel') ? SpmbModel::getKopUrl($unitKopPath) : asset(ltrim($unitKopPath, '/'))) : '';
 
         // Dynamic logo dan nama unit dari settings
         if (class_exists('SpmbModel')) {
             $dynLogo = SpmbModel::getSetting('logo_unit_' . strtoupper($unitKey));
             if (!empty($dynLogo)) {
-                $unitConfigs[$unitKey]['logo'] = url(ltrim($dynLogo, '/'));
+                $unitConfigs[$unitKey]['logo'] = SpmbModel::getKopUrl($dynLogo);
             }
             $dynNama = SpmbModel::getSetting('nama_sekolah_' . strtoupper($unitKey));
             if (!empty($dynNama)) {

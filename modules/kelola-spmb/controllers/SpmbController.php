@@ -1962,6 +1962,8 @@ SVG;
 
         $allTemplates = SpmbModel::getAllSuratTemplates();
         $activeTemplate = $allTemplates[$unit] ?? SpmbModel::getSuratTemplate($unit);
+        $kopGambar = SpmbModel::getKopUnit($unit);
+        $kopUrl = SpmbModel::getKopUrl($kopGambar);
         $globalKop = SpmbModel::getSetting('spmb_kop_gambar');
 
         self::view(
@@ -1970,6 +1972,8 @@ SVG;
                 'unit'           => $unit,
                 'activeTemplate' => $activeTemplate,
                 'allTemplates'   => $allTemplates,
+                'kopGambar'      => $kopGambar,
+                'kopUrl'         => $kopUrl,
                 'globalKop'      => $globalKop,
             ],
             "Pengaturan Surat Pernyataan Komitmen - Unit $unit",
@@ -2025,7 +2029,7 @@ SVG;
 
         $saved = self::saveCompressedUpload($_FILES['kop_gambar'], 'kop_unit_' . strtolower($jenjang), 1024);
         if ($saved) {
-            SpmbModel::updateKopTemplate($jenjang, $saved);
+            SpmbModel::setKopUnit($jenjang, $saved);
             $_SESSION['flash_success'] = "Gambar banner kop surat unit $jenjang berhasil diunggah!";
         } else {
             $_SESSION['flash_error'] = "Gagal mengunggah banner kop unit. Pastikan format PNG/JPG/WEBP.";
@@ -2046,7 +2050,7 @@ SVG;
             $jenjang = 'SD';
         }
 
-        SpmbModel::updateKopTemplate($jenjang, null);
+        SpmbModel::setKopUnit($jenjang, null);
         $_SESSION['flash_success'] = "Banner kop unit $jenjang telah direset ke kop utama SPMB.";
         header('Location: ' . url('kelola-spmb/surat-pernyataan?unit=' . $jenjang));
         exit;
@@ -2087,7 +2091,7 @@ SVG;
         $signatureData = SpmbModel::getDecryptedSignature($pendaftar);
         $template      = $renderedDoc;
         $renderedContent = $renderedDoc['isi_rendered'] ?? '';
-        $kopUrl        = !empty($renderedDoc['kop_gambar']) ? url($renderedDoc['kop_gambar']) : '';
+        $kopUrl        = !empty($renderedDoc['kop_url']) ? $renderedDoc['kop_url'] : SpmbModel::getKopUrl($renderedDoc['kop_gambar'] ?? null);
         $decryptedAyah = $signatureData['ayah'] ?? null;
         $decryptedIbu  = $signatureData['ibu'] ?? null;
         $pageTitle     = 'Surat Pernyataan Komitmen - ' . $pendaftar['nama_lengkap'];
@@ -2390,7 +2394,7 @@ SVG;
         $signatureData = SpmbModel::getDecryptedSignature($pendaftar);
         $template      = $renderedDoc;
         $renderedContent = $renderedDoc['isi_rendered'] ?? '';
-        $kopUrl        = !empty($renderedDoc['kop_gambar']) ? url($renderedDoc['kop_gambar']) : '';
+        $kopUrl        = !empty($renderedDoc['kop_url']) ? $renderedDoc['kop_url'] : SpmbModel::getKopUrl($renderedDoc['kop_gambar'] ?? null);
         $sudahTtd      = ($pendaftar['status_ttd_komitmen'] ?? '') === 'Sudah TTD';
         $statusTtd     = $pendaftar['status_ttd_komitmen'] ?? 'Belum TTD';
         $decryptedAyah = $signatureData['ayah'] ?? null;
@@ -2472,7 +2476,7 @@ SVG;
         $signatureData = SpmbModel::getDecryptedSignature($pendaftar);
         $template      = $renderedDoc;
         $renderedContent = $renderedDoc['isi_rendered'] ?? '';
-        $kopUrl        = !empty($renderedDoc['kop_gambar']) ? url($renderedDoc['kop_gambar']) : '';
+        $kopUrl        = !empty($renderedDoc['kop_url']) ? $renderedDoc['kop_url'] : SpmbModel::getKopUrl($renderedDoc['kop_gambar'] ?? null);
         $decryptedAyah = $signatureData['ayah'] ?? null;
         $decryptedIbu  = $signatureData['ibu'] ?? null;
         $pageTitle     = 'Cetak Surat Pernyataan Komitmen - ' . $pendaftar['nama_lengkap'];

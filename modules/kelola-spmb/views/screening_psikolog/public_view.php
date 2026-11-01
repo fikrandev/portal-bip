@@ -232,7 +232,7 @@ if (defined('SYS_APP_LOGO') && !empty(SYS_APP_LOGO)) {
     <footer class="bg-white border-t border-slate-200 mt-8 py-6 text-center text-xs text-slate-400">
         <div class="max-w-4xl mx-auto px-4 space-y-1">
             <p class="font-bold text-slate-600">&copy; <?= date('Y') ?> SIT Bina Insan Palu. Hak cipta dilindungi undang-undang.</p>
-            <p class="text-[11px]">Jl. Bina Insan, Kel. Mamboro, Kec. Palu Utara, Kota Palu, Sulawesi Tengah</p>
+            <p class="text-[11px]">Jl. Bina Insan, Kel. Mamboro, Kec. Palu Utara, Kota Palu, Sulawesi Tengah &bull; Website: binainsanpalu.sch.id</p>
         </div>
     </footer>
 

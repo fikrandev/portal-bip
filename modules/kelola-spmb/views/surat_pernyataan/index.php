@@ -7,8 +7,9 @@ $unit = $unit ?? 'SD';
 $activeTemplate = $activeTemplate ?? [];
 $allTemplates = $allTemplates ?? [];
 $globalKop = $globalKop ?? '';
-$kopGambar = !empty($activeTemplate['kop_gambar']) ? $activeTemplate['kop_gambar'] : $globalKop;
-$isCustomKop = !empty($activeTemplate['kop_gambar']);
+$kopGambar = !empty($kopGambar) ? $kopGambar : (class_exists('SpmbModel') ? SpmbModel::getKopUnit($unit) : (!empty($activeTemplate['kop_gambar']) ? $activeTemplate['kop_gambar'] : $globalKop));
+$kopUrl = class_exists('SpmbModel') ? SpmbModel::getKopUrl($kopGambar) : (!empty($kopGambar) ? url(ltrim($kopGambar, '/')) : '');
+$isCustomKop = !empty($kopGambar) && $kopGambar !== $globalKop;
 
 $unitMeta = [
     'PAUD' => ['icon' => '🧸', 'badge' => 'bg-emerald-100 text-emerald-800 border-emerald-200', 'color' => 'emerald'],
@@ -123,11 +124,11 @@ $unitMeta = [
 
                 <?php if (!empty($kopGambar)): ?>
                     <div class="p-4 bg-slate-50 rounded-2xl border-2 border-slate-200 text-center relative group">
-                        <img src="<?= url(ltrim($kopGambar, '/')) ?>" 
+                        <img src="<?= $kopUrl ?>" 
                              alt="Kop Surat Unit <?= $unit ?>" 
                              class="w-full max-h-36 object-contain mx-auto rounded-lg shadow-xs bg-white p-2">
                         <div class="mt-3 flex items-center justify-center gap-3 text-xs">
-                            <a href="<?= url(ltrim($kopGambar, '/')) ?>" target="_blank" class="text-sky-600 hover:text-sky-700 font-bold underline">
+                            <a href="<?= $kopUrl ?>" target="_blank" class="text-sky-600 hover:text-sky-700 font-bold underline">
                                 🔍 Lihat Ukuran Asli
                             </a>
                             <?php if ($isCustomKop): ?>
@@ -367,13 +368,13 @@ $unitMeta = [
                     <!-- Visual Mockup Kop Surat -->
                     <?php if (!empty($kopGambar)): ?>
                         <div class="mb-6 pb-4 border-b-2 border-slate-900 text-center">
-                            <img src="<?= url(ltrim($kopGambar, '/')) ?>" alt="Kop Surat" class="max-h-28 mx-auto object-contain">
+                            <img src="<?= $kopUrl ?>" alt="Kop Surat" class="max-h-28 mx-auto object-contain">
                         </div>
                     <?php else: ?>
                         <div class="mb-6 pb-4 border-b-2 border-slate-900 text-center space-y-1">
                             <div class="text-sm font-bold tracking-wider">YAYASAN BINA INSAN PALU</div>
                             <div class="text-lg font-extrabold uppercase"><?= e($activeTemplate['nama_sekolah'] ?? ($unit . ' ISLAM TERPADU BINA INSAN PALU')) ?></div>
-                            <div class="text-[11px] text-slate-500 font-sans">Jl. Agatis No. 1 Kel. Nunu Kec. Tatanga Palu 94222 Sulawesi Tengah &bull; Email: sditbinainsanpalu2019@gmail.com</div>
+                            <div class="text-[11px] text-slate-500 font-sans">Jl. Agatis No. 1 Kel. Nunu Kec. Tatanga Palu 94222 Sulawesi Tengah &bull; Email: spmb@binainsanpalu.sch.id &bull; Website: binainsanpalu.sch.id</div>
                         </div>
                     <?php endif; ?>
 
@@ -470,7 +471,7 @@ $unitMeta = [
             <div class="bg-white w-full max-w-3xl p-8 sm:p-12 shadow-lg text-slate-900 text-xs sm:text-sm leading-relaxed" style="font-family: 'Times New Roman', Times, serif;">
                 <?php if (!empty($kopGambar)): ?>
                     <div class="mb-6 pb-4 border-b-2 border-slate-900 text-center">
-                        <img src="<?= url(ltrim($kopGambar, '/')) ?>" alt="Kop Surat" class="max-h-24 mx-auto object-contain">
+                        <img src="<?= $kopUrl ?>" alt="Kop Surat" class="max-h-24 mx-auto object-contain">
                     </div>
                 <?php endif; ?>
                 <div class="text-center mb-6 space-y-1">

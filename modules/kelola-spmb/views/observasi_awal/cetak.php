@@ -26,6 +26,8 @@ $sbLogo = '';
 if (defined('SYS_APP_LOGO') && !empty(SYS_APP_LOGO)) {
     $sbLogo = url(ltrim(SYS_APP_LOGO, '/'));
 }
+$unitKopPath = class_exists('SpmbModel') ? SpmbModel::getKopUnit($jenjang) : null;
+$unitKopUrl = !empty($unitKopPath) ? SpmbModel::getKopUrl($unitKopPath) : '';
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -353,20 +355,26 @@ if (defined('SYS_APP_LOGO') && !empty(SYS_APP_LOGO)) {
     <!-- Sheet A4 -->
     <div class="page-sheet">
         <!-- Kop Surat -->
-        <div class="kop-area">
-            <?php if ($sbLogo): ?>
-                <img src="<?= $sbLogo ?>" alt="Logo SIT BIP" class="kop-logo">
-            <?php else: ?>
-                <div style="width: 60px; height: 60px; border-radius: 50%; background: #0284c7; color: white; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 16pt;">
-                    BIP
-                </div>
-            <?php endif; ?>
-            <div class="kop-text">
-                <h1>YAYASAN BINA INSAN PALU</h1>
-                <h2><?= strtoupper($namaUnit) ?></h2>
-                <p>Jl. Garuda No. 34, Birobuli Utara, Palu Selatan, Kota Palu, Sulawesi Tengah &bull; Telp: (0451) 481234 &bull; Email: spmb@binainsanpalu.sch.id</p>
+        <?php if (!empty($unitKopUrl)): ?>
+            <div style="margin-bottom: 12px; text-align: center;">
+                <img src="<?= $unitKopUrl ?>" alt="Kop <?= htmlspecialchars($jenjang) ?>" style="max-height: 90px; width: 100%; object-fit: contain;">
             </div>
-        </div>
+        <?php else: ?>
+            <div class="kop-area">
+                <?php if ($sbLogo): ?>
+                    <img src="<?= $sbLogo ?>" alt="Logo SIT BIP" class="kop-logo">
+                <?php else: ?>
+                    <div style="width: 60px; height: 60px; border-radius: 50%; background: #0284c7; color: white; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 16pt;">
+                        BIP
+                    </div>
+                <?php endif; ?>
+                <div class="kop-text">
+                    <h1>YAYASAN BINA INSAN PALU</h1>
+                    <h2><?= strtoupper($namaUnit) ?></h2>
+                    <p>Jl. Garuda No. 34, Birobuli Utara, Palu Selatan, Kota Palu, Sulawesi Tengah &bull; Telp: (0451) 481234 &bull; Email: spmb@binainsanpalu.sch.id &bull; Website: binainsanpalu.sch.id</p>
+                </div>
+            </div>
+        <?php endif; ?>
 
         <!-- Judul Dokumen -->
         <div class="doc-title">
@@ -526,6 +534,12 @@ if (defined('SYS_APP_LOGO') && !empty(SYS_APP_LOGO)) {
                 <div class="ttd-space"></div>
                 <p class="ttd-name">(............................................)</p>
             </div>
+        </div>
+
+        <!-- Footer Dokumen -->
+        <div style="margin-top: 20px; padding-top: 8px; border-top: 1px dashed #cbd5e1; font-size: 8pt; color: #64748b; display: flex; justify-content: space-between;">
+            <span>Dicetak secara otomatis melalui binainsanpalu.sch.id &bull; <?= date('d/m/Y H:i') ?> WITA</span>
+            <span>Dokumen Resmi Observasi Awal SPMB &bull; SIT Bina Insan Palu</span>
         </div>
     </div>
 

@@ -268,13 +268,13 @@ $templateDapodik = $spmbOptions['template_dapodik'] ?? '';
                         <?php if ($hasEffective): ?>
                             <div class="p-4 bg-slate-50 rounded-2xl border-2 border-slate-200 text-center relative group">
                                 <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-xs flex items-center justify-center min-h-[90px]">
-                                    <img src="<?= url(ltrim($effectivePath, '/')) ?>" 
+                                    <img src="<?= SpmbModel::getKopUrl($effectivePath) ?>" 
                                          alt="Kop <?= $cfg['label'] ?>" 
                                          class="max-h-24 w-auto max-w-full object-contain mx-auto">
                                 </div>
 
                                 <div class="mt-3 flex items-center justify-center gap-3 text-xs">
-                                    <a href="<?= url(ltrim($effectivePath, '/')) ?>" target="_blank" class="text-sky-600 hover:text-sky-700 font-bold underline">
+                                    <a href="<?= SpmbModel::getKopUrl($effectivePath) ?>" target="_blank" class="text-sky-600 hover:text-sky-700 font-bold underline">
                                         🔍 Lihat Ukuran Asli
                                     </a>
                                     <?php if ($hasCustom): ?>

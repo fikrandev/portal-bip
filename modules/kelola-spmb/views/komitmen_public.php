@@ -23,6 +23,11 @@ $jenjang   = htmlspecialchars($pendaftar['jenjang'] ?? 'SD');
 $sekolah   = htmlspecialchars($template['nama_sekolah'] ?? ('SIT Bina Insan Palu (' . $jenjang . ')'));
 $cetakUrl  = url('spmb/komitmen/' . $token . '/cetak');
 $biodataUrl = url('spmb/biodata/' . $token);
+if (!empty($kopUrl) && class_exists('SpmbModel')) {
+    $kopUrl = SpmbModel::getKopUrl($kopUrl);
+} elseif (empty($kopUrl) && class_exists('SpmbModel')) {
+    $kopUrl = SpmbModel::getKopUrl(SpmbModel::getKopUnit($jenjang));
+}
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -840,7 +845,7 @@ $biodataUrl = url('spmb/biodata/' . $token);
                             <div class="kop-text">
                                 <h2><?= htmlspecialchars($template['nama_sekolah'] ?? 'SD ISLAM TERPADU BINA INSAN PALU') ?></h2>
                                 <p>Jl. Agatis No. 1 Kel. Nunu Kec. Tatanga, Palu 94222, Sulawesi Tengah</p>
-                                <p>Email: sditbinainsanpalu2019@gmail.com</p>
+                                <p>Email: spmb@binainsanpalu.sch.id | Website: binainsanpalu.sch.id</p>
                             </div>
                         </div>
                         <div class="kop-npsn-box">

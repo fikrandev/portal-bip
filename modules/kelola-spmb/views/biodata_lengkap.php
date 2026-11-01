@@ -14,9 +14,39 @@ $token = htmlspecialchars($pendaftar['biodata_token'] ?? '');
 $activeTab = (int)($_GET['tab'] ?? ($pendaftar['biodata_step'] ?? 1));
 if ($activeTab < 1 || $activeTab > 5) $activeTab = 1;
 
-$batasPengisian = !empty($options['batas_pengisian']) ? $options['batas_pengisian'] : date('Y-12-31 23:59:59');
+$tglBukaGroup = !empty($pendaftar['tanggal_buka']) ? $pendaftar['tanggal_buka'] : null;
+$tglTutupGroup = !empty($pendaftar['tanggal_tutup']) ? $pendaftar['tanggal_tutup'] : null;
+
+// Fallback jika belum terisi di data pendaftar (ambil dari grup SPMB aktif)
+if (empty($tglBukaGroup) || empty($tglTutupGroup)) {
+    try {
+        if (class_exists('SpmbModel')) {
+            $actGroup = SpmbModel::getActiveGroup();
+            if ($actGroup) {
+                if (empty($tglBukaGroup)) $tglBukaGroup = $actGroup['tanggal_buka'] ?? null;
+                if (empty($tglTutupGroup)) $tglTutupGroup = $actGroup['tanggal_tutup'] ?? null;
+            }
+        }
+    } catch (Throwable $e) {}
+}
+
+if (!empty($tglTutupGroup)) {
+    $batasPengisian = date('Y-m-d 23:59:59', strtotime($tglTutupGroup));
+} elseif (!empty($options['batas_pengisian'])) {
+    $batasPengisian = $options['batas_pengisian'];
+} else {
+    $batasPengisian = date('Y-12-31 23:59:59');
+}
+
 $batasTimestamp = strtotime($batasPengisian);
-$batasFormatted = date('d M Y, H:i', strtotime($batasPengisian)) . ' WITA';
+$batasFormatted = class_exists('SpmbModel') ? SpmbModel::formatTglIndo(date('Y-m-d', $batasTimestamp)) . ', 23:59 WITA' : (date('d M Y', $batasTimestamp) . ', 23:59 WITA');
+$tglBukaFormatted = !empty($tglBukaGroup) && class_exists('SpmbModel') ? SpmbModel::formatTglIndo($tglBukaGroup) : (!empty($tglBukaGroup) ? date('d M Y', strtotime($tglBukaGroup)) : '-');
+$tglTutupFormatted = !empty($tglTutupGroup) && class_exists('SpmbModel') ? SpmbModel::formatTglIndo($tglTutupGroup) : (!empty($tglTutupGroup) ? date('d M Y', strtotime($tglTutupGroup)) : '-');
+
+$nowTime = time();
+$bukaTimestamp = !empty($tglBukaGroup) ? strtotime($tglBukaGroup . ' 00:00:00') : null;
+$isNotOpenYet = $bukaTimestamp && ($nowTime < $bukaTimestamp);
+$isExpired = $nowTime > $batasTimestamp;
 
 // Helper untuk value lama / default
 function val($arr, $key, $default = '') {
@@ -2242,9 +2272,9 @@ function val($arr, $key, $default = '') {
                     <i class="fa-solid fa-hourglass-half"></i>
                 </span>
                 <div class="countdown-text">
-                    <span class="countdown-title">Batas Pengisian Formulir:</span>
+                    <span class="countdown-title"><?= $isNotOpenYet ? 'Jadwal Pendaftaran:' : 'Batas Pengisian Formulir:' ?></span>
                     <span class="countdown-date-hint" title="<?= htmlspecialchars($batasFormatted) ?>">
-                        s.d. <?= htmlspecialchars($batasFormatted) ?>
+                        <?= !empty($tglBukaGroup) ? htmlspecialchars($tglBukaFormatted) . ' s.d. ' : 's.d. ' ?><?= htmlspecialchars($batasFormatted) ?>
                     </span>
                 </div>
             </div>
@@ -2271,7 +2301,7 @@ function val($arr, $key, $default = '') {
                 </div>
             </div>
 
-            <div class="countdown-expired-badge" id="countdownExpiredBadge" style="display:none;">
+            <div class="countdown-expired-badge" id="countdownExpiredBadge" style="<?= $isExpired ? 'display:inline-flex;' : 'display:none;' ?>">
                 <i class="fa-solid fa-triangle-exclamation"></i>
                 <span>Waktu Pengisian Berakhir</span>
             </div>
@@ -2325,6 +2355,34 @@ function val($arr, $key, $default = '') {
                 <?php endif; ?>
             </div>
         </div>
+
+        <?php if ($isNotOpenYet): ?>
+            <!-- Alert Belum Buka -->
+            <div style="background:#fffbeb; border:1.5px solid #fde68a; border-radius:14px; padding:16px 20px; margin-bottom:20px; display:flex; align-items:center; gap:14px; color:#92400e; box-shadow: 0 2px 8px rgba(245,158,11,0.08);">
+                <div style="width:40px; height:40px; border-radius:10px; background:#fef3c7; display:flex; align-items:center; justify-content:center; color:#d97706; font-size:20px; flex-shrink:0;">
+                    <i class="fa-solid fa-calendar-clock"></i>
+                </div>
+                <div>
+                    <h4 style="font-size:14px; font-weight:800; margin:0 0 2px 0; color:#92400e;">Periode Pengisian Formulir Belum Dibuka</h4>
+                    <p style="font-size:12px; margin:0; color:#b45309; line-height:1.5;">
+                        Pengisian formulir untuk gelombang pendaftaran ini dijadwalkan dibuka resmi mulai tanggal <strong><?= htmlspecialchars($tglBukaFormatted) ?></strong> sampai <strong><?= htmlspecialchars($tglTutupFormatted) ?></strong>.
+                    </p>
+                </div>
+            </div>
+        <?php elseif ($isExpired && !$isSubmitted): ?>
+            <!-- Alert Telah Ditutup -->
+            <div style="background:#fef2f2; border:1.5px solid #fecaca; border-radius:14px; padding:16px 20px; margin-bottom:20px; display:flex; align-items:center; gap:14px; color:#991b1b; box-shadow: 0 2px 8px rgba(239,68,68,0.08);">
+                <div style="width:40px; height:40px; border-radius:10px; background:#fee2e2; display:flex; align-items:center; justify-content:center; color:#dc2626; font-size:20px; flex-shrink:0;">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <div>
+                    <h4 style="font-size:14px; font-weight:800; margin:0 0 2px 0; color:#991b1b;">Batas Waktu Pengisian Formulir Telah Berakhir</h4>
+                    <p style="font-size:12px; margin:0; color:#b91c1c; line-height:1.5;">
+                        Masa pengisian formulir telah ditutup pada <strong><?= htmlspecialchars($batasFormatted) ?></strong>. Silakan hubungi Panitia SPMB SIT Bina Insan Palu jika memerlukan bantuan.
+                    </p>
+                </div>
+            </div>
+        <?php endif; ?>
 
         <?php if ($isSubmitted && !empty($_GET['status']) && $_GET['status'] === 'selesai'): ?>
             <!-- Success Flash Alert -->
@@ -3554,6 +3612,7 @@ function val($arr, $key, $default = '') {
         const UPLOAD_BERKAS_URL = <?= json_encode(url('spmb/biodata/' . $token . '/upload-berkas')) ?>;
         const SUBMIT_URL = <?= json_encode(url('spmb/biodata/' . $token . '/submit')) ?>;
         const DEADLINE_TIMESTAMP = <?= (int)$batasTimestamp ?>;
+        const OPEN_TIMESTAMP = <?= (int)($bukaTimestamp ?: 0) ?>;
         const STEP_NAMES = [
             'Data Calon Siswa',
             'Sekolah Sebelumnya',
@@ -3577,7 +3636,6 @@ function val($arr, $key, $default = '') {
         function updateCountdownTimer() {
             if (!DEADLINE_TIMESTAMP) return;
             const now = Math.floor(Date.now() / 1000);
-            const diff = DEADLINE_TIMESTAMP - now;
 
             const daysEl = document.getElementById('cdDays');
             const hoursEl = document.getElementById('cdHours');
@@ -3585,6 +3643,27 @@ function val($arr, $key, $default = '') {
             const secsEl = document.getElementById('cdSeconds');
             const tickerEl = document.getElementById('countdownTicker');
             const expiredEl = document.getElementById('countdownExpiredBadge');
+            const titleEl = document.querySelector('.countdown-title');
+
+            if (OPEN_TIMESTAMP > 0 && now < OPEN_TIMESTAMP) {
+                const diffOpen = OPEN_TIMESTAMP - now;
+                if (titleEl) titleEl.textContent = 'Dibuka Dalam:';
+                const days = Math.floor(diffOpen / 86400);
+                const hours = Math.floor((diffOpen % 86400) / 3600);
+                const minutes = Math.floor((diffOpen % 3600) / 60);
+                const seconds = diffOpen % 60;
+
+                if (daysEl) daysEl.textContent = String(days).padStart(2, '0');
+                if (hoursEl) hoursEl.textContent = String(hours).padStart(2, '0');
+                if (minsEl) minsEl.textContent = String(minutes).padStart(2, '0');
+                if (secsEl) secsEl.textContent = String(seconds).padStart(2, '0');
+                if (tickerEl) tickerEl.style.display = 'flex';
+                if (expiredEl) expiredEl.style.display = 'none';
+                return;
+            }
+
+            if (titleEl) titleEl.textContent = 'Batas Pengisian Formulir:';
+            const diff = DEADLINE_TIMESTAMP - now;
 
             if (diff <= 0) {
                 if (daysEl) daysEl.textContent = '00';
