@@ -7,9 +7,18 @@ $item = $pendaftar ?? [];
 
 $logoUrl = '';
 if (defined('SYS_APP_LOGO') && !empty(SYS_APP_LOGO)) {
-    $logoUrl = url(ltrim(SYS_APP_LOGO, '/'));
-} elseif (defined('SYS_APP_FAVICON') && !empty(SYS_APP_FAVICON)) {
-    $logoUrl = url(ltrim(SYS_APP_FAVICON, '/'));
+    $logoUrl = SpmbModel::getKopUrl(SYS_APP_LOGO);
+} elseif (class_exists('SpmbModel')) {
+    $dbLogo = SpmbModel::getSetting('app_logo');
+    if (!empty($dbLogo)) {
+        $logoUrl = SpmbModel::getKopUrl($dbLogo);
+    }
+}
+if (empty($logoUrl) && defined('SYS_APP_FAVICON') && !empty(SYS_APP_FAVICON)) {
+    $logoUrl = SpmbModel::getKopUrl(SYS_APP_FAVICON);
+}
+if (empty($logoUrl) && file_exists(BASE_PATH . '/public/uploads/settings/logo_1780981905.png')) {
+    $logoUrl = asset('uploads/settings/logo_1780981905.png');
 }
 
 // Cek Kop Gambar Banner dari Pengaturan SPMB (Bisa per Jenjang PAUD-SMA atau Global)
@@ -97,31 +106,23 @@ if (!function_exists('renderKwitansiCardDaftarTunggu')) {
         ?>
         <div class="kwitansi-card <?= $isCompact ? 'compact' : '' ?>">
 
-            <!-- KOP SURAT (GAMBAR DARI PENGATURAN / TEKS DEFAULT) -->
-            <?php if (!empty($kopGambarUrl)): ?>
-                <div class="k-kop-img-wrap">
-                    <img src="<?= $kopGambarUrl ?>" alt="Kop Surat Resmi SPMB" class="k-kop-banner">
-                    <div class="k-header-badge-float">
-                        <span class="lembar-tag"><?= e($lembarLabel) ?></span>
-                    </div>
+            <!-- KOP SURAT RESMI SPMB (PATEN) -->
+            <div class="k-header">
+                <?php if (!empty($logoUrl)): ?>
+                    <img src="<?= $logoUrl ?>" alt="Logo SIT Bina Insan Palu" class="k-logo">
+                <?php else: ?>
+                    <div class="k-logo-fallback">SIT BIP</div>
+                <?php endif; ?>
+                <div class="k-header-center">
+                    <h2>Sekolah Islam Terpadu Bina Insan Palu</h2>
+                    <h3>Panitia SPMB PAUD - SD - SMP - SMA</h3>
+                    <div class="k-address">Jalan Agatis No. 1, Kota Palu, Sulawesi Tengah &bull; Website: binainsanpalu.sch.id</div>
                 </div>
-            <?php else: ?>
-                <div class="k-header">
-                    <?php if (!empty($logoUrl)): ?>
-                        <img src="<?= $logoUrl ?>" alt="Logo" class="k-logo">
-                    <?php endif; ?>
-                    <div class="k-header-center">
-                        <h2>YAYASAN BINA INSAN PALU</h2>
-                        <h3>PANITIA PENERIMAAN MURID BARU (SPMB)</h3>
-                        <div class="k-sub-instansi">TK IT &bull; SD IT &bull; SMP IT &bull; SMA IT BINA INSAN PALU</div>
-                        <div class="k-address">Jl. Garuda No. 34, Kota Palu, Sulawesi Tengah | WA: 0812-3456-7890 | binainsanpalu.sch.id</div>
-                    </div>
-                    <div class="k-header-badge">
-                        <span class="lembar-tag"><?= e($lembarLabel) ?></span>
-                    </div>
+                <div class="k-header-badge">
+                    <span class="lembar-tag"><?= e($lembarLabel) ?></span>
                 </div>
-                <div class="k-divider-double"></div>
-            <?php endif; ?>
+            </div>
+            <div class="k-divider-double"></div>
 
             <!-- Header Info & Nomor -->
             <div class="k-meta-row">
@@ -393,45 +394,75 @@ if (!function_exists('renderKwitansiCardDaftarTunggu')) {
             top: 10px;
         }
 
-        /* KOP SURAT TEKS DEFAULT */
+        /* KOP SURAT PATEN RESMI */
         .k-header {
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-            padding-bottom: 8px;
+            gap: 14px;
+            margin-bottom: 8px;
         }
         .k-logo {
-            width: 55px;
-            height: 55px;
+            width: 58px;
+            height: 58px;
             object-fit: contain;
             flex-shrink: 0;
         }
+        .compact .k-logo {
+            width: 48px;
+            height: 48px;
+        }
+        .k-logo-fallback {
+            width: 54px;
+            height: 54px;
+            border-radius: 8px;
+            background: #d97706;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            font-size: 13px;
+            flex-shrink: 0;
+        }
+        .compact .k-logo-fallback {
+            width: 46px;
+            height: 46px;
+            font-size: 11px;
+        }
         .k-header-center {
-            text-align: center;
-            flex-grow: 1;
+            flex: 1;
+            text-align: left;
         }
         .k-header-center h2 {
             margin: 0;
-            font-size: 14px;
+            font-size: 14.5px;
             font-weight: 800;
+            letter-spacing: 0.3px;
             color: #0f172a;
-            letter-spacing: 0.5px;
+            line-height: 1.25;
+        }
+        .compact .k-header-center h2 {
+            font-size: 12.5px;
         }
         .k-header-center h3 {
             margin: 2px 0 0 0;
-            font-size: 11px;
+            font-size: 12px;
             font-weight: 700;
             color: #d97706;
-            letter-spacing: 0.5px;
+            line-height: 1.25;
         }
-        .k-sub-instansi {
-            font-size: 9.5px;
-            font-weight: 700;
-            color: #334155;
-            margin-top: 1px;
+        .compact .k-header-center h3 {
+            font-size: 10.5px;
         }
         .k-address {
+            font-size: 9.5px;
+            color: #475569;
+            margin-top: 2px;
+            line-height: 1.3;
+        }
+        .compact .k-address {
+            font-size: 8.5px;
+        }
             font-size: 8.5px;
             color: #64748b;
             margin-top: 2px;

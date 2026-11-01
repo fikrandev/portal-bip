@@ -180,7 +180,7 @@ $templateDapodik = $spmbOptions['template_dapodik'] ?? '';
                 <div>
                     <h3 class="font-extrabold text-slate-900 text-base sm:text-lg">Kop Surat Formulir & Cetak SPMB (Per Unit)</h3>
                     <p class="text-xs text-slate-500 mt-0.5">
-                        Unggah gambar banner kop resmi masing-masing unit sekolah (<strong>PAUD / TK</strong>, <strong>SD</strong>, <strong>SMP</strong>, <strong>SMA</strong>) untuk dicetak pada Formulir Peserta Didik Dapodik (F4 3 Lembar), Kwitansi, dan Tanda Bukti.
+                        Unggah gambar banner kop resmi masing-masing unit sekolah (<strong>PAUD / TK</strong>, <strong>SD</strong>, <strong>SMP</strong>, <strong>SMA</strong>) untuk dicetak pada Formulir Peserta Didik Dapodik (F4 3 Lembar), Lembar Kelulusan, dan Surat Komitmen. Tanda Bukti Pendaftaran menggunakan kop paten terpadu.
                     </p>
                 </div>
             </div>
