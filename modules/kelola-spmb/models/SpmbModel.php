@@ -1071,11 +1071,7 @@ class SpmbModel
         }
 
         // Pastikan token biodata ada
-        if (empty($pendaftar['biodata_token'])) {
-            $token = bin2hex(random_bytes(24));
-            self::db()->query("UPDATE `spmb_pendaftar` SET `biodata_token` = ? WHERE `id` = ?", [$token, $pendaftarId]);
-            $pendaftar['biodata_token'] = $token;
-        }
+        $pendaftar['biodata_token'] = self::getOrCreateBiodataToken($pendaftar);
 
         // Cari nomor tujuan pengiriman (Prioritas: no_wa -> no_hp -> no_hp_ayah -> no_hp_ibu)
         $targetPhone = !empty($pendaftar['no_wa']) ? $pendaftar['no_wa'] :
@@ -1648,6 +1644,57 @@ class SpmbModel
             $result[$u] = $spec;
         }
         return $result;
+    }
+
+    /**
+     * Dapatkan atau buat token biodata unik untuk pendaftar
+     */
+    public static function getOrCreateBiodataToken(array|int $pendaftarOrId): string
+    {
+        if (is_numeric($pendaftarOrId)) {
+            $p = self::getPendaftarById((int)$pendaftarOrId);
+            $id = (int)$pendaftarOrId;
+            $token = !empty($p['biodata_token']) ? trim((string)$p['biodata_token']) : '';
+        } else {
+            $id = (int)($pendaftarOrId['id'] ?? 0);
+            $token = !empty($pendaftarOrId['biodata_token']) ? trim((string)$pendaftarOrId['biodata_token']) : '';
+        }
+
+        if (empty($token) && $id > 0) {
+            $token = bin2hex(random_bytes(24));
+            self::db()->query("UPDATE `spmb_pendaftar` SET `biodata_token` = ? WHERE `id` = ?", [$token, $id]);
+        }
+        return $token;
+    }
+
+    /**
+     * Generate QR Code Base64 Data URI secara in-memory (tanpa file fisik di disk)
+     * Menggunakan phpqrcode dengan suppress header dan tangkap buffer output.
+     */
+    public static function generateQrCodeDataUri(string $content, int $size = 3, int $margin = 1): string
+    {
+        if (empty($content)) {
+            return '';
+        }
+
+        if (!class_exists('QRcode')) {
+            $basePath = defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__, 3);
+            $qrLib = $basePath . '/core/phpqrcode.php';
+            if (file_exists($qrLib)) {
+                require_once $qrLib;
+            }
+        }
+
+        if (class_exists('QRcode')) {
+            ob_start();
+            @\QRcode::png($content, false, 1, $size, $margin);
+            $rawPng = ob_get_clean();
+            if (!empty($rawPng)) {
+                return 'data:image/png;base64,' . base64_encode($rawPng);
+            }
+        }
+
+        return '';
     }
 
     // ═════════════════════════════════════════════════════════════════════════

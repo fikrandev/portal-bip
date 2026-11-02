@@ -103,6 +103,11 @@ if (!function_exists('renderKwitansiCardDaftarTunggu')) {
             
         $namaOrtu = $item['nama_ayah'] ?: ($item['nama_ibu'] ?: ($item['nama_wali'] ?: '-'));
         $hpKontak = $item['no_hp_ayah'] ?: ($item['no_hp_ibu'] ?: ($item['no_hp'] ?: ''));
+
+        // QR Code Tautan Pengisian Biodata Calon Siswa (Solusi Alternatif Jika WA Terkendala)
+        $biodataToken = SpmbModel::getOrCreateBiodataToken($item);
+        $linkBiodata = !empty($biodataToken) ? (function_exists('url') ? url('spmb/biodata/' . $biodataToken) : ((defined('BASE_URL') ? BASE_URL : '') . '/spmb/biodata/' . $biodataToken)) : '';
+        $qrBiodataDataUri = !empty($linkBiodata) ? SpmbModel::generateQrCodeDataUri($linkBiodata, 3, 1) : '';
         ?>
         <div class="kwitansi-card <?= $isCompact ? 'compact' : '' ?>">
 
@@ -202,14 +207,32 @@ if (!function_exists('renderKwitansiCardDaftarTunggu')) {
             <!-- Footer / Catatan Pendaftaran & Tanda Tangan -->
             <div class="k-footer-row">
                 <div class="k-nominal-col">
-                    <div class="k-note-box">
-                        <div class="k-note-title">📌 Ketentuan Daftar Tunggu (Waiting List):</div>
-                        <ul class="k-note-list">
-                            <li>Lembar ini merupakan bukti pendaftaran sah jalur Daftar Tunggu / Rekomendasi SIT Bina Insan Palu.</li>
-                            <li>Calon siswa masuk dalam prioritas seleksi & konfirmasi kuota sesuai rekomendasi instansi/yayasan.</li>
-                            <li>Informasi ketersediaan bangku dan jadwal observasi akan dihubungi langsung oleh panitia SPMB.</li>
-                        </ul>
-                    </div>
+                    <?php if (!empty($qrBiodataDataUri)): ?>
+                        <div class="k-qr-box">
+                            <div class="k-qr-image-wrap">
+                                <img src="<?= $qrBiodataDataUri ?>" alt="QR Code Formulir Biodata" class="k-qr-img">
+                                <span class="k-qr-badge">SCAN BIODATA</span>
+                            </div>
+                            <div class="k-qr-text-wrap">
+                                <div class="k-qr-title">📱 Isi Formulir Biodata Orang Tua:</div>
+                                <div class="k-qr-desc">
+                                    Scan QR Code ini dengan Kamera HP / Google Lens untuk melengkapi biodata & upload berkas pendaftar langsung tanpa menunggu link WhatsApp.
+                                </div>
+                                <div class="k-qr-subnote">
+                                    📌 Bawa tanda bukti ini saat observasi & verifikasi berkas.
+                                </div>
+                            </div>
+                        </div>
+                    <?php else: ?>
+                        <div class="k-note-box">
+                            <div class="k-note-title">📌 Ketentuan Daftar Tunggu (Waiting List):</div>
+                            <ul class="k-note-list">
+                                <li>Lembar ini merupakan bukti pendaftaran sah jalur Daftar Tunggu / Rekomendasi SIT Bina Insan Palu.</li>
+                                <li>Calon siswa masuk dalam prioritas seleksi & konfirmasi kuota sesuai rekomendasi instansi/yayasan.</li>
+                                <li>Informasi ketersediaan bangku dan jadwal observasi akan dihubungi langsung oleh panitia SPMB.</li>
+                            </ul>
+                        </div>
+                    <?php endif; ?>
                 </div>
 
                 <div class="k-sig-col ortu-col">
@@ -586,6 +609,91 @@ if (!function_exists('renderKwitansiCardDaftarTunggu')) {
         }
         .k-nominal-col {
             flex: 1.5;
+        }
+        .k-qr-box {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-left: 3.5px solid #16a34a;
+            border-radius: 6px;
+            padding: 5px 9px;
+            max-width: 430px;
+        }
+        .compact .k-qr-box {
+            padding: 4px 7px;
+            gap: 8px;
+            max-width: 400px;
+        }
+        .k-qr-image-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            background: #ffffff;
+            padding: 3px;
+            border-radius: 4px;
+            border: 1px solid #86efac;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        .k-qr-img {
+            width: 58px;
+            height: 58px;
+            display: block;
+            image-rendering: pixelated;
+        }
+        .compact .k-qr-img {
+            width: 48px;
+            height: 48px;
+        }
+        .k-qr-badge {
+            font-size: 7.5px;
+            font-weight: 800;
+            color: #15803d;
+            letter-spacing: 0.4px;
+            margin-top: 2px;
+            text-align: center;
+            line-height: 1;
+        }
+        .compact .k-qr-badge {
+            font-size: 7px;
+        }
+        .k-qr-text-wrap {
+            flex: 1;
+            text-align: left;
+            min-width: 0;
+        }
+        .k-qr-title {
+            font-size: 10px;
+            font-weight: 700;
+            color: #166534;
+            margin-bottom: 2px;
+            line-height: 1.2;
+        }
+        .compact .k-qr-title {
+            font-size: 9px;
+            margin-bottom: 1px;
+        }
+        .k-qr-desc {
+            font-size: 8.5px;
+            color: #334155;
+            line-height: 1.28;
+        }
+        .compact .k-qr-desc {
+            font-size: 7.8px;
+            line-height: 1.22;
+        }
+        .k-qr-subnote {
+            font-size: 8px;
+            color: #15803d;
+            font-weight: 600;
+            margin-top: 2px;
+            line-height: 1.2;
+        }
+        .compact .k-qr-subnote {
+            font-size: 7.5px;
         }
         .k-note-box {
             background: #fffbeb;
