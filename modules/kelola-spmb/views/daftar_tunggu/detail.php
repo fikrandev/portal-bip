@@ -73,7 +73,11 @@ $badgeStyle = match($st) {
 
     <!-- ── Card Tautan & Status Biodata Lengkap ── -->
     <?php
-    $biodataStatus = $item['biodata_status'] ?? 'belum_diisi';
+    $rawBioSt = $item['biodata_status'] ?? 'Belum Diisi';
+    $biodataStatus = strtolower(str_replace(' ', '_', trim((string)$rawBioSt)));
+    if (!empty($item['biodata_submitted_at']) || !empty($item['persetujuan_data'])) {
+        $biodataStatus = 'lengkap';
+    }
     $biodataToken = $item['biodata_token'] ?? '';
     $biodataUrl = !empty($biodataToken) ? url('spmb/biodata/' . $biodataToken) : '#';
 
@@ -164,6 +168,16 @@ $badgeStyle = match($st) {
                         <span>Buka Chat WhatsApp Web</span>
                     </a>
                 <?php endif; ?>
+
+                <!-- Ubah Status Biodata (Khusus Admin) -->
+                <form action="<?= url('kelola-spmb/update-status-biodata/' . $item['id']) ?>" method="POST" class="w-full">
+                    <?= CSRF::field() ?>
+                    <select name="biodata_status" onchange="if(confirm('Ubah status biodata calon siswa daftar tunggu ini menjadi ' + this.options[this.selectedIndex].text.replace('⚙️ Set: ', '') + '?')) { this.form.submit(); } else { this.value = '<?= $biodataStatus === 'lengkap' ? 'Lengkap' : ($biodataStatus === 'draft' ? 'Draft' : 'Belum Diisi') ?>'; }" class="bg-slate-900/90 hover:bg-slate-900 text-white text-[11px] font-semibold rounded-2xl px-3 py-2 border border-amber-500/40 outline-none w-full cursor-pointer shadow-sm transition-all">
+                        <option value="Belum Diisi" <?= $biodataStatus === 'belum_diisi' ? 'selected' : '' ?>>⚙️ Set: Belum Diisi</option>
+                        <option value="Draft" <?= $biodataStatus === 'draft' ? 'selected' : '' ?>>⚙️ Set: Draft</option>
+                        <option value="Lengkap" <?= $biodataStatus === 'lengkap' ? 'selected' : '' ?>>⚙️ Set: Lengkap</option>
+                    </select>
+                </form>
             </div>
         </div>
     </div>

@@ -1285,6 +1285,14 @@ class SpmbController
 
             $data = $_POST;
 
+            // Alias mapping untuk form online
+            if (!empty($data['sekolah_asal']) && empty($data['asal_sekolah'])) {
+                $data['asal_sekolah'] = $data['sekolah_asal'];
+            }
+            if (!empty($data['kabupaten']) && empty($data['kota'])) {
+                $data['kota'] = $data['kabupaten'];
+            }
+
             // Proses upload berkas jika ada file yang dikirim
             $fileFields = [
                 'file_screenshot_dapodik' => 'dapodik',
@@ -1457,12 +1465,18 @@ class SpmbController
             Response::redirect(url('spmb/biodata/' . $token . '?tab=5'), $msg, 'error');
         }
 
-        // Sinkronisasi kota / kabupaten
+        // Sinkronisasi kota / kabupaten dan sekolah_asal
         if (!empty($data['kabupaten']) && empty($data['kota'])) {
             $data['kota'] = $data['kabupaten'];
         } elseif (!empty($data['kota']) && empty($data['kabupaten'])) {
             $data['kabupaten'] = $data['kota'];
         }
+        if (!empty($data['sekolah_asal']) && empty($data['asal_sekolah'])) {
+            $data['asal_sekolah'] = $data['sekolah_asal'];
+        }
+
+        // Refresh pendaftar dari database agar berkas dan data yang sudah tersimpan sebelumnya langsung terbaca
+        $pendaftar = SpmbModel::getPendaftarByBiodataToken($token) ?: $pendaftar;
 
         // Validasi seluruh data teks wajib
         $requiredText = [
@@ -1501,13 +1515,12 @@ class SpmbController
 
         $missingFields = [];
         foreach ($requiredText as $f => $label) {
-            if (!isset($data[$f]) || trim((string)$data[$f]) === '') {
+            $postVal = isset($data[$f]) ? trim((string)$data[$f]) : '';
+            $dbVal = isset($pendaftar[$f]) ? trim((string)$pendaftar[$f]) : '';
+            if ($postVal === '' && $dbVal === '') {
                 $missingFields[] = $label;
             }
         }
-
-        // Refresh pendaftar dari database agar berkas yang sudah terupload via AJAX langsung terbaca
-        $pendaftar = SpmbModel::getPendaftarByBiodataToken($token) ?: $pendaftar;
 
         // Proses upload berkas jika ada file yang dikirim
         $fileFields = [
@@ -1713,6 +1726,27 @@ SVG;
             $_SESSION['flash_error'] = 'Gagal mengirim WhatsApp: ' . ($res['message'] ?? 'Kesalahan gateway.');
         }
 
+        $referer = $_SERVER['HTTP_REFERER'] ?? url('kelola-spmb/siswa-baru/detail/' . $id);
+        header('Location: ' . $referer);
+        exit;
+    }
+
+    /**
+     * Admin manual update status pengisian biodata (Lengkap / Draft / Belum Diisi)
+     */
+    public static function updateStatusBiodata(int $id): void
+    {
+        $status = $_POST['biodata_status'] ?? 'Lengkap';
+        SpmbModel::updateStatusBiodata($id, $status);
+
+        $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) || !empty($_POST['is_ajax']);
+        if ($isAjax) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => true, 'message' => "Status biodata berhasil diubah menjadi: $status", 'status' => $status]);
+            exit;
+        }
+
+        $_SESSION['flash_success'] = "Status biodata berhasil diperbarui menjadi: $status";
         $referer = $_SERVER['HTTP_REFERER'] ?? url('kelola-spmb/siswa-baru/detail/' . $id);
         header('Location: ' . $referer);
         exit;

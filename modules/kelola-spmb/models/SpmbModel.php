@@ -295,8 +295,10 @@ class SpmbModel
         }
 
         if (!empty($filters['biodata_status'])) {
-            $conditions[] = "p.biodata_status = ?";
-            $params[] = $filters['biodata_status'];
+            $bioNorm = strtolower(str_replace(' ', '_', trim((string)$filters['biodata_status'])));
+            $conditions[] = "(LOWER(p.biodata_status) = ? OR REPLACE(LOWER(p.biodata_status), ' ', '_') = ?)";
+            $params[] = $bioNorm;
+            $params[] = $bioNorm;
         }
 
         if (!empty($filters['status_berkas'])) {
@@ -380,8 +382,10 @@ class SpmbModel
         }
 
         if (!empty($filters['biodata_status'])) {
-            $conditions[] = "p.biodata_status = ?";
-            $params[] = $filters['biodata_status'];
+            $bioNorm = strtolower(str_replace(' ', '_', trim((string)$filters['biodata_status'])));
+            $conditions[] = "(LOWER(p.biodata_status) = ? OR REPLACE(LOWER(p.biodata_status), ' ', '_') = ?)";
+            $params[] = $bioNorm;
+            $params[] = $bioNorm;
         }
 
         if (!empty($filters['status_berkas'])) {
@@ -851,6 +855,14 @@ class SpmbModel
         $pendaftar = self::getPendaftarByBiodataToken($token);
         if (!$pendaftar) return false;
 
+        // Alias mapping untuk form online (sekolah_asal -> asal_sekolah, kabupaten -> kota)
+        if (isset($data['sekolah_asal']) && !isset($data['asal_sekolah'])) {
+            $data['asal_sekolah'] = $data['sekolah_asal'];
+        }
+        if (isset($data['kabupaten']) && !isset($data['kota'])) {
+            $data['kota'] = $data['kabupaten'];
+        }
+
         $allowedCols = [
             // Tab 1: Data Diri
             'nama_lengkap', 'nama_panggilan', 'jenis_kelamin', 'nik', 'no_kk',
@@ -922,7 +934,8 @@ class SpmbModel
             $sets[] = "`biodata_submitted_at` = NOW()";
             $sets[] = "`status_berkas` = 'Lengkap'";
         } else {
-            if ($pendaftar['biodata_status'] !== 'Lengkap') {
+            $currBio = strtolower(str_replace(' ', '_', trim((string)($pendaftar['biodata_status'] ?? ''))));
+            if ($currBio !== 'lengkap' && empty($pendaftar['biodata_submitted_at'])) {
                 $sets[] = "`biodata_status` = 'Draft'";
             }
             if (isset($data['persetujuan_data'])) {
@@ -944,6 +957,26 @@ class SpmbModel
             error_log("updateBiodataByToken error: " . $e->getMessage());
             return false;
         }
+    }
+
+    /**
+     * Update manual status pengisian biodata calon siswa (oleh admin)
+     */
+    public static function updateStatusBiodata(int $id, string $status): bool
+    {
+        $statusNorm = match(strtolower(str_replace(' ', '_', trim($status)))) {
+            'lengkap' => 'Lengkap',
+            'draft'   => 'Draft',
+            default   => 'Belum Diisi'
+        };
+
+        $extra = "";
+        if ($statusNorm === 'Lengkap') {
+            $extra = ", `biodata_submitted_at` = COALESCE(`biodata_submitted_at`, NOW()), `persetujuan_data` = 1, `status_berkas` = 'Lengkap'";
+        }
+
+        self::db()->query("UPDATE `spmb_pendaftar` SET `biodata_status` = ? {$extra}, `updated_at` = NOW() WHERE `id` = ?", [$statusNorm, $id]);
+        return true;
     }
 
     /**

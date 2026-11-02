@@ -9,7 +9,8 @@
  * @var string $pageTitle
  */
 
-$isSubmitted = ($pendaftar['biodata_status'] ?? '') === 'lengkap';
+$rawBioSt = strtolower(str_replace(' ', '_', trim((string)($pendaftar['biodata_status'] ?? ''))));
+$isSubmitted = ($rawBioSt === 'lengkap') || !empty($pendaftar['biodata_submitted_at']) || !empty($pendaftar['persetujuan_data']);
 $token = htmlspecialchars($pendaftar['biodata_token'] ?? '');
 $activeTab = (int)($_GET['tab'] ?? ($pendaftar['biodata_step'] ?? 1));
 if ($activeTab < 1 || $activeTab > 5) $activeTab = 1;
@@ -48,9 +49,16 @@ $bukaTimestamp = !empty($tglBukaGroup) ? strtotime($tglBukaGroup . ' 00:00:00') 
 $isNotOpenYet = $bukaTimestamp && ($nowTime < $bukaTimestamp);
 $isExpired = $nowTime > $batasTimestamp;
 
-// Helper untuk value lama / default
+// Helper untuk value lama / default (mendukung alias sekolah_asal & kabupaten)
 function val($arr, $key, $default = '') {
-    return htmlspecialchars($arr[$key] ?? $default);
+    $v = $arr[$key] ?? null;
+    if ($v === null && $key === 'sekolah_asal') {
+        $v = $arr['asal_sekolah'] ?? null;
+    }
+    if ($v === null && $key === 'kabupaten') {
+        $v = $arr['kota'] ?? null;
+    }
+    return htmlspecialchars((string)($v ?? $default));
 }
 ?>
 <!DOCTYPE html>
@@ -2348,7 +2356,7 @@ function val($arr, $key, $default = '') {
             <div>
                 <?php if ($isSubmitted): ?>
                     <span class="badge-pill status-lengkap"><i class="fa-solid fa-circle-check"></i> Biodata Lengkap & Terverifikasi</span>
-                <?php elseif (($pendaftar['biodata_status'] ?? '') === 'draft'): ?>
+                <?php elseif ($rawBioSt === 'draft'): ?>
                     <span class="badge-pill status-draft"><i class="fa-solid fa-clock-rotate-left"></i> Draft Tersimpan (Bisa Dilanjutkan)</span>
                 <?php else: ?>
                     <span class="badge-pill status-baru"><i class="fa-solid fa-pen-to-square"></i> Belum Selesai Diisi</span>

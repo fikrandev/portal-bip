@@ -304,7 +304,11 @@ $filters = $filters ?? [];
                                         <!-- Status Pengisian Biodata -->
                                         <div>
                                             <?php
-                                            $bioSt = $item['biodata_status'] ?? 'belum_diisi';
+                                            $rawBioSt = $item['biodata_status'] ?? 'Belum Diisi';
+                                            $bioSt = strtolower(str_replace(' ', '_', trim((string)$rawBioSt)));
+                                            if (!empty($item['biodata_submitted_at']) || !empty($item['persetujuan_data'])) {
+                                                $bioSt = 'lengkap';
+                                            }
                                             $bioBadge = match($bioSt) {
                                                 'lengkap' => 'bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold',
                                                 'draft'   => 'bg-amber-50 text-amber-700 border border-amber-200 font-semibold',

@@ -116,7 +116,11 @@ $badgeStyle = match($st) {
 
     <!-- ── Card Tautan & Status Biodata Lengkap Mutasi ── -->
     <?php
-    $biodataStatus = $item['biodata_status'] ?? 'belum_diisi';
+    $rawBioSt = $item['biodata_status'] ?? 'Belum Diisi';
+    $biodataStatus = strtolower(str_replace(' ', '_', trim((string)$rawBioSt)));
+    if (!empty($item['biodata_submitted_at']) || !empty($item['persetujuan_data'])) {
+        $biodataStatus = 'lengkap';
+    }
     $biodataToken = $item['biodata_token'] ?? '';
     $biodataUrl = !empty($biodataToken) ? url('spmb/biodata/' . $biodataToken) : '#';
 
@@ -210,7 +214,17 @@ $badgeStyle = match($st) {
                     <span>🌐 Buka Formulir Publik</span>
                 </a>
 
-                <!-- 4. Toggle Preview Teks Pesan -->
+                <!-- 4. Ubah Status Biodata (Khusus Admin) -->
+                <form action="<?= url('kelola-spmb/update-status-biodata/' . $item['id']) ?>" method="POST" class="w-full pt-1">
+                    <?= CSRF::field() ?>
+                    <select name="biodata_status" onchange="if(confirm('Ubah status biodata calon siswa pindahan ini menjadi ' + this.options[this.selectedIndex].text.replace('⚙️ Set: ', '') + '?')) { this.form.submit(); } else { this.value = '<?= $biodataStatus === 'lengkap' ? 'Lengkap' : ($biodataStatus === 'draft' ? 'Draft' : 'Belum Diisi') ?>'; }" class="bg-slate-900/90 hover:bg-slate-900 text-white text-[11px] font-semibold rounded-xl px-3 py-2 border border-sky-500/40 outline-none w-full cursor-pointer shadow-sm transition-all">
+                        <option value="Belum Diisi" <?= $biodataStatus === 'belum_diisi' ? 'selected' : '' ?>>⚙️ Set: Belum Diisi</option>
+                        <option value="Draft" <?= $biodataStatus === 'draft' ? 'selected' : '' ?>>⚙️ Set: Draft</option>
+                        <option value="Lengkap" <?= $biodataStatus === 'lengkap' ? 'selected' : '' ?>>⚙️ Set: Lengkap</option>
+                    </select>
+                </form>
+
+                <!-- 5. Toggle Preview Teks Pesan -->
                 <button type="button" onclick="document.getElementById('waPreviewBox').classList.toggle('hidden')" class="text-xs text-sky-300 hover:text-white underline text-center pt-1 font-semibold">
                     👁️ Lihat & Salin Teks Pesan WA
                 </button>
@@ -530,7 +544,7 @@ $badgeStyle = match($st) {
                         Berkas Dokumen Pendukung Terupload (Maks. 500 KB)
                     </h3>
                     <span class="text-xs font-bold text-slate-500">
-                        Status: <strong class="<?= $item['biodata_status'] === 'lengkap' ? 'text-emerald-600' : 'text-amber-600' ?>"><?= strtoupper(str_replace('_', ' ', $item['biodata_status'] ?? 'belum diisi')) ?></strong>
+                        Status: <strong class="<?= $biodataStatus === 'lengkap' ? 'text-emerald-600' : ($biodataStatus === 'draft' ? 'text-amber-600' : 'text-slate-500') ?>"><?= $biodataStatus === 'lengkap' ? 'LENGKAP' : ($biodataStatus === 'draft' ? 'DRAFT' : 'BELUM DIISI') ?></strong>
                     </span>
                 </div>
 

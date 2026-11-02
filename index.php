@@ -700,6 +700,7 @@ $router->post('/kelola-spmb/pengaturan/hapus-kop', [SpmbController::class, 'peng
 $router->post('/kelola-spmb/pengaturan/save-options', [SpmbController::class, 'pengaturanSaveOptions'], [Middleware::permissionRequired('spmb.update')]);
 $router->post('/kelola-spmb/pengaturan/upload-contoh-dapodik', [SpmbController::class, 'pengaturanUploadContohDapodik'], [Middleware::permissionRequired('spmb.update')]);
 $router->post('/kelola-spmb/kirim-wa-biodata/{id}', [SpmbController::class, 'kirimWaBiodata'], [Middleware::permissionRequired('spmb.update')]);
+$router->post('/kelola-spmb/update-status-biodata/{id}', [SpmbController::class, 'updateStatusBiodata'], [Middleware::permissionRequired('spmb.update')]);
 $router->get('/kelola-spmb/surat-pernyataan', [SpmbController::class, 'suratPernyataanIndex'], [Middleware::permissionRequired('spmb.view')]);
 $router->post('/kelola-spmb/surat-pernyataan/update', [SpmbController::class, 'suratPernyataanUpdate'], [Middleware::permissionRequired('spmb.update')]);
 $router->post('/kelola-spmb/surat-pernyataan/upload-kop', [SpmbController::class, 'suratPernyataanUploadKop'], [Middleware::permissionRequired('spmb.update')]);
