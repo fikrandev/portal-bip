@@ -907,6 +907,12 @@ function openModalTambahSiswaPindahan() {
         modal.classList.remove('hidden');
         modal.classList.add('flex');
         document.body.style.overflow = 'hidden';
+
+        // Refresh nomor formulir otomatis saat modal dibuka agar selalu nomor terbaru
+        if (typeof onJenjangChangePindahan === 'function') {
+            onJenjangChangePindahan();
+        }
+
         setTimeout(() => {
             const inputNama = document.getElementById('modal_pindah_nama_lengkap');
             if (inputNama) inputNama.focus();

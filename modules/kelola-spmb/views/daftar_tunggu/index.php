@@ -566,6 +566,12 @@ function openModalTambahDaftarTunggu() {
     if (modal) {
         modal.classList.remove('hidden');
         document.body.classList.add('overflow-hidden');
+
+        // Refresh nomor formulir otomatis saat modal dibuka agar selalu nomor terbaru
+        if (typeof onJenjangChangeDaftarTunggu === 'function') {
+            onJenjangChangeDaftarTunggu();
+        }
+
         setTimeout(() => {
             document.getElementById('modal_nama_lengkap')?.focus();
         }, 150);

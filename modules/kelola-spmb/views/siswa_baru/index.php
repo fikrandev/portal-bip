@@ -843,6 +843,12 @@ function openModalTambahSiswaBaru() {
         modal.classList.remove('hidden');
         modal.classList.add('flex');
         document.body.style.overflow = 'hidden';
+
+        // Refresh nomor formulir otomatis saat modal dibuka agar selalu nomor terbaru
+        if (typeof onJenjangChange === 'function') {
+            onJenjangChange();
+        }
+
         setTimeout(() => {
             const inputNama = document.getElementById('modal_nama_lengkap');
             if (inputNama) inputNama.focus();

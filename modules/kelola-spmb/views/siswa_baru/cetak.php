@@ -116,7 +116,7 @@ if (!function_exists('renderKwitansiCard')) {
         // QR Code Tautan Pengisian Biodata Calon Siswa (Solusi Alternatif Jika WA Terkendala)
         $biodataToken = SpmbModel::getOrCreateBiodataToken($item);
         $linkBiodata = !empty($biodataToken) ? (function_exists('url') ? url('spmb/biodata/' . $biodataToken) : ((defined('BASE_URL') ? BASE_URL : '') . '/spmb/biodata/' . $biodataToken)) : '';
-        $qrBiodataDataUri = !empty($linkBiodata) ? SpmbModel::generateQrCodeDataUri($linkBiodata, 3, 1) : '';
+        $qrBiodataDataUri = !empty($linkBiodata) ? SpmbModel::generateQrCodeDataUri($linkBiodata, 5, 1) : '';
         ?>
         <div class="kwitansi-card <?= $isCompact ? 'compact' : '' ?>">
 
@@ -670,18 +670,18 @@ if (!function_exists('renderKwitansiCard')) {
         .k-qr-box {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
             background: #f0fdf4;
-            border: 1px solid #bbf7d0;
-            border-left: 3.5px solid #16a34a;
-            border-radius: 6px;
-            padding: 5px 9px;
-            max-width: 430px;
+            border: 1.5px solid #86efac;
+            border-left: 4px solid #16a34a;
+            border-radius: 8px;
+            padding: 6px 11px;
+            max-width: 460px;
         }
         .compact .k-qr-box {
-            padding: 4px 7px;
-            gap: 8px;
-            max-width: 400px;
+            padding: 4px 8px;
+            gap: 10px;
+            max-width: 420px;
         }
         .k-qr-image-wrap {
             display: flex;
@@ -690,32 +690,33 @@ if (!function_exists('renderKwitansiCard')) {
             justify-content: center;
             flex-shrink: 0;
             background: #ffffff;
-            padding: 3px;
-            border-radius: 4px;
-            border: 1px solid #86efac;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            padding: 4px;
+            border-radius: 6px;
+            border: 1.5px solid #86efac;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
         }
         .k-qr-img {
-            width: 58px;
-            height: 58px;
+            width: 88px;
+            height: 88px;
             display: block;
             image-rendering: pixelated;
         }
         .compact .k-qr-img {
-            width: 48px;
-            height: 48px;
+            width: 72px;
+            height: 72px;
         }
         .k-qr-badge {
-            font-size: 7.5px;
+            font-size: 8px;
             font-weight: 800;
             color: #15803d;
-            letter-spacing: 0.4px;
-            margin-top: 2px;
+            letter-spacing: 0.5px;
+            margin-top: 3px;
             text-align: center;
             line-height: 1;
         }
         .compact .k-qr-badge {
-            font-size: 7px;
+            font-size: 7.5px;
+            margin-top: 2px;
         }
         .k-qr-text-wrap {
             flex: 1;
@@ -723,34 +724,35 @@ if (!function_exists('renderKwitansiCard')) {
             min-width: 0;
         }
         .k-qr-title {
-            font-size: 10px;
+            font-size: 10.5px;
             font-weight: 700;
             color: #166534;
             margin-bottom: 2px;
-            line-height: 1.2;
+            line-height: 1.25;
         }
         .compact .k-qr-title {
-            font-size: 9px;
-            margin-bottom: 1px;
+            font-size: 9.5px;
+            margin-bottom: 1.5px;
         }
         .k-qr-desc {
-            font-size: 8.5px;
+            font-size: 8.8px;
             color: #334155;
-            line-height: 1.28;
+            line-height: 1.3;
         }
         .compact .k-qr-desc {
-            font-size: 7.8px;
-            line-height: 1.22;
+            font-size: 8px;
+            line-height: 1.25;
         }
         .k-qr-subnote {
-            font-size: 8px;
+            font-size: 8.5px;
             color: #15803d;
             font-weight: 600;
-            margin-top: 2px;
+            margin-top: 3px;
             line-height: 1.2;
         }
         .compact .k-qr-subnote {
             font-size: 7.5px;
+            margin-top: 2px;
         }
         .k-note-box {
             background: #f8fafc;

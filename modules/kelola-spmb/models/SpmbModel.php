@@ -227,22 +227,48 @@ class SpmbModel
             $codePrefix = $unit . '-';
         }
 
-        $lastRow = self::db()->find(
-            "SELECT nomor_pendaftaran FROM `spmb_pendaftar` 
+        // Cari nomor urut tertinggi secara akurat menggunakan MAX(CAST(...))
+        $prefixLen = strlen($codePrefix) + 1; // 1-based offset for MySQL SUBSTRING
+        $maxRow = self::db()->find(
+            "SELECT MAX(CAST(SUBSTRING(nomor_pendaftaran, ?) AS UNSIGNED)) as max_seq 
+             FROM `spmb_pendaftar` 
              WHERE nomor_pendaftaran LIKE ? 
-             ORDER BY id DESC LIMIT 1",
-            [$codePrefix . '%']
+               AND SUBSTRING(nomor_pendaftaran, ?) REGEXP '^[0-9]+$'",
+            [$prefixLen, $codePrefix . '%', $prefixLen]
         );
 
         $seq = 1;
-        if ($lastRow && !empty($lastRow['nomor_pendaftaran'])) {
-            $part = substr($lastRow['nomor_pendaftaran'], strlen($codePrefix));
-            if (is_numeric($part)) {
-                $seq = (int)$part + 1;
+        if (!empty($maxRow['max_seq'])) {
+            $seq = (int)$maxRow['max_seq'] + 1;
+        } else {
+            // Fallback: cari record terakhir
+            $lastRow = self::db()->find(
+                "SELECT nomor_pendaftaran FROM `spmb_pendaftar` 
+                 WHERE nomor_pendaftaran LIKE ? 
+                 ORDER BY id DESC LIMIT 1",
+                [$codePrefix . '%']
+            );
+            if ($lastRow && !empty($lastRow['nomor_pendaftaran'])) {
+                $part = substr($lastRow['nomor_pendaftaran'], strlen($codePrefix));
+                if (is_numeric($part)) {
+                    $seq = (int)$part + 1;
+                }
             }
         }
 
-        return $codePrefix . str_pad((string)$seq, 3, '0', STR_PAD_LEFT);
+        // Pastikan nomor benar-benar belum pernah dipakai di database (looping check)
+        do {
+            $candidate = $codePrefix . str_pad((string)$seq, 3, '0', STR_PAD_LEFT);
+            $exists = self::db()->find(
+                "SELECT id FROM `spmb_pendaftar` WHERE `nomor_pendaftaran` = ? LIMIT 1",
+                [$candidate]
+            );
+            if ($exists) {
+                $seq++;
+            }
+        } while ($exists);
+
+        return $candidate;
     }
 
     /**
@@ -435,25 +461,7 @@ class SpmbModel
             $data['group_id'] = $act['id'] ?? 1;
         }
 
-        // Pastikan nomor_pendaftaran terisi dan unik
-        if (empty($data['nomor_pendaftaran'])) {
-            $group = self::getGroupById((int)$data['group_id']);
-            $data['nomor_pendaftaran'] = self::generateNomorPendaftaran(
-                $data['jenis_pendaftaran'] ?? 'Siswa Baru',
-                $group['tahun_ajaran'] ?? null,
-                $data['jenjang'] ?? 'PAUD'
-            );
-        } else {
-            $exists = self::db()->find("SELECT id FROM `spmb_pendaftar` WHERE `nomor_pendaftaran` = ?", [$data['nomor_pendaftaran']]);
-            if ($exists) {
-                $group = self::getGroupById((int)$data['group_id']);
-                $data['nomor_pendaftaran'] = self::generateNomorPendaftaran(
-                    $data['jenis_pendaftaran'] ?? 'Siswa Baru',
-                    $group['tahun_ajaran'] ?? null,
-                    $data['jenjang'] ?? 'PAUD'
-                );
-            }
-        }
+        // Nomor pendaftaran divalidasi dan di-lock secara atomik di bawah
 
         // Format biaya pendaftaran ke nominal angka numerik
         if (isset($data['biaya_pendaftaran']) && $data['biaya_pendaftaran'] !== '') {
@@ -501,7 +509,38 @@ class SpmbModel
         $namaRekomendasi = !empty($data['nama_rekomendasi']) ? trim($data['nama_rekomendasi']) : null;
         $statusKelulusan = $data['status_kelulusan'] ?? (($data['jenis_pendaftaran'] ?? '') === 'Daftar Tunggu' ? 'Cadangan' : 'Menunggu Seleksi');
 
-        $sql = "INSERT INTO `spmb_pendaftar` (
+        // Advisory Lock MySQL untuk mencegah nomor pendaftaran double saat 2+ pengguna mendaftar bersamaan
+        $lockAcquired = false;
+        try {
+            $lockRes = self::db()->find("SELECT GET_LOCK('spmb_nomor_pendaftaran_lock', 10) as lk");
+            $lockAcquired = !empty($lockRes['lk']);
+        } catch (Throwable $e) {}
+
+        try {
+            $group = self::getGroupById((int)$data['group_id']);
+            $submittedNomor = trim($data['nomor_pendaftaran'] ?? '');
+
+            // Pastikan nomor_pendaftaran unik dan valid
+            if ($submittedNomor === '') {
+                $data['nomor_pendaftaran'] = self::generateNomorPendaftaran(
+                    $data['jenis_pendaftaran'] ?? 'Siswa Baru',
+                    $group['tahun_ajaran'] ?? null,
+                    $data['jenjang'] ?? 'PAUD'
+                );
+            } else {
+                $exists = self::db()->find("SELECT id FROM `spmb_pendaftar` WHERE `nomor_pendaftaran` = ? LIMIT 1", [$submittedNomor]);
+                if ($exists) {
+                    $data['nomor_pendaftaran'] = self::generateNomorPendaftaran(
+                        $data['jenis_pendaftaran'] ?? 'Siswa Baru',
+                        $group['tahun_ajaran'] ?? null,
+                        $data['jenjang'] ?? 'PAUD'
+                    );
+                } else {
+                    $data['nomor_pendaftaran'] = $submittedNomor;
+                }
+            }
+
+            $sql = "INSERT INTO `spmb_pendaftar` (
             `group_id`, `jenis_pendaftaran`, `nomor_pendaftaran`, `tanggal_daftar`,
             `gelombang`, `jenjang`, `jalur_pendaftaran`, `kategori_pendaftar`, `nama_rekomendasi`, `nisn`, `nik`, `no_kk`,
             `nama_lengkap`, `nama_panggilan`, `jenis_kelamin`, `tempat_lahir`,
@@ -541,101 +580,125 @@ class SpmbModel
             ?, ?, ?, ?
         )";
 
-        self::db()->query($sql, [
-            (int)$data['group_id'],
-            $data['jenis_pendaftaran'] ?? 'Siswa Baru',
-            $data['nomor_pendaftaran'],
-            $data['tanggal_daftar'] ?? date('Y-m-d'),
-            $data['gelombang'] ?? 'Gelombang 1',
-            $data['jenjang'],
-            $data['jalur_pendaftaran'] ?? $katPendaftar,
-            $katPendaftar,
-            $namaRekomendasi,
-            $data['nisn'] ?? null,
-            $data['nik'] ?? null,
-            $data['no_kk'] ?? null,
-            $data['nama_lengkap'],
-            $data['nama_panggilan'] ?? null,
-            $data['jenis_kelamin'],
-            $data['tempat_lahir'] ?? null,
-            !empty($data['tanggal_lahir']) ? $data['tanggal_lahir'] : null,
-            $data['umur'] ?? null,
-            $data['no_akta_lahir'] ?? null,
-            $data['agama'] ?? 'Islam',
-            !empty($data['anak_ke']) ? (int)$data['anak_ke'] : null,
-            !empty($data['jumlah_saudara']) ? (int)$data['jumlah_saudara'] : null,
-            $data['alergi'] ?? null,
-            !empty($data['tinggi_badan']) ? (int)$data['tinggi_badan'] : null,
-            !empty($data['berat_badan']) ? (int)$data['berat_badan'] : null,
-            !empty($data['lingkar_kepala']) ? (int)$data['lingkar_kepala'] : null,
-            $data['hobi'] ?? null,
-            $data['cita_cita'] ?? null,
-            $data['alamat'] ?? null,
-            $data['rt'] ?? null,
-            $data['rw'] ?? null,
-            $data['dusun'] ?? null,
-            $data['kelurahan'] ?? null,
-            $data['kecamatan'] ?? null,
-            $data['kota'] ?? 'Palu',
-            $data['provinsi'] ?? 'Sulawesi Tengah',
-            $data['kode_pos'] ?? null,
-            $data['lintang'] ?? null,
-            $data['bujur'] ?? null,
-            $data['tempat_tinggal'] ?? null,
-            $data['moda_transportasi'] ?? null,
-            $data['no_hp'] ?? null,
-            $data['no_wa'] ?? ($data['no_hp'] ?? null),
-            $data['email'] ?? null,
-            $data['foto'] ?? null,
-            $data['asal_sekolah'] ?? null,
-            $data['npsn_asal'] ?? null,
-            $data['alamat_sekolah_asal'] ?? null,
-            $data['file_screenshot_dapodik'] ?? null,
-            $data['kelas_tujuan'] ?? null,
-            $data['alasan_pindah'] ?? null,
-            $data['nomor_surat_pindah'] ?? null,
-            $data['nama_ayah'] ?? null,
-            $data['nik_ayah'] ?? null,
-            $data['tahun_lahir_ayah'] ?? null,
-            $data['pendidikan_ayah'] ?? null,
-            $data['pekerjaan_ayah'] ?? null,
-            $data['penghasilan_ayah'] ?? null,
-            $data['kantor_ayah'] ?? null,
-            $data['jabatan_ayah'] ?? null,
-            $data['kebutuhan_khusus_ayah'] ?? null,
-            $data['no_hp_ayah'] ?? null,
-            $data['nama_ibu'] ?? null,
-            $data['nik_ibu'] ?? null,
-            $data['tahun_lahir_ibu'] ?? null,
-            $data['pendidikan_ibu'] ?? null,
-            $data['pekerjaan_ibu'] ?? null,
-            $data['penghasilan_ibu'] ?? null,
-            $data['kantor_ibu'] ?? null,
-            $data['jabatan_ibu'] ?? null,
-            $data['kebutuhan_khusus_ibu'] ?? null,
-            $data['no_hp_ibu'] ?? null,
-            $data['nama_wali'] ?? null,
-            $data['pekerjaan_wali'] ?? null,
-            $data['no_hp_wali'] ?? null,
-            (float)($data['biaya_pendaftaran'] ?? 0),
-            $data['status_pembayaran'] ?? 'Gratis',
-            $data['metode_pembayaran'] ?? 'Gratis',
-            $data['bukti_bayar'] ?? null,
-            $data['berkas_kk'] ?? null,
-            $data['berkas_akta'] ?? null,
-            $data['berkas_ktp_ayah'] ?? null,
-            $data['berkas_ktp_ibu'] ?? null,
-            $data['biodata_token'],
-            $data['biodata_status'] ?? 'Belum Diisi',
-            !empty($data['biodata_step']) ? (int)$data['biodata_step'] : 1,
-            !empty($data['persetujuan_data']) ? 1 : 0,
-            $data['status_berkas'] ?? 'Belum Lengkap',
-            $statusKelulusan,
-            $data['catatan'] ?? null,
-            !empty($data['created_by']) ? (int)$data['created_by'] : null
-        ]);
+            $insertParams = [
+                (int)$data['group_id'],
+                $data['jenis_pendaftaran'] ?? 'Siswa Baru',
+                $data['nomor_pendaftaran'],
+                $data['tanggal_daftar'] ?? date('Y-m-d'),
+                $data['gelombang'] ?? 'Gelombang 1',
+                $data['jenjang'],
+                $data['jalur_pendaftaran'] ?? $katPendaftar,
+                $katPendaftar,
+                $namaRekomendasi,
+                $data['nisn'] ?? null,
+                $data['nik'] ?? null,
+                $data['no_kk'] ?? null,
+                $data['nama_lengkap'],
+                $data['nama_panggilan'] ?? null,
+                $data['jenis_kelamin'],
+                $data['tempat_lahir'] ?? null,
+                !empty($data['tanggal_lahir']) ? $data['tanggal_lahir'] : null,
+                $data['umur'] ?? null,
+                $data['no_akta_lahir'] ?? null,
+                $data['agama'] ?? 'Islam',
+                !empty($data['anak_ke']) ? (int)$data['anak_ke'] : null,
+                !empty($data['jumlah_saudara']) ? (int)$data['jumlah_saudara'] : null,
+                $data['alergi'] ?? null,
+                !empty($data['tinggi_badan']) ? (int)$data['tinggi_badan'] : null,
+                !empty($data['berat_badan']) ? (int)$data['berat_badan'] : null,
+                !empty($data['lingkar_kepala']) ? (int)$data['lingkar_kepala'] : null,
+                $data['hobi'] ?? null,
+                $data['cita_cita'] ?? null,
+                $data['alamat'] ?? null,
+                $data['rt'] ?? null,
+                $data['rw'] ?? null,
+                $data['dusun'] ?? null,
+                $data['kelurahan'] ?? null,
+                $data['kecamatan'] ?? null,
+                $data['kota'] ?? 'Palu',
+                $data['provinsi'] ?? 'Sulawesi Tengah',
+                $data['kode_pos'] ?? null,
+                $data['lintang'] ?? null,
+                $data['bujur'] ?? null,
+                $data['tempat_tinggal'] ?? null,
+                $data['moda_transportasi'] ?? null,
+                $data['no_hp'] ?? null,
+                $data['no_wa'] ?? ($data['no_hp'] ?? null),
+                $data['email'] ?? null,
+                $data['foto'] ?? null,
+                $data['asal_sekolah'] ?? null,
+                $data['npsn_asal'] ?? null,
+                $data['alamat_sekolah_asal'] ?? null,
+                $data['file_screenshot_dapodik'] ?? null,
+                $data['kelas_tujuan'] ?? null,
+                $data['alasan_pindah'] ?? null,
+                $data['nomor_surat_pindah'] ?? null,
+                $data['nama_ayah'] ?? null,
+                $data['nik_ayah'] ?? null,
+                $data['tahun_lahir_ayah'] ?? null,
+                $data['pendidikan_ayah'] ?? null,
+                $data['pekerjaan_ayah'] ?? null,
+                $data['penghasilan_ayah'] ?? null,
+                $data['kantor_ayah'] ?? null,
+                $data['jabatan_ayah'] ?? null,
+                $data['kebutuhan_khusus_ayah'] ?? null,
+                $data['no_hp_ayah'] ?? null,
+                $data['nama_ibu'] ?? null,
+                $data['nik_ibu'] ?? null,
+                $data['tahun_lahir_ibu'] ?? null,
+                $data['pendidikan_ibu'] ?? null,
+                $data['pekerjaan_ibu'] ?? null,
+                $data['penghasilan_ibu'] ?? null,
+                $data['kantor_ibu'] ?? null,
+                $data['jabatan_ibu'] ?? null,
+                $data['kebutuhan_khusus_ibu'] ?? null,
+                $data['no_hp_ibu'] ?? null,
+                $data['nama_wali'] ?? null,
+                $data['pekerjaan_wali'] ?? null,
+                $data['no_hp_wali'] ?? null,
+                (float)($data['biaya_pendaftaran'] ?? 0),
+                $data['status_pembayaran'] ?? 'Gratis',
+                $data['metode_pembayaran'] ?? 'Gratis',
+                $data['bukti_bayar'] ?? null,
+                $data['berkas_kk'] ?? null,
+                $data['berkas_akta'] ?? null,
+                $data['berkas_ktp_ayah'] ?? null,
+                $data['berkas_ktp_ibu'] ?? null,
+                $data['biodata_token'],
+                $data['biodata_status'] ?? 'Belum Diisi',
+                !empty($data['biodata_step']) ? (int)$data['biodata_step'] : 1,
+                !empty($data['persetujuan_data']) ? 1 : 0,
+                $data['status_berkas'] ?? 'Belum Lengkap',
+                $statusKelulusan,
+                $data['catatan'] ?? null,
+                !empty($data['created_by']) ? (int)$data['created_by'] : null
+            ];
 
-        return (int)self::db()->getConnection()->lastInsertId();
+            try {
+                self::db()->query($sql, $insertParams);
+            } catch (Throwable $dbErr) {
+                // Proteksi race-condition: jika bentrok 1062 duplicate key, otomatis re-generate nomor urut unik dan coba lagi
+                if (strpos($dbErr->getMessage(), 'Duplicate') !== false || strpos($dbErr->getMessage(), '1062') !== false) {
+                    $data['nomor_pendaftaran'] = self::generateNomorPendaftaran(
+                        $data['jenis_pendaftaran'] ?? 'Siswa Baru',
+                        $group['tahun_ajaran'] ?? null,
+                        $data['jenjang'] ?? 'PAUD'
+                    );
+                    $insertParams[2] = $data['nomor_pendaftaran'];
+                    self::db()->query($sql, $insertParams);
+                } else {
+                    throw $dbErr;
+                }
+            }
+
+            return (int)self::db()->getConnection()->lastInsertId();
+        } finally {
+            if ($lockAcquired) {
+                try {
+                    self::db()->find("SELECT RELEASE_LOCK('spmb_nomor_pendaftaran_lock') as ulk");
+                } catch (Throwable $e) {}
+            }
+        }
     }
 
     /**
@@ -1704,7 +1767,7 @@ class SpmbModel
      * Generate QR Code Base64 Data URI secara in-memory (tanpa file fisik di disk)
      * Menggunakan phpqrcode dengan suppress header dan tangkap buffer output.
      */
-    public static function generateQrCodeDataUri(string $content, int $size = 3, int $margin = 1): string
+    public static function generateQrCodeDataUri(string $content, int $size = 5, int $margin = 1): string
     {
         if (empty($content)) {
             return '';
