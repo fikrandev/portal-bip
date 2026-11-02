@@ -1212,5 +1212,300 @@ class SettingsController
         imagedestroy($srcImg);
         return true;
     }
+
+    /**
+     * Halaman Log Aktivitas Sistem
+     */
+    public static function logAktivitas(): void
+    {
+        $pageTitle = 'Log Aktivitas Sistem';
+        $breadcrumbs = [
+            ['label' => 'Pengaturan', 'url' => url('pengaturan-sistem')],
+            ['label' => 'Log Aktivitas Sistem']
+        ];
+        $settings = self::getSettings();
+        $db = Database::getInstance();
+
+        // Ambil filter dari request
+        $tglMulai = trim($_GET['tgl_mulai'] ?? '');
+        $tglSelesai = trim($_GET['tgl_selesai'] ?? '');
+        $userId = trim($_GET['user_id'] ?? '');
+        $action = trim($_GET['action'] ?? '');
+        $search = trim($_GET['search'] ?? '');
+        $page = max(1, (int)($_GET['page'] ?? 1));
+        $perPage = (int)($_GET['per_page'] ?? 20);
+        if ($perPage < 5 || $perPage > 100) {
+            $perPage = 20;
+        }
+
+        // Build WHERE clause
+        $where = ['1=1'];
+        $params = [];
+
+        if ($tglMulai !== '') {
+            $where[] = "a.created_at >= ?";
+            $params[] = $tglMulai . ' 00:00:00';
+        }
+
+        if ($tglSelesai !== '') {
+            $where[] = "a.created_at <= ?";
+            $params[] = $tglSelesai . ' 23:59:59';
+        }
+
+        if ($userId !== '') {
+            $where[] = "a.user_id = ?";
+            $params[] = (int)$userId;
+        }
+
+        if ($action !== '') {
+            $where[] = "a.action = ?";
+            $params[] = $action;
+        }
+
+        if ($search !== '') {
+            $where[] = "(a.entity_type LIKE ? OR a.ip_address LIKE ? OR u.full_name LIKE ? OR u.username LIKE ? OR a.action LIKE ?)";
+            $searchWild = '%' . $search . '%';
+            $params[] = $searchWild;
+            $params[] = $searchWild;
+            $params[] = $searchWild;
+            $params[] = $searchWild;
+            $params[] = $searchWild;
+        }
+
+        $whereSql = implode(' AND ', $where);
+
+        // Hitung total data terfilter
+        $countRow = $db->find(
+            "SELECT COUNT(*) as total 
+             FROM audit_logs a 
+             LEFT JOIN users u ON a.user_id = u.id 
+             WHERE {$whereSql}", 
+            $params
+        );
+        $total = (int)($countRow['total'] ?? 0);
+        $totalPages = max(1, ceil($total / $perPage));
+        if ($page > $totalPages) {
+            $page = $totalPages;
+        }
+        $offset = ($page - 1) * $perPage;
+
+        // Ambil data log
+        $logs = $db->findAll(
+            "SELECT a.*, u.full_name, u.username, u.avatar,
+                    (SELECT GROUP_CONCAT(r.name SEPARATOR ', ') 
+                     FROM user_roles ur 
+                     JOIN roles r ON ur.role_id = r.id 
+                     WHERE ur.user_id = u.id) as role_names
+             FROM audit_logs a
+             LEFT JOIN users u ON a.user_id = u.id
+             WHERE {$whereSql}
+             ORDER BY a.created_at DESC, a.id DESC
+             LIMIT {$perPage} OFFSET {$offset}",
+            $params
+        );
+
+        // Statistik ringkasan
+        $stats = [
+            'total_all' => 0,
+            'today_all' => 0,
+            'top_user'  => null,
+            'last_login'=> null,
+        ];
+        try {
+            $stats['total_all'] = (int)($db->find("SELECT COUNT(*) as cnt FROM audit_logs")['cnt'] ?? 0);
+            $stats['today_all'] = (int)($db->find("SELECT COUNT(*) as cnt FROM audit_logs WHERE DATE(created_at) = CURDATE()")['cnt'] ?? 0);
+            $stats['top_user'] = $db->find(
+                "SELECT u.full_name, COUNT(*) as cnt 
+                 FROM audit_logs a 
+                 JOIN users u ON a.user_id = u.id 
+                 GROUP BY a.user_id 
+                 ORDER BY cnt DESC 
+                 LIMIT 1"
+            );
+            $stats['last_login'] = $db->find(
+                "SELECT a.created_at, u.full_name 
+                 FROM audit_logs a 
+                 LEFT JOIN users u ON a.user_id = u.id 
+                 WHERE a.action = 'LOGIN' 
+                 ORDER BY a.created_at DESC 
+                 LIMIT 1"
+            );
+        } catch (Throwable $e) {}
+
+        // List user untuk filter dropdown
+        $usersList = $db->findAll("SELECT id, full_name, username FROM users ORDER BY full_name ASC");
+
+        // List aksi untuk filter dropdown
+        $actionsList = $db->findAll(
+            "SELECT DISTINCT action 
+             FROM audit_logs 
+             WHERE action IS NOT NULL AND action != '' 
+             ORDER BY action ASC"
+        );
+
+        $customSidebar = MODULES_PATH . '/pengaturan-sistem/views/sidebar.php';
+        ob_start();
+        include MODULES_PATH . '/pengaturan-sistem/views/log-aktivitas.php';
+        $content = ob_get_clean();
+        include TEMPLATES_PATH . '/layouts/app.php';
+    }
+
+    /**
+     * Ekspor Log Aktivitas ke CSV
+     */
+    public static function exportLogAktivitas(): void
+    {
+        $db = Database::getInstance();
+
+        // Ambil filter yang sama
+        $tglMulai = trim($_GET['tgl_mulai'] ?? '');
+        $tglSelesai = trim($_GET['tgl_selesai'] ?? '');
+        $userId = trim($_GET['user_id'] ?? '');
+        $action = trim($_GET['action'] ?? '');
+        $search = trim($_GET['search'] ?? '');
+
+        $where = ['1=1'];
+        $params = [];
+
+        if ($tglMulai !== '') {
+            $where[] = "a.created_at >= ?";
+            $params[] = $tglMulai . ' 00:00:00';
+        }
+
+        if ($tglSelesai !== '') {
+            $where[] = "a.created_at <= ?";
+            $params[] = $tglSelesai . ' 23:59:59';
+        }
+
+        if ($userId !== '') {
+            $where[] = "a.user_id = ?";
+            $params[] = (int)$userId;
+        }
+
+        if ($action !== '') {
+            $where[] = "a.action = ?";
+            $params[] = $action;
+        }
+
+        if ($search !== '') {
+            $where[] = "(a.entity_type LIKE ? OR a.ip_address LIKE ? OR u.full_name LIKE ? OR u.username LIKE ? OR a.action LIKE ?)";
+            $searchWild = '%' . $search . '%';
+            $params[] = $searchWild;
+            $params[] = $searchWild;
+            $params[] = $searchWild;
+            $params[] = $searchWild;
+            $params[] = $searchWild;
+        }
+
+        $whereSql = implode(' AND ', $where);
+
+        $logs = $db->findAll(
+            "SELECT a.*, u.full_name, u.username,
+                    (SELECT GROUP_CONCAT(r.name SEPARATOR ', ') 
+                     FROM user_roles ur 
+                     JOIN roles r ON ur.role_id = r.id 
+                     WHERE ur.user_id = u.id) as role_names
+             FROM audit_logs a
+             LEFT JOIN users u ON a.user_id = u.id
+             WHERE {$whereSql}
+             ORDER BY a.created_at DESC, a.id DESC
+             LIMIT 5000",
+            $params
+        );
+
+        $filename = 'log_aktivitas_' . date('Ymd_His') . '.csv';
+
+        header('Content-Type: text/csv; charset=UTF-8');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+
+        $out = fopen('php://output', 'w');
+        // UTF-8 BOM agar terbaca sempurna di Microsoft Excel
+        fputs($out, "\xEF\xBB\xBF");
+
+        fputcsv($out, [
+            'No',
+            'Waktu',
+            'Pengguna',
+            'Username',
+            'Role',
+            'Aksi',
+            'Modul / Entitas',
+            'Entity ID',
+            'IP Address',
+            'Browser / OS',
+            'User Agent Lengkap',
+            'Data Baru (New Value)',
+            'Data Lama (Old Value)'
+        ]);
+
+        $no = 1;
+        foreach ($logs as $log) {
+            $uaInfo = AuditLog::parseUserAgent($log['user_agent'] ?? '');
+            fputcsv($out, [
+                $no++,
+                $log['created_at'],
+                $log['full_name'] ?: 'Sistem / Anonim',
+                $log['username'] ?: '-',
+                $log['role_names'] ?: '-',
+                $log['action'],
+                $log['entity_type'] ?: '-',
+                $log['entity_id'] ?: '-',
+                $log['ip_address'] ?: '-',
+                $uaInfo['label'],
+                $log['user_agent'] ?: '-',
+                $log['new_value'] ?: '',
+                $log['old_value'] ?: ''
+            ]);
+        }
+
+        fclose($out);
+        exit;
+    }
+
+    /**
+     * Bersihkan Log Aktivitas
+     */
+    public static function clearLogAktivitas(): void
+    {
+        if (!CSRF::validate()) {
+            $_SESSION['flash_error'] = 'Token keamanan tidak valid.';
+            header('Location: ' . url('pengaturan-sistem/log-aktivitas'));
+            exit;
+        }
+
+        $db = Database::getInstance();
+        $range = $_POST['range'] ?? '30';
+
+        try {
+            $deletedCount = 0;
+            if ($range === 'all') {
+                $count = $db->find("SELECT COUNT(*) as cnt FROM audit_logs")['cnt'] ?? 0;
+                $db->query("TRUNCATE TABLE `audit_logs`");
+                $deletedCount = $count;
+            } else {
+                $days = max(1, (int)$range);
+                $threshold = date('Y-m-d H:i:s', strtotime("-{$days} days"));
+                $count = $db->find("SELECT COUNT(*) as cnt FROM audit_logs WHERE created_at < ?", [$threshold])['cnt'] ?? 0;
+                $db->query("DELETE FROM `audit_logs` WHERE created_at < ?", [$threshold]);
+                $deletedCount = $count;
+            }
+
+            // Catat log pembersihan audit
+            AuditLog::log('DELETE', 'audit_logs', null, null, [
+                'range' => $range,
+                'deleted_records' => $deletedCount,
+                'cleared_at' => date('Y-m-d H:i:s')
+            ]);
+
+            $_SESSION['flash_success'] = "Berhasil membersihkan {$deletedCount} catatan log aktivitas.";
+        } catch (Throwable $e) {
+            $_SESSION['flash_error'] = 'Gagal membersihkan log: ' . $e->getMessage();
+        }
+
+        header('Location: ' . url('pengaturan-sistem/log-aktivitas'));
+        exit;
+    }
 }
 

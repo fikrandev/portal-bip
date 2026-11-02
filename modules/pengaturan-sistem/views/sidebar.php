@@ -117,11 +117,17 @@ if (defined('SYS_APP_FAVICON') && !empty(SYS_APP_FAVICON)) {
         </div>
         
         <div class="mb-6">
-            <h3 class="px-3 mb-3 text-xs font-bold text-red-400 uppercase tracking-wider">
-                Pemeliharaan
+            <h3 class="px-3 mb-3 text-xs font-bold text-amber-400 uppercase tracking-wider">
+                Audit & Pemeliharaan
             </h3>
             <ul class="space-y-1">
                 <?php
+                renderSettingsMenu(
+                    'Log Aktivitas Sistem', 
+                    url('pengaturan-sistem/log-aktivitas'), 
+                    '<svg class="w-5 h-5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>',
+                    strpos($currentUri, '/pengaturan-sistem/log-aktivitas') !== false
+                );
                 renderSettingsMenu(
                     'Reset Data', 
                     url('pengaturan-sistem/reset-data'), 

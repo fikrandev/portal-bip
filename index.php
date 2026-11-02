@@ -38,6 +38,7 @@ require_once BASE_PATH . '/core/DropdownHelper.php';
 require_once BASE_PATH . '/core/KartuHelper.php';
 require_once BASE_PATH . '/core/WaGateway.php';
 require_once BASE_PATH . '/core/SignatureCrypto.php';
+require_once BASE_PATH . '/core/AuditLog.php';
 require_once BASE_PATH . '/core/AutoMigrate.php';
 
 // ── Auto Migrate Database (Pastikan struktur database server selalu mutakhir) ──
@@ -862,6 +863,11 @@ $router->post('/pengaturan-sistem/wa-gateway/start-server', [SettingsController:
 $router->post('/pengaturan-sistem/wa-gateway/update', [SettingsController::class, 'updateWaGateway'], [Middleware::permissionRequired('settings.update')]);
 $router->post('/pengaturan-sistem/wa-gateway/test', [SettingsController::class, 'testSendWaGateway'], [Middleware::permissionRequired('settings.update')]);
 $router->post('/pengaturan-sistem/wa-gateway/clear-logs', [SettingsController::class, 'clearWaLogs'], [Middleware::permissionRequired('settings.update')]);
+
+// -- Log Aktivitas Sistem --
+$router->get('/pengaturan-sistem/log-aktivitas', [SettingsController::class, 'logAktivitas'], [Middleware::permissionRequired('settings.view')]);
+$router->get('/pengaturan-sistem/log-aktivitas/export', [SettingsController::class, 'exportLogAktivitas'], [Middleware::permissionRequired('settings.view')]);
+$router->post('/pengaturan-sistem/log-aktivitas/clear', [SettingsController::class, 'clearLogAktivitas'], [Middleware::permissionRequired('settings.delete')]);
 
 // -- Portal Guru Mobile (PWA) --
 $router->get('/mobile', [PortalGuruController::class, 'beranda'], [[Middleware::class, 'authRequired']]);

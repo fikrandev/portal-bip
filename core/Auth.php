@@ -349,20 +349,34 @@ class Auth
 
     /**
      * Log an audit entry
+     * 
+     * @param string $action
+     * @param string $entityType
+     * @param int|null $entityId
+     * @param mixed $oldValue
+     * @param mixed $newValue
      */
-    private static function logAudit(string $action, string $entityType, ?int $entityId): void
-    {
+    public static function logAudit(
+        string $action, 
+        string $entityType = 'system', 
+        ?int $entityId = null,
+        $oldValue = null,
+        $newValue = null
+    ): void {
         try {
             $db = Database::getInstance();
             $db->insert('audit_logs', [
                 'user_id'    => self::id(),
-                'action'     => $action,
-                'entity_type'=> $entityType,
+                'action'     => strtoupper(trim($action)),
+                'entity_type'=> trim($entityType),
                 'entity_id'  => $entityId,
+                'old_value'  => is_array($oldValue) ? json_encode($oldValue, JSON_UNESCAPED_UNICODE) : $oldValue,
+                'new_value'  => is_array($newValue) ? json_encode($newValue, JSON_UNESCAPED_UNICODE) : $newValue,
                 'ip_address' => $_SERVER['REMOTE_ADDR'] ?? null,
                 'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? null,
+                'created_at' => date('Y-m-d H:i:s'),
             ]);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             error_log('Audit log error: ' . $e->getMessage());
         }
     }
