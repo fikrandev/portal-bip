@@ -966,6 +966,7 @@ $router->get('/mobile-sarpras/peminjaman/tambah', [MobileSarprasController::clas
 $router->get('/mobile-sarpras/pengajuan/tambah', [MobileSarprasController::class, 'pengajuanTambah'], [[MobileSarprasAuthController::class, 'authRequired']]);
 
 $router->get('/mobile-sarpras/api/barang-by-kode', [MobileSarprasController::class, 'apiGetBarangByKode'], [[MobileSarprasAuthController::class, 'authRequired']]);
+$router->get('/mobile-sarpras/api/scan-barang', [MobileSarprasController::class, 'apiScanBarang'], [[MobileSarprasAuthController::class, 'authRequired']]);
 $router->get('/mobile-sarpras/api/barang-by-ruangan', [MobileSarprasController::class, 'apiGetBarangByRuangan'], [[MobileSarprasAuthController::class, 'authRequired']]);
 
 $router->post('/mobile-sarpras/inventaris/store', [SarprasController::class, 'barangStore'], [[MobileSarprasAuthController::class, 'authRequired']]);

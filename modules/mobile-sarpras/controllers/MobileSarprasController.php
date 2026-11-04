@@ -62,9 +62,11 @@ class MobileSarprasController
 
     public static function scan(): void
     {
+        $presetCode = trim($_GET['code'] ?? ($_GET['kode'] ?? ($_GET['id'] ?? ($_GET['search'] ?? ''))));
         self::render('scan', [
-            'pageTitle' => 'Scan QR Code',
-            'activeTab' => 'scan'
+            'pageTitle'  => 'Scan QR Code',
+            'activeTab'  => 'scan',
+            'presetCode' => $presetCode
         ]);
     }
 
@@ -72,7 +74,9 @@ class MobileSarprasController
     {
         $barang = SarprasModel::getBarangById($id);
         if (!$barang) {
-            die("Barang tidak ditemukan.");
+            $_SESSION['flash_error'] = 'Barang tidak ditemukan atau telah dihapus.';
+            header('Location: ' . (function_exists('url') ? url('mobile-sarpras/inventaris') : '/mobile-sarpras/inventaris'));
+            exit;
         }
         
         // Fetch maintenance history
@@ -257,12 +261,19 @@ class MobileSarprasController
     {
         $barangTersedia = SarprasModel::getBarangList();
         $ruanganList = SarprasModel::db()->findAll("SELECT id, nama_ruangan FROM sarpras_ruangan WHERE is_active = 1");
+        $selectedBarangId = (int)($_GET['barang_id'] ?? 0);
+        $presetBarang = null;
+        if ($selectedBarangId > 0) {
+            $presetBarang = SarprasModel::getBarangById($selectedBarangId);
+        }
         
         self::render('maintenance/tambah', [
-            'pageTitle' => 'Input Maintenance',
-            'activeTab' => 'input',
-            'barang' => $barangTersedia,
-            'ruanganList' => $ruanganList
+            'pageTitle'        => 'Input Maintenance',
+            'activeTab'        => 'input',
+            'barang'           => $barangTersedia,
+            'ruanganList'      => $ruanganList,
+            'selectedBarangId' => $selectedBarangId,
+            'presetBarang'     => $presetBarang
         ]);
     }
 
@@ -284,11 +295,19 @@ class MobileSarprasController
         // Fetch items available for borrowing along with their room
         $barangTersedia = $db->findAll("SELECT b.id, b.kode_barang, b.nama_barang, r.nama_ruangan FROM sarpras_barang b LEFT JOIN sarpras_ruangan r ON b.ruangan_id = r.id WHERE b.status = 'Tersedia' ORDER BY b.nama_barang ASC");
         
+        $selectedBarangId = (int)($_GET['barang_id'] ?? 0);
+        $presetBarang = null;
+        if ($selectedBarangId > 0) {
+            $presetBarang = SarprasModel::getBarangById($selectedBarangId);
+        }
+
         self::render('peminjaman/tambah', [
-            'pageTitle' => 'Input Peminjaman',
-            'activeTab' => 'input',
-            'pegawaiList' => $pegawaiList,
-            'barang' => $barangTersedia
+            'pageTitle'        => 'Input Peminjaman',
+            'activeTab'        => 'input',
+            'pegawaiList'      => $pegawaiList,
+            'barang'           => $barangTersedia,
+            'selectedBarangId' => $selectedBarangId,
+            'presetBarang'     => $presetBarang
         ]);
     }
 
@@ -415,19 +434,182 @@ class MobileSarprasController
         }
     }
 
-    public static function apiGetBarangByKode(): void
+    /**
+     * Resolusi pintar kode/URL QR code menjadi data barang lengkap
+     */
+    public static function resolveBarangByInput(string $input): ?array
+    {
+        $input = trim($input);
+        if ($input === '') {
+            return null;
+        }
+
+        $db = SarprasModel::db();
+
+        // 1. Jika berbentuk URL atau mengandung slash / query string, parse URL terlebih dahulu
+        if (filter_var($input, FILTER_VALIDATE_URL) || str_starts_with($input, 'http://') || str_starts_with($input, 'https://') || str_contains($input, '/') || str_contains($input, '?')) {
+            $parsed = parse_url($input);
+
+            // Cek parameter query (?search=, ?kode=, ?code=, ?id=)
+            if (!empty($parsed['query'])) {
+                parse_str($parsed['query'], $q);
+                if (!empty($q['search'])) {
+                    $found = self::resolveBarangByInput((string)$q['search']);
+                    if ($found) return $found;
+                }
+                if (!empty($q['kode'])) {
+                    $found = self::resolveBarangByInput((string)$q['kode']);
+                    if ($found) return $found;
+                }
+                if (!empty($q['code'])) {
+                    $found = self::resolveBarangByInput((string)$q['code']);
+                    if ($found) return $found;
+                }
+                if (!empty($q['id']) && is_numeric($q['id'])) {
+                    $found = self::resolveBarangByInput((string)$q['id']);
+                    if ($found) return $found;
+                }
+            }
+
+            // Cek segment path (/detail/123, /edit/123, /barang/123)
+            if (!empty($parsed['path'])) {
+                if (preg_match('#/(?:detail|barang|edit)/(\d+)#i', $parsed['path'], $m)) {
+                    $found = self::resolveBarangByInput($m[1]);
+                    if ($found) return $found;
+                }
+            }
+        }
+
+        // 2. Base query data lengkap aset (kategori, ruangan, gedung)
+        $baseSql = "
+            SELECT b.*, 
+                   COALESCE(k.nama_kategori, 'Inventaris') AS nama_kategori,
+                   COALESCE(r.nama_ruangan, '-') AS nama_ruangan,
+                   COALESCE(r.lokasi_gedung, '-') AS lokasi_gedung
+            FROM sarpras_barang b
+            LEFT JOIN sarpras_kategori k ON b.kategori_id = k.id
+            LEFT JOIN sarpras_ruangan r ON b.ruangan_id = r.id
+        ";
+
+        // 3. Cari berdasarkan ID numerik
+        if (is_numeric($input)) {
+            $row = $db->find($baseSql . " WHERE b.id = ?", [(int)$input]);
+            if ($row) return $row;
+        }
+
+        // 4. Cari berdasarkan kode_barang persis
+        $row = $db->find($baseSql . " WHERE b.kode_barang = ?", [$input]);
+        if ($row) return $row;
+
+        // 5. Cari jika ada akhiran nomor urut unit (misal label per-unit: 'A.001.YYS.003-002' -> 'A.001.YYS.003')
+        if (preg_match('/^(.*?)-(\d{2,4})$/', $input, $m)) {
+            $row = $db->find($baseSql . " WHERE b.kode_barang = ?", [$m[1]]);
+            if ($row) return $row;
+        }
+
+        // 6. Cari berdasarkan nomor_seri
+        $row = $db->find($baseSql . " WHERE b.nomor_seri = ?", [$input]);
+        if ($row) return $row;
+
+        // 7. Case-insensitive kode_barang
+        $row = $db->find($baseSql . " WHERE LOWER(b.kode_barang) = LOWER(?)", [$input]);
+        if ($row) return $row;
+
+        // 8. Fallback parsial jika kode terpotong
+        $row = $db->find($baseSql . " WHERE b.kode_barang LIKE ? LIMIT 1", ['%' . $input . '%']);
+        if ($row) return $row;
+
+        return null;
+    }
+
+    /**
+     * API Handler untuk Scan QR Code Aset Sarpras (JSON)
+     */
+    public static function apiScanBarang(): void
     {
         header('Content-Type: application/json');
-        $kode = $_GET['kode'] ?? '';
-        $db = SarprasModel::db();
-        $barang = $db->find("SELECT b.*, r.nama_ruangan FROM sarpras_barang b LEFT JOIN sarpras_ruangan r ON b.ruangan_id = r.id WHERE b.kode_barang = ?", [$kode]);
+        $kode = trim($_GET['kode'] ?? ($_GET['code'] ?? ($_GET['q'] ?? ($_GET['search'] ?? ''))));
         
-        if ($barang) {
-            echo json_encode(['status' => 'success', 'data' => $barang]);
-        } else {
-            echo json_encode(['status' => 'error', 'message' => 'Barang tidak ditemukan']);
+        if ($kode === '') {
+            echo json_encode(['status' => 'error', 'message' => 'Kode atau QR tidak boleh kosong']);
+            exit;
         }
+
+        $barang = self::resolveBarangByInput($kode);
+
+        if (!$barang) {
+            echo json_encode([
+                'status' => 'error', 
+                'message' => 'Aset tidak ditemukan. Pastikan QR Code merupakan label aset Sarpras.',
+                'raw_input' => $kode
+            ]);
+            exit;
+        }
+
+        $db = SarprasModel::db();
+        
+        // Parsing daftar foto
+        $fotoRawList = SarprasModel::getFotoList($barang['foto'] ?? '');
+        $fotoList = [];
+        foreach ($fotoRawList as $f) {
+            $cleanF = ltrim($f, '/');
+            $fotoList[] = [
+                'path' => $cleanF,
+                'url'  => function_exists('url') ? url('public/' . $cleanF) : ('/public/' . $cleanF)
+            ];
+        }
+
+        // Ambil riwayat perbaikan (5 terakhir)
+        $maintenance = $db->findAll("
+            SELECT id, tanggal_lapor, deskripsi_kerusakan, dilaporkan_oleh, status, biaya, tanggal_selesai
+            FROM sarpras_maintenance 
+            WHERE barang_id = ? 
+            ORDER BY tanggal_lapor DESC 
+            LIMIT 5
+        ", [(int)$barang['id']]);
+
+        // Hitung ketersediaan
+        $stokTotal = (int)$barang['jumlah'];
+        $stokDipakai = (int)($barang['dipakai'] ?? 0);
+        $stokTersedia = max(0, $stokTotal - $stokDipakai);
+
+        // URLs untuk quick actions
+        $urlDetail = function_exists('url') ? url('mobile-sarpras/detail/' . $barang['id']) : ('/mobile-sarpras/detail/' . $barang['id']);
+        $urlMaintenance = function_exists('url') ? url('mobile-sarpras/maintenance/tambah?barang_id=' . $barang['id']) : ('/mobile-sarpras/maintenance/tambah?barang_id=' . $barang['id']);
+        $urlPeminjaman = function_exists('url') ? url('mobile-sarpras/peminjaman/tambah?barang_id=' . $barang['id']) : ('/mobile-sarpras/peminjaman/tambah?barang_id=' . $barang['id']);
+
+        echo json_encode([
+            'status' => 'success',
+            'data' => [
+                'id'              => (int)$barang['id'],
+                'kode_barang'     => $barang['kode_barang'],
+                'nama_barang'     => $barang['nama_barang'],
+                'nama_kategori'   => $barang['nama_kategori'] ?? 'Inventaris',
+                'nama_ruangan'    => $barang['nama_ruangan'] ?? '-',
+                'lokasi_gedung'   => $barang['lokasi_gedung'] ?? '-',
+                'kondisi'         => $barang['kondisi'] ?? 'Baik',
+                'jumlah'          => $stokTotal,
+                'dipakai'         => $stokDipakai,
+                'tersedia'        => $stokTersedia,
+                'satuan'          => $barang['satuan'] ?? 'Unit',
+                'tahun_pengadaan' => $barang['tahun_pengadaan'] ?? '-',
+                'sumber_dana'     => $barang['sumber_dana'] ?? '-',
+                'nomor_seri'      => $barang['nomor_seri'] ?? '',
+                'merk_model'      => $barang['merk_model'] ?? '',
+                'foto_list'       => $fotoList,
+                'foto_utama'      => !empty($fotoList[0]['url']) ? $fotoList[0]['url'] : '',
+                'maintenance'     => $maintenance,
+                'url_detail'      => $urlDetail,
+                'url_maintenance' => $urlMaintenance,
+                'url_peminjaman'  => $urlPeminjaman
+            ]
+        ]);
         exit;
+    }
+
+    public static function apiGetBarangByKode(): void
+    {
+        self::apiScanBarang();
     }
 
     public static function apiGetBarangByRuangan(): void

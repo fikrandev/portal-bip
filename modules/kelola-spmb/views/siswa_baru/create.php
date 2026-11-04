@@ -623,4 +623,8 @@ function submitFormTambahSiswaBaruPage(e) {
         });
     });
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+    onJenjangChangePage();
+});
 </script>

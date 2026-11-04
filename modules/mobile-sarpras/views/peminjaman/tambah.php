@@ -1,3 +1,8 @@
+<?php
+$isPreset = !empty($presetBarang);
+$presetBarangId = $isPreset ? (int)$presetBarang['id'] : '';
+$presetDisplay = $isPreset ? (e($presetBarang['nama_barang']) . ' - ' . e($presetBarang['kode_barang']) . ' (Dari: ' . e($presetBarang['nama_ruangan'] ?? 'Tanpa Ruangan') . ')') : 'Pilih Barang...';
+?>
 <div class="px-4 pt-4 pb-24 h-full overflow-y-auto">
     <div class="flex items-center gap-3 mb-6">
         <a href="<?= url('mobile-sarpras/peminjaman') ?>" class="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm border border-slate-100 text-slate-500 active:scale-95 transition-transform">
@@ -24,9 +29,9 @@
             <!-- Inventaris (Searchable Bottom Sheet) -->
             <div>
                 <label class="block text-xs font-bold text-slate-700 mb-1">Barang (Inventaris) <span class="text-rose-500">*</span></label>
-                <input type="hidden" name="barang_id" id="barang_val" required>
-                <div class="w-full px-3 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-500 flex justify-between items-center cursor-pointer active:scale-[0.98] transition-transform" onclick="openSelectModal('modal_barang')">
-                    <span id="barang_display" class="truncate">Pilih Barang...</span>
+                <input type="hidden" name="barang_id" id="barang_val" value="<?= $presetBarangId ?>" required>
+                <div class="w-full px-3 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm <?= $isPreset ? 'text-slate-800 font-semibold' : 'text-slate-500' ?> flex justify-between items-center cursor-pointer active:scale-[0.98] transition-transform" onclick="openSelectModal('modal_barang')">
+                    <span id="barang_display" class="truncate"><?= $presetDisplay ?></span>
                     <i data-lucide="chevron-down" class="w-4 h-4 flex-shrink-0"></i>
                 </div>
             </div>

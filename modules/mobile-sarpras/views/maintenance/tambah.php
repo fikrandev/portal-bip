@@ -1,3 +1,9 @@
+<?php
+$isPreset = !empty($presetBarang);
+$presetId = $isPreset ? (int)$presetBarang['id'] : '';
+$presetNama = $isPreset ? e($presetBarang['nama_barang']) : '';
+$presetRuangan = $isPreset ? e($presetBarang['nama_ruangan'] ?? '-') : '';
+?>
 <div class="px-4 pt-4 pb-24 h-full overflow-y-auto">
     <div class="flex items-center gap-3 mb-6">
         <a href="<?= url('mobile-sarpras/maintenance') ?>" class="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm border border-slate-100 text-slate-500 active:scale-95 transition-transform">
@@ -16,11 +22,11 @@
         <?= CSRF::field() ?>
         
         <!-- HIDDEN BARANG ID -->
-        <input type="hidden" name="barang_id" id="val_barang_id" required>
+        <input type="hidden" name="barang_id" id="val_barang_id" value="<?= $presetId ?>" required>
 
         <!-- SCAN QR SECTION -->
         <div id="section-scan" class="space-y-4">
-            <div id="scanner-wrapper" class="w-full bg-slate-900 rounded-3xl overflow-hidden shadow-inner border-4 border-slate-200 relative mx-auto max-w-sm">
+            <div id="scanner-wrapper" class="w-full bg-slate-900 rounded-3xl overflow-hidden shadow-inner border-4 border-slate-200 relative mx-auto max-w-sm <?= $isPreset ? 'hidden' : '' ?>">
                 <div id="qr-reader" style="width:100%;"></div>
             </div>
 
@@ -36,15 +42,15 @@
                 </div>
             </div>
 
-            <div id="scan-result" class="hidden bg-blue-50 border border-blue-100 rounded-2xl p-4">
+            <div id="scan-result" class="<?= $isPreset ? '' : 'hidden' ?> bg-blue-50 border border-blue-100 rounded-2xl p-4">
                 <div class="flex gap-3">
                     <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 shrink-0">
                         <i data-lucide="check-circle" class="w-6 h-6"></i>
                     </div>
                     <div>
                         <p class="text-xs font-bold text-blue-600 uppercase tracking-wider">Barang Ditemukan</p>
-                        <h4 id="res-nama-barang" class="font-bold text-slate-800 mt-1">Nama Barang</h4>
-                        <p id="res-ruangan" class="text-xs text-slate-500 mt-0.5">Ruangan: -</p>
+                        <h4 id="res-nama-barang" class="font-bold text-slate-800 mt-1"><?= $presetNama ?: 'Nama Barang' ?></h4>
+                        <p id="res-ruangan" class="text-xs text-slate-500 mt-0.5">Ruangan: <?= $presetRuangan ?: '-' ?></p>
                     </div>
                 </div>
                 <button type="button" id="btn-scan-ulang" class="mt-3 w-full py-2 bg-white text-blue-600 border border-blue-200 rounded-xl text-xs font-bold active:bg-blue-50">Scan Ulang</button>
@@ -73,7 +79,7 @@
         </div>
 
         <!-- FORM DETAIL PERBAIKAN -->
-        <div id="section-detail" class="hidden bg-white rounded-3xl p-5 shadow-sm border border-slate-100 space-y-4">
+        <div id="section-detail" class="<?= $isPreset ? '' : 'hidden' ?> bg-white rounded-3xl p-5 shadow-sm border border-slate-100 space-y-4">
             <h3 class="font-bold text-slate-800 border-b pb-2 mb-3">Detail Perbaikan</h3>
             
             <div>
@@ -272,6 +278,13 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Initialize default mode
-    startScanner();
+    const hasPreset = <?= $isPreset ? 'true' : 'false' ?>;
+    if (!hasPreset) {
+        startScanner();
+    } else {
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+    }
 });
 </script>
