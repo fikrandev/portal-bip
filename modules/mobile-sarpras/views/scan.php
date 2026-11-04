@@ -271,6 +271,9 @@ $presetCode = $presetCode ?? '';
     function copyKodeAset() {
         if (!currentBarangKode) return;
         navigator.clipboard.writeText(currentBarangKode).then(() => {
+            if (typeof window.showToast === 'function') {
+                window.showToast('Kode ' + currentBarangKode + ' berhasil disalin!', 'success');
+            }
             const toast = document.getElementById('copy-toast');
             if (toast) {
                 toast.classList.remove('hidden');
@@ -472,6 +475,10 @@ $presetCode = $presetCode ?? '';
         document.getElementById('scan-error-card').classList.add('hidden');
         document.getElementById('scan-asset-card').classList.remove('hidden');
 
+        if (typeof window.showToast === 'function') {
+            window.showToast('Data ' + (b.nama_barang || 'Aset') + ' berhasil dimuat!', 'success');
+        }
+
         if (typeof lucide !== 'undefined') {
             lucide.createIcons();
         }
@@ -484,6 +491,11 @@ $presetCode = $presetCode ?? '';
         document.getElementById('scanner-section').classList.add('hidden');
         document.getElementById('scan-asset-card').classList.add('hidden');
         document.getElementById('scan-error-card').classList.remove('hidden');
+        
+        if (typeof window.showToast === 'function') {
+            window.showToast(msg || 'Aset tidak ditemukan.', 'error');
+        }
+
         if (typeof lucide !== 'undefined') lucide.createIcons();
     }
 

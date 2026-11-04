@@ -1,3 +1,17 @@
+<?php
+// Ambil & bersihkan flash messages sesi untuk toast notification
+$flashSuccess = $_SESSION['flash_success'] ?? ($_SESSION['success'] ?? null);
+$flashError   = $_SESSION['flash_error'] ?? ($_SESSION['error'] ?? null);
+$flashWarning = $_SESSION['flash_warning'] ?? ($_SESSION['warning'] ?? null);
+$flashInfo    = $_SESSION['flash_info'] ?? ($_SESSION['info'] ?? null);
+
+unset(
+    $_SESSION['flash_success'], $_SESSION['success'],
+    $_SESSION['flash_error'], $_SESSION['error'],
+    $_SESSION['flash_warning'], $_SESSION['warning'],
+    $_SESSION['flash_info'], $_SESSION['info']
+);
+?>
 <!DOCTYPE html>
 <html lang="id" class="h-full antialiased bg-slate-50">
 <head>
@@ -58,9 +72,86 @@
         @media all and (display-mode: standalone) {
             .pwa-install-trigger { display: none !important; }
         }
+
+        /* Mobile Floating Toast Notification */
+        #mobile-toast-container {
+            position: fixed;
+            top: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 999999;
+            width: calc(100% - 2rem);
+            max-width: 420px;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .mobile-toast {
+            pointer-events: auto;
+            border-radius: 1.25rem;
+            padding: 0.85rem 1rem;
+            box-shadow: 0 12px 30px -4px rgba(0, 0, 0, 0.15), 0 4px 10px -2px rgba(0, 0, 0, 0.08);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            animation: toastSlideDown 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            position: relative;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.96);
+            border: 1px solid rgba(226, 232, 240, 0.9);
+        }
+
+        .mobile-toast.toast-hide {
+            animation: toastSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes toastSlideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-24px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        @keyframes toastSlideUp {
+            from {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+            to {
+                opacity: 0;
+                transform: translateY(-16px) scale(0.95);
+            }
+        }
+
+        .toast-progress-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 3px;
+            width: 100%;
+            transform-origin: left;
+            animation: toastProgress linear forwards;
+        }
+
+        @keyframes toastProgress {
+            from { transform: scaleX(1); }
+            to { transform: scaleX(0); }
+        }
     </style>
 </head>
 <body class="h-full flex flex-col overflow-hidden bg-slate-50 relative">
+
+    <!-- Mobile Floating Toast Container -->
+    <div id="mobile-toast-container"></div>
 
     <!-- Splash Screen Loader -->
     <div id="mobile-splash-loader" class="fixed inset-0 z-[9999] bg-blue-600 flex flex-col items-center justify-center transition-opacity duration-500">
@@ -448,7 +539,11 @@
                     // });
                     
                     // Mock success for now
-                    alert('Notifikasi berhasil diaktifkan!');
+                    if (typeof window.showToast === 'function') {
+                        window.showToast('Notifikasi push berhasil diaktifkan!', 'success');
+                    } else {
+                        alert('Notifikasi berhasil diaktifkan!');
+                    }
                     // Send to backend
                     // fetch('<?= url("mobile-sarpras/action/subscribe-push") ?>', {
                     //     method: 'POST',
@@ -458,6 +553,119 @@
             } catch (error) {
                 console.error('Error subscribing to push:', error);
             }
+        });
+
+        // ============================================================
+        // GLOBAL TOAST NOTIFICATION SYSTEM
+        // ============================================================
+        window.showToast = function(message, type = 'success', duration = 3500) {
+            const container = document.getElementById('mobile-toast-container');
+            if (!container || !message) return;
+
+            // Soft haptic vibration if supported on mobile
+            if (navigator.vibrate) {
+                try {
+                    navigator.vibrate(type === 'error' ? [50, 40, 50] : 40);
+                } catch (e) {}
+            }
+
+            const toast = document.createElement('div');
+            toast.className = 'mobile-toast';
+
+            // Config by type
+            let iconName = 'check-circle-2';
+            let iconBg = 'bg-emerald-100 text-emerald-600';
+            let borderClass = 'border-emerald-200';
+            let progressBg = 'bg-emerald-500';
+            let titleText = 'Berhasil';
+
+            if (type === 'error') {
+                iconName = 'alert-circle';
+                iconBg = 'bg-rose-100 text-rose-600';
+                borderClass = 'border-rose-200';
+                progressBg = 'bg-rose-500';
+                titleText = 'Perhatian';
+            } else if (type === 'warning') {
+                iconName = 'alert-triangle';
+                iconBg = 'bg-amber-100 text-amber-600';
+                borderClass = 'border-amber-200';
+                progressBg = 'bg-amber-500';
+                titleText = 'Peringatan';
+            } else if (type === 'info') {
+                iconName = 'info';
+                iconBg = 'bg-blue-100 text-blue-600';
+                borderClass = 'border-blue-200';
+                progressBg = 'bg-blue-500';
+                titleText = 'Informasi';
+            }
+
+            toast.classList.add(borderClass);
+
+            toast.innerHTML = `
+                <div class="w-9 h-9 rounded-xl ${iconBg} flex items-center justify-center shrink-0 shadow-2xs">
+                    <i data-lucide="${iconName}" class="w-5 h-5"></i>
+                </div>
+                <div class="flex-1 min-w-0 pr-1">
+                    <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 leading-tight">${titleText}</p>
+                    <p class="text-xs sm:text-sm font-semibold text-slate-800 leading-snug break-words mt-0.5">${message}</p>
+                </div>
+                <button type="button" class="toast-close-btn p-1 text-slate-400 hover:text-slate-600 active:scale-90 transition rounded-lg" aria-label="Tutup">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+                <div class="toast-progress-bar ${progressBg}" style="animation-duration: ${duration}ms;"></div>
+            `;
+
+            container.appendChild(toast);
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons({ root: toast });
+            }
+
+            let isDismissed = false;
+            const dismissToast = () => {
+                if (isDismissed) return;
+                isDismissed = true;
+                toast.classList.add('toast-hide');
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.parentNode.removeChild(toast);
+                    }
+                }, 300);
+            };
+
+            const closeBtn = toast.querySelector('.toast-close-btn');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', dismissToast);
+            }
+
+            // Swipe up to dismiss
+            let startY = 0;
+            toast.addEventListener('touchstart', (e) => {
+                startY = e.touches[0].clientY;
+            }, { passive: true });
+            toast.addEventListener('touchend', (e) => {
+                const diffY = e.changedTouches[0].clientY - startY;
+                if (diffY < -20) {
+                    dismissToast();
+                }
+            }, { passive: true });
+
+            setTimeout(dismissToast, duration);
+        };
+
+        // Otomatis tampilkan Flash Message dari Session jika ada
+        document.addEventListener('DOMContentLoaded', function() {
+            <?php if (!empty($flashSuccess)): ?>
+                showToast(<?= json_encode($flashSuccess) ?>, 'success');
+            <?php endif; ?>
+            <?php if (!empty($flashError)): ?>
+                showToast(<?= json_encode($flashError) ?>, 'error');
+            <?php endif; ?>
+            <?php if (!empty($flashWarning)): ?>
+                showToast(<?= json_encode($flashWarning) ?>, 'warning');
+            <?php endif; ?>
+            <?php if (!empty($flashInfo)): ?>
+                showToast(<?= json_encode($flashInfo) ?>, 'info');
+            <?php endif; ?>
         });
     </script>
 
