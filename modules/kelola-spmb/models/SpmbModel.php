@@ -2787,7 +2787,7 @@ class SpmbModel
             SELECT p.*,
                    obs.id as respon_id, obs.status as respon_status, obs.nama_pengisi, obs.hubungan_pengisi,
                    obs.no_wa_pengisi, obs.total_skor, obs.skor_maksimal, obs.persentase, obs.kategori_hasil,
-                   obs.catatan_orang_tua, obs.submitted_at as observasi_submitted_at,
+                   obs.catatan_orang_tua, obs.harapan_orang_tua, obs.submitted_at as observasi_submitted_at,
                    g.nama_group, g.tahun_ajaran as group_tahun_ajaran, g.tanggal_buka, g.tanggal_tutup, g.tanggal_patokan_umur
             FROM `spmb_pendaftar` p
             LEFT JOIN `spmb_observasi_respon` obs ON obs.pendaftar_id = p.id
@@ -2861,6 +2861,7 @@ class SpmbModel
         $hubunganPengisi = trim($postData['hubungan_pengisi'] ?? 'Orang Tua / Wali');
         $noWaPengisi     = trim($postData['no_wa_pengisi'] ?? ($pendaftar['no_wa'] ?: ''));
         $catatanOrtu     = trim($postData['catatan_orang_tua'] ?? '');
+        $harapanOrtu     = trim($postData['harapan_orang_tua'] ?? '');
 
         if (empty($namaPengisi)) {
             return ['success' => false, 'message' => 'Mohon isi nama lengkap Ayah/Ibu/Wali yang mengisi formulir.'];
@@ -2939,6 +2940,7 @@ class SpmbModel
                     `persentase` = ?,
                     `kategori_hasil` = ?,
                     `catatan_orang_tua` = ?,
+                    `harapan_orang_tua` = ?,
                     `submitted_at` = NOW(),
                     `ip_address` = ?,
                     `user_agent` = ?,
@@ -2947,7 +2949,7 @@ class SpmbModel
             ", [
                 $namaPengisi, $hubunganPengisi, $noWaPengisi,
                 $totalSkor, $skorMaksTotal, $persentase, $kategoriHasil,
-                $catatanOrtu, $ip, $ua, $responId
+                $catatanOrtu, $harapanOrtu, $ip, $ua, $responId
             ]);
 
             // Hapus jawaban lama dan simpan yang baru
@@ -2957,12 +2959,12 @@ class SpmbModel
                 INSERT INTO `spmb_observasi_respon` (
                     `pendaftar_id`, `token`, `status`, `nama_pengisi`, `hubungan_pengisi`,
                     `no_wa_pengisi`, `total_skor`, `skor_maksimal`, `persentase`, `kategori_hasil`,
-                    `catatan_orang_tua`, `submitted_at`, `ip_address`, `user_agent`, `created_at`, `updated_at`
-                ) VALUES (?, ?, 'selesai', ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, NOW(), NOW())
+                    `catatan_orang_tua`, `harapan_orang_tua`, `submitted_at`, `ip_address`, `user_agent`, `created_at`, `updated_at`
+                ) VALUES (?, ?, 'selesai', ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, NOW(), NOW())
             ", [
                 $pendaftarId, $tokenRespon, $namaPengisi, $hubunganPengisi,
                 $noWaPengisi, $totalSkor, $skorMaksTotal, $persentase, $kategoriHasil,
-                $catatanOrtu, $ip, $ua
+                $catatanOrtu, $harapanOrtu, $ip, $ua
             ]);
             $responId = (int)self::db()->lastInsertId();
         }
@@ -3047,7 +3049,7 @@ class SpmbModel
                    p.jenjang, p.jenis_pendaftaran, p.no_wa, p.no_hp, p.no_hp_ayah, p.no_hp_ibu,
                    p.observasi_token, p.biodata_token, p.status_observasi, p.skor_observasi, p.kategori_observasi, p.tgl_observasi,
                    obs.id as respon_id, obs.nama_pengisi, obs.hubungan_pengisi, obs.total_skor, obs.skor_maksimal, obs.persentase,
-                   obs.kategori_hasil, obs.submitted_at
+                   obs.kategori_hasil, obs.catatan_orang_tua, obs.harapan_orang_tua, obs.submitted_at
             FROM `spmb_pendaftar` p
             LEFT JOIN `spmb_observasi_respon` obs ON obs.pendaftar_id = p.id
             $whereClause
@@ -3297,6 +3299,249 @@ class SpmbModel
              . "Terima kasih atas kerja sama dan kepercayaan Bapak/Ibu kepada SIT Bina Insan Palu.\n\n"
              . "Wassalamu'alaikum Warahmatullahi Wabarakatuh.\n"
              . "_Panitia SPMB SIT Bina Insan Palu_";
+    }
+
+    /**
+     * Ambil seluruh data hasil observasi awal untuk cetak rekap (tanpa paginasi ketat)
+     */
+    public static function getRekapObservasiAwal(array $filters = []): array
+    {
+        $conditions = [];
+        $params = [];
+
+        if (!empty($filters['group_id'])) {
+            $conditions[] = "p.group_id = ?";
+            $params[] = (int)$filters['group_id'];
+        }
+
+        if (!empty($filters['jenjang']) && strtoupper(trim($filters['jenjang'])) !== 'ALL') {
+            $conditions[] = "p.jenjang = ?";
+            $params[] = strtoupper(trim($filters['jenjang']));
+        }
+
+        if (!empty($filters['status_observasi'])) {
+            if ($filters['status_observasi'] === 'sudah') {
+                $conditions[] = "p.status_observasi = 'Sudah Mengisi'";
+            } elseif ($filters['status_observasi'] === 'belum') {
+                $conditions[] = "(p.status_observasi IS NULL OR p.status_observasi != 'Sudah Mengisi')";
+            }
+        }
+
+        if (!empty($filters['search'])) {
+            $term = '%' . trim($filters['search']) . '%';
+            $conditions[] = "(p.nama_lengkap LIKE ? OR p.nomor_pendaftaran LIKE ? OR p.nisn LIKE ? OR obs.nama_pengisi LIKE ?)";
+            $params[] = $term;
+            $params[] = $term;
+            $params[] = $term;
+            $params[] = $term;
+        }
+
+        $whereClause = !empty($conditions) ? "WHERE " . implode(" AND ", $conditions) : "";
+
+        $sql = "
+            SELECT p.id as pendaftar_id, p.id, p.nomor_pendaftaran, p.nama_lengkap, p.nama_panggilan,
+                   p.jenjang, p.jenis_pendaftaran, p.no_wa, p.no_hp, p.no_hp_ayah, p.no_hp_ibu,
+                   p.observasi_token, p.biodata_token, p.status_observasi, p.skor_observasi, p.kategori_observasi, p.tgl_observasi,
+                   obs.id as respon_id, obs.nama_pengisi, obs.hubungan_pengisi, obs.total_skor, obs.skor_maksimal, obs.persentase,
+                   obs.kategori_hasil, obs.catatan_orang_tua, obs.harapan_orang_tua, obs.submitted_at
+            FROM `spmb_pendaftar` p
+            LEFT JOIN `spmb_observasi_respon` obs ON obs.pendaftar_id = p.id
+            $whereClause
+            ORDER BY 
+                p.nomor_pendaftaran ASC, p.id ASC
+        ";
+
+        return self::db()->findAll($sql, $params);
+    }
+
+    /**
+     * Menganalisis harapan orang tua dari kumpulan hasil observasi awal dan
+     * menghasilkan kesimpulan tematik komprehensif, distribusi topik, dan ringkasan naratif.
+     */
+    public static function analisisKesimpulanHarapan(array $items): array
+    {
+        $harapanList = [];
+        foreach ($items as $it) {
+            $h = trim($it['harapan_orang_tua'] ?? '');
+            if (!empty($h)) {
+                $harapanList[] = [
+                    'nama_siswa' => $it['nama_lengkap'] ?? '',
+                    'jenjang'    => $it['jenjang'] ?? '',
+                    'nama_ortu'  => $it['nama_pengisi'] ?? '',
+                    'teks'       => $h
+                ];
+            }
+        }
+
+        $totalResponden = count($harapanList);
+        if ($totalResponden === 0) {
+            return [
+                'total_responden'   => 0,
+                'kategori'          => [],
+                'top_categories'    => [],
+                'kesimpulan_utama'  => 'Belum ada data harapan orang tua yang diisi pada periode atau filter pendaftaran ini.',
+                'kutipan_pilihan'   => [],
+                'rekomendasi'       => 'Pastikan orang tua calon murid baru telah melengkapi instrumen observasi awal melalui tautan yang dikirimkan.'
+            ];
+        }
+
+        // Definisi tema/kategori harapan beserta kamus kata kunci komprehensif
+        $kategoriDef = [
+            'akhlak_karakter' => [
+                'label'    => 'Akhlak Mulia, Adab & Karakter Islami',
+                'color'    => '#059669',
+                'bg_badge' => '#ecfdf5',
+                'border'   => '#a7f3d0',
+                'keywords' => [
+                    'akhlak', 'adab', 'karakter', 'sopan', 'santun', 'sholeh', 'sholehah', 
+                    'soleh', 'solehah', 'budi pekerti', 'moral', 'kepribadian', 'disiplin', 
+                    'tertib', 'jujur', 'amanah', 'teladan', 'rendah hati', 'hormat', 'patuh',
+                    'taat', 'berbudi', 'prilaku', 'perilaku'
+                ],
+            ],
+            'tahfidz_quran' => [
+                'label'    => 'Tahfidz Al-Qur\'an, Ibadah & Cinta Agama',
+                'color'    => '#2563eb',
+                'bg_badge' => '#eff6ff',
+                'border'   => '#bfdbfe',
+                'keywords' => [
+                    'tahfidz', 'tahfiz', 'quran', 'qur\'an', 'juz', 'hafalan', 'hafal', 
+                    'mengaji', 'tilawah', 'murottal', 'sholat', 'salat', 'ibadah', 'doa', 
+                    'do\'a', 'tajwid', 'tartil', 'sunnah', 'islam', 'cinta allah', 'agama'
+                ],
+            ],
+            'akademik_kognitif' => [
+                'label'    => 'Prestasi Akademik, Sains & Daya Pikir Kritis',
+                'color'    => '#4f46e5',
+                'bg_badge' => '#eef2ff',
+                'border'   => '#c7d2fe',
+                'keywords' => [
+                    'akademik', 'pintar', 'cerdas', 'sains', 'prestasi', 'belajar', 'ilmu', 
+                    'nalar', 'wawasan', 'baca', 'membaca', 'tulis', 'menulis', 'hitung', 
+                    'matematika', 'teknologi', 'bahasa inggris', 'kompeten', 'juara', 'potensi',
+                    'pengetahuan', 'berpikir', 'kreatif'
+                ],
+            ],
+            'kemandirian_sosial' => [
+                'label'    => 'Kemandirian, Percaya Diri & Kepemimpinan',
+                'color'    => '#d97706',
+                'bg_badge' => '#fffbeb',
+                'border'   => '#fde68a',
+                'keywords' => [
+                    'mandiri', 'kemandirian', 'percaya diri', 'pede', 'berani', 'pimpin', 
+                    'kepemimpinan', 'sosialisasi', 'teman', 'bergaul', 'empati', 'kerjasama', 
+                    'tanggung jawab', 'emosi', 'regulasi', 'beradaptasi', 'fokus', 'tumbuh'
+                ],
+            ],
+            'lingkungan_islami' => [
+                'label'    => 'Lingkungan Belajar Kondusif, Aman & Bebas Perundungan',
+                'color'    => '#0d9488',
+                'bg_badge' => '#f0fdf4',
+                'border'   => '#bbf7d0',
+                'keywords' => [
+                    'lingkungan', 'islami', 'aman', 'nyaman', 'pergaulan', 'bullying', 
+                    'perundungan', 'bimbingan', 'guru', 'asuhan', 'teladan guru', 'ramah', 
+                    'bahagia', 'senang', 'positif', 'kekeluargaan', 'kasih sayang'
+                ],
+            ],
+        ];
+
+        // Analisis frekuensi kecocokan kata kunci per kategori
+        $kategoriStats = [];
+        foreach ($kategoriDef as $key => $def) {
+            $kategoriStats[$key] = [
+                'key'         => $key,
+                'label'       => $def['label'],
+                'color'       => $def['color'],
+                'bg_badge'    => $def['bg_badge'],
+                'border'      => $def['border'],
+                'count'       => 0,
+                'persentase'  => 0,
+                'sample_list' => [],
+            ];
+        }
+
+        foreach ($harapanList as $entry) {
+            $teksLower = mb_strtolower($entry['teks'], 'UTF-8');
+            $matchedCategories = [];
+
+            foreach ($kategoriDef as $kKey => $kVal) {
+                foreach ($kVal['keywords'] as $kw) {
+                    if (str_contains($teksLower, $kw)) {
+                        $kategoriStats[$kKey]['count']++;
+                        $kategoriStats[$kKey]['sample_list'][] = $entry['teks'];
+                        $matchedCategories[] = $kKey;
+                        break; // 1 kecocokan per responden per kategori
+                    }
+                }
+            }
+
+            // Jika belum ada kata kunci spesifik yang cocok, klasifikasikan ke akhlak & karakter
+            if (empty($matchedCategories)) {
+                $kategoriStats['akhlak_karakter']['count']++;
+                $kategoriStats['akhlak_karakter']['sample_list'][] = $entry['teks'];
+            }
+        }
+
+        // Hitung persentase dan urutkan
+        foreach ($kategoriStats as &$ks) {
+            $ks['persentase'] = round(($ks['count'] / $totalResponden) * 100, 1);
+        }
+        unset($ks);
+
+        uasort($kategoriStats, function ($a, $b) {
+            return $b['count'] <=> $a['count'];
+        });
+
+        $topCategories = array_values($kategoriStats);
+        $top1 = $topCategories[0] ?? null;
+        $top2 = $topCategories[1] ?? null;
+        $top3 = $topCategories[2] ?? null;
+
+        // Susun sintesis naratif kesimpulan
+        $kesimpulanParagraf = [];
+        $kesimpulanParagraf[] = "Berdasarkan rekapitulasi kuesioner observasi awal dari {$totalResponden} orang tua calon murid baru, mayoritas orang tua memiliki ekspektasi yang sangat selaras dengan visi Sekolah Islam Terpadu (SIT) Bina Insan Palu.";
+
+        if ($top1 && $top1['count'] > 0) {
+            $txtTop = "Harapan yang paling dominan diutarakan oleh orang tua adalah aspek **{$top1['label']}** ({$top1['persentase']}% responden, {$top1['count']} orang tua)";
+            if ($top2 && $top2['count'] > 0) {
+                $txtTop .= ", disusul oleh harapan penguatan pada aspek **{$top2['label']}** ({$top2['persentase']}%)";
+            }
+            if ($top3 && $top3['count'] > 0) {
+                $txtTop .= ", serta pengembangan **{$top3['label']}** ({$top3['persentase']}%)";
+            }
+            $txtTop .= ".";
+            $kesimpulanParagraf[] = $txtTop;
+        }
+
+        $kesimpulanParagraf[] = "Secara umum, orang tua menitikberatkan agar ananda dibina dengan teladan kepribadian islami, tertib dalam ibadah sholat berjamaah, bertambah hafalan Al-Qur'an (tahfidz) dengan makhraj yang fasih, serta memiliki kemandirian dan daya saing akademik dalam lingkungan sekolah yang aman, asri, dan berakhlak mulia.";
+
+        // Ambil kutipan-kutipan pilihan yang mewakili
+        $sortedHarapan = $harapanList;
+        usort($sortedHarapan, function ($a, $b) {
+            return mb_strlen($b['teks']) <=> mb_strlen($a['teks']);
+        });
+
+        $kutipanPilihan = [];
+        foreach (array_slice($sortedHarapan, 0, 6) as $sh) {
+            $kutipanPilihan[] = [
+                'nama_siswa' => $sh['nama_siswa'],
+                'jenjang'    => $sh['jenjang'],
+                'nama_ortu'  => $sh['nama_ortu'],
+                'teks'       => $sh['teks']
+            ];
+        }
+
+        $rekomendasi = "Panitia SPMB dan tim dewan guru disarankan mengintegrasikan temuan ini ke dalam rencana pendampingan masa orientasi (MPLS) dan pembinaan wali kelas, dengan fokus pada pembiasaan adab harian, pemetaan awal tahfidz Al-Qur'an, serta menjalin komunikasi dua arah yang intensif bersama orang tua.";
+
+        return [
+            'total_responden'   => $totalResponden,
+            'kategori'          => $kategoriStats,
+            'top_categories'    => array_slice($topCategories, 0, 3),
+            'kesimpulan_utama'  => implode(' ', $kesimpulanParagraf),
+            'kutipan_pilihan'   => $kutipanPilihan,
+            'rekomendasi'       => $rekomendasi
+        ];
     }
 }
 

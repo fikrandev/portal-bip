@@ -740,6 +740,7 @@ $router->post('/kelola-spmb/observasi-awal/send-wa/{id}', [SpmbController::class
 $router->get('/kelola-spmb/observasi-awal/broadcast-data', [SpmbController::class, 'observasiAwalBroadcastData'], [Middleware::permissionRequired('spmb.view')]);
 $router->post('/kelola-spmb/observasi-awal/broadcast-send-single', [SpmbController::class, 'observasiAwalSendWaSingle'], [Middleware::permissionRequired('spmb.update')]);
 $router->get('/kelola-spmb/observasi-awal/export', [SpmbController::class, 'observasiAwalExport'], [Middleware::permissionRequired('spmb.view')]);
+$router->get('/kelola-spmb/observasi-awal/cetak-rekap', [SpmbController::class, 'observasiAwalCetakRekap'], [Middleware::permissionRequired('spmb.view')]);
 $router->get('/kelola-spmb/observasi-awal/cetak/{id}', [SpmbController::class, 'observasiAwalCetak'], [Middleware::permissionRequired('spmb.view')]);
 $router->get('/kelola-pelanggaran-siswa', [PelanggaranSiswaController::class, 'index'], [Middleware::permissionRequired('pelanggaran_siswa.view')]);
 $router->get('/kelola-izin-guru', [IzinGuruController::class, 'index'], [Middleware::permissionRequired('izin_guru.view')]);

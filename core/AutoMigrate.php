@@ -78,6 +78,7 @@ class AutoMigrate
             '2026_10_20_000040_sync_spmb_full_integrity'                  => 'migration040SyncSpmbFullIntegrity',
             '2026_10_31_000041_enable_self_hosted_wa_gateway'             => 'migration041EnableSelfHostedWaGateway',
             '2026_10_31_000042_ensure_spmb_upload_permissions'            => 'migration042EnsureSpmbUploadPermissions',
+            '2026_11_07_000043_add_spmb_observasi_harapan_orang_tua'      => 'migration043AddSpmbObservasiHarapanOrangTua',
         ];
     }
     /**
@@ -2864,6 +2865,17 @@ class AutoMigrate
                 @mkdir($dir, 0777, true);
             }
             @chmod($dir, 0777);
+        }
+    }
+
+    /**
+     * Migration 043: Tambah kolom harapan_orang_tua pada spmb_observasi_respon
+     */
+    protected static function migration043AddSpmbObservasiHarapanOrangTua(PDO $pdo): void
+    {
+        $cols = $pdo->query("SHOW COLUMNS FROM `spmb_observasi_respon` LIKE 'harapan_orang_tua'")->fetchAll();
+        if (empty($cols)) {
+            $pdo->exec("ALTER TABLE `spmb_observasi_respon` ADD COLUMN `harapan_orang_tua` TEXT NULL AFTER `catatan_orang_tua`");
         }
     }
 }

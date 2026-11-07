@@ -217,8 +217,15 @@ if (defined('SYS_APP_LOGO') && !empty(SYS_APP_LOGO)) {
 
                 <?php if (!empty($respon['catatan_orang_tua'])): ?>
                     <div class="p-4 rounded-2xl bg-sky-50/60 border border-sky-100 text-xs sm:text-sm text-slate-700">
-                        <span class="font-bold text-sky-900 block mb-1">Catatan Tambahan dari Orang Tua/Wali:</span>
+                        <span class="font-bold text-sky-900 block mb-1">Catatan Tambahan Orang Tua:</span>
                         <p class="italic text-slate-600">"<?= nl2br(htmlspecialchars($respon['catatan_orang_tua'])) ?>"</p>
+                    </div>
+                <?php endif; ?>
+
+                <?php if (!empty($respon['harapan_orang_tua'])): ?>
+                    <div class="p-4 rounded-2xl bg-emerald-50/60 border border-emerald-100 text-xs sm:text-sm text-slate-700">
+                        <span class="font-bold text-emerald-900 block mb-1">Harapan Orang Tua:</span>
+                        <p class="italic text-slate-600">"<?= nl2br(htmlspecialchars($respon['harapan_orang_tua'])) ?>"</p>
                     </div>
                 <?php endif; ?>
 
@@ -401,17 +408,37 @@ if (defined('SYS_APP_LOGO') && !empty(SYS_APP_LOGO)) {
                     <?php endforeach; ?>
                 <?php endif; ?>
 
-                <!-- Bagian 3: Catatan Tambahan Orang Tua -->
-                <div class="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-sm space-y-3">
-                    <h4 class="text-sm font-bold text-slate-900">Catatan / Keterangan Khusus dari Orang Tua (Opsional)</h4>
-                    <p class="text-xs text-slate-500">
-                        Apakah ananda memiliki alergi, riwayat kesehatan khusus, bakat menonjol, atau hal penting lain yang perlu diketahui oleh guru?
-                    </p>
-                    <textarea name="catatan_orang_tua" 
-                              id="catatan_orang_tua" 
-                              rows="3" 
-                              placeholder="Tuliskan catatan khusus di sini..." 
-                              class="w-full px-4 py-3 rounded-2xl border border-slate-300 text-xs sm:text-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-all font-medium"><?= htmlspecialchars($respon['catatan_orang_tua'] ?? '') ?></textarea>
+                <!-- Bagian 3: Catatan Tambahan & Harapan Orang Tua -->
+                <div class="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-sm space-y-6">
+                    <!-- 1. Catatan Tambahan Orang Tua (Text Area) -->
+                    <div class="space-y-2">
+                        <label for="catatan_orang_tua" class="block text-sm font-bold text-slate-900">
+                            1. Catatan Tambahan Orang Tua (Opsional)
+                        </label>
+                        <p class="text-xs text-slate-500">
+                            Apakah ananda memiliki alergi, riwayat kesehatan khusus, bakat menonjol, atau hal penting lain yang perlu diketahui oleh guru dan pihak sekolah?
+                        </p>
+                        <textarea name="catatan_orang_tua" 
+                                  id="catatan_orang_tua" 
+                                  rows="3" 
+                                  placeholder="Tuliskan catatan tambahan orang tua di sini..." 
+                                  class="w-full px-4 py-3 rounded-2xl border border-slate-300 text-xs sm:text-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-all font-medium"><?= htmlspecialchars($respon['catatan_orang_tua'] ?? '') ?></textarea>
+                    </div>
+
+                    <!-- 2. Harapan Orang Tua (Text Area) -->
+                    <div class="space-y-2 pt-4 border-t border-slate-100">
+                        <label for="harapan_orang_tua" class="block text-sm font-bold text-slate-900">
+                            2. Harapan Orang Tua
+                        </label>
+                        <p class="text-xs text-slate-500">
+                            Tuliskan harapan Ayah/Bunda terhadap perkembangan kepribadian, akhlak, hafalan Al-Qur'an, dan pendidikan ananda selama bersekolah di SIT Bina Insan Palu.
+                        </p>
+                        <textarea name="harapan_orang_tua" 
+                                  id="harapan_orang_tua" 
+                                  rows="4" 
+                                  placeholder="Tuliskan apa yang Ayah/Bunda harapkan dari sekolah untuk perkembangan ananda ke depan..." 
+                                  class="w-full px-4 py-3 rounded-2xl border border-slate-300 text-xs sm:text-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-all font-medium"><?= htmlspecialchars($respon['harapan_orang_tua'] ?? '') ?></textarea>
+                    </div>
                 </div>
 
                 <!-- Sticky Bottom Action Bar -->

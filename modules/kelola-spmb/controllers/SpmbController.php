@@ -3386,6 +3386,8 @@ SVG;
             'Nama Pengisi',
             'Hubungan Pengisi',
             'No. WA Pengisi',
+            'Catatan Tambahan Ortu',
+            'Harapan Orang Tua',
             'Tanggal Observasi',
             'Tautan Kuesioner Observasi'
         ]);
@@ -3406,12 +3408,42 @@ SVG;
                 $isSudah ? ($it['nama_pengisi'] ?: '-') : '-',
                 $isSudah ? ($it['hubungan_pengisi'] ?: '-') : '-',
                 $it['target_phone'] ?: '-',
+                $isSudah ? ($it['catatan_orang_tua'] ?: '-') : '-',
+                $isSudah ? ($it['harapan_orang_tua'] ?: '-') : '-',
                 $it['submitted_at'] ? date('d/m/Y H:i', strtotime($it['submitted_at'])) : '-',
                 $it['public_url']
             ]);
         }
 
         fclose($out);
+        exit;
+    }
+
+    /**
+     * Cetak Lembar Rekap Hasil Observasi Awal Calon Siswa (A4 Print / PDF Preview)
+     * Dilengkapi analisis otomatis & kesimpulan harapan orang tua
+     */
+    public static function observasiAwalCetakRekap(): void
+    {
+        $activeGroup = SpmbModel::getActiveGroup();
+        $groupId = $activeGroup['id'] ?? null;
+
+        $jenjang = trim($_GET['jenjang'] ?? '');
+        $statusObservasi = trim($_GET['status_observasi'] ?? '');
+        $search = trim($_GET['search'] ?? '');
+
+        $filters = [
+            'group_id'         => $groupId,
+            'jenjang'          => $jenjang,
+            'status_observasi' => $statusObservasi,
+            'search'           => $search
+        ];
+
+        $items = SpmbModel::getRekapObservasiAwal($filters);
+        $stats = SpmbModel::getObservasiStats($groupId);
+        $analisisHarapan = SpmbModel::analisisKesimpulanHarapan($items);
+
+        include MODULES_PATH . '/kelola-spmb/views/observasi_awal/cetak_rekap.php';
         exit;
     }
 

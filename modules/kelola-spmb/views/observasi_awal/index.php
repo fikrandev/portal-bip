@@ -52,6 +52,14 @@ $searchKeyword   = $filters['search'] ?? '';
                 </svg>
                 Kirim Broadcast Link WA
             </button>
+            <a href="<?= url('kelola-spmb/observasi-awal/cetak-rekap?' . http_build_query($filters)) ?>" 
+               target="_blank" 
+               class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-sky-300 text-xs sm:text-sm font-semibold text-sky-700 bg-sky-50 hover:bg-sky-100 transition-colors shadow-sm">
+                <svg class="w-4 h-4 text-sky-600" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24-1.03-.42-2.114-.51-3.235M17 17h2a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h2m2 4h6a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2Zm8-12V5a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v4h10Z" />
+                </svg>
+                Cetak Rekap Observasi
+            </a>
             <a href="<?= url('kelola-spmb/observasi-awal/export?' . http_build_query($filters)) ?>" 
                data-download="true" 
                class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-sky-600 to-blue-600 text-white text-xs sm:text-sm font-semibold hover:from-sky-700 hover:to-blue-700 transition-all shadow-md shadow-sky-600/20">
@@ -751,6 +759,11 @@ function showDetailObservasi(pendaftarId) {
                     ${r.catatan_orang_tua ? `
                         <div class="mt-3 pt-3 border-t border-sky-400/40 text-xs text-sky-100">
                             <strong class="text-white">Catatan Tambahan Ortu:</strong> <em>"${escapeHtml(r.catatan_orang_tua)}"</em>
+                        </div>
+                    ` : ''}
+                    ${r.harapan_orang_tua ? `
+                        <div class="mt-2 pt-2 border-t border-sky-400/40 text-xs text-sky-100">
+                            <strong class="text-white">Harapan Orang Tua:</strong> <em>"${escapeHtml(r.harapan_orang_tua)}"</em>
                         </div>
                     ` : ''}
                 </div>

@@ -286,7 +286,7 @@ $unitKopUrl = !empty($unitKopPath) ? SpmbModel::getKopUrl($unitKopPath) : '';
             color: #0369a1;
         }
 
-        /* Catatan Ortu */
+        /* Catatan & Harapan Ortu */
         .catatan-box {
             background: #fffbeb;
             border: 1px solid #fde68a;
@@ -294,6 +294,16 @@ $unitKopUrl = !empty($unitKopPath) ? SpmbModel::getKopUrl($unitKopPath) : '';
             padding: 8px 12px;
             font-size: 8.5pt;
             color: #92400e;
+            margin-bottom: 12px;
+        }
+
+        .harapan-box {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 8.5pt;
+            color: #166534;
             margin-bottom: 20px;
         }
 
@@ -509,8 +519,16 @@ $unitKopUrl = !empty($unitKopPath) ? SpmbModel::getKopUrl($unitKopPath) : '';
         <!-- Catatan Khusus Orang Tua -->
         <?php if (!empty($respon['catatan_orang_tua'])): ?>
             <div class="catatan-box">
-                <strong>Catatan Khusus Orang Tua/Wali:</strong><br>
+                <strong>Catatan Tambahan Orang Tua/Wali:</strong><br>
                 <em>"<?= nl2br(htmlspecialchars($respon['catatan_orang_tua'])) ?>"</em>
+            </div>
+        <?php endif; ?>
+
+        <!-- Harapan Orang Tua -->
+        <?php if (!empty($respon['harapan_orang_tua'])): ?>
+            <div class="harapan-box">
+                <strong>Harapan Orang Tua terhadap Ananda & Sekolah:</strong><br>
+                <em>"<?= nl2br(htmlspecialchars($respon['harapan_orang_tua'])) ?>"</em>
             </div>
         <?php endif; ?>
 
