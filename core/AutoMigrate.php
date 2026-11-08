@@ -79,6 +79,7 @@ class AutoMigrate
             '2026_10_31_000041_enable_self_hosted_wa_gateway'             => 'migration041EnableSelfHostedWaGateway',
             '2026_10_31_000042_ensure_spmb_upload_permissions'            => 'migration042EnsureSpmbUploadPermissions',
             '2026_11_07_000043_add_spmb_observasi_harapan_orang_tua'      => 'migration043AddSpmbObservasiHarapanOrangTua',
+            '2026_11_09_000044_fix_spmb_biodata_and_berkas_status'        => 'migration044FixSpmbBiodataAndBerkasStatus',
         ];
     }
     /**
@@ -2877,6 +2878,31 @@ class AutoMigrate
         if (empty($cols)) {
             $pdo->exec("ALTER TABLE `spmb_observasi_respon` ADD COLUMN `harapan_orang_tua` TEXT NULL AFTER `catatan_orang_tua`");
         }
+    }
+
+    /**
+     * Migration 044: Sinkronisasi integritas status biodata dan status berkas SPMB.
+     * 1. Berkas lengkap hanya jika diverifikasi petugas melalui fitur Cek & Terima Berkas.
+     * 2. Biodata lengkap hanya jika telah disubmit final (biodata_submitted_at terisi).
+     */
+    protected static function migration044FixSpmbBiodataAndBerkasStatus(PDO $pdo): void
+    {
+        // 1. Reset status_berkas ke 'Belum Dikembalikan' jika belum pernah diverifikasi admin
+        $pdo->exec("
+            UPDATE `spmb_pendaftar` 
+            SET `status_berkas` = 'Belum Dikembalikan' 
+            WHERE `status_berkas` = 'Lengkap' 
+              AND (`petugas_verifikasi_berkas` IS NULL OR `petugas_verifikasi_berkas` = '') 
+              AND `tanggal_kembali_berkas` IS NULL
+        ");
+
+        // 2. Reset biodata_status ke 'Draft' jika belum pernah disubmit final
+        $pdo->exec("
+            UPDATE `spmb_pendaftar` 
+            SET `biodata_status` = 'Draft' 
+            WHERE LOWER(`biodata_status`) = 'lengkap' 
+              AND `biodata_submitted_at` IS NULL
+        ");
     }
 }
 

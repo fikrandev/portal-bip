@@ -995,16 +995,14 @@ class SpmbModel
             $sets[] = "`biodata_status` = 'Lengkap'";
             $sets[] = "`persetujuan_data` = 1";
             $sets[] = "`biodata_submitted_at` = NOW()";
-            $sets[] = "`status_berkas` = 'Lengkap'";
+            // CATATAN: status_berkas TIDAK diubah menjadi 'Lengkap' di sini!
+            // Berkas hanya dinyatakan 'Lengkap' ketika admin melakukan validasi via fitur 'Cek dan Terima Berkas'.
         } else {
             $currBio = strtolower(str_replace(' ', '_', trim((string)($pendaftar['biodata_status'] ?? ''))));
-            if ($currBio !== 'lengkap' && empty($pendaftar['biodata_submitted_at'])) {
+            if ($currBio !== 'lengkap' || empty($pendaftar['biodata_submitted_at'])) {
                 $sets[] = "`biodata_status` = 'Draft'";
             }
-            if (isset($data['persetujuan_data'])) {
-                $sets[] = "`persetujuan_data` = ?";
-                $values[] = !empty($data['persetujuan_data']) ? 1 : 0;
-            }
+            // Jangan simpan persetujuan_data = 1 saat masih draft/proses isi agar tidak memicu status lengkap prematur
         }
 
         $sets[] = "`updated_at` = NOW()";
@@ -1035,7 +1033,9 @@ class SpmbModel
 
         $extra = "";
         if ($statusNorm === 'Lengkap') {
-            $extra = ", `biodata_submitted_at` = COALESCE(`biodata_submitted_at`, NOW()), `persetujuan_data` = 1, `status_berkas` = 'Lengkap'";
+            $extra = ", `biodata_submitted_at` = COALESCE(`biodata_submitted_at`, NOW()), `persetujuan_data` = 1";
+        } elseif ($statusNorm === 'Draft' || $statusNorm === 'Belum Diisi') {
+            $extra = ", `biodata_submitted_at` = NULL";
         }
 
         self::db()->query("UPDATE `spmb_pendaftar` SET `biodata_status` = ? {$extra}, `updated_at` = NOW() WHERE `id` = ?", [$statusNorm, $id]);

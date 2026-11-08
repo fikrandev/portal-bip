@@ -205,7 +205,7 @@ $filters = $filters ?? [];
                                         <?php
                                         $rawBioSt = $item['biodata_status'] ?? 'Belum Diisi';
                                         $bioSt = strtolower(str_replace(' ', '_', trim((string)$rawBioSt)));
-                                        if (!empty($item['biodata_submitted_at']) || !empty($item['persetujuan_data'])) {
+                                        if (!empty($item['biodata_submitted_at']) || $bioSt === 'lengkap') {
                                             $bioSt = 'lengkap';
                                         }
                                         $bioBadge = match($bioSt) {

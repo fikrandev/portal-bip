@@ -10,7 +10,7 @@
  */
 
 $rawBioSt = strtolower(str_replace(' ', '_', trim((string)($pendaftar['biodata_status'] ?? ''))));
-$isSubmitted = ($rawBioSt === 'lengkap') || !empty($pendaftar['biodata_submitted_at']) || !empty($pendaftar['persetujuan_data']);
+$isSubmitted = ($rawBioSt === 'lengkap') || !empty($pendaftar['biodata_submitted_at']);
 $token = htmlspecialchars($pendaftar['biodata_token'] ?? '');
 $activeTab = (int)($_GET['tab'] ?? ($pendaftar['biodata_step'] ?? 1));
 if ($activeTab < 1 || $activeTab > 5) $activeTab = 1;

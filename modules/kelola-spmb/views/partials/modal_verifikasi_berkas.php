@@ -661,7 +661,7 @@ function bukaModalVerifikasi(id) {
         }
 
         // Form Fields
-        document.getElementById('vb_status_berkas').value = d.status_berkas || 'Lengkap';
+        document.getElementById('vb_status_berkas').value = d.status_berkas || 'Belum Dikembalikan';
         document.getElementById('vb_catatan_berkas').value = d.catatan_berkas || '';
 
         // Riwayat Verifikasi
