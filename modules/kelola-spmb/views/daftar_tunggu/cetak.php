@@ -104,10 +104,9 @@ if (!function_exists('renderKwitansiCardDaftarTunggu')) {
         $namaOrtu = $item['nama_ayah'] ?: ($item['nama_ibu'] ?: ($item['nama_wali'] ?: '-'));
         $hpKontak = $item['no_hp_ayah'] ?: ($item['no_hp_ibu'] ?: ($item['no_hp'] ?: ''));
 
-        // QR Code Tautan Pengisian Biodata Calon Siswa (Solusi Alternatif Jika WA Terkendala)
-        $biodataToken = SpmbModel::getOrCreateBiodataToken($item);
-        $linkBiodata = !empty($biodataToken) ? (function_exists('url') ? url('spmb/biodata/' . $biodataToken) : ((defined('BASE_URL') ? BASE_URL : '') . '/spmb/biodata/' . $biodataToken)) : '';
-        $qrBiodataDataUri = !empty($linkBiodata) ? SpmbModel::generateQrCodeDataUri($linkBiodata, 5, 1) : '';
+        // Catatan: Tautan pengisian biodata online dihilangkan pada tahap Daftar Tunggu
+        // (Formulir biodata lengkap baru diisi setelah dipromosikan ke Siswa Baru)
+        $qrBiodataDataUri = '';
         ?>
         <div class="kwitansi-card <?= $isCompact ? 'compact' : '' ?>">
 

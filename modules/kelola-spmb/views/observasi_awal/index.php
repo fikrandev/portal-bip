@@ -149,6 +149,7 @@ $searchKeyword   = $filters['search'] ?? '';
     <!-- Filter & Pencarian -->
     <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
         <form method="GET" action="<?= url('kelola-spmb/observasi-awal') ?>" class="flex flex-col md:flex-row items-center gap-3">
+            <input type="hidden" name="per_page" value="<?= e($perPageParam ?? '50') ?>">
             <!-- Jenjang / Unit -->
             <div class="w-full md:w-44 shrink-0">
                 <select name="jenjang" onchange="this.form.submit()" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs sm:text-sm font-medium focus:ring-2 focus:ring-sky-500 bg-white">
@@ -358,35 +359,10 @@ $searchKeyword   = $filters['search'] ?? '';
         </div>
 
         <!-- Pagination -->
-        <?php if ($totalPages > 1): ?>
-            <div class="px-5 py-4 border-t border-slate-100 flex items-center justify-between gap-4">
-                <span class="text-xs text-slate-500">
-                    Menampilkan Halaman <strong><?= $page ?></strong> dari <strong><?= $totalPages ?></strong> (Total <?= $totalItems ?> data)
-                </span>
-                <div class="flex items-center gap-1.5">
-                    <?php if ($page > 1): ?>
-                        <a href="<?= url('kelola-spmb/observasi-awal?' . http_build_query(array_merge($filters, ['page' => $page - 1]))) ?>" 
-                           class="px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-50">
-                            Sebelumnya
-                        </a>
-                    <?php endif; ?>
-
-                    <?php for ($p = max(1, $page - 2); $p <= min($totalPages, $page + 2); $p++): ?>
-                        <a href="<?= url('kelola-spmb/observasi-awal?' . http_build_query(array_merge($filters, ['page' => $p]))) ?>" 
-                           class="px-3 py-1.5 rounded-lg text-xs font-semibold <?= $p === $page ? 'bg-sky-600 text-white shadow-sm' : 'border border-slate-300 text-slate-700 hover:bg-slate-50' ?>">
-                            <?= $p ?>
-                        </a>
-                    <?php endfor; ?>
-
-                    <?php if ($page < $totalPages): ?>
-                        <a href="<?= url('kelola-spmb/observasi-awal?' . http_build_query(array_merge($filters, ['page' => $page + 1]))) ?>" 
-                           class="px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-50">
-                            Selanjutnya
-                        </a>
-                    <?php endif; ?>
-                </div>
-            </div>
-        <?php endif; ?>
+        <?php 
+        $baseRoute = 'kelola-spmb/observasi-awal';
+        include BASE_PATH . '/modules/kelola-spmb/views/partials/pagination.php'; 
+        ?>
     </div>
 </div>
 

@@ -687,6 +687,7 @@ $router->post('/kelola-spmb/daftar-tunggu/update/{id}', [SpmbController::class, 
 $router->get('/kelola-spmb/daftar-tunggu/detail/{id}', [SpmbController::class, 'daftarTungguDetail'], [Middleware::permissionRequired('spmb.view')]);
 $router->get('/kelola-spmb/daftar-tunggu/delete/{id}', [SpmbController::class, 'daftarTungguDelete'], [Middleware::permissionRequired('spmb.delete')]);
 $router->post('/kelola-spmb/daftar-tunggu/status/{id}', [SpmbController::class, 'daftarTungguStatus'], [Middleware::permissionRequired('spmb.approve')]);
+$router->post('/kelola-spmb/daftar-tunggu/promosikan/{id}', [SpmbController::class, 'daftarTungguPromosikan'], [Middleware::permissionRequired('spmb.update')]);
 $router->get('/kelola-spmb/daftar-tunggu/cetak/{id}', [SpmbController::class, 'daftarTungguCetak'], [Middleware::permissionRequired('spmb.view')]);
 $router->get('/kelola-spmb/daftar-tunggu/export', [SpmbController::class, 'daftarTungguExport'], [Middleware::permissionRequired('spmb.view')]);
 

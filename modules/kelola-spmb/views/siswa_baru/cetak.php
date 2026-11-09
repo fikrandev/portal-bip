@@ -184,7 +184,7 @@ if (!function_exists('renderKwitansiCard')) {
                     <td class="kc-value font-semibold">
                         <?= e($item['jenjang'] ?? '-') ?> IT BINA INSAN PALU
                         <span class="detail-inline" style="font-weight: normal; color: #475569;">
-                            (Kelompok: <?= e($item['nama_group'] ?? 'SPMB') ?> &bull; Jenis: <?= e($item['jenis_pendaftaran'] ?? 'Siswa Baru') ?>)
+                            (Kelompok: <?= e($item['nama_group'] ?? 'SPMB') ?> &bull; Jenis: <?= e($item['jenis_pendaftaran'] ?? 'Siswa Baru') ?><?= !empty($item['is_dari_daftar_tunggu']) ? ' &bull; Eks Daftar Tunggu: ' . e($item['nomor_daftar_tunggu']) : '' ?>)
                         </span>
                     </td>
                 </tr>

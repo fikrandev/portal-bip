@@ -159,6 +159,7 @@
     <!-- Filter & Control Panel -->
     <div class="bg-white rounded-3xl border border-slate-200/80 shadow-sm p-4 sm:p-5">
         <form method="GET" action="<?= url('kelola-spmb/screening-psikolog') ?>" id="formFilterScreening" class="space-y-4">
+            <input type="hidden" name="per_page" value="<?= e($perPageParam ?? '50') ?>">
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
                 <!-- Search Input -->
                 <div class="lg:col-span-2 relative">
@@ -503,36 +504,10 @@
         </div>
 
         <!-- Pagination Bar -->
-        <?php if ($totalPages > 1): ?>
-            <div class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-6 border-t border-slate-200/80">
-                <span class="text-xs text-slate-500">
-                    Halaman <span class="font-bold text-slate-700"><?= $page ?></span> dari <span class="font-bold text-slate-700"><?= $totalPages ?></span> (Total <?= number_format($totalItems) ?> Calon Siswa)
-                </span>
-
-                <div class="flex items-center gap-1.5">
-                    <?php if ($page > 1): ?>
-                        <a href="<?= url('kelola-spmb/screening-psikolog?' . http_build_query(array_merge($filters, ['page' => $page - 1]))) ?>" 
-                           class="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors">
-                            &larr; Sebelumnya
-                        </a>
-                    <?php endif; ?>
-
-                    <?php for ($p = max(1, $page - 2); $p <= min($totalPages, $page + 2); $p++): ?>
-                        <a href="<?= url('kelola-spmb/screening-psikolog?' . http_build_query(array_merge($filters, ['page' => $p]))) ?>" 
-                           class="w-8 h-8 flex items-center justify-center rounded-lg text-xs font-bold transition-all <?= ($p === $page) ? 'bg-sky-600 text-white shadow-sm' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50' ?>">
-                            <?= $p ?>
-                        </a>
-                    <?php endfor; ?>
-
-                    <?php if ($page < $totalPages): ?>
-                        <a href="<?= url('kelola-spmb/screening-psikolog?' . http_build_query(array_merge($filters, ['page' => $page + 1]))) ?>" 
-                           class="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors">
-                            Berikutnya &rarr;
-                        </a>
-                    <?php endif; ?>
-                </div>
-            </div>
-        <?php endif; ?>
+        <?php 
+        $baseRoute = 'kelola-spmb/screening-psikolog';
+        include BASE_PATH . '/modules/kelola-spmb/views/partials/pagination.php'; 
+        ?>
     <?php endif; ?>
 </div>
 

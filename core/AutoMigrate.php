@@ -80,6 +80,7 @@ class AutoMigrate
             '2026_10_31_000042_ensure_spmb_upload_permissions'            => 'migration042EnsureSpmbUploadPermissions',
             '2026_11_07_000043_add_spmb_observasi_harapan_orang_tua'      => 'migration043AddSpmbObservasiHarapanOrangTua',
             '2026_11_09_000044_fix_spmb_biodata_and_berkas_status'        => 'migration044FixSpmbBiodataAndBerkasStatus',
+            '2026_11_09_000045_add_spmb_promosi_daftar_tunggu_features'   => 'migration045AddSpmbPromosiDaftarTungguFeatures',
         ];
     }
     /**
@@ -2903,6 +2904,25 @@ class AutoMigrate
             WHERE LOWER(`biodata_status`) = 'lengkap' 
               AND `biodata_submitted_at` IS NULL
         ");
+    }
+
+    /**
+     * Migration 045: Menambahkan tracking promosi calon siswa dari Daftar Tunggu ke Siswa Baru
+     */
+    protected static function migration045AddSpmbPromosiDaftarTungguFeatures(PDO $pdo): void
+    {
+        if (self::hasTable($pdo, 'spmb_pendaftar')) {
+            self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'is_dari_daftar_tunggu', 'TINYINT(1) NOT NULL DEFAULT 0', 'jenis_pendaftaran');
+            self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'nomor_daftar_tunggu', 'VARCHAR(50) NULL', 'is_dari_daftar_tunggu');
+            self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'tgl_promosi_siswa_baru', 'DATETIME NULL', 'nomor_daftar_tunggu');
+
+            try {
+                $cols = $pdo->query("SHOW INDEX FROM `spmb_pendaftar` WHERE Key_name = 'idx_spmb_dari_dt'")->fetchAll();
+                if (empty($cols)) {
+                    $pdo->exec("ALTER TABLE `spmb_pendaftar` ADD INDEX `idx_spmb_dari_dt` (`is_dari_daftar_tunggu`)");
+                }
+            } catch (Throwable $e) {}
+        }
     }
 }
 

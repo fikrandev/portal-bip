@@ -332,6 +332,11 @@ class SpmbModel
             $params[] = $filters['status_berkas'];
         }
 
+        if (isset($filters['is_dari_daftar_tunggu']) && $filters['is_dari_daftar_tunggu'] !== '') {
+            $conditions[] = "p.is_dari_daftar_tunggu = ?";
+            $params[] = (int)$filters['is_dari_daftar_tunggu'];
+        }
+
         if (!empty($filters['search'])) {
             $term = '%' . trim($filters['search']) . '%';
             $conditions[] = "(p.nama_lengkap LIKE ? OR p.nomor_pendaftaran LIKE ? OR p.nisn LIKE ? OR p.asal_sekolah LIKE ? OR p.nama_ayah LIKE ? OR p.no_hp LIKE ? OR p.nama_rekomendasi LIKE ?)";
@@ -417,6 +422,11 @@ class SpmbModel
         if (!empty($filters['status_berkas'])) {
             $conditions[] = "p.status_berkas = ?";
             $params[] = $filters['status_berkas'];
+        }
+
+        if (isset($filters['is_dari_daftar_tunggu']) && $filters['is_dari_daftar_tunggu'] !== '') {
+            $conditions[] = "p.is_dari_daftar_tunggu = ?";
+            $params[] = (int)$filters['is_dari_daftar_tunggu'];
         }
 
         if (!empty($filters['search'])) {
@@ -1040,6 +1050,74 @@ class SpmbModel
 
         self::db()->query("UPDATE `spmb_pendaftar` SET `biodata_status` = ? {$extra}, `updated_at` = NOW() WHERE `id` = ?", [$statusNorm, $id]);
         return true;
+    }
+
+    /**
+     * Promosikan Calon Siswa dari Daftar Tunggu menjadi Siswa Baru resmi
+     */
+    public static function promosikanDaftarTunggu(int $id, bool $kirimWa = false): array
+    {
+        $pendaftar = self::getPendaftarById($id);
+        if (!$pendaftar) {
+            throw new Exception("Data calon siswa daftar tunggu tidak ditemukan.");
+        }
+
+        if (($pendaftar['jenis_pendaftaran'] ?? '') !== 'Daftar Tunggu') {
+            throw new Exception("Data ini bukan pendaftar Daftar Tunggu (status saat ini: {$pendaftar['jenis_pendaftaran']}).");
+        }
+
+        $oldNomor = $pendaftar['nomor_pendaftaran'];
+        $group = self::getGroupById((int)$pendaftar['group_id']);
+        $tahunAjaran = $group['tahun_ajaran'] ?? ($pendaftar['group_tahun_ajaran'] ?? null);
+
+        // Generate nomor pendaftaran resmi Siswa Baru (misal: SD-006, PAUD-005, dll)
+        $newNomor = self::generateNomorPendaftaran('Siswa Baru', $tahunAjaran, $pendaftar['jenjang']);
+
+        // Update jenis pendaftaran ke Siswa Baru dan simpan identitas asal Daftar Tunggu
+        self::db()->update('spmb_pendaftar', [
+            'jenis_pendaftaran'      => 'Siswa Baru',
+            'nomor_pendaftaran'      => $newNomor,
+            'is_dari_daftar_tunggu'  => 1,
+            'nomor_daftar_tunggu'    => $oldNomor,
+            'tgl_promosi_siswa_baru' => date('Y-m-d H:i:s'),
+            'status_kelulusan'       => 'Menunggu Seleksi',
+            'updated_at'             => date('Y-m-d H:i:s')
+        ], 'id = ?', [$id]);
+
+        // Catat ke Audit Log jika kelas AuditLog tersedia
+        if (class_exists('AuditLog') && method_exists('AuditLog', 'log')) {
+            try {
+                AuditLog::log(
+                    'Promosi Daftar Tunggu ke Siswa Baru',
+                    'spmb_pendaftar',
+                    $id,
+                    ['nomor' => $oldNomor, 'jenis' => 'Daftar Tunggu'],
+                    ['nomor' => $newNomor, 'jenis' => 'Siswa Baru']
+                );
+            } catch (\Throwable $e) {
+                error_log("AuditLog error: " . $e->getMessage());
+            }
+        }
+
+        // Kirim notifikasi WhatsApp otomatis ke orang tua jika diminta
+        $waSent = false;
+        if ($kirimWa) {
+            try {
+                self::sendWaBiodataNotification($id);
+                $waSent = true;
+            } catch (\Throwable $e) {
+                error_log("Gagal kirim notif WA saat promosi Daftar Tunggu: " . $e->getMessage());
+            }
+        }
+
+        return [
+            'success'   => true,
+            'id'        => $id,
+            'nama'      => $pendaftar['nama_lengkap'],
+            'old_nomor' => $oldNomor,
+            'new_nomor' => $newNomor,
+            'wa_sent'   => $waSent
+        ];
     }
 
     /**

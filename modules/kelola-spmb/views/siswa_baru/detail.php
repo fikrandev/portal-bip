@@ -66,6 +66,35 @@ $badgeStyle = match($st) {
         </div>
     </div>
 
+    <!-- Banner Info Eks Daftar Tunggu -->
+    <?php if (!empty($item['is_dari_daftar_tunggu'])): ?>
+        <div class="bg-gradient-to-r from-amber-50 to-amber-100/70 border border-amber-300 rounded-2xl p-4 flex items-center justify-between gap-4 text-amber-900 shadow-sm animate-in fade-in">
+            <div class="flex items-center gap-3.5">
+                <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-500 to-amber-600 text-white flex items-center justify-center shrink-0 shadow-md shadow-amber-500/20">
+                    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                    </svg>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <h4 class="font-extrabold text-sm sm:text-base text-amber-950">Calon Siswa Berasal Dari Kuota Daftar Tunggu</h4>
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-200/90 text-amber-900 border border-amber-400/60">
+                            Eks Daftar Tunggu
+                        </span>
+                    </div>
+                    <p class="text-xs text-amber-800 mt-0.5">
+                        Nomor antrean sebelumnya: <strong class="font-mono text-amber-950"><?= e($item['nomor_daftar_tunggu'] ?? '-') ?></strong> &bull; Resmi dipindahkan ke Siswa Baru pada: <strong><?= !empty($item['tgl_promosi_siswa_baru']) ? date('d/m/Y H:i', strtotime($item['tgl_promosi_siswa_baru'])) : '-' ?></strong>
+                    </p>
+                </div>
+            </div>
+            <div class="hidden sm:block">
+                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/90 border border-amber-300 text-amber-900 text-xs font-bold shadow-2xs">
+                    ✓ Kuota Siswa Baru Aktif
+                </span>
+            </div>
+        </div>
+    <?php endif; ?>
+
     <!-- Quick Status Update Card -->
     <div class="bg-white p-5 rounded-2xl border border-primary-100/70 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -441,6 +470,18 @@ $badgeStyle = match($st) {
                             </span>
                         <?php endif; ?>
                     </div>
+                    <?php if (!empty($item['is_dari_daftar_tunggu'])): ?>
+                        <div class="flex justify-between py-1 border-b border-slate-50 items-center bg-amber-50/70 -mx-2 px-2 rounded-lg">
+                            <span class="text-amber-800 font-bold flex items-center gap-1">
+                                <svg class="w-3.5 h-3.5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
+                                Asal Pendaftaran
+                            </span>
+                            <span class="font-bold text-amber-900 flex items-center gap-1.5">
+                                <span>Daftar Tunggu</span>
+                                <span class="font-mono text-[11px] px-1.5 py-0.5 rounded bg-amber-200/90 text-amber-950 border border-amber-300"><?= e($item['nomor_daftar_tunggu'] ?? '-') ?></span>
+                            </span>
+                        </div>
+                    <?php endif; ?>
                     <div class="flex justify-between py-1 border-b border-slate-50">
                         <span class="text-slate-500">Gelombang</span>
                         <span class="font-bold text-slate-800"><?= e($item['gelombang'] ?? 'Gelombang 1') ?></span>

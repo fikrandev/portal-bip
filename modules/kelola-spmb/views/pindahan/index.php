@@ -96,6 +96,7 @@ $filters = $filters ?? [];
     <!-- Filter Form -->
     <div class="bg-white p-5 rounded-2xl border border-primary-100/70 shadow-sm">
         <form method="GET" action="<?= url('kelola-spmb/pindahan') ?>" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-3">
+            <input type="hidden" name="per_page" value="<?= e($perPageParam ?? '50') ?>">
             <!-- Search -->
             <div class="lg:col-span-2">
                 <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Cari Nama / No. Daftar / Asal Sekolah / NISN</label>
@@ -549,19 +550,10 @@ $filters = $filters ?? [];
         </div>
 
         <!-- Pagination -->
-        <?php if ($totalPages > 1): ?>
-            <div class="p-4 border-t border-slate-100 flex items-center justify-between text-xs">
-                <span class="text-slate-500">Halaman <?= $currentPage ?> dari <?= $totalPages ?></span>
-                <div class="flex items-center gap-1">
-                    <?php for ($i = 1; $i <= $totalPages; $i++): ?>
-                        <a href="<?= url('kelola-spmb/pindahan?' . http_build_query(array_merge($filters, ['page' => $i]))) ?>" 
-                           class="w-7 h-7 flex items-center justify-center rounded-lg font-bold <?= $i === $currentPage ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200' ?>">
-                            <?= $i ?>
-                        </a>
-                    <?php endfor; ?>
-                </div>
-            </div>
-        <?php endif; ?>
+        <?php 
+        $baseRoute = 'kelola-spmb/pindahan';
+        include BASE_PATH . '/modules/kelola-spmb/views/partials/pagination.php'; 
+        ?>
     </div>
 </div>
 

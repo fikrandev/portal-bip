@@ -47,6 +47,7 @@ $filters = $filters ?? [];
     <!-- Filter Form -->
     <div class="bg-white p-5 rounded-2xl border border-primary-100/70 shadow-sm">
         <form method="GET" action="<?= url('kelola-spmb/daftar-tunggu') ?>" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+            <input type="hidden" name="per_page" value="<?= e($perPageParam ?? '50') ?>">
             <!-- Search -->
             <div class="lg:col-span-2">
                 <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Cari Siswa / No. Daftar / Rekomendasi</label>
@@ -185,44 +186,20 @@ $filters = $filters ?? [];
                                 <td class="py-3 px-4 text-slate-600 whitespace-nowrap">
                                     <?= date('d/m/Y', strtotime($item['tanggal_daftar'])) ?>
                                 </td>
-                                <td class="py-3 px-4 space-y-1">
-                                    <div>
-                                        <?php
-                                        $stKelulusan = $item['status_kelulusan'] ?? 'Cadangan';
-                                        $stStyle = match($stKelulusan) {
-                                            'Lulus / Diterima' => 'bg-emerald-100 text-emerald-800',
-                                            'Lolos Berkas'     => 'bg-blue-100 text-blue-800',
-                                            'Cadangan'         => 'bg-amber-100 text-amber-800 font-bold',
-                                            'Tidak Lulus'      => 'bg-rose-100 text-rose-800',
-                                            default            => 'bg-slate-100 text-slate-600'
-                                        };
-                                        ?>
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold <?= $stStyle ?>">
-                                            <?= e($stKelulusan) ?>
-                                        </span>
-                                    </div>
-                                    <div>
-                                        <?php
-                                        $rawBioSt = $item['biodata_status'] ?? 'Belum Diisi';
-                                        $bioSt = strtolower(str_replace(' ', '_', trim((string)$rawBioSt)));
-                                        if (!empty($item['biodata_submitted_at']) || $bioSt === 'lengkap') {
-                                            $bioSt = 'lengkap';
-                                        }
-                                        $bioBadge = match($bioSt) {
-                                            'lengkap' => 'bg-emerald-100 text-emerald-800 font-bold',
-                                            'draft'   => 'bg-amber-100 text-amber-800 font-semibold',
-                                            default   => 'bg-slate-100 text-slate-500'
-                                        };
-                                        $bioLabel = match($bioSt) {
-                                            'lengkap' => '✓ Biodata Lengkap',
-                                            'draft'   => '⏱ Biodata Draft',
-                                            default   => 'Biodata Belum Diisi'
-                                        };
-                                        ?>
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] <?= $bioBadge ?>">
-                                            <?= $bioLabel ?>
-                                        </span>
-                                    </div>
+                                <td class="py-3 px-4">
+                                    <?php
+                                    $stKelulusan = $item['status_kelulusan'] ?? 'Cadangan';
+                                    $stStyle = match($stKelulusan) {
+                                        'Lulus / Diterima' => 'bg-emerald-100 text-emerald-800',
+                                        'Lolos Berkas'     => 'bg-blue-100 text-blue-800',
+                                        'Cadangan'         => 'bg-amber-100 text-amber-800 font-bold',
+                                        'Tidak Lulus'      => 'bg-rose-100 text-rose-800',
+                                        default            => 'bg-slate-100 text-slate-600'
+                                    };
+                                    ?>
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold <?= $stStyle ?>">
+                                        <?= e($stKelulusan) ?>
+                                    </span>
                                 </td>
                                 <td class="py-3 px-4 text-center whitespace-nowrap">
                                     <div class="inline-flex items-center gap-1">
@@ -231,11 +208,6 @@ $filters = $filters ?? [];
                                             class="p-1.5 rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors">
                                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg>
                                         </a>
-                                        <button type="button" onclick="salinLinkPublic('<?= url('spmb/biodata/' . ($item['biodata_token'] ?? '')) ?>')" 
-                                                title="Salin Link Biodata Lengkap"
-                                                class="p-1.5 rounded-lg bg-teal-50 text-teal-700 hover:bg-teal-100 transition-colors">
-                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" /></svg>
-                                        </button>
                                         <a href="<?= url('kelola-spmb/daftar-tunggu/edit/' . $item['id']) ?>" 
                                             title="Edit Data"
                                             class="p-1.5 rounded-lg bg-sky-50 text-sky-700 hover:bg-sky-100 transition-colors">
@@ -246,6 +218,11 @@ $filters = $filters ?? [];
                                             class="p-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors">
                                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0 1 10.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0 .229 2.523a1.125 1.125 0 0 1-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0 0 21 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 0 0-1.913-.247M6.34 18H5.25A2.25 2.25 0 0 1 3 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 0 1 1.913-.247m10.5 0a48.536 48.536 0 0 0-10.5 0m10.5 0V3.375c0-.621-.504-1.125-1.125-1.125h-8.25c-.621 0-1.125.504-1.125 1.125v3.656h10.5Z" /></svg>
                                         </a>
+                                        <button type="button" onclick="bukaModalPromosi(<?= $item['id'] ?>)" 
+                                                title="Promosikan ke Siswa Baru"
+                                                class="p-1.5 rounded-lg bg-emerald-100 text-emerald-800 hover:bg-emerald-200 transition-colors font-bold">
+                                            <svg class="w-4 h-4 text-emerald-700" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" /></svg>
+                                        </button>
                                         <button onclick="confirmDelete(<?= $item['id'] ?>, '<?= e(addslashes($item['nama_lengkap'])) ?>')" 
                                                 title="Hapus"
                                                 class="p-1.5 rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100 transition-colors">
@@ -261,35 +238,10 @@ $filters = $filters ?? [];
         </div>
 
         <!-- Pagination -->
-        <?php if (($totalPages ?? 1) > 1): ?>
-            <div class="p-4 border-t border-slate-100 flex items-center justify-between text-xs">
-                <span class="text-slate-500">
-                    Halaman <strong><?= $currentPage ?></strong> dari <strong><?= $totalPages ?></strong>
-                </span>
-                <div class="flex items-center gap-1">
-                    <?php if ($currentPage > 1): ?>
-                        <a href="<?= url('kelola-spmb/daftar-tunggu?' . http_build_query(array_merge($filters, ['page' => $currentPage - 1]))) ?>" 
-                           class="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold">
-                            &larr; Sebelumnya
-                        </a>
-                    <?php endif; ?>
-                    
-                    <?php for ($i = max(1, $currentPage - 2); $i <= min($totalPages, $currentPage + 2); $i++): ?>
-                        <a href="<?= url('kelola-spmb/daftar-tunggu?' . http_build_query(array_merge($filters, ['page' => $i]))) ?>" 
-                           class="px-3 py-1.5 rounded-lg <?= ($i === $currentPage) ? 'bg-amber-600 text-white font-bold' : 'border border-slate-200 hover:bg-slate-50 text-slate-700' ?>">
-                            <?= $i ?>
-                        </a>
-                    <?php endfor; ?>
-
-                    <?php if ($currentPage < $totalPages): ?>
-                        <a href="<?= url('kelola-spmb/daftar-tunggu?' . http_build_query(array_merge($filters, ['page' => $currentPage + 1]))) ?>" 
-                           class="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold">
-                            Selanjutnya &rarr;
-                        </a>
-                    <?php endif; ?>
-                </div>
-            </div>
-        <?php endif; ?>
+        <?php 
+        $baseRoute = 'kelola-spmb/daftar-tunggu';
+        include BASE_PATH . '/modules/kelola-spmb/views/partials/pagination.php'; 
+        ?>
     </div>
 </div>
 
@@ -557,7 +509,225 @@ $filters = $filters ?? [];
     </div>
 </div>
 
+<!-- Modal Promosi ke Siswa Baru (Detail Lengkap & Konfirmasi) -->
+<div id="modalPromosiDT" class="fixed inset-0 z-50 hidden flex items-center justify-center p-3 sm:p-4 bg-slate-950/60 backdrop-blur-sm overflow-y-auto">
+    <div class="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden my-auto max-h-[92vh] flex flex-col" onclick="event.stopPropagation()">
+        
+        <!-- Modal Header -->
+        <div class="px-5 py-4 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white flex items-center justify-between shrink-0 shadow-md">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center font-bold text-lg shadow-inner">
+                    🚀
+                </div>
+                <div>
+                    <h3 class="text-base font-extrabold tracking-tight">Detail Calon Siswa & Promosi</h3>
+                    <p class="text-[11px] text-emerald-100 mt-0.5">Tinjau kelengkapan data sebelum dipromosikan ke Siswa Baru</p>
+                </div>
+            </div>
+            <button type="button" onclick="tutupModalPromosi()" class="p-1.5 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition-colors">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+
+        <!-- Modal Form Body -->
+        <form id="formPromosiDT" method="POST" class="flex flex-col flex-1 overflow-hidden">
+            <?= CSRF::field() ?>
+
+            <div class="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4 text-xs text-slate-700">
+                
+                <!-- Status & Nomor Banner -->
+                <div class="p-3.5 rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200/80 space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-500 font-medium">No. Daftar Tunggu Saat Ini:</span>
+                        <span class="font-mono font-bold text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded-lg border border-amber-200" id="promosiNomor">-</span>
+                    </div>
+                    <div class="flex items-center justify-between pt-1.5 border-t border-emerald-200/60">
+                        <span class="text-slate-500 font-medium">No. Siswa Baru Resmi:</span>
+                        <span class="font-mono font-bold text-emerald-800 bg-emerald-100/90 px-2.5 py-0.5 rounded-lg border border-emerald-300">
+                            ✨ Otomatis Digenerate Resmi
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Bagian 1: Informasi Pendaftaran & Rekomendasi -->
+                <div class="p-4 rounded-2xl bg-white border border-slate-200/90 space-y-2.5 shadow-xs">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+                        <span class="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">1. Data Pendaftaran & Rekomendasi</span>
+                        <span class="px-2.5 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-bold text-[10px]" id="promosiJenjang">-</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 pt-1 text-xs">
+                        <div>
+                            <span class="text-slate-400 text-[11px] block">Rekomendasi</span>
+                            <span class="font-bold text-slate-800" id="promosiRekomendasi">-</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-400 text-[11px] block">Nama Rekomendasi</span>
+                            <span class="font-bold text-slate-800" id="promosiNamaRekomendasi">-</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-400 text-[11px] block">Gelombang</span>
+                            <span class="font-semibold text-slate-700" id="promosiGelombang">-</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-400 text-[11px] block">Tanggal Mendaftar</span>
+                            <span class="font-semibold text-slate-700" id="promosiTanggalDaftar">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bagian 2: Identitas Calon Siswa -->
+                <div class="p-4 rounded-2xl bg-white border border-slate-200/90 space-y-2.5 shadow-xs">
+                    <span class="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 block border-b border-slate-100 pb-2">2. Identitas Calon Siswa</span>
+                    <div class="space-y-2 pt-1 text-xs">
+                        <div>
+                            <span class="text-slate-400 text-[11px] block">Nama Lengkap Siswa</span>
+                            <span class="text-sm font-extrabold text-slate-900" id="promosiNama">-</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <span class="text-slate-400 text-[11px] block">Jenis Kelamin</span>
+                                <span class="font-semibold text-slate-800" id="promosiJK">-</span>
+                            </div>
+                            <div>
+                                <span class="text-slate-400 text-[11px] block">Umur Siswa</span>
+                                <span class="font-semibold text-slate-800" id="promosiUmur">-</span>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <span class="text-slate-400 text-[11px] block">Tempat, Tanggal Lahir</span>
+                                <span class="font-semibold text-slate-800" id="promosiTTL">-</span>
+                            </div>
+                            <div>
+                                <span class="text-slate-400 text-[11px] block">Asal Sekolah</span>
+                                <span class="font-semibold text-slate-800" id="promosiAsalSekolah">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bagian 3: Orang Tua & Kontak -->
+                <div class="p-4 rounded-2xl bg-white border border-slate-200/90 space-y-2.5 shadow-xs">
+                    <span class="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 block border-b border-slate-100 pb-2">3. Data Orang Tua & Kontak</span>
+                    <div class="space-y-2 pt-1 text-xs">
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <span class="text-slate-400 text-[11px] block">Nama Ayah</span>
+                                <span class="font-semibold text-slate-800" id="promosiNamaAyah">-</span>
+                            </div>
+                            <div>
+                                <span class="text-slate-400 text-[11px] block">Nama Ibu</span>
+                                <span class="font-semibold text-slate-800" id="promosiNamaIbu">-</span>
+                            </div>
+                        </div>
+                        <div>
+                            <span class="text-slate-400 text-[11px] block">No. WhatsApp / HP Orang Tua</span>
+                            <span class="font-mono font-bold text-slate-900" id="promosiKontak">-</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-400 text-[11px] block">Alamat Tinggal</span>
+                            <span class="font-normal text-slate-700" id="promosiAlamat">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Catatan Info & Opsi WA -->
+                <div class="p-3 bg-amber-50/70 border border-amber-200 rounded-2xl text-[11px] text-amber-900 leading-relaxed">
+                    ℹ️ <strong>Catatan:</strong> Setelah menekan tombol <strong>Lanjutkan</strong>, calon siswa akan resmi berstatus <strong>Siswa Baru</strong> dan ditandai badge <em>Eks DT</em>. Selanjutnya orang tua dapat mengisi formulir online biodata lengkap untuk kebutuhan berkas Dapodik/EMIS.
+                </div>
+
+                <label class="flex items-start gap-2.5 p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs cursor-pointer hover:bg-slate-100 transition-colors">
+                    <input type="checkbox" name="kirim_wa" value="1" class="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500 mt-0.5">
+                    <div class="text-slate-700">
+                        <span class="font-bold text-slate-900">Kirim notifikasi WhatsApp ke nomor orang tua</span>
+                        <p class="text-[11px] text-slate-500 mt-0.5">Kirimkan pesan otomatis berisi pemberitahuan dan tautan formulir biodata lengkap ke nomor <span id="promosiKontakNotif" class="font-semibold">-</span>.</p>
+                    </div>
+                </label>
+
+            </div>
+
+            <!-- Modal Footer Actions -->
+            <div class="px-5 py-3.5 bg-slate-50 border-t border-slate-200 flex items-center justify-between shrink-0 gap-3">
+                <button type="button" onclick="tutupModalPromosi()" class="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-600 font-bold text-xs hover:bg-slate-100 transition-colors cursor-pointer">
+                    Batal
+                </button>
+                <button type="submit" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs shadow-md shadow-emerald-600/25 transition-all transform hover:-translate-y-0.5 cursor-pointer">
+                    <span>Lanjutkan Promosikan ke Siswa Baru</span>
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+                    </svg>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<?php
+$listById = [];
+foreach ($list as $row) {
+    $listById[$row['id']] = [
+        'id'                 => (int)$row['id'],
+        'nama_lengkap'       => $row['nama_lengkap'] ?? '',
+        'nomor_pendaftaran'  => $row['nomor_pendaftaran'] ?? '',
+        'jenjang'            => $row['jenjang'] ?? '',
+        'kategori_pendaftar' => $row['kategori_pendaftar'] ?? 'Yayasan',
+        'nama_rekomendasi'   => $row['nama_rekomendasi'] ?? '-',
+        'gelombang'          => $row['gelombang'] ?? 'Gelombang 1',
+        'tanggal_daftar'     => !empty($row['tanggal_daftar']) ? date('d F Y', strtotime($row['tanggal_daftar'])) : '-',
+        'jenis_kelamin'      => ($row['jenis_kelamin'] === 'L') ? 'Laki-laki' : 'Perempuan',
+        'tempat_lahir'       => $row['tempat_lahir'] ?? '-',
+        'tanggal_lahir'      => !empty($row['tanggal_lahir']) ? date('d/m/Y', strtotime($row['tanggal_lahir'])) : '-',
+        'umur'               => $row['umur'] ?? '-',
+        'asal_sekolah'       => $row['asal_sekolah'] ?? '-',
+        'nama_ayah'          => $row['nama_ayah'] ?? '-',
+        'nama_ibu'           => $row['nama_ibu'] ?? '-',
+        'kontak'             => $row['no_hp'] ?: ($row['no_wa'] ?: ($row['no_hp_ayah'] ?: '-')),
+        'alamat'             => $row['alamat'] ?? '-'
+    ];
+}
+?>
 <script>
+const DATA_PENDAFTAR = <?= json_encode($listById, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
+
+function bukaModalPromosi(id) {
+    const data = DATA_PENDAFTAR[id];
+    if (!data) return;
+
+    document.getElementById('promosiNama').innerText = data.nama_lengkap || '-';
+    document.getElementById('promosiJenjang').innerText = data.jenjang || '-';
+    document.getElementById('promosiNomor').innerText = data.nomor_pendaftaran || '-';
+    document.getElementById('promosiRekomendasi').innerText = data.kategori_pendaftar || 'Yayasan';
+    document.getElementById('promosiNamaRekomendasi').innerText = data.nama_rekomendasi || '-';
+    document.getElementById('promosiGelombang').innerText = data.gelombang || 'Gelombang 1';
+    document.getElementById('promosiTanggalDaftar').innerText = data.tanggal_daftar || '-';
+    document.getElementById('promosiJK').innerText = data.jenis_kelamin || '-';
+    document.getElementById('promosiUmur').innerText = data.umur || '-';
+    document.getElementById('promosiTTL').innerText = (data.tempat_lahir || '-') + ', ' + (data.tanggal_lahir || '-');
+    document.getElementById('promosiAsalSekolah').innerText = data.asal_sekolah || '-';
+    document.getElementById('promosiNamaAyah').innerText = data.nama_ayah || '-';
+    document.getElementById('promosiNamaIbu').innerText = data.nama_ibu || '-';
+    document.getElementById('promosiKontak').innerText = data.kontak || '-';
+    document.getElementById('promosiKontakNotif').innerText = data.kontak || '-';
+    document.getElementById('promosiAlamat').innerText = data.alamat || '-';
+
+    document.getElementById('formPromosiDT').action = '<?= url('kelola-spmb/daftar-tunggu/promosikan/') ?>' + id;
+    
+    const modal = document.getElementById('modalPromosiDT');
+    if (modal) {
+        modal.classList.remove('hidden');
+        document.body.classList.add('overflow-hidden');
+    }
+}
+
+function tutupModalPromosi() {
+    const modal = document.getElementById('modalPromosiDT');
+    if (modal) {
+        modal.classList.add('hidden');
+        document.body.classList.remove('overflow-hidden');
+    }
+}
 // Tanggal patokan umur dari group aktif (standar 1 Juli 2027)
 const TANGGAL_PATOKAN_UMUR = <?= json_encode($activeGroup['tanggal_patokan_umur'] ?? '2027-07-01') ?>;
 

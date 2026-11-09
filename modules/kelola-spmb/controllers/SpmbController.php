@@ -54,6 +54,35 @@ class SpmbController
     // 2. SISWA BARU
     // ═════════════════════════════════════════════════════════════════════════
 
+    /**
+     * Resolves pagination parameters from $_GET: page, perPage, offset, and perPageParam
+     * Supported per_page options: 50, 75, 100, 125, 'semua' (default: 50)
+     */
+    private static function resolvePagination(int $defaultPerPage = 50): array
+    {
+        $rawPerPage = strtolower(trim((string)($_GET['per_page'] ?? $defaultPerPage)));
+        $allowed = [50, 75, 100, 125];
+
+        if ($rawPerPage === 'semua' || $rawPerPage === 'all' || (int)$rawPerPage < 0) {
+            $perPage = 999999;
+            $perPageParam = 'semua';
+            $page = 1;
+            $offset = 0;
+        } else {
+            $perPage = in_array((int)$rawPerPage, $allowed) ? (int)$rawPerPage : $defaultPerPage;
+            $perPageParam = (string)$perPage;
+            $page = max(1, (int)($_GET['page'] ?? 1));
+            $offset = ($page - 1) * $perPage;
+        }
+
+        return [
+            'page'         => $page,
+            'perPage'      => $perPage,
+            'offset'       => $offset,
+            'perPageParam' => $perPageParam
+        ];
+    }
+
     public static function siswaBaruIndex(): void
     {
         $activeGroup = SpmbModel::getActiveGroup();
@@ -61,9 +90,11 @@ class SpmbController
         $groups = SpmbModel::getAllGroups();
         $autoNomor = SpmbModel::generateNomorPendaftaran('Siswa Baru', $activeGroup['tahun_ajaran'] ?? null, 'PAUD');
 
-        $page = max(1, (int)($_GET['page'] ?? 1));
-        $perPage = 15;
-        $offset = ($page - 1) * $perPage;
+        $pagination = self::resolvePagination(50);
+        $page = $pagination['page'];
+        $perPage = $pagination['perPage'];
+        $offset = $pagination['offset'];
+        $perPageParam = $pagination['perPageParam'];
 
         $filters = [
             'jenis_pendaftaran' => 'Siswa Baru',
@@ -73,12 +104,13 @@ class SpmbController
             'status_kelulusan' => $_GET['status_kelulusan'] ?? '',
             'status_pembayaran' => $_GET['status_pembayaran'] ?? '',
             'status_berkas' => $_GET['status_berkas'] ?? '',
+            'is_dari_daftar_tunggu' => $_GET['is_dari_daftar_tunggu'] ?? '',
             'search' => $_GET['search'] ?? ''
         ];
 
         $totalRows = SpmbModel::countPendaftar($filters);
         $pendaftarList = SpmbModel::getPendaftarList($filters, $perPage, $offset);
-        $totalPages = ceil($totalRows / $perPage);
+        $totalPages = ($perPage >= 999999 || $totalRows <= 0) ? 1 : (int)ceil($totalRows / $perPage);
 
         self::view(
             'siswa_baru/index',
@@ -91,6 +123,7 @@ class SpmbController
                 'currentPage'   => $page,
                 'totalPages'    => $totalPages,
                 'perPage'       => $perPage,
+                'perPageParam'  => $perPageParam,
                 'totalRows'     => $totalRows
             ],
             'Data Calon Siswa Baru SPMB',
@@ -471,7 +504,7 @@ class SpmbController
         header('Content-Disposition: attachment; filename=Siswa_Baru_SPMB_' . date('Ymd_His') . '.csv');
 
         $out = fopen('php://output', 'w');
-        fputcsv($out, ['No', 'No. Pendaftaran', 'Nama Lengkap', 'Jenis Kelamin', 'Jenjang', 'Kategori Pendaftar', 'NISN', 'Asal Sekolah', 'Nama Ayah', 'Nama Ibu', 'No HP', 'Status Bayar', 'Tgl Daftar']);
+        fputcsv($out, ['No', 'No. Pendaftaran', 'Nama Lengkap', 'Jenis Kelamin', 'Jenjang', 'Kategori Pendaftar', 'Asal Pendaftaran', 'No. Daftar Tunggu Asal', 'NISN', 'Asal Sekolah', 'Nama Ayah', 'Nama Ibu', 'No HP', 'Status Bayar', 'Tgl Daftar']);
 
         $no = 1;
         foreach ($data as $r) {
@@ -482,6 +515,8 @@ class SpmbController
                 $r['jenis_kelamin'],
                 $r['jenjang'],
                 $r['kategori_pendaftar'] ?: ($r['jalur_pendaftaran'] ?: 'Umum (Luar Bina Insan)'),
+                !empty($r['is_dari_daftar_tunggu']) ? 'Eks Daftar Tunggu' : 'Reguler',
+                !empty($r['is_dari_daftar_tunggu']) ? ($r['nomor_daftar_tunggu'] ?? '-') : '-',
                 $r['nisn'],
                 $r['asal_sekolah'],
                 $r['nama_ayah'],
@@ -506,9 +541,11 @@ class SpmbController
         $groups = SpmbModel::getAllGroups();
         $autoNomor = SpmbModel::generateNomorPendaftaran('Pindahan', $activeGroup['tahun_ajaran'] ?? null, 'PAUD');
 
-        $page = max(1, (int)($_GET['page'] ?? 1));
-        $perPage = 15;
-        $offset = ($page - 1) * $perPage;
+        $pagination = self::resolvePagination(50);
+        $page = $pagination['page'];
+        $perPage = $pagination['perPage'];
+        $offset = $pagination['offset'];
+        $perPageParam = $pagination['perPageParam'];
 
         $filters = [
             'jenis_pendaftaran' => 'Pindahan',
@@ -518,12 +555,13 @@ class SpmbController
             'status_kelulusan' => $_GET['status_kelulusan'] ?? '',
             'status_pembayaran' => $_GET['status_pembayaran'] ?? '',
             'status_berkas' => $_GET['status_berkas'] ?? '',
+            'is_dari_daftar_tunggu' => $_GET['is_dari_daftar_tunggu'] ?? '',
             'search' => $_GET['search'] ?? ''
         ];
 
         $totalRows = SpmbModel::countPendaftar($filters);
         $pendaftarList = SpmbModel::getPendaftarList($filters, $perPage, $offset);
-        $totalPages = ceil($totalRows / $perPage);
+        $totalPages = ($perPage >= 999999 || $totalRows <= 0) ? 1 : (int)ceil($totalRows / $perPage);
 
         self::view(
             'pindahan/index',
@@ -536,6 +574,7 @@ class SpmbController
                 'currentPage'   => $page,
                 'totalPages'    => $totalPages,
                 'perPage'       => $perPage,
+                'perPageParam'  => $perPageParam,
                 'totalRows'     => $totalRows
             ],
             'Data Siswa Pindahan SPMB',
@@ -818,9 +857,11 @@ class SpmbController
         $groups = SpmbModel::getAllGroups();
         $autoNomor = SpmbModel::generateNomorPendaftaran('Daftar Tunggu', $activeGroup['tahun_ajaran'] ?? null, 'PAUD');
 
-        $page = max(1, (int)($_GET['page'] ?? 1));
-        $perPage = 15;
-        $offset = ($page - 1) * $perPage;
+        $pagination = self::resolvePagination(50);
+        $page = $pagination['page'];
+        $perPage = $pagination['perPage'];
+        $offset = $pagination['offset'];
+        $perPageParam = $pagination['perPageParam'];
 
         $filters = [
             'jenis_pendaftaran' => 'Daftar Tunggu',
@@ -833,7 +874,7 @@ class SpmbController
 
         $totalRows = SpmbModel::countPendaftar($filters);
         $pendaftarList = SpmbModel::getPendaftarList($filters, $perPage, $offset);
-        $totalPages = ceil($totalRows / $perPage);
+        $totalPages = ($perPage >= 999999 || $totalRows <= 0) ? 1 : (int)ceil($totalRows / $perPage);
 
         self::view(
             'daftar_tunggu/index',
@@ -846,6 +887,7 @@ class SpmbController
                 'currentPage'   => $page,
                 'totalPages'    => $totalPages,
                 'perPage'       => $perPage,
+                'perPageParam'  => $perPageParam,
                 'totalRows'     => $totalRows
             ],
             'Data Calon Siswa Daftar Tunggu SPMB',
@@ -1022,6 +1064,27 @@ class SpmbController
         $status = $_POST['status_kelulusan'] ?? 'Cadangan';
         SpmbModel::updateStatusPendaftar($id, $status);
         Response::redirect(url('kelola-spmb/daftar-tunggu/detail/' . $id), "Status berhasil diubah menjadi: $status", 'success');
+    }
+
+    public static function daftarTungguPromosikan(int $id): void
+    {
+        if (!CSRF::validate(false)) {
+            Response::redirect(url('kelola-spmb/daftar-tunggu/detail/' . $id), 'Token CSRF tidak valid atau sesi telah kedaluwarsa.', 'error');
+        }
+
+        $kirimWa = !empty($_POST['kirim_wa']);
+
+        try {
+            $res = SpmbModel::promosikanDaftarTunggu($id, $kirimWa);
+            $msg = "Calon siswa <strong>" . e($res['nama']) . "</strong> berhasil dipromosikan ke <strong>Siswa Baru</strong> dengan nomor pendaftaran resmi <strong>" . e($res['new_nomor']) . "</strong> (sebelumnya nomor Daftar Tunggu: " . e($res['old_nomor']) . ").";
+            if (!empty($res['wa_sent'])) {
+                $msg .= " Notifikasi WhatsApp dan link pengisian formulir online biodata lengkap telah terkirim ke orang tua.";
+            }
+
+            Response::redirect(url('kelola-spmb/siswa-baru/detail/' . $id), $msg, 'success');
+        } catch (\Throwable $e) {
+            Response::redirect(url('kelola-spmb/daftar-tunggu/detail/' . $id), 'Gagal mempromosikan ke Siswa Baru: ' . $e->getMessage(), 'error');
+        }
     }
 
     public static function daftarTungguCetak(int $id): void
@@ -2538,12 +2601,14 @@ SVG;
             'search'             => trim($_GET['search'] ?? '')
         ];
 
-        $page = max(1, (int)($_GET['page'] ?? 1));
-        $limit = 24; // 24 kartu per halaman agar pas di grid 2, 3, atau 4 kolom
-        $offset = ($page - 1) * $limit;
+        $pagination = self::resolvePagination(50);
+        $page = $pagination['page'];
+        $limit = $pagination['perPage'];
+        $offset = $pagination['offset'];
+        $perPageParam = $pagination['perPageParam'];
 
         $totalItems = SpmbModel::countScreeningPsikolog($filters);
-        $totalPages = max(1, ceil($totalItems / $limit));
+        $totalPages = ($limit >= 999999 || $totalItems <= 0) ? 1 : (int)ceil($totalItems / $limit);
         $items = SpmbModel::getScreeningPsikologList($filters, $limit, $offset);
         $stats = SpmbModel::getScreeningPsikologStats($groupId);
 
@@ -2563,9 +2628,12 @@ SVG;
                 'stats'         => $stats,
                 'filters'       => $filters,
                 'page'          => $page,
+                'currentPage'   => $page,
                 'totalPages'    => $totalPages,
                 'totalItems'    => $totalItems,
+                'totalRows'     => $totalItems,
                 'limit'         => $limit,
+                'perPageParam'  => $perPageParam,
                 'allPendaftar'  => $allPendaftar
             ],
             'Hasil Screening Psikolog',
@@ -3042,9 +3110,12 @@ SVG;
     {
         $activeGroup = SpmbModel::getActiveGroup();
         $groupId = $activeGroup['id'] ?? null;
-        $page = max(1, (int)($_GET['page'] ?? 1));
-        $limit = 25;
-        $offset = ($page - 1) * $limit;
+        
+        $pagination = self::resolvePagination(50);
+        $page = $pagination['page'];
+        $limit = $pagination['perPage'];
+        $offset = $pagination['offset'];
+        $perPageParam = $pagination['perPageParam'];
 
         $filters = [
             'group_id'         => $groupId,
@@ -3054,7 +3125,7 @@ SVG;
         ];
 
         $totalItems = SpmbModel::countDaftarHasilObservasiAwal($filters);
-        $totalPages = max(1, ceil($totalItems / $limit));
+        $totalPages = ($limit >= 999999 || $totalItems <= 0) ? 1 : (int)ceil($totalItems / $limit);
         $items = SpmbModel::getDaftarHasilObservasiAwal($filters, $limit, $offset);
         $stats = SpmbModel::getObservasiStats($groupId);
 
@@ -3066,9 +3137,12 @@ SVG;
                 'stats'         => $stats,
                 'filters'       => $filters,
                 'page'          => $page,
+                'currentPage'   => $page,
                 'totalPages'    => $totalPages,
                 'totalItems'    => $totalItems,
+                'totalRows'     => $totalItems,
                 'limit'         => $limit,
+                'perPageParam'  => $perPageParam,
             ],
             'Hasil Observasi Awal Siswa',
             [['label' => 'Kelola SPMB', 'url' => url('kelola-spmb')], ['label' => 'Observasi Awal']]

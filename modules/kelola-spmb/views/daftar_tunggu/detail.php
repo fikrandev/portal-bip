@@ -36,6 +36,14 @@ $badgeStyle = match($st) {
         </div>
 
         <div class="flex flex-wrap items-center gap-2">
+            <!-- Tombol Promosikan ke Siswa Baru -->
+            <button type="button" onclick="bukaModalPromosi()"
+               class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition-all cursor-pointer">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+                </svg>
+                <span>Promosikan ke Siswa Baru</span>
+            </button>
             <a href="<?= url('kelola-spmb/daftar-tunggu/cetak/' . $item['id']) ?>" target="_blank"
                class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition-all">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0 1 10.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0 .229 2.523a1.125 1.125 0 0 1-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0 0 21 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 0 0-1.913-.247M6.34 18H5.25A2.25 2.25 0 0 1 3 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 0 1 1.913-.247m10.5 0a48.536 48.536 0 0 0-10.5 0m10.5 0V3.375c0-.621-.504-1.125-1.125-1.125h-8.25c-.621 0-1.125.504-1.125 1.125v3.656h10.5Z" /></svg>
@@ -69,117 +77,6 @@ $badgeStyle = match($st) {
                 Terapkan
             </button>
         </form>
-    </div>
-
-    <!-- ── Card Tautan & Status Biodata Lengkap ── -->
-    <?php
-    $rawBioSt = $item['biodata_status'] ?? 'Belum Diisi';
-    $biodataStatus = strtolower(str_replace(' ', '_', trim((string)$rawBioSt)));
-    if (!empty($item['biodata_submitted_at']) || $biodataStatus === 'lengkap') {
-        $biodataStatus = 'lengkap';
-    }
-    $biodataToken = $item['biodata_token'] ?? '';
-    $biodataUrl = !empty($biodataToken) ? url('spmb/biodata/' . $biodataToken) : '#';
-
-    // Persiapan nomor tujuan dan pesan WhatsApp
-    $rawWaPhone = !empty($item['no_wa']) ? $item['no_wa'] : (!empty($item['no_hp']) ? $item['no_hp'] : '');
-    $targetPhoneFormatted = class_exists('WaGateway') ? WaGateway::formatPhone($rawWaPhone) : preg_replace('/[^0-9]/', '', $rawWaPhone);
-
-    $spmbOptions = SpmbModel::getSpmbOptions();
-    $waTemplate = $spmbOptions['wa_template_biodata'];
-    $replacements = [
-        '{nama_siswa}'        => $item['nama_lengkap'],
-        '{nomor_pendaftaran}' => $item['nomor_pendaftaran'],
-        '{no_daftar}'         => $item['nomor_pendaftaran'],
-        '{jenjang}'           => $item['jenjang'],
-        '{link_biodata}'      => $biodataUrl,
-        '{jalur}'             => 'Daftar Tunggu (' . ($item['kategori_pendaftar'] ?? 'Yayasan') . ')'
-    ];
-    $waMessagePreview = str_replace(array_keys($replacements), array_values($replacements), $waTemplate);
-    $waDirectUrl = !empty($targetPhoneFormatted) 
-        ? 'https://api.whatsapp.com/send?phone=' . $targetPhoneFormatted . '&text=' . rawurlencode($waMessagePreview) 
-        : '#';
-    ?>
-    <div class="bg-gradient-to-r from-slate-950 via-slate-900 to-amber-950 text-white p-6 rounded-3xl shadow-xl border border-amber-600/40 relative overflow-hidden">
-        <div class="absolute -right-10 -bottom-10 w-72 h-72 rounded-full bg-amber-500/10 blur-3xl pointer-events-none"></div>
-
-        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative z-10">
-            <div class="space-y-2 max-w-xl">
-                <div class="flex items-center gap-2">
-                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                        Link Pengisian Biodata Calon Siswa
-                    </span>
-                    <?php if ($biodataStatus === 'lengkap'): ?>
-                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
-                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                            Sudah Diisi Lengkap
-                        </span>
-                    <?php elseif ($biodataStatus === 'draft'): ?>
-                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1">
-                            <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-                            Masih Draft (Langkah <?= (int)($item['biodata_step'] ?? 1) ?>/4)
-                        </span>
-                    <?php else: ?>
-                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-500/20 text-slate-300 border border-slate-500/30 flex items-center gap-1">
-                            <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
-                            Belum Diisi Orang Tua
-                        </span>
-                    <?php endif; ?>
-                </div>
-
-                <h3 class="text-base font-bold text-white tracking-tight">
-                    Tautan Formulir Biodata Dapodik / EMIS
-                </h3>
-                <p class="text-xs text-slate-300 leading-relaxed">
-                    Bagikan tautan berikut kepada orang tua / wali murid untuk melengkapi berkas KK, Akta, KTP, dan formulir Dapodik.
-                </p>
-
-                <!-- Input box copy -->
-                <div class="flex items-center gap-2 pt-1">
-                    <input type="text" readonly value="<?= e($biodataUrl) ?>" id="input_biodata_url"
-                           class="w-full text-xs font-mono bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-slate-200 select-all focus:outline-none">
-                    <button type="button" onclick="salinLinkPublic('<?= e($biodataUrl) ?>')"
-                            class="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold shrink-0 transition-colors border border-white/10 flex items-center gap-1.5">
-                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.666 3.888A2.25 2.25 0 0 0 13.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 0 1-.75.75H9a.75.75 0 0 1-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 0 1-2.25 2.25H6.75A2.25 2.25 0 0 1 4.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 0 1 1.927-.184" /></svg>
-                        Salin
-                    </button>
-                    <a href="<?= e($biodataUrl) ?>" target="_blank"
-                       class="px-3 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-xs font-semibold shrink-0 transition-colors border border-amber-500/30 flex items-center gap-1.5">
-                        Buka &rarr;
-                    </a>
-                </div>
-            </div>
-
-            <!-- WhatsApp Actions -->
-            <div class="flex flex-col sm:flex-row md:flex-col gap-2.5 w-full md:w-auto shrink-0">
-                <form action="<?= url('kelola-spmb/kirim-wa-biodata/' . $item['id']) ?>" method="POST" onsubmit="return confirm('Kirimkan notifikasi WhatsApp otomatis sekarang ke nomor orang tua?')">
-                    <?= CSRF::field() ?>
-                    <button type="submit" 
-                            class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-white font-bold text-xs shadow-lg shadow-emerald-500/25 transition-all transform hover:-translate-y-0.5">
-                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5" /></svg>
-                        <span>Kirim WA Otomatis (Server)</span>
-                    </button>
-                </form>
-
-                <?php if (!empty($targetPhoneFormatted)): ?>
-                    <a href="<?= $waDirectUrl ?>" target="_blank"
-                       class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-semibold text-xs border border-white/20 transition-colors">
-                        <svg class="w-4 h-4 text-emerald-400" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981z"/></svg>
-                        <span>Buka Chat WhatsApp Web</span>
-                    </a>
-                <?php endif; ?>
-
-                <!-- Ubah Status Biodata (Khusus Admin) -->
-                <form action="<?= url('kelola-spmb/update-status-biodata/' . $item['id']) ?>" method="POST" class="w-full">
-                    <?= CSRF::field() ?>
-                    <select name="biodata_status" onchange="if(confirm('Ubah status biodata calon siswa daftar tunggu ini menjadi ' + this.options[this.selectedIndex].text.replace('⚙️ Set: ', '') + '?')) { this.form.submit(); } else { this.value = '<?= $biodataStatus === 'lengkap' ? 'Lengkap' : ($biodataStatus === 'draft' ? 'Draft' : 'Belum Diisi') ?>'; }" class="bg-slate-900/90 hover:bg-slate-900 text-white text-[11px] font-semibold rounded-2xl px-3 py-2 border border-amber-500/40 outline-none w-full cursor-pointer shadow-sm transition-all">
-                        <option value="Belum Diisi" <?= $biodataStatus === 'belum_diisi' ? 'selected' : '' ?>>⚙️ Set: Belum Diisi</option>
-                        <option value="Draft" <?= $biodataStatus === 'draft' ? 'selected' : '' ?>>⚙️ Set: Draft</option>
-                        <option value="Lengkap" <?= $biodataStatus === 'lengkap' ? 'selected' : '' ?>>⚙️ Set: Lengkap</option>
-                    </select>
-                </form>
-            </div>
-        </div>
     </div>
 
     <!-- 2 Column Details Grid -->
@@ -401,31 +298,180 @@ $badgeStyle = match($st) {
     </div>
 </div>
 
+<!-- Modal Promosi ke Siswa Baru (Detail Lengkap & Konfirmasi) -->
+<div id="modalPromosi" class="fixed inset-0 z-50 hidden flex items-center justify-center p-3 sm:p-4 bg-slate-950/60 backdrop-blur-sm overflow-y-auto">
+    <div class="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden my-auto max-h-[92vh] flex flex-col" onclick="event.stopPropagation()">
+        
+        <!-- Modal Header -->
+        <div class="px-5 py-4 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white flex items-center justify-between shrink-0 shadow-md">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center font-bold text-lg shadow-inner">
+                    🚀
+                </div>
+                <div>
+                    <h3 class="text-base font-extrabold tracking-tight">Detail Calon Siswa & Promosi</h3>
+                    <p class="text-[11px] text-emerald-100 mt-0.5">Tinjau kelengkapan data sebelum dipromosikan ke Siswa Baru</p>
+                </div>
+            </div>
+            <button type="button" onclick="tutupModalPromosi()" class="p-1.5 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition-colors">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+
+        <!-- Modal Form Body -->
+        <form action="<?= url('kelola-spmb/daftar-tunggu/promosikan/' . $item['id']) ?>" method="POST" class="flex flex-col flex-1 overflow-hidden">
+            <?= CSRF::field() ?>
+
+            <div class="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4 text-xs text-slate-700">
+                
+                <!-- Status & Nomor Banner -->
+                <div class="p-3.5 rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200/80 space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-500 font-medium">No. Daftar Tunggu Saat Ini:</span>
+                        <span class="font-mono font-bold text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded-lg border border-amber-200">
+                            <?= e($item['nomor_pendaftaran']) ?>
+                        </span>
+                    </div>
+                    <div class="flex items-center justify-between pt-1.5 border-t border-emerald-200/60">
+                        <span class="text-slate-500 font-medium">No. Siswa Baru Resmi:</span>
+                        <span class="font-mono font-bold text-emerald-800 bg-emerald-100/90 px-2.5 py-0.5 rounded-lg border border-emerald-300">
+                            ✨ Otomatis Digenerate Resmi
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Bagian 1: Informasi Pendaftaran & Rekomendasi -->
+                <div class="p-4 rounded-2xl bg-white border border-slate-200/90 space-y-2.5 shadow-xs">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+                        <span class="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">1. Data Pendaftaran & Rekomendasi</span>
+                        <span class="px-2.5 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-bold text-[10px]">
+                            <?= e($item['jenjang']) ?>
+                        </span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 pt-1 text-xs">
+                        <div>
+                            <span class="text-slate-400 text-[11px] block">Rekomendasi</span>
+                            <span class="font-bold text-slate-800"><?= e($item['kategori_pendaftar'] ?? 'Yayasan') ?></span>
+                        </div>
+                        <div>
+                            <span class="text-slate-400 text-[11px] block">Nama Rekomendasi</span>
+                            <span class="font-bold text-slate-800"><?= e($item['nama_rekomendasi'] ?? '-') ?></span>
+                        </div>
+                        <div>
+                            <span class="text-slate-400 text-[11px] block">Gelombang</span>
+                            <span class="font-semibold text-slate-700"><?= e($item['gelombang'] ?? 'Gelombang 1') ?></span>
+                        </div>
+                        <div>
+                            <span class="text-slate-400 text-[11px] block">Tanggal Mendaftar</span>
+                            <span class="font-semibold text-slate-700"><?= date('d F Y', strtotime($item['tanggal_daftar'])) ?></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bagian 2: Identitas Calon Siswa -->
+                <div class="p-4 rounded-2xl bg-white border border-slate-200/90 space-y-2.5 shadow-xs">
+                    <span class="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 block border-b border-slate-100 pb-2">2. Identitas Calon Siswa</span>
+                    <div class="space-y-2 pt-1 text-xs">
+                        <div>
+                            <span class="text-slate-400 text-[11px] block">Nama Lengkap Siswa</span>
+                            <span class="text-sm font-extrabold text-slate-900"><?= e($item['nama_lengkap']) ?></span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <span class="text-slate-400 text-[11px] block">Jenis Kelamin</span>
+                                <span class="font-semibold text-slate-800"><?= ($item['jenis_kelamin'] === 'L') ? 'Laki-laki' : 'Perempuan' ?></span>
+                            </div>
+                            <div>
+                                <span class="text-slate-400 text-[11px] block">Umur Siswa</span>
+                                <span class="font-semibold text-slate-800"><?= e($item['umur'] ?: '-') ?></span>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <span class="text-slate-400 text-[11px] block">Tempat, Tanggal Lahir</span>
+                                <span class="font-semibold text-slate-800">
+                                    <?= e($item['tempat_lahir'] ?? '-') ?>, <?= !empty($item['tanggal_lahir']) ? date('d/m/Y', strtotime($item['tanggal_lahir'])) : '-' ?>
+                                </span>
+                            </div>
+                            <div>
+                                <span class="text-slate-400 text-[11px] block">Asal Sekolah</span>
+                                <span class="font-semibold text-slate-800"><?= e($item['asal_sekolah'] ?? '-') ?></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bagian 3: Orang Tua & Kontak -->
+                <div class="p-4 rounded-2xl bg-white border border-slate-200/90 space-y-2.5 shadow-xs">
+                    <span class="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 block border-b border-slate-100 pb-2">3. Data Orang Tua & Kontak</span>
+                    <div class="space-y-2 pt-1 text-xs">
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <span class="text-slate-400 text-[11px] block">Nama Ayah</span>
+                                <span class="font-semibold text-slate-800"><?= e($item['nama_ayah'] ?? '-') ?></span>
+                            </div>
+                            <div>
+                                <span class="text-slate-400 text-[11px] block">Nama Ibu</span>
+                                <span class="font-semibold text-slate-800"><?= e($item['nama_ibu'] ?? '-') ?></span>
+                            </div>
+                        </div>
+                        <div>
+                            <span class="text-slate-400 text-[11px] block">No. WhatsApp / HP Orang Tua</span>
+                            <span class="font-mono font-bold text-slate-900"><?= e($item['no_hp'] ?: ($item['no_wa'] ?: '-')) ?></span>
+                        </div>
+                        <div>
+                            <span class="text-slate-400 text-[11px] block">Alamat Tinggal</span>
+                            <span class="font-normal text-slate-700"><?= e($item['alamat'] ?? '-') ?></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Catatan Info & Opsi WA -->
+                <div class="p-3 bg-amber-50/70 border border-amber-200 rounded-2xl text-[11px] text-amber-900 leading-relaxed">
+                    ℹ️ <strong>Catatan:</strong> Setelah menekan tombol <strong>Lanjutkan</strong>, calon siswa akan resmi berstatus <strong>Siswa Baru</strong> dan ditandai badge <em>Eks DT</em>. Selanjutnya orang tua dapat mengisi formulir online biodata lengkap untuk kebutuhan berkas Dapodik/EMIS.
+                </div>
+
+                <label class="flex items-start gap-2.5 p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs cursor-pointer hover:bg-slate-100 transition-colors">
+                    <input type="checkbox" name="kirim_wa" value="1" class="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500 mt-0.5">
+                    <div class="text-slate-700">
+                        <span class="font-bold text-slate-900">Kirim notifikasi WhatsApp ke nomor orang tua</span>
+                        <p class="text-[11px] text-slate-500 mt-0.5">Kirimkan pesan otomatis berisi pemberitahuan dan tautan formulir biodata lengkap ke nomor <?= e($item['no_hp'] ?: ($item['no_wa'] ?: '-')) ?>.</p>
+                    </div>
+                </label>
+
+            </div>
+
+            <!-- Modal Footer Actions -->
+            <div class="px-5 py-3.5 bg-slate-50 border-t border-slate-200 flex items-center justify-between shrink-0 gap-3">
+                <button type="button" onclick="tutupModalPromosi()" class="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-600 font-bold text-xs hover:bg-slate-100 transition-colors cursor-pointer">
+                    Batal
+                </button>
+                <button type="submit" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs shadow-md shadow-emerald-600/25 transition-all transform hover:-translate-y-0.5 cursor-pointer">
+                    <span>Lanjutkan Promosikan ke Siswa Baru</span>
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+                    </svg>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
-function salinLinkPublic(url) {
-    if (navigator.clipboard && window.isSecureContext) {
-        navigator.clipboard.writeText(url).then(() => {
-            Swal.fire({
-                icon: 'success',
-                title: 'Link Berhasil Disalin',
-                text: 'Tautan formulir biodata lengkap berhasil disalin ke clipboard.',
-                timer: 1500,
-                showConfirmButton: false
-            });
-        });
-    } else {
-        const inp = document.getElementById('input_biodata_url');
-        if (inp) {
-            inp.select();
-            document.execCommand('copy');
-            Swal.fire({
-                icon: 'success',
-                title: 'Link Berhasil Disalin',
-                text: 'Tautan formulir biodata lengkap berhasil disalin.',
-                timer: 1500,
-                showConfirmButton: false
-            });
-        }
+function bukaModalPromosi() {
+    const modal = document.getElementById('modalPromosi');
+    if (modal) {
+        modal.classList.remove('hidden');
+        document.body.classList.add('overflow-hidden');
+    }
+}
+function tutupModalPromosi() {
+    const modal = document.getElementById('modalPromosi');
+    if (modal) {
+        modal.classList.add('hidden');
+        document.body.classList.remove('overflow-hidden');
     }
 }
 </script>
