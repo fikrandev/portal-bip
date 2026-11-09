@@ -1,3 +1,0 @@
-git add .
-git commit -m "Deskripsi perubahan yang Anda buat"
-git push
