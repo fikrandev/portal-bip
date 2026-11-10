@@ -52,11 +52,12 @@ class MobileSarprasController
 
         // Custom mobile dashboard stats
         self::render('dashboard', [
-            'pageTitle' => 'Dashboard Sarpras',
-            'activeTab' => 'beranda',
-            'statistik' => $statistik,
-            'nama'      => $nama,
-            'jabatan'   => $jabatan
+            'pageTitle'   => 'Dashboard Sarpras',
+            'activeTab'   => 'beranda',
+            'statistik'   => $statistik,
+            'nama'        => $nama,
+            'jabatan'     => $jabatan,
+            'ruanganList' => SarprasModel::getAllRuangan()
         ]);
     }
 
@@ -93,21 +94,26 @@ class MobileSarprasController
 
     public static function inventarisList(): void
     {
+        SarprasModel::ensureSarprasSchema();
         $filters = [
-            'search' => trim($_GET['search'] ?? ''),
-            'kategori_id' => trim($_GET['kategori_id'] ?? '')
+            'search'      => trim($_GET['search'] ?? ''),
+            'kategori_id' => trim($_GET['kategori_id'] ?? ''),
+            'ruangan_id'  => (int)($_GET['ruangan_id'] ?? 0)
         ];
         
-        // Let's limit to 50 for mobile view to prevent heavy loading
         $barang = SarprasModel::getBarangList($filters, 50, 0);
         $kategoriList = SarprasModel::getAllKategori();
+        $ruanganList = SarprasModel::getAllRuangan();
+        $selectedRuangan = $filters['ruangan_id'] > 0 ? SarprasModel::getRuanganById($filters['ruangan_id']) : null;
         
         self::render('inventaris/index', [
-            'pageTitle' => 'Daftar Inventaris',
-            'activeTab' => 'inventaris',
-            'barang' => $barang,
-            'filters' => $filters,
-            'kategoriList' => $kategoriList
+            'pageTitle'       => $selectedRuangan ? ('Inventaris: ' . $selectedRuangan['nama_ruangan']) : 'Daftar Inventaris',
+            'activeTab'       => 'inventaris',
+            'barang'          => $barang,
+            'filters'         => $filters,
+            'kategoriList'    => $kategoriList,
+            'ruanganList'     => $ruanganList,
+            'selectedRuangan' => $selectedRuangan
         ]);
     }
 
@@ -122,10 +128,19 @@ class MobileSarprasController
 
     public static function bangunanList(): void
     {
+        $bangunan = SarprasModel::db()->query("SELECT b.*, t.nama_tanah FROM sarpras_bangunan b LEFT JOIN sarpras_tanah t ON b.tanah_id = t.id ORDER BY b.created_at DESC")->fetchAll();
+        $allRuangan = SarprasModel::getAllRuangan();
+        $ruanganByBangunan = [];
+        foreach ($allRuangan as $r) {
+            $bId = (int)($r['bangunan_id'] ?? 0);
+            $ruanganByBangunan[$bId][] = $r;
+        }
+
         self::render('bangunan/index', [
-            'pageTitle' => 'Data Bangunan',
-            'activeTab' => 'bangunan',
-            'bangunan' => SarprasModel::db()->query("SELECT b.*, t.nama_tanah FROM sarpras_bangunan b LEFT JOIN sarpras_tanah t ON b.tanah_id = t.id ORDER BY b.created_at DESC")->fetchAll()
+            'pageTitle'         => 'Data Bangunan',
+            'activeTab'         => 'bangunan',
+            'bangunan'          => $bangunan,
+            'ruanganByBangunan' => $ruanganByBangunan
         ]);
     }
 
@@ -155,11 +170,16 @@ class MobileSarprasController
         });
 
         self::render('ruangan/detail', [
-            'pageTitle' => 'Aset: ' . $ruangan['nama_ruangan'],
-            'activeTab' => 'ruangan',
-            'ruangan' => $ruangan,
-            'distribusi' => $distribusi,
-            'barangTersedia' => $barangTersedia
+            'pageTitle'        => 'Aset: ' . $ruangan['nama_ruangan'],
+            'activeTab'        => 'ruangan',
+            'ruangan'          => $ruangan,
+            'distribusi'       => $distribusi,
+            'barangTersedia'   => $barangTersedia,
+            'kategoriList'     => SarprasModel::getAllKategori(),
+            'golonganList'     => SarprasModel::getAllGolongan(),
+            'kelompokList'     => SarprasModel::getAllKelompok(),
+            'asalAnggaranList' => SarprasModel::getAllAsalAnggaran(),
+            'satuanList'       => SarprasModel::getAllSatuan()
         ]);
     }
 

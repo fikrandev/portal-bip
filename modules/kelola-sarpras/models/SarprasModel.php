@@ -156,7 +156,8 @@ class SarprasModel
             $params[] = (int)$filters['kategori_id'];
         }
         if (!empty($filters['ruangan_id'])) {
-            $sql .= " AND b.ruangan_id = ?";
+            $sql .= " AND (b.ruangan_id = ? OR b.id IN (SELECT barang_id FROM sarpras_distribusi WHERE ruangan_id = ?))";
+            $params[] = (int)$filters['ruangan_id'];
             $params[] = (int)$filters['ruangan_id'];
         }
         if (!empty($filters['kondisi'])) {
@@ -195,7 +196,8 @@ class SarprasModel
             $params[] = (int)$filters['kategori_id'];
         }
         if (!empty($filters['ruangan_id'])) {
-            $sql .= " AND b.ruangan_id = ?";
+            $sql .= " AND (b.ruangan_id = ? OR b.id IN (SELECT barang_id FROM sarpras_distribusi WHERE ruangan_id = ?))";
+            $params[] = (int)$filters['ruangan_id'];
             $params[] = (int)$filters['ruangan_id'];
         }
         if (!empty($filters['kondisi'])) {

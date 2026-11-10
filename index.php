@@ -1256,7 +1256,7 @@ $router->get('/sw-sarpras.js', function() {
     header('Service-Worker-Allowed: /');
     header('Cache-Control: no-cache, no-store, must-revalidate');
     echo <<<'JS'
-const CACHE_NAME='sarpras-pwa-v2';
+const CACHE_NAME='sarpras-pwa-v4';
 self.addEventListener('install',e=>{self.skipWaiting();});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(n=>Promise.all(n.filter(n=>n!==CACHE_NAME).map(n=>caches.delete(n)))).then(()=>self.clients.claim()));});
 self.addEventListener('fetch',e=>{if(e.request.method!=='GET'||!e.request.url.startsWith('http'))return;e.respondWith(fetch(e.request).then(r=>{if(r&&r.status===200){const c=r.clone();caches.open(CACHE_NAME).then(cache=>cache.put(e.request,c));}return r;}).catch(()=>caches.match(e.request)));});

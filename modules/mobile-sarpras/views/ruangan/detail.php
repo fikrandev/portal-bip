@@ -3,6 +3,7 @@ $totalUnitRuangan = 0;
 foreach ($distribusi as $itemD) {
     $totalUnitRuangan += (int)($itemD['jumlah'] ?? 0);
 }
+$defaultUnit = !empty($ruangan['unit']) ? $ruangan['unit'] : 'SD';
 ?>
 <div class="px-4 pt-4 pb-28 space-y-4">
     <!-- Header Info Ruangan -->
@@ -15,7 +16,7 @@ foreach ($distribusi as $itemD) {
                 <div class="min-w-0">
                     <div class="flex items-center gap-1.5 flex-wrap">
                         <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-100"><?= e($ruangan['jenis_ruangan'] ?? 'Ruang Kelas') ?></span>
-                        <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-100">Unit: <?= e($ruangan['unit'] ?? 'SD') ?></span>
+                        <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-100">Unit: <?= e($defaultUnit) ?></span>
                     </div>
                     <h2 class="text-base font-bold text-slate-800 truncate mt-1"><?= e($ruangan['nama_ruangan']) ?></h2>
                     <p class="text-[11px] text-slate-500 truncate">
@@ -41,12 +42,12 @@ foreach ($distribusi as $itemD) {
 
         <!-- Tombol Aksi Utama: Input Manual vs Ambil dari Inventaris -->
         <div class="grid grid-cols-1 gap-2 pt-1">
-            <a href="<?= url('mobile-sarpras/inventaris/tambah?ruangan_id=' . $ruangan['id']) ?>" class="w-full py-3 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white text-xs font-bold flex items-center justify-center gap-2 shadow-md shadow-emerald-500/20 transition-all">
+            <button type="button" onclick="openModalInputManualMobile()" class="w-full py-3 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white text-xs font-bold flex items-center justify-center gap-2 shadow-md shadow-emerald-500/20 transition-all">
                 <i data-lucide="package-plus" class="w-4 h-4"></i>
-                <span>+ Input Manual Barang Baru di Ruangan Ini</span>
-            </a>
+                <span>+ Input Manual Inventaris Baru di Ruangan Ini</span>
+            </button>
             <button type="button" onclick="openModalDistribusiMobile()" class="w-full py-2.5 px-4 rounded-2xl bg-blue-50 hover:bg-blue-100 active:scale-98 text-blue-700 border border-blue-200 text-xs font-bold flex items-center justify-center gap-2 transition-all">
-                <i data-lucide="arrow-Left-right" class="w-4 h-4"></i>
+                <i data-lucide="arrow-left-right" class="w-4 h-4"></i>
                 <span>Ambil / Distribusi dari Stok Inventaris</span>
             </button>
         </div>
@@ -65,11 +66,11 @@ foreach ($distribusi as $itemD) {
                     <i data-lucide="package-open" class="w-7 h-7"></i>
                 </div>
                 <h4 class="text-sm font-bold text-slate-700">Belum Ada Barang di Ruangan Ini</h4>
-                <p class="text-xs text-slate-400 mt-1 mb-4">Input manual barang baru di kelas/ruangan ini agar otomatis masuk ke Inventaris dan ditempatkan di sini.</p>
-                <a href="<?= url('mobile-sarpras/inventaris/tambah?ruangan_id=' . $ruangan['id']) ?>" class="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-bold shadow-sm">
+                <p class="text-xs text-slate-400 mt-1 mb-4">Input manual barang baru di kelas/ruangan ini agar otomatis masuk ke Master Inventaris dan ditempatkan di sini.</p>
+                <button type="button" onclick="openModalInputManualMobile()" class="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-bold shadow-sm">
                     <i data-lucide="plus" class="w-4 h-4"></i>
-                    <span>Input Manual Barang Baru</span>
-                </a>
+                    <span>Input Manual Inventaris Baru</span>
+                </button>
             </div>
         <?php else: ?>
             <?php foreach ($distribusi as $d): 
@@ -145,6 +146,165 @@ foreach ($distribusi as $itemD) {
     </div>
 </div>
 
+<!-- Modal Input Manual Barang Baru (Langsung Masuk Inventaris & Auto Distribusi ke Ruangan Ini) -->
+<div id="modalInputManualMobile" class="fixed inset-0 z-[100] hidden flex items-end sm:items-center justify-center">
+    <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-xs" onclick="closeModalInputManualMobile()"></div>
+    <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl relative z-10 max-h-[90vh] flex flex-col overflow-hidden">
+        <div class="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between bg-emerald-600 text-white shrink-0">
+            <div class="min-w-0 pr-2">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-100 block">Auto Masuk Inventaris &amp; Ruangan</span>
+                <h3 class="text-sm font-bold truncate">Input Barang: <?= e($ruangan['nama_ruangan']) ?></h3>
+            </div>
+            <button type="button" onclick="closeModalInputManualMobile()" class="w-8 h-8 rounded-full bg-white/20 text-white flex items-center justify-center font-bold shrink-0">&times;</button>
+        </div>
+
+        <form action="<?= url('mobile-sarpras/inventaris/store') ?>" method="POST" enctype="multipart/form-data" class="p-4 overflow-y-auto space-y-3.5 flex-1">
+            <?= CSRF::field() ?>
+            <input type="hidden" name="ruangan_id" value="<?= (int)$ruangan['id'] ?>">
+            <input type="hidden" name="auto_distribusi" value="1">
+            <input type="hidden" name="redirect_to" value="<?= url('mobile-sarpras/ruangan/detail/' . $ruangan['id']) ?>">
+
+            <!-- Preview Kode Barang -->
+            <div class="bg-blue-50 rounded-2xl p-3 border border-blue-100 flex items-center justify-between">
+                <div>
+                    <p class="text-[10px] font-bold text-blue-600 uppercase tracking-wider">Preview Kode Barang</p>
+                    <p class="text-sm font-mono font-bold text-blue-950 mt-0.5" id="previewKodeManualMob">... . ... . ... . 001</p>
+                </div>
+                <span class="px-2 py-1 rounded-lg bg-emerald-100 text-emerald-800 text-[10px] font-bold">📍 <?= e($ruangan['nama_ruangan']) ?></span>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Golongan <span class="text-rose-500">*</span></label>
+                <select name="golongan_id" id="selGolManualMob" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-emerald-500">
+                    <option value="" data-kode="00">-- Pilih Golongan --</option>
+                    <?php if (!empty($golonganList)): foreach ($golonganList as $g): ?>
+                        <option value="<?= $g['id'] ?>" data-kode="<?= e($g['kode']) ?>"><?= e($g['kode']) ?> - <?= e($g['nama_golongan']) ?></option>
+                    <?php endforeach; endif; ?>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Kelompok <span class="text-rose-500">*</span></label>
+                <select name="kelompok_id" id="selKelManualMob" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-emerald-500">
+                    <option value="" data-kode="00">-- Pilih Kelompok --</option>
+                    <?php if (!empty($kelompokList)): foreach ($kelompokList as $k): ?>
+                        <option value="<?= $k['id'] ?>" data-golongan="<?= $k['golongan_id'] ?>" data-kode="<?= e($k['kode']) ?>"><?= e($k['kode']) ?> - <?= e($k['nama_kelompok']) ?></option>
+                    <?php endforeach; endif; ?>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Asal Anggaran <span class="text-rose-500">*</span></label>
+                <select name="asal_anggaran_id" id="selAngManualMob" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-emerald-500">
+                    <option value="" data-kode="00">-- Pilih Asal Anggaran --</option>
+                    <?php if (!empty($asalAnggaranList)): foreach ($asalAnggaranList as $a): ?>
+                        <option value="<?= $a['id'] ?>" data-kode="<?= e($a['kode']) ?>"><?= e($a['kode']) ?> - <?= e($a['nama']) ?></option>
+                    <?php endforeach; endif; ?>
+                </select>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Unit / Jenjang <span class="text-rose-500">*</span></label>
+                    <select name="unit" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-emerald-500 font-semibold">
+                        <?php foreach (['SD', 'SMP', 'SMA', 'PAUD', 'Yayasan', 'Semua'] as $u): ?>
+                            <option value="<?= $u ?>" <?= $u === $defaultUnit ? 'selected' : '' ?>><?= $u ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Kategori <span class="text-rose-500">*</span></label>
+                    <select name="kategori_id" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-emerald-500 font-semibold">
+                        <option value="">-- Pilih --</option>
+                        <?php if (!empty($kategoriList)): foreach ($kategoriList as $k): ?>
+                            <option value="<?= $k['id'] ?>"><?= e($k['nama_kategori']) ?></option>
+                        <?php endforeach; endif; ?>
+                    </select>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Nama Barang <span class="text-rose-500">*</span></label>
+                <input type="text" name="nama_barang" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-emerald-500" placeholder="Contoh: Meja Siswa / Kursi Guru / AC">
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Merk / Model</label>
+                    <input type="text" name="merk_model" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-emerald-500" placeholder="Cth: Olympic">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Nomor Seri</label>
+                    <input type="text" name="nomor_seri" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono outline-none focus:border-emerald-500" placeholder="Opsional">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Jumlah (Qty) <span class="text-rose-500">*</span></label>
+                    <input type="number" name="jumlah" value="1" min="1" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:border-emerald-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Satuan <span class="text-rose-500">*</span></label>
+                    <select name="satuan" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-emerald-500">
+                        <?php if (!empty($satuanList)): foreach ($satuanList as $s): ?>
+                            <option value="<?= e($s['nama_satuan']) ?>"><?= e($s['nama_satuan']) ?></option>
+                        <?php endforeach; else: ?>
+                            <option value="Unit">Unit</option>
+                        <?php endif; ?>
+                    </select>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Harga Perolehan (Rp)</label>
+                    <input type="text" id="inputHargaManualMob" name="harga_perolehan_formatted" value="0" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-right outline-none focus:border-emerald-500">
+                    <input type="hidden" name="harga_perolehan" id="hiddenHargaManualMob" value="0">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Tgl Perolehan <span class="text-rose-500">*</span></label>
+                    <input type="date" name="tanggal_perolehan" value="<?= date('Y-m-d') ?>" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-emerald-500">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Masa Manfaat (Thn)</label>
+                    <input type="number" name="masa_manfaat" value="5" min="0" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-emerald-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Kondisi</label>
+                    <select name="kondisi" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-emerald-500">
+                        <option value="Baik">Baik</option>
+                        <option value="Rusak Ringan">Rusak Ringan</option>
+                        <option value="Rusak Berat">Rusak Berat</option>
+                    </select>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Keterangan / Posisi di Ruangan</label>
+                <input type="text" name="keterangan" placeholder="Cth: Pojok depan kelas, Meja Guru..." class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-emerald-500">
+            </div>
+
+            <div class="pt-1">
+                <?php 
+                $uploaderId = 'foto_modal_manual_mob';
+                $existingFotos = [];
+                $isMobile = true;
+                include BASE_PATH . '/modules/kelola-sarpras/views/barang/_foto_uploader.php';
+                ?>
+            </div>
+
+            <div class="pt-3 flex gap-2">
+                <button type="button" onclick="closeModalInputManualMobile()" class="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-600 text-xs font-bold">Batal</button>
+                <button type="submit" class="flex-1 py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-bold shadow-md">Simpan ke Ruangan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <!-- Modal Distribusi dari Inventaris (Mobile) -->
 <div id="modalDistribusiMobile" class="fixed inset-0 z-[100] hidden flex items-end sm:items-center justify-center">
     <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-xs" onclick="closeModalDistribusiMobile()"></div>
@@ -203,12 +363,102 @@ foreach ($distribusi as $itemD) {
 </div>
 
 <script>
+function openModalInputManualMobile() {
+    document.getElementById('modalInputManualMobile')?.classList.remove('hidden');
+}
+function closeModalInputManualMobile() {
+    document.getElementById('modalInputManualMobile')?.classList.add('hidden');
+}
 function openModalDistribusiMobile() {
     document.getElementById('modalDistribusiMobile')?.classList.remove('hidden');
 }
 function closeModalDistribusiMobile() {
     document.getElementById('modalDistribusiMobile')?.classList.add('hidden');
 }
+
+// Format Rupiah pada Modal Input Manual Mobile
+const inputHargaManualMob = document.getElementById('inputHargaManualMob');
+const hiddenHargaManualMob = document.getElementById('hiddenHargaManualMob');
+if (inputHargaManualMob && hiddenHargaManualMob) {
+    inputHargaManualMob.addEventListener('input', function() {
+        let value = this.value.replace(/[^,\d]/g, '').toString();
+        let split = value.split(',');
+        let sisa = split[0].length % 3;
+        let rupiah = split[0].substr(0, sisa);
+        let ribuan = split[0].substr(sisa).match(/\d{3}/gi);
+        if (ribuan) {
+            let separator = sisa ? '.' : '';
+            rupiah += separator + ribuan.join('.');
+        }
+        rupiah = split[1] != undefined ? rupiah + ',' + split[1] : rupiah;
+        this.value = rupiah;
+        hiddenHargaManualMob.value = value.replace(/\./g, '').replace(',', '.');
+    });
+}
+
+// Dependent Golongan & Kelompok + Preview Kode pada Modal Input Manual Mobile
+const selGolManualMob = document.getElementById('selGolManualMob');
+const selKelManualMob = document.getElementById('selKelManualMob');
+const selAngManualMob = document.getElementById('selAngManualMob');
+const previewKodeManualMob = document.getElementById('previewKodeManualMob');
+
+function updatePreviewKodeMob() {
+    const kGol = selGolManualMob?.options[selGolManualMob.selectedIndex]?.dataset?.kode || '...';
+    const kKel = selKelManualMob?.options[selKelManualMob.selectedIndex]?.dataset?.kode || '...';
+    const kAng = selAngManualMob?.options[selAngManualMob.selectedIndex]?.dataset?.kode || '...';
+    if (previewKodeManualMob) {
+        previewKodeManualMob.textContent = `${kGol}.${kKel}.${kAng}.001`;
+    }
+}
+
+if (selGolManualMob && selKelManualMob) {
+    const masterOpts = Array.from(selKelManualMob.options)
+        .filter(opt => opt.value !== '')
+        .map(opt => ({
+            value: opt.value,
+            text: opt.textContent,
+            golonganId: opt.getAttribute('data-golongan') || '',
+            kode: opt.getAttribute('data-kode') || ''
+        }));
+
+    function applyFilterMob(selectedId = null) {
+        const golId = selGolManualMob.value;
+        selKelManualMob.innerHTML = '';
+        if (!golId) {
+            const opt = document.createElement('option');
+            opt.value = '';
+            opt.dataset.kode = '...';
+            opt.textContent = '-- Pilih Golongan Dulu --';
+            selKelManualMob.appendChild(opt);
+            selKelManualMob.disabled = true;
+            updatePreviewKodeMob();
+            return;
+        }
+        const filtered = masterOpts.filter(i => String(i.golonganId) === String(golId));
+        selKelManualMob.disabled = filtered.length === 0;
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.dataset.kode = '...';
+        placeholder.textContent = filtered.length ? '-- Pilih Kelompok --' : '-- Belum Ada Kelompok --';
+        selKelManualMob.appendChild(placeholder);
+        filtered.forEach(item => {
+            const opt = document.createElement('option');
+            opt.value = item.value;
+            opt.dataset.golongan = item.golonganId;
+            opt.dataset.kode = item.kode;
+            opt.textContent = item.text;
+            if (selectedId && String(item.value) === String(selectedId)) opt.selected = true;
+            selKelManualMob.appendChild(opt);
+        });
+        updatePreviewKodeMob();
+    }
+
+    selGolManualMob.addEventListener('change', () => applyFilterMob(''));
+    selKelManualMob.addEventListener('change', updatePreviewKodeMob);
+    if (selAngManualMob) selAngManualMob.addEventListener('change', updatePreviewKodeMob);
+    applyFilterMob(null);
+}
+
 document.getElementById('selBarangDistMobile')?.addEventListener('change', function() {
     const opt = this.options[this.selectedIndex];
     const sisa = opt?.getAttribute('data-sisa');
@@ -223,5 +473,11 @@ document.getElementById('selBarangDistMobile')?.addEventListener('change', funct
         info.textContent = '';
     }
 });
-</script>
 
+document.addEventListener('DOMContentLoaded', function() {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('action') === 'input-manual') {
+        openModalInputManualMobile();
+    }
+});
+</script>

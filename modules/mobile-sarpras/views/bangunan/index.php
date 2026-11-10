@@ -15,7 +15,9 @@
                 <p class="text-xs text-slate-500 mt-1">Silakan klik tombol + untuk menambah data baru.</p>
             </div>
         <?php else: ?>
-            <?php foreach ($bangunan as $b): ?>
+            <?php foreach ($bangunan as $b): 
+                $rooms = $ruanganByBangunan[$b['id']] ?? [];
+            ?>
                 <div class="block bg-white p-4 rounded-3xl shadow-sm border border-slate-100">
                     <div class="flex gap-4">
                         <div class="w-16 h-16 bg-amber-50 rounded-2xl flex items-center justify-center flex-shrink-0 border border-amber-100">
@@ -32,6 +34,9 @@
                                 <span class="px-2 py-0.5 rounded-lg border text-[10px] font-bold bg-slate-50 text-slate-600 border-slate-200">
                                     <?= floatval($b['luas_bangunan']) ?> m&sup2;
                                 </span>
+                                <span class="px-2 py-0.5 rounded-lg border text-[10px] font-bold bg-indigo-50 text-indigo-700 border-indigo-100">
+                                    <?= count($rooms) ?> Ruang
+                                </span>
                             </div>
                         
                             <div class="flex items-center gap-2 mt-3 pt-2 border-t border-slate-100">
@@ -47,6 +52,30 @@
                             </div>
                         </div>
                     </div>
+
+                    <?php if (!empty($rooms)): ?>
+                        <div class="mt-3 pt-3 border-t border-slate-100 space-y-2">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                                <i data-lucide="door-open" class="w-3 h-3 text-indigo-500"></i> Daftar Ruangan di Gedung Ini:
+                            </p>
+                            <?php foreach ($rooms as $r): ?>
+                                <div class="bg-slate-50 rounded-2xl p-2.5 border border-slate-100 flex items-center justify-between gap-2">
+                                    <div class="min-w-0 flex-1">
+                                        <p class="text-xs font-bold text-slate-800 truncate"><?= e($r['nama_ruang']) ?></p>
+                                        <p class="text-[10px] text-slate-500 truncate"><?= e($r['jenis_ruang']) ?> &bull; <?= intval($r['total_aset'] ?? 0) ?> Aset</p>
+                                    </div>
+                                    <div class="flex items-center gap-1.5 flex-shrink-0">
+                                        <a href="<?= url('mobile-sarpras/ruangan/detail/' . $r['id']) ?>" class="px-2 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-700 text-[10px] font-bold flex items-center gap-1 active:scale-95">
+                                            <i data-lucide="package" class="w-3 h-3 text-indigo-500"></i> Detail
+                                        </a>
+                                        <a href="<?= url('mobile-sarpras/ruangan/detail/' . $r['id'] . '?action=input-manual') ?>" class="px-2.5 py-1.5 rounded-xl bg-emerald-600 text-white text-[10px] font-bold flex items-center gap-1 shadow-sm shadow-emerald-600/20 active:scale-95">
+                                            <i data-lucide="plus-circle" class="w-3 h-3"></i> + Inventaris
+                                        </a>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
                 </div>
             <?php endforeach; ?>
         <?php endif; ?>

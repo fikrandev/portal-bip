@@ -2,7 +2,7 @@
     <div class="mb-4 sticky top-0 bg-slate-50 pt-2 pb-3 z-10 space-y-2.5">
         <div class="flex items-center justify-between">
             <div>
-                <h2 class="text-xl font-bold text-slate-800">Data Ruangan</h2>
+                <h2 class="text-xl font-bold text-slate-800">Data Ruangan &amp; Inventaris</h2>
                 <p class="text-xs text-slate-500 font-medium">Menampilkan <span id="mobileRuanganCount"><?= count($ruangan) ?></span> ruangan</p>
             </div>
         </div>
@@ -62,15 +62,15 @@
                         </div>
                     </div>
 
-                    <!-- Action Buttons -->
+                    <!-- Action Buttons: Tambah Inventaris Ruangan & Lihat Aset -->
                     <div class="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-slate-100">
-                        <a href="<?= url('mobile-sarpras/inventaris/tambah?ruangan_id=' . $r['id']) ?>" class="py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs transition-all">
+                        <a href="<?= url('mobile-sarpras/ruangan/detail/' . $r['id'] . '?action=input-manual') ?>" class="py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs transition-all">
                             <i data-lucide="package-plus" class="w-3.5 h-3.5"></i>
-                            <span>+ Input Barang</span>
+                            <span>+ Tambah Inventaris</span>
                         </a>
-                        <a href="<?= url('mobile-sarpras/ruangan/detail/' . $r['id']) ?>" class="py-2 px-3 rounded-xl bg-blue-50 hover:bg-blue-100 active:scale-98 text-blue-700 border border-blue-200 text-xs font-bold flex items-center justify-center gap-1.5 transition-all">
+                        <a href="<?= url('mobile-sarpras/ruangan/detail/' . $r['id']) ?>" class="py-2.5 px-3 rounded-xl bg-blue-50 hover:bg-blue-100 active:scale-98 text-blue-700 border border-blue-200 text-xs font-bold flex items-center justify-center gap-1.5 transition-all">
                             <i data-lucide="boxes" class="w-3.5 h-3.5"></i>
-                            <span>Aset Ruang (<?= $totalBarang ?>)</span>
+                            <span>Lihat Aset (<?= $totalBarang ?>)</span>
                         </a>
                     </div>
 
