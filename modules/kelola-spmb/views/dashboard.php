@@ -285,7 +285,7 @@ $group = $stats['activeGroup'] ?? null;
             <div class="flex items-center justify-between mb-4">
                 <div>
                     <h3 class="font-bold text-slate-900 text-base">Progress Kuota Pendaftar</h3>
-                    <p class="text-xs text-slate-500">Kapasitas kursi per jenjang pendidikan</p>
+                    <p class="text-xs text-slate-500">Kapasitas kursi per jenjang (tanpa Daftar Tunggu)</p>
                 </div>
                 <span class="text-xs font-bold px-2.5 py-1 rounded-lg bg-sky-50 text-sky-700 border border-sky-100">
                     <?= e($group['nama_group'] ?? 'SPMB') ?>

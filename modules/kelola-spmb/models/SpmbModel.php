@@ -74,9 +74,10 @@ class SpmbModel
     {
         return self::db()->findAll("
             SELECT g.*, 
-                   COUNT(p.id) as total_pendaftar,
+                   SUM(CASE WHEN p.jenis_pendaftaran IN ('Siswa Baru', 'Pindahan') THEN 1 ELSE 0 END) as total_pendaftar,
                    SUM(CASE WHEN p.jenis_pendaftaran = 'Siswa Baru' THEN 1 ELSE 0 END) as total_siswa_baru,
-                   SUM(CASE WHEN p.jenis_pendaftaran = 'Pindahan' THEN 1 ELSE 0 END) as total_pindahan
+                   SUM(CASE WHEN p.jenis_pendaftaran = 'Pindahan' THEN 1 ELSE 0 END) as total_pindahan,
+                   SUM(CASE WHEN p.jenis_pendaftaran = 'Daftar Tunggu' THEN 1 ELSE 0 END) as total_daftar_tunggu
             FROM `spmb_group` g
             LEFT JOIN `spmb_pendaftar` p ON p.group_id = g.id
             GROUP BY g.id
@@ -1531,33 +1532,38 @@ class SpmbModel
         $targetGroupId = $activeGroup['id'] ?? null;
 
         $whereGroup = $targetGroupId ? "WHERE group_id = $targetGroupId" : "";
-        $whereGroupP = $targetGroupId ? "WHERE p.group_id = $targetGroupId" : "";
+        $whereNonDaftarTunggu = $targetGroupId
+            ? "WHERE group_id = $targetGroupId AND jenis_pendaftaran != 'Daftar Tunggu'"
+            : "WHERE jenis_pendaftaran != 'Daftar Tunggu'";
+        $whereNonDaftarTungguP = $targetGroupId
+            ? "WHERE p.group_id = $targetGroupId AND p.jenis_pendaftaran != 'Daftar Tunggu'"
+            : "WHERE p.jenis_pendaftaran != 'Daftar Tunggu'";
 
-        // Total Counts
+        // Total Counts (Daftar Tunggu dipisahkan dari perhitungan Total Pendaftar & Progress Kuota)
         $counts = self::db()->find("
             SELECT 
-                COUNT(*) as total_pendaftar,
+                SUM(CASE WHEN jenis_pendaftaran != 'Daftar Tunggu' THEN 1 ELSE 0 END) as total_pendaftar,
                 SUM(CASE WHEN jenis_pendaftaran = 'Siswa Baru' THEN 1 ELSE 0 END) as total_siswa_baru,
                 SUM(CASE WHEN jenis_pendaftaran = 'Pindahan' THEN 1 ELSE 0 END) as total_pindahan,
                 SUM(CASE WHEN jenis_pendaftaran = 'Daftar Tunggu' THEN 1 ELSE 0 END) as total_daftar_tunggu,
-                SUM(CASE WHEN status_kelulusan = 'Lulus / Diterima' THEN 1 ELSE 0 END) as total_lulus,
-                SUM(CASE WHEN status_kelulusan = 'Menunggu Seleksi' THEN 1 ELSE 0 END) as total_menunggu,
-                SUM(CASE WHEN status_kelulusan = 'Lolos Berkas' THEN 1 ELSE 0 END) as total_lolos_berkas,
-                SUM(CASE WHEN status_kelulusan = 'Dibatalkan' THEN 1 ELSE 0 END) as total_dibatalkan,
-                SUM(CASE WHEN (kategori_pendaftar LIKE '%Keluarga%' OR kategori_pendaftar LIKE '%Adik%' OR kategori_pendaftar LIKE '%Saudara%') THEN 1 ELSE 0 END) as total_keluarga,
-                SUM(CASE WHEN ((kategori_pendaftar NOT LIKE '%Keluarga%' AND kategori_pendaftar NOT LIKE '%Adik%' AND kategori_pendaftar NOT LIKE '%Saudara%') OR kategori_pendaftar IS NULL OR kategori_pendaftar = '') THEN 1 ELSE 0 END) as total_umum,
-                SUM(CASE WHEN biodata_status = 'Lengkap' THEN 1 ELSE 0 END) as total_biodata_lengkap,
-                SUM(CASE WHEN status_pembayaran = 'Lunas' THEN 1 ELSE 0 END) as total_lunas,
-                SUM(CASE WHEN status_pembayaran = 'Belum Lunas' THEN 1 ELSE 0 END) as total_belum_lunas
+                SUM(CASE WHEN jenis_pendaftaran != 'Daftar Tunggu' AND status_kelulusan = 'Lulus / Diterima' THEN 1 ELSE 0 END) as total_lulus,
+                SUM(CASE WHEN jenis_pendaftaran != 'Daftar Tunggu' AND status_kelulusan = 'Menunggu Seleksi' THEN 1 ELSE 0 END) as total_menunggu,
+                SUM(CASE WHEN jenis_pendaftaran != 'Daftar Tunggu' AND status_kelulusan = 'Lolos Berkas' THEN 1 ELSE 0 END) as total_lolos_berkas,
+                SUM(CASE WHEN jenis_pendaftaran != 'Daftar Tunggu' AND status_kelulusan = 'Dibatalkan' THEN 1 ELSE 0 END) as total_dibatalkan,
+                SUM(CASE WHEN jenis_pendaftaran != 'Daftar Tunggu' AND (kategori_pendaftar LIKE '%Keluarga%' OR kategori_pendaftar LIKE '%Adik%' OR kategori_pendaftar LIKE '%Saudara%') THEN 1 ELSE 0 END) as total_keluarga,
+                SUM(CASE WHEN jenis_pendaftaran != 'Daftar Tunggu' AND ((kategori_pendaftar NOT LIKE '%Keluarga%' AND kategori_pendaftar NOT LIKE '%Adik%' AND kategori_pendaftar NOT LIKE '%Saudara%') OR kategori_pendaftar IS NULL OR kategori_pendaftar = '') THEN 1 ELSE 0 END) as total_umum,
+                SUM(CASE WHEN jenis_pendaftaran != 'Daftar Tunggu' AND biodata_status = 'Lengkap' THEN 1 ELSE 0 END) as total_biodata_lengkap,
+                SUM(CASE WHEN jenis_pendaftaran != 'Daftar Tunggu' AND status_pembayaran = 'Lunas' THEN 1 ELSE 0 END) as total_lunas,
+                SUM(CASE WHEN jenis_pendaftaran != 'Daftar Tunggu' AND status_pembayaran = 'Belum Lunas' THEN 1 ELSE 0 END) as total_belum_lunas
             FROM `spmb_pendaftar`
             $whereGroup
         ") ?: [];
 
-        // Breakdown per Jenjang
+        // Breakdown per Jenjang (Hanya Siswa Baru & Pindahan, Daftar Tunggu tidak masuk kuota/progres)
         $jenjangRaw = self::db()->findAll("
             SELECT jenjang, COUNT(*) as jumlah
             FROM `spmb_pendaftar`
-            $whereGroup
+            $whereNonDaftarTunggu
             GROUP BY jenjang
         ");
         $jenjangStats = ['PAUD' => 0, 'SD' => 0, 'SMP' => 0, 'SMA' => 0];
@@ -1565,21 +1571,21 @@ class SpmbModel
             $jenjangStats[$r['jenjang']] = (int)$r['jumlah'];
         }
 
-        // Breakdown per Kategori / Jalur
+        // Breakdown per Kategori / Jalur (Hanya Siswa Baru & Pindahan)
         $jalurStats = self::db()->findAll("
             SELECT COALESCE(NULLIF(kategori_pendaftar, ''), jalur_pendaftaran, 'Umum') as jalur_pendaftaran, COUNT(*) as jumlah
             FROM `spmb_pendaftar`
-            $whereGroup
+            $whereNonDaftarTunggu
             GROUP BY COALESCE(NULLIF(kategori_pendaftar, ''), jalur_pendaftaran, 'Umum')
             ORDER BY jumlah DESC
         ");
 
-        // Pendaftar Terbaru (Recent 7)
+        // Pendaftar Terbaru (Recent 7 - Hanya Siswa Baru & Pindahan)
         $recentPendaftar = self::db()->findAll("
             SELECT p.*, g.nama_group
             FROM `spmb_pendaftar` p
             LEFT JOIN `spmb_group` g ON g.id = p.group_id
-            $whereGroupP
+            $whereNonDaftarTungguP
             ORDER BY p.id DESC
             LIMIT 7
         ");
