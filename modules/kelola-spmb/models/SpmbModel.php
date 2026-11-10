@@ -3627,6 +3627,105 @@ class SpmbModel
             'rekomendasi'       => $rekomendasi
         ];
     }
+
+    /**
+     * Template pesan default untuk broadcast WhatsApp calon siswa Daftar Tunggu
+     */
+    public static function getDefaultWaDaftarTungguTemplate(): string
+    {
+        return "Assalamu'alaikum Warahmatullahi Wabarakatuh,\n\nKepada Yth. Ayah/Bunda dari ananda *{nama}*,\n\nTerima kasih telah mendaftarkan ananda dalam Data Daftar Tunggu (Waiting List) {jenjang} SIT Bina Insan Palu Tahun Ajaran {tahun_ajaran}.\n\nKami menginformasikan bahwa pendaftaran ananda telah tercatat dengan Nomor Pendaftaran: *{no_daftar}* melalui jalur rekomendasi: *{rekomendasi}*.\n\nInformasi lebih lanjut mengenai ketersediaan kuota dan tahapan selanjutnya akan kami sampaikan secara berkala melalui nomor WhatsApp ini.\n\nApabila ada pertanyaan atau informasi yang ingin dikonfirmasikan, silakan membalas pesan ini.\n\nWassalamu'alaikum Warahmatullahi Wabarakatuh.\n\n_Panitia SPMB SIT Bina Insan Palu_";
+    }
+
+    /**
+     * Kirim notifikasi WhatsApp ke calon siswa Daftar Tunggu
+     */
+    public static function sendWaDaftarTunggu(int $pendaftarId, ?string $customTemplate = null): array
+    {
+        $pendaftar = self::getPendaftarById($pendaftarId);
+        if (!$pendaftar) {
+            return [
+                'success' => false,
+                'message' => 'Data calon siswa daftar tunggu tidak ditemukan.',
+                'phone'   => '-',
+                'nama'    => '-'
+            ];
+        }
+
+        $targetPhone = !empty($pendaftar['no_wa']) ? $pendaftar['no_wa'] :
+                      (!empty($pendaftar['no_hp']) ? $pendaftar['no_hp'] :
+                      (!empty($pendaftar['no_hp_ayah']) ? $pendaftar['no_hp_ayah'] :
+                      (!empty($pendaftar['no_hp_ibu']) ? $pendaftar['no_hp_ibu'] : '')));
+
+        if (empty($targetPhone)) {
+            return [
+                'success' => false,
+                'message' => 'Nomor WhatsApp atau No HP calon siswa / orang tua belum diisi.',
+                'phone'   => '-',
+                'nama'    => $pendaftar['nama_lengkap']
+            ];
+        }
+
+        $group = !empty($pendaftar['group_id']) ? self::getGroupById((int)$pendaftar['group_id']) : self::getActiveGroup();
+        $tahunAjaran = $group['tahun_ajaran'] ?? ($group['nama_group'] ?? '2026/2027');
+        $namaUnit = self::getNamaSekolahByJenjang($pendaftar['jenjang'] ?? 'SD');
+        $rekomendasi = $pendaftar['kategori_pendaftar'] ?: 'Yayasan';
+        if (!empty($pendaftar['nama_rekomendasi'])) {
+            $rekomendasi .= ' (' . $pendaftar['nama_rekomendasi'] . ')';
+        }
+        $namaOrtu = $pendaftar['nama_ayah'] ?: ($pendaftar['nama_ibu'] ?: 'Ayah/Bunda');
+
+        $template = !empty(trim($customTemplate ?? '')) ? $customTemplate : self::getDefaultWaDaftarTungguTemplate();
+
+        $replacements = [
+            '{nama}'                => $pendaftar['nama_lengkap'],
+            '{nama_siswa}'          => $pendaftar['nama_lengkap'],
+            '{no_daftar}'           => $pendaftar['nomor_pendaftaran'],
+            '{nomor_pendaftaran}'   => $pendaftar['nomor_pendaftaran'],
+            '{jenjang}'             => $pendaftar['jenjang'],
+            '{rekomendasi}'         => $rekomendasi,
+            '{jalur}'               => $rekomendasi,
+            '{tahun_ajaran}'        => $tahunAjaran,
+            '{nama_sekolah}'        => $namaUnit,
+            '{nama_unit}'           => $namaUnit,
+            '{nama_ortu}'           => $namaOrtu,
+        ];
+
+        $pesan = str_replace(array_keys($replacements), array_values($replacements), $template);
+
+        // Kirim melalui WaGateway
+        $res = WaGateway::send($targetPhone, $pesan, [
+            'module'         => 'spmb_daftar_tunggu',
+            'include_footer' => true
+        ]);
+
+        $res['phone'] = $targetPhone;
+        $res['nama'] = $pendaftar['nama_lengkap'];
+        $res['pendaftar_id'] = $pendaftarId;
+
+        if (!empty($res['success'])) {
+            try {
+                self::db()->query("
+                    UPDATE `spmb_pendaftar` SET
+                        `wa_dt_sent_at` = NOW(),
+                        `wa_dt_sent_count` = `wa_dt_sent_count` + 1,
+                        `last_wa_dt_phone` = ?,
+                        `last_wa_dt_status` = 'Success'
+                    WHERE `id` = ?
+                ", [$targetPhone, $pendaftarId]);
+            } catch (Throwable $e) {}
+        } else {
+            try {
+                self::db()->query("
+                    UPDATE `spmb_pendaftar` SET
+                        `last_wa_dt_phone` = ?,
+                        `last_wa_dt_status` = 'Failed'
+                    WHERE `id` = ?
+                ", [$targetPhone, $pendaftarId]);
+            } catch (Throwable $e) {}
+        }
+
+        return $res;
+    }
 }
 
 

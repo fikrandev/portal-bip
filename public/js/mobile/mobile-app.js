@@ -3,13 +3,13 @@
  * Handles Geolocation GPS, Map Radar, Attendance Check-in/Check-out State (15:00 device time lock), Journal forms, and Mobile UI interactions.
  */
 
-// School Center Coordinates (Default: Kampus Utama BIP)
-const SCHOOL_COORDS = {
+// School Center Coordinates (Default: Kampus Utama BIP, can be overridden per employee/unit via window.CUSTOM_SCHOOL_COORDS)
+const SCHOOL_COORDS = Object.assign({
   lat: -5.147665,
   lng: 119.432732,
   name: "Kampus Utama BIP",
   radius: 150 // radius in meters
-};
+}, window.CUSTOM_SCHOOL_COORDS || {});
 
 let userCoords = null;
 let leafletMap = null;

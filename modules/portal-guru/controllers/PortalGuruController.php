@@ -68,12 +68,39 @@ class PortalGuruController
      */
     public static function absen(): void
     {
+        $schoolName = 'Kampus Utama BIP';
+        $schoolRadius = 150;
+        $schoolCoords = ['lat' => -5.147665, 'lng' => 119.432732];
+        $lokasiSourceLabel = 'Lokasi Semula (Default)';
+
+        if (file_exists(MODULES_PATH . '/kelola-absen-pegawai/models/AbsenPegawaiModel.php')) {
+            require_once MODULES_PATH . '/kelola-absen-pegawai/models/AbsenPegawaiModel.php';
+            $pegawaiId = (int)($_SESSION['user']['pegawai_id'] ?? $_GET['pegawai_id'] ?? 0);
+            if ($pegawaiId <= 0 && !empty($_SESSION['user']['nama_lengkap'])) {
+                try {
+                    $db = Database::getInstance()->getConnection();
+                    $st = $db->prepare("SELECT id FROM pegawai WHERE nama_lengkap = ? LIMIT 1");
+                    $st->execute([$_SESSION['user']['nama_lengkap']]);
+                    $pegawaiId = (int)$st->fetchColumn();
+                } catch (Throwable $e) {}
+            }
+            $efektif = AbsenPegawaiModel::getLokasiEfektifPegawai($pegawaiId);
+            $schoolName = $efektif['nama_kantor'] ?? $schoolName;
+            $schoolRadius = (int)($efektif['radius_meter'] ?? $schoolRadius);
+            $schoolCoords = [
+                'lat' => (float)($efektif['latitude'] ?? -5.147665),
+                'lng' => (float)($efektif['longitude'] ?? 119.432732),
+            ];
+            $lokasiSourceLabel = $efektif['source_label'] ?? $lokasiSourceLabel;
+        }
+
         self::render('absen', [
             'pageTitle' => 'Presensi Kehadiran & Geolokasi',
             'activeTab' => 'absen',
-            'schoolName' => 'Kampus BIP',
-            'schoolRadius' => 150,
-            'schoolCoords' => ['lat' => -5.147665, 'lng' => 119.432732],
+            'schoolName' => $schoolName,
+            'schoolRadius' => $schoolRadius,
+            'schoolCoords' => $schoolCoords,
+            'lokasiSourceLabel' => $lokasiSourceLabel,
             'recentLogs' => [
                 ['date' => 'Hari ini', 'checkin' => '07:12 WITA', 'checkout' => '-', 'status' => 'Hadir Tepat Waktu', 'badge' => 'emerald'],
                 ['date' => 'Kemarin', 'checkin' => '07:05 WITA', 'checkout' => '15:35 WITA', 'status' => 'Hadir Tepat Waktu', 'badge' => 'emerald'],

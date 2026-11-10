@@ -81,6 +81,9 @@ class AutoMigrate
             '2026_11_07_000043_add_spmb_observasi_harapan_orang_tua'      => 'migration043AddSpmbObservasiHarapanOrangTua',
             '2026_11_09_000044_fix_spmb_biodata_and_berkas_status'        => 'migration044FixSpmbBiodataAndBerkasStatus',
             '2026_11_09_000045_add_spmb_promosi_daftar_tunggu_features'   => 'migration045AddSpmbPromosiDaftarTungguFeatures',
+            '2026_11_10_000046_create_cuti_pegawai_tables'                => 'migration046CreateCutiPegawaiTables',
+            '2026_11_10_000047_create_absen_pegawai_tables'               => 'migration047CreateAbsenPegawaiTables',
+            '2026_11_11_000048_add_spmb_daftar_tunggu_wa_columns'         => 'migration048AddSpmbDaftarTungguWaColumns',
         ];
     }
     /**
@@ -2922,6 +2925,45 @@ class AutoMigrate
                     $pdo->exec("ALTER TABLE `spmb_pendaftar` ADD INDEX `idx_spmb_dari_dt` (`is_dari_daftar_tunggu`)");
                 }
             } catch (Throwable $e) {}
+        }
+    }
+
+    /**
+     * Migration 046: Tabel Modul Kelola Cuti Pegawai (Jenis Cuti, Saldo Pegawai, Pengajuan, & Log Pengurangan)
+     */
+    protected static function migration046CreateCutiPegawaiTables(PDO $pdo): void
+    {
+        if (file_exists(BASE_PATH . '/modules/kelola-cuti/models/CutiModel.php')) {
+            require_once BASE_PATH . '/modules/kelola-cuti/models/CutiModel.php';
+            if (class_exists('CutiModel')) {
+                CutiModel::init();
+            }
+        }
+    }
+
+    /**
+     * Migration 047: Tabel Modul Kelola Absen Pegawai (Pengaturan Global, Lokasi Custom Unit, Lokasi Custom Pegawai, & Log)
+     */
+    protected static function migration047CreateAbsenPegawaiTables(PDO $pdo): void
+    {
+        if (file_exists(BASE_PATH . '/modules/kelola-absen-pegawai/models/AbsenPegawaiModel.php')) {
+            require_once BASE_PATH . '/modules/kelola-absen-pegawai/models/AbsenPegawaiModel.php';
+            if (class_exists('AbsenPegawaiModel')) {
+                AbsenPegawaiModel::init();
+            }
+        }
+    }
+
+    /**
+     * Migration 048: Tambah kolom riwayat broadcast WhatsApp pendaftar Daftar Tunggu
+     */
+    protected static function migration048AddSpmbDaftarTungguWaColumns(PDO $pdo): void
+    {
+        if (self::hasTable($pdo, 'spmb_pendaftar')) {
+            self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'wa_dt_sent_at', 'DATETIME NULL', 'wa_psikolog_sent_at');
+            self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'wa_dt_sent_count', 'INT NOT NULL DEFAULT 0', 'wa_dt_sent_at');
+            self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'last_wa_dt_phone', 'VARCHAR(30) NULL', 'wa_dt_sent_count');
+            self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'last_wa_dt_status', 'VARCHAR(50) NULL', 'last_wa_dt_phone');
         }
     }
 }

@@ -604,7 +604,16 @@ $router->get('/kelola-absen-siswa/kelas/cetak', [AbsenSiswaController::class, 'a
 $router->get('/kelola-absen-siswa/rekap', [AbsenSiswaController::class, 'rekap'], [Middleware::permissionRequired('absen_siswa.rekap')]);
 $router->get('/kelola-absen-siswa/rekap/cetak', [AbsenSiswaController::class, 'rekapCetak'], [Middleware::permissionRequired('absen_siswa.rekap')]);
 $router->get('/kelola-absen-siswa/rekap/export', [AbsenSiswaController::class, 'rekapExport'], [Middleware::permissionRequired('absen_siswa.export')]);
+// -- Kelola Lokasi & Radius Absen Pegawai --
 $router->get('/kelola-absen-pegawai', [AbsenPegawaiController::class, 'index'], [Middleware::permissionRequired('absen_pegawai.view')]);
+$router->post('/kelola-absen-pegawai/pengaturan/save', [AbsenPegawaiController::class, 'savePengaturanGlobal'], [Middleware::permissionRequired('absen_pegawai.view')]);
+$router->post('/kelola-absen-pegawai/radius/update', [AbsenPegawaiController::class, 'updateRadiusQuick'], [Middleware::permissionRequired('absen_pegawai.view')]);
+$router->post('/kelola-absen-pegawai/pegawai/save', [AbsenPegawaiController::class, 'saveLokasiPegawai'], [Middleware::permissionRequired('absen_pegawai.view')]);
+$router->post('/kelola-absen-pegawai/pegawai/reset', [AbsenPegawaiController::class, 'resetLokasiPegawai'], [Middleware::permissionRequired('absen_pegawai.view')]);
+$router->post('/kelola-absen-pegawai/unit/save', [AbsenPegawaiController::class, 'saveLokasiUnit'], [Middleware::permissionRequired('absen_pegawai.view')]);
+$router->post('/kelola-absen-pegawai/unit/reset', [AbsenPegawaiController::class, 'resetLokasiUnit'], [Middleware::permissionRequired('absen_pegawai.view')]);
+$router->post('/kelola-absen-pegawai/reset-semua', [AbsenPegawaiController::class, 'resetSemuaLokasi'], [Middleware::permissionRequired('absen_pegawai.view')]);
+$router->get('/kelola-absen-pegawai/export', [AbsenPegawaiController::class, 'exportCsv'], [Middleware::permissionRequired('absen_pegawai.view')]);
 // Modul Qur'an Siswa (Hub + 3 Jenjang: SD, PAUD, SMP & SMA)
 $router->get('/kelola-quran-siswa', [QuranSiswaController::class, 'index'], [Middleware::permissionRequired('quran_siswa.view')]);
 $router->get('/kelola-quran-siswa-sd', [QuranSiswaController::class, 'sdIndex'], [Middleware::permissionRequired('quran_siswa.view')]);
@@ -641,7 +650,16 @@ $router->get('/kelola-quran-siswa/cetak', [QuranSiswaController::class, 'cetakRe
 $router->get('/kelola-quran-siswa/export', [QuranSiswaController::class, 'exportExcel'], [Middleware::permissionRequired('quran_siswa.view')]);
 $router->get('/kelola-ujian', [UjianController::class, 'index'], [Middleware::permissionRequired('ujian.view')]);
 $router->get('/kelola-quran-pegawai', [QuranPegawaiController::class, 'index'], [Middleware::permissionRequired('quran_pegawai.view')]);
+// -- Kelola Cuti Pegawai --
 $router->get('/kelola-cuti', [CutiController::class, 'index'], [Middleware::permissionRequired('cuti.view')]);
+$router->post('/kelola-cuti/pengajuan/store', [CutiController::class, 'storePengajuan'], [Middleware::permissionRequired('cuti.view')]);
+$router->post('/kelola-cuti/pengajuan/approve', [CutiController::class, 'approve'], [Middleware::permissionRequired('cuti.view')]);
+$router->post('/kelola-cuti/jenis/store', [CutiController::class, 'storeJenisCuti'], [Middleware::permissionRequired('cuti.view')]);
+$router->post('/kelola-cuti/jenis/delete', [CutiController::class, 'deleteJenisCuti'], [Middleware::permissionRequired('cuti.view')]);
+$router->post('/kelola-cuti/saldo/adjust', [CutiController::class, 'adjustSaldo'], [Middleware::permissionRequired('cuti.view')]);
+$router->post('/kelola-cuti/tambah-bulanan', [CutiController::class, 'triggerTambahBulanan'], [Middleware::permissionRequired('cuti.view')]);
+$router->get('/kelola-cuti/cetak/{id}', [CutiController::class, 'cetakSurat'], [Middleware::permissionRequired('cuti.view')]);
+$router->get('/kelola-cuti/export', [CutiController::class, 'exportCsv'], [Middleware::permissionRequired('cuti.view')]);
 $router->get('/kelola-kpi', [KpiController::class, 'index'], [Middleware::permissionRequired('kpi.view')]);
 $router->get('/kelola-ibadah-guru', [IbadahGuruController::class, 'index'], [Middleware::permissionRequired('ibadah_guru.view')]);
 // -- Kelola SPMB (Seleksi Penerimaan Murid Baru) --
@@ -690,6 +708,9 @@ $router->post('/kelola-spmb/daftar-tunggu/status/{id}', [SpmbController::class, 
 $router->post('/kelola-spmb/daftar-tunggu/promosikan/{id}', [SpmbController::class, 'daftarTungguPromosikan'], [Middleware::permissionRequired('spmb.update')]);
 $router->get('/kelola-spmb/daftar-tunggu/cetak/{id}', [SpmbController::class, 'daftarTungguCetak'], [Middleware::permissionRequired('spmb.view')]);
 $router->get('/kelola-spmb/daftar-tunggu/export', [SpmbController::class, 'daftarTungguExport'], [Middleware::permissionRequired('spmb.view')]);
+$router->post('/kelola-spmb/daftar-tunggu/send-wa/{id}', [SpmbController::class, 'daftarTungguSendWaSingle'], [Middleware::permissionRequired('spmb.update')]);
+$router->post('/kelola-spmb/daftar-tunggu/broadcast-send-single', [SpmbController::class, 'daftarTungguSendWaSingle'], [Middleware::permissionRequired('spmb.update')]);
+$router->get('/kelola-spmb/daftar-tunggu/get-template-wa', [SpmbController::class, 'daftarTungguGetTemplateWa'], [Middleware::permissionRequired('spmb.view')]);
 
 // 5. Pengaturan Tahun Group SPMB
 $router->get('/kelola-spmb/pengaturan', [SpmbController::class, 'pengaturanIndex'], [Middleware::permissionRequired('spmb.view')]);

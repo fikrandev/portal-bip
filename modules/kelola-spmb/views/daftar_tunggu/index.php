@@ -28,6 +28,14 @@ $filters = $filters ?? [];
             </p>
         </div>
         <div class="flex flex-wrap items-center gap-2.5">
+            <button type="button" onclick="bukaModalBroadcastDt()"
+               class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition-all active:scale-95 cursor-pointer">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
+                </svg>
+                <span>Broadcast WA</span>
+                <span id="badgeCheckedDt" class="hidden px-2 py-0.5 rounded-full text-[10px] bg-white text-emerald-800 font-extrabold shadow-xs">0</span>
+            </button>
             <a href="<?= url('kelola-spmb/daftar-tunggu/export?' . http_build_query($filters)) ?>" 
                data-download="true"
                data-no-loading="true"
@@ -103,6 +111,9 @@ $filters = $filters ?? [];
             <table class="w-full text-left text-xs">
                 <thead class="bg-slate-50/75 text-slate-500 border-b border-slate-100 uppercase tracking-wider font-semibold">
                     <tr>
+                        <th class="py-3 px-3 w-10 text-center">
+                            <input type="checkbox" id="checkAllDt" onchange="toggleSelectAllDt(this)" class="rounded text-amber-600 focus:ring-amber-500 cursor-pointer">
+                        </th>
                         <th class="py-3 px-4 w-12 text-center">No</th>
                         <th class="py-3 px-4">No. Pendaftaran</th>
                         <th class="py-3 px-4">Calon Siswa</th>
@@ -117,7 +128,7 @@ $filters = $filters ?? [];
                 <tbody class="divide-y divide-slate-100">
                     <?php if (empty($list)): ?>
                         <tr>
-                            <td colspan="9" class="py-12 text-center text-slate-400">
+                            <td colspan="10" class="py-12 text-center text-slate-400">
                                 <div class="max-w-xs mx-auto space-y-2">
                                     <div class="w-12 h-12 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center mx-auto">
                                         <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
@@ -131,8 +142,24 @@ $filters = $filters ?? [];
                         <?php 
                         $no = ($currentPage - 1) * $perPage + 1;
                         foreach ($list as $item): 
+                            $targetPhone = !empty($item['no_wa']) ? $item['no_wa'] :
+                                          (!empty($item['no_hp']) ? $item['no_hp'] :
+                                          (!empty($item['no_hp_ayah']) ? $item['no_hp_ayah'] :
+                                          (!empty($item['no_hp_ibu']) ? $item['no_hp_ibu'] : '')));
+                            $rekomStr = $item['kategori_pendaftar'] . (!empty($item['nama_rekomendasi']) ? ' (' . $item['nama_rekomendasi'] . ')' : '');
                         ?>
-                            <tr class="hover:bg-slate-50/70 transition-colors">
+                            <tr class="hover:bg-slate-50/70 transition-colors dt-table-row" id="dt-row-<?= (int)$item['id'] ?>">
+                                <td class="py-3 px-3 text-center">
+                                    <input type="checkbox" class="dt-row-check rounded text-amber-600 focus:ring-amber-500 cursor-pointer"
+                                           value="<?= (int)$item['id'] ?>"
+                                           data-id="<?= (int)$item['id'] ?>"
+                                           data-nama="<?= e($item['nama_lengkap']) ?>"
+                                           data-phone="<?= e($targetPhone) ?>"
+                                           data-jenjang="<?= e($item['jenjang']) ?>"
+                                           data-nodaf="<?= e($item['nomor_pendaftaran']) ?>"
+                                           data-rekom="<?= e($rekomStr) ?>"
+                                           onchange="updateSelectedDtCount()">
+                                </td>
                                 <td class="py-3 px-4 text-center font-medium text-slate-400"><?= $no++ ?></td>
                                 <td class="py-3 px-4">
                                     <a href="<?= url('kelola-spmb/daftar-tunggu/detail/' . $item['id']) ?>" class="font-mono font-bold text-amber-700 hover:underline">
@@ -181,7 +208,13 @@ $filters = $filters ?? [];
                                 </td>
                                 <td class="py-3 px-4">
                                     <div class="font-medium text-slate-700"><?= e($item['nama_ayah'] ?: $item['nama_ibu'] ?: '-') ?></div>
-                                    <div class="text-[11px] text-slate-500"><?= e($item['no_hp'] ?: $item['no_hp_ayah'] ?: '-') ?></div>
+                                    <div class="text-[11px] text-slate-500"><?= e($targetPhone ?: '-') ?></div>
+                                    <?php if (!empty($item['wa_dt_sent_at'])): ?>
+                                        <span class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 mt-1" title="Terkirim: <?= date('d M Y H:i', strtotime($item['wa_dt_sent_at'])) ?>">
+                                            <svg class="w-3 h-3 text-emerald-600" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+                                            <span>WA Terkirim</span>
+                                        </span>
+                                    <?php endif; ?>
                                 </td>
                                 <td class="py-3 px-4 text-slate-600 whitespace-nowrap">
                                     <?= date('d/m/Y', strtotime($item['tanggal_daftar'])) ?>
@@ -203,6 +236,12 @@ $filters = $filters ?? [];
                                 </td>
                                 <td class="py-3 px-4 text-center whitespace-nowrap">
                                     <div class="inline-flex items-center gap-1">
+                                        <button type="button" 
+                                                onclick="bukaModalBroadcastDtSingle(<?= (int)$item['id'] ?>, '<?= e(addslashes($item['nama_lengkap'])) ?>', '<?= e($targetPhone) ?>', '<?= e($item['jenjang']) ?>', '<?= e($item['nomor_pendaftaran']) ?>', '<?= e(addslashes($rekomStr)) ?>')" 
+                                                title="Kirim Pesan WhatsApp Japri"
+                                                class="p-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors cursor-pointer">
+                                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+                                        </button>
                                         <a href="<?= url('kelola-spmb/daftar-tunggu/detail/' . $item['id']) ?>" 
                                             title="Detail Siswa"
                                             class="p-1.5 rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors">
@@ -242,6 +281,192 @@ $filters = $filters ?? [];
         $baseRoute = 'kelola-spmb/daftar-tunggu';
         include BASE_PATH . '/modules/kelola-spmb/views/partials/pagination.php'; 
         ?>
+    </div>
+</div>
+
+<!-- ═════════════════════════════════════════════════════════════════════════ -->
+<!-- FLOATING ACTION BAR SAAT SISWA DICENTANG                                   -->
+<!-- ═════════════════════════════════════════════════════════════════════════ -->
+<div id="floatingSelectionDtBar" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-slate-900/95 backdrop-blur-md text-white px-5 py-3 rounded-2xl shadow-2xl border border-slate-700/80 flex items-center gap-4 transition-all">
+    <div class="flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span class="text-xs font-semibold"><span id="floatingSelectedCount" class="font-extrabold text-emerald-300">0</span> Calon Siswa Dicentang</span>
+    </div>
+    <div class="h-4 w-px bg-slate-700"></div>
+    <button type="button" onclick="bukaModalBroadcastDt()" class="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-bold text-xs shadow-md shadow-emerald-500/20 transition-all flex items-center gap-1.5 cursor-pointer active:scale-95">
+        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+        <span>Kirim Broadcast WA Terpilih</span>
+    </button>
+    <button type="button" onclick="resetCheckedDt()" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium text-xs transition-colors cursor-pointer">
+        Batal
+    </button>
+</div>
+
+<!-- ═════════════════════════════════════════════════════════════════════════ -->
+<!-- MODAL BROADCAST WHATSAPP SISWA DAFTAR TUNGGU                              -->
+<!-- ═════════════════════════════════════════════════════════════════════════ -->
+<div id="modalBroadcastDt" class="fixed inset-0 z-50 hidden flex items-center justify-center p-3 sm:p-4 bg-slate-950/60 backdrop-blur-sm overflow-y-auto">
+    <div class="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden my-auto max-h-[92vh] flex flex-col">
+        
+        <!-- Header Modal -->
+        <div class="px-6 py-4 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white flex items-center justify-between shrink-0 shadow-md">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-inner">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+                </div>
+                <div>
+                    <h3 class="text-base font-extrabold tracking-tight">Broadcast WhatsApp Siswa Daftar Tunggu</h3>
+                    <p class="text-[11px] text-emerald-100">Kirim pesan WhatsApp berkala ke calon siswa yang dipilih</p>
+                </div>
+            </div>
+            <button type="button" onclick="tutupModalBroadcastDt()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors text-white cursor-pointer">
+                ✕
+            </button>
+        </div>
+
+        <!-- Modal Body (Scrollable) -->
+        <div class="p-6 overflow-y-auto space-y-5 text-xs text-slate-700">
+            
+            <!-- 1. Sasaran Penerima Info -->
+            <div class="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200/80 flex flex-col gap-2">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-emerald-950 flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                        Sasaran Penerima Broadcast:
+                    </span>
+                    <span id="dtBroadcastQueueBadge" class="px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-emerald-600 text-white shadow-xs">
+                        0 Calon Siswa Terpilih
+                    </span>
+                </div>
+                <div id="dtQueueChipsContainer" class="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-1 custom-scrollbar">
+                    <!-- Dynamic chips of recipients -->
+                </div>
+            </div>
+
+            <!-- 2. Pesan Template Editor -->
+            <div class="space-y-2">
+                <div class="flex items-center justify-between">
+                    <label class="block font-bold text-slate-800 text-xs">
+                        Format Teks Pesan WhatsApp <span class="text-rose-500">*</span>
+                    </label>
+                    <button type="button" onclick="resetDefaultTemplateDt()" class="text-[11px] font-semibold text-emerald-700 hover:underline cursor-pointer">
+                        ↺ Reset ke Template Default
+                    </button>
+                </div>
+
+                <!-- Helper Tags Toolbar -->
+                <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1.5">
+                    <div class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Sisipkan Tag Dinamis (Klik untuk Menambahkan):</div>
+                    <div class="flex flex-wrap gap-1.5">
+                        <button type="button" onclick="insertTagDt('{nama}')" class="px-2.5 py-1 rounded-lg bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-extrabold text-[11px] border border-emerald-300 transition-all cursor-pointer shadow-xs active:scale-95" title="Nama Lengkap Calon Siswa">
+                            + {nama}
+                        </button>
+                        <button type="button" onclick="insertTagDt('{no_daftar}')" class="px-2 py-1 rounded-lg bg-white hover:bg-slate-100 text-slate-700 font-bold text-[11px] border border-slate-200 transition-all cursor-pointer shadow-xs active:scale-95" title="Nomor Pendaftaran">
+                            + {no_daftar}
+                        </button>
+                        <button type="button" onclick="insertTagDt('{jenjang}')" class="px-2 py-1 rounded-lg bg-white hover:bg-slate-100 text-slate-700 font-bold text-[11px] border border-slate-200 transition-all cursor-pointer shadow-xs active:scale-95" title="Jenjang (PAUD/SD/SMP/SMA)">
+                            + {jenjang}
+                        </button>
+                        <button type="button" onclick="insertTagDt('{rekomendasi}')" class="px-2 py-1 rounded-lg bg-white hover:bg-slate-100 text-slate-700 font-bold text-[11px] border border-slate-200 transition-all cursor-pointer shadow-xs active:scale-95" title="Jalur Rekomendasi">
+                            + {rekomendasi}
+                        </button>
+                        <button type="button" onclick="insertTagDt('{tahun_ajaran}')" class="px-2 py-1 rounded-lg bg-white hover:bg-slate-100 text-slate-700 font-bold text-[11px] border border-slate-200 transition-all cursor-pointer shadow-xs active:scale-95" title="Tahun Ajaran Aktif">
+                            + {tahun_ajaran}
+                        </button>
+                        <button type="button" onclick="insertTagDt('{nama_ortu}')" class="px-2 py-1 rounded-lg bg-white hover:bg-slate-100 text-slate-700 font-bold text-[11px] border border-slate-200 transition-all cursor-pointer shadow-xs active:scale-95" title="Nama Ayah/Ibu">
+                            + {nama_ortu}
+                        </button>
+                    </div>
+                </div>
+
+                <textarea id="dtWaCustomTemplate" rows="7" 
+                          oninput="updatePreviewDtMessage()"
+                          class="w-full p-3.5 rounded-2xl border border-slate-200 text-xs font-mono text-slate-800 leading-relaxed outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all bg-white shadow-inner"
+                          placeholder="Ketik template pesan WhatsApp di sini..."></textarea>
+            </div>
+
+            <!-- 3. Live Preview Card -->
+            <div class="space-y-1.5">
+                <div class="flex items-center justify-between">
+                    <span class="text-[11px] font-bold text-slate-500">Pratinjau Pesan Terkirim (Contoh Calon Siswa Pertama):</span>
+                </div>
+                <div class="p-3.5 rounded-2xl bg-slate-900 text-slate-100 font-sans text-xs whitespace-pre-wrap leading-relaxed border border-slate-800 max-h-36 overflow-y-auto shadow-inner" id="dtPreviewContent">
+                    (Pratinjau pesan akan muncul di sini)
+                </div>
+            </div>
+
+            <!-- 4. Keamanan Delay / Jeda Pengiriman -->
+            <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                    <label class="block font-bold text-slate-800 text-xs">Jeda Antar Pesan (Keamanan Anti-Blokir WA)</label>
+                    <p class="text-[11px] text-slate-400">Jeda waktu berhenti sejenak sebelum mengirim pesan ke siswa berikutnya</p>
+                </div>
+                <select id="dtBroadcastDelay" class="px-3 py-1.5 rounded-xl border border-slate-200 bg-white font-bold text-xs text-slate-700 outline-none">
+                    <option value="1000">1 Detik (Cepat)</option>
+                    <option value="2000">2 Detik</option>
+                    <option value="3000" selected>3 Detik (Rekomendasi Aman)</option>
+                    <option value="5000">5 Detik (Sangat Aman)</option>
+                </select>
+            </div>
+
+            <!-- 5. Real-time Progress Card (Berjalan di Background) -->
+            <div id="dtBroadcastProgressBox" class="hidden space-y-3 p-4 rounded-2xl bg-emerald-50/80 border border-emerald-300">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-600 animate-ping"></span>
+                        <span id="dtProgressStatusText" class="font-bold text-emerald-950 text-xs">Memulai antrean pengiriman...</span>
+                    </div>
+                    <span id="dtProgressPercentage" class="font-mono font-black text-emerald-700 text-sm">0%</span>
+                </div>
+                <div class="w-full bg-slate-200/80 rounded-full h-3 overflow-hidden shadow-inner p-0.5">
+                    <div id="dtProgressBar" class="bg-gradient-to-r from-emerald-500 via-teal-500 to-sky-500 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+                <div class="flex items-center gap-3 pt-1 text-[11px] font-bold">
+                    <span class="text-slate-600">Total: <strong id="dtCounterTotal">0</strong></span>
+                    <span class="text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md border border-emerald-300">✓ Berhasil: <strong id="dtCounterSuccess">0</strong></span>
+                    <span class="text-rose-700 bg-rose-100 px-2 py-0.5 rounded-md border border-rose-300">✕ Gagal: <strong id="dtCounterFail">0</strong></span>
+                </div>
+            </div>
+
+            <!-- 6. Real-time Results List with Retry per Item -->
+            <div id="dtResultsContainer" class="hidden space-y-2">
+                <div class="flex items-center justify-between">
+                    <h4 class="font-bold text-slate-800 text-xs flex items-center gap-1.5">
+                        <span>📋</span>
+                        <span>Daftar Status Pengiriman WhatsApp:</span>
+                    </h4>
+                    <button type="button" id="btnRetryAllFailedDt" onclick="retryAllFailedDt()" class="hidden px-2.5 py-1 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-[11px] shadow-sm transition-all cursor-pointer">
+                        🔄 Kirim Ulang Semua yang Gagal (<span id="dtFailedTotalCount">0</span>)
+                    </button>
+                </div>
+                
+                <div id="dtFailSummaryBanner" class="hidden p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs font-semibold text-rose-800 flex items-center justify-between">
+                    <span>⚠️ Terdapat nomor yang gagal dikirimi. Anda dapat mencoba mengirim ulang pada daftar di bawah.</span>
+                </div>
+
+                <div class="max-h-56 overflow-y-auto rounded-2xl border border-slate-200 divide-y divide-slate-100 bg-white shadow-inner" id="dtResultsList">
+                    <!-- Dynamically populated rows -->
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between shrink-0">
+            <button type="button" id="btnTutupBroadcastDt" onclick="tutupModalBroadcastDt()" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-bold text-xs hover:bg-slate-100 transition-colors cursor-pointer">
+                Tutup
+            </button>
+            <div class="flex items-center gap-2">
+                <button type="button" id="btnHentikanBroadcastDt" onclick="hentikanBroadcastDt()" class="hidden px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow-md transition-colors cursor-pointer">
+                    ⏸ Jeda / Hentikan
+                </button>
+                <button type="button" id="btnMulaiBroadcastDt" onclick="mulaiBroadcastDt()" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold text-xs shadow-md shadow-emerald-600/20 transition-all flex items-center gap-2 active:scale-95 cursor-pointer">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+                    <span>Mulai Kirim Broadcast</span>
+                </button>
+            </div>
+        </div>
+
     </div>
 </div>
 
@@ -1173,5 +1398,546 @@ function salinLinkPublic(url) {
             showConfirmButton: false
         });
     }
+}
+
+// ═════════════════════════════════════════════════════════════════════════
+// JAVASCRIPT BROADCAST WHATSAPP SISWA DAFTAR TUNGGU
+// ═════════════════════════════════════════════════════════════════════════
+let dtBroadcastQueue = [];
+let dtFailedItems = [];
+let isDtBroadcastRunning = false;
+const DT_TAHUN_AJARAN = <?= json_encode($activeGroup['tahun_ajaran'] ?? ($activeGroup['nama_group'] ?? '2026/2027')) ?>;
+const DT_CSRF_TOKEN = '<?= CSRF::token() ?>';
+const DT_DEFAULT_TEMPLATE = `Assalamu'alaikum Warahmatullahi Wabarakatuh,
+
+Kepada Yth. Ayah/Bunda dari ananda *{nama}*,
+
+Terima kasih telah mendaftarkan ananda dalam Data Daftar Tunggu (Waiting List) {jenjang} SIT Bina Insan Palu Tahun Ajaran {tahun_ajaran}.
+
+Kami menginformasikan bahwa pendaftaran ananda telah tercatat dengan Nomor Pendaftaran: *{no_daftar}* melalui jalur rekomendasi: *{rekomendasi}*.
+
+Informasi lebih lanjut mengenai ketersediaan kuota dan tahapan selanjutnya akan kami sampaikan secara berkala melalui nomor WhatsApp ini.
+
+Apabila ada pertanyaan atau dokumen pendukung yang ingin dilengkapi, silakan membalas pesan ini.
+
+Wassalamu'alaikum Warahmatullahi Wabarakatuh.
+
+_Panitia SPMB SIT Bina Insan Palu_`;
+
+function toggleSelectAllDt(master) {
+    document.querySelectorAll('.dt-row-check').forEach(chk => {
+        chk.checked = master.checked;
+    });
+    updateSelectedDtCount();
+}
+
+function updateSelectedDtCount() {
+    const checked = document.querySelectorAll('.dt-row-check:checked');
+    const count = checked.length;
+    const badge = document.getElementById('badgeCheckedDt');
+    const floatBar = document.getElementById('floatingSelectionDtBar');
+    const floatCount = document.getElementById('floatingSelectedCount');
+    const checkAll = document.getElementById('checkAllDt');
+    const allChecks = document.querySelectorAll('.dt-row-check');
+
+    if (badge) {
+        badge.textContent = count;
+        badge.classList.toggle('hidden', count === 0);
+    }
+    if (floatBar) {
+        floatBar.classList.toggle('hidden', count === 0);
+        floatBar.classList.toggle('flex', count > 0);
+    }
+    if (floatCount) {
+        floatCount.textContent = count;
+    }
+    if (checkAll && allChecks.length > 0) {
+        checkAll.checked = (count === allChecks.length);
+        checkAll.indeterminate = (count > 0 && count < allChecks.length);
+    }
+}
+
+function resetCheckedDt() {
+    document.querySelectorAll('.dt-row-check').forEach(c => c.checked = false);
+    const checkAll = document.getElementById('checkAllDt');
+    if (checkAll) {
+        checkAll.checked = false;
+        checkAll.indeterminate = false;
+    }
+    updateSelectedDtCount();
+}
+
+function getSelectedDtItems() {
+    const checked = document.querySelectorAll('.dt-row-check:checked');
+    const items = [];
+    checked.forEach(chk => {
+        items.push({
+            id: parseInt(chk.dataset.id),
+            nama: chk.dataset.nama || '',
+            phone: chk.dataset.phone || '',
+            jenjang: chk.dataset.jenjang || '',
+            nodaf: chk.dataset.nodaf || '',
+            rekom: chk.dataset.rekom || 'Yayasan'
+        });
+    });
+    return items;
+}
+
+function getAllDtItemsOnPage() {
+    const checks = document.querySelectorAll('.dt-row-check');
+    const items = [];
+    checks.forEach(chk => {
+        items.push({
+            id: parseInt(chk.dataset.id),
+            nama: chk.dataset.nama || '',
+            phone: chk.dataset.phone || '',
+            jenjang: chk.dataset.jenjang || '',
+            nodaf: chk.dataset.nodaf || '',
+            rekom: chk.dataset.rekom || 'Yayasan'
+        });
+    });
+    return items;
+}
+
+function bukaModalBroadcastDt() {
+    let items = getSelectedDtItems();
+    if (items.length === 0) {
+        const allItems = getAllDtItemsOnPage();
+        if (allItems.length === 0) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Data Kosong',
+                text: 'Belum ada calon siswa daftar tunggu pada halaman ini.',
+                confirmButtonColor: '#d97706'
+            });
+            return;
+        }
+
+        Swal.fire({
+            title: 'Kirim Broadcast ke Siapa?',
+            text: `Anda belum mencentang calon siswa. Apakah Anda ingin mengirimkan pesan ke seluruh ${allItems.length} calon siswa di halaman ini?`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#059669',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: `Ya, Kirim ke Semua (${allItems.length} Siswa)`,
+            cancelButtonText: 'Saya Pilih Centang Dulu'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                document.querySelectorAll('.dt-row-check').forEach(c => c.checked = true);
+                updateSelectedDtCount();
+                siapkanDanTampilkanModalBroadcast(allItems);
+            }
+        });
+        return;
+    }
+
+    siapkanDanTampilkanModalBroadcast(items);
+}
+
+function bukaModalBroadcastDtSingle(id, nama, phone, jenjang, nodaf, rekom) {
+    const singleItem = [{
+        id: parseInt(id),
+        nama: nama,
+        phone: phone,
+        jenjang: jenjang,
+        nodaf: nodaf,
+        rekom: rekom
+    }];
+    siapkanDanTampilkanModalBroadcast(singleItem);
+}
+
+function siapkanDanTampilkanModalBroadcast(items) {
+    dtBroadcastQueue = items;
+    dtFailedItems = [];
+
+    // Set badge & chips
+    const badgeEl = document.getElementById('dtBroadcastQueueBadge');
+    if (badgeEl) {
+        badgeEl.textContent = `${items.length} Calon Siswa Terpilih`;
+    }
+
+    const chipsContainer = document.getElementById('dtQueueChipsContainer');
+    if (chipsContainer) {
+        chipsContainer.innerHTML = items.map(it => `
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white border border-emerald-200 text-slate-800 text-[11px] shadow-xs">
+                <span class="font-bold">${escapeHtml(it.nama)}</span>
+                <span class="text-slate-400 font-mono text-[10px]">(${escapeHtml(it.phone || 'No HP Kosong')})</span>
+            </span>
+        `).join('');
+    }
+
+    // Set default template if empty
+    const templateEl = document.getElementById('dtWaCustomTemplate');
+    if (templateEl && !templateEl.value.trim()) {
+        templateEl.value = DT_DEFAULT_TEMPLATE;
+    }
+
+    updatePreviewDtMessage();
+
+    // Reset progress UI
+    if (!isDtBroadcastRunning) {
+        document.getElementById('dtBroadcastProgressBox').classList.add('hidden');
+        document.getElementById('dtResultsContainer').classList.add('hidden');
+        document.getElementById('dtResultsList').innerHTML = '';
+        document.getElementById('btnMulaiBroadcastDt').classList.remove('hidden');
+        document.getElementById('btnHentikanBroadcastDt').classList.add('hidden');
+        document.getElementById('btnTutupBroadcastDt').disabled = false;
+        document.getElementById('btnRetryAllFailedDt').classList.add('hidden');
+        document.getElementById('dtFailSummaryBanner').classList.add('hidden');
+    }
+
+    const modal = document.getElementById('modalBroadcastDt');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
+
+function tutupModalBroadcastDt() {
+    if (isDtBroadcastRunning) {
+        if (!confirm('Pengiriman broadcast sedang berjalan. Yakin ingin menutup jendela? Pengiriman akan dihentikan.')) {
+            return;
+        }
+        isDtBroadcastRunning = false;
+    }
+    const modal = document.getElementById('modalBroadcastDt');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+
+function insertTagDt(tag) {
+    const textarea = document.getElementById('dtWaCustomTemplate');
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = textarea.value;
+    textarea.value = text.substring(0, start) + tag + text.substring(end);
+    textarea.selectionStart = textarea.selectionEnd = start + tag.length;
+    textarea.focus();
+    updatePreviewDtMessage();
+}
+
+function resetDefaultTemplateDt() {
+    const textarea = document.getElementById('dtWaCustomTemplate');
+    if (textarea) {
+        textarea.value = DT_DEFAULT_TEMPLATE;
+        updatePreviewDtMessage();
+    }
+}
+
+function updatePreviewDtMessage() {
+    const textarea = document.getElementById('dtWaCustomTemplate');
+    const previewEl = document.getElementById('dtPreviewContent');
+    if (!textarea || !previewEl) return;
+
+    const sample = dtBroadcastQueue[0] || {
+        nama: 'Ananda Ahmad Fauzan',
+        no_daftar: 'DT-SD-001',
+        jenjang: 'SD',
+        rekomendasi: 'Yayasan (Bina Insan)',
+        nama_ortu: 'Bpk. Hendra Saputra',
+        phone: '08123456789'
+    };
+
+    let text = textarea.value || DT_DEFAULT_TEMPLATE;
+    text = text.replace(/\{nama\}/g, sample.nama)
+               .replace(/\{nama_siswa\}/g, sample.nama)
+               .replace(/\{no_daftar\}/g, sample.nodaf || sample.no_daftar || 'DT-SD-001')
+               .replace(/\{nomor_pendaftaran\}/g, sample.nodaf || sample.no_daftar || 'DT-SD-001')
+               .replace(/\{jenjang\}/g, sample.jenjang || 'SD')
+               .replace(/\{rekomendasi\}/g, sample.rekom || 'Yayasan')
+               .replace(/\{jalur\}/g, sample.rekom || 'Yayasan')
+               .replace(/\{tahun_ajaran\}/g, DT_TAHUN_AJARAN)
+               .replace(/\{nama_ortu\}/g, sample.nama_ortu || 'Ayah/Bunda')
+               .replace(/\{nama_sekolah\}/g, 'SIT Bina Insan Palu');
+
+    previewEl.textContent = text;
+}
+
+async function mulaiBroadcastDt() {
+    if (!dtBroadcastQueue || dtBroadcastQueue.length === 0) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Antrean Kosong',
+            text: 'Tidak ada calon siswa pada antrean broadcast WhatsApp.',
+            confirmButtonColor: '#d97706'
+        });
+        return;
+    }
+
+    const total = dtBroadcastQueue.length;
+    const delayMs = parseInt(document.getElementById('dtBroadcastDelay').value) || 3000;
+    const delaySec = Math.round(delayMs / 1000);
+    const template = document.getElementById('dtWaCustomTemplate').value.trim();
+
+    if (!template) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Pesan Kosong',
+            text: 'Format teks pesan WhatsApp wajib diisi.',
+            confirmButtonColor: '#d97706'
+        });
+        return;
+    }
+
+    const confirmResult = await Swal.fire({
+        title: `Kirim ke ${total} Calon Siswa?`,
+        html: `Pesan WhatsApp akan dikirimkan secara berurutan dengan jeda <strong>${delaySec} detik</strong> per pesan untuk menjaga keamanan akun WhatsApp.<br><br>Gunakan tag <code>{nama}</code> untuk menyapa ananda secara personal.`,
+        icon: 'info',
+        showCancelButton: true,
+        confirmButtonColor: '#059669',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: 'Ya, Mulai Broadcast!',
+        cancelButtonText: 'Batal'
+    });
+
+    if (!confirmResult.isConfirmed) {
+        return;
+    }
+
+    isDtBroadcastRunning = true;
+    dtFailedItems = [];
+
+    // UI Updates
+    document.getElementById('btnMulaiBroadcastDt').classList.add('hidden');
+    document.getElementById('btnHentikanBroadcastDt').classList.remove('hidden');
+    document.getElementById('btnTutupBroadcastDt').disabled = true;
+    document.getElementById('dtBroadcastProgressBox').classList.remove('hidden');
+    document.getElementById('dtResultsContainer').classList.remove('hidden');
+    document.getElementById('btnRetryAllFailedDt').classList.add('hidden');
+    document.getElementById('dtFailSummaryBanner').classList.add('hidden');
+
+    const progressBar = document.getElementById('dtProgressBar');
+    const progressPct = document.getElementById('dtProgressPercentage');
+    const statusText = document.getElementById('dtProgressStatusText');
+    const counterTotal = document.getElementById('dtCounterTotal');
+    const counterSuccess = document.getElementById('dtCounterSuccess');
+    const counterFail = document.getElementById('dtCounterFail');
+    const resultsList = document.getElementById('dtResultsList');
+
+    resultsList.innerHTML = '';
+    counterTotal.textContent = total;
+    counterSuccess.textContent = '0';
+    counterFail.textContent = '0';
+    progressBar.style.width = '0%';
+    progressPct.textContent = '0%';
+
+    let successCount = 0;
+    let failCount = 0;
+
+    for (let i = 0; i < total; i++) {
+        if (!isDtBroadcastRunning) {
+            statusText.textContent = `⏸ Pengiriman dihentikan pengguna pada nomor ke-${i + 1}.`;
+            break;
+        }
+
+        const item = dtBroadcastQueue[i];
+        statusText.textContent = `Mengirim pesan (${i + 1}/${total}): Ananda ${item.nama}...`;
+
+        const pct = Math.round((i / total) * 100);
+        progressBar.style.width = pct + '%';
+        progressPct.textContent = pct + '%';
+
+        const rowId = `dt-res-row-${item.id}`;
+        let resData = null;
+
+        try {
+            const formData = new FormData();
+            formData.append('csrf_token', DT_CSRF_TOKEN);
+            formData.append('pendaftar_id', item.id);
+            formData.append('pesan_custom', template);
+
+            const response = await fetch('<?= url('kelola-spmb/daftar-tunggu/broadcast-send-single') ?>', {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: formData
+            });
+
+            resData = await response.json();
+        } catch (err) {
+            resData = {
+                success: false,
+                message: 'Gangguan koneksi: ' + err.message
+            };
+        }
+
+        const nowTime = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+        if (resData && resData.success) {
+            successCount++;
+            counterSuccess.textContent = successCount;
+
+            const rowHtml = `
+                <div id="${rowId}" class="p-3 flex items-center justify-between gap-3 hover:bg-slate-50 transition-colors">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <div class="w-7 h-7 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0 font-bold text-xs">
+                            ✓
+                        </div>
+                        <div class="min-w-0">
+                            <div class="font-bold text-slate-800 text-xs truncate">${escapeHtml(item.nama)}</div>
+                            <div class="text-[10px] text-slate-400 font-mono">${escapeHtml(resData.phone || item.phone || '-')} &bull; ${escapeHtml(item.nodaf)} (${escapeHtml(item.jenjang)})</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <span>Terkirim</span>
+                            <span class="text-slate-400 font-normal">${nowTime}</span>
+                        </span>
+                    </div>
+                </div>
+            `;
+            resultsList.insertAdjacentHTML('afterbegin', rowHtml);
+        } else {
+            failCount++;
+            counterFail.textContent = failCount;
+            dtFailedItems.push(item);
+
+            const errorMsg = (resData && resData.message) ? resData.message : 'Nomor HP tidak valid atau gagal terkirim';
+            const rowHtml = `
+                <div id="${rowId}" class="p-3 flex items-center justify-between gap-3 bg-rose-50/40 hover:bg-rose-50/70 transition-colors">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <div class="w-7 h-7 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center shrink-0 font-bold text-xs">
+                            ✕
+                        </div>
+                        <div class="min-w-0">
+                            <div class="font-bold text-slate-800 text-xs truncate">${escapeHtml(item.nama)}</div>
+                            <div class="text-[10px] text-rose-600 font-medium">${escapeHtml(errorMsg)} &bull; No: ${escapeHtml(item.phone || '-')}</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0" id="action-box-${item.id}">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700 border border-rose-200">
+                            Gagal
+                        </span>
+                        <button type="button" onclick="retrySingleDtWa(${item.id}, this)" class="px-2.5 py-1 rounded-xl bg-white hover:bg-rose-50 text-rose-700 border border-rose-200 font-bold text-[10px] shadow-2xs transition-all flex items-center gap-1 cursor-pointer">
+                            <svg class="w-3 h-3 text-rose-500" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
+                            <span>Kirim Ulang</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+            resultsList.insertAdjacentHTML('afterbegin', rowHtml);
+        }
+
+        const pctDone = Math.round(((i + 1) / total) * 100);
+        progressBar.style.width = pctDone + '%';
+        progressPct.textContent = pctDone + '%';
+
+        // Jeda waktu antar pesan jika bukan item terakhir
+        if (i < total - 1 && isDtBroadcastRunning) {
+            await new Promise(resolve => setTimeout(resolve, delayMs));
+        }
+    }
+
+    // Broadcast Finished
+    isDtBroadcastRunning = false;
+    document.getElementById('btnMulaiBroadcastDt').classList.remove('hidden');
+    document.getElementById('btnHentikanBroadcastDt').classList.add('hidden');
+    document.getElementById('btnTutupBroadcastDt').disabled = false;
+
+    if (failCount > 0) {
+        statusText.textContent = `⚠️ Selesai! Berhasil: ${successCount}, Gagal: ${failCount}.`;
+        document.getElementById('dtFailSummaryBanner').classList.remove('hidden');
+        document.getElementById('btnRetryAllFailedDt').classList.remove('hidden');
+        document.getElementById('dtFailedTotalCount').textContent = failCount;
+    } else {
+        statusText.textContent = `🎉 Selesai! Seluruh ${successCount} pesan WhatsApp berhasil terkirim sempurna.`;
+    }
+}
+
+function hentikanBroadcastDt() {
+    isDtBroadcastRunning = false;
+    const statusText = document.getElementById('dtProgressStatusText');
+    if (statusText) {
+        statusText.textContent = '⏸ Sedang menghentikan antrean pengiriman...';
+    }
+}
+
+async function retrySingleDtWa(pendaftarId, btnEl) {
+    const item = dtBroadcastQueue.find(it => it.id === pendaftarId) || dtFailedItems.find(it => it.id === pendaftarId);
+    if (!item) {
+        alert('Data calon siswa tidak ditemukan.');
+        return;
+    }
+
+    const template = document.getElementById('dtWaCustomTemplate').value.trim() || DT_DEFAULT_TEMPLATE;
+    const originalBtnHtml = btnEl.innerHTML;
+    btnEl.disabled = true;
+    btnEl.innerHTML = `<span class="animate-spin inline-block mr-1">⟳</span> Mengirim...`;
+
+    try {
+        const formData = new FormData();
+        formData.append('csrf_token', DT_CSRF_TOKEN);
+        formData.append('pendaftar_id', item.id);
+        formData.append('pesan_custom', template);
+
+        const response = await fetch('<?= url('kelola-spmb/daftar-tunggu/broadcast-send-single') ?>', {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: formData
+        });
+
+        const resData = await response.json();
+        const actionBox = document.getElementById(`action-box-${item.id}`);
+        const nowTime = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+        if (resData && resData.success) {
+            // Update row to success
+            if (actionBox) {
+                actionBox.innerHTML = `
+                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        <span>✓ Terkirim (Kirim Ulang)</span>
+                        <span class="text-slate-400 font-normal">${nowTime}</span>
+                    </span>
+                `;
+            }
+
+            // Adjust counters
+            const counterSuccess = document.getElementById('dtCounterSuccess');
+            const counterFail = document.getElementById('dtCounterFail');
+            let succ = parseInt(counterSuccess.textContent) || 0;
+            let fail = parseInt(counterFail.textContent) || 0;
+            counterSuccess.textContent = succ + 1;
+            counterFail.textContent = Math.max(0, fail - 1);
+
+            // Remove from failed list
+            dtFailedItems = dtFailedItems.filter(it => it.id !== item.id);
+            document.getElementById('dtFailedTotalCount').textContent = dtFailedItems.length;
+
+            if (dtFailedItems.length === 0) {
+                document.getElementById('dtFailSummaryBanner').classList.add('hidden');
+                document.getElementById('btnRetryAllFailedDt').classList.add('hidden');
+            }
+        } else {
+            alert('Gagal mengirim ulang: ' + ((resData && resData.message) ? resData.message : 'Nomor tidak valid'));
+            btnEl.disabled = false;
+            btnEl.innerHTML = originalBtnHtml;
+        }
+    } catch (err) {
+        alert('Koneksi bermasalah: ' + err.message);
+        btnEl.disabled = false;
+        btnEl.innerHTML = originalBtnHtml;
+    }
+}
+
+function retryAllFailedDt() {
+    if (!dtFailedItems || dtFailedItems.length === 0) {
+        return;
+    }
+    dtBroadcastQueue = [...dtFailedItems];
+    mulaiBroadcastDt();
+}
+
+function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
 }
 </script>

@@ -8,3 +8,4 @@ public/uploads/spmb/berkas/*
 .vscode/
 .idea/
 *.tmp
+storage/logs/*.log

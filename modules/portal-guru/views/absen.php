@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Absen Kehadiran & Geolokasi Screen
  * Pure GPS Attendance (No Camera needed) with Check-in Masuk and 15:00 device time-locked Absen Pulang.
@@ -43,7 +43,7 @@
                 </div>
                 <div>
                     <h3 class="font-bold text-slate-800 text-xs">Titik Lokasi Presensi</h3>
-                    <p class="text-[10px] text-slate-400">Kampus Utama BIP • Radius 150m</p>
+                    <p class="text-[10px] text-slate-400"><?= e($schoolName ?? 'Kampus Utama BIP') ?> • Radius <?= (int)($schoolRadius ?? 150) ?>m</p>
                 </div>
             </div>
             <button type="button" onclick="window.initGeolocation()" class="px-2.5 py-1 text-[11px] font-semibold text-primary-600 bg-primary-50 rounded-xl hover:bg-primary-100 flex items-center gap-1 press-bounce">
@@ -116,6 +116,13 @@
 </div>
 
 <script>
+    window.CUSTOM_SCHOOL_COORDS = {
+        lat: <?= json_encode((float)($schoolCoords['lat'] ?? -5.147665)) ?>,
+        lng: <?= json_encode((float)($schoolCoords['lng'] ?? 119.432732)) ?>,
+        name: <?= json_encode((string)($schoolName ?? 'Kampus Utama BIP')) ?>,
+        radius: <?= json_encode((int)($schoolRadius ?? 150)) ?>
+    };
+
     // Realtime digital seconds clock & live check for 15.00 threshold
     setInterval(() => {
         const now = new Date();

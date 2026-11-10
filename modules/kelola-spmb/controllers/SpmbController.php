@@ -504,15 +504,17 @@ class SpmbController
         header('Content-Disposition: attachment; filename=Siswa_Baru_SPMB_' . date('Ymd_His') . '.csv');
 
         $out = fopen('php://output', 'w');
-        fputcsv($out, ['No', 'No. Pendaftaran', 'Nama Lengkap', 'Jenis Kelamin', 'Jenjang', 'Kategori Pendaftar', 'Asal Pendaftaran', 'No. Daftar Tunggu Asal', 'NISN', 'Asal Sekolah', 'Nama Ayah', 'Nama Ibu', 'No HP', 'Status Bayar', 'Tgl Daftar']);
+        fputcsv($out, ['No', 'No. Pendaftaran', 'Nama Lengkap', 'Jenis Kelamin', 'Umur', 'Jenjang', 'Kategori Pendaftar', 'Asal Pendaftaran', 'No. Daftar Tunggu Asal', 'NISN', 'Asal Sekolah', 'Nama Ayah', 'Nama Ibu', 'No HP', 'Status Bayar', 'Tgl Daftar']);
 
         $no = 1;
         foreach ($data as $r) {
+            $umur = !empty($r['umur']) ? $r['umur'] : SpmbModel::hitungUmur($r['tanggal_lahir'] ?? null, $r['tanggal_patokan_umur'] ?? null);
             fputcsv($out, [
                 $no++,
                 $r['nomor_pendaftaran'],
                 $r['nama_lengkap'],
                 $r['jenis_kelamin'],
+                $umur ?: '-',
                 $r['jenjang'],
                 $r['kategori_pendaftar'] ?: ($r['jalur_pendaftaran'] ?: 'Umum (Luar Bina Insan)'),
                 !empty($r['is_dari_daftar_tunggu']) ? 'Eks Daftar Tunggu' : 'Reguler',
@@ -823,14 +825,17 @@ class SpmbController
         header('Content-Disposition: attachment; filename=Siswa_Pindahan_SPMB_' . date('Ymd_His') . '.csv');
 
         $out = fopen('php://output', 'w');
-        fputcsv($out, ['No', 'No. Pendaftaran', 'Nama Lengkap', 'Sekolah Asal', 'NPSN Asal', 'Kelas Tujuan', 'Jenjang', 'No Surat Pindah', 'Alasan Pindah', 'No HP', 'Status Seleksi', 'Tgl Daftar']);
+        fputcsv($out, ['No', 'No. Pendaftaran', 'Nama Lengkap', 'Jenis Kelamin', 'Umur', 'Sekolah Asal', 'NPSN Asal', 'Kelas Tujuan', 'Jenjang', 'No Surat Pindah', 'Alasan Pindah', 'No HP', 'Status Seleksi', 'Tgl Daftar']);
 
         $no = 1;
         foreach ($data as $r) {
+            $umur = !empty($r['umur']) ? $r['umur'] : SpmbModel::hitungUmur($r['tanggal_lahir'] ?? null, $r['tanggal_patokan_umur'] ?? null);
             fputcsv($out, [
                 $no++,
                 $r['nomor_pendaftaran'],
                 $r['nama_lengkap'],
+                $r['jenis_kelamin'] ?: '-',
+                $umur ?: '-',
                 $r['asal_sekolah'],
                 $r['npsn_asal'],
                 $r['kelas_tujuan'],
@@ -1111,14 +1116,17 @@ class SpmbController
         header('Content-Disposition: attachment; filename=Daftar_Tunggu_SPMB_' . date('Ymd_His') . '.csv');
 
         $out = fopen('php://output', 'w');
-        fputcsv($out, ['No', 'No. Pendaftaran', 'Nama Lengkap', 'Jenjang', 'Rekomendasi', 'Nama Rekomendasi', 'Asal Sekolah', 'Nama Ayah', 'No HP', 'Status Seleksi', 'Tgl Daftar']);
+        fputcsv($out, ['No', 'No. Pendaftaran', 'Nama Lengkap', 'Jenis Kelamin', 'Umur', 'Jenjang', 'Rekomendasi', 'Nama Rekomendasi', 'Asal Sekolah', 'Nama Ayah', 'No HP', 'Status Seleksi', 'Tgl Daftar']);
 
         $no = 1;
         foreach ($data as $r) {
+            $umur = !empty($r['umur']) ? $r['umur'] : SpmbModel::hitungUmur($r['tanggal_lahir'] ?? null, $r['tanggal_patokan_umur'] ?? null);
             fputcsv($out, [
                 $no++,
                 $r['nomor_pendaftaran'],
                 $r['nama_lengkap'],
+                $r['jenis_kelamin'] ?: '-',
+                $umur ?: '-',
                 $r['jenjang'],
                 $r['kategori_pendaftar'],
                 $r['nama_rekomendasi'] ?? '-',
@@ -1131,6 +1139,50 @@ class SpmbController
         }
         fclose($out);
         exit;
+    }
+
+    /**
+     * Kirim Notifikasi WhatsApp Single ke Siswa Daftar Tunggu (Mendukung Custom Template Pesan)
+     */
+    public static function daftarTungguSendWaSingle(int $id = 0): void
+    {
+        if (!CSRF::validate(false)) {
+            Response::json(['success' => false, 'message' => 'Token CSRF tidak valid atau sesi telah kedaluwarsa.'], 403);
+            return;
+        }
+
+        $pendaftarId = $id > 0 ? $id : (int)($_POST['pendaftar_id'] ?? 0);
+        if ($pendaftarId <= 0) {
+            Response::json(['success' => false, 'message' => 'ID calon siswa tidak valid.'], 400);
+            return;
+        }
+
+        $customTemplate = !empty($_POST['pesan_custom']) ? trim($_POST['pesan_custom']) : null;
+        $res = SpmbModel::sendWaDaftarTunggu($pendaftarId, $customTemplate);
+
+        $httpCode = !empty($res['success']) ? 200 : 400;
+        Response::json($res, $httpCode);
+    }
+
+    /**
+     * Ambil template default pesan WhatsApp Daftar Tunggu
+     */
+    public static function daftarTungguGetTemplateWa(): void
+    {
+        $template = SpmbModel::getDefaultWaDaftarTungguTemplate();
+        Response::json([
+            'success'  => true,
+            'template' => $template,
+            'tags'     => [
+                '{nama}'        => 'Nama Lengkap Calon Siswa',
+                '{no_daftar}'   => 'Nomor Pendaftaran',
+                '{jenjang}'     => 'Jenjang Pendidikan (PAUD/SD/SMP/SMA)',
+                '{rekomendasi}' => 'Jalur Rekomendasi (Yayasan/Dinas/Lainnya)',
+                '{tahun_ajaran}'=> 'Tahun Ajaran Aktif',
+                '{nama_ortu}'   => 'Nama Orang Tua / Wali',
+                '{nama_sekolah}'=> 'Nama Unit Sekolah',
+            ]
+        ]);
     }
 
     // ═════════════════════════════════════════════════════════════════════════
