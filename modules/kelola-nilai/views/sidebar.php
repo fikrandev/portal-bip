@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Sidebar Modul Kelola Nilai
  */
@@ -16,26 +16,26 @@ if (defined('SYS_APP_FAVICON') && !empty(SYS_APP_FAVICON)) {
        aria-label="Sidebar Modul Kelola Nilai">
     
     <!-- Sidebar Header -->
-    <div class="h-16 flex items-center px-6 border-b border-primary-800/50 bg-primary-950/30">
-        <div class="flex items-center gap-3">
+    <div class="h-16 flex items-center px-6 border-b border-primary-800/50 bg-primary-950/30 shrink-0">
+        <div class="flex items-center gap-3 min-w-0">
             <?php if ($sbLogo): ?>
                 <div class="w-9 h-9 rounded-2xl bg-white p-1 flex items-center justify-center shadow-md shadow-black/20 shrink-0">
                     <img src="<?= $sbLogo ?>" alt="Logo Sekolah" class="max-w-full max-h-full object-contain">
                 </div>
             <?php else: ?>
-                <div class="w-8 h-8 rounded-2xl bg-gradient-to-br from-indigo-400 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20 text-white font-bold shrink-0">
-                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <div class="w-9 h-9 rounded-2xl bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center shadow-lg shadow-primary-500/20 text-white font-bold shrink-0">
+                    <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
                     </svg>
                 </div>
             <?php endif; ?>
             <div class="min-w-0">
                 <h1 class="text-white font-bold text-base tracking-tight leading-tight truncate">Kelola Nilai</h1>
-                <p class="text-indigo-300 text-xs truncate">Penilaian Akademik</p>
+                <p class="text-primary-300 text-xs truncate">Penilaian Akademik</p>
             </div>
         </div>
         
-        <button onclick="toggleSidebar()" class="lg:hidden ml-auto p-1.5 rounded-full text-primary-400 hover:text-white hover:bg-primary-800 transition-colors">
+        <button onclick="toggleSidebar()" class="lg:hidden ml-auto p-1.5 rounded-full text-primary-400 hover:text-white hover:bg-primary-800 transition-colors" aria-label="Tutup menu">
             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/>
             </svg>
@@ -53,15 +53,15 @@ if (defined('SYS_APP_FAVICON') && !empty(SYS_APP_FAVICON)) {
                 if (!function_exists('renderNilaiMenuItem')) {
                     function renderNilaiMenuItem($label, $url, $icon, $isActive = false) {
                         $activeClass = $isActive 
-                            ? 'bg-indigo-600/30 text-white font-semibold shadow-sm border border-indigo-500/40' 
-                            : 'text-primary-200 hover:bg-primary-800/60 hover:text-white border border-transparent';
+                            ? 'bg-primary-600/30 text-white font-semibold shadow-sm border border-primary-500/40' 
+                            : 'text-primary-200 font-medium hover:bg-primary-800/60 hover:text-white border border-transparent';
                         
-                        $iconColor = $isActive ? 'text-indigo-400' : 'text-primary-400 group-hover:text-indigo-300';
+                        $iconColor = $isActive ? 'text-white' : 'text-primary-400 group-hover:text-primary-300';
                         
                         echo "<li>
-                            <a href=\"$url\" class=\"flex items-center justify-between px-3 py-2.5 rounded-2xl transition-all duration-200 group $activeClass\">
+                            <a href=\"$url\" class=\"flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-200 group $activeClass\">
                                 <div class=\"flex items-center gap-3 min-w-0\">
-                                    <div class=\"$iconColor transition-colors flex-shrink-0\">$icon</div>
+                                    <div class=\"w-5 h-5 [&>svg]:w-5 [&>svg]:h-5 $iconColor transition-colors shrink-0\">$icon</div>
                                     <span class=\"text-sm truncate\">$label</span>
                                 </div>
                             </a>
@@ -104,22 +104,13 @@ if (defined('SYS_APP_FAVICON') && !empty(SYS_APP_FAVICON)) {
     </div>
 
     <!-- Sidebar Footer -->
-    <div class="p-4 border-t border-primary-800/50 bg-primary-950/20 space-y-2">
-        <a href="<?= url('mobile') ?>" 
-           target="_blank"
-           class="flex items-center gap-2.5 px-3 py-2 rounded-2xl text-xs font-semibold text-primary-300 hover:text-white bg-primary-500/10 hover:bg-primary-500/20 border border-primary-500/20 transition-all">
-            <svg class="w-4 h-4 text-primary-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 0 0 6 3.75v16.5a2.25 2.25 0 0 0 2.25 2.25h7.5A2.25 2.25 0 0 0 18 20.25V3.75a2.25 2.25 0 0 0-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" />
-            </svg>
-            <span>📱 Portal Guru (Mobile)</span>
-        </a>
-
+    <div class="p-4 border-t border-primary-800/50 bg-primary-950/20 shrink-0">
         <a href="<?= url('dashboard') ?>" 
-           class="flex items-center gap-2.5 px-3 py-2 rounded-2xl text-xs font-semibold text-primary-300 hover:text-white hover:bg-white/10 transition-colors">
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+           class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-primary-200 hover:text-white hover:bg-primary-800/60 transition-all duration-200 group">
+            <svg class="w-5 h-5 text-primary-400 group-hover:text-primary-300 shrink-0 transition-colors" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
             </svg>
-            <span>Kembali ke Portal Utama</span>
+            <span class="truncate">Kembali ke Portal Utama</span>
         </a>
     </div>
 </aside>

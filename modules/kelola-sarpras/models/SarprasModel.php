@@ -933,9 +933,11 @@ class SarprasModel
     public static function getDistribusiByRuangan(int $ruanganId): array
     {
         return self::db()->findAll("
-            SELECT d.*, b.kode_barang, b.nama_barang, b.merk_model, b.satuan, b.kondisi as kondisi_master
+            SELECT d.*, b.kode_barang, b.nama_barang, b.merk_model, b.nomor_seri, b.satuan, b.kondisi as kondisi_master,
+                   b.harga_perolehan, b.foto, b.unit, b.kategori_id, k.nama_kategori
             FROM sarpras_distribusi d
             JOIN sarpras_barang b ON d.barang_id = b.id
+            LEFT JOIN sarpras_kategori k ON b.kategori_id = k.id
             WHERE d.ruangan_id = ?
             ORDER BY d.created_at DESC
         ", [$ruanganId]);

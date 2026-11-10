@@ -134,7 +134,32 @@ class MobileSarprasController
         self::render('ruangan/index', [
             'pageTitle' => 'Data Ruangan',
             'activeTab' => 'ruangan',
-            'ruangan' => SarprasModel::db()->query("SELECT r.*, b.nama_bangunan FROM sarpras_ruangan r LEFT JOIN sarpras_bangunan b ON r.bangunan_id = b.id ORDER BY r.created_at DESC")->fetchAll()
+            'ruangan' => SarprasModel::getAllRuangan()
+        ]);
+    }
+
+    public static function ruanganDetail(int $id): void
+    {
+        SarprasModel::ensureSarprasSchema();
+        $ruangan = SarprasModel::getRuanganById($id);
+        if (!$ruangan) {
+            $_SESSION['flash_error'] = 'Ruangan tidak ditemukan.';
+            header('Location: ' . url('mobile-sarpras/ruangan'));
+            exit;
+        }
+
+        $distribusi = SarprasModel::getDistribusiByRuangan($id);
+        $allBarang = SarprasModel::getBarangList();
+        $barangTersedia = array_filter($allBarang, function($b) {
+            return ($b['jumlah'] - ($b['dipakai'] ?? 0)) > 0;
+        });
+
+        self::render('ruangan/detail', [
+            'pageTitle' => 'Aset: ' . $ruangan['nama_ruangan'],
+            'activeTab' => 'ruangan',
+            'ruangan' => $ruangan,
+            'distribusi' => $distribusi,
+            'barangTersedia' => $barangTersedia
         ]);
     }
 
@@ -149,9 +174,15 @@ class MobileSarprasController
 
     public static function inventarisTambah(): void
     {
+        SarprasModel::ensureSarprasSchema();
+        $ruanganId = (int)($_GET['ruangan_id'] ?? 0);
+        $selectedRuangan = $ruanganId > 0 ? SarprasModel::getRuanganById($ruanganId) : null;
+
         self::render('inventaris/tambah', [
-            'pageTitle' => 'Tambah Inventaris',
-            'activeTab' => 'input',
+            'pageTitle' => $selectedRuangan ? ('Input Barang: ' . $selectedRuangan['nama_ruangan']) : 'Tambah Inventaris',
+            'activeTab' => $selectedRuangan ? 'ruangan' : 'input',
+            'selectedRuangan' => $selectedRuangan,
+            'ruanganList' => SarprasModel::getAllRuangan(),
             'kategoriList' => SarprasModel::getAllKategori(),
             'golonganList' => SarprasModel::getAllGolongan(),
             'kelompokList' => SarprasModel::getAllKelompok(),

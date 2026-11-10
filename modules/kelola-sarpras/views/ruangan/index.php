@@ -122,12 +122,16 @@
                                     <?= e($r['penanggung_jawab'] ?? '-') ?>
                                 </td>
                                 <td class="py-3.5 px-4 text-center">
-                                    <span class="px-2.5 py-1 rounded-xl text-[11px] font-bold bg-primary-50 text-primary-700">
+                                    <a href="<?= url('kelola-sarpras/ruangan/detail/' . $r['id']) ?>" class="inline-block px-2.5 py-1 rounded-xl text-[11px] font-bold bg-primary-50 text-primary-700 hover:bg-primary-100 border border-primary-100 transition-colors" title="Lihat & Kelola Aset di Ruangan">
                                         <?= $r['total_barang'] ?> Aset (<?= $r['total_qty'] ?> Unit)
-                                    </span>
+                                    </a>
                                 </td>
                                 <td class="py-3.5 px-4 text-center">
                                     <div class="flex items-center justify-center gap-1.5">
+                                        <a href="<?= url('kelola-sarpras/ruangan/detail/' . $r['id'] . '?action=input-manual') ?>" class="px-2 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-[10px] font-bold flex items-center gap-1 transition-colors" title="Input Manual Barang Baru di Ruangan Ini">
+                                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+                                            <span>Barang</span>
+                                        </a>
                                         <a href="<?= url('kelola-sarpras/ruangan/detail/' . $r['id']) ?>" class="p-1.5 rounded-lg text-slate-500 hover:text-primary-600 hover:bg-primary-50" title="Kelola Aset di Ruangan">
                                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 7.125C2.25 6.504 2.754 6 3.375 6h6c.621 0 1.125.504 1.125 1.125v3.75c0 .621-.504 1.125-1.125 1.125h-6a1.125 1.125 0 0 1-1.125-1.125v-3.75ZM14.25 8.625c0-.828.672-1.5 1.5-1.5h5.25c.828 0 1.5.672 1.5 1.5v8.25c0 .828-.672 1.5-1.5 1.5h-5.25a1.5 1.5 0 0 1-1.5-1.5v-8.25ZM3.75 16.125c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125v2.25c0 .621-.504 1.125-1.125 1.125h-3.75a1.125 1.125 0 0 1-1.125-1.125v-2.25Z" /></svg>
                                         </a>

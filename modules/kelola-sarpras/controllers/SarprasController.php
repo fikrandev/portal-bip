@@ -183,12 +183,15 @@ class SarprasController
             return;
         }
 
+        SarprasModel::ensureSarprasSchema();
+
         $namaBarang = trim($_POST['nama_barang'] ?? '');
         $golonganId = (int)($_POST['golongan_id'] ?? 0);
         $kelompokId = (int)($_POST['kelompok_id'] ?? 0);
         $asalAnggaranId = (int)($_POST['asal_anggaran_id'] ?? 0);
         $kategoriId = (int)($_POST['kategori_id'] ?? 1); // fallback
-        $ruanganId = (int)($_POST['ruangan_id'] ?? 1); // fallback
+        $ruanganId = !empty($_POST['ruangan_id']) ? (int)$_POST['ruangan_id'] : null;
+        $autoDistribusi = isset($_POST['auto_distribusi']) ? (int)$_POST['auto_distribusi'] : ($ruanganId ? 1 : 0);
         $unit = trim($_POST['unit'] ?? 'SD');
         $jumlah = max(1, (int)($_POST['jumlah'] ?? 1));
         $satuan = trim($_POST['satuan'] ?? 'Unit');
@@ -220,7 +223,7 @@ class SarprasController
         $fotoPath = self::handlePhotoUploads([]);
 
         try {
-            SarprasModel::insertBarang([
+            $newBarangId = SarprasModel::insertBarang([
                 'kode_barang' => $kodeBarang,
                 'nama_barang' => $namaBarang,
                 'golongan_id' => $golonganId,
@@ -242,7 +245,22 @@ class SarprasController
                 'keterangan' => $keterangan ?: null
             ]);
 
-            $_SESSION['flash_success'] = "Data aset '{$namaBarang}' ({$kodeBarang}) berhasil ditambahkan!";
+            if ($ruanganId && $autoDistribusi && $newBarangId > 0) {
+                SarprasModel::insertDistribusi([
+                    'ruangan_id' => $ruanganId,
+                    'barang_id' => $newBarangId,
+                    'jumlah' => $jumlah,
+                    'kondisi' => $kondisi,
+                    'keterangan' => $keterangan ?: null,
+                    'tanggal_distribusi' => $tanggalPerolehan ?: date('Y-m-d')
+                ]);
+                $ruanganInfo = SarprasModel::getRuanganById($ruanganId);
+                $namaRuangan = $ruanganInfo['nama_ruangan'] ?? 'Ruangan';
+                $_SESSION['flash_success'] = "Data aset '{$namaBarang}' ({$kodeBarang}) berhasil ditambahkan ke Inventaris & otomatis terdistribusi ke {$namaRuangan}!";
+            } else {
+                $_SESSION['flash_success'] = "Data aset '{$namaBarang}' ({$kodeBarang}) berhasil ditambahkan!";
+            }
+
             $redirectUrl = !empty($_POST['redirect_to']) ? $_POST['redirect_to'] : url('kelola-sarpras/barang');
             Response::redirect($redirectUrl);
         } catch (Exception $e) {
@@ -690,6 +708,7 @@ class SarprasController
 
     public static function ruanganDetail(int $id): void
     {
+        SarprasModel::ensureSarprasSchema();
         $ruangan = SarprasModel::getRuanganById($id);
         if (!$ruangan) {
             $_SESSION['flash_error'] = 'Ruangan tidak ditemukan.';
@@ -707,7 +726,12 @@ class SarprasController
         self::view('ruangan/detail', [
             'ruangan' => $ruangan,
             'distribusi' => $distribusi,
-            'barangTersedia' => $barangTersedia
+            'barangTersedia' => $barangTersedia,
+            'kategoriList' => SarprasModel::getAllKategori(),
+            'golonganList' => SarprasModel::getAllGolongan(),
+            'kelompokList' => SarprasModel::getAllKelompok(),
+            'asalAnggaranList' => SarprasModel::getAllAsalAnggaran(),
+            'satuanList' => SarprasModel::getAllSatuan()
         ], 'Detail Ruangan & Aset: ' . $ruangan['nama_ruangan'], [
             ['label' => 'Sarpras', 'url' => url('kelola-sarpras')],
             ['label' => 'Data Ruangan', 'url' => url('kelola-sarpras/ruangan')],
@@ -773,7 +797,8 @@ class SarprasController
             $_SESSION['flash_error'] = 'Tidak ada barang yang berhasil didistribusikan (cek sisa stok).';
         }
         
-        Response::redirect(url("kelola-sarpras/ruangan/detail/{$ruanganId}"));
+        $redirectUrl = !empty($_POST['redirect_to']) ? $_POST['redirect_to'] : (!empty($_POST['return_to']) ? $_POST['return_to'] : url("kelola-sarpras/ruangan/detail/{$ruanganId}"));
+        Response::redirect($redirectUrl);
     }
 
     public static function distribusiDelete(int $id): void
@@ -783,10 +808,12 @@ class SarprasController
         if ($dist) {
             SarprasModel::deleteDistribusi($id);
             $_SESSION['flash_success'] = 'Barang berhasil ditarik/dihapus dari ruangan!';
-            Response::redirect(url("kelola-sarpras/ruangan/detail/{$dist['ruangan_id']}"));
+            $redirectUrl = !empty($_POST['redirect_to']) ? $_POST['redirect_to'] : (!empty($_POST['return_to']) ? $_POST['return_to'] : url("kelola-sarpras/ruangan/detail/{$dist['ruangan_id']}"));
+            Response::redirect($redirectUrl);
         } else {
             $_SESSION['flash_error'] = 'Data distribusi tidak ditemukan!';
-            Response::redirect(url('kelola-sarpras/ruangan'));
+            $redirectUrl = !empty($_POST['redirect_to']) ? $_POST['redirect_to'] : (!empty($_POST['return_to']) ? $_POST['return_to'] : url('kelola-sarpras/ruangan'));
+            Response::redirect($redirectUrl);
         }
     }
 

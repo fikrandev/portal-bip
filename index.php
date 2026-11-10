@@ -961,6 +961,9 @@ $router->get('/mobile-sarpras/bangunan/tambah', [MobileSarprasController::class,
 $router->get('/mobile-sarpras/bangunan/edit/{id}', [MobileSarprasController::class, 'bangunanEdit'], [[MobileSarprasAuthController::class, 'authRequired']]);
 $router->get('/mobile-sarpras/ruangan/tambah', [MobileSarprasController::class, 'ruanganTambah'], [[MobileSarprasAuthController::class, 'authRequired']]);
 $router->get('/mobile-sarpras/ruangan/edit/{id}', [MobileSarprasController::class, 'ruanganEdit'], [[MobileSarprasAuthController::class, 'authRequired']]);
+$router->get('/mobile-sarpras/ruangan/detail/{id}', [MobileSarprasController::class, 'ruanganDetail'], [[MobileSarprasAuthController::class, 'authRequired']]);
+$router->post('/mobile-sarpras/distribusi/store', [SarprasController::class, 'distribusiStore'], [[MobileSarprasAuthController::class, 'authRequired']]);
+$router->post('/mobile-sarpras/distribusi/delete/{id}', [SarprasController::class, 'distribusiDelete'], [[MobileSarprasAuthController::class, 'authRequired']]);
 $router->get('/mobile-sarpras/maintenance', [MobileSarprasController::class, 'maintenanceList'], [[MobileSarprasAuthController::class, 'authRequired']]);
 $router->get('/mobile-sarpras/maintenance/tambah', [MobileSarprasController::class, 'maintenanceTambah'], [[MobileSarprasAuthController::class, 'authRequired']]);
 $router->get('/mobile-sarpras/peminjaman', [MobileSarprasController::class, 'peminjamanList'], [[MobileSarprasAuthController::class, 'authRequired']]);

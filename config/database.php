@@ -39,11 +39,14 @@ define('DB_PASS', getenv('DB_PASS') !== false ? getenv('DB_PASS') : '');
 define('DB_CHARSET', getenv('DB_CHARSET') ?: 'utf8mb4');
 
 // ── PDO Options ─────────────────────────────────────
+$attrUseBufferedQuery = class_exists('Pdo\Mysql') ? \Pdo\Mysql::ATTR_USE_BUFFERED_QUERY : PDO::MYSQL_ATTR_USE_BUFFERED_QUERY;
+$attrInitCommand      = class_exists('Pdo\Mysql') ? \Pdo\Mysql::ATTR_INIT_COMMAND : PDO::MYSQL_ATTR_INIT_COMMAND;
+
 define('DB_OPTIONS', [
     PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
     PDO::ATTR_EMULATE_PREPARES => false,
     PDO::ATTR_STRINGIFY_FETCHES => false,
-    PDO::MYSQL_ATTR_USE_BUFFERED_QUERY => true,
-    PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES " . DB_CHARSET,
+    $attrUseBufferedQuery => true,
+    $attrInitCommand => "SET NAMES " . DB_CHARSET,
 ]);

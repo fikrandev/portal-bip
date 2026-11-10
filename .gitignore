@@ -1,3 +1,4 @@
+.env
 node_modules/
 wa-server/node_modules/
 wa-server/auth_info_baileys/

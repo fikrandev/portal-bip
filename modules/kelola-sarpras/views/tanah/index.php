@@ -488,6 +488,14 @@
                                                                                         <span class="font-semibold text-primary-800 truncate max-w-[130px]"><?= e($r['penanggung_jawab'] ?: '-') ?></span>
                                                                                     </div>
                                                                                 </div>
+                                                                                <div class="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between gap-1.5">
+                                                                                    <a href="<?= url('kelola-sarpras/ruangan/detail/' . $r['id']) ?>" class="flex-1 text-center py-1 px-2 rounded-lg bg-slate-50 hover:bg-primary-50 text-slate-700 hover:text-primary-700 border border-slate-200 text-[10px] font-bold transition-colors">
+                                                                                        Kelola Aset
+                                                                                    </a>
+                                                                                    <a href="<?= url('kelola-sarpras/ruangan/detail/' . $r['id'] . '?action=input-manual') ?>" class="flex-1 text-center py-1 px-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold transition-colors">
+                                                                                        + Input Barang
+                                                                                    </a>
+                                                                                </div>
                                                                             </div>
                                                                         </div>
                                                                     <?php endforeach; ?>

@@ -71,20 +71,25 @@
 
 /* ── Custom Scrollbar ────────────────────────────── */
 
-.scrollbar-thin::-webkit-scrollbar {
+.scrollbar-thin::-webkit-scrollbar,
+.custom-scrollbar::-webkit-scrollbar {
     width: 4px;
+    height: 4px;
 }
 
-.scrollbar-thin::-webkit-scrollbar-track {
+.scrollbar-thin::-webkit-scrollbar-track,
+.custom-scrollbar::-webkit-scrollbar-track {
     background: transparent;
 }
 
-.scrollbar-thin::-webkit-scrollbar-thumb {
+.scrollbar-thin::-webkit-scrollbar-thumb,
+.custom-scrollbar::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.15);
     border-radius: 999px;
 }
 
-.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+.scrollbar-thin::-webkit-scrollbar-thumb:hover,
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.25);
 }
 
