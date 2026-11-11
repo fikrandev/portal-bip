@@ -71,7 +71,7 @@ $cetakQuery = http_build_query([
                     data-jurnal-tab-btn="dashboard"
                     class="jurnal-tab-btn inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all <?= $activeTab === 'dashboard' ? 'bg-primary-600 text-white shadow-md shadow-primary-600/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200/80' ?>">
                 <span>📊</span>
-                <span>1. Dashboard</span>
+                <span>Dashboard</span>
             </button>
 
             <button type="button"
@@ -79,7 +79,7 @@ $cetakQuery = http_build_query([
                     data-jurnal-tab-btn="data"
                     class="jurnal-tab-btn inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all <?= $activeTab === 'data' ? 'bg-primary-600 text-white shadow-md shadow-primary-600/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200/80' ?>">
                 <span>📖</span>
-                <span>2. Data Jurnal</span>
+                <span>Data Jurnal</span>
                 <span class="px-2 py-0.5 text-[10px] rounded-full bg-black/15 font-extrabold"><?= number_format((int)($kpiFiltered['total_count'] ?? 0)) ?></span>
             </button>
 
@@ -88,7 +88,7 @@ $cetakQuery = http_build_query([
                     data-jurnal-tab-btn="rekap"
                     class="jurnal-tab-btn inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all <?= $activeTab === 'rekap' ? 'bg-primary-600 text-white shadow-md shadow-primary-600/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200/80' ?>">
                 <span>👨‍🏫</span>
-                <span>3. Rekap Jurnal (PIC)</span>
+                <span>Rekap Jurnal (PIC)</span>
                 <span class="px-2 py-0.5 text-[10px] rounded-full bg-black/15 font-extrabold"><?= count($rekapGuruList) ?> Guru</span>
             </button>
 
@@ -97,7 +97,7 @@ $cetakQuery = http_build_query([
                     data-jurnal-tab-btn="matrix"
                     class="jurnal-tab-btn inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all <?= $activeTab === 'matrix' ? 'bg-primary-600 text-white shadow-md shadow-primary-600/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200/80' ?>">
                 <span>🗓️</span>
-                <span>4. Rekap Harian Matrix (✓/✕)</span>
+                <span>Rekap Harian Matrix (✓/✕)</span>
             </button>
 
             <button type="button"
@@ -105,7 +105,7 @@ $cetakQuery = http_build_query([
                     data-jurnal-tab-btn="kosong"
                     class="jurnal-tab-btn inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all <?= $activeTab === 'kosong' ? 'bg-rose-600 text-white shadow-md shadow-rose-600/20' : 'bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200/70' ?>">
                 <span>⚠️</span>
-                <span>5. Jurnal Tidak Terisi</span>
+                <span>Jurnal Tidak Terisi</span>
                 <span class="px-2 py-0.5 text-[10px] rounded-full bg-rose-600 text-white font-extrabold"><?= number_format($unfilledTotalCount) ?></span>
             </button>
         </div>
@@ -1007,10 +1007,10 @@ $cetakQuery = http_build_query([
             const key = link.getAttribute('data-jurnal-sidebar-tab');
             if (key === tabKey) {
                 link.classList.add('bg-primary-600/30', 'text-white', 'font-semibold', 'shadow-sm', 'border-primary-500/40');
-                link.classList.remove('text-primary-200', 'font-medium', 'border-transparent');
+                link.classList.remove('text-primary-200', 'font-medium', 'border-transparent', 'hover:bg-primary-800/60', 'hover:text-white');
             } else {
                 link.classList.remove('bg-primary-600/30', 'text-white', 'font-semibold', 'shadow-sm', 'border-primary-500/40');
-                link.classList.add('text-primary-200', 'font-medium', 'border-transparent');
+                link.classList.add('text-primary-200', 'font-medium', 'border-transparent', 'hover:bg-primary-800/60', 'hover:text-white');
             }
         });
 
