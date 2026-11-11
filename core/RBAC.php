@@ -28,6 +28,14 @@ class RBAC
     }
 
     /**
+     * Alias for hasPermission()
+     */
+    public static function can(string $permissionSlug): bool
+    {
+        return self::hasPermission($permissionSlug);
+    }
+
+    /**
      * Check if current user can access a module by slug
      * 
      * @param string $moduleSlug  e.g., 'kelola-siswa'

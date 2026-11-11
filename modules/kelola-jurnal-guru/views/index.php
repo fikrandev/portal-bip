@@ -8,8 +8,8 @@
  * 5. Rekap Jurnal Tidak Terisi
  */
 $activeTab = $activeTab ?? ($_GET['tab'] ?? 'dashboard');
-$canManage = RBAC::can('jurnal.manage') || Auth::isSuperAdmin();
-$canDelete = RBAC::can('jurnal.delete') || Auth::isSuperAdmin();
+$canManage = RBAC::hasPermission('jurnal.manage') || RBAC::canAccessModule('kelola-jurnal-guru') || Auth::isSuperAdmin();
+$canDelete = RBAC::hasPermission('jurnal.delete') || RBAC::canAccessModule('kelola-jurnal-guru') || Auth::isSuperAdmin();
 
 $cetakQuery = http_build_query([
     'search'     => $search ?? '',
