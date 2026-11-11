@@ -3,7 +3,7 @@
  * Enables PWA offline capabilities, pre-caching, and background sync.
  */
 
-const CACHE_NAME = 'sarpras-mobile-pwa-v1';
+const CACHE_NAME = 'sarpras-mobile-pwa-v2';
 const OFFLINE_URL = './mobile-sarpras';
 
 // Install Event - Pre-cache critical core shell
@@ -39,8 +39,8 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const request = event.request;
   
-  // Skip non-GET requests and cross-origin schemes
-  if (request.method !== 'GET' || !request.url.startsWith('http')) {
+  // Skip non-GET requests, cross-origin schemes, and any requests outside /mobile-sarpras/
+  if (request.method !== 'GET' || !request.url.startsWith('http') || !request.url.includes('/mobile-sarpras')) {
     return;
   }
 

@@ -907,8 +907,14 @@ $router->post('/mobile/login', [PortalGuruAuthController::class, 'login']);
 $router->get('/mobile/logout', [PortalGuruAuthController::class, 'logout']);
 $router->post('/mobile/api/token-login', [PortalGuruAuthController::class, 'tokenLogin']);
 $router->get('/mobile', [PortalGuruController::class, 'beranda'], [[PortalGuruAuthController::class, 'authRequired']]);
-$router->get('/portal-guru', [PortalGuruController::class, 'beranda'], [[PortalGuruAuthController::class, 'authRequired']]);
-$router->get('/guru', [PortalGuruController::class, 'beranda'], [[PortalGuruAuthController::class, 'authRequired']]);
+$router->get('/portal-guru', function() {
+    header('Location: ' . url('mobile'), true, 302);
+    exit;
+});
+$router->get('/guru', function() {
+    header('Location: ' . url('mobile'), true, 302);
+    exit;
+});
 $router->get('/mobile/absen', [PortalGuruController::class, 'absen'], [[PortalGuruAuthController::class, 'authRequired']]);
 $router->get('/mobile/jurnal', [PortalGuruController::class, 'jurnal'], [[PortalGuruAuthController::class, 'authRequired']]);
 $router->post('/mobile/jurnal/simpan', [PortalGuruController::class, 'simpanJurnal'], [[PortalGuruAuthController::class, 'authRequired']]);
@@ -1213,12 +1219,12 @@ $portalGuruManifestHandler = function() {
         $content = file_get_contents($manifestPath);
         $manifest = json_decode($content, true);
         if (is_array($manifest)) {
-            $manifest['name'] = (defined('SYS_APP_NAME') && SYS_APP_NAME ? SYS_APP_NAME : 'Portal BIP') . ' - Portal Guru';
-            $manifest['short_name'] = 'Portal Guru';
-            $manifest['description'] = 'Aplikasi Resmi Guru Portal BIP untuk Presensi GPS, Jurnal Mengajar, Izin, Cuti, dan Akademik.';
+            $manifest['name'] = 'Portal BIP';
+            $manifest['short_name'] = 'Portal BIP';
+            $manifest['description'] = 'Aplikasi Resmi Portal BIP untuk Presensi GPS, Jurnal Mengajar, Izin, Cuti, dan Layanan Akademik.';
             $manifest['start_url'] = url('mobile?utm_source=pwa');
             $manifest['scope'] = url('mobile/');
-            $manifest['id'] = 'portal-guru-bip-app';
+            $manifest['id'] = 'portal-bip-app';
 
             // Check icon timestamp from settings for instant cache-busting
             $customIconPath = '';
@@ -1298,10 +1304,14 @@ $router->get('/sw-sarpras.js', function() {
     header('Service-Worker-Allowed: /');
     header('Cache-Control: no-cache, no-store, must-revalidate');
     echo <<<'JS'
-const CACHE_NAME='sarpras-pwa-v5';
+const CACHE_NAME='sarpras-pwa-v6';
 self.addEventListener('install',e=>{self.skipWaiting();});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(n=>Promise.all(n.filter(n=>n!==CACHE_NAME).map(n=>caches.delete(n)))).then(()=>self.clients.claim()));});
-self.addEventListener('fetch',e=>{if(e.request.method!=='GET'||!e.request.url.startsWith('http'))return;e.respondWith(fetch(e.request).then(r=>{if(r&&r.status===200){const c=r.clone();caches.open(CACHE_NAME).then(cache=>cache.put(e.request,c));}return r;}).catch(()=>caches.match(e.request)));});
+self.addEventListener('fetch',e=>{
+    if(e.request.method!=='GET'||!e.request.url.startsWith('http'))return;
+    if(!e.request.url.includes('/mobile-sarpras'))return;
+    e.respondWith(fetch(e.request).then(r=>{if(r&&r.status===200){const c=r.clone();caches.open(CACHE_NAME).then(cache=>cache.put(e.request,c));}return r;}).catch(()=>caches.match(e.request)));
+});
 JS;
     exit;
 });

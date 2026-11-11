@@ -3,7 +3,7 @@
  * Enables PWA offline capabilities, pre-caching, WebAPK installation compliance, and background sync.
  */
 
-const CACHE_NAME = 'portal-guru-pwa-v4';
+const CACHE_NAME = 'portal-bip-pwa-v5';
 const STATIC_ASSETS = [
   './mobile',
   './mobile/absen',
@@ -62,6 +62,11 @@ self.addEventListener('fetch', (event) => {
   
   // Skip non-GET requests and cross-origin schemes (e.g. chrome-extension:)
   if (request.method !== 'GET' || !request.url.startsWith('http')) {
+    return;
+  }
+
+  // Never intercept requests for Sarpras Mobile
+  if (request.url.includes('/mobile-sarpras')) {
     return;
   }
 

@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#1d4ed8">
-    <title><?= htmlspecialchars($pageTitle ?? 'Login Portal Guru') ?></title>
+    <title><?= htmlspecialchars($pageTitle ?? 'Portal BIP') ?></title>
+    <meta name="application-name" content="Portal BIP">
+    <meta name="apple-mobile-web-app-title" content="Portal BIP">
     
     <!-- Favicon -->
     <?= function_exists('renderFaviconTags') ? renderFaviconTags() : '' ?>
@@ -14,6 +16,29 @@
     <link rel="apple-touch-icon" href="<?= url('pwa-icon.png?size=192') ?>">
     <script>
         window.APP_BASE_URL = '<?= rtrim(BASE_URL, "/") ?>';
+        // Auto-cleanup any rogue Sarpras or root service worker immediately
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(regs) {
+                regs.forEach(function(reg) {
+                    var script = (reg.active && reg.active.scriptURL) ? reg.active.scriptURL : '';
+                    var scope = reg.scope || '';
+                    if (script.indexOf('sw-sarpras') !== -1 || (!scope.includes('/mobile/') && !scope.includes('/mobile-sarpras/'))) {
+                        reg.unregister().then(function() {
+                            console.log('[PWA Cleanup] Removed rogue SW:', script, scope);
+                        });
+                    }
+                });
+            }).catch(function() {});
+            if ('caches' in window) {
+                caches.keys().then(function(keys) {
+                    keys.forEach(function(k) {
+                        if (k.indexOf('sarpras') !== -1) {
+                            caches.delete(k);
+                        }
+                    });
+                }).catch(function() {});
+            }
+        }
     </script>
     
     <!-- Fonts -->
@@ -211,7 +236,7 @@
             <!-- Install PWA on Home Screen -->
             <div id="login-pwa-install-wrapper" class="mt-4 pt-4 border-t border-slate-100 text-center hidden">
                 <button type="button" id="btn-login-install" class="w-full py-2.5 px-4 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 font-bold rounded-2xl text-xs flex items-center justify-center gap-2 transition-all press-bounce">
-                    <i data-lucide="download" class="w-4 h-4 text-primary-600"></i> Pasang Aplikasi di Layar HP
+                    <i data-lucide="download" class="w-4 h-4 text-primary-600"></i> Pasang Aplikasi Portal BIP
                 </button>
             </div>
         </form>

@@ -32,16 +32,28 @@ if ('serviceWorker' in navigator) {
     const swPath = baseUrl ? `${baseUrl}/sw.js` : '/sw.js';
     const scopePath = baseUrl ? `${baseUrl}/mobile/` : '/mobile/';
 
-    // Clean up any legacy unpartitioned root-scoped service worker
+    // Clean up any legacy unpartitioned root-scoped service worker or conflicting sarpras worker
     navigator.serviceWorker.getRegistrations().then((regs) => {
       regs.forEach((reg) => {
         const originRoot = window.location.origin + '/';
         const appRoot = (baseUrl ? baseUrl : window.location.origin) + '/';
-        if ((reg.scope === originRoot || reg.scope === appRoot) && !reg.scope.includes('/mobile/') && !reg.scope.includes('/mobile-sarpras/')) {
-          reg.unregister().then(() => console.log('[PWA Portal Guru] Cleaned legacy root SW:', reg.scope));
+        const script = (reg.active && reg.active.scriptURL) ? reg.active.scriptURL : '';
+        const scope = reg.scope || '';
+        if (script.includes('sw-sarpras') || ((scope === originRoot || scope === appRoot) && !scope.includes('/mobile/') && !scope.includes('/mobile-sarpras/'))) {
+          reg.unregister().then(() => console.log('[PWA Portal BIP] Cleaned legacy/conflicting SW:', script, scope));
         }
       });
     }).catch(() => {});
+
+    if ('caches' in window) {
+      caches.keys().then((keys) => {
+        keys.forEach((k) => {
+          if (k.includes('sarpras')) {
+            caches.delete(k);
+          }
+        });
+      }).catch(() => {});
+    }
 
     navigator.serviceWorker.register(swPath, { scope: scopePath })
       .then((registration) => {
@@ -69,7 +81,7 @@ window.addEventListener('appinstalled', () => {
   window.isPWAInstalled = true;
 
   if (window.AndroidUI && window.AndroidUI.toast) {
-    window.AndroidUI.toast('Aplikasi Portal Guru berhasil dipasang di perangkat Anda!', 'success');
+    window.AndroidUI.toast('Aplikasi Portal BIP berhasil dipasang di perangkat Anda!', 'success');
   }
 });
 

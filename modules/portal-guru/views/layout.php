@@ -8,10 +8,37 @@
     <!-- PWA Settings -->
     <link rel="manifest" href="<?= url('mobile/manifest.json') ?>">
     <meta name="theme-color" content="#2563eb">
-    <meta name="application-name" content="Portal Guru">
+    <meta name="application-name" content="Portal BIP">
+    <meta name="apple-mobile-web-app-title" content="Portal BIP">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <script>
+        window.APP_BASE_URL = '<?= rtrim(BASE_URL, "/") ?>';
+        // Auto-cleanup any rogue Sarpras or root service worker immediately
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(regs) {
+                regs.forEach(function(reg) {
+                    var script = (reg.active && reg.active.scriptURL) ? reg.active.scriptURL : '';
+                    var scope = reg.scope || '';
+                    if (script.indexOf('sw-sarpras') !== -1 || (!scope.includes('/mobile/') && !scope.includes('/mobile-sarpras/'))) {
+                        reg.unregister().then(function() {
+                            console.log('[PWA Cleanup] Unregistered rogue SW:', script, scope);
+                        });
+                    }
+                });
+            }).catch(function() {});
+            if ('caches' in window) {
+                caches.keys().then(function(keys) {
+                    keys.forEach(function(k) {
+                        if (k.indexOf('sarpras') !== -1) {
+                            caches.delete(k);
+                        }
+                    });
+                }).catch(function() {});
+            }
+        }
+    </script>
     <?php
         $iconVer = defined('SYS_APP_FAVICON') ? md5(SYS_APP_FAVICON . (defined('SYS_APP_LOGO') ? SYS_APP_LOGO : '')) : time();
         $pwaIcon180 = url('pwa-icon.png?size=180&v=' . $iconVer);

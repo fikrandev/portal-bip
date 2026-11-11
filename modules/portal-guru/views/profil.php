@@ -86,7 +86,7 @@
         <div class="space-y-2 pt-1">
             <button type="button" onclick="window.triggerPWAInstall()" class="w-full py-3 bg-white hover:bg-primary-50 text-primary-700 font-bold text-xs rounded-2xl shadow-lg flex items-center justify-center gap-2 press-bounce">
                 <i data-lucide="download" class="w-4 h-4"></i>
-                Pasang Aplikasi ke Smartphone
+                Pasang Aplikasi Portal BIP ke Smartphone
             </button>
 
             <div class="grid grid-cols-2 gap-2">
