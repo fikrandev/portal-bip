@@ -10,8 +10,11 @@
     <?= function_exists('renderFaviconTags') ? renderFaviconTags() : '' ?>
     
     <!-- PWA Web App Manifest -->
-    <link rel="manifest" href="<?= url('manifest.json') ?>">
+    <link rel="manifest" href="<?= url('mobile/manifest.json') ?>">
     <link rel="apple-touch-icon" href="<?= url('pwa-icon.png?size=192') ?>">
+    <script>
+        window.APP_BASE_URL = '<?= rtrim(BASE_URL, "/") ?>';
+    </script>
     
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -340,6 +343,18 @@
                     alert('Untuk memasang di HP: Buka menu browser (titik 3 di Android atau tombol Bagikan di iPhone Safari) lalu pilih "Tambahkan ke Layar Utama".');
                 }
             });
+        }
+
+        // Register Portal Guru SW strictly within mobile scope
+        if ('serviceWorker' in navigator) {
+            const guruScope = '<?= url('mobile/') ?>';
+            navigator.serviceWorker.register('<?= url('sw.js') ?>', { scope: guruScope })
+                .then(function(reg) {
+                    console.log('[PWA Portal Guru] SW registered OK on login, scope:', reg.scope);
+                })
+                .catch(function(err) {
+                    console.error('[PWA Portal Guru] SW reg error:', err);
+                });
         }
     </script>
 </body>

@@ -1026,12 +1026,12 @@ $router->get('/mobile-sarpras/manifest.json', function() {
     header('Cache-Control: no-cache, no-store, must-revalidate');
     
     $manifest = [
-        'name' => (defined('SYS_APP_NAME') && SYS_APP_NAME ? SYS_APP_NAME : 'Portal BIP') . ' - Mobile Sarpras',
-        'short_name' => 'Sarpras',
-        'description' => 'Aplikasi Manajemen Sarana dan Prasarana',
+        'name' => (defined('SYS_APP_NAME') && SYS_APP_NAME ? SYS_APP_NAME : 'Portal BIP') . ' - Sarpras Mobile',
+        'short_name' => 'Sarpras Mobile',
+        'description' => 'Aplikasi Manajemen Sarana dan Prasarana Mobile',
         'id' => 'mobile-sarpras-bip-app',
-        'start_url' => url('mobile-sarpras'),
-        'scope' => url(''),
+        'start_url' => url('mobile-sarpras?utm_source=pwa'),
+        'scope' => url('mobile-sarpras/'),
         'display' => 'standalone',
         'orientation' => 'portrait-primary',
         'background_color' => '#f8fafc',
@@ -1203,7 +1203,7 @@ $router->get('/favicon.ico', function() {
 
 
 // -- PWA Manifest & Service Worker Routes --
-$router->get('/manifest.json', function() {
+$portalGuruManifestHandler = function() {
     header('Content-Type: application/manifest+json; charset=utf-8');
     header('Access-Control-Allow-Origin: *');
     header('Cache-Control: no-cache, no-store, must-revalidate');
@@ -1215,8 +1215,9 @@ $router->get('/manifest.json', function() {
         if (is_array($manifest)) {
             $manifest['name'] = (defined('SYS_APP_NAME') && SYS_APP_NAME ? SYS_APP_NAME : 'Portal BIP') . ' - Portal Guru';
             $manifest['short_name'] = 'Portal Guru';
+            $manifest['description'] = 'Aplikasi Resmi Guru Portal BIP untuk Presensi GPS, Jurnal Mengajar, Izin, Cuti, dan Akademik.';
             $manifest['start_url'] = url('mobile?utm_source=pwa');
-            $manifest['scope'] = rtrim(url(''), '/') . '/';
+            $manifest['scope'] = url('mobile/');
             $manifest['id'] = 'portal-guru-bip-app';
 
             // Check icon timestamp from settings for instant cache-busting
@@ -1280,7 +1281,11 @@ $router->get('/manifest.json', function() {
     }
     readfile($manifestPath);
     exit;
-});
+};
+
+$router->get('/manifest.json', $portalGuruManifestHandler);
+$router->get('/mobile/manifest.json', $portalGuruManifestHandler);
+
 $router->get('/sw.js', function() {
     header('Content-Type: application/javascript; charset=utf-8');
     header('Service-Worker-Allowed: /');
@@ -1293,7 +1298,7 @@ $router->get('/sw-sarpras.js', function() {
     header('Service-Worker-Allowed: /');
     header('Cache-Control: no-cache, no-store, must-revalidate');
     echo <<<'JS'
-const CACHE_NAME='sarpras-pwa-v4';
+const CACHE_NAME='sarpras-pwa-v5';
 self.addEventListener('install',e=>{self.skipWaiting();});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(n=>Promise.all(n.filter(n=>n!==CACHE_NAME).map(n=>caches.delete(n)))).then(()=>self.clients.claim()));});
 self.addEventListener('fetch',e=>{if(e.request.method!=='GET'||!e.request.url.startsWith('http'))return;e.respondWith(fetch(e.request).then(r=>{if(r&&r.status===200){const c=r.clone();caches.open(CACHE_NAME).then(cache=>cache.put(e.request,c));}return r;}).catch(()=>caches.match(e.request)));});

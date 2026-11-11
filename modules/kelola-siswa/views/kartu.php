@@ -14,6 +14,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cetak Kartu Siswa</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            200: '#bfdbfe',
+                            300: '#93c5fd',
+                            400: '#60a5fa',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a',
+                            950: '#172554',
+                        }
+                    }
+                }
+            }
+        };
+    </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         @page {
@@ -175,7 +198,7 @@
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6v-8z" /></svg>
             <span>Print Fisik (<?= count($siswaList) ?>)</span>
         </button>
-        <button onclick="window.close()" class="px-3 py-2 bg-white/80 backdrop-blur-xs hover:bg-white text-slate-700 border border-slate-200 rounded-xl text-xs font-bold shadow-md transition-colors">Tutup</button>
+        <button onclick="window.close()" class="px-3 py-2 bg-white/80 backdrop-blur-sm hover:bg-white text-slate-700 border border-slate-200 rounded-xl text-xs font-bold shadow-md transition-colors">Tutup</button>
     </div>
 
     <?php 

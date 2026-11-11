@@ -3,7 +3,7 @@
  * Enables PWA offline capabilities, pre-caching, WebAPK installation compliance, and background sync.
  */
 
-const CACHE_NAME = 'portal-guru-pwa-v3';
+const CACHE_NAME = 'portal-guru-pwa-v4';
 const STATIC_ASSETS = [
   './mobile',
   './mobile/absen',
@@ -11,6 +11,7 @@ const STATIC_ASSETS = [
   './mobile/kelas',
   './mobile/murid',
   './mobile/profil',
+  './mobile/manifest.json',
   './manifest.json',
   './public/manifest.json',
   './public/images/pwa/icon-192.png',

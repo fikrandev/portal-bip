@@ -25,7 +25,7 @@ $npsnMap = [
 $npsnSekolah = $npsnMap[$jenjang] ?? '69979223';
 
 $isActive = (bool)($siswa['is_active'] ?? 1);
-$statusColor = $isActive ? 'bg-primary-500 text-white shadow-primary-500/20' : 'bg-rose-500 text-white shadow-rose-500/30';
+$statusColor = $isActive ? 'bg-emerald-500 text-white shadow-emerald-500/25' : 'bg-rose-500 text-white shadow-rose-500/30';
 $statusText = $isActive ? 'Siswa Aktif' : 'Tidak Aktif';
 $statusIcon = $isActive 
     ? '<svg class="w-3.5 h-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>'
@@ -41,11 +41,47 @@ $isDapodik = strtolower(trim((string)($siswa['dapodik'] ?? ''))) === 'sudah';
     <title>Validasi Kartu Siswa - <?= e($siswa['nama_lengkap'] ?: $siswa['nama']) ?></title>
     <!-- Favicon -->
     <?= function_exists('renderFaviconTags') ? renderFaviconTags() : '' ?>
-    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Preconnect Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS with custom palette config -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            200: '#bfdbfe',
+                            300: '#93c5fd',
+                            400: '#60a5fa',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a',
+                            950: '#172554',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'system-ui', '-apple-system', 'sans-serif'],
+                    }
+                }
+            }
+        };
+    </script>
+
+    <!-- Custom CSS Portal BIP -->
+    <link rel="stylesheet" href="<?= asset('css/app.css') ?>">
+
     <style>
         body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
             background-color: #f1f5f9;
             background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
             background-size: 20px 20px;
@@ -53,7 +89,8 @@ $isDapodik = strtolower(trim((string)($siswa['dapodik'] ?? ''))) === 'sudah';
         .glass-card {
             background: rgba(255, 255, 255, 0.98);
             backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.8);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.85);
             box-shadow: 0 20px 45px -10px rgba(15, 23, 42, 0.12), 0 0 0 1px rgba(226, 232, 240, 0.8);
         }
     </style>
@@ -162,41 +199,41 @@ $isDapodik = strtolower(trim((string)($siswa['dapodik'] ?? ''))) === 'sudah';
 
                 <!-- Dapodik Synchronization Status Section (Prominent) -->
                 <?php if ($isDapodik): ?>
-                    <div class="mt-4 p-4 rounded-2xl bg-gradient-to-br from-primary-500 via-teal-50/60 to-primary-600/50 border border-primary-200 text-left relative overflow-hidden shadow-sm">
+                    <div class="mt-4 p-4 rounded-2xl bg-gradient-to-br from-emerald-50 via-teal-50/70 to-emerald-100/60 border border-emerald-200/80 text-left relative overflow-hidden shadow-xs">
                         <!-- Watermark background icon -->
-                        <div class="absolute -right-3 -bottom-3 text-primary-600/10 pointer-events-none">
+                        <div class="absolute -right-3 -bottom-3 text-emerald-600/10 pointer-events-none">
                             <svg class="w-24 h-24" fill="currentColor" viewBox="0 0 24 24">
                                 <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/>
                             </svg>
                         </div>
                         
                         <div class="flex items-start gap-3 relative z-10">
-                            <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-primary-500 to-primary-600 text-white flex items-center justify-center flex-shrink-0 shadow-md shadow-primary-500/20">
+                            <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-600 text-white flex items-center justify-center flex-shrink-0 shadow-md shadow-emerald-500/25">
                                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                                 </svg>
                             </div>
                             <div class="flex-1 min-w-0">
                                 <div class="flex items-center justify-between gap-1.5 mb-0.5">
-                                    <h2 class="text-xs font-black text-primary-950 uppercase tracking-wide">
+                                    <h2 class="text-xs font-black text-emerald-950 uppercase tracking-wide">
                                         Tersinkronisasi Dapodik
                                     </h2>
-                                    <span class="inline-flex items-center px-1.5 py-0.5 rounded-md text-[8.5px] font-black bg-primary-200 text-primary-900 uppercase tracking-wider">
+                                    <span class="inline-flex items-center px-1.5 py-0.5 rounded-md text-[8.5px] font-black bg-emerald-200/90 text-emerald-900 uppercase tracking-wider">
                                         Kemendikbud
                                     </span>
                                 </div>
-                                <p class="text-[11px] text-primary-800 font-medium leading-snug">
+                                <p class="text-[11px] text-emerald-800 font-medium leading-snug">
                                     Data siswa telah terverifikasi dan tersinkronisasi langsung dengan sistem Data Pokok Pendidikan Nasional.
                                 </p>
                             </div>
                         </div>
 
-                        <div class="mt-3 pt-2.5 border-t border-primary-200/80 flex items-center justify-between text-[10px] text-primary-900 font-bold relative z-10">
+                        <div class="mt-3 pt-2.5 border-t border-emerald-200/80 flex items-center justify-between text-[10px] text-emerald-900 font-bold relative z-10">
                             <span class="flex items-center gap-1.5">
-                                <span class="w-2 h-2 rounded-full bg-primary-500 animate-pulse"></span>
+                                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                                 Status: Resmi & Valid
                             </span>
-                            <span class="font-mono text-primary-800 bg-primary-100/80 px-2 py-0.5 rounded-md">
+                            <span class="font-mono text-emerald-800 bg-emerald-100/80 px-2 py-0.5 rounded-md border border-emerald-200/60">
                                 NPSN: <?= e($npsnSekolah) ?>
                             </span>
                         </div>

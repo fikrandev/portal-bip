@@ -346,25 +346,29 @@ unset(
         lucide.createIcons();
 
         // ============================================================
-        // SERVICE WORKER REGISTRATION
+        // SERVICE WORKER REGISTRATION (SCOPED TO MOBILE-SARPRAS ONLY)
         // ============================================================
         if ('serviceWorker' in navigator) {
-            // Unregister old conflicting service workers first
+            const sarprasScope = '<?= url('mobile-sarpras/') ?>';
+
+            // Clean up any legacy unpartitioned root-scoped service worker
             navigator.serviceWorker.getRegistrations().then(function(regs) {
                 regs.forEach(function(reg) {
-                    if (reg.active && reg.active.scriptURL && !reg.active.scriptURL.includes('sw-sarpras.js')) {
-                        reg.unregister();
-                        console.log('[PWA] Unregistered old SW:', reg.active.scriptURL);
+                    const originRoot = window.location.origin + '/';
+                    const appRoot = '<?= url('') ?>/';
+                    if ((reg.scope === originRoot || reg.scope === appRoot) && !reg.scope.includes('/mobile-sarpras/') && !reg.scope.includes('/mobile/')) {
+                        reg.unregister().then(() => console.log('[PWA Sarpras] Cleaned legacy root SW:', reg.scope));
                     }
                 });
-            });
-            // Register the sarpras SW - use absolute path from root
-            navigator.serviceWorker.register('<?= url('sw-sarpras.js') ?>')
+            }).catch(function() {});
+
+            // Register Sarpras SW strictly within mobile-sarpras scope
+            navigator.serviceWorker.register('<?= url('sw-sarpras.js') ?>', { scope: sarprasScope })
                 .then(function(reg) {
-                    console.log('[PWA] SW registered OK, scope:', reg.scope);
+                    console.log('[PWA Sarpras] SW registered OK, scope:', reg.scope);
                 })
                 .catch(function(err) {
-                    console.error('[PWA] SW registration FAILED:', err);
+                    console.error('[PWA Sarpras] SW registration FAILED:', err);
                 });
         }
 

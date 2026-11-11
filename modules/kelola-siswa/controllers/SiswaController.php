@@ -2104,9 +2104,44 @@ class SiswaController
 
         if (!$siswa) {
             http_response_code(404);
-            // Show a simple error view
             $favTags = function_exists('renderFaviconTags') ? renderFaviconTags() : '';
-            echo "<!DOCTYPE html><html><head><meta name='viewport' content='width=device-width, initial-scale=1.0'><title>Tidak Valid</title>{$favTags}<script src='https://cdn.tailwindcss.com'></script></head><body class='bg-slate-100 flex items-center justify-center min-h-screen p-4'><div class='bg-white p-8 rounded-3xl shadow-xl max-w-sm w-full text-center border-t-4 border-red-500'><div class='w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-5'><svg class='w-10 h-10' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 18L18 6M6 6l12 12'/></svg></div><h2 class='text-2xl font-extrabold text-slate-800 mb-2'>Kartu Tidak Valid</h2><p class='text-slate-500 text-sm leading-relaxed mb-6'>Mohon maaf, QR Code yang Anda scan tidak dapat ditemukan di dalam sistem kami.</p><div class='text-xs font-semibold text-slate-400'>Divisi IT Bina Insan Palu</div></div></body></html>";
+            $cssAppUrl = function_exists('asset') ? asset('css/app.css') : '';
+            echo "<!DOCTYPE html>
+<html lang='id'>
+<head>
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no'>
+    <title>Kartu Tidak Valid - SIT Bina Insan</title>
+    {$favTags}
+    <link rel='preconnect' href='https://fonts.googleapis.com'>
+    <link rel='preconnect' href='https://fonts.gstatic.com' crossorigin>
+    <link href='https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap' rel='stylesheet'>
+    <script src='https://cdn.tailwindcss.com'></script>
+    " . ($cssAppUrl ? "<link rel='stylesheet' href='{$cssAppUrl}'>" : "") . "
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+            background-color: #f1f5f9;
+            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+    </style>
+</head>
+<body class='min-h-screen flex items-center justify-center p-4 antialiased selection:bg-rose-100'>
+    <div class='bg-white/95 backdrop-blur-md p-8 rounded-[32px] shadow-2xl max-w-sm w-full text-center border border-slate-200/80 relative overflow-hidden'>
+        <div class='w-20 h-20 bg-rose-50 text-rose-500 rounded-3xl flex items-center justify-center mx-auto mb-5 border border-rose-100 shadow-inner'>
+            <svg class='w-10 h-10' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 18L18 6M6 6l12 12'/></svg>
+        </div>
+        <h2 class='text-xl font-black text-slate-900 mb-2 tracking-tight'>Kartu Tidak Terdaftar</h2>
+        <p class='text-slate-500 text-xs leading-relaxed mb-6'>
+            Mohon maaf, QR Code yang Anda scan tidak dapat ditemukan atau belum terdaftar di dalam sistem SIT Bina Insan Palu.
+        </p>
+        <div class='pt-4 border-t border-slate-100 flex items-center justify-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest'>
+            &copy; " . date('Y') . " &bull; Divisi IT Bina Insan Palu
+        </div>
+    </div>
+</body>
+</html>";
             return;
         }
 

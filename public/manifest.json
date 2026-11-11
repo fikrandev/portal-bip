@@ -4,7 +4,7 @@
   "short_name": "Portal Guru",
   "description": "Aplikasi Resmi Guru Portal BIP untuk Presensi Geolokasi GPS, Jurnal Mengajar, Izin, Cuti, dan Amalan Harian.",
   "start_url": "mobile?utm_source=pwa",
-  "scope": "./",
+  "scope": "mobile/",
   "display": "standalone",
   "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "orientation": "portrait-primary",

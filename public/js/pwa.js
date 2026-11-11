@@ -30,16 +30,27 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     const baseUrl = window.APP_BASE_URL || '';
     const swPath = baseUrl ? `${baseUrl}/sw.js` : '/sw.js';
-    const scopePath = baseUrl ? `${baseUrl}/` : '/';
+    const scopePath = baseUrl ? `${baseUrl}/mobile/` : '/mobile/';
+
+    // Clean up any legacy unpartitioned root-scoped service worker
+    navigator.serviceWorker.getRegistrations().then((regs) => {
+      regs.forEach((reg) => {
+        const originRoot = window.location.origin + '/';
+        const appRoot = (baseUrl ? baseUrl : window.location.origin) + '/';
+        if ((reg.scope === originRoot || reg.scope === appRoot) && !reg.scope.includes('/mobile/') && !reg.scope.includes('/mobile-sarpras/')) {
+          reg.unregister().then(() => console.log('[PWA Portal Guru] Cleaned legacy root SW:', reg.scope));
+        }
+      });
+    }).catch(() => {});
 
     navigator.serviceWorker.register(swPath, { scope: scopePath })
       .then((registration) => {
-        console.log('[PWA] ServiceWorker registered with scope:', registration.scope);
+        console.log('[PWA Portal Guru] ServiceWorker registered with scope:', registration.scope);
       })
       .catch((err) => {
-        console.warn('[PWA] ServiceWorker registration fallback:', err);
-        navigator.serviceWorker.register((window.APP_BASE_URL || '') + '/public/sw.js')
-          .catch((e) => console.log('[PWA] SW fallback error:', e));
+        console.warn('[PWA Portal Guru] ServiceWorker registration fallback:', err);
+        navigator.serviceWorker.register(baseUrl ? `${baseUrl}/public/sw.js` : '/public/sw.js', { scope: scopePath })
+          .catch((e) => console.log('[PWA Portal Guru] SW fallback error:', e));
       });
   });
 }

@@ -6,7 +6,7 @@
     <title><?= e($pageTitle ?? 'Portal Guru') ?> — Portal BIP</title>
     
     <!-- PWA Settings -->
-    <link rel="manifest" href="<?= url('manifest.json') ?>">
+    <link rel="manifest" href="<?= url('mobile/manifest.json') ?>">
     <meta name="theme-color" content="#2563eb">
     <meta name="application-name" content="Portal Guru">
     <meta name="mobile-web-app-capable" content="yes">

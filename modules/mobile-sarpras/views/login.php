@@ -237,12 +237,12 @@
         }
 
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('<?= url('sw-sarpras.js') ?>')
+            navigator.serviceWorker.register('<?= url('sw-sarpras.js') ?>', { scope: '<?= url('mobile-sarpras/') ?>' })
                 .then(function(reg) {
-                    console.log('[PWA] SW registered OK on login:', reg.scope);
+                    console.log('[PWA Sarpras] SW registered OK on login:', reg.scope);
                 })
                 .catch(function(err) {
-                    console.error('[PWA] SW registration FAILED:', err);
+                    console.error('[PWA Sarpras] SW registration FAILED:', err);
                 });
         }
     </script>
