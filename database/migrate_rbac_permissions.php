@@ -100,6 +100,14 @@ $modulesDefinition = [
             ['perangkat.approve', 'Pusat Verifikasi / Pengesahan', 'Wewenang khusus menyetujui (Approve), menolak (Reject), dan mengesahkan RPP/Perangkat Ajar', true],
         ]
     ],
+    'kelola-jurnal-guru' => [
+        'name' => 'Kelola Jurnal Guru',
+        'permissions' => [
+            ['jurnal.view', 'Lihat Jurnal Guru', 'Melihat rekap jurnal KBM, jam mengajar (JP), dan presensi kelas', false],
+            ['jurnal.manage', 'Validasi / Kelola Jurnal', 'Memvalidasi status jurnal mengajar dan mencetak rekapitulasi JP', false],
+            ['jurnal.delete', 'Hapus Jurnal Guru', 'Menghapus catatan jurnal mengajar guru', false],
+        ]
+    ],
     'kelola-nilai' => [
         'name' => 'Kelola Nilai',
         'permissions' => [

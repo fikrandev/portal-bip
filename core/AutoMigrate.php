@@ -84,6 +84,7 @@ class AutoMigrate
             '2026_11_10_000046_create_cuti_pegawai_tables'                => 'migration046CreateCutiPegawaiTables',
             '2026_11_10_000047_create_absen_pegawai_tables'               => 'migration047CreateAbsenPegawaiTables',
             '2026_11_11_000048_add_spmb_daftar_tunggu_wa_columns'         => 'migration048AddSpmbDaftarTungguWaColumns',
+            '2026_11_11_000049_register_kelola_jurnal_guru_module'         => 'migration049RegisterKelolaJurnalGuruModule',
         ];
     }
     /**
@@ -2964,6 +2965,158 @@ class AutoMigrate
             self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'wa_dt_sent_count', 'INT NOT NULL DEFAULT 0', 'wa_dt_sent_at');
             self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'last_wa_dt_phone', 'VARCHAR(30) NULL', 'wa_dt_sent_count');
             self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'last_wa_dt_status', 'VARCHAR(50) NULL', 'last_wa_dt_phone');
+        }
+    }
+
+    /**
+     * Migration 049: Registrasi Modul Kelola Jurnal Guru (Administrasi Guru & Rekap KBM)
+     */
+    protected static function migration049RegisterKelolaJurnalGuruModule(PDO $pdo): void
+    {
+        // 1. Pastikan tabel jurnal_mengajar lengkap dengan kolom yang dibutuhkan
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `jurnal_mengajar` (
+                `id` INT AUTO_INCREMENT PRIMARY KEY,
+                `kode_jurnal` VARCHAR(50) NULL UNIQUE,
+                `jadwal_id` INT NULL,
+                `guru_id` INT NULL,
+                `nama_guru` VARCHAR(150) NULL,
+                `kelas` VARCHAR(50) NULL,
+                `mata_pelajaran` VARCHAR(100) NULL,
+                `tanggal` DATE NOT NULL,
+                `jam_ke` VARCHAR(20) DEFAULT '1',
+                `jumlah_jp` INT NOT NULL DEFAULT 2,
+                `materi_pokok` TEXT NULL,
+                `uraian_kegiatan` TEXT NULL,
+                `catatan_kelas` TEXT NULL,
+                `kehadiran_summary` VARCHAR(255) NULL,
+                `foto_kegiatan` VARCHAR(255) NULL,
+                `status` ENUM('draft', 'selesai', 'tervalidasi') DEFAULT 'selesai',
+                `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+                `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                INDEX `idx_jurnal_tanggal` (`tanggal`),
+                INDEX `idx_jurnal_guru` (`guru_id`),
+                INDEX `idx_jurnal_kelas` (`kelas`),
+                INDEX `idx_jurnal_status` (`status`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
+
+        if (self::hasTable($pdo, 'jurnal_mengajar')) {
+            self::addColumnIfNotExists($pdo, 'jurnal_mengajar', 'kode_jurnal', 'VARCHAR(50) NULL', 'id');
+            self::addColumnIfNotExists($pdo, 'jurnal_mengajar', 'jadwal_id', 'INT NULL', 'kode_jurnal');
+            self::addColumnIfNotExists($pdo, 'jurnal_mengajar', 'guru_id', 'INT NULL', 'jadwal_id');
+            self::addColumnIfNotExists($pdo, 'jurnal_mengajar', 'nama_guru', 'VARCHAR(150) NULL', 'guru_id');
+            self::addColumnIfNotExists($pdo, 'jurnal_mengajar', 'kelas', 'VARCHAR(50) NULL', 'nama_guru');
+            self::addColumnIfNotExists($pdo, 'jurnal_mengajar', 'mata_pelajaran', 'VARCHAR(100) NULL', 'kelas');
+            self::addColumnIfNotExists($pdo, 'jurnal_mengajar', 'jam_ke', "VARCHAR(20) DEFAULT '1'", 'tanggal');
+            self::addColumnIfNotExists($pdo, 'jurnal_mengajar', 'jumlah_jp', 'INT NOT NULL DEFAULT 2', 'jam_ke');
+            self::addColumnIfNotExists($pdo, 'jurnal_mengajar', 'materi_pokok', 'TEXT NULL', 'jumlah_jp');
+            self::addColumnIfNotExists($pdo, 'jurnal_mengajar', 'uraian_kegiatan', 'TEXT NULL', 'materi_pokok');
+            self::addColumnIfNotExists($pdo, 'jurnal_mengajar', 'catatan_kelas', 'TEXT NULL', 'uraian_kegiatan');
+            self::addColumnIfNotExists($pdo, 'jurnal_mengajar', 'kehadiran_summary', 'VARCHAR(255) NULL', 'catatan_kelas');
+            self::addColumnIfNotExists($pdo, 'jurnal_mengajar', 'status', "ENUM('draft', 'selesai', 'tervalidasi') DEFAULT 'selesai'", 'foto_kegiatan');
+        }
+
+        // 2. Daftarkan Modul kelola-jurnal-guru ke tabel modules
+        if (self::hasTable($pdo, 'modules')) {
+            $checkMod = $pdo->prepare("SELECT id FROM modules WHERE slug = ?");
+            $checkMod->execute(['kelola-jurnal-guru']);
+            $moduleId = $checkMod->fetchColumn();
+
+            $icon = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" /><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 7.5l-4.5 4.5m0 0l-1.5-1.5" /></svg>';
+
+            if (!$moduleId) {
+                $insMod = $pdo->prepare("
+                    INSERT INTO modules (name, slug, description, module_group, icon_svg, color, route, sort_order, is_active)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
+                ");
+                $insMod->execute([
+                    'Kelola Jurnal Guru',
+                    'kelola-jurnal-guru',
+                    'Monitoring pengisian jurnal KBM harian, verifikasi materi, dan rekapitulasi beban Jam Pelajaran (JP) guru',
+                    'Administrasi Guru',
+                    $icon,
+                    '#0284c7',
+                    '/kelola-jurnal-guru',
+                    10
+                ]);
+                $moduleId = $pdo->lastInsertId();
+            } else {
+                $updMod = $pdo->prepare("
+                    UPDATE modules 
+                    SET name = ?, description = ?, module_group = ?, icon_svg = ?, color = ?, route = ?, is_active = 1
+                    WHERE id = ?
+                ");
+                $updMod->execute([
+                    'Kelola Jurnal Guru',
+                    'Monitoring pengisian jurnal KBM harian, verifikasi materi, dan rekapitulasi beban Jam Pelajaran (JP) guru',
+                    'Administrasi Guru',
+                    $icon,
+                    '#0284c7',
+                    '/kelola-jurnal-guru',
+                    $moduleId
+                ]);
+            }
+
+            // 3. Hak Akses (Permissions) untuk Jurnal Guru
+            if ($moduleId && self::hasTable($pdo, 'permissions')) {
+                $permissions = [
+                    ['jurnal.view', 'Lihat Jurnal Guru', 'Melihat rekap jurnal KBM, jam mengajar (JP), dan presensi kelas'],
+                    ['jurnal.manage', 'Validasi / Kelola Jurnal', 'Memvalidasi status jurnal mengajar dan mencetak rekapitulasi JP'],
+                    ['jurnal.delete', 'Hapus Jurnal Guru', 'Menghapus catatan jurnal mengajar guru']
+                ];
+
+                $stmtPermCheck = $pdo->prepare("SELECT id FROM permissions WHERE slug = ?");
+                $stmtPermIns   = $pdo->prepare("INSERT INTO permissions (name, slug, description, module_id) VALUES (?, ?, ?, ?)");
+                $stmtPermUpd   = $pdo->prepare("UPDATE permissions SET name = ?, description = ?, module_id = ? WHERE id = ?");
+
+                $permIds = [];
+                foreach ($permissions as $p) {
+                    $stmtPermCheck->execute([$p[0]]);
+                    $pId = $stmtPermCheck->fetchColumn();
+                    if (!$pId) {
+                        $stmtPermIns->execute([$p[1], $p[0], $p[2], $moduleId]);
+                        $pId = $pdo->lastInsertId();
+                    } else {
+                        $stmtPermUpd->execute([$p[1], $p[2], $moduleId, $pId]);
+                    }
+                    $permIds[] = (int)$pId;
+                }
+
+                // Map to module_permissions
+                if (self::hasTable($pdo, 'module_permissions')) {
+                    $stmtMpCheck = $pdo->prepare("SELECT 1 FROM module_permissions WHERE module_id = ? AND permission_id = ?");
+                    $stmtMpIns   = $pdo->prepare("INSERT INTO module_permissions (module_id, permission_id) VALUES (?, ?)");
+                    foreach ($permIds as $pId) {
+                        $stmtMpCheck->execute([$moduleId, $pId]);
+                        if (!$stmtMpCheck->fetchColumn()) {
+                            $stmtMpIns->execute([$moduleId, $pId]);
+                        }
+                    }
+                }
+
+                // Map to role_permissions for Admin & Management Roles
+                if (self::hasTable($pdo, 'role_permissions') && self::hasTable($pdo, 'roles')) {
+                    $roles = $pdo->query("SELECT id, name FROM roles")->fetchAll(PDO::FETCH_ASSOC);
+                    $stmtRpCheck = $pdo->prepare("SELECT 1 FROM role_permissions WHERE role_id = ? AND permission_id = ?");
+                    $stmtRpIns   = $pdo->prepare("INSERT INTO role_permissions (role_id, permission_id) VALUES (?, ?)");
+
+                    foreach ($roles as $r) {
+                        $roleName = strtolower($r['name'] ?? '');
+                        $roleId = (int)$r['id'];
+
+                        foreach ($permIds as $pId) {
+                            $stmtRpCheck->execute([$roleId, $pId]);
+                            if (!$stmtRpCheck->fetchColumn()) {
+                                // Super admin, admin, kepsek, waka get all jurnal permissions
+                                if (strpos($roleName, 'admin') !== false || strpos($roleName, 'kepala') !== false || strpos($roleName, 'kurikulum') !== false || strpos($roleName, 'operator') !== false) {
+                                    $stmtRpIns->execute([$roleId, $pId]);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
