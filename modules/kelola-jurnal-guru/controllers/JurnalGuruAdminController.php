@@ -153,6 +153,7 @@ class JurnalGuruAdminController
             ['label' => 'Administrasi Guru', 'url' => url('kelola-perangkat-pembelajaran')],
             ['label' => 'Kelola Jurnal Guru']
         ];
+        $customSidebar = MODULES_PATH . '/kelola-jurnal-guru/views/sidebar.php';
 
         ob_start();
         include MODULES_PATH . '/kelola-jurnal-guru/views/index.php';
