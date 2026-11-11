@@ -274,7 +274,7 @@ $currentQs = http_build_query([
                                     <div class="min-w-0">
                                         <div class="font-bold text-slate-800 truncate"><?= e($row['guru_nama_lengkap']) ?></div>
                                         <div class="text-[11px] text-slate-400">
-                                            <?= !empty($row['nip']) ? 'NIP: ' . e($row['nip']) : (!empty($row['niy']) ? 'NIY: ' . e($row['niy']) : 'Guru Pengampu') ?>
+                                            <?= !empty($row['niy']) ? 'NIY: ' . e($row['niy']) : (!empty($row['nik']) ? 'NIK: ' . e($row['nik']) : 'Guru Pengampu') ?>
                                         </div>
                                     </div>
                                 </div>

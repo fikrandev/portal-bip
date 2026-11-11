@@ -228,7 +228,7 @@
         <!-- Meta Box -->
         <div class="meta-box">
             <div>
-                <strong>Guru Pengajar:</strong> <?= $selectedGuru ? e($selectedGuru['nama']) . ' (' . ($selectedGuru['nip'] ?? $selectedGuru['niy'] ?? '-') . ')' : 'Semua Guru' ?>
+                <strong>Guru Pengajar:</strong> <?= $selectedGuru ? e($selectedGuru['nama']) . ' (' . ($selectedGuru['niy'] ?? ($selectedGuru['nik'] ?? '-')) . ')' : 'Semua Guru' ?>
             </div>
             <div>
                 <strong>Kelas:</strong> <?= !empty($kelas) ? e($kelas) : 'Semua Kelas' ?>
@@ -259,7 +259,7 @@
                         <tr>
                             <td class="text-center"><?= $noG++ ?></td>
                             <td class="font-bold"><?= e($rg['nama']) ?></td>
-                            <td class="text-center"><?= e($rg['nip'] !== '-' ? $rg['nip'] : $rg['niy']) ?></td>
+                            <td class="text-center"><?= e($rg['niy'] ?? '-') ?></td>
                             <td class="text-center"><?= $rg['total_pertemuan'] ?> kali</td>
                             <td class="text-center font-bold"><?= $rg['total_jp'] ?> JP</td>
                         </tr>

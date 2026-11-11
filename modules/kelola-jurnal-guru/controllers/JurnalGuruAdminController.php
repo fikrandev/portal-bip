@@ -108,8 +108,8 @@ class JurnalGuruAdminController
             SELECT 
                 jm.*,
                 COALESCE(p.nama, jm.nama_guru, 'Guru') as guru_nama_lengkap,
-                p.nip,
                 p.niy,
+                p.nik,
                 p.foto as guru_foto,
                 jp.jam_mulai,
                 jp.jam_selesai,
@@ -127,7 +127,7 @@ class JurnalGuruAdminController
 
         // 6. Data Dropdown Filter
         $guruOptions = $pdo->query("
-            SELECT id, nama, nip, niy 
+            SELECT id, nama, niy, nik 
             FROM pegawai 
             WHERE status_pegawai != 'Keluar' OR status_pegawai IS NULL
             ORDER BY nama ASC
@@ -174,8 +174,8 @@ class JurnalGuruAdminController
                 SELECT 
                     jm.*,
                     COALESCE(p.nama, jm.nama_guru, 'Guru') as guru_nama_lengkap,
-                    p.nip,
                     p.niy,
+                    p.nik,
                     p.email as guru_email,
                     p.foto as guru_foto,
                     jp.jam_mulai,
@@ -325,8 +325,8 @@ class JurnalGuruAdminController
             SELECT 
                 jm.*,
                 COALESCE(p.nama, jm.nama_guru, 'Guru') as guru_nama_lengkap,
-                p.nip,
                 p.niy,
+                p.nik,
                 jp.jam_mulai,
                 jp.jam_selesai,
                 jp.ruangan
@@ -348,8 +348,7 @@ class JurnalGuruAdminController
             if (!isset($rekapPerGuru[$gId])) {
                 $rekapPerGuru[$gId] = [
                     'nama' => $gName,
-                    'nip' => $item['nip'] ?? '-',
-                    'niy' => $item['niy'] ?? '-',
+                    'niy' => $item['niy'] ?? ($item['nik'] ?? '-'),
                     'total_pertemuan' => 0,
                     'total_jp' => 0
                 ];
