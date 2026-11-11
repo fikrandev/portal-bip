@@ -557,6 +557,7 @@ $router->post('/kelola-perangkat-pembelajaran/delete/{id}', [PerangkatController
 $router->get('/kelola-jurnal-guru', [JurnalGuruAdminController::class, 'index'], [Middleware::permissionRequired('jurnal.view')]);
 $router->get('/kelola-jurnal-guru/cetak', [JurnalGuruAdminController::class, 'cetak'], [Middleware::permissionRequired('jurnal.view')]);
 $router->get('/kelola-jurnal-guru/api/detail/{id}', [JurnalGuruAdminController::class, 'apiDetail'], [Middleware::permissionRequired('jurnal.view')]);
+$router->post('/kelola-jurnal-guru/store', [JurnalGuruAdminController::class, 'store'], [Middleware::permissionRequired('jurnal.manage')]);
 $router->post('/kelola-jurnal-guru/status/{id}', [JurnalGuruAdminController::class, 'updateStatus'], [Middleware::permissionRequired('jurnal.manage')]);
 $router->post('/kelola-jurnal-guru/delete/{id}', [JurnalGuruAdminController::class, 'delete'], [Middleware::permissionRequired('jurnal.delete')]);
 

@@ -1,8 +1,15 @@
 <?php
 /**
  * Sidebar Khusus Modul Kelola Jurnal Guru - Portal BIP
+ * Menampilkan 5 Menu Utama:
+ * 1. Dashboard
+ * 2. Data Jurnal (Nama, Kegiatan, Kelas, Mapel, Presensi)
+ * 3. Rekap Jurnal (Nama, Jumlah PIC & Beban JP)
+ * 4. Data Rekap Harian Matrix (✓ / ✕ per tanggal)
+ * 5. Rekap Jurnal Tidak Terisi
  */
 $currentUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+$activeTab = $activeTab ?? ($_GET['tab'] ?? 'dashboard');
 
 $sbLogo = '';
 if (defined('SYS_APP_FAVICON') && !empty(SYS_APP_FAVICON)) {
@@ -14,6 +21,7 @@ if (defined('SYS_APP_FAVICON') && !empty(SYS_APP_FAVICON)) {
 $sidebarStats = $kpiToday ?? [];
 $countToday = (int)($sidebarStats['count_today'] ?? 0);
 $jpToday = (int)($sidebarStats['jp_today'] ?? 0);
+$totalUnfilledCount = (int)($unfilledTotalCount ?? 0);
 ?>
 <aside id="sidebar" 
        class="fixed top-0 left-0 z-50 w-[280px] h-screen transition-transform duration-300 ease-in-out -translate-x-full lg:translate-x-0 bg-primary-900 border-r border-primary-800 flex flex-col"
@@ -34,8 +42,8 @@ $jpToday = (int)($sidebarStats['jp_today'] ?? 0);
                 </div>
             <?php endif; ?>
             <div class="min-w-0">
-                <h1 class="text-white font-bold text-base tracking-tight leading-tight truncate">Jurnal KBM</h1>
-                <p class="text-primary-300 text-xs truncate">Administrasi Guru & Beban JP</p>
+                <h1 class="text-white font-bold text-base tracking-tight leading-tight truncate">Kelola Jurnal</h1>
+                <p class="text-primary-300 text-xs truncate">Monitoring KBM & PIC Guru</p>
             </div>
         </div>
         
@@ -63,7 +71,7 @@ $jpToday = (int)($sidebarStats['jp_today'] ?? 0);
                 📚 Total Terlaksana: <?= $jpToday ?> JP
             </div>
             <p class="text-primary-300 text-[11px] mt-0.5 truncate">
-                Monitoring presensi & jam mengajar
+                Sinkron langsung dari Portal Guru
             </p>
         </div>
     </div>
@@ -72,24 +80,81 @@ $jpToday = (int)($sidebarStats['jp_today'] ?? 0);
     <div class="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar py-4 px-4 space-y-6">
         <div>
             <h3 class="px-3 mb-2 text-[11px] font-bold text-primary-400 uppercase tracking-wider">
-                Menu Jurnal Guru
+                Menu Kelola Jurnal
             </h3>
             <ul class="space-y-1">
-                <!-- 1. Rekap Jurnal KBM -->
-                <li>
-                    <a href="<?= url('kelola-jurnal-guru') ?>" 
-                       class="flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-200 group <?= strpos($currentUri, 'kelola-jurnal-guru') !== false && strpos($currentUri, 'cetak') === false ? 'bg-primary-600/30 text-white font-semibold shadow-sm border border-primary-500/40' : 'text-primary-200 font-medium hover:bg-primary-800/60 hover:text-white border border-transparent' ?>">
-                        <div class="flex items-center gap-3 min-w-0">
-                            <svg class="w-5 h-5 <?= strpos($currentUri, 'kelola-jurnal-guru') !== false && strpos($currentUri, 'cetak') === false ? 'text-white' : 'text-primary-400 group-hover:text-primary-300' ?> transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
-                            </svg>
-                            <span class="text-sm truncate">Rekap Jurnal KBM</span>
-                        </div>
-                    </a>
-                </li>
+                <?php
+                if (!function_exists('renderJurnalSidebarItem')) {
+                    function renderJurnalSidebarItem(string $tabKey, string $label, string $iconSvg, string $activeTab, ?int $badge = null, string $badgeClass = 'bg-primary-500 text-white'): void {
+                        $isActive = ($activeTab === $tabKey);
+                        $cls = $isActive
+                            ? 'bg-primary-600/30 text-white font-semibold shadow-sm border border-primary-500/40'
+                            : 'text-primary-200 font-medium hover:bg-primary-800/60 hover:text-white border border-transparent';
+                        $iconCls = $isActive ? 'text-white' : 'text-primary-400 group-hover:text-primary-300';
+                        $href = url('kelola-jurnal-guru?tab=' . $tabKey);
 
-                <!-- 2. Cetak Rekap KBM -->
-                <li>
+                        echo '<li>
+                            <a href="' . $href . '" 
+                               onclick="if(typeof switchJurnalTab === \'function\'){ switchJurnalTab(\'' . $tabKey . '\'); return false; }"
+                               data-jurnal-sidebar-tab="' . $tabKey . '"
+                               class="jurnal-sidebar-link flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-200 group ' . $cls . '">
+                                <div class="flex items-center gap-3 min-w-0">
+                                    <span class="w-5 h-5 [&>svg]:w-5 [&>svg]:h-5 ' . $iconCls . ' transition-colors shrink-0">' . $iconSvg . '</span>
+                                    <span class="text-sm truncate">' . e($label) . '</span>
+                                </div>';
+                        if ($badge !== null && $badge > 0) {
+                            echo '<span class="px-2 py-0.5 text-[10px] font-extrabold rounded-full ' . $badgeClass . ' shrink-0">' . $badge . '</span>';
+                        }
+                        echo '</a>
+                        </li>';
+                    }
+                }
+
+                // 1. Dashboard
+                renderJurnalSidebarItem(
+                    'dashboard',
+                    '1. Dashboard Jurnal',
+                    '<svg fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z"/></svg>',
+                    $activeTab
+                );
+
+                // 2. Data Jurnal (Nama, Kegiatan, Kelas)
+                renderJurnalSidebarItem(
+                    'data',
+                    '2. Data Jurnal Guru',
+                    '<svg fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25"/></svg>',
+                    $activeTab
+                );
+
+                // 3. Rekap Jurnal (Nama, Jumlah PIC)
+                renderJurnalSidebarItem(
+                    'rekap',
+                    '3. Rekap Jurnal (PIC)',
+                    '<svg fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z"/></svg>',
+                    $activeTab
+                );
+
+                // 4. Data Rekap Harian Matrix (✓ / ✕)
+                renderJurnalSidebarItem(
+                    'matrix',
+                    '4. Rekap Harian Matrix',
+                    '<svg fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.375 19.5h17.25m-17.25 0a1.125 1.125 0 0 1-1.125-1.125M3.375 19.5h7.5c.621 0 1.125-.504 1.125-1.125m-9.75 0V5.625m0 12.75v-1.5c0-.621.504-1.125 1.125-1.125m18.375 2.625V5.625m0 12.75c0 .621-.504 1.125-1.125 1.125m1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125m0 3.75h-7.5A1.125 1.125 0 0 1 12 18.375m9.75-12.75c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125m19.5 0v1.5c0 .621-.504 1.125-1.125 1.125M2.25 5.625v1.5c0 .621.504 1.125 1.125 1.125m0 0h17.25m-17.25 0h7.5c.621 0 1.125.504 1.125 1.125M3.375 8.25c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125m17.25-3.75h-7.5c-.621 0-1.125.504-1.125 1.125m8.625-1.125c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125m-17.25 0h7.5m-7.5 0c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125M12 10.875v-1.5m0 1.5c0 .621-.504 1.125-1.125 1.125M12 10.875c0 .621.504 1.125 1.125 1.125m-2.25 0c.621 0 1.125.504 1.125 1.125M13.125 12h7.5m-7.5 0c-.621 0-1.125.504-1.125 1.125M20.625 12c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125m-17.25 0h7.5M12 14.625v-1.5m0 1.5c0 .621-.504 1.125-1.125 1.125M12 14.625c0 .621.504 1.125 1.125 1.125m-2.25 0c.621 0 1.125.504 1.125 1.125m0 1.5v-1.5m0 0c0-.621.504-1.125 1.125-1.125m0 0h7.5"/></svg>',
+                    $activeTab
+                );
+
+                // 5. Rekap Jurnal Tidak Terisi
+                renderJurnalSidebarItem(
+                    'kosong',
+                    '5. Jurnal Tidak Terisi',
+                    '<svg fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"/></svg>',
+                    $activeTab,
+                    $totalUnfilledCount,
+                    'bg-rose-500 text-white'
+                );
+                ?>
+
+                <!-- Cetak Rekap KBM -->
+                <li class="pt-2">
                     <a href="<?= url('kelola-jurnal-guru/cetak') ?>" 
                        target="_blank"
                        class="flex items-center justify-between px-3 py-2.5 rounded-xl text-primary-200 font-medium hover:bg-primary-800/60 hover:text-white border border-transparent transition-all duration-200 group">
@@ -97,7 +162,7 @@ $jpToday = (int)($sidebarStats['jp_today'] ?? 0);
                             <svg class="w-5 h-5 text-primary-400 group-hover:text-primary-300 transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24-3.376 1.942-5.908 5.28-5.908 3.337 0 5.52 2.532 5.28 5.908m-10.56 0A5.967 5.967 0 0 0 12 18.25c2.476 0 4.636-1.503 5.28-4.421m-10.56 0c0-1.077.29-2.09.794-2.964m9.766 2.964a5.986 5.986 0 0 0-.794-2.964M6.72 13.829A7.95 7.95 0 0 1 12 11.25a7.95 7.95 0 0 1 5.28 2.579M6.75 6.75h10.5a2.25 2.25 0 0 1 2.25 2.25v1.5a2.25 2.25 0 0 1-2.25 2.25H6.75A2.25 2.25 0 0 1 4.5 10.5v-1.5A2.25 2.25 0 0 1 6.75 6.75Z" />
                             </svg>
-                            <span class="text-sm truncate">Cetak Rekap KBM</span>
+                            <span class="text-sm truncate">Cetak Laporan PDF</span>
                         </div>
                         <span class="text-[10px] text-primary-400 group-hover:text-primary-200 font-bold uppercase tracking-wider">Print</span>
                     </a>
@@ -146,13 +211,13 @@ $jpToday = (int)($sidebarStats['jp_today'] ?? 0);
     <!-- Sidebar Footer -->
     <div class="p-4 border-t border-primary-800/50 bg-primary-950/20 space-y-1.5 shrink-0">
         <!-- Shortcut Portal Guru Mobile -->
-        <a href="<?= url('mobile') ?>" 
+        <a href="<?= url('mobile/jurnal') ?>" 
            target="_blank"
            class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-emerald-300 hover:text-white hover:bg-emerald-800/40 border border-emerald-500/20 transition-all duration-200 group">
             <svg class="w-5 h-5 text-emerald-400 group-hover:text-emerald-300 shrink-0 transition-colors" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 0 0 6 3.75v16.5a2.25 2.25 0 0 0 2.25 2.25h7.5A2.25 2.25 0 0 0 18 20.25V3.75a2.25 2.25 0 0 0-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" />
             </svg>
-            <span class="truncate">Portal Guru (Mobile)</span>
+            <span class="truncate">Jurnal Portal Guru (HP)</span>
         </a>
 
         <!-- Kembali ke Dashboard Utama -->
