@@ -98,6 +98,16 @@ class AutoMigrate
         }
         self::$hasRun = true;
 
+        $allMigrations = self::getMigrations();
+        $dbNameKey = defined('DB_NAME') ? DB_NAME : 'default';
+        $migrationStateHash = md5($dbNameKey . '|' . implode(',', array_keys($allMigrations)));
+        $stampDir = (defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__)) . '/storage/logs';
+        $stampFile = $stampDir . '/.automigrate_' . $migrationStateHash . '.stamp';
+
+        if (!$forceVerbose && is_file($stampFile)) {
+            return ['status' => 'up_to_date_cached'];
+        }
+
         $results = [
             'applied' => [],
             'skipped' => [],
@@ -121,8 +131,6 @@ class AutoMigrate
             $applied = $pdo->query("SELECT migration FROM `migrations`")->fetchAll(PDO::FETCH_COLUMN);
             $appliedMap = array_flip($applied ?: []);
 
-            $allMigrations = self::getMigrations();
-
             // Quick check: if all migrations are applied, exit immediately (< 1ms overhead)
             $pending = [];
             foreach ($allMigrations as $key => $method) {
@@ -134,6 +142,9 @@ class AutoMigrate
             }
 
             if (empty($pending)) {
+                if (is_dir($stampDir) && is_writable($stampDir)) {
+                    @file_put_contents($stampFile, date('c'));
+                }
                 return $results;
             }
 
@@ -153,6 +164,10 @@ class AutoMigrate
                     $results['errors'][$key] = $e->getMessage();
                     error_log("[AutoMigrate Error] Migration {$key} failed: " . $e->getMessage());
                 }
+            }
+
+            if (empty($results['errors']) && is_dir($stampDir) && is_writable($stampDir)) {
+                @file_put_contents($stampFile, date('c'));
             }
 
         } catch (Throwable $e) {

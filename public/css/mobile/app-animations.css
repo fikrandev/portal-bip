@@ -157,3 +157,92 @@
     66% { stroke: #f59e0b; }
     80% { stroke: #8b5cf6; }
 }
+
+/* ── 5. Instant SPA View Transitions (GPU Accelerated 60fps) ── */
+#mobile-main-view {
+    will-change: transform, opacity;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    transform: translateZ(0);
+}
+
+.spa-page-enter {
+    animation: spaPageEnter 0.18s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.spa-page-leave {
+    opacity: 0.55;
+    transform: scale(0.992);
+    transition: opacity 0.1s ease-out, transform 0.1s ease-out;
+}
+
+@keyframes spaPageEnter {
+    0% {
+        opacity: 0.01;
+        transform: translate3d(0, 7px, 0);
+    }
+    100% {
+        opacity: 1;
+        transform: translate3d(0, 0, 0);
+    }
+}
+
+/* ── 6. Top Slim Progress Bar ─────────────────────────── */
+#spa-progress-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2.5px;
+    z-index: 9999;
+    background: linear-gradient(90deg, #2563eb, #38bdf8, #4f46e5);
+    box-shadow: 0 0 10px rgba(37, 99, 235, 0.6);
+    transform-origin: 0% 50%;
+    transform: scaleX(0);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s ease;
+}
+
+#spa-progress-bar.is-loading {
+    opacity: 1;
+    transform: scaleX(0.72);
+    transition: transform 1.2s cubic-bezier(0.1, 0.5, 0.2, 1), opacity 0.1s ease;
+}
+
+#spa-progress-bar.is-finishing {
+    opacity: 0;
+    transform: scaleX(1);
+    transition: transform 0.15s ease-out, opacity 0.22s ease 0.08s;
+}
+
+/* ── 7. Bottom Nav Smooth Pill & Tactile Feedback ─────── */
+.mobile-nav-item {
+    position: relative;
+    transition: color 0.18s cubic-bezier(0.22, 1, 0.36, 1), transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+}
+
+.mobile-nav-item:active {
+    transform: scale(0.9);
+}
+
+.mobile-nav-item .nav-pill {
+    transition: all 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.mobile-nav-item.is-active .nav-pill {
+    background-color: rgba(37, 99, 235, 0.12);
+    transform: scale(1);
+}
+
+/* Smooth Card Hover & Press */
+.mobile-card-elevated {
+    transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.18s ease, border-color 0.18s ease;
+    will-change: transform;
+}
+
+.mobile-card-elevated:active {
+    transform: scale(0.98);
+}

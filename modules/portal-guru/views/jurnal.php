@@ -693,8 +693,12 @@
                 closeJournalModal();
                 AndroidUI.toast(res.message || 'Jurnal pembelajaran berhasil disimpan!', 'success');
                 setTimeout(() => {
-                    window.location.reload();
-                }, 800);
+                    if (window.MobileRouter) {
+                        window.MobileRouter.reload();
+                    } else {
+                        window.location.reload();
+                    }
+                }, 400);
             } else {
                 AndroidUI.toast(res.message || 'Gagal menyimpan jurnal.', 'error');
             }

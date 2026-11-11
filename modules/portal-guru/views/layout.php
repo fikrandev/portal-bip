@@ -51,10 +51,12 @@
     <link rel="icon" type="image/png" sizes="512x512" href="<?= $pwaIcon512 ?>">
     <link rel="shortcut icon" href="<?= $favIconRaw ?>">
     
-    <!-- Google Fonts: Inter & Amiri (Arabic Calligraphy) -->
+    <!-- Google Fonts & CDN Preconnect -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="preconnect" href="https://unpkg.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         @font-face {
             font-family: 'Uthmani';
@@ -110,17 +112,32 @@
     <link rel="stylesheet" href="<?= asset('css/app.css') ?>">
 
     <!-- Smooth Animations CSS -->
-    <link rel="stylesheet" href="<?= asset('css/mobile/app-animations.css') ?>">
+    <link rel="stylesheet" href="<?= asset('css/mobile/app-animations.css') ?>?v=2">
 
-    <!-- Leaflet Map CSS & JS -->
+    <!-- Leaflet Map CSS & Deferred JS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="" defer></script>
     
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Pinned Fast Lucide Icons (Zero 302 Redirect Latency) -->
+    <script src="https://cdn.jsdelivr.net/npm/lucide@0.460.0/dist/umd/lucide.min.js"></script>
 
     <script>
         window.APP_BASE_URL = '<?= rtrim(BASE_URL, "/") ?>';
+        // Ensure DOMContentLoaded listeners inside SPA-swapped views execute immediately
+        (function() {
+            const origAddEvent = document.addEventListener.bind(document);
+            document.addEventListener = function(type, listener, options) {
+                if (type === 'DOMContentLoaded' && document.readyState !== 'loading') {
+                    if (typeof listener === 'function') {
+                        setTimeout(function() {
+                            try { listener(new Event('DOMContentLoaded')); } catch (e) { console.warn(e); }
+                        }, 0);
+                    }
+                    return;
+                }
+                return origAddEvent(type, listener, options);
+            };
+        })();
     </script>
 
     <style>
@@ -179,58 +196,72 @@
 </head>
 <body class="h-full bg-slate-100 flex justify-center text-slate-800 antialiased selection:bg-primary-600 selection:text-white">
 
+    <!-- Top Slim SPA Progress Bar -->
+    <div id="spa-progress-bar" aria-hidden="true"></div>
+
     <!-- Mobile Shell Wrapper (Original Compact Size: max-w-md) -->
     <div class="w-full max-w-md min-h-screen bg-[#f6f8fb] shadow-2xl flex flex-col relative overflow-x-hidden border-x border-slate-200/60 sm:my-4 sm:rounded-3xl sm:min-h-[860px]">
         
         <!-- Main View Content -->
-        <main class="flex-1 pb-24 overflow-y-auto no-scrollbar">
+        <main id="mobile-main-view" 
+              data-active-tab="<?= e($activeTab ?? 'beranda') ?>" 
+              data-page-title="<?= e($pageTitle ?? 'Portal Guru') ?> — Portal BIP"
+              class="flex-1 pb-24 overflow-y-auto no-scrollbar">
             <?= $content ?? '' ?>
         </main>
 
-        <!-- Bottom Navigation Bar (5 Items with Center Elevated FAB) -->
-        <nav class="fixed bottom-0 sm:bottom-4 left-0 right-0 max-w-md mx-auto z-40 bg-white/90 backdrop-blur-xl border-t border-slate-200/80 px-3 py-2 flex items-center justify-around sm:rounded-b-3xl safe-bottom shadow-[0_-4px_20px_rgba(0,0,0,0.04)]">
+        <!-- Bottom Navigation Bar (5 Items with Center Elevated FAB & Pill Indicators) -->
+        <nav id="mobile-bottom-nav" class="fixed bottom-0 sm:bottom-4 left-0 right-0 max-w-md mx-auto z-40 bg-white/95 backdrop-blur-xl border-t border-slate-200/70 px-2 py-1.5 flex items-center justify-around sm:rounded-b-3xl safe-bottom shadow-[0_-6px_25px_rgba(15,23,42,0.05)]">
             
             <!-- Tab 1: Beranda -->
-            <a href="<?= url('mobile') ?>" class="flex flex-col items-center gap-1 py-1 px-2.5 rounded-2xl press-bounce <?= ($activeTab ?? '') === 'beranda' ? 'text-primary-600 font-semibold' : 'text-slate-400 hover:text-slate-600 font-medium' ?>">
-                <i data-lucide="home" class="w-5 h-5 <?= ($activeTab ?? '') === 'beranda' ? 'stroke-[2.5]' : 'stroke-2' ?>"></i>
-                <span class="text-[11px] leading-none">Beranda</span>
+            <a href="<?= url('mobile') ?>" data-nav-tab="beranda" class="mobile-nav-item flex-1 flex flex-col items-center gap-0.5 py-1 rounded-2xl <?= ($activeTab ?? '') === 'beranda' ? 'is-active text-primary-600 font-bold' : 'text-slate-400 hover:text-slate-600 font-medium' ?>">
+                <div class="nav-pill w-12 h-7 rounded-full flex items-center justify-center">
+                    <i data-lucide="home" class="w-5 h-5 <?= ($activeTab ?? '') === 'beranda' ? 'stroke-[2.5]' : 'stroke-2' ?>"></i>
+                </div>
+                <span class="text-[10.5px] leading-none tracking-tight">Beranda</span>
             </a>
 
             <!-- Tab 2: Kelas -->
-            <a href="<?= url('mobile/kelas') ?>" class="flex flex-col items-center gap-1 py-1 px-2.5 rounded-2xl press-bounce <?= ($activeTab ?? '') === 'kelas' ? 'text-primary-600 font-semibold' : 'text-slate-400 hover:text-slate-600 font-medium' ?>">
-                <i data-lucide="users" class="w-5 h-5 <?= ($activeTab ?? '') === 'kelas' ? 'stroke-[2.5]' : 'stroke-2' ?>"></i>
-                <span class="text-[11px] leading-none">Kelas</span>
+            <a href="<?= url('mobile/kelas') ?>" data-nav-tab="kelas" class="mobile-nav-item flex-1 flex flex-col items-center gap-0.5 py-1 rounded-2xl <?= ($activeTab ?? '') === 'kelas' ? 'is-active text-primary-600 font-bold' : 'text-slate-400 hover:text-slate-600 font-medium' ?>">
+                <div class="nav-pill w-12 h-7 rounded-full flex items-center justify-center">
+                    <i data-lucide="users" class="w-5 h-5 <?= ($activeTab ?? '') === 'kelas' ? 'stroke-[2.5]' : 'stroke-2' ?>"></i>
+                </div>
+                <span class="text-[10.5px] leading-none tracking-tight">Kelas</span>
             </a>
 
             <!-- Center Elevated FAB: Buat (+) -->
-            <div class="-mt-6 flex flex-col items-center">
-                <button onclick="openAndroidActionSheet()" class="w-13 h-13 rounded-full bg-primary-600 text-white flex items-center justify-center shadow-lg shadow-primary-600/40 hover:bg-primary-700 press-bounce border-4 border-[#f6f8fb]">
+            <div class="-mt-6 px-1 flex flex-col items-center">
+                <button type="button" onclick="openAndroidActionSheet()" class="w-13 h-13 rounded-full bg-gradient-to-tr from-primary-600 via-primary-500 to-indigo-600 text-white flex items-center justify-center shadow-lg shadow-primary-600/35 hover:shadow-primary-600/50 press-bounce border-4 border-[#f6f8fb]">
                     <i data-lucide="plus" class="w-6 h-6 stroke-[3]"></i>
                 </button>
-                <span class="text-[10px] font-semibold text-slate-500 mt-1">Buat</span>
+                <span class="text-[10px] font-bold text-slate-500 mt-0.5 tracking-tight">Aksi</span>
             </div>
 
             <!-- Tab 3: Murid -->
-            <a href="<?= url('mobile/murid') ?>" class="flex flex-col items-center gap-1 py-1 px-2.5 rounded-2xl press-bounce <?= ($activeTab ?? '') === 'murid' ? 'text-primary-600 font-semibold' : 'text-slate-400 hover:text-slate-600 font-medium' ?>">
-                <i data-lucide="graduation-cap" class="w-5 h-5 <?= ($activeTab ?? '') === 'murid' ? 'stroke-[2.5]' : 'stroke-2' ?>"></i>
-                <span class="text-[11px] leading-none">Murid</span>
+            <a href="<?= url('mobile/murid') ?>" data-nav-tab="murid" class="mobile-nav-item flex-1 flex flex-col items-center gap-0.5 py-1 rounded-2xl <?= ($activeTab ?? '') === 'murid' ? 'is-active text-primary-600 font-bold' : 'text-slate-400 hover:text-slate-600 font-medium' ?>">
+                <div class="nav-pill w-12 h-7 rounded-full flex items-center justify-center">
+                    <i data-lucide="graduation-cap" class="w-5 h-5 <?= ($activeTab ?? '') === 'murid' ? 'stroke-[2.5]' : 'stroke-2' ?>"></i>
+                </div>
+                <span class="text-[10.5px] leading-none tracking-tight">Murid</span>
             </a>
 
             <!-- Tab 4: Profil -->
-            <a href="<?= url('mobile/profil') ?>" class="flex flex-col items-center gap-1 py-1 px-2.5 rounded-2xl press-bounce <?= ($activeTab ?? '') === 'profil' ? 'text-primary-600 font-semibold' : 'text-slate-400 hover:text-slate-600 font-medium' ?>">
-                <i data-lucide="user" class="w-5 h-5 <?= ($activeTab ?? '') === 'profil' ? 'stroke-[2.5]' : 'stroke-2' ?>"></i>
-                <span class="text-[11px] leading-none">Profil</span>
+            <a href="<?= url('mobile/profil') ?>" data-nav-tab="profil" class="mobile-nav-item flex-1 flex flex-col items-center gap-0.5 py-1 rounded-2xl <?= ($activeTab ?? '') === 'profil' ? 'is-active text-primary-600 font-bold' : 'text-slate-400 hover:text-slate-600 font-medium' ?>">
+                <div class="nav-pill w-12 h-7 rounded-full flex items-center justify-center">
+                    <i data-lucide="user" class="w-5 h-5 <?= ($activeTab ?? '') === 'profil' ? 'stroke-[2.5]' : 'stroke-2' ?>"></i>
+                </div>
+                <span class="text-[10.5px] leading-none tracking-tight">Profil</span>
             </a>
         </nav>
 
     </div>
 
     <!-- Scripts -->
-    <script src="<?= asset('js/mobile/android-ui.js') ?>"></script>
-    <script src="<?= asset('js/mobile/mobile-api.js') ?>"></script>
-    <script src="<?= asset('js/mobile/lazy-load.js') ?>"></script>
-    <script src="<?= asset('js/pwa.js') ?>"></script>
-    <script src="<?= asset('js/mobile/mobile-app.js') ?>"></script>
+    <script src="<?= asset('js/mobile/android-ui.js') ?>?v=2"></script>
+    <script src="<?= asset('js/mobile/mobile-api.js') ?>?v=2"></script>
+    <script src="<?= asset('js/mobile/lazy-load.js') ?>?v=2"></script>
+    <script src="<?= asset('js/pwa.js') ?>?v=2"></script>
+    <script src="<?= asset('js/mobile/mobile-app.js') ?>?v=2"></script>
 
     <script>
         // Open Android-style Bottom Sheet for '+' FAB

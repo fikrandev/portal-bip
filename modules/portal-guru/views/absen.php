@@ -124,15 +124,20 @@
     };
 
     // Realtime digital seconds clock & live check for 15.00 threshold
-    setInterval(() => {
+    if (window._absenClockTimer) {
+        clearInterval(window._absenClockTimer);
+    }
+    window._absenClockTimer = setInterval(() => {
+        const clockEl = document.getElementById('live-clock');
+        if (!clockEl) {
+            clearInterval(window._absenClockTimer);
+            return;
+        }
         const now = new Date();
         const s = String(now.getSeconds()).padStart(2, '0');
         const m = String(now.getMinutes()).padStart(2, '0');
         const h = String(now.getHours()).padStart(2, '0');
-        const clockEl = document.getElementById('live-clock');
-        if (clockEl) {
-            clockEl.innerHTML = `${h}:${m}<span class="text-xl opacity-80">: ${s}</span> <span class="text-xs font-normal opacity-75">WITA</span>`;
-        }
+        clockEl.innerHTML = `${h}:${m}<span class="text-xl opacity-80">:${s}</span> <span class="text-xs font-normal opacity-75">WITA</span>`;
     }, 1000);
 
     document.addEventListener('DOMContentLoaded', () => {

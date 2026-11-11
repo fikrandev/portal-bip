@@ -78,13 +78,7 @@
             b.className = 'class-chip px-3.5 py-1.5 rounded-full text-xs font-bold shrink-0 bg-white text-slate-600 border border-slate-200 transition-all';
         });
         btn.className = 'class-chip px-3.5 py-1.5 rounded-full text-xs font-bold shrink-0 bg-primary-600 text-white shadow-sm transition-all';
-
-        // Center screen loading indicator when filtering data
-        AndroidUI.showCenterLoading(`Memuat data ${className}...`);
-        setTimeout(() => {
-            AndroidUI.hideCenterLoading();
-            filterStudents();
-        }, 200);
+        filterStudents();
     }
 
     function filterStudents() {

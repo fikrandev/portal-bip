@@ -114,7 +114,24 @@ function updateGPSDisplay(coords, isSimulated = false) {
 
 function initOrUpdateMap(coords, isWithinRadius) {
   const mapContainer = document.getElementById('leaflet-map');
-  if (!mapContainer || typeof L === 'undefined') return;
+  if (!mapContainer) return;
+
+  if (typeof L === 'undefined') {
+    setTimeout(() => initOrUpdateMap(coords, isWithinRadius), 120);
+    return;
+  }
+
+  if (window.CUSTOM_SCHOOL_COORDS) {
+    Object.assign(SCHOOL_COORDS, window.CUSTOM_SCHOOL_COORDS);
+  }
+
+  // If SPA swapped the DOM, clean up detached map instance
+  if (leafletMap && leafletMap.getContainer() !== mapContainer) {
+    try { leafletMap.remove(); } catch (e) {}
+    leafletMap = null;
+    userMarker = null;
+    schoolCircle = null;
+  }
 
   if (!leafletMap) {
     leafletMap = L.map('leaflet-map', {
@@ -259,7 +276,11 @@ window.handleDoCheckout = function(btn) {
             {
               text: 'Ke Beranda',
               className: 'w-full py-3 bg-blue-600 text-white font-bold text-xs rounded-2xl shadow-md text-center',
-              onClick: () => window.location.href = (window.APP_BASE_URL || '') + '/mobile'
+              onClick: () => {
+                const target = (window.APP_BASE_URL || '') + '/mobile';
+                if (window.MobileRouter) window.MobileRouter.navigate(target);
+                else window.location.href = target;
+              }
             }
           ]
         });
@@ -390,9 +411,9 @@ function renderAttendancePageUI() {
           </div>
         </div>
 
-        <button type="button" onclick="window.location.href='${(window.APP_BASE_URL || '') + '/mobile'}'" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-2xl">
+        <a href="${(window.APP_BASE_URL || '') + '/mobile'}" class="block w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-2xl text-center press-bounce">
           Kembali ke Beranda
-        </button>
+        </a>
       </div>
     `;
   }
@@ -500,11 +521,377 @@ window.handleJournalSubmit = function(event) {
   }, 700);
 };
 
+window.renderAttendancePageUI = renderAttendancePageUI;
+window.syncBerandaAttendanceUI = syncBerandaAttendanceUI;
+
+// ── Instant SPA Smooth Page Router & Prefetch Engine ────────────────────────
+window.MobileRouter = (function() {
+  const pageCache = new Map();       // url -> { html, title, activeTab, timestamp }
+  const inFlight = new Map();        // url -> Promise
+  const CACHE_TTL_FRESH = 12000;     // 12s fresh (no background refetch needed)
+  const CACHE_TTL_MAX   = 120000;    // 2m max stale-while-revalidate
+  let progressTimer = null;
+  let activeNavigationUrl = null;
+
+  function normalizeUrl(rawUrl) {
+    try {
+      const u = new URL(rawUrl, window.location.origin);
+      return u.origin + u.pathname.replace(/\/+$/, '') + u.search;
+    } catch (e) {
+      return rawUrl;
+    }
+  }
+
+  function isSpaEligibleUrl(rawHref, anchorEl) {
+    if (!rawHref) return false;
+    if (anchorEl) {
+      if (anchorEl.hasAttribute('data-no-spa') || anchorEl.hasAttribute('download')) return false;
+      const target = anchorEl.getAttribute('target');
+      if (target && target !== '_self') return false;
+    }
+    if (rawHref.startsWith('#') || rawHref.startsWith('javascript:') || rawHref.startsWith('mailto:') || rawHref.startsWith('tel:') || rawHref.startsWith('whatsapp:')) {
+      return false;
+    }
+    try {
+      const u = new URL(rawHref, window.location.origin);
+      if (u.origin !== window.location.origin) return false;
+      const path = u.pathname;
+      if (path.includes('/mobile/logout') || path.includes('/logout')) return false;
+      if (path.includes('/mobile-sarpras')) return false;
+      return path.includes('/mobile');
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function guessTabFromUrl(urlStr) {
+    try {
+      const p = new URL(urlStr, window.location.origin).pathname.replace(/\/+$/, '');
+      if (p.endsWith('/mobile/kelas')) return 'kelas';
+      if (p.endsWith('/mobile/murid')) return 'murid';
+      if (p.endsWith('/mobile/profil')) return 'profil';
+      if (p.endsWith('/mobile')) return 'beranda';
+    } catch (e) {}
+    return null;
+  }
+
+  function updateBottomNavTab(activeTab) {
+    if (!activeTab) return;
+    const navItems = document.querySelectorAll('#mobile-bottom-nav [data-nav-tab]');
+    navItems.forEach(item => {
+      const tab = item.getAttribute('data-nav-tab');
+      const isAct = (tab === activeTab);
+      if (isAct) {
+        item.classList.add('is-active', 'text-primary-600', 'font-bold');
+        item.classList.remove('text-slate-400', 'hover:text-slate-600', 'font-medium');
+      } else {
+        item.classList.remove('is-active', 'text-primary-600', 'font-bold');
+        item.classList.add('text-slate-400', 'hover:text-slate-600', 'font-medium');
+      }
+      const icon = item.querySelector('svg, i[data-lucide]');
+      if (icon) {
+        if (isAct) {
+          icon.classList.add('stroke-[2.5]');
+          icon.classList.remove('stroke-2');
+        } else {
+          icon.classList.remove('stroke-[2.5]');
+          icon.classList.add('stroke-2');
+        }
+      }
+    });
+  }
+
+  function startProgressBar() {
+    clearTimeout(progressTimer);
+    progressTimer = setTimeout(() => {
+      const bar = document.getElementById('spa-progress-bar');
+      if (bar) {
+        bar.classList.remove('is-finishing');
+        bar.classList.add('is-loading');
+      }
+    }, 45);
+  }
+
+  function finishProgressBar() {
+    clearTimeout(progressTimer);
+    const bar = document.getElementById('spa-progress-bar');
+    if (bar && bar.classList.contains('is-loading')) {
+      bar.classList.remove('is-loading');
+      bar.classList.add('is-finishing');
+      setTimeout(() => bar.classList.remove('is-finishing'), 260);
+    }
+  }
+
+  function parseHtmlDocument(htmlText) {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(htmlText, 'text/html');
+    const mainEl = doc.getElementById('mobile-main-view') || doc.querySelector('main');
+    if (!mainEl) return null;
+
+    return {
+      html: mainEl.innerHTML,
+      title: mainEl.getAttribute('data-page-title') || doc.title || 'Portal BIP',
+      activeTab: mainEl.getAttribute('data-active-tab') || '',
+      timestamp: Date.now()
+    };
+  }
+
+  function fetchAndCache(url) {
+    const norm = normalizeUrl(url);
+    if (inFlight.has(norm)) {
+      return inFlight.get(norm);
+    }
+
+    const promise = fetch(url, {
+      method: 'GET',
+      credentials: 'same-origin',
+      headers: { 'X-Requested-With': 'MobileRouter' }
+    })
+      .then(res => {
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        // If redirected to login page, force hard redirect
+        if (res.redirected && res.url && res.url.includes('/login')) {
+          window.location.href = res.url;
+          return null;
+        }
+        return res.text();
+      })
+      .then(text => {
+        inFlight.delete(norm);
+        if (!text) return null;
+        const parsed = parseHtmlDocument(text);
+        if (parsed) {
+          pageCache.set(norm, parsed);
+        }
+        return parsed;
+      })
+      .catch(err => {
+        inFlight.delete(norm);
+        throw err;
+      });
+
+    inFlight.set(norm, promise);
+    return promise;
+  }
+
+  function executeViewScripts(container) {
+    const scripts = Array.from(container.querySelectorAll('script'));
+    scripts.forEach(oldScript => {
+      const newScript = document.createElement('script');
+      Array.from(oldScript.attributes).forEach(attr => {
+        newScript.setAttribute(attr.name, attr.value);
+      });
+
+      if (oldScript.src) {
+        newScript.src = oldScript.src;
+      } else {
+        // Transform top-level let/const to var so repeated SPA visits never throw SyntaxError redeclaration
+        const safeCode = oldScript.textContent.replace(/^(\s{0,4})(let|const)\s+/gm, '$1var ');
+        newScript.textContent = `try {\n${safeCode}\n} catch (err) { console.warn('[SPA View Script]', err); }`;
+      }
+      oldScript.parentNode.replaceChild(newScript, oldScript);
+    });
+  }
+
+  function hydrateSwappedView(parsedData, scrollToTop = true) {
+    const mainEl = document.getElementById('mobile-main-view');
+    if (!mainEl || !parsedData) return;
+
+    // 1. Update Title & Bottom Nav
+    if (parsedData.title) {
+      document.title = parsedData.title;
+    }
+    if (parsedData.activeTab) {
+      mainEl.setAttribute('data-active-tab', parsedData.activeTab);
+      updateBottomNavTab(parsedData.activeTab);
+    }
+
+    // 2. Inject Content & Trigger GPU Smooth Enter Animation
+    mainEl.classList.remove('spa-page-leave', 'spa-page-enter');
+    mainEl.innerHTML = parsedData.html;
+    void mainEl.offsetWidth; // Force quick reflow for animation restart
+    mainEl.classList.add('spa-page-enter');
+
+    if (scrollToTop) {
+      mainEl.scrollTop = 0;
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    }
+
+    // 3. Execute Inline View Scripts & Re-hydrate UI Icons/Widgets
+    executeViewScripts(mainEl);
+
+    if (window.lucide) {
+      window.lucide.createIcons();
+    }
+    if (window.initLazyImages) {
+      window.initLazyImages();
+    }
+    syncBerandaAttendanceUI();
+    renderAttendancePageUI();
+  }
+
+  function navigate(targetUrl, options = {}) {
+    const pushState = options.pushState !== false;
+    const norm = normalizeUrl(targetUrl);
+    const currentNorm = normalizeUrl(window.location.href);
+
+    // Close any open Bottom Sheet immediately
+    if (window.AndroidUI && typeof window.AndroidUI.closeBottomSheet === 'function') {
+      window.AndroidUI.closeBottomSheet();
+    }
+
+    // Instant visual feedback on Bottom Nav if target matches a tab
+    const guessedTab = guessTabFromUrl(targetUrl);
+    if (guessedTab) {
+      updateBottomNavTab(guessedTab);
+    }
+
+    // If tapping the exact same bottom nav tab that is already open, just scroll to top smoothly
+    if (norm === currentNorm && !options.forceReload) {
+      const mainEl = document.getElementById('mobile-main-view');
+      if (mainEl) mainEl.scrollTo({ top: 0, behavior: 'smooth' });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return Promise.resolve();
+    }
+
+    activeNavigationUrl = norm;
+    const cached = !options.forceReload ? pageCache.get(norm) : null;
+    const now = Date.now();
+
+    // Case 1: Instant 0ms Swap from Cache (Stale-While-Revalidate)
+    if (cached && (now - cached.timestamp) < CACHE_TTL_MAX) {
+      if (pushState) {
+        window.history.pushState({ spaUrl: targetUrl }, cached.title || '', targetUrl);
+      }
+      hydrateSwappedView(cached, options.scrollToTop !== false);
+
+      // Silently revalidate in background if older than CACHE_TTL_FRESH
+      if ((now - cached.timestamp) > CACHE_TTL_FRESH) {
+        fetchAndCache(targetUrl).catch(() => {});
+      }
+      return Promise.resolve();
+    }
+
+    // Case 2: Fetch from Network (or await in-flight prefetch)
+    startProgressBar();
+
+    return fetchAndCache(targetUrl)
+      .then(parsed => {
+        finishProgressBar();
+        if (activeNavigationUrl !== norm || !parsed) return;
+        if (pushState) {
+          window.history.pushState({ spaUrl: targetUrl }, parsed.title || '', targetUrl);
+        }
+        hydrateSwappedView(parsed, options.scrollToTop !== false);
+      })
+      .catch(() => {
+        finishProgressBar();
+        // Fallback to native navigation if network/parse fails
+        window.location.href = targetUrl;
+      });
+  }
+
+  function prefetch(targetUrl) {
+    if (!isSpaEligibleUrl(targetUrl)) return;
+    const norm = normalizeUrl(targetUrl);
+    const cached = pageCache.get(norm);
+    if (cached && (Date.now() - cached.timestamp) < CACHE_TTL_FRESH) return;
+    fetchAndCache(targetUrl).catch(() => {});
+  }
+
+  function init() {
+    const mainEl = document.getElementById('mobile-main-view');
+    if (!mainEl) return;
+
+    // Seed current page into cache immediately so returning to it is 0ms
+    const currentNorm = normalizeUrl(window.location.href);
+    pageCache.set(currentNorm, {
+      html: mainEl.innerHTML,
+      title: document.title,
+      activeTab: mainEl.getAttribute('data-active-tab') || 'beranda',
+      timestamp: Date.now()
+    });
+
+    // 1. Intercept clicks on any <a href="..."> inside the app
+    document.addEventListener('click', (e) => {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      const anchor = e.target.closest('a[href]');
+      if (!anchor) return;
+      const href = anchor.getAttribute('href');
+      if (!isSpaEligibleUrl(href, anchor)) return;
+
+      e.preventDefault();
+      navigate(anchor.href);
+    });
+
+    // 2. Instant Prefetch on touchstart / pointerdown / mouseenter (80-150ms head start!)
+    const handlePrefetchIntent = (e) => {
+      const anchor = e.target.closest('a[href]');
+      if (!anchor) return;
+      const href = anchor.getAttribute('href');
+      if (isSpaEligibleUrl(href, anchor)) {
+        prefetch(anchor.href);
+      }
+    };
+    document.addEventListener('touchstart', handlePrefetchIntent, { passive: true });
+    document.addEventListener('mouseenter', handlePrefetchIntent, { passive: true, capture: true });
+
+    // 3. Handle Hardware Back / Forward Button (popstate)
+    window.addEventListener('popstate', () => {
+      if (isSpaEligibleUrl(window.location.href)) {
+        navigate(window.location.href, { pushState: false, scrollToTop: false });
+      }
+    });
+
+    // 4. Idle Pre-warming of Core Tabs so first tap is 0ms
+    const prewarmCoreTabs = () => {
+      const base = window.APP_BASE_URL || '';
+      const coreRoutes = [
+        `${base}/mobile`,
+        `${base}/mobile/kelas`,
+        `${base}/mobile/murid`,
+        `${base}/mobile/profil`,
+        `${base}/mobile/jurnal`,
+        `${base}/mobile/absen`
+      ];
+      coreRoutes.forEach((route, idx) => {
+        setTimeout(() => prefetch(route), idx * 180);
+      });
+    };
+
+    if ('requestIdleCallback' in window) {
+      requestIdleCallback(prewarmCoreTabs, { timeout: 1200 });
+    } else {
+      setTimeout(prewarmCoreTabs, 450);
+    }
+  }
+
+  return {
+    init,
+    navigate,
+    prefetch,
+    invalidate: function(url) {
+      if (!url) {
+        pageCache.clear();
+      } else {
+        pageCache.delete(normalizeUrl(url));
+      }
+    },
+    reload: function() {
+      pageCache.clear();
+      return navigate(window.location.href, { pushState: false, forceReload: true, scrollToTop: false });
+    }
+  };
+})();
+
 document.addEventListener('DOMContentLoaded', () => {
   syncBerandaAttendanceUI();
   renderAttendancePageUI();
 
   if (window.lucide) {
     window.lucide.createIcons();
+  }
+  if (window.MobileRouter) {
+    window.MobileRouter.init();
   }
 });

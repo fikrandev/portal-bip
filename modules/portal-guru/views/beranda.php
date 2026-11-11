@@ -4,28 +4,41 @@
  * Clean Card-based Ibadah Harian: items with sub-items trigger Android Bottom Sheet modals,
  * items without sub-items toggle instant checkmark.
  */
+$hourNow = (int)date('G');
+if ($hourNow < 11) {
+    $greetingText = 'Selamat pagi,';
+} elseif ($hourNow < 15) {
+    $greetingText = 'Selamat siang,';
+} elseif ($hourNow < 18) {
+    $greetingText = 'Selamat sore,';
+} else {
+    $greetingText = 'Selamat malam,';
+}
 ?>
 
 <!-- Header Section: Greeting, Avatar & Notification Bell -->
-<div class="px-5 pt-4 pb-4 flex items-center justify-between">
-    <div>
-        <p class="text-xs text-slate-500 font-normal">Selamat pagi,</p>
-        <h1 class="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-1.5">
-            <?= e($teacherName ?? 'Guru') ?> <span class="inline-block animate-bounce origin-bottom">👋</span>
+<div class="px-5 pt-4 pb-3.5 flex items-center justify-between">
+    <div class="min-w-0 pr-2">
+        <div class="flex items-center gap-1.5 mb-0.5">
+            <span class="text-xs text-slate-500 font-medium"><?= $greetingText ?></span>
+            <span class="px-2 py-0.5 rounded-full text-[9.5px] font-bold bg-primary-50 text-primary-700 border border-primary-100"><?= e($todayName ?? 'Hari Ini') ?></span>
+        </div>
+        <h1 class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-1.5 truncate">
+            <span class="truncate"><?= e($teacherName ?? 'Guru') ?></span> <span class="inline-block origin-bottom shrink-0">👋</span>
         </h1>
-        <p class="text-[11px] text-slate-400 font-normal max-w-[210px] leading-tight mt-0.5">
-            Semangat mengajar, menginspirasi, dan membimbing hari ini!
+        <p class="text-[11px] text-slate-400 font-medium leading-tight mt-0.5 truncate">
+            <?= e($teacherRole ?? 'Tenaga Pendidik') ?> &bull; Semangat menginspirasi!
         </p>
     </div>
     
-    <div class="flex items-center gap-2.5">
-        <!-- Teacher Avatar Photo (Lazy Loaded) -->
-        <a href="<?= url('mobile/profil') ?>" class="relative block rounded-full p-0.5 bg-gradient-to-tr from-primary-500 to-sky-300 shadow-md press-bounce">
+    <div class="flex items-center gap-2 shrink-0">
+        <!-- Teacher Avatar Photo -->
+        <a href="<?= url('mobile/profil') ?>" class="relative block rounded-full p-0.5 bg-gradient-to-tr from-primary-600 via-primary-400 to-sky-300 shadow-md press-bounce">
             <img src="<?= !empty($teacherAvatar) ? url($teacherAvatar) : asset('images/mobile/teacher_rina.jpg') ?>" 
                  alt="<?= e($teacherName ?? 'Guru') ?>" 
-                 loading="lazy"
-                 class="w-14 h-14 rounded-full object-cover border-2 border-white">
-            <span class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-primary-500 border-2 border-white rounded-full"></span>
+                 decoding="async"
+                 class="w-12 h-12 rounded-full object-cover border-2 border-white">
+            <span class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full"></span>
         </a>
 
         <!-- Notification Bell -->

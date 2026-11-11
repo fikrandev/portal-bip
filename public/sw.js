@@ -3,7 +3,7 @@
  * Enables PWA offline capabilities, pre-caching, WebAPK installation compliance, and background sync.
  */
 
-const CACHE_NAME = 'portal-bip-pwa-v5';
+const CACHE_NAME = 'portal-bip-pwa-v6';
 const STATIC_ASSETS = [
   './mobile',
   './mobile/absen',
