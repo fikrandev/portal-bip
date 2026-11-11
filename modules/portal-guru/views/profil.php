@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Profil Guru & PWA Management Screen
  * Compact size with Android Bottom Sheet confirmations and install dialogs.
@@ -23,7 +23,7 @@
     <!-- 1. Teacher Profile Card -->
     <div class="bg-white rounded-3xl p-5 shadow-sm border border-slate-100 text-center relative overflow-hidden space-y-3">
         <div class="relative w-20 h-20 mx-auto">
-            <img src="<?= asset('images/mobile/teacher_rina.jpg') ?>" alt="Bu Rina" loading="lazy" class="w-20 h-20 rounded-full object-cover border-4 border-white shadow-md mx-auto">
+            <img src="<?= !empty($profile['avatar']) ? url($profile['avatar']) : asset('images/mobile/teacher_rina.jpg') ?>" alt="<?= e($profile['name']) ?>" loading="lazy" class="w-20 h-20 rounded-full object-cover border-4 border-white shadow-md mx-auto">
             <span class="absolute bottom-1 right-1 w-5 h-5 bg-primary-500 border-2 border-white rounded-full flex items-center justify-center text-white text-[10px]">✓</span>
         </div>
 
@@ -189,9 +189,12 @@
             cancelText: 'Batal',
             onConfirm: () => {
                 AndroidUI.toast('Mengeluarkan akun...', 'info');
+                try {
+                    localStorage.removeItem('portal_guru_token');
+                } catch(e) {}
                 setTimeout(() => {
-                    window.location.href = '<?= url("logout") ?>';
-                }, 800);
+                    window.location.href = '<?= url("mobile/logout") ?>';
+                }, 400);
             }
         });
     }

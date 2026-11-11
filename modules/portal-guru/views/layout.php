@@ -41,6 +41,9 @@
         .font-quran { font-family: 'Uthmani', 'Amiri', 'Traditional Arabic', serif; }
     </style>
     
+    <!-- CSRF Token -->
+    <?= class_exists('CSRF') ? CSRF::meta() : '' ?>
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -59,16 +62,29 @@
                             700: '#1d4ed8',
                             800: '#1e40af',
                             900: '#1e3a8a',
+                            950: '#172554',
                         }
+                    },
+                    spacing: {
+                        '13': '3.25rem',
+                    },
+                    boxShadow: {
+                        'xs': '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                    },
+                    backdropBlur: {
+                        'xs': '2px',
                     }
                 }
             }
         }
     </script>
     
+    <!-- Core App CSS & Utilities -->
+    <link rel="stylesheet" href="<?= asset('css/app.css') ?>">
+
     <!-- Smooth Animations CSS -->
     <link rel="stylesheet" href="<?= asset('css/mobile/app-animations.css') ?>">
-    
+
     <!-- Leaflet Map CSS & JS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
@@ -103,6 +119,35 @@
             transform: scale(0.95);
             opacity: 0.9;
         }
+
+        /* Utility Fallbacks for Tailwind CDN */
+        .w-13 { width: 3.25rem !important; }
+        .h-13 { height: 3.25rem !important; }
+        .shadow-xs { box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important; }
+        .backdrop-blur-xs { backdrop-filter: blur(2px) !important; -webkit-backdrop-filter: blur(2px) !important; }
+
+        /* Color Badges Fallbacks (Zero JIT Overhead) */
+        .bg-emerald-50 { background-color: #ecfdf5 !important; }
+        .text-emerald-700 { color: #047857 !important; }
+        .border-emerald-200 { border-color: #a7f3d0 !important; }
+        .bg-amber-50 { background-color: #fffbeb !important; }
+        .text-amber-700 { color: #b45309 !important; }
+        .border-amber-200 { border-color: #fde68a !important; }
+        .bg-indigo-50 { background-color: #eef2ff !important; }
+        .text-indigo-600 { color: #4f46e5 !important; }
+        .border-indigo-100 { border-color: #e0e7ff !important; }
+        .bg-purple-50 { background-color: #faf5ff !important; }
+        .text-purple-600 { color: #9333ea !important; }
+        .border-purple-100 { border-color: #f3e8ff !important; }
+        .bg-teal-50 { background-color: #f0fdfa !important; }
+        .text-teal-600 { color: #0d9488 !important; }
+        .border-teal-100 { border-color: #ccfbf1 !important; }
+        .bg-sky-50 { background-color: #f0f9ff !important; }
+        .text-sky-600 { color: #0284c7 !important; }
+        .border-sky-100 { border-color: #e0f2fe !important; }
+        .bg-blue-50 { background-color: #eff6ff !important; }
+        .text-blue-600 { color: #2563eb !important; }
+        .border-blue-100 { border-color: #dbeafe !important; }
     </style>
 </head>
 <body class="h-full bg-slate-100 flex justify-center text-slate-800 antialiased selection:bg-primary-600 selection:text-white">
@@ -282,5 +327,15 @@
             if (window.lucide) window.lucide.createIcons();
         });
     </script>
+
+    <?php if (!empty($_SESSION['active_guru_token'])): ?>
+    <script>
+        try {
+            if (localStorage.getItem('portal_guru_token') !== '<?= e($_SESSION['active_guru_token']) ?>') {
+                localStorage.setItem('portal_guru_token', '<?= e($_SESSION['active_guru_token']) ?>');
+            }
+        } catch(e) {}
+    </script>
+    <?php endif; ?>
 </body>
 </html>

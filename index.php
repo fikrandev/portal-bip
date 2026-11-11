@@ -177,6 +177,7 @@ require_once BASE_PATH . '/modules/kelola-kelas/controllers/KelasController.php'
 require_once BASE_PATH . '/modules/kelola-pegawai/controllers/PegawaiController.php';
 require_once BASE_PATH . '/modules/pengaturan-sistem/controllers/SettingsController.php';
 require_once BASE_PATH . '/modules/portal-guru/controllers/PortalGuruController.php';
+require_once BASE_PATH . '/modules/portal-guru/controllers/PortalGuruAuthController.php';
 require_once BASE_PATH . '/modules/kelola-perangkat-pembelajaran/controllers/PerangkatController.php';
 require_once BASE_PATH . '/modules/kelola-perangkat-pembelajaran/controllers/JadwalController.php';
 require_once BASE_PATH . '/modules/kelola-nilai/controllers/NilaiController.php';
@@ -194,6 +195,7 @@ require_once BASE_PATH . '/modules/kelola-pelanggaran-siswa/controllers/Pelangga
 require_once BASE_PATH . '/modules/kelola-izin-guru/controllers/IzinGuruController.php';
 require_once BASE_PATH . '/modules/kelola-buku-angkatan-siswa/controllers/BukuAngkatanSiswaController.php';
 require_once BASE_PATH . '/modules/kelola-sarpras/controllers/SarprasController.php';
+require_once BASE_PATH . '/modules/kelola-jurnal-guru/controllers/JurnalGuruAdminController.php';
 
 // ── Define Routes ───────────────────────────────────
 
@@ -551,6 +553,13 @@ $router->post('/kelola-perangkat-pembelajaran/submit/{id}', [PerangkatController
 $router->post('/kelola-perangkat-pembelajaran/draft/{id}', [PerangkatController::class, 'draft'], [Middleware::permissionRequired('perangkat.update')]);
 $router->post('/kelola-perangkat-pembelajaran/delete/{id}', [PerangkatController::class, 'delete'], [Middleware::permissionRequired('perangkat.delete')]);
 
+// -- Kelola Jurnal Guru (KBM & Jam Pelajaran) --
+$router->get('/kelola-jurnal-guru', [JurnalGuruAdminController::class, 'index'], [Middleware::permissionRequired('jurnal.view')]);
+$router->get('/kelola-jurnal-guru/cetak', [JurnalGuruAdminController::class, 'cetak'], [Middleware::permissionRequired('jurnal.view')]);
+$router->get('/kelola-jurnal-guru/api/detail/{id}', [JurnalGuruAdminController::class, 'apiDetail'], [Middleware::permissionRequired('jurnal.view')]);
+$router->post('/kelola-jurnal-guru/status/{id}', [JurnalGuruAdminController::class, 'updateStatus'], [Middleware::permissionRequired('jurnal.manage')]);
+$router->post('/kelola-jurnal-guru/delete/{id}', [JurnalGuruAdminController::class, 'delete'], [Middleware::permissionRequired('jurnal.delete')]);
+
 // Base Routes Modul Tambahan Lainnya
 $router->get('/kelola-nilai', [NilaiController::class, 'index'], [Middleware::permissionRequired('nilai.view')]);
 $router->get('/kelola-nilai/group', [NilaiController::class, 'groupList'], [Middleware::permissionRequired('nilai.view')]);
@@ -892,26 +901,33 @@ $router->get('/pengaturan-sistem/log-aktivitas', [SettingsController::class, 'lo
 $router->get('/pengaturan-sistem/log-aktivitas/export', [SettingsController::class, 'exportLogAktivitas'], [Middleware::permissionRequired('settings.view')]);
 $router->post('/pengaturan-sistem/log-aktivitas/clear', [SettingsController::class, 'clearLogAktivitas'], [Middleware::permissionRequired('settings.delete')]);
 
-// -- Portal Guru Mobile (PWA) --
-$router->get('/mobile', [PortalGuruController::class, 'beranda'], [[Middleware::class, 'authRequired']]);
-$router->get('/portal-guru', [PortalGuruController::class, 'beranda'], [[Middleware::class, 'authRequired']]);
-$router->get('/guru', [PortalGuruController::class, 'beranda'], [[Middleware::class, 'authRequired']]);
-$router->get('/mobile/absen', [PortalGuruController::class, 'absen'], [[Middleware::class, 'authRequired']]);
-$router->get('/mobile/jurnal', [PortalGuruController::class, 'jurnal'], [[Middleware::class, 'authRequired']]);
-$router->get('/mobile/kelas', [PortalGuruController::class, 'kelas'], [[Middleware::class, 'authRequired']]);
-$router->get('/mobile/absensi-kelas', [PortalGuruController::class, 'absensiKelas'], [[Middleware::class, 'authRequired']]);
-$router->get('/mobile/murid', [PortalGuruController::class, 'murid'], [[Middleware::class, 'authRequired']]);
-$router->get('/mobile/profil', [PortalGuruController::class, 'profil'], [[Middleware::class, 'authRequired']]);
-$router->get('/mobile/notifikasi', [PortalGuruController::class, 'notifikasi'], [[Middleware::class, 'authRequired']]);
-$router->get('/mobile/materi', [PortalGuruController::class, 'materi'], [[Middleware::class, 'authRequired']]);
-$router->get('/mobile/buat-tugas', [PortalGuruController::class, 'buatTugas'], [[Middleware::class, 'authRequired']]);
-$router->get('/mobile/pesan-kelas', [PortalGuruController::class, 'pesanKelas'], [[Middleware::class, 'authRequired']]);
-$router->get('/mobile/bank-soal', [PortalGuruController::class, 'bankSoal'], [[Middleware::class, 'authRequired']]);
-$router->get('/mobile/quran', [PortalGuruController::class, 'quran'], [[Middleware::class, 'authRequired']]);
-$router->get('/mobile/dzikir', [PortalGuruController::class, 'dzikir'], [[Middleware::class, 'authRequired']]);
-$router->get('/mobile/keterlambatan-siswa', [PortalGuruController::class, 'keterlambatanSiswa'], [[Middleware::class, 'authRequired']]);
-$router->get('/mobile/izin', [PortalGuruController::class, 'izin'], [[Middleware::class, 'authRequired']]);
-$router->get('/mobile/cuti', [PortalGuruController::class, 'cuti'], [[Middleware::class, 'authRequired']]);
+// -- Portal Guru Mobile (PWA) Auth & Routes --
+$router->get('/mobile/login', [PortalGuruAuthController::class, 'showLogin']);
+$router->post('/mobile/login', [PortalGuruAuthController::class, 'login']);
+$router->get('/mobile/logout', [PortalGuruAuthController::class, 'logout']);
+$router->post('/mobile/api/token-login', [PortalGuruAuthController::class, 'tokenLogin']);
+$router->get('/mobile', [PortalGuruController::class, 'beranda'], [[PortalGuruAuthController::class, 'authRequired']]);
+$router->get('/portal-guru', [PortalGuruController::class, 'beranda'], [[PortalGuruAuthController::class, 'authRequired']]);
+$router->get('/guru', [PortalGuruController::class, 'beranda'], [[PortalGuruAuthController::class, 'authRequired']]);
+$router->get('/mobile/absen', [PortalGuruController::class, 'absen'], [[PortalGuruAuthController::class, 'authRequired']]);
+$router->get('/mobile/jurnal', [PortalGuruController::class, 'jurnal'], [[PortalGuruAuthController::class, 'authRequired']]);
+$router->post('/mobile/jurnal/simpan', [PortalGuruController::class, 'simpanJurnal'], [[PortalGuruAuthController::class, 'authRequired']]);
+$router->get('/mobile/api/jurnal/detail/{id}', [PortalGuruController::class, 'apiJurnalDetail'], [[PortalGuruAuthController::class, 'authRequired']]);
+$router->get('/mobile/api/siswa-kelas', [PortalGuruController::class, 'apiSiswaKelas'], [[PortalGuruAuthController::class, 'authRequired']]);
+$router->get('/mobile/kelas', [PortalGuruController::class, 'kelas'], [[PortalGuruAuthController::class, 'authRequired']]);
+$router->get('/mobile/absensi-kelas', [PortalGuruController::class, 'absensiKelas'], [[PortalGuruAuthController::class, 'authRequired']]);
+$router->get('/mobile/murid', [PortalGuruController::class, 'murid'], [[PortalGuruAuthController::class, 'authRequired']]);
+$router->get('/mobile/profil', [PortalGuruController::class, 'profil'], [[PortalGuruAuthController::class, 'authRequired']]);
+$router->get('/mobile/notifikasi', [PortalGuruController::class, 'notifikasi'], [[PortalGuruAuthController::class, 'authRequired']]);
+$router->get('/mobile/materi', [PortalGuruController::class, 'materi'], [[PortalGuruAuthController::class, 'authRequired']]);
+$router->get('/mobile/buat-tugas', [PortalGuruController::class, 'buatTugas'], [[PortalGuruAuthController::class, 'authRequired']]);
+$router->get('/mobile/pesan-kelas', [PortalGuruController::class, 'pesanKelas'], [[PortalGuruAuthController::class, 'authRequired']]);
+$router->get('/mobile/bank-soal', [PortalGuruController::class, 'bankSoal'], [[PortalGuruAuthController::class, 'authRequired']]);
+$router->get('/mobile/quran', [PortalGuruController::class, 'quran'], [[PortalGuruAuthController::class, 'authRequired']]);
+$router->get('/mobile/dzikir', [PortalGuruController::class, 'dzikir'], [[PortalGuruAuthController::class, 'authRequired']]);
+$router->get('/mobile/keterlambatan-siswa', [PortalGuruController::class, 'keterlambatanSiswa'], [[PortalGuruAuthController::class, 'authRequired']]);
+$router->get('/mobile/izin', [PortalGuruController::class, 'izin'], [[PortalGuruAuthController::class, 'authRequired']]);
+$router->get('/mobile/cuti', [PortalGuruController::class, 'cuti'], [[PortalGuruAuthController::class, 'authRequired']]);
 
 // ==============================================================================
 // MOBILE SARPRAS PWA ROUTES

@@ -39,8 +39,8 @@ const AndroidUI = (function() {
                 </div>
 
                 <!-- Center Screen Data Loading Mount Point -->
-                <div id="android-ui-center-loading" class="fixed inset-0 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center z-50 opacity-0 pointer-events-none transition-opacity duration-200">
-                    <div class="bg-white/95 backdrop-blur-xl p-5 rounded-3xl shadow-2xl flex flex-col items-center gap-3 border border-slate-100 max-w-[220px] text-center transform scale-95 transition-transform duration-200" id="center-loading-box">
+                <div id="android-ui-center-loading" onclick="AndroidUI.hideCenterLoading()" title="Klik untuk menutup" class="fixed inset-0 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center z-50 opacity-0 pointer-events-none transition-opacity duration-200 cursor-pointer">
+                    <div class="bg-white/95 backdrop-blur-xl p-5 rounded-3xl shadow-2xl flex flex-col items-center gap-3 border border-slate-100 max-w-[220px] text-center transform scale-95 transition-transform duration-200 cursor-default" id="center-loading-box" onclick="event.stopPropagation();">
                         <svg class="material-spinner w-10 h-10" viewBox="25 25 50 50">
                             <circle class="material-spinner-circle" cx="50" cy="50" r="20" fill="none" stroke-width="4" stroke-miterlimit="10"/>
                         </svg>
@@ -426,7 +426,7 @@ const AndroidUI = (function() {
         /**
          * Center Screen Data Loading Spinner (for fetch, refresh, tab data load)
          */
-        showCenterLoading: function(message = 'Memuat data...') {
+        showCenterLoading: function(message = 'Memuat data...', timeoutMs = 3500) {
             ensureContainer();
             const mount = document.getElementById('android-ui-center-loading');
             const text = document.getElementById('center-loading-text');
@@ -440,6 +440,14 @@ const AndroidUI = (function() {
                     box.classList.remove('scale-95');
                     box.classList.add('scale-100');
                 }
+
+                // Safety timeout: auto-hide so the screen never gets stuck in loading
+                if (window._androidUiLoadingTimer) clearTimeout(window._androidUiLoadingTimer);
+                if (timeoutMs > 0) {
+                    window._androidUiLoadingTimer = setTimeout(() => {
+                        AndroidUI.hideCenterLoading();
+                    }, timeoutMs);
+                }
             }
         },
 
@@ -447,6 +455,10 @@ const AndroidUI = (function() {
          * Hide Center Screen Data Loading Spinner
          */
         hideCenterLoading: function() {
+            if (window._androidUiLoadingTimer) {
+                clearTimeout(window._androidUiLoadingTimer);
+                window._androidUiLoadingTimer = null;
+            }
             const mount = document.getElementById('android-ui-center-loading');
             const box = document.getElementById('center-loading-box');
 

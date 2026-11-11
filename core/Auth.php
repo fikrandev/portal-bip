@@ -59,6 +59,9 @@ class Auth
         $_SESSION['login_time'] = time();
         $_SESSION['ip_address'] = $_SERVER['REMOTE_ADDR'] ?? '';
 
+        // Reset static cache
+        self::$currentUser = null;
+
         // Update last login
         $db->update('users', ['last_login' => date('Y-m-d H:i:s')], 'id = ?', [$user['id']]);
 
@@ -134,6 +137,7 @@ class Auth
         }
 
         $_SESSION = [];
+        self::$currentUser = null;
 
         if (ini_get('session.use_cookies')) {
             $params = session_get_cookie_params();

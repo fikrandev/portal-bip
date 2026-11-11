@@ -24,42 +24,195 @@ class PortalGuruController
     }
 
     /**
+     * Dapatkan data profil guru yang sedang aktif login dari sesi
+     */
+    public static function getLoggedInTeacher(): array
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return [
+                'name' => 'Guru',
+                'nip' => '-',
+                'role' => 'Tenaga Pendidik',
+                'status' => 'Aktif',
+                'email' => '',
+                'phone' => '',
+                'avatar' => null,
+                'teachingHours' => '24 Jam / Minggu',
+                'academicYear' => defined('SYS_TAHUN_AKADEMIK_NAME') ? SYS_TAHUN_AKADEMIK_NAME : '2025/2026 Genap'
+            ];
+        }
+
+        $db = Database::getInstance();
+        $pegawai = null;
+        if (!empty($user['email'])) {
+            $pegawai = $db->find("SELECT * FROM pegawai WHERE email = ? LIMIT 1", [$user['email']]);
+        }
+        if (!$pegawai && !empty($user['full_name'])) {
+            $pegawai = $db->find("SELECT * FROM pegawai WHERE nama = ? LIMIT 1", [$user['full_name']]);
+        }
+
+        $fullName = !empty($user['full_name']) ? $user['full_name'] : ($pegawai['nama'] ?? 'Guru');
+        $role = !empty($pegawai['jabatan']) ? $pegawai['jabatan'] : (Auth::hasRole('super_admin') ? 'Super Administrator' : 'Guru Pengajar');
+        $nip = !empty($pegawai['niy']) ? $pegawai['niy'] : (!empty($pegawai['nik']) ? $pegawai['nik'] : '-');
+        $phone = !empty($pegawai['no_wa']) ? $pegawai['no_wa'] : ($user['phone'] ?? '-');
+        $status = !empty($pegawai['status_pegawai']) ? $pegawai['status_pegawai'] : 'Pegawai Aktif';
+        $foto = !empty($pegawai['foto']) ? $pegawai['foto'] : ($user['avatar'] ?? null);
+
+        $pegawaiId = !empty($pegawai['id']) ? (int)$pegawai['id'] : null;
+
+        return [
+            'id' => $pegawaiId,
+            'pegawai_id' => $pegawaiId,
+            'user_id' => (int)$user['id'],
+            'name' => $fullName,
+            'nip' => $nip,
+            'role' => $role,
+            'status' => $status,
+            'email' => $user['email'] ?? ($pegawai['email'] ?? '-'),
+            'phone' => $phone,
+            'avatar' => $foto,
+            'teachingHours' => '24 Jam / Minggu',
+            'academicYear' => defined('SYS_TAHUN_AKADEMIK_NAME') ? SYS_TAHUN_AKADEMIK_NAME : '2025/2026 Genap'
+        ];
+    }
+
+    /**
+     * Ambil jadwal mengajar guru dari jadwal_pelajaran yang aktif tersinkronisasi
+     */
+    public static function getTeacherSchedules(?int $pegawaiId, string $guruName, ?string $hari = null): array
+    {
+        $db = Database::getInstance();
+        $params = [];
+        $where = "1=1";
+
+        if ($pegawaiId) {
+            $where .= " AND (jp.pegawai_id = ? OR jp.nama_guru LIKE ?)";
+            $params[] = $pegawaiId;
+            $params[] = '%' . $guruName . '%';
+        } else {
+            $where .= " AND jp.nama_guru LIKE ?";
+            $params[] = '%' . $guruName . '%';
+        }
+
+        if ($hari) {
+            $where .= " AND jp.hari = ?";
+            $params[] = $hari;
+        }
+
+        $sql = "
+            SELECT jp.*, 
+                   COALESCE(jp.jumlah_jp, 2) as jp_alokasi,
+                   jm.id as jurnal_id, 
+                   jm.kode_jurnal, 
+                   jm.status as jurnal_status, 
+                   jm.materi_pokok as jurnal_materi,
+                   jm.uraian_kegiatan as jurnal_kegiatan,
+                   jm.catatan_kelas as jurnal_catatan,
+                   jm.jumlah_jp as jurnal_jp,
+                   jm.kehadiran_summary as jurnal_kehadiran
+            FROM jadwal_pelajaran jp
+            LEFT JOIN jadwal_grup jg ON jp.grup_id = jg.id
+            LEFT JOIN jurnal_mengajar jm ON (jm.jadwal_id = jp.id OR (jm.guru_id = jp.pegawai_id AND jm.kelas = jp.nama_kelas COLLATE utf8mb4_unicode_ci AND jm.mata_pelajaran = jp.mata_pelajaran COLLATE utf8mb4_unicode_ci AND jm.jam_ke = CONCAT(jp.jam_ke))) AND jm.tanggal = CURDATE()
+            WHERE {$where}
+              AND (jg.is_active = 1 OR jp.grup_id = (SELECT id FROM jadwal_grup ORDER BY is_active DESC, id DESC LIMIT 1))
+            ORDER BY FIELD(jp.hari, 'Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'), jp.jam_ke ASC, jp.jam_mulai ASC
+        ";
+
+        try {
+            $rows = $db->findAll($sql, $params);
+        } catch (Throwable $e) {
+            $rows = [];
+        }
+
+        $now = date('H:i:s');
+        $schedules = [];
+        foreach ($rows as $r) {
+            $start = !empty($r['jam_mulai']) ? date('H:i', strtotime($r['jam_mulai'])) : '-';
+            $end = !empty($r['jam_selesai']) ? date('H:i', strtotime($r['jam_selesai'])) : '-';
+            $timeRange = ($start !== '-' && $end !== '-') ? "{$start} - {$end}" : "Jam ke-{$r['jam_ke']}";
+            
+            $status = 'Mendatang';
+            if (!empty($r['jam_mulai']) && !empty($r['jam_selesai'])) {
+                if ($now >= $r['jam_mulai'] && $now <= $r['jam_selesai']) {
+                    $status = 'Berlangsung';
+                } elseif ($now > $r['jam_selesai']) {
+                    $status = 'Selesai';
+                }
+            }
+
+            $hasJurnal = !empty($r['jurnal_id']);
+
+            $schedules[] = [
+                'id' => (int)$r['id'],
+                'hari' => $r['hari'],
+                'jam_ke' => $r['jam_ke'],
+                'jumlah_jp' => (int)($r['jp_alokasi'] ?: 2),
+                'jam_mulai' => $r['jam_mulai'],
+                'jam_selesai' => $r['jam_selesai'],
+                'time' => $timeRange,
+                'class' => $r['nama_kelas'],
+                'subject' => $r['mata_pelajaran'],
+                'room' => !empty($r['ruangan']) ? $r['ruangan'] : 'Ruang Kelas',
+                'status' => $status,
+                'has_jurnal' => $hasJurnal,
+                'jurnal_id' => $r['jurnal_id'],
+                'jurnal_kode' => $r['kode_jurnal'],
+                'jurnal_status' => $r['jurnal_status'],
+                'jurnal_materi' => $r['jurnal_materi'],
+                'jurnal_kegiatan' => $r['jurnal_kegiatan'],
+                'jurnal_catatan' => $r['jurnal_catatan'],
+                'jurnal_jp' => $r['jurnal_jp'],
+                'jurnal_kehadiran' => $r['jurnal_kehadiran'],
+            ];
+        }
+
+        return $schedules;
+    }
+
+    /**
      * Mobile Home (Beranda)
      */
     public static function beranda(): void
     {
+        $teacher = self::getLoggedInTeacher();
+
+        $indonesianDays = [
+            'Sunday' => 'Minggu',
+            'Monday' => 'Senin',
+            'Tuesday' => 'Selasa',
+            'Wednesday' => 'Rabu',
+            'Thursday' => 'Kamis',
+            'Friday' => 'Jumat',
+            'Saturday' => 'Sabtu'
+        ];
+        $todayName = $indonesianDays[date('l')] ?? 'Senin';
+
+        $todaySchedule = self::getTeacherSchedules($teacher['pegawai_id'], $teacher['name'], $todayName);
+        $allTeacherSchedules = self::getTeacherSchedules($teacher['pegawai_id'], $teacher['name']);
+        
+        $classesTaught = array_unique(array_filter(array_column($allTeacherSchedules, 'class')));
+        $totalClasses = count($classesTaught) ?: 1;
+
+        $todayJp = array_sum(array_column($todaySchedule, 'jumlah_jp'));
+        $todayFilledJurnal = count(array_filter($todaySchedule, fn($s) => $s['has_jurnal']));
+
         self::render('beranda', [
             'pageTitle' => 'Beranda Guru',
             'activeTab' => 'beranda',
-            'teacherName' => 'Bu Rina',
-            'teacherRole' => 'Guru Matematika',
-            'totalClasses' => 6,
+            'teacherName' => $teacher['name'],
+            'teacherRole' => $teacher['role'],
+            'teacherAvatar' => $teacher['avatar'],
+            'teacherNip' => $teacher['nip'],
+            'totalClasses' => $totalClasses,
+            'todayName' => $todayName,
+            'todayDate' => date('d F Y'),
+            'todayJp' => $todayJp,
+            'todayFilledJurnal' => $todayFilledJurnal,
+            'todaySchedule' => $todaySchedule,
             'activeTasks' => 12,
             'pendingGrades' => 36,
             'classReports' => 4,
-            'todaySchedule' => [
-                [
-                    'time' => '08.00 - 08.45',
-                    'subject' => 'Matematika',
-                    'class' => 'Kelas 7A',
-                    'status' => 'Berlangsung',
-                    'room' => 'Ruang 102'
-                ],
-                [
-                    'time' => '09.00 - 09.45',
-                    'subject' => 'Matematika',
-                    'class' => 'Kelas 7B',
-                    'status' => 'Mendatang',
-                    'room' => 'Ruang 103'
-                ],
-                [
-                    'time' => '10.15 - 11.00',
-                    'subject' => 'Matematika',
-                    'class' => 'Kelas 8A',
-                    'status' => 'Mendatang',
-                    'room' => 'Ruang 201'
-                ]
-            ]
         ]);
     }
 
@@ -115,36 +268,253 @@ class PortalGuruController
      */
     public static function jurnal(): void
     {
+        $teacher = self::getLoggedInTeacher();
+        $db = Database::getInstance();
+
+        $indonesianDays = [
+            'Sunday' => 'Minggu',
+            'Monday' => 'Senin',
+            'Tuesday' => 'Selasa',
+            'Wednesday' => 'Rabu',
+            'Thursday' => 'Kamis',
+            'Friday' => 'Jumat',
+            'Saturday' => 'Sabtu'
+        ];
+        $todayName = $indonesianDays[date('l')] ?? 'Senin';
+
+        // Ambil jadwal hari ini dan seluruh jadwal guru
+        $todaySchedule = self::getTeacherSchedules($teacher['pegawai_id'], $teacher['name'], $todayName);
+        $allSchedules = self::getTeacherSchedules($teacher['pegawai_id'], $teacher['name']);
+
+        // Riwayat jurnal dari database
+        $recentJournals = [];
+        try {
+            $recentJournals = $db->findAll(
+                "SELECT * FROM jurnal_mengajar 
+                 WHERE guru_id = ? OR nama_guru LIKE ? 
+                 ORDER BY tanggal DESC, id DESC LIMIT 30",
+                [$teacher['pegawai_id'] ?: 0, '%' . $teacher['name'] . '%']
+            );
+        } catch (Throwable $e) {}
+
+        // Format riwayat jurnal untuk tampilan
+        $formattedJournals = [];
+        foreach ($recentJournals as $rj) {
+            $formattedJournals[] = [
+                'id' => $rj['id'],
+                'kode' => $rj['kode_jurnal'],
+                'date' => date('d M Y', strtotime($rj['tanggal'])),
+                'tanggal_raw' => $rj['tanggal'],
+                'class' => $rj['kelas'],
+                'subject' => $rj['mata_pelajaran'],
+                'hours' => 'Jam ke-' . $rj['jam_ke'] . ' (' . ($rj['jumlah_jp'] ?? 2) . ' JP)',
+                'jumlah_jp' => $rj['jumlah_jp'] ?? 2,
+                'topic' => $rj['materi_pokok'],
+                'kegiatan' => $rj['uraian_kegiatan'] ?? '',
+                'summary' => $rj['uraian_kegiatan'] ?: 'Pembelajaran tatap muka sesuai modul ajar.',
+                'attendance' => $rj['kehadiran_summary'] ?: 'Semua Siswa Hadir',
+                'catatan' => $rj['catatan_kelas'] ?? '',
+                'status' => ucfirst($rj['status'] ?? 'selesai')
+            ];
+        }
+
+        // Distinct classes & subjects untuk opsi dropdown mandiri
+        $classes = array_unique(array_filter(array_column($allSchedules, 'class')));
+        if (empty($classes)) {
+            $classes = ['Kelas 1 Abu Bakar', 'Kelas 1 Bilal bin Rabbah', 'Kelas 3 Abdurrahman', 'Kelas 4 Anas bin Malik', 'Kelas 5 Ibnu Abbas'];
+        }
+        $subjects = array_unique(array_filter(array_column($allSchedules, 'subject')));
+        if (empty($subjects)) {
+            $subjects = ['Tahsin & Al-Quran', 'Bina Pribadi Islam', 'Ilmu Pengetahuan Alam dan Sosial (IPAS)', 'Matematika'];
+        }
+
         self::render('jurnal', [
             'pageTitle' => 'Jurnal Mengajar Harian',
             'activeTab' => 'jurnal',
-            'classes' => ['Kelas 7A', 'Kelas 7B', 'Kelas 8A', 'Kelas 8B', 'Kelas 9A', 'Kelas 9B'],
-            'subjects' => ['Matematika', 'Matematika Peminatan'],
-            'recentJournals' => [
-                [
-                    'id' => 'JRN-104',
-                    'date' => date('d M Y'),
-                    'class' => 'Kelas 7A',
-                    'subject' => 'Matematika',
-                    'hours' => 'Jam ke 1-2 (08.00 - 09.30)',
-                    'topic' => 'Teorema Pythagoras & Segitiga Siku-Siku',
-                    'summary' => 'Pembahasan rumus dasar dan latihan soal kelompok.',
-                    'attendance' => '30 Hadir, 1 Sakit, 1 Izin',
-                    'status' => 'Tervalidasi'
-                ],
-                [
-                    'id' => 'JRN-103',
-                    'date' => date('d M Y', strtotime('-1 day')),
-                    'class' => 'Kelas 7B',
-                    'subject' => 'Matematika',
-                    'hours' => 'Jam ke 3-4 (09.45 - 11.15)',
-                    'topic' => 'Operasi Aljabar Satu Variabel',
-                    'summary' => 'Penjelasan konsep perkalian aljabar dan kuis individu.',
-                    'attendance' => '32 Hadir, 0 Absen',
-                    'status' => 'Tervalidasi'
-                ]
-            ]
+            'teacher' => $teacher,
+            'todayName' => $todayName,
+            'todayDate' => date('d F Y'),
+            'todaySchedule' => $todaySchedule,
+            'allSchedules' => $allSchedules,
+            'classes' => array_values($classes),
+            'subjects' => array_values($subjects),
+            'recentJournals' => $formattedJournals
         ]);
+    }
+
+    /**
+     * Simpan / Perbarui Jurnal Pembelajaran dari Mobile
+     */
+    public static function simpanJurnal(): void
+    {
+        header('Content-Type: application/json; charset=utf-8');
+
+        $teacher = self::getLoggedInTeacher();
+        $db = Database::getInstance();
+
+        $jadwalId = !empty($_POST['jadwal_id']) ? (int)$_POST['jadwal_id'] : null;
+        $jurnalId = !empty($_POST['jurnal_id']) ? (int)$_POST['jurnal_id'] : null;
+        $kelas = trim($_POST['kelas'] ?? '');
+        $mapel = trim($_POST['mata_pelajaran'] ?? ($_POST['mapel'] ?? ''));
+        $tanggal = trim($_POST['tanggal'] ?? date('Y-m-d'));
+        $jamKe = trim($_POST['jam_ke'] ?? '1');
+        $jumlahJp = max(1, min(10, (int)($_POST['jumlah_jp'] ?? 2)));
+        $topik = trim($_POST['topik'] ?? ($_POST['materi_pokok'] ?? ''));
+        $kegiatan = trim($_POST['kegiatan'] ?? ($_POST['uraian_kegiatan'] ?? ''));
+        $catatan = trim($_POST['catatan'] ?? ($_POST['catatan_kelas'] ?? ''));
+        $kehadiran = trim($_POST['kehadiran'] ?? ($_POST['kehadiran_summary'] ?? 'Lengkap Hadir'));
+
+        if (empty($kelas) || empty($mapel) || empty($topik)) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Kelas, Mata Pelajaran, dan Materi/Topik wajib diisi.'
+            ]);
+            exit;
+        }
+
+        $guruId = $teacher['pegawai_id'] ?: (int)Auth::id();
+        $namaGuru = $teacher['name'];
+
+        try {
+            if ($jurnalId) {
+                // Update jurnal yang sudah ada
+                $db->update('jurnal_mengajar', [
+                    'kelas' => $kelas,
+                    'mata_pelajaran' => $mapel,
+                    'tanggal' => $tanggal,
+                    'jam_ke' => $jamKe,
+                    'jumlah_jp' => $jumlahJp,
+                    'materi_pokok' => $topik,
+                    'uraian_kegiatan' => $kegiatan,
+                    'catatan_kelas' => $catatan,
+                    'kehadiran_summary' => $kehadiran,
+                    'status' => 'selesai',
+                    'updated_at' => date('Y-m-d H:i:s')
+                ], 'id = ?', [$jurnalId]);
+
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Jurnal pembelajaran berhasil diperbarui!',
+                    'jurnal_id' => $jurnalId
+                ]);
+                exit;
+            } else {
+                // Buat kode jurnal unik
+                $kodeJurnal = 'JRN-' . date('Ymd', strtotime($tanggal)) . '-' . strtoupper(substr(uniqid(), -4));
+
+                $newId = $db->insert('jurnal_mengajar', [
+                    'kode_jurnal' => $kodeJurnal,
+                    'jadwal_id' => $jadwalId,
+                    'guru_id' => $guruId,
+                    'nama_guru' => $namaGuru,
+                    'kelas' => $kelas,
+                    'mata_pelajaran' => $mapel,
+                    'tanggal' => $tanggal,
+                    'jam_ke' => $jamKe,
+                    'jumlah_jp' => $jumlahJp,
+                    'materi_pokok' => $topik,
+                    'uraian_kegiatan' => $kegiatan,
+                    'catatan_kelas' => $catatan,
+                    'kehadiran_summary' => $kehadiran,
+                    'status' => 'selesai',
+                    'created_at' => date('Y-m-d H:i:s'),
+                    'updated_at' => date('Y-m-d H:i:s')
+                ]);
+
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Jurnal pembelajaran berhasil disimpan!',
+                    'jurnal_id' => $newId,
+                    'kode_jurnal' => $kodeJurnal
+                ]);
+                exit;
+            }
+        } catch (Throwable $e) {
+            error_log('simpanJurnal error: ' . $e->getMessage());
+            echo json_encode([
+                'success' => false,
+                'message' => 'Gagal menyimpan jurnal: ' . $e->getMessage()
+            ]);
+            exit;
+        }
+    }
+
+    /**
+     * API Detail Jurnal untuk modal preview / edit
+     */
+    public static function apiJurnalDetail(int $id): void
+    {
+        header('Content-Type: application/json; charset=utf-8');
+        $db = Database::getInstance();
+        $jurnal = $db->find("SELECT * FROM jurnal_mengajar WHERE id = ?", [$id]);
+
+        if (!$jurnal) {
+            echo json_encode(['success' => false, 'message' => 'Jurnal tidak ditemukan.']);
+            exit;
+        }
+
+        echo json_encode(['success' => true, 'data' => $jurnal]);
+        exit;
+    }
+
+    /**
+     * API Daftar Siswa per Kelas untuk Presensi Jurnal Mengajar
+     */
+    public static function apiSiswaKelas(): void
+    {
+        header('Content-Type: application/json; charset=utf-8');
+        $className = trim($_GET['kelas'] ?? '');
+
+        if (empty($className)) {
+            echo json_encode(['success' => false, 'message' => 'Nama kelas tidak diberikan.']);
+            exit;
+        }
+
+        $db = Database::getInstance();
+        $cleanName = trim(preg_replace('/^kelas\s+/i', '', $className));
+
+        $sql = "
+            SELECT id, nisn, nama_lengkap, nama, jenis_kelamin, kelas
+            FROM siswa 
+            WHERE (kelas = ? OR kelas = ? OR kelas LIKE ?)
+              AND is_active = 1
+            ORDER BY nama_lengkap ASC
+        ";
+
+        try {
+            $students = $db->findAll($sql, [$className, $cleanName, '%' . $cleanName . '%']);
+            
+            // Fallback jika belum ada data siswa di DB untuk kelas tersebut
+            if (empty($students)) {
+                $samples = [
+                    'Achmad Zaky Pratama', 'Aisyah Putri Azzahra', 'Alif Ramadhan', 
+                    'Anisa Nur Fadilah', 'Bagus Dwi Wicaksono', 'Cantika Dewi Lestari',
+                    'Dimas Arya Nugraha', 'Fadli Kurniawan', 'Gita Permata Sari', 'Hafizh Pratama'
+                ];
+                $students = [];
+                foreach ($samples as $idx => $name) {
+                    $students[] = [
+                        'id' => $idx + 1,
+                        'nisn' => '008' . str_pad((string)($idx + 1), 6, '0', STR_PAD_LEFT),
+                        'nama_lengkap' => $name,
+                        'nama' => $name,
+                        'jenis_kelamin' => ($idx % 2 === 0) ? 'L' : 'P',
+                        'kelas' => $className
+                    ];
+                }
+            }
+
+            echo json_encode([
+                'success' => true,
+                'kelas' => $className,
+                'total' => count($students),
+                'data' => $students
+            ]);
+            exit;
+        } catch (Throwable $e) {
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            exit;
+        }
     }
 
     /**
@@ -216,19 +586,12 @@ class PortalGuruController
      */
     public static function profil(): void
     {
+        $teacher = self::getLoggedInTeacher();
+
         self::render('profil', [
             'pageTitle' => 'Profil Guru & Pengaturan PWA',
             'activeTab' => 'profil',
-            'profile' => [
-                'name' => 'Bu Rina S.Pd',
-                'nip' => '19880412 201201 2 003',
-                'role' => 'Guru Matematika',
-                'status' => 'PNS / Sertifikasi Pendidik',
-                'email' => 'rina.matematika@sekolah.bip.id',
-                'phone' => '0812-3456-7890',
-                'teachingHours' => '24 Jam / Minggu',
-                'academicYear' => '2025/2026 Genap'
-            ]
+            'profile' => $teacher
         ]);
     }
 

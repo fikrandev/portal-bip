@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Beranda Guru (Mobile Dashboard)
  * Clean Card-based Ibadah Harian: items with sub-items trigger Android Bottom Sheet modals,
@@ -11,7 +11,7 @@
     <div>
         <p class="text-xs text-slate-500 font-normal">Selamat pagi,</p>
         <h1 class="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-1.5">
-            Bu Rina <span class="inline-block animate-bounce origin-bottom">👋</span>
+            <?= e($teacherName ?? 'Guru') ?> <span class="inline-block animate-bounce origin-bottom">👋</span>
         </h1>
         <p class="text-[11px] text-slate-400 font-normal max-w-[210px] leading-tight mt-0.5">
             Semangat mengajar, menginspirasi, dan membimbing hari ini!
@@ -21,8 +21,8 @@
     <div class="flex items-center gap-2.5">
         <!-- Teacher Avatar Photo (Lazy Loaded) -->
         <a href="<?= url('mobile/profil') ?>" class="relative block rounded-full p-0.5 bg-gradient-to-tr from-primary-500 to-sky-300 shadow-md press-bounce">
-            <img src="<?= asset('images/mobile/teacher_rina.jpg') ?>" 
-                 alt="Bu Rina" 
+            <img src="<?= !empty($teacherAvatar) ? url($teacherAvatar) : asset('images/mobile/teacher_rina.jpg') ?>" 
+                 alt="<?= e($teacherName ?? 'Guru') ?>" 
                  loading="lazy"
                  class="w-14 h-14 rounded-full object-cover border-2 border-white">
             <span class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-primary-500 border-2 border-white rounded-full"></span>
@@ -172,45 +172,56 @@
                 <div class="w-8 h-8 rounded-xl bg-primary-600 text-white flex items-center justify-center shadow-md shadow-primary-600/30">
                     <i data-lucide="calendar" class="w-4 h-4"></i>
                 </div>
-                <h3 class="font-bold text-slate-800 text-sm">Jadwal Hari Ini</h3>
+                <div>
+                    <h3 class="font-bold text-slate-800 text-sm">Jadwal Hari Ini (<?= e($todayName ?? 'Hari Ini') ?>)</h3>
+                    <p class="text-[10px] text-slate-400 font-medium"><?= !empty($todaySchedule) ? count($todaySchedule) . ' Jam Pelajaran Terjadwal' : 'Tidak ada jadwal mengajar' ?></p>
+                </div>
             </div>
-            <a href="<?= url('mobile/kelas') ?>" class="text-xs font-semibold text-primary-600 hover:text-primary-700 flex items-center gap-1">
-                Lihat Semua <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+            <a href="<?= url('mobile/jurnal') ?>" class="text-xs font-bold text-primary-600 hover:text-primary-700 flex items-center gap-1">
+                Jurnal <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
             </a>
         </div>
 
-        <!-- Timeline + 3D Calendar Illustration -->
-        <div class="flex items-center justify-between gap-2">
-            
-            <!-- Left: Timeline -->
-            <div class="flex-1 space-y-3.5 pl-1">
+        <!-- Schedule List -->
+        <?php if (!empty($todaySchedule)): ?>
+        <div class="space-y-2.5">
+            <?php foreach ($todaySchedule as $sch): ?>
+            <div class="p-3 bg-white/90 rounded-2xl border border-primary-100/80 shadow-xs flex items-center justify-between gap-3">
+                <div class="relative pl-3.5 border-l-2 <?= $sch['has_jurnal'] ? 'border-emerald-500' : 'border-primary-500' ?> min-w-0 flex-1">
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                        <span class="text-[10px] font-bold text-slate-400"><?= e($sch['time']) ?></span>
+                        <span class="px-1.5 py-0.2 text-[9px] font-bold bg-primary-50 text-primary-700 rounded-md"><?= e($sch['jumlah_jp']) ?> JP</span>
+                        <?php if ($sch['has_jurnal']): ?>
+                        <span class="px-1.5 py-0.2 text-[9px] font-bold bg-emerald-50 text-emerald-700 rounded-md">✓ Terisi</span>
+                        <?php endif; ?>
+                    </div>
+                    <h4 class="text-xs font-bold text-slate-900 leading-snug truncate mt-0.5"><?= e($sch['subject']) ?></h4>
+                    <p class="text-[11px] text-slate-600 font-medium truncate"><?= e($sch['class']) ?> &bull; <?= e($sch['room']) ?></p>
+                </div>
                 
-                <!-- Schedule Item 1 -->
-                <div class="relative pl-5 border-l-2 border-primary-400">
-                    <span class="absolute -left-[5px] top-1 w-2.5 h-2.5 rounded-full bg-primary-600 ring-4 ring-primary-100"></span>
-                    <p class="text-[10px] font-semibold text-slate-400">08.00 - 08.45</p>
-                    <h4 class="text-xs font-bold text-slate-900 leading-snug">Matematika</h4>
-                    <p class="text-[10px] text-slate-500 font-medium">Kelas 7A</p>
+                <div class="shrink-0">
+                    <?php if ($sch['has_jurnal']): ?>
+                    <a href="<?= url('mobile/jurnal?edit_id=' . $sch['jurnal_id']) ?>" class="px-3 py-1.5 bg-emerald-50 text-emerald-700 font-bold rounded-xl text-[11px] border border-emerald-200 press-bounce flex items-center gap-1">
+                        <i data-lucide="check" class="w-3.5 h-3.5"></i> Selesai
+                    </a>
+                    <?php else: ?>
+                    <a href="<?= url('mobile/jurnal?jadwal_id=' . $sch['id']) ?>" class="px-3 py-1.5 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-xl text-[11px] shadow-sm shadow-primary-500/20 press-bounce flex items-center gap-1">
+                        <i data-lucide="edit-3" class="w-3.5 h-3.5"></i> Isi Jurnal
+                    </a>
+                    <?php endif; ?>
                 </div>
-
-                <!-- Schedule Item 2 -->
-                <div class="relative pl-5 border-l-2 border-primary-300">
-                    <span class="absolute -left-[5px] top-1 w-2.5 h-2.5 rounded-full bg-primary-500 ring-4 ring-primary-100"></span>
-                    <p class="text-[10px] font-semibold text-slate-400">09.00 - 09.45</p>
-                    <h4 class="text-xs font-bold text-slate-900 leading-snug">Matematika</h4>
-                    <p class="text-[10px] text-slate-500 font-medium">Kelas 7B</p>
-                </div>
-
             </div>
-
-            <!-- Right: 3D Calendar Illustration (Lazy Loaded) -->
-            <div class="w-36 h-28 shrink-0 relative flex items-center justify-center">
-                <img src="<?= asset('images/mobile/calendar_3d.jpg') ?>" 
-                     alt="3D Calendar" 
-                     loading="lazy"
-                     class="w-full h-full object-contain filter drop-shadow-md rounded-2xl">
+            <?php endforeach; ?>
+        </div>
+        <?php else: ?>
+        <div class="p-4 bg-white/70 rounded-2xl border border-dashed border-slate-200 text-center space-y-1">
+            <p class="text-xs font-bold text-slate-700">Tidak ada jadwal KBM hari ini</p>
+            <p class="text-[11px] text-slate-400">Jadwal Anda tersinkronisasi otomatis dengan modul Perangkat Pembelajaran.</p>
+            <div class="pt-1">
+                <a href="<?= url('mobile/jurnal') ?>" class="text-xs font-bold text-primary-600 underline">Lihat Semua Jadwal & Jurnal</a>
             </div>
         </div>
+        <?php endif; ?>
     </div>
 
     <!-- 4. 4 Stat / Metric Cards (2x2 Grid) -->
