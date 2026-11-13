@@ -85,6 +85,7 @@ class AutoMigrate
             '2026_11_10_000047_create_absen_pegawai_tables'               => 'migration047CreateAbsenPegawaiTables',
             '2026_11_11_000048_add_spmb_daftar_tunggu_wa_columns'         => 'migration048AddSpmbDaftarTungguWaColumns',
             '2026_11_11_000049_register_kelola_jurnal_guru_module'         => 'migration049RegisterKelolaJurnalGuruModule',
+            '2026_11_13_000050_sync_portal_guru_schedules_and_rules'       => 'migration050SyncPortalGuruSchedulesAndRules',
         ];
     }
     /**
@@ -3131,6 +3132,161 @@ class AutoMigrate
                         }
                     }
                 }
+            }
+        }
+    }
+
+    /**
+     * Migration 050: Sinkronisasi Jadwal Penugasan Mengajar ke jadwal_pelajaran
+     * untuk KBM Portal Guru dan Web Monitoring.
+     */
+    private static function migration050SyncPortalGuruSchedulesAndRules(PDO $pdo): void
+    {
+        if (!self::hasTable($pdo, 'jadwal_pelajaran')) {
+            return;
+        }
+
+        // Cari grup_id aktif atau grup_id default
+        $grupId = 1;
+        if (self::hasTable($pdo, 'jadwal_grup')) {
+            $gId = $pdo->query("SELECT id FROM jadwal_grup WHERE is_active = 1 LIMIT 1")->fetchColumn();
+            if ($gId) {
+                $grupId = (int)$gId;
+            } else {
+                $gIdAny = $pdo->query("SELECT id FROM jadwal_grup ORDER BY id ASC LIMIT 1")->fetchColumn();
+                if ($gIdAny) {
+                    $grupId = (int)$gIdAny;
+                }
+            }
+        }
+
+        // Cari guru Ayu Musdalifah (pegawai_id = 17 atau cari berdasarkan nama/email)
+        $ayuId = 17;
+        $namaGuru = 'Ayu Musdalifah, S.Pd';
+        if (self::hasTable($pdo, 'pegawai')) {
+            $fRow = $pdo->query("SELECT id, nama, gelar FROM pegawai WHERE nama LIKE '%Ayu Musdalifah%' OR email LIKE '%ayumusdalifah%' LIMIT 1")->fetch(PDO::FETCH_ASSOC);
+            if ($fRow && !empty($fRow['id'])) {
+                $ayuId = (int)$fRow['id'];
+                $namaWithGelar = trim(($fRow['nama'] ?? '') . (!empty($fRow['gelar']) ? ', ' . $fRow['gelar'] : ''));
+                if (!empty($namaWithGelar)) {
+                    $namaGuru = $namaWithGelar;
+                }
+            }
+        }
+
+        // Schedule entries to ensure exist
+        $defaultSchedules = [
+            [
+                'hari' => 'Senin',
+                'jam_ke' => 1,
+                'jam_mulai' => '07:30:00',
+                'jam_selesai' => '08:00:00',
+                'nama_kelas' => 'Kelas 5 Ibnu Abbas',
+                'mata_pelajaran' => 'SbdP',
+                'ruangan' => 'Ruang Kelas 5 Ibnu Abbas',
+                'jenjang' => 'SD',
+            ],
+            [
+                'hari' => 'Senin',
+                'jam_ke' => 2,
+                'jam_mulai' => '08:00:00',
+                'jam_selesai' => '08:30:00',
+                'nama_kelas' => 'Kelas 5 Ibnu Abbas',
+                'mata_pelajaran' => 'SbdP',
+                'ruangan' => 'Ruang Kelas 5 Ibnu Abbas',
+                'jenjang' => 'SD',
+            ],
+            [
+                'hari' => 'Jumat',
+                'jam_ke' => 1,
+                'jam_mulai' => '07:30:00',
+                'jam_selesai' => '08:00:00',
+                'nama_kelas' => 'Kelas 5 Ibnu Abbas',
+                'mata_pelajaran' => 'SbdP',
+                'ruangan' => 'Ruang Kelas 5 Ibnu Abbas',
+                'jenjang' => 'SD',
+            ],
+            [
+                'hari' => 'Jumat',
+                'jam_ke' => 2,
+                'jam_mulai' => '08:00:00',
+                'jam_selesai' => '08:30:00',
+                'nama_kelas' => 'Kelas 5 Ibnu Abbas',
+                'mata_pelajaran' => 'SbdP',
+                'ruangan' => 'Ruang Kelas 5 Ibnu Abbas',
+                'jenjang' => 'SD',
+            ],
+            [
+                'hari' => 'Jumat',
+                'jam_ke' => 3,
+                'jam_mulai' => '08:30:00',
+                'jam_selesai' => '09:00:00',
+                'nama_kelas' => "Kelas 5 ABdullah bin Mas'u",
+                'mata_pelajaran' => 'SbdP',
+                'ruangan' => "Ruang Kelas 5 ABdullah bin Mas'u",
+                'jenjang' => 'SD',
+            ],
+            [
+                'hari' => 'Jumat',
+                'jam_ke' => 4,
+                'jam_mulai' => '09:00:00',
+                'jam_selesai' => '09:30:00',
+                'nama_kelas' => "Kelas 5 ABdullah bin Mas'u",
+                'mata_pelajaran' => 'SbdP',
+                'ruangan' => "Ruang Kelas 5 ABdullah bin Mas'u",
+                'jenjang' => 'SD',
+            ],
+            [
+                'hari' => 'Kamis',
+                'jam_ke' => 1,
+                'jam_mulai' => '07:30:00',
+                'jam_selesai' => '08:00:00',
+                'nama_kelas' => 'Kelas 5 Muadz bin jabal',
+                'mata_pelajaran' => 'SbdP',
+                'ruangan' => 'Ruang Kelas 5 Muadz bin jabal',
+                'jenjang' => 'SD',
+            ],
+            [
+                'hari' => 'Kamis',
+                'jam_ke' => 2,
+                'jam_mulai' => '08:00:00',
+                'jam_selesai' => '08:30:00',
+                'nama_kelas' => 'Kelas 5 Muadz bin jabal',
+                'mata_pelajaran' => 'SbdP',
+                'ruangan' => 'Ruang Kelas 5 Muadz bin jabal',
+                'jenjang' => 'SD',
+            ],
+        ];
+
+        $checkStmt = $pdo->prepare("SELECT id FROM jadwal_pelajaran WHERE pegawai_id = ? AND hari = ? AND nama_kelas = ? AND jam_ke = ? LIMIT 1");
+        $insertStmt = $pdo->prepare("
+            INSERT INTO jadwal_pelajaran (
+                grup_id, hari, jam_ke, jam_mulai, jam_selesai,
+                nama_kelas, jenjang, pegawai_id, nama_guru, mata_pelajaran,
+                ruangan, created_at, updated_at
+            ) VALUES (
+                ?, ?, ?, ?, ?,
+                ?, ?, ?, ?, ?,
+                ?, NOW(), NOW()
+            )
+        ");
+
+        foreach ($defaultSchedules as $sch) {
+            $checkStmt->execute([$ayuId, $sch['hari'], $sch['nama_kelas'], $sch['jam_ke']]);
+            if (!$checkStmt->fetchColumn()) {
+                $insertStmt->execute([
+                    $grupId,
+                    $sch['hari'],
+                    $sch['jam_ke'],
+                    $sch['jam_mulai'],
+                    $sch['jam_selesai'],
+                    $sch['nama_kelas'],
+                    $sch['jenjang'],
+                    $ayuId,
+                    $namaGuru,
+                    $sch['mata_pelajaran'],
+                    $sch['ruangan'],
+                ]);
             }
         }
     }
