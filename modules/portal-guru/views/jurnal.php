@@ -222,26 +222,18 @@
 <!-- ======================================================== -->
 <!-- MODAL BOTTOM SHEET: FORM ISI / EDIT JURNAL              -->
 <!-- ======================================================== -->
-<div id="journal-input-modal" onclick="onJournalBackdropClick(event)" class="fixed inset-0 z-[100] bg-slate-950/60 backdrop-blur-xs flex flex-col justify-end items-center opacity-0 pointer-events-none transition-opacity duration-300 overflow-hidden">
-    <div id="journal-input-sheet" onclick="event.stopPropagation()" class="bg-white rounded-t-[32px] shadow-2xl transform translate-y-full transition-transform duration-300 ease-out w-full max-w-md mx-auto flex flex-col max-h-[92vh] pointer-events-auto border-t border-slate-200/80 overflow-hidden">
+<div id="journal-input-modal" class="fixed inset-0 z-[9999] pointer-events-none opacity-0 transition-opacity duration-300">
+    <!-- Backdrop Scrim -->
+    <div id="journal-input-scrim" onclick="closeJournalModal()" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs pointer-events-auto"></div>
+
+    <!-- Sheet Wrapper: Fixed firmly at bottom: 0, centered, max-w-md -->
+    <div id="journal-input-wrapper" class="fixed inset-x-0 bottom-0 max-w-md mx-auto w-full pointer-events-none z-10 transition-all duration-300">
         
-        <!-- Sheet Header (Fixed) -->
-        <div class="px-5 pt-3.5 pb-3 border-b border-slate-100 shrink-0 bg-white">
-            <div class="w-10 h-1.5 bg-slate-200 rounded-full mx-auto mb-3 cursor-grab"></div>
-
-            <div class="flex items-center justify-between">
-                <div class="min-w-0 pr-2">
-                    <h3 id="form-modal-title" class="font-black text-slate-900 text-base leading-tight truncate">Isi Jurnal Mengajar</h3>
-                    <p id="form-modal-subtitle" class="text-xs text-primary-600 font-semibold mt-0.5 truncate">Kelas & Jadwal Terisi Otomatis</p>
-                </div>
-                <button type="button" onclick="closeJournalModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center text-xs font-bold transition-colors shrink-0">
-                    ✕
-                </button>
-            </div>
-        </div>
-
-        <!-- Scrollable Form Body -->
-        <form id="form-isi-jurnal" onsubmit="handleJournalSave(event)" class="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3.5 no-scrollbar">
+        <!-- Sheet Container & Native Form: Encapsulates header, scrolling body, and sticky footer -->
+        <form id="form-isi-jurnal" 
+              onsubmit="handleJournalSave(event)" 
+              class="bg-white rounded-t-[32px] shadow-2xl pointer-events-auto border-t border-slate-200/80 flex flex-col h-[85vh] max-h-[700px] w-full transform translate-y-full transition-transform duration-300 ease-out overflow-hidden">
+            
             <?= CSRF::field() ?>
             <input type="hidden" name="jadwal_id" id="input_jadwal_id" value="">
             <input type="hidden" name="jurnal_id" id="input_jurnal_id" value="">
@@ -252,109 +244,127 @@
             <input type="hidden" name="jumlah_jp" id="input_jumlah_jp" value="2">
             <input type="hidden" name="kehadiran_summary" id="input_kehadiran" value="Semua Siswa Hadir">
 
-            <!-- Strip Info Ringkas (Disabled / Non-Editable) -->
-            <div class="p-3 bg-slate-50 border border-slate-100 rounded-2xl flex flex-wrap items-center justify-between gap-2">
-                <div class="flex items-center gap-1.5 flex-wrap min-w-0">
-                    <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-white border border-slate-200/80 rounded-xl text-xs font-bold text-slate-800 shadow-2xs">
-                        <i data-lucide="book-open" class="w-3.5 h-3.5 text-primary-600"></i>
-                        <span id="badge_mapel">-</span>
-                    </span>
-                    <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-white border border-slate-200/80 rounded-xl text-xs font-bold text-indigo-700 shadow-2xs">
-                        <i data-lucide="graduation-cap" class="w-3.5 h-3.5 text-indigo-600"></i>
-                        <span id="badge_kelas">-</span>
-                    </span>
-                </div>
-                <div class="flex items-center gap-1.5 shrink-0">
-                    <span class="px-2.5 py-1 bg-slate-200/80 text-slate-700 font-bold text-[11px] rounded-xl">
-                        Jam Ke-<span id="badge_jam_ke">1</span>
-                    </span>
-                    <span class="px-2.5 py-1 bg-indigo-100 text-indigo-800 font-black text-[11px] rounded-xl border border-indigo-200/70">
-                        <span id="badge_jumlah_jp">2</span> JP
-                    </span>
-                </div>
-            </div>
-
-            <!-- Materi / Topik Pokok (Wajib) -->
-            <div>
-                <label class="block text-[11px] font-bold text-slate-700 mb-1">
-                    Materi Pokok / Bahasan <span class="text-rose-500">*</span>
-                </label>
-                <input type="text" 
-                       name="materi_pokok" 
-                       id="input_materi" 
-                       required 
-                       placeholder="Contoh: QS. An-Naba Ayat 1-15 (Hukum Mad Thobi'i)" 
-                       class="w-full px-3.5 py-2.5 text-xs bg-slate-50 rounded-2xl border border-slate-200 font-semibold text-slate-800 placeholder:text-slate-400 focus:bg-white focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition-all">
-            </div>
-
-            <!-- Uraian Aktivitas Belajar (Ringkas) -->
-            <div>
-                <label class="block text-[11px] font-bold text-slate-700 mb-1">Uraian Aktivitas Belajar</label>
-                <textarea name="uraian_kegiatan" 
-                          id="input_kegiatan" 
-                          rows="2" 
-                          placeholder="Ringkasan kegiatan murid di kelas..." 
-                          class="w-full px-3.5 py-2 text-xs bg-slate-50 rounded-2xl border border-slate-200 text-slate-800 placeholder:text-slate-400 focus:bg-white focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition-all leading-relaxed"></textarea>
-                
-                <!-- Quick Tags -->
-                <div class="flex flex-wrap gap-1 mt-1">
-                    <button type="button" onclick="appendTagModal('Talaqqi dan Simak Bacaan')" class="px-2 py-0.5 rounded-lg text-[10px] font-semibold bg-primary-50 text-primary-700 hover:bg-primary-100">+ Talaqqi</button>
-                    <button type="button" onclick="appendTagModal('Setoran Hafalan Mandiri')" class="px-2 py-0.5 rounded-lg text-[10px] font-semibold bg-primary-50 text-primary-700 hover:bg-primary-100">+ Setoran</button>
-                    <button type="button" onclick="appendTagModal('Latihan Soal & Diskusi')" class="px-2 py-0.5 rounded-lg text-[10px] font-semibold bg-primary-50 text-primary-700 hover:bg-primary-100">+ Latihan Soal</button>
-                    <button type="button" onclick="appendTagModal('Kuis Evaluasi Formatif')" class="px-2 py-0.5 rounded-lg text-[10px] font-semibold bg-purple-50 text-purple-700 hover:bg-purple-100">+ Kuis Formatif</button>
-                </div>
-            </div>
-
-            <!-- Presensi Siswa Interaktif -->
-            <div class="space-y-1.5 pt-0.5">
+            <!-- 1. FIXED HEADER (shrink-0) -->
+            <div class="px-5 pt-3.5 pb-3 border-b border-slate-100 shrink-0 bg-white">
+                <div class="w-10 h-1.5 bg-slate-200 rounded-full mx-auto mb-3 cursor-grab"></div>
                 <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-1.5">
-                        <label class="text-[11px] font-bold text-slate-700">Presensi Siswa</label>
-                        <span id="presensi_counter_badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
-                            Memuat siswa...
-                        </span>
+                    <div class="min-w-0 pr-2">
+                        <h3 id="form-modal-title" class="font-black text-slate-900 text-base leading-tight truncate">Isi Jurnal Mengajar</h3>
+                        <p id="form-modal-subtitle" class="text-xs text-primary-600 font-semibold mt-0.5 truncate">Kelas & Jadwal Terisi Otomatis</p>
                     </div>
-                    <button type="button" 
-                            onclick="setAllStudentsPresent()" 
-                            class="px-2.5 py-1 text-[10px] font-bold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-xl transition-all border border-emerald-200 flex items-center gap-1 press-bounce">
-                        <i data-lucide="check-check" class="w-3 h-3 text-emerald-600"></i>
-                        <span>Hadir Semua</span>
+                    <button type="button" onclick="closeJournalModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center text-xs font-bold transition-colors shrink-0">
+                        ✕
                     </button>
                 </div>
+            </div>
 
-                <!-- Daftar Checkbox Siswa -->
-                <div id="presensi-students-container" class="max-h-44 overflow-y-auto divide-y divide-slate-100 border border-slate-200/80 rounded-2xl bg-white shadow-2xs p-1">
-                    <div id="presensi-loading" class="py-6 text-center text-slate-400 text-xs">
-                        <div class="w-5 h-5 border-2 border-primary-600 border-t-transparent rounded-full animate-spin mx-auto mb-1.5"></div>
-                        Memuat daftar nama murid...
+            <!-- 2. SCROLLABLE MIDDLE BODY (flex-1 min-h-0 overflow-y-auto) -->
+            <div class="flex-1 min-h-0 overflow-y-auto p-4 sm:p-5 space-y-3.5 no-scrollbar">
+                
+                <!-- Strip Info Ringkas -->
+                <div class="p-3 bg-slate-50 border border-slate-100 rounded-2xl flex flex-wrap items-center justify-between gap-2">
+                    <div class="flex items-center gap-1.5 flex-wrap min-w-0">
+                        <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-white border border-slate-200/80 rounded-xl text-xs font-bold text-slate-800 shadow-2xs">
+                            <i data-lucide="book-open" class="w-3.5 h-3.5 text-primary-600"></i>
+                            <span id="badge_mapel">-</span>
+                        </span>
+                        <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-white border border-slate-200/80 rounded-xl text-xs font-bold text-indigo-700 shadow-2xs">
+                            <i data-lucide="graduation-cap" class="w-3.5 h-3.5 text-indigo-600"></i>
+                            <span id="badge_kelas">-</span>
+                        </span>
                     </div>
-                    <div id="presensi-students-list" class="space-y-0.5 hidden"></div>
+                    <div class="flex items-center gap-1.5 shrink-0">
+                        <span class="px-2.5 py-1 bg-slate-200/80 text-slate-700 font-bold text-[11px] rounded-xl">
+                            Jam Ke-<span id="badge_jam_ke">1</span>
+                        </span>
+                        <span class="px-2.5 py-1 bg-indigo-100 text-indigo-800 font-black text-[11px] rounded-xl border border-indigo-200/70">
+                            <span id="badge_jumlah_jp">2</span> JP
+                        </span>
+                    </div>
                 </div>
-                <p class="text-[10px] text-slate-400 italic">Hilangkan centang pada nama murid yang tidak hadir (sakit/izin/alfa).</p>
+
+                <!-- Materi Pokok / Bahasan (Wajib) -->
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-700 mb-1">
+                        Materi Pokok / Bahasan <span class="text-rose-500">*</span>
+                    </label>
+                    <input type="text" 
+                           name="materi_pokok" 
+                           id="input_materi" 
+                           required 
+                           placeholder="Contoh: QS. An-Naba Ayat 1-15 (Hukum Mad Thobi'i)" 
+                           class="w-full px-3.5 py-2.5 text-xs bg-slate-50 rounded-2xl border border-slate-200 font-semibold text-slate-800 placeholder:text-slate-400 focus:bg-white focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition-all">
+                </div>
+
+                <!-- Uraian Aktivitas Belajar -->
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-700 mb-1">Uraian Aktivitas Belajar</label>
+                    <textarea name="uraian_kegiatan" 
+                              id="input_kegiatan" 
+                              rows="2" 
+                              placeholder="Ringkasan kegiatan murid di kelas..." 
+                              class="w-full px-3.5 py-2 text-xs bg-slate-50 rounded-2xl border border-slate-200 text-slate-800 placeholder:text-slate-400 focus:bg-white focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition-all leading-relaxed"></textarea>
+                    
+                    <!-- Quick Tags -->
+                    <div class="flex flex-wrap gap-1 mt-1">
+                        <button type="button" onclick="appendTagModal('Talaqqi dan Simak Bacaan')" class="px-2 py-0.5 rounded-lg text-[10px] font-semibold bg-primary-50 text-primary-700 hover:bg-primary-100">+ Talaqqi</button>
+                        <button type="button" onclick="appendTagModal('Setoran Hafalan Mandiri')" class="px-2 py-0.5 rounded-lg text-[10px] font-semibold bg-primary-50 text-primary-700 hover:bg-primary-100">+ Setoran</button>
+                        <button type="button" onclick="appendTagModal('Latihan Soal & Diskusi')" class="px-2 py-0.5 rounded-lg text-[10px] font-semibold bg-primary-50 text-primary-700 hover:bg-primary-100">+ Latihan Soal</button>
+                        <button type="button" onclick="appendTagModal('Kuis Evaluasi Formatif')" class="px-2 py-0.5 rounded-lg text-[10px] font-semibold bg-purple-50 text-purple-700 hover:bg-purple-100">+ Kuis Formatif</button>
+                    </div>
+                </div>
+
+                <!-- Presensi Siswa Interaktif -->
+                <div class="space-y-1.5 pt-0.5">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-1.5">
+                            <label class="text-[11px] font-bold text-slate-700">Presensi Siswa</label>
+                            <span id="presensi_counter_badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                                Memuat siswa...
+                            </span>
+                        </div>
+                        <button type="button" 
+                                onclick="setAllStudentsPresent()" 
+                                class="px-2.5 py-1 text-[10px] font-bold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-xl transition-all border border-emerald-200 flex items-center gap-1 press-bounce">
+                            <i data-lucide="check-check" class="w-3 h-3 text-emerald-600"></i>
+                            <span>Hadir Semua</span>
+                        </button>
+                    </div>
+
+                    <!-- Daftar Checkbox Siswa -->
+                    <div id="presensi-students-container" class="max-h-40 overflow-y-auto divide-y divide-slate-100 border border-slate-200/80 rounded-2xl bg-white shadow-2xs p-1">
+                        <div id="presensi-loading" class="py-6 text-center text-slate-400 text-xs">
+                            <div class="w-5 h-5 border-2 border-primary-600 border-t-transparent rounded-full animate-spin mx-auto mb-1.5"></div>
+                            Memuat daftar nama murid...
+                        </div>
+                        <div id="presensi-students-list" class="space-y-0.5 hidden"></div>
+                    </div>
+                    <p class="text-[10px] text-slate-400 italic">Hilangkan centang pada nama murid yang tidak hadir (sakit/izin/alfa).</p>
+                </div>
+
+                <!-- Catatan / Evaluasi (Opsional) -->
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-700 mb-1">Catatan / Evaluasi (Opsional)</label>
+                    <input type="text" name="catatan_kelas" id="input_catatan" placeholder="Catatan siswa berprestasi / kejadian khusus..." class="w-full px-3.5 py-2 text-xs bg-slate-50 rounded-2xl border border-slate-200 text-slate-800 placeholder:text-slate-400 focus:bg-white focus:border-primary-500 outline-none transition-all">
+                </div>
             </div>
 
-            <!-- Catatan / Evaluasi (Opsional) -->
-            <div>
-                <label class="block text-[11px] font-bold text-slate-700 mb-1">Catatan / Evaluasi (Opsional)</label>
-                <input type="text" name="catatan_kelas" id="input_catatan" placeholder="Catatan siswa berprestasi / kejadian khusus..." class="w-full px-3.5 py-2 text-xs bg-slate-50 rounded-2xl border border-slate-200 text-slate-800 placeholder:text-slate-400 focus:bg-white focus:border-primary-500 outline-none transition-all">
+            <!-- 3. PINNED STICKY FOOTER (shrink-0) -->
+            <div class="p-4 sm:px-5 bg-white border-t border-slate-200/80 shrink-0 safe-bottom shadow-[0_-4px_16px_rgba(0,0,0,0.06)] flex items-center gap-2.5">
+                <button type="submit" 
+                        id="btn-save-journal" 
+                        class="flex-1 py-3.5 px-4 bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white font-bold text-xs sm:text-sm rounded-2xl shadow-lg shadow-primary-600/30 flex items-center justify-center gap-2 press-bounce transition-all cursor-pointer">
+                    <i data-lucide="check" class="w-4 h-4"></i>
+                    <span>Simpan Jurnal Mengajar</span>
+                </button>
+                <button type="button" 
+                        onclick="closeJournalModal()" 
+                        class="px-5 py-3.5 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 font-bold text-xs rounded-2xl press-bounce transition-all shrink-0 cursor-pointer">
+                    Batal
+                </button>
             </div>
+
         </form>
-
-        <!-- Pinned Sticky Footer: Simpan Selalu Terlihat -->
-        <div class="p-4 sm:px-5 bg-white border-t border-slate-200/80 shrink-0 safe-bottom shadow-[0_-4px_16px_rgba(0,0,0,0.06)] flex items-center gap-2.5">
-            <button type="submit" 
-                    form="form-isi-jurnal" 
-                    id="btn-save-journal" 
-                    class="flex-1 py-3 px-4 bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white font-bold text-xs sm:text-sm rounded-2xl shadow-lg shadow-primary-600/25 flex items-center justify-center gap-2 press-bounce transition-all">
-                <i data-lucide="check" class="w-4 h-4"></i>
-                <span>Simpan Jurnal Mengajar</span>
-            </button>
-            <button type="button" 
-                    onclick="closeJournalModal()" 
-                    class="px-5 py-3 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 font-bold text-xs rounded-2xl press-bounce transition-all shrink-0">
-                Batal
-            </button>
-        </div>
     </div>
 </div>
 
@@ -651,28 +661,49 @@
         }
     }
 
-    function showModalSheet() {
+    // Pastikan modal terpasang langsung di document.body (bebas dari transform & scroll main view)
+    function ensureModalMounted() {
         const modal = document.getElementById('journal-input-modal');
-        const sheet = document.getElementById('journal-input-sheet');
-        modal.classList.remove('opacity-0', 'pointer-events-none');
-        sheet.classList.remove('translate-y-full');
+        if (modal && modal.parentElement !== document.body) {
+            document.body.appendChild(modal);
+        }
+    }
+
+    function showModalSheet() {
+        ensureModalMounted();
+        const modal = document.getElementById('journal-input-modal');
+        const sheet = document.getElementById('form-isi-jurnal');
+        if (modal && sheet) {
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            sheet.classList.remove('translate-y-full');
+        }
         document.body.classList.add('overflow-hidden');
         if (window.lucide) lucide.createIcons();
     }
 
     function closeJournalModal() {
         const modal = document.getElementById('journal-input-modal');
-        const sheet = document.getElementById('journal-input-sheet');
-        modal.classList.add('opacity-0', 'pointer-events-none');
-        sheet.classList.add('translate-y-full');
+        const sheet = document.getElementById('form-isi-jurnal');
+        if (modal && sheet) {
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            sheet.classList.add('translate-y-full');
+        }
         document.body.classList.remove('overflow-hidden');
     }
 
-    function onJournalBackdropClick(e) {
-        if (e.target && e.target.id === 'journal-input-modal') {
-            closeJournalModal();
-        }
+    // Auto Keyboard Avoidance untuk virtual keyboard mobile
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', () => {
+            const wrapper = document.getElementById('journal-input-wrapper');
+            if (!wrapper) return;
+            const offset = Math.max(0, window.innerHeight - window.visualViewport.height - (window.visualViewport.offsetTop || 0));
+            wrapper.style.bottom = offset > 40 ? `${offset}px` : '0px';
+        });
     }
+
+    // Inisialisasi mount ke body sesegera mungkin
+    ensureModalMounted();
+    document.addEventListener('DOMContentLoaded', ensureModalMounted);
 
     function appendTagModal(text) {
         const el = document.getElementById('input_kegiatan');

@@ -160,10 +160,8 @@
 
 /* ── 5. Instant SPA View Transitions (GPU Accelerated 60fps) ── */
 #mobile-main-view {
-    will-change: transform, opacity;
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
-    transform: translateZ(0);
 }
 
 .spa-page-enter {
