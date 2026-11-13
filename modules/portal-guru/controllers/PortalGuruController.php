@@ -95,7 +95,7 @@ class PortalGuruController
             'status' => 'Pegawai Aktif',
             'email' => $user['email'] ?? '-',
             'phone' => $user['phone'] ?? '-',
-            'avatar' => $user['avatar'] ?? null,
+            'avatar' => Auth::avatar(),
             'teachingHours' => '24 Jam / Minggu',
             'academicYear' => defined('SYS_TAHUN_AKADEMIK_NAME') ? SYS_TAHUN_AKADEMIK_NAME : '2026/2027 Ganjil'
         ];
@@ -124,7 +124,7 @@ class PortalGuruController
             'status' => $status,
             'email' => $pegawai['email'] ?: ($user['email'] ?? '-'),
             'phone' => $phone,
-            'avatar' => $foto,
+            'avatar' => $foto ? Auth::resolvePhotoUrl($foto) : null,
             'teachingHours' => '24 Jam / Minggu',
             'academicYear' => defined('SYS_TAHUN_AKADEMIK_NAME') ? SYS_TAHUN_AKADEMIK_NAME : '2026/2027 Ganjil'
         ];

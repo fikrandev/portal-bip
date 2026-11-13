@@ -95,14 +95,19 @@
 
             <!-- User Dropdown -->
             <div class="relative" id="user-dropdown-container">
+                <?php $topbarAvatar = Auth::avatar(); ?>
                 <button onclick="toggleUserDropdown()" 
                         id="btn-user-dropdown"
                         class="flex items-center gap-2.5 p-1.5 pr-3 rounded-full hover:bg-primary-50 transition-colors"
                         aria-haspopup="true"
                         aria-expanded="false">
-                    <div class="flex items-center justify-center w-8 h-8 rounded-2xl bg-gradient-to-br from-primary-400 to-primary-600 text-white font-bold text-xs shadow-sm">
-                        <?= Auth::initials() ?>
-                    </div>
+                    <?php if ($topbarAvatar): ?>
+                        <img src="<?= e($topbarAvatar) ?>" alt="<?= e(Auth::name()) ?>" class="w-8 h-8 rounded-full object-cover shadow-xs border border-primary-200 shrink-0">
+                    <?php else: ?>
+                        <div class="flex items-center justify-center w-8 h-8 rounded-2xl bg-gradient-to-br from-primary-400 to-primary-600 text-white font-bold text-xs shadow-sm">
+                            <?= Auth::initials() ?>
+                        </div>
+                    <?php endif; ?>
                     <span class="hidden sm:block text-sm font-medium text-primary-800 max-w-[120px] truncate"><?= e(Auth::name()) ?></span>
                     <svg class="hidden sm:block w-4 h-4 text-primary-400 transition-transform duration-200" id="user-dropdown-arrow" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/>
@@ -114,9 +119,18 @@
                      class="absolute right-0 mt-2 w-56 py-2 bg-white rounded-2xl shadow-xl shadow-primary-900/10 border border-primary-100 hidden opacity-0 transform scale-95 transition-all duration-200 origin-top-right"
                      role="menu"
                      aria-label="Menu pengguna">
-                    <div class="px-4 py-3 border-b border-primary-50">
-                        <p class="text-sm font-semibold text-primary-900"><?= e(Auth::name()) ?></p>
-                        <p class="text-xs text-primary-500 mt-0.5"><?= e(Auth::user()['email'] ?? '') ?></p>
+                    <div class="px-4 py-3 border-b border-primary-50 flex items-center gap-3">
+                        <?php if ($topbarAvatar): ?>
+                            <img src="<?= e($topbarAvatar) ?>" alt="<?= e(Auth::name()) ?>" class="w-9 h-9 rounded-xl object-cover shadow-xs border border-primary-100 shrink-0">
+                        <?php else: ?>
+                            <div class="w-9 h-9 rounded-xl bg-primary-100 text-primary-700 font-bold flex items-center justify-center text-xs shrink-0">
+                                <?= Auth::initials() ?>
+                            </div>
+                        <?php endif; ?>
+                        <div class="min-w-0 flex-1">
+                            <p class="text-sm font-semibold text-primary-900 truncate"><?= e(Auth::name()) ?></p>
+                            <p class="text-xs text-primary-500 mt-0.5 truncate"><?= e(Auth::user()['email'] ?? '') ?></p>
+                        </div>
                     </div>
                     <div class="py-1">
                         <a href="<?= url('mobile') ?>" 

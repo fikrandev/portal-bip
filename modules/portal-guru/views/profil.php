@@ -23,7 +23,22 @@
     <!-- 1. Teacher Profile Card -->
     <div class="bg-white rounded-3xl p-5 shadow-sm border border-slate-100 text-center relative overflow-hidden space-y-3">
         <div class="relative w-20 h-20 mx-auto">
-            <img src="<?= !empty($profile['avatar']) ? url($profile['avatar']) : asset('images/mobile/teacher_rina.jpg') ?>" alt="<?= e($profile['name']) ?>" loading="lazy" class="w-20 h-20 rounded-full object-cover border-4 border-white shadow-md mx-auto">
+            <?php 
+                $profileAvatar = !empty($profile['avatar']) ? $profile['avatar'] : Auth::avatar(); 
+                $profileInitials = '';
+                if (!empty($profile['name'])) {
+                    $pParts = preg_split('/\s+/', trim($profile['name']));
+                    $profileInitials = strtoupper(substr($pParts[0] ?? '', 0, 1) . substr($pParts[1] ?? '', 0, 1));
+                }
+                if (empty($profileInitials)) $profileInitials = 'G';
+            ?>
+            <?php if (!empty($profileAvatar)): ?>
+                <img src="<?= e($profileAvatar) ?>" alt="<?= e($profile['name']) ?>" loading="lazy" class="w-20 h-20 rounded-full object-cover border-4 border-white shadow-md mx-auto">
+            <?php else: ?>
+                <div class="w-20 h-20 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 text-white font-black text-2xl flex items-center justify-center border-4 border-white shadow-md mx-auto tracking-wider">
+                    <?= e($profileInitials) ?>
+                </div>
+            <?php endif; ?>
             <span class="absolute bottom-1 right-1 w-5 h-5 bg-primary-500 border-2 border-white rounded-full flex items-center justify-center text-white text-[10px]">✓</span>
         </div>
 

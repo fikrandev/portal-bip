@@ -222,25 +222,26 @@
 <!-- ======================================================== -->
 <!-- MODAL BOTTOM SHEET: FORM ISI / EDIT JURNAL              -->
 <!-- ======================================================== -->
-<div id="journal-input-modal" class="fixed inset-0 z-50 bg-slate-950/40 backdrop-blur-xs flex flex-col justify-end opacity-0 pointer-events-none transition-all duration-300">
-    <div id="journal-input-sheet" class="bg-white rounded-t-[2.5rem] p-5 sm:p-6 max-h-[90vh] overflow-y-auto space-y-4 shadow-2xl transform translate-y-full transition-transform duration-300 max-w-lg mx-auto w-full border-t border-slate-100">
+<div id="journal-input-modal" onclick="onJournalBackdropClick(event)" class="fixed inset-0 z-[100] bg-slate-950/60 backdrop-blur-xs flex flex-col justify-end items-center opacity-0 pointer-events-none transition-opacity duration-300 overflow-hidden">
+    <div id="journal-input-sheet" onclick="event.stopPropagation()" class="bg-white rounded-t-[32px] shadow-2xl transform translate-y-full transition-transform duration-300 ease-out w-full max-w-md mx-auto flex flex-col max-h-[92vh] pointer-events-auto border-t border-slate-200/80 overflow-hidden">
         
-        <!-- Sheet Handle -->
-        <div class="w-10 h-1 bg-slate-200 rounded-full mx-auto"></div>
+        <!-- Sheet Header (Fixed) -->
+        <div class="px-5 pt-3.5 pb-3 border-b border-slate-100 shrink-0 bg-white">
+            <div class="w-10 h-1.5 bg-slate-200 rounded-full mx-auto mb-3 cursor-grab"></div>
 
-        <!-- Sheet Header -->
-        <div class="flex items-center justify-between">
-            <div>
-                <h3 id="form-modal-title" class="font-black text-slate-900 text-base leading-tight">Isi Jurnal Mengajar</h3>
-                <p id="form-modal-subtitle" class="text-xs text-primary-600 font-semibold mt-0.5">Kelas & Jadwal Terisi Otomatis</p>
+            <div class="flex items-center justify-between">
+                <div class="min-w-0 pr-2">
+                    <h3 id="form-modal-title" class="font-black text-slate-900 text-base leading-tight truncate">Isi Jurnal Mengajar</h3>
+                    <p id="form-modal-subtitle" class="text-xs text-primary-600 font-semibold mt-0.5 truncate">Kelas & Jadwal Terisi Otomatis</p>
+                </div>
+                <button type="button" onclick="closeJournalModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center text-xs font-bold transition-colors shrink-0">
+                    ✕
+                </button>
             </div>
-            <button type="button" onclick="closeJournalModal()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:text-slate-800 flex items-center justify-center text-xs">
-                ✕
-            </button>
         </div>
 
-        <!-- Form Isi Jurnal -->
-        <form id="form-isi-jurnal" onsubmit="handleJournalSave(event)" class="space-y-3.5">
+        <!-- Scrollable Form Body -->
+        <form id="form-isi-jurnal" onsubmit="handleJournalSave(event)" class="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3.5 no-scrollbar">
             <?= CSRF::field() ?>
             <input type="hidden" name="jadwal_id" id="input_jadwal_id" value="">
             <input type="hidden" name="jurnal_id" id="input_jurnal_id" value="">
@@ -337,18 +338,23 @@
                 <label class="block text-[11px] font-bold text-slate-700 mb-1">Catatan / Evaluasi (Opsional)</label>
                 <input type="text" name="catatan_kelas" id="input_catatan" placeholder="Catatan siswa berprestasi / kejadian khusus..." class="w-full px-3.5 py-2 text-xs bg-slate-50 rounded-2xl border border-slate-200 text-slate-800 placeholder:text-slate-400 focus:bg-white focus:border-primary-500 outline-none transition-all">
             </div>
-
-            <!-- Action Buttons -->
-            <div class="pt-2 flex items-center gap-2.5">
-                <button type="submit" id="btn-save-journal" class="flex-1 py-3 bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs rounded-2xl shadow-lg shadow-primary-600/25 flex items-center justify-center gap-2 press-bounce transition-all">
-                    <i data-lucide="check" class="w-4 h-4"></i>
-                    <span>Simpan Jurnal Mengajar</span>
-                </button>
-                <button type="button" onclick="closeJournalModal()" class="px-5 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-2xl press-bounce transition-all">
-                    Batal
-                </button>
-            </div>
         </form>
+
+        <!-- Pinned Sticky Footer: Simpan Selalu Terlihat -->
+        <div class="p-4 sm:px-5 bg-white border-t border-slate-200/80 shrink-0 safe-bottom shadow-[0_-4px_16px_rgba(0,0,0,0.06)] flex items-center gap-2.5">
+            <button type="submit" 
+                    form="form-isi-jurnal" 
+                    id="btn-save-journal" 
+                    class="flex-1 py-3 px-4 bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white font-bold text-xs sm:text-sm rounded-2xl shadow-lg shadow-primary-600/25 flex items-center justify-center gap-2 press-bounce transition-all">
+                <i data-lucide="check" class="w-4 h-4"></i>
+                <span>Simpan Jurnal Mengajar</span>
+            </button>
+            <button type="button" 
+                    onclick="closeJournalModal()" 
+                    class="px-5 py-3 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 font-bold text-xs rounded-2xl press-bounce transition-all shrink-0">
+                Batal
+            </button>
+        </div>
     </div>
 </div>
 
@@ -650,6 +656,7 @@
         const sheet = document.getElementById('journal-input-sheet');
         modal.classList.remove('opacity-0', 'pointer-events-none');
         sheet.classList.remove('translate-y-full');
+        document.body.classList.add('overflow-hidden');
         if (window.lucide) lucide.createIcons();
     }
 
@@ -658,6 +665,13 @@
         const sheet = document.getElementById('journal-input-sheet');
         modal.classList.add('opacity-0', 'pointer-events-none');
         sheet.classList.add('translate-y-full');
+        document.body.classList.remove('overflow-hidden');
+    }
+
+    function onJournalBackdropClick(e) {
+        if (e.target && e.target.id === 'journal-input-modal') {
+            closeJournalModal();
+        }
     }
 
     function appendTagModal(text) {

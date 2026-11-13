@@ -10,12 +10,24 @@
     </div>
     
     <div class="relative z-10">
-        <h2 class="text-xl sm:text-2xl font-bold text-white mb-1">
-            Selamat Datang, <?= e(Auth::name()) ?>! 👋
-        </h2>
-        <p class="text-primary-100 text-sm sm:text-base">
-            Kelola semua modul dan fitur dari satu tempat.
-        </p>
+        <div class="flex items-center gap-4 mb-2">
+            <?php $dashAvatar = Auth::avatar(); ?>
+            <?php if ($dashAvatar): ?>
+                <img src="<?= e($dashAvatar) ?>" alt="<?= e(Auth::name()) ?>" class="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl object-cover border-2 border-white/70 shadow-md shrink-0">
+            <?php else: ?>
+                <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white/20 backdrop-blur-sm border-2 border-white/40 text-white font-black text-xl flex items-center justify-center shadow-md shrink-0">
+                    <?= Auth::initials() ?>
+                </div>
+            <?php endif; ?>
+            <div>
+                <h2 class="text-xl sm:text-2xl font-bold text-white mb-0.5">
+                    Selamat Datang, <?= e(Auth::name()) ?>! 👋
+                </h2>
+                <p class="text-primary-100 text-xs sm:text-sm">
+                    Kelola semua modul dan fitur portal dari satu tempat.
+                </p>
+            </div>
+        </div>
         
         <!-- Quick Stats -->
         <div class="flex flex-wrap gap-4 sm:gap-6 mt-6">

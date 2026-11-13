@@ -33,11 +33,26 @@ if ($hourNow < 11) {
     
     <div class="flex items-center gap-2 shrink-0">
         <!-- Teacher Avatar Photo -->
-        <a href="<?= url('mobile/profil') ?>" class="relative block rounded-full p-0.5 bg-gradient-to-tr from-primary-600 via-primary-400 to-sky-300 shadow-md press-bounce">
-            <img src="<?= !empty($teacherAvatar) ? url($teacherAvatar) : asset('images/mobile/teacher_rina.jpg') ?>" 
-                 alt="<?= e($teacherName ?? 'Guru') ?>" 
-                 decoding="async"
-                 class="w-12 h-12 rounded-full object-cover border-2 border-white">
+        <?php 
+            $effectiveAvatar = !empty($teacherAvatar) ? $teacherAvatar : Auth::avatar(); 
+            $initials = '';
+            if (!empty($teacherName)) {
+                $parts = preg_split('/\s+/', trim($teacherName));
+                $initials = strtoupper(substr($parts[0] ?? '', 0, 1) . substr($parts[1] ?? '', 0, 1));
+            }
+            if (empty($initials)) $initials = 'G';
+        ?>
+        <a href="<?= url('mobile/profil') ?>" class="relative block rounded-full p-0.5 bg-gradient-to-tr from-primary-600 via-primary-400 to-sky-300 shadow-md press-bounce shrink-0">
+            <?php if (!empty($effectiveAvatar)): ?>
+                <img src="<?= e($effectiveAvatar) ?>" 
+                     alt="<?= e($teacherName ?? 'Guru') ?>" 
+                     decoding="async"
+                     class="w-12 h-12 rounded-full object-cover border-2 border-white">
+            <?php else: ?>
+                <div class="w-12 h-12 rounded-full bg-primary-600 text-white font-black text-sm flex items-center justify-center border-2 border-white tracking-wider">
+                    <?= e($initials) ?>
+                </div>
+            <?php endif; ?>
             <span class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full"></span>
         </a>
 

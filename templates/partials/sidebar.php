@@ -57,9 +57,14 @@ if (defined('SYS_APP_FAVICON') && !empty(SYS_APP_FAVICON)) {
     <!-- User Card -->
     <div class="px-4 pt-4 pb-2 shrink-0">
         <div class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-primary-950/40 border border-primary-800/60">
-            <div class="flex items-center justify-center w-9 h-9 rounded-xl bg-primary-600/40 text-white font-bold text-xs shrink-0">
-                <?= Auth::initials() ?>
-            </div>
+            <?php $sidebarAvatar = Auth::avatar(); ?>
+            <?php if ($sidebarAvatar): ?>
+                <img src="<?= e($sidebarAvatar) ?>" alt="<?= e(Auth::name()) ?>" class="w-9 h-9 rounded-xl object-cover shrink-0 border border-primary-700/60 shadow-xs">
+            <?php else: ?>
+                <div class="flex items-center justify-center w-9 h-9 rounded-xl bg-primary-600/40 text-white font-bold text-xs shrink-0">
+                    <?= Auth::initials() ?>
+                </div>
+            <?php endif; ?>
             <div class="min-w-0 flex-1">
                 <p class="text-sm font-semibold text-white truncate"><?= e(Auth::name()) ?></p>
                 <p class="text-xs text-primary-300 truncate"><?= e(implode(', ', Auth::roles())) ?></p>

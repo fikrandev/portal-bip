@@ -236,6 +236,62 @@ class Auth
     }
 
     /**
+     * Get user avatar URL, falling back to linked pegawai foto or null
+     */
+    public static function avatar(): ?string
+    {
+        $user = self::user();
+        if (!$user) {
+            return null;
+        }
+
+        // 1. Cek avatar di tabel users
+        if (!empty($user['avatar'])) {
+            return self::resolvePhotoUrl($user['avatar']);
+        }
+
+        // 2. Cek foto di tabel pegawai yang terhubung (by email, nama, phone, atau username)
+        $db = Database::getInstance();
+        $pegawai = null;
+        if (!empty($user['email'])) {
+            $pegawai = $db->find("SELECT foto FROM pegawai WHERE email = ? AND foto IS NOT NULL AND foto != '' LIMIT 1", [$user['email']]);
+        }
+        if (!$pegawai && !empty($user['full_name'])) {
+            $pegawai = $db->find("SELECT foto FROM pegawai WHERE (nama = ? OR nama LIKE ?) AND foto IS NOT NULL AND foto != '' LIMIT 1", [$user['full_name'], '%' . $user['full_name'] . '%']);
+        }
+        if (!$pegawai && !empty($user['phone'])) {
+            $pegawai = $db->find("SELECT foto FROM pegawai WHERE no_wa = ? AND foto IS NOT NULL AND foto != '' LIMIT 1", [$user['phone']]);
+        }
+        if (!$pegawai && !empty($user['username'])) {
+            $cleanName = str_replace(['.', '_', '-'], ' ', $user['username']);
+            $pegawai = $db->find("SELECT foto FROM pegawai WHERE nama LIKE ? AND foto IS NOT NULL AND foto != '' LIMIT 1", ['%' . $cleanName . '%']);
+        }
+
+        if ($pegawai && !empty($pegawai['foto'])) {
+            return self::resolvePhotoUrl($pegawai['foto']);
+        }
+
+        return null;
+    }
+
+    /**
+     * Helper resolve URL foto relatif ke web path yang valid
+     */
+    public static function resolvePhotoUrl(?string $path): ?string
+    {
+        if (empty($path)) return null;
+        $clean = trim($path);
+        if (str_starts_with($clean, 'http://') || str_starts_with($clean, 'https://')) {
+            return $clean;
+        }
+        $trimmed = ltrim($clean, '/');
+        if (str_starts_with($trimmed, 'public/')) {
+            return url($trimmed);
+        }
+        return url('public/' . $trimmed);
+    }
+
+    /**
      * Ensure login_attempts table exists in database
      */
     private static function ensureAttemptsTable(): void
