@@ -222,9 +222,9 @@
 <!-- ======================================================== -->
 <!-- MODAL BOTTOM SHEET: FORM ISI / EDIT JURNAL              -->
 <!-- ======================================================== -->
-<div id="journal-input-modal" class="fixed inset-0 z-[9999] pointer-events-none opacity-0 transition-opacity duration-300">
-    <!-- Backdrop Scrim -->
-    <div id="journal-input-scrim" onclick="closeJournalModal()" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs pointer-events-auto"></div>
+<div id="journal-input-modal" class="hidden fixed inset-0 z-[9999] overflow-hidden select-none">
+    <!-- Backdrop Scrim (Interaktif hanya saat modal aktif) -->
+    <div id="journal-input-scrim" onclick="closeJournalModal()" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity duration-300 opacity-0 pointer-events-none"></div>
 
     <!-- Sheet Wrapper: Fixed firmly at bottom: 0, centered, max-w-md -->
     <div id="journal-input-wrapper" class="fixed inset-x-0 bottom-0 max-w-md mx-auto w-full pointer-events-none z-10 transition-all duration-300">
@@ -664,7 +664,15 @@
     // Pastikan modal terpasang langsung di document.body (bebas dari transform & scroll main view)
     function ensureModalMounted() {
         const modal = document.getElementById('journal-input-modal');
-        if (modal && modal.parentElement !== document.body) {
+        if (!modal) return;
+        // Bersihkan duplikat jika ada modal dari reload SPA sebelumnya
+        const allModals = document.querySelectorAll('#journal-input-modal');
+        if (allModals.length > 1) {
+            for (let i = 0; i < allModals.length - 1; i++) {
+                allModals[i].remove();
+            }
+        }
+        if (modal.parentElement !== document.body) {
             document.body.appendChild(modal);
         }
     }
@@ -672,23 +680,43 @@
     function showModalSheet() {
         ensureModalMounted();
         const modal = document.getElementById('journal-input-modal');
+        const scrim = document.getElementById('journal-input-scrim');
         const sheet = document.getElementById('form-isi-jurnal');
-        if (modal && sheet) {
-            modal.classList.remove('opacity-0', 'pointer-events-none');
-            sheet.classList.remove('translate-y-full');
+        if (!modal || !sheet) return;
+
+        modal.classList.remove('hidden');
+        // Force reflow untuk memicu transisi halus
+        void modal.offsetWidth;
+
+        if (scrim) {
+            scrim.classList.remove('opacity-0', 'pointer-events-none');
+            scrim.classList.add('opacity-100', 'pointer-events-auto');
         }
+        sheet.classList.remove('translate-y-full');
         document.body.classList.add('overflow-hidden');
         if (window.lucide) lucide.createIcons();
     }
 
     function closeJournalModal() {
         const modal = document.getElementById('journal-input-modal');
+        const scrim = document.getElementById('journal-input-scrim');
         const sheet = document.getElementById('form-isi-jurnal');
-        if (modal && sheet) {
-            modal.classList.add('opacity-0', 'pointer-events-none');
+
+        if (scrim) {
+            scrim.classList.remove('opacity-100', 'pointer-events-auto');
+            scrim.classList.add('opacity-0', 'pointer-events-none');
+        }
+        if (sheet) {
             sheet.classList.add('translate-y-full');
         }
         document.body.classList.remove('overflow-hidden');
+        document.body.style.overflow = '';
+
+        setTimeout(() => {
+            if (modal && sheet && sheet.classList.contains('translate-y-full')) {
+                modal.classList.add('hidden');
+            }
+        }, 300);
     }
 
     // Auto Keyboard Avoidance untuk virtual keyboard mobile
@@ -737,12 +765,15 @@
             if (res && res.success) {
                 closeJournalModal();
                 AndroidUI.toast(res.message || 'Jurnal pembelajaran berhasil disimpan!', 'success');
+
+                // Bersihkan query param kelas/jadwal agar tidak auto-open modal lagi setelah reload
+                const cleanUrl = '<?= url("mobile/jurnal") ?>';
+                if (window.history && window.history.replaceState) {
+                    window.history.replaceState({}, document.title, cleanUrl);
+                }
+
                 setTimeout(() => {
-                    if (window.MobileRouter) {
-                        window.MobileRouter.reload();
-                    } else {
-                        window.location.reload();
-                    }
+                    window.location.href = cleanUrl;
                 }, 400);
             } else {
                 AndroidUI.toast(res.message || 'Gagal menyimpan jurnal.', 'error');
@@ -753,6 +784,8 @@
             btn.innerHTML = `<i data-lucide="check" class="w-4 h-4"></i><span>Simpan Jurnal Mengajar</span>`;
             if (window.lucide) lucide.createIcons();
             AndroidUI.toast('Terjadi kesalahan koneksi server.', 'error');
+            document.body.classList.remove('overflow-hidden');
+            document.body.style.overflow = '';
         });
     }
 
