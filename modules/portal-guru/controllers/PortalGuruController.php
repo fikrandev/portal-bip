@@ -617,6 +617,38 @@ class PortalGuruController
             exit;
         }
 
+        $indonesianDays = [
+            'Sunday' => 'Minggu',
+            'Monday' => 'Senin',
+            'Tuesday' => 'Selasa',
+            'Wednesday' => 'Rabu',
+            'Thursday' => 'Kamis',
+            'Friday' => 'Jumat',
+            'Saturday' => 'Sabtu'
+        ];
+        $todayName = $indonesianDays[date('l')] ?? 'Senin';
+        $todayDate = date('Y-m-d');
+
+        // Aturan Keras: Jurnal hanya dapat diisi pada hari KBM berlangsung (Hari Ini). Hari esok / lampau tidak bisa diisi.
+        if ($tanggal !== $todayDate) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Jurnal KBM hanya dapat diisi pada hari jadwal berlangsung (Hari Ini: ' . $todayName . ', ' . date('d/m/Y') . '). Pengisian untuk hari esok atau hari lampau tidak diizinkan.'
+            ]);
+            exit;
+        }
+
+        if ($jadwalId) {
+            $checkJadwal = $db->find("SELECT hari, nama_kelas, mata_pelajaran FROM jadwal_pelajaran WHERE id = ? LIMIT 1", [$jadwalId]);
+            if ($checkJadwal && strtolower($checkJadwal['hari']) !== strtolower($todayName)) {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Jadwal KBM ' . $checkJadwal['nama_kelas'] . ' adalah hari ' . $checkJadwal['hari'] . '. Jurnal hanya dapat diisi pada hari jadwal tersebut berlangsung (Hari Ini: ' . $todayName . ').'
+                ]);
+                exit;
+            }
+        }
+
         $guruId = $teacher['pegawai_id'] ?: (int)Auth::id();
         $namaGuru = $teacher['name'];
 

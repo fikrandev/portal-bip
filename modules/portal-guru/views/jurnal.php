@@ -120,23 +120,63 @@
                     </div>
                     <?php endif; ?>
 
-                    <!-- Action Button -->
-                    <div class="pt-1 border-t border-slate-50 flex items-center justify-between gap-2">
-                        <span class="text-[11px] text-slate-400 font-medium">Hari <?= e($sch['hari']) ?></span>
+                    <!-- Action Buttons: Absen Siswa & Isi Jurnal -->
+                    <div class="pt-2 border-t border-slate-100 flex items-center justify-between gap-2 flex-wrap">
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-[11px] text-slate-400 font-medium">Hari <?= e($sch['hari']) ?></span>
+                            <?php if ($isToday): ?>
+                                <span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                    Hari Ini
+                                </span>
+                            <?php endif; ?>
+                        </div>
 
-                        <?php if ($sch['has_jurnal']): ?>
-                        <button type="button" 
-                                onclick="openEditJournalModal(<?= $sch['jurnal_id'] ?>, '<?= e($sch['class']) ?>', '<?= e($sch['subject']) ?>', '<?= e($sch['jam_ke']) ?>', <?= $sch['jumlah_jp'] ?>)"
-                                class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-2xl text-xs press-bounce flex items-center gap-1.5 transition-all">
-                            <i data-lucide="edit-3" class="w-3.5 h-3.5 text-primary-600"></i> Edit Jurnal
-                        </button>
-                        <?php else: ?>
-                        <button type="button" 
-                                onclick="openFillJournalModal(<?= $sch['id'] ?>, '<?= e($sch['class']) ?>', '<?= e($sch['subject']) ?>', '<?= e($sch['jam_ke']) ?>', <?= $sch['jumlah_jp'] ?>, '<?= e($sch['time']) ?>')"
-                                class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-2xl text-xs press-bounce flex items-center gap-1.5 shadow-sm shadow-primary-500/25 transition-all">
-                            <i data-lucide="plus-circle" class="w-4 h-4"></i> Isi Jurnal
-                        </button>
-                        <?php endif; ?>
+                        <div class="flex items-center gap-1.5">
+                            <!-- Tombol Langsung Absen Siswa -->
+                            <a href="<?= url('mobile/absensi-kelas?kelas=' . urlencode($sch['class']) . '&mapel=' . urlencode($sch['subject'])) ?>" 
+                               class="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 active:bg-emerald-200 text-emerald-700 font-bold rounded-xl text-[11px] press-bounce flex items-center gap-1 border border-emerald-200 transition-all"
+                               title="Absensi Siswa Kelas <?= e($sch['class']) ?>">
+                                <i data-lucide="user-check" class="w-3.5 h-3.5 text-emerald-600"></i>
+                                <span>Absen</span>
+                            </a>
+
+                            <!-- Tombol Isi / Edit Jurnal (Hanya Hari Ini yang Boleh Diisi) -->
+                            <?php if ($isToday): ?>
+                                <?php if ($sch['has_jurnal']): ?>
+                                <button type="button" 
+                                        onclick="openEditJournalModal(<?= $sch['jurnal_id'] ?>, '<?= e($sch['class']) ?>', '<?= e($sch['subject']) ?>', '<?= e($sch['jam_ke']) ?>', <?= $sch['jumlah_jp'] ?>)"
+                                        class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-[11px] press-bounce flex items-center gap-1 transition-all">
+                                    <i data-lucide="edit-3" class="w-3.5 h-3.5 text-primary-600"></i>
+                                    <span>Edit Jurnal</span>
+                                </button>
+                                <?php else: ?>
+                                <button type="button" 
+                                        onclick="openFillJournalModal(<?= $sch['id'] ?>, '<?= e($sch['class']) ?>', '<?= e($sch['subject']) ?>', '<?= e($sch['jam_ke']) ?>', <?= $sch['jumlah_jp'] ?>, '<?= e($sch['time']) ?>')"
+                                        class="px-3.5 py-1.5 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-xl text-[11px] press-bounce flex items-center gap-1 shadow-sm shadow-primary-500/25 transition-all">
+                                    <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
+                                    <span>Isi Jurnal</span>
+                                </button>
+                                <?php endif; ?>
+                            <?php else: ?>
+                                <!-- Jadwal Hari Lain: Terkunci (Hari esok atau hari lain tidak bisa diisi) -->
+                                <?php if ($sch['has_jurnal']): ?>
+                                <button type="button" 
+                                        onclick="showJournalDetailSheet('<?= e($sch['jurnal_kode']) ?>', '<?= e($sch['class']) ?>', '<?= e(addslashes($sch['jurnal_materi'] ?? '')) ?>', '<?= e(addslashes($sch['jurnal_kegiatan'] ?? '')) ?>', '<?= e(addslashes($sch['jurnal_catatan'] ?? '')) ?>', <?= $sch['jumlah_jp'] ?>, '<?= e($sch['hari']) ?>')"
+                                        class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl text-[11px] press-bounce flex items-center gap-1 transition-all">
+                                    <i data-lucide="eye" class="w-3.5 h-3.5 text-slate-500"></i>
+                                    <span>Lihat</span>
+                                </button>
+                                <?php else: ?>
+                                <button type="button" 
+                                        onclick="AndroidUI.toast('Jurnal hanya dapat diisi pada hari jadwal berlangsung (Hari Ini: <?= e($todayName) ?>). Hari <?= e($sch['hari']) ?> belum/tidak dapat diisi.', 'warning', 4000)"
+                                        class="px-2.5 py-1.5 bg-slate-100 text-slate-400 font-medium rounded-xl text-[11px] flex items-center gap-1 border border-slate-200/60 cursor-not-allowed"
+                                        title="Hanya dapat diisi pada hari <?= e($sch['hari']) ?>">
+                                    <i data-lucide="lock" class="w-3 h-3 text-slate-400"></i>
+                                    <span>Hanya <?= e($sch['hari']) ?></span>
+                                </button>
+                                <?php endif; ?>
+                            <?php endif; ?>
+                        </div>
                     </div>
                 </div>
                 <?php endforeach; ?>
@@ -844,32 +884,23 @@
         } else if (editId) {
             openEditJournalModal(parseInt(editId));
         } else if (kelasParam) {
-            const mapelParam = urlParams.get('mapel') || 'SbdP';
-            const jamParam = urlParams.get('jam_ke') || '1';
-            const jpParam = parseInt(urlParams.get('jp') || 2);
-            const kehadiranParam = urlParams.get('kehadiran') || 'Semua Siswa Hadir';
-
-            document.getElementById('input_jadwal_id').value = '';
-            document.getElementById('input_jurnal_id').value = '';
-            document.getElementById('input_kelas').value = kelasParam;
-            document.getElementById('input_mapel').value = mapelParam;
-            document.getElementById('input_jam_ke').value = jamParam;
-            document.getElementById('input_jumlah_jp').value = jpParam;
-            document.getElementById('input_materi').value = '';
-            document.getElementById('input_kegiatan').value = '';
-            document.getElementById('input_catatan').value = '';
-            document.getElementById('input_kehadiran').value = kehadiranParam;
-
-            document.getElementById('badge_mapel').textContent = mapelParam;
-            document.getElementById('badge_kelas').textContent = kelasParam;
-            document.getElementById('badge_jam_ke').textContent = jamParam;
-            document.getElementById('badge_jumlah_jp').textContent = jpParam;
-
-            document.getElementById('form-modal-title').innerText = 'Isi Jurnal Mengajar';
-            document.getElementById('form-modal-subtitle').innerText = `${kelasParam} • ${mapelParam} (Presensi Tersinkron)`;
-
-            loadClassStudents(kelasParam, kehadiranParam);
-            showModalSheet();
+            const todayDay = '<?= e($todayName) ?>';
+            // Cek apakah kelas ini memiliki jadwal KBM HARI INI
+            const todayCard = document.querySelector(`.schedule-item-card[data-day="${todayDay}"][data-kelas="${kelasParam}"]`);
+            if (todayCard) {
+                // Ada jadwal hari ini -> buka modal isi jurnal untuk jadwal hari ini
+                openFillJournalModal(
+                    todayCard.getAttribute('data-id'),
+                    kelasParam,
+                    todayCard.getAttribute('data-mapel') || (urlParams.get('mapel') || 'SbdP'),
+                    todayCard.getAttribute('data-jam') || (urlParams.get('jam_ke') || '1'),
+                    parseInt(todayCard.getAttribute('data-jp') || (urlParams.get('jp') || 2)),
+                    todayCard.getAttribute('data-time') || ''
+                );
+            } else {
+                // Tidak ada jadwal hari ini untuk kelas ini -> tampilkan info dan biarkan guru melihat semua jadwal hari ini
+                AndroidUI.toast(`Kelas ${kelasParam} tidak memiliki jadwal KBM hari ini (${todayDay}). Jurnal hanya dapat diisi pada hari jadwal KBM berlangsung.`, 'warning', 4500);
+            }
         }
     });
 </script>

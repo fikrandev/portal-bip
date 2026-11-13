@@ -227,14 +227,17 @@ if ($hourNow < 11) {
                     <p class="text-[11px] text-slate-600 font-medium truncate"><?= e($sch['class']) ?> &bull; <?= e($sch['room']) ?></p>
                 </div>
                 
-                <div class="shrink-0">
+                <div class="shrink-0 flex items-center gap-1.5">
+                    <a href="<?= url('mobile/absensi-kelas?kelas=' . urlencode($sch['class']) . '&mapel=' . urlencode($sch['subject'])) ?>" class="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold rounded-xl text-[11px] border border-emerald-200 press-bounce flex items-center gap-1" title="Absen Siswa">
+                        <i data-lucide="user-check" class="w-3.5 h-3.5 text-emerald-600"></i> Absen
+                    </a>
                     <?php if ($sch['has_jurnal']): ?>
-                    <a href="<?= url('mobile/jurnal?edit_id=' . $sch['jurnal_id']) ?>" class="px-3 py-1.5 bg-emerald-50 text-emerald-700 font-bold rounded-xl text-[11px] border border-emerald-200 press-bounce flex items-center gap-1">
-                        <i data-lucide="check" class="w-3.5 h-3.5"></i> Selesai
+                    <a href="<?= url('mobile/jurnal?edit_id=' . $sch['jurnal_id']) ?>" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-[11px] border border-slate-200 press-bounce flex items-center gap-1">
+                        <i data-lucide="check" class="w-3.5 h-3.5 text-emerald-600"></i> Selesai
                     </a>
                     <?php else: ?>
                     <a href="<?= url('mobile/jurnal?jadwal_id=' . $sch['id']) ?>" class="px-3 py-1.5 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-xl text-[11px] shadow-sm shadow-primary-500/20 press-bounce flex items-center gap-1">
-                        <i data-lucide="edit-3" class="w-3.5 h-3.5"></i> Isi Jurnal
+                        <i data-lucide="edit-3" class="w-3.5 h-3.5"></i> Jurnal
                     </a>
                     <?php endif; ?>
                 </div>
