@@ -914,7 +914,7 @@ $cetakQuery = http_build_query([
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1">Kelas *</label>
-                    <input type="text" name="kelas" id="form_kelas" required list="datalist-kelas" placeholder="Contoh: Kelas 1 Abu Bakar" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-primary-500 outline-none">
+                    <input type="text" name="kelas" id="form_kelas" required list="datalist-kelas" onchange="onAdminClassChanged(this.value)" placeholder="Contoh: Kelas 1 Abu Bakar" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-primary-500 outline-none">
                     <datalist id="datalist-kelas">
                         <?php foreach ($kelasOptions as $klsOpt): ?>
                             <option value="<?= e($klsOpt) ?>">
@@ -924,6 +924,23 @@ $cetakQuery = http_build_query([
                 <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1">Mata Pelajaran *</label>
                     <input type="text" name="mata_pelajaran" id="form_mapel" required placeholder="Contoh: Matematika / Tahsin" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-primary-500 outline-none">
+                </div>
+            </div>
+
+            <!-- Panel Checklist Presensi Siswa Real-time -->
+            <div class="p-3 bg-slate-50 border border-slate-200 rounded-2xl space-y-2">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-1.5">
+                        <span class="font-bold text-xs text-slate-800">📋 Presensi Kehadiran Siswa Kelas</span>
+                        <span id="badge-admin-student-count" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200 text-slate-600">Pilih kelas dahulu</span>
+                    </div>
+                    <button type="button" id="btn-admin-all-present" onclick="setAdminAllStudentsPresent()" class="hidden text-[10px] font-bold px-2.5 py-1 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-emerald-800 transition-all">
+                        ✓ Semua Hadir
+                    </button>
+                </div>
+
+                <div id="container-admin-students" class="hidden max-h-48 overflow-y-auto space-y-1.5 bg-white rounded-xl p-2.5 border border-slate-200/80">
+                    <!-- Populated dynamically via JS -->
                 </div>
             </div>
 
@@ -1123,7 +1140,10 @@ $cetakQuery = http_build_query([
         const tEl = document.getElementById('form_tanggal');
         if (tEl && tanggal) tEl.value = tanggal;
         const kEl = document.getElementById('form_kelas');
-        if (kEl && kelas) kEl.value = kelas;
+        if (kEl && kelas) {
+            kEl.value = kelas;
+            onAdminClassChanged(kelas);
+        }
         const mEl = document.getElementById('form_mapel');
         if (mEl && mapel) mEl.value = mapel;
         const jkEl = document.getElementById('form_jam_ke');
@@ -1132,5 +1152,178 @@ $cetakQuery = http_build_query([
         if (jpEl && jumlahJp) jpEl.value = jumlahJp;
         const jdEl = document.getElementById('form_jadwal_id');
         if (jdEl) jdEl.value = jadwalId || '';
+    }
+
+    // ── Sinkronisasi Penugasan SK Guru & Presensi Siswa di Modal Admin ───────
+    document.addEventListener('DOMContentLoaded', () => {
+        const guruSelect = document.getElementById('form_guru_id');
+        if (guruSelect) {
+            guruSelect.addEventListener('change', function() {
+                const guruId = this.value;
+                if (!guruId) return;
+
+                fetch('<?= url("kelola-jurnal-guru/api/guru-assignments") ?>/' + guruId)
+                    .then(r => r.json())
+                    .then(res => {
+                        if (res && res.success) {
+                            const dataList = document.getElementById('datalist-kelas');
+                            if (dataList && Array.isArray(res.classes) && res.classes.length > 0) {
+                                dataList.innerHTML = '';
+                                res.classes.forEach(c => {
+                                    const opt = document.createElement('option');
+                                    opt.value = c.name;
+                                    opt.label = `${c.name} (${c.role})`;
+                                    dataList.appendChild(opt);
+                                });
+
+                                // Auto set kelas & mapel jika form masih kosong
+                                const kelasInput = document.getElementById('form_kelas');
+                                const mapelInput = document.getElementById('form_mapel');
+                                if (kelasInput && !kelasInput.value) {
+                                    kelasInput.value = res.classes[0].name;
+                                    onAdminClassChanged(res.classes[0].name);
+                                }
+                                if (mapelInput && !mapelInput.value && Array.isArray(res.subjects) && res.subjects.length > 0) {
+                                    mapelInput.value = res.subjects[0];
+                                }
+                            }
+                        }
+                    })
+                    .catch(() => {});
+            });
+        }
+    });
+
+    let adminStudentsList = [];
+
+    function onAdminClassChanged(className) {
+        className = (className || '').trim();
+        const container = document.getElementById('container-admin-students');
+        const badge = document.getElementById('badge-admin-student-count');
+        const btnAll = document.getElementById('btn-admin-all-present');
+
+        if (!className) {
+            if (container) container.classList.add('hidden');
+            if (badge) {
+                badge.innerText = 'Pilih kelas dahulu';
+                badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200 text-slate-600';
+            }
+            if (btnAll) btnAll.classList.add('hidden');
+            return;
+        }
+
+        if (badge) {
+            badge.innerText = 'Memuat murid...';
+            badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 animate-pulse';
+        }
+
+        fetch('<?= url("kelola-jurnal-guru/api/siswa-kelas") ?>?kelas=' + encodeURIComponent(className))
+            .then(r => r.json())
+            .then(res => {
+                if (res && res.success && Array.isArray(res.data) && res.data.length > 0) {
+                    adminStudentsList = res.data;
+                    if (badge) {
+                        badge.innerText = `${adminStudentsList.length} Siswa Terdaftar`;
+                        badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800';
+                    }
+                    if (btnAll) btnAll.classList.remove('hidden');
+
+                    let html = '';
+                    adminStudentsList.forEach((s, idx) => {
+                        html += `
+                            <div class="flex items-center justify-between p-2 rounded-xl bg-slate-50 hover:bg-slate-100/70 border border-slate-100 transition-all text-xs admin-student-row" data-student-id="${s.id}">
+                                <input type="hidden" name="siswa_status[${s.id}]" id="adm_stat_val_${s.id}" value="H">
+                                <div class="min-w-0 pr-2">
+                                    <span class="font-bold text-slate-800 truncate block">${idx + 1}. ${s.nama}</span>
+                                    <span class="text-[10px] text-slate-400 font-mono">NISN: ${s.nisn || '-'} &bull; ${s.jenis_kelamin || 'L'}</span>
+                                </div>
+                                <div class="flex items-center gap-1 shrink-0">
+                                    <button type="button" onclick="setAdminStudentStatus(${s.id}, 'H', this)" class="adm-btn-stat px-2 py-1 rounded-lg text-[10px] font-bold bg-emerald-500 text-white shadow-xs transition-all">H</button>
+                                    <button type="button" onclick="setAdminStudentStatus(${s.id}, 'S', this)" class="adm-btn-stat px-2 py-1 rounded-lg text-[10px] font-bold bg-slate-200 text-slate-600 transition-all">S</button>
+                                    <button type="button" onclick="setAdminStudentStatus(${s.id}, 'I', this)" class="adm-btn-stat px-2 py-1 rounded-lg text-[10px] font-bold bg-slate-200 text-slate-600 transition-all">I</button>
+                                    <button type="button" onclick="setAdminStudentStatus(${s.id}, 'A', this)" class="adm-btn-stat px-2 py-1 rounded-lg text-[10px] font-bold bg-slate-200 text-slate-600 transition-all">A</button>
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    if (container) {
+                        container.innerHTML = html;
+                        container.classList.remove('hidden');
+                    }
+                    updateAdminAttendanceSummary();
+                } else {
+                    if (badge) {
+                        badge.innerText = '0 Murid';
+                        badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500';
+                    }
+                    if (btnAll) btnAll.classList.add('hidden');
+                    if (container) {
+                        container.innerHTML = '<p class="text-xs text-slate-400 text-center py-2">Tidak ada data murid di kelas ini.</p>';
+                        container.classList.remove('hidden');
+                    }
+                }
+            })
+            .catch(() => {
+                if (badge) {
+                    badge.innerText = 'Gagal memuat siswa';
+                    badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-700';
+                }
+            });
+    }
+
+    function setAdminStudentStatus(studentId, status, btn) {
+        const inputVal = document.getElementById(`adm_stat_val_${studentId}`);
+        if (inputVal) inputVal.value = status;
+
+        const parent = btn.parentElement;
+        parent.querySelectorAll('.adm-btn-stat').forEach(b => {
+            b.className = 'adm-btn-stat px-2 py-1 rounded-lg text-[10px] font-bold bg-slate-200 text-slate-600 transition-all';
+        });
+
+        const activeColors = {
+            'H': 'bg-emerald-500 text-white shadow-xs',
+            'S': 'bg-blue-500 text-white shadow-xs',
+            'I': 'bg-amber-500 text-white shadow-xs',
+            'A': 'bg-rose-500 text-white shadow-xs'
+        };
+
+        btn.className = `adm-btn-stat px-2 py-1 rounded-lg text-[10px] font-bold ${activeColors[status]} transition-all`;
+        updateAdminAttendanceSummary();
+    }
+
+    function setAdminAllStudentsPresent() {
+        document.querySelectorAll('.admin-student-row').forEach(row => {
+            const sId = row.getAttribute('data-student-id');
+            const hBtn = row.querySelector('.adm-btn-stat:first-child');
+            if (hBtn) {
+                setAdminStudentStatus(sId, 'H', hBtn);
+            }
+        });
+    }
+
+    function updateAdminAttendanceSummary() {
+        let h = 0, s = 0, i = 0, a = 0;
+        document.querySelectorAll('.admin-student-row input[type="hidden"]').forEach(inp => {
+            const v = inp.value;
+            if (v === 'H') h++;
+            else if (v === 'S') s++;
+            else if (v === 'I') i++;
+            else if (v === 'A') a++;
+        });
+
+        const total = h + s + i + a;
+        const inputKehadiran = document.getElementById('form_kehadiran');
+        if (!inputKehadiran || total === 0) return;
+
+        if (s + i + a === 0) {
+            inputKehadiran.value = `${total}/${total} Hadir Lengkap`;
+        } else {
+            const parts = [`${h} Hadir`];
+            if (s > 0) parts.push(`${s} Sakit`);
+            if (i > 0) parts.push(`${i} Izin`);
+            if (a > 0) parts.push(`${a} Alpa`);
+            inputKehadiran.value = `${total} Siswa (${parts.join(', ')})`;
+        }
     }
 </script>

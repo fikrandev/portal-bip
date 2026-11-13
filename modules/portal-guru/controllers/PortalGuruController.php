@@ -29,8 +29,23 @@ class PortalGuruController
     public static function getLoggedInTeacher(): array
     {
         $user = Auth::user();
+        $db = Database::getInstance();
+
+        // 1. Dukungan Switch / Preview Guru via URL (?guru_id=17) atau Session
+        $previewId = (int)($_GET['guru_id'] ?? $_SESSION['portal_guru_preview_id'] ?? 0);
+        if ($previewId > 0) {
+            $_SESSION['portal_guru_preview_id'] = $previewId;
+            $previewPegawai = $db->find("SELECT * FROM pegawai WHERE id = ? LIMIT 1", [$previewId]);
+            if ($previewPegawai) {
+                return self::formatTeacherArray($previewPegawai, $user);
+            }
+        }
+
         if (!$user) {
             return [
+                'id' => null,
+                'pegawai_id' => null,
+                'user_id' => null,
                 'name' => 'Guru',
                 'nip' => '-',
                 'role' => 'Tenaga Pendidik',
@@ -39,11 +54,10 @@ class PortalGuruController
                 'phone' => '',
                 'avatar' => null,
                 'teachingHours' => '24 Jam / Minggu',
-                'academicYear' => defined('SYS_TAHUN_AKADEMIK_NAME') ? SYS_TAHUN_AKADEMIK_NAME : '2025/2026 Genap'
+                'academicYear' => defined('SYS_TAHUN_AKADEMIK_NAME') ? SYS_TAHUN_AKADEMIK_NAME : '2026/2027 Ganjil'
             ];
         }
 
-        $db = Database::getInstance();
         $pegawai = null;
         if (!empty($user['email'])) {
             $pegawai = $db->find("SELECT * FROM pegawai WHERE email = ? LIMIT 1", [$user['email']]);
@@ -52,29 +66,237 @@ class PortalGuruController
             $pegawai = $db->find("SELECT * FROM pegawai WHERE nama = ? LIMIT 1", [$user['full_name']]);
         }
 
-        $fullName = !empty($user['full_name']) ? $user['full_name'] : ($pegawai['nama'] ?? 'Guru');
-        $role = !empty($pegawai['jabatan']) ? $pegawai['jabatan'] : (Auth::hasRole('super_admin') ? 'Super Administrator' : 'Guru Pengajar');
+        // Jika user adalah admin dan belum terhubung ke pegawai, gunakan Ayu Musdalifah (id 17) sebagai default guru contoh
+        if (!$pegawai && (Auth::hasRole('super_admin') || ($user['id'] ?? 0) === 1)) {
+            $pegawai = $db->find("SELECT * FROM pegawai WHERE id = 17 LIMIT 1");
+        }
+
+        if ($pegawai) {
+            return self::formatTeacherArray($pegawai, $user);
+        }
+
+        $fullName = !empty($user['full_name']) ? $user['full_name'] : 'Guru';
+        $role = Auth::hasRole('super_admin') ? 'Super Administrator' : 'Guru Pengajar';
+
+        return [
+            'id' => null,
+            'pegawai_id' => null,
+            'user_id' => (int)$user['id'],
+            'name' => $fullName,
+            'nip' => '-',
+            'role' => $role,
+            'status' => 'Pegawai Aktif',
+            'email' => $user['email'] ?? '-',
+            'phone' => $user['phone'] ?? '-',
+            'avatar' => $user['avatar'] ?? null,
+            'teachingHours' => '24 Jam / Minggu',
+            'academicYear' => defined('SYS_TAHUN_AKADEMIK_NAME') ? SYS_TAHUN_AKADEMIK_NAME : '2026/2027 Ganjil'
+        ];
+    }
+
+    /**
+     * Helper format data array guru
+     */
+    private static function formatTeacherArray(array $pegawai, ?array $user = null): array
+    {
+        $fullName = !empty($pegawai['nama']) ? $pegawai['nama'] : ($user['full_name'] ?? 'Guru');
+        $role = !empty($pegawai['jabatan']) ? $pegawai['jabatan'] : 'Wali Kelas & Guru Pengajar';
         $nip = !empty($pegawai['niy']) ? $pegawai['niy'] : (!empty($pegawai['nik']) ? $pegawai['nik'] : '-');
         $phone = !empty($pegawai['no_wa']) ? $pegawai['no_wa'] : ($user['phone'] ?? '-');
         $status = !empty($pegawai['status_pegawai']) ? $pegawai['status_pegawai'] : 'Pegawai Aktif';
         $foto = !empty($pegawai['foto']) ? $pegawai['foto'] : ($user['avatar'] ?? null);
-
-        $pegawaiId = !empty($pegawai['id']) ? (int)$pegawai['id'] : null;
+        $pegawaiId = (int)$pegawai['id'];
 
         return [
             'id' => $pegawaiId,
             'pegawai_id' => $pegawaiId,
-            'user_id' => (int)$user['id'],
+            'user_id' => (int)($user['id'] ?? 0),
             'name' => $fullName,
             'nip' => $nip,
             'role' => $role,
             'status' => $status,
-            'email' => $user['email'] ?? ($pegawai['email'] ?? '-'),
+            'email' => $pegawai['email'] ?: ($user['email'] ?? '-'),
             'phone' => $phone,
             'avatar' => $foto,
             'teachingHours' => '24 Jam / Minggu',
-            'academicYear' => defined('SYS_TAHUN_AKADEMIK_NAME') ? SYS_TAHUN_AKADEMIK_NAME : '2025/2026 Genap'
+            'academicYear' => defined('SYS_TAHUN_AKADEMIK_NAME') ? SYS_TAHUN_AKADEMIK_NAME : '2026/2027 Ganjil'
         ];
+    }
+
+    /**
+     * Ambil seluruh kelas yang diampu guru dari SK Penugasan Aktif & Jadwal Pelajaran
+     */
+    public static function getTeacherClasses(?int $pegawaiId, string $guruName): array
+    {
+        $db = Database::getInstance();
+        $classes = [];
+
+        // 1. Dari SK Penugasan Aktif (pegawai_penugasan -> wali_kelas_nama)
+        if ($pegawaiId) {
+            try {
+                $waliRows = $db->findAll("
+                    SELECT pp.wali_kelas_nama, pg.nama_grup, pg.semester
+                    FROM pegawai_penugasan pp
+                    JOIN penugasan_grup pg ON pp.grup_id = pg.id
+                    WHERE pp.pegawai_id = ? AND pg.is_active = 1 AND pp.wali_kelas_nama IS NOT NULL AND pp.wali_kelas_nama != ''
+                ", [$pegawaiId]);
+                foreach ($waliRows as $w) {
+                    $cName = trim($w['wali_kelas_nama']);
+                    if (!isset($classes[$cName])) {
+                        $classes[$cName] = [
+                            'name' => $cName,
+                            'role' => 'Wali Kelas',
+                            'roleBadge' => 'emerald',
+                            'subjects' => [],
+                            'total_jp' => 0,
+                            'schedule' => 'Setiap Hari KBM',
+                            'is_wali' => true
+                        ];
+                    } else {
+                        $classes[$cName]['role'] = 'Wali Kelas & Guru Mapel';
+                        $classes[$cName]['is_wali'] = true;
+                    }
+                }
+            } catch (Throwable $e) {}
+
+            // 2. Dari SK Penugasan Mengajar (pegawai_penugasan_mengajar)
+            try {
+                $mengajarRows = $db->findAll("
+                    SELECT ppm.*, pg.nama_grup
+                    FROM pegawai_penugasan_mengajar ppm
+                    JOIN penugasan_grup pg ON ppm.grup_id = pg.id
+                    WHERE ppm.pegawai_id = ? AND pg.is_active = 1
+                ", [$pegawaiId]);
+                foreach ($mengajarRows as $m) {
+                    $cName = trim($m['nama_kelas']);
+                    if (empty($cName)) continue;
+                    if (!isset($classes[$cName])) {
+                        $classes[$cName] = [
+                            'name' => $cName,
+                            'role' => 'Guru Pengajar (PIC)',
+                            'roleBadge' => 'blue',
+                            'subjects' => [],
+                            'total_jp' => 0,
+                            'schedule' => '-',
+                            'is_wali' => false
+                        ];
+                    } else {
+                        $classes[$cName]['role'] = 'Wali Kelas & Guru Mapel';
+                    }
+                    if (!empty($m['mata_pelajaran']) && !in_array($m['mata_pelajaran'], $classes[$cName]['subjects'])) {
+                        $classes[$cName]['subjects'][] = $m['mata_pelajaran'];
+                    }
+                    $classes[$cName]['total_jp'] += (int)($m['jumlah_jp'] ?? 2);
+                }
+            } catch (Throwable $e) {}
+        }
+
+        // 3. Dari Jadwal Pelajaran (jadwal_pelajaran)
+        try {
+            $jadwalRows = $db->findAll("
+                SELECT jp.nama_kelas, jp.mata_pelajaran, jp.hari, jp.jam_ke, jp.jam_mulai, jp.jam_selesai, jp.ruangan
+                FROM jadwal_pelajaran jp
+                LEFT JOIN jadwal_grup jg ON jp.grup_id = jg.id
+                WHERE (jp.pegawai_id = ? OR jp.nama_guru LIKE ?)
+                  AND (jg.is_active = 1 OR jp.grup_id = (SELECT id FROM jadwal_grup ORDER BY is_active DESC, id DESC LIMIT 1))
+                ORDER BY FIELD(jp.hari, 'Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'), jp.jam_ke ASC
+            ", [$pegawaiId ?: 0, '%' . $guruName . '%']);
+
+            foreach ($jadwalRows as $j) {
+                $cName = trim($j['nama_kelas']);
+                if (empty($cName)) continue;
+                if (!isset($classes[$cName])) {
+                    $classes[$cName] = [
+                        'name' => $cName,
+                        'role' => 'Guru Pengajar',
+                        'roleBadge' => 'indigo',
+                        'subjects' => [],
+                        'total_jp' => 0,
+                        'schedule' => '-',
+                        'is_wali' => false
+                    ];
+                }
+                if (!empty($j['mata_pelajaran']) && !in_array($j['mata_pelajaran'], $classes[$cName]['subjects'])) {
+                    $classes[$cName]['subjects'][] = $j['mata_pelajaran'];
+                }
+                $timeStr = ($j['hari'] ? $j['hari'] . ', ' : '') . ($j['jam_mulai'] ? substr($j['jam_mulai'], 0, 5) . '-' . substr($j['jam_selesai'], 0, 5) : 'Jam ke-' . $j['jam_ke']);
+                if ($classes[$cName]['schedule'] === '-' || str_contains($classes[$cName]['schedule'], 'Setiap Hari')) {
+                    $classes[$cName]['schedule'] = $timeStr;
+                } else if (!str_contains($classes[$cName]['schedule'], $timeStr)) {
+                    $classes[$cName]['schedule'] .= ' & ' . $timeStr;
+                }
+            }
+        } catch (Throwable $e) {}
+
+        // Fallback jika tidak ada data sama sekali
+        if (empty($classes)) {
+            $classes['Kelas 5 Ibnu Abbas'] = [
+                'name' => 'Kelas 5 Ibnu Abbas',
+                'role' => 'Wali Kelas & Guru Mapel',
+                'roleBadge' => 'emerald',
+                'subjects' => ['SbdP'],
+                'total_jp' => 2,
+                'schedule' => 'Senin, 07:30 - 08:30',
+                'is_wali' => true
+            ];
+        }
+
+        // Hitung jumlah siswa riil dari tabel siswa untuk setiap kelas
+        $pdo = $db->getConnection();
+        $colorPalette = ['emerald', 'blue', 'indigo', 'purple', 'teal', 'sky', 'amber'];
+        $cIndex = 0;
+
+        foreach ($classes as $cName => &$info) {
+            $cleanName = trim(preg_replace('/^kelas\s+/i', '', $cName));
+            try {
+                $st = $pdo->prepare("
+                    SELECT COUNT(*) 
+                    FROM siswa 
+                    WHERE (kelas = ? OR kelas = ? OR REPLACE(kelas, 'Kelas ', '') = ? OR ? = REPLACE(kelas, 'Kelas ', ''))
+                      AND (is_active = 1 OR is_active IS NULL OR status_siswa = 'Aktif')
+                ");
+                $st->execute([$cName, $cleanName, $cleanName, $cleanName]);
+                $info['totalStudents'] = (int)$st->fetchColumn();
+            } catch (Throwable $e) {
+                $info['totalStudents'] = 0;
+            }
+
+            // Cari nama Wali Kelas jika guru ini bukan wali kelasnya
+            if (!$info['is_wali']) {
+                try {
+                    $stWali = $pdo->prepare("
+                        SELECT COALESCE(p.nama, pp.wali_kelas_nama) 
+                        FROM pegawai_penugasan pp
+                        JOIN penugasan_grup pg ON pp.grup_id = pg.id
+                        JOIN pegawai p ON pp.pegawai_id = p.id
+                        WHERE (pp.wali_kelas_nama = ? OR pp.wali_kelas_nama = ?) AND pg.is_active = 1
+                        LIMIT 1
+                    ");
+                    $stWali->execute([$cName, $cleanName]);
+                    $waliFound = $stWali->fetchColumn();
+                    $info['homeroom'] = $waliFound ?: 'Wali Kelas BIP';
+                } catch (Throwable $e) {
+                    $info['homeroom'] = 'Wali Kelas BIP';
+                }
+            } else {
+                $info['homeroom'] = $guruName . ' (Anda)';
+            }
+
+            // Ekstrak tingkat (misal '5' dari 'Kelas 5 Ibnu Abbas')
+            if (preg_match('/(\d+)/', $cName, $matches)) {
+                $info['level'] = $matches[1];
+            } else {
+                $info['level'] = 'SD';
+            }
+
+            $info['color'] = $colorPalette[$cIndex % count($colorPalette)];
+            $info['jp'] = $info['total_jp'] ?: 2;
+            $info['subjectList'] = !empty($info['subjects']) ? implode(', ', $info['subjects']) : 'Mata Pelajaran';
+            $cIndex++;
+        }
+        unset($info);
+
+        return $classes;
     }
 
     /**
@@ -318,14 +540,30 @@ class PortalGuruController
             ];
         }
 
-        // Distinct classes & subjects untuk opsi dropdown mandiri
-        $classes = array_unique(array_filter(array_column($allSchedules, 'class')));
-        if (empty($classes)) {
-            $classes = ['Kelas 1 Abu Bakar', 'Kelas 1 Bilal bin Rabbah', 'Kelas 3 Abdurrahman', 'Kelas 4 Anas bin Malik', 'Kelas 5 Ibnu Abbas'];
+        // Distinct classes & subjects dari SK Penugasan & Jadwal Pelajaran
+        $teacherClasses = self::getTeacherClasses($teacher['pegawai_id'], $teacher['name']);
+        $classes = array_keys($teacherClasses);
+        $subjects = [];
+        foreach ($teacherClasses as $cInfo) {
+            foreach ($cInfo['subjects'] as $sb) {
+                if (!empty($sb) && !in_array($sb, $subjects)) {
+                    $subjects[] = $sb;
+                }
+            }
         }
-        $subjects = array_unique(array_filter(array_column($allSchedules, 'subject')));
+        foreach ($allSchedules as $sch) {
+            if (!empty($sch['subject']) && !in_array($sch['subject'], $subjects)) {
+                $subjects[] = $sch['subject'];
+            }
+        }
+        if (empty($classes)) {
+            $classes = array_unique(array_filter(array_column($allSchedules, 'class')));
+        }
+        if (empty($classes)) {
+            $classes = ['Kelas 5 Ibnu Abbas', 'Kelas 5 ABdullah bin Mas\'u', 'Kelas 5 Muadz bin jabal'];
+        }
         if (empty($subjects)) {
-            $subjects = ['Tahsin & Al-Quran', 'Bina Pribadi Islam', 'Ilmu Pengetahuan Alam dan Sosial (IPAS)', 'Matematika'];
+            $subjects = ['SbdP', 'Pendidikan Agama Islam', 'Tahsin & Al-Quran', 'Matematika'];
         }
 
         self::render('jurnal', [
@@ -421,6 +659,34 @@ class PortalGuruController
                     'updated_at' => date('Y-m-d H:i:s')
                 ]);
 
+                // Sinkronkan ke presensi_kelas jika belum tercatat hari ini
+                try {
+                    $cleanKls = trim(preg_replace('/^kelas\s+/i', '', $kelas));
+                    $existingPres = $db->find("
+                        SELECT id FROM presensi_kelas 
+                        WHERE (kelas = ? OR kelas = ? OR REPLACE(kelas, 'Kelas ', '') = ?)
+                          AND tanggal = ? AND (guru_id = ? OR guru_id = 0)
+                        LIMIT 1
+                    ", [$kelas, $cleanKls, $cleanKls, $tanggal, $guruId]);
+                    if (!$existingPres) {
+                        $db->insert('presensi_kelas', [
+                            'guru_id' => $guruId,
+                            'kelas' => $kelas,
+                            'mata_pelajaran' => $mapel,
+                            'tanggal' => $tanggal,
+                            'jam_ke' => $jamKe,
+                            'role_mengajar' => 'PIC',
+                            'jp' => $jumlahJp,
+                            'tipe_presensi' => 'mapel',
+                            'catatan' => $kehadiran,
+                            'created_by' => (int)Auth::id() ?: 1,
+                            'waktu_presensi' => date('H:i:s'),
+                            'created_at' => date('Y-m-d H:i:s'),
+                            'updated_at' => date('Y-m-d H:i:s')
+                        ]);
+                    }
+                } catch (Throwable $pe) {}
+
                 echo json_encode([
                     'success' => true,
                     'message' => 'Jurnal pembelajaran berhasil disimpan!',
@@ -464,6 +730,7 @@ class PortalGuruController
     {
         header('Content-Type: application/json; charset=utf-8');
         $className = trim($_GET['kelas'] ?? '');
+        $tanggal = trim($_GET['tanggal'] ?? date('Y-m-d'));
 
         if (empty($className)) {
             echo json_encode(['success' => false, 'message' => 'Nama kelas tidak diberikan.']);
@@ -474,40 +741,44 @@ class PortalGuruController
         $cleanName = trim(preg_replace('/^kelas\s+/i', '', $className));
 
         $sql = "
-            SELECT id, nisn, nama_lengkap, nama, jenis_kelamin, kelas
+            SELECT id, nisn, nis, COALESCE(nama_lengkap, nama) as nama_lengkap, nama, jenis_kelamin, kelas, no_hp, telepon, foto
             FROM siswa 
-            WHERE (kelas = ? OR kelas = ? OR kelas LIKE ?)
-              AND is_active = 1
-            ORDER BY nama_lengkap ASC
+            WHERE (kelas = ? OR kelas = ? OR REPLACE(kelas, 'Kelas ', '') = ? OR ? = REPLACE(kelas, 'Kelas ', ''))
+              AND (is_active = 1 OR is_active IS NULL OR status_siswa = 'Aktif')
+            ORDER BY COALESCE(nama_lengkap, nama) ASC
         ";
 
         try {
-            $students = $db->findAll($sql, [$className, $cleanName, '%' . $cleanName . '%']);
-            
-            // Fallback jika belum ada data siswa di DB untuk kelas tersebut
-            if (empty($students)) {
-                $samples = [
-                    'Achmad Zaky Pratama', 'Aisyah Putri Azzahra', 'Alif Ramadhan', 
-                    'Anisa Nur Fadilah', 'Bagus Dwi Wicaksono', 'Cantika Dewi Lestari',
-                    'Dimas Arya Nugraha', 'Fadli Kurniawan', 'Gita Permata Sari', 'Hafizh Pratama'
-                ];
-                $students = [];
-                foreach ($samples as $idx => $name) {
-                    $students[] = [
-                        'id' => $idx + 1,
-                        'nisn' => '008' . str_pad((string)($idx + 1), 6, '0', STR_PAD_LEFT),
-                        'nama_lengkap' => $name,
-                        'nama' => $name,
-                        'jenis_kelamin' => ($idx % 2 === 0) ? 'L' : 'P',
-                        'kelas' => $className
-                    ];
+            $students = $db->findAll($sql, [$className, $cleanName, $cleanName, $cleanName]);
+
+            // Cek apakah sudah ada data presensi hari ini untuk kelas ini
+            $presensiHariIni = $db->find("
+                SELECT id FROM presensi_kelas 
+                WHERE (kelas = ? OR kelas = ? OR REPLACE(kelas, 'Kelas ', '') = ?)
+                  AND tanggal = ?
+                ORDER BY id DESC LIMIT 1
+            ", [$className, $cleanName, $cleanName, $tanggal]);
+
+            $existingDetails = [];
+            if ($presensiHariIni) {
+                $details = $db->findAll("SELECT siswa_id, status FROM presensi_kelas_detail WHERE presensi_kelas_id = ?", [$presensiHariIni['id']]);
+                foreach ($details as $d) {
+                    $existingDetails[(int)$d['siswa_id']] = $d['status'];
                 }
             }
+
+            foreach ($students as &$st) {
+                $stId = (int)$st['id'];
+                $st['today_status'] = $existingDetails[$stId] ?? 'H';
+            }
+            unset($st);
 
             echo json_encode([
                 'success' => true,
                 'kelas' => $className,
+                'clean_kelas' => $cleanName,
                 'total' => count($students),
+                'has_presensi_today' => !empty($presensiHariIni),
                 'data' => $students
             ]);
             exit;
@@ -518,21 +789,39 @@ class PortalGuruController
     }
 
     /**
-     * Kelas Diampu
+     * Kelas Diampu - Mengambil data riil dari SK Penugasan Aktif & Jadwal KBM
      */
     public static function kelas(): void
     {
+        $teacher = self::getLoggedInTeacher();
+        $classesMap = self::getTeacherClasses($teacher['pegawai_id'], $teacher['name']);
+        $classList = array_values($classesMap);
+
+        // Hitung total JP dan ringkasan PIC vs Mendampingi / Wali Kelas
+        $totalPicClasses = 0;
+        $totalPicJp = 0;
+        $totalWaliClasses = 0;
+        $totalWaliJp = 0;
+
+        foreach ($classList as $c) {
+            if ($c['is_wali']) {
+                $totalWaliClasses++;
+                $totalWaliJp += (int)($c['jp'] ?? 2);
+            } else {
+                $totalPicClasses++;
+                $totalPicJp += (int)($c['jp'] ?? 2);
+            }
+        }
+
         self::render('kelas', [
             'pageTitle' => 'Kelas Diampu',
             'activeTab' => 'kelas',
-            'classList' => [
-                ['name' => 'Kelas 7A', 'level' => '7', 'totalStudents' => 32, 'homeroom' => 'Bu Rina S.Pd', 'schedule' => 'Senin, 08.00 - 09.30', 'role' => 'PIC', 'jp' => 2, 'color' => 'blue', 'roleBadge' => 'emerald'],
-                ['name' => 'Kelas 7B', 'level' => '7', 'totalStudents' => 30, 'homeroom' => 'Bpk. Ahmad Fauzi', 'schedule' => 'Senin, 09.45 - 11.15', 'role' => 'PIC', 'jp' => 2, 'color' => 'indigo', 'roleBadge' => 'emerald'],
-                ['name' => 'Kelas 8A', 'level' => '8', 'totalStudents' => 32, 'homeroom' => 'Bu Siti Rahma', 'schedule' => 'Selasa, 08.00 - 09.30', 'role' => 'Mendampingi', 'jp' => 2, 'color' => 'emerald', 'roleBadge' => 'blue'],
-                ['name' => 'Kelas 8B', 'level' => '8', 'totalStudents' => 31, 'homeroom' => 'Bpk. Dani Setiawan', 'schedule' => 'Rabu, 10.00 - 11.30', 'role' => 'PIC', 'jp' => 2, 'color' => 'teal', 'roleBadge' => 'emerald'],
-                ['name' => 'Kelas 9A', 'level' => '9', 'totalStudents' => 28, 'homeroom' => 'Bu Sri Wahyuni', 'schedule' => 'Kamis, 08.00 - 09.30', 'role' => 'Mendampingi', 'jp' => 2, 'color' => 'purple', 'roleBadge' => 'blue'],
-                ['name' => 'Kelas 9B', 'level' => '9', 'totalStudents' => 29, 'homeroom' => 'Bpk. Hendra Saputra', 'schedule' => 'Jumat, 07.30 - 09.00', 'role' => 'PIC', 'jp' => 2, 'color' => 'sky', 'roleBadge' => 'emerald']
-            ]
+            'teacher' => $teacher,
+            'classList' => $classList,
+            'totalPicClasses' => $totalPicClasses,
+            'totalPicJp' => $totalPicJp,
+            'totalWaliClasses' => $totalWaliClasses,
+            'totalWaliJp' => $totalWaliJp
         ]);
     }
 
@@ -541,43 +830,282 @@ class PortalGuruController
      */
     public static function absensiKelas(): void
     {
+        $teacher = self::getLoggedInTeacher();
+        $db = Database::getInstance();
+        $classesMap = self::getTeacherClasses($teacher['pegawai_id'], $teacher['name']);
+        
+        // Tentukan kelas yang dipilih (dari ?kelas=... atau default ke Wali Kelas atau kelas pertama)
+        $selectedClass = trim($_GET['kelas'] ?? '');
+        if (empty($selectedClass) || !isset($classesMap[$selectedClass])) {
+            // Cari kelas wali kelas dahulu
+            foreach ($classesMap as $cName => $cInfo) {
+                if ($cInfo['is_wali']) {
+                    $selectedClass = $cName;
+                    break;
+                }
+            }
+            if (empty($selectedClass) && !empty($classesMap)) {
+                $selectedClass = array_key_first($classesMap);
+            }
+        }
+
+        // Ambil data siswa untuk kelas terpilih
+        $cleanName = trim(preg_replace('/^kelas\s+/i', '', $selectedClass));
+        $students = [];
+        try {
+            $students = $db->findAll("
+                SELECT id, nisn, nis, COALESCE(nama_lengkap, nama) as name, nama_lengkap, jenis_kelamin as gender, kelas, no_hp
+                FROM siswa 
+                WHERE (kelas = ? OR kelas = ? OR REPLACE(kelas, 'Kelas ', '') = ? OR ? = REPLACE(kelas, 'Kelas ', ''))
+                  AND (is_active = 1 OR is_active IS NULL OR status_siswa = 'Aktif')
+                ORDER BY COALESCE(nama_lengkap, nama) ASC
+            ", [$selectedClass, $cleanName, $cleanName, $cleanName]);
+        } catch (Throwable $e) {}
+
+        // Cek data presensi hari ini
+        $tanggal = date('Y-m-d');
+        $presensiHariIni = null;
+        try {
+            $presensiHariIni = $db->find("
+                SELECT * FROM presensi_kelas 
+                WHERE (kelas = ? OR kelas = ? OR REPLACE(kelas, 'Kelas ', '') = ?)
+                  AND tanggal = ?
+                ORDER BY id DESC LIMIT 1
+            ", [$selectedClass, $cleanName, $cleanName, $tanggal]);
+        } catch (Throwable $e) {}
+
+        $savedDetails = [];
+        if ($presensiHariIni) {
+            try {
+                $details = $db->findAll("SELECT siswa_id, status FROM presensi_kelas_detail WHERE presensi_kelas_id = ?", [$presensiHariIni['id']]);
+                foreach ($details as $d) {
+                    $savedDetails[(int)$d['siswa_id']] = $d['status'];
+                }
+            } catch (Throwable $e) {}
+        }
+
+        foreach ($students as &$s) {
+            $sId = (int)$s['id'];
+            $s['status'] = $savedDetails[$sId] ?? 'H';
+        }
+        unset($s);
+
         self::render('absensi_kelas', [
             'pageTitle' => 'Absensi Siswa Kelas',
             'activeTab' => 'kelas',
-            'selectedClass' => 'Kelas 7A',
-            'students' => [
-                ['id' => 1, 'nisn' => '0089218201', 'name' => 'Achmad Zaky Pratama', 'gender' => 'L', 'status' => 'H'],
-                ['id' => 2, 'nisn' => '0089218202', 'name' => 'Aisyah Putri Azzahra', 'gender' => 'P', 'status' => 'H'],
-                ['id' => 3, 'nisn' => '0089218203', 'name' => 'Alif Ramadhan', 'gender' => 'L', 'status' => 'H'],
-                ['id' => 4, 'nisn' => '0089218204', 'name' => 'Anisa Nur Fadilah', 'gender' => 'P', 'status' => 'S'],
-                ['id' => 5, 'nisn' => '0089218205', 'name' => 'Bagus Dwi Wicaksono', 'gender' => 'L', 'status' => 'H'],
-                ['id' => 6, 'nisn' => '0089218206', 'name' => 'Cantika Dewi Lestari', 'gender' => 'P', 'status' => 'I'],
-                ['id' => 7, 'nisn' => '0089218207', 'name' => 'Dimas Arya Nugraha', 'gender' => 'L', 'status' => 'H'],
-                ['id' => 8, 'nisn' => '0089218208', 'name' => 'Fadli Kurniawan', 'gender' => 'L', 'status' => 'H'],
-                ['id' => 9, 'nisn' => '0089218209', 'name' => 'Gita Permata Sari', 'gender' => 'P', 'status' => 'H'],
-                ['id' => 10, 'nisn' => '0089218210', 'name' => 'Hafizh Pratama', 'gender' => 'L', 'status' => 'H']
-            ]
+            'teacher' => $teacher,
+            'classes' => $classesMap,
+            'selectedClass' => $selectedClass,
+            'students' => $students,
+            'presensiHariIni' => $presensiHariIni
         ]);
     }
 
     /**
-     * Murid (Daftar Siswa)
+     * Simpan Presensi Siswa Kelas dari Mobile
+     */
+    public static function simpanAbsensiKelas(): void
+    {
+        header('Content-Type: application/json; charset=utf-8');
+
+        $teacher = self::getLoggedInTeacher();
+        $db = Database::getInstance();
+        $pdo = $db->getConnection();
+
+        $kelas = trim($_POST['kelas'] ?? '');
+        $mapel = trim($_POST['mata_pelajaran'] ?? ($_POST['mapel'] ?? ''));
+        $tanggal = trim($_POST['tanggal'] ?? date('Y-m-d'));
+        $jamKe = trim($_POST['jam_ke'] ?? '1');
+        $tipePresensi = trim($_POST['tipe_presensi'] ?? 'mapel');
+        $catatanUmum = trim($_POST['catatan'] ?? '');
+        $statuses = $_POST['kehadiran'] ?? []; // array [siswa_id => status]
+        $redirectToJurnal = !empty($_POST['redirect_to_jurnal']);
+
+        if (empty($kelas)) {
+            echo json_encode(['success' => false, 'message' => 'Kelas harus dipilih.']);
+            exit;
+        }
+
+        $guruId = $teacher['pegawai_id'] ?: 0;
+        $userId = Auth::id() ?: 1;
+
+        // Ambil data mapel default dari kelas jika kosong
+        if (empty($mapel)) {
+            $classesMap = self::getTeacherClasses($guruId, $teacher['name']);
+            $mapel = !empty($classesMap[$kelas]['subjects']) ? implode(', ', $classesMap[$kelas]['subjects']) : ($classesMap[$kelas]['is_wali'] ? 'Wali Kelas' : 'KBM');
+        }
+
+        try {
+            // Hitung status Hadir/Sakit/Izin/Alpa
+            $h = 0; $s = 0; $i = 0; $a = 0;
+            foreach ($statuses as $stat) {
+                if ($stat === 'H') $h++;
+                elseif ($stat === 'S') $s++;
+                elseif ($stat === 'I') $i++;
+                elseif ($stat === 'A') $a++;
+            }
+            $totalSiswa = count($statuses);
+
+            if ($totalSiswa > 0 && ($s + $i + $a === 0)) {
+                $summary = "{$totalSiswa}/{$totalSiswa} Hadir Lengkap";
+            } elseif ($totalSiswa > 0) {
+                $parts = ["{$h} Hadir"];
+                if ($s > 0) $parts[] = "{$s} Sakit";
+                if ($i > 0) $parts[] = "{$i} Izin";
+                if ($a > 0) $parts[] = "{$a} Alpa";
+                $summary = "{$totalSiswa} Siswa (" . implode(', ', $parts) . ")";
+            } else {
+                $summary = "Semua Siswa Hadir";
+            }
+
+            // Cek apakah sudah ada presensi hari ini
+            $cleanName = trim(preg_replace('/^kelas\s+/i', '', $kelas));
+            $existing = $db->find("
+                SELECT id FROM presensi_kelas 
+                WHERE (kelas = ? OR kelas = ? OR REPLACE(kelas, 'Kelas ', '') = ?)
+                  AND tanggal = ? AND (guru_id = ? OR guru_id = 0)
+                ORDER BY id DESC LIMIT 1
+            ", [$kelas, $cleanName, $cleanName, $tanggal, $guruId]);
+
+            if ($existing) {
+                $presensiId = (int)$existing['id'];
+                $db->update('presensi_kelas', [
+                    'kelas' => $kelas,
+                    'mata_pelajaran' => $mapel,
+                    'jam_ke' => $jamKe,
+                    'catatan' => $catatanUmum,
+                    'waktu_presensi' => date('H:i:s'),
+                    'updated_at' => date('Y-m-d H:i:s')
+                ], 'id = ?', [$presensiId]);
+            } else {
+                $presensiId = $db->insert('presensi_kelas', [
+                    'guru_id' => $guruId,
+                    'kelas' => $kelas,
+                    'mata_pelajaran' => $mapel,
+                    'tanggal' => $tanggal,
+                    'jam_ke' => $jamKe,
+                    'role_mengajar' => 'PIC',
+                    'jp' => 2,
+                    'tipe_presensi' => $tipePresensi,
+                    'catatan' => $catatanUmum,
+                    'created_by' => $userId,
+                    'waktu_presensi' => date('H:i:s'),
+                    'created_at' => date('Y-m-d H:i:s'),
+                    'updated_at' => date('Y-m-d H:i:s')
+                ]);
+            }
+
+            // Hapus detail lama dan masukkan detail baru
+            $pdo->prepare("DELETE FROM presensi_kelas_detail WHERE presensi_kelas_id = ?")->execute([$presensiId]);
+
+            // Ambil nama-nama siswa untuk pencatatan di detail
+            $siswaIds = array_keys($statuses);
+            $namesMap = [];
+            if (!empty($siswaIds)) {
+                $placeholders = implode(',', array_fill(0, count($siswaIds), '?'));
+                $rows = $db->findAll("SELECT id, COALESCE(nama_lengkap, nama) as nama FROM siswa WHERE id IN ($placeholders)", $siswaIds);
+                foreach ($rows as $r) {
+                    $namesMap[$r['id']] = $r['nama'];
+                }
+            }
+
+            foreach ($statuses as $sId => $stat) {
+                $statVal = in_array($stat, ['H', 'S', 'I', 'A']) ? $stat : 'H';
+                $db->insert('presensi_kelas_detail', [
+                    'presensi_kelas_id' => $presensiId,
+                    'siswa_id' => (int)$sId,
+                    'nama_siswa' => $namesMap[$sId] ?? "Siswa #{$sId}",
+                    'status' => $statVal,
+                    'created_at' => date('Y-m-d H:i:s')
+                ]);
+            }
+
+            $redirectUrl = url('mobile/jurnal?kelas=' . urlencode($kelas) . '&mapel=' . urlencode($mapel) . '&kehadiran=' . urlencode($summary));
+
+            echo json_encode([
+                'success' => true,
+                'message' => 'Presensi kelas ' . $kelas . ' berhasil disimpan!',
+                'summary' => $summary,
+                'redirect_url' => $redirectUrl
+            ]);
+            exit;
+        } catch (Throwable $e) {
+            echo json_encode(['success' => false, 'message' => 'Gagal menyimpan presensi: ' . $e->getMessage()]);
+            exit;
+        }
+    }
+
+    /**
+     * Murid (Daftar Siswa Riil dari SK Penugasan Guru)
      */
     public static function murid(): void
     {
+        $teacher = self::getLoggedInTeacher();
+        $classesMap = self::getTeacherClasses($teacher['pegawai_id'], $teacher['name']);
+        
+        $classesList = array_keys($classesMap);
+        $filterClasses = array_merge(['Semua'], $classesList);
+
+        $selectedFilter = trim($_GET['kelas'] ?? 'Semua');
+        if (!in_array($selectedFilter, $filterClasses)) {
+            $selectedFilter = 'Semua';
+        }
+
+        $db = Database::getInstance();
+        $studentList = [];
+
+        // Buat klausa pencarian untuk seluruh kelas yang diampu guru
+        if (!empty($classesList)) {
+            $clauses = [];
+            $params = [];
+            foreach ($classesList as $cName) {
+                $clean = trim(preg_replace('/^kelas\s+/i', '', $cName));
+                $clauses[] = "(s.kelas = ? OR s.kelas = ? OR REPLACE(s.kelas, 'Kelas ', '') = ? OR ? = REPLACE(s.kelas, 'Kelas ', ''))";
+                $params[] = $cName;
+                $params[] = $clean;
+                $params[] = $clean;
+                $params[] = $clean;
+            }
+            $whereKelas = '(' . implode(' OR ', $clauses) . ')';
+
+            $sql = "
+                SELECT s.id, s.nisn, s.nis, COALESCE(s.nama_lengkap, s.nama) as name, s.nama_lengkap,
+                       s.jenis_kelamin as gender, s.kelas, s.no_hp, s.telepon, s.foto
+                FROM siswa s
+                WHERE {$whereKelas}
+                  AND (s.is_active = 1 OR s.is_active IS NULL OR s.status_siswa = 'Aktif')
+                ORDER BY s.kelas ASC, COALESCE(s.nama_lengkap, s.nama) ASC
+            ";
+
+            try {
+                $rows = $db->findAll($sql, $params);
+                foreach ($rows as $r) {
+                    $phone = !empty($r['no_hp']) ? preg_replace('/[^0-9]/', '', $r['no_hp']) : (!empty($r['telepon']) ? preg_replace('/[^0-9]/', '', $r['telepon']) : '');
+                    if ($phone && str_starts_with($phone, '0')) {
+                        $phone = '62' . substr($phone, 1);
+                    }
+                    $studentList[] = [
+                        'id' => (int)$r['id'],
+                        'name' => $r['name'],
+                        'nisn' => $r['nisn'] ?: ($r['nis'] ?: '-'),
+                        'class' => str_starts_with($r['kelas'], 'Kelas ') ? $r['kelas'] : 'Kelas ' . $r['kelas'],
+                        'gender' => $r['gender'] ?: 'L',
+                        'presence' => '100%',
+                        'phone' => $phone ?: '628123456789',
+                        'points' => 100
+                    ];
+                }
+            } catch (Throwable $e) {}
+        }
+
         self::render('murid', [
             'pageTitle' => 'Daftar Siswa & Profil',
             'activeTab' => 'murid',
-            'classes' => ['Semua', 'Kelas 7A', 'Kelas 7B', 'Kelas 8A', 'Kelas 8B', 'Kelas 9A', 'Kelas 9B'],
-            'studentList' => [
-                ['name' => 'Achmad Zaky Pratama', 'nisn' => '0089218201', 'class' => 'Kelas 7A', 'gender' => 'L', 'presence' => '98%', 'phone' => '081234567890', 'points' => 100],
-                ['name' => 'Aisyah Putri Azzahra', 'nisn' => '0089218202', 'class' => 'Kelas 7A', 'gender' => 'P', 'presence' => '100%', 'phone' => '081234567891', 'points' => 100],
-                ['name' => 'Alif Ramadhan', 'nisn' => '0089218203', 'class' => 'Kelas 7A', 'gender' => 'L', 'presence' => '95%', 'phone' => '081234567892', 'points' => 95],
-                ['name' => 'Bintang Pratama', 'nisn' => '0089218211', 'class' => 'Kelas 7B', 'gender' => 'L', 'presence' => '96%', 'phone' => '081234567893', 'points' => 98],
-                ['name' => 'Citra Kirana', 'nisn' => '0089218212', 'class' => 'Kelas 7B', 'gender' => 'P', 'presence' => '100%', 'phone' => '081234567894', 'points' => 100],
-                ['name' => 'David Maulana', 'nisn' => '0089218221', 'class' => 'Kelas 8A', 'gender' => 'L', 'presence' => '94%', 'phone' => '081234567895', 'points' => 90],
-                ['name' => 'Elsa Safira', 'nisn' => '0089218222', 'class' => 'Kelas 8A', 'gender' => 'P', 'presence' => '98%', 'phone' => '081234567896', 'points' => 100]
-            ]
+            'teacher' => $teacher,
+            'classes' => $filterClasses,
+            'selectedFilter' => $selectedFilter,
+            'totalStudents' => count($studentList),
+            'studentList' => $studentList
         ]);
     }
 

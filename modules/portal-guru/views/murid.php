@@ -14,7 +14,7 @@
         <h2 class="font-bold text-slate-800 text-base">Daftar Murid</h2>
     </div>
     <span class="px-3 py-1 bg-primary-50 text-primary-700 rounded-full text-xs font-bold">
-        182 Siswa
+        <?= (int)($totalStudents ?? count($studentList)) ?> Siswa
     </span>
 </div>
 
@@ -29,7 +29,8 @@
     <!-- Class Filter Horizontal Chips -->
     <div class="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
         <?php foreach ($classes as $idx => $c): ?>
-        <button type="button" onclick="selectClassFilter('<?= e($c) ?>', this)" class="class-chip px-3.5 py-1.5 rounded-full text-xs font-bold shrink-0 transition-all <?= $idx === 0 ? 'bg-primary-600 text-white shadow-sm' : 'bg-white text-slate-600 border border-slate-200' ?>">
+        <?php $isActive = ($c === ($selectedFilter ?? 'Semua')); ?>
+        <button type="button" onclick="selectClassFilter('<?= e($c) ?>', this)" class="class-chip px-3.5 py-1.5 rounded-full text-xs font-bold shrink-0 transition-all <?= $isActive ? 'bg-primary-600 text-white shadow-sm' : 'bg-white text-slate-600 border border-slate-200' ?>">
             <?= e($c) ?>
         </button>
         <?php endforeach; ?>
@@ -70,7 +71,7 @@
 </div>
 
 <script>
-    let currentClassFilter = 'Semua';
+    let currentClassFilter = <?= json_encode($selectedFilter ?? 'Semua') ?>;
 
     function selectClassFilter(className, btn) {
         currentClassFilter = className;
@@ -80,6 +81,12 @@
         btn.className = 'class-chip px-3.5 py-1.5 rounded-full text-xs font-bold shrink-0 bg-primary-600 text-white shadow-sm transition-all';
         filterStudents();
     }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        if (currentClassFilter !== 'Semua') {
+            filterStudents();
+        }
+    });
 
     function filterStudents() {
         const query = document.getElementById('search-student').value.toLowerCase();

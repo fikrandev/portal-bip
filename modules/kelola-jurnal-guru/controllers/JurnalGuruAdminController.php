@@ -671,6 +671,67 @@ class JurnalGuruAdminController
 
         $kodeJurnal = 'JRN-' . date('Ymd', strtotime($tanggal)) . '-' . strtoupper(substr(uniqid(), -4));
 
+        $siswaStatuses = $_POST['siswa_status'] ?? [];
+        if (!empty($siswaStatuses) && is_array($siswaStatuses)) {
+            $h = 0; $s = 0; $i = 0; $a = 0;
+            foreach ($siswaStatuses as $stat) {
+                if ($stat === 'H') $h++;
+                elseif ($stat === 'S') $s++;
+                elseif ($stat === 'I') $i++;
+                elseif ($stat === 'A') $a++;
+            }
+            $tot = count($siswaStatuses);
+            if ($s + $i + $a === 0) {
+                $kehadiran = "{$tot}/{$tot} Hadir Lengkap";
+            } else {
+                $parts = ["{$h} Hadir"];
+                if ($s > 0) $parts[] = "{$s} Sakit";
+                if ($i > 0) $parts[] = "{$i} Izin";
+                if ($a > 0) $parts[] = "{$a} Alpa";
+                $kehadiran = "{$tot} Siswa (" . implode(', ', $parts) . ")";
+            }
+
+            // Catat presensi ke presensi_kelas & detail
+            try {
+                $cleanKls = trim(preg_replace('/^kelas\s+/i', '', $kelas));
+                $presensiId = $db->insert('presensi_kelas', [
+                    'guru_id' => $guruId ?: 0,
+                    'kelas' => $kelas,
+                    'mata_pelajaran' => $mapel,
+                    'tanggal' => $tanggal,
+                    'jam_ke' => $jamKe,
+                    'role_mengajar' => 'PIC',
+                    'jp' => $jumlahJp,
+                    'tipe_presensi' => 'mapel',
+                    'catatan' => $catatan ?: $kehadiran,
+                    'created_by' => (int)Auth::id() ?: 1,
+                    'waktu_presensi' => date('H:i:s'),
+                    'created_at' => date('Y-m-d H:i:s'),
+                    'updated_at' => date('Y-m-d H:i:s')
+                ]);
+
+                $siswaIds = array_keys($siswaStatuses);
+                $namesMap = [];
+                if (!empty($siswaIds)) {
+                    $placeholders = implode(',', array_fill(0, count($siswaIds), '?'));
+                    $sRows = $db->findAll("SELECT id, COALESCE(nama_lengkap, nama) as nama FROM siswa WHERE id IN ($placeholders)", $siswaIds);
+                    foreach ($sRows as $sr) {
+                        $namesMap[$sr['id']] = $sr['nama'];
+                    }
+                }
+
+                foreach ($siswaStatuses as $sId => $stVal) {
+                    $db->insert('presensi_kelas_detail', [
+                        'presensi_kelas_id' => $presensiId,
+                        'siswa_id' => (int)$sId,
+                        'nama_siswa' => $namesMap[$sId] ?? "Siswa #{$sId}",
+                        'status' => in_array($stVal, ['H', 'S', 'I', 'A']) ? $stVal : 'H',
+                        'created_at' => date('Y-m-d H:i:s')
+                    ]);
+                }
+            } catch (Throwable $e) {}
+        }
+
         $db->insert('jurnal_mengajar', [
             'kode_jurnal'       => $kodeJurnal,
             'jadwal_id'         => $jadwalId ?: null,
@@ -691,6 +752,143 @@ class JurnalGuruAdminController
         ]);
 
         Response::redirect(url('kelola-jurnal-guru?tab=' . urlencode($returnTab)), 'Data jurnal mengajar berhasil disimpan & divalidasi!', 'success');
+    }
+
+    /**
+     * API Ambil Penugasan SK & Jadwal KBM Guru
+     */
+    public static function apiGuruAssignments(int $id): void
+    {
+        header('Content-Type: application/json; charset=utf-8');
+        try {
+            $db = Database::getInstance();
+
+            $pegawai = $db->find("SELECT id, nama, niy, nik, jabatan, unit_tugas FROM pegawai WHERE id = ?", [$id]);
+            if (!$pegawai) {
+                echo json_encode(['success' => false, 'message' => 'Data guru tidak ditemukan.']);
+                exit;
+            }
+
+            $classes = [];
+            $subjects = [];
+
+            // 1. Wali Kelas dari SK Aktif
+            $waliRows = $db->findAll("
+                SELECT pp.wali_kelas_nama, pg.nama_grup, pg.semester
+                FROM pegawai_penugasan pp
+                JOIN penugasan_grup pg ON pp.grup_id = pg.id
+                WHERE pp.pegawai_id = ? AND pg.is_active = 1 AND pp.wali_kelas_nama IS NOT NULL AND pp.wali_kelas_nama != ''
+            ", [$id]);
+            foreach ($waliRows as $w) {
+                $c = trim($w['wali_kelas_nama']);
+                $classes[$c] = [
+                    'name' => $c,
+                    'role' => 'Wali Kelas',
+                    'subjects' => []
+                ];
+            }
+
+            // 2. Mengajar dari SK Aktif
+            $mengajarRows = $db->findAll("
+                SELECT ppm.*, pg.nama_grup
+                FROM pegawai_penugasan_mengajar ppm
+                JOIN penugasan_grup pg ON ppm.grup_id = pg.id
+                WHERE ppm.pegawai_id = ? AND pg.is_active = 1
+            ", [$id]);
+            foreach ($mengajarRows as $m) {
+                $c = trim($m['nama_kelas']);
+                if (empty($c)) continue;
+                if (!isset($classes[$c])) {
+                    $classes[$c] = [
+                        'name' => $c,
+                        'role' => 'Guru Pengajar (PIC)',
+                        'subjects' => []
+                    ];
+                }
+                if (!empty($m['mata_pelajaran']) && !in_array($m['mata_pelajaran'], $classes[$c]['subjects'])) {
+                    $classes[$c]['subjects'][] = $m['mata_pelajaran'];
+                }
+                if (!empty($m['mata_pelajaran']) && !in_array($m['mata_pelajaran'], $subjects)) {
+                    $subjects[] = $m['mata_pelajaran'];
+                }
+            }
+
+            // 3. Jadwal Pelajaran
+            $jadwalRows = $db->findAll("
+                SELECT jp.* 
+                FROM jadwal_pelajaran jp
+                WHERE (jp.pegawai_id = ? OR jp.nama_guru LIKE ?)
+                ORDER BY FIELD(jp.hari, 'Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'), jp.jam_ke ASC
+            ", [$id, '%' . $pegawai['nama'] . '%']);
+
+            foreach ($jadwalRows as $j) {
+                $c = trim($j['nama_kelas']);
+                if (!empty($c) && !isset($classes[$c])) {
+                    $classes[$c] = [
+                        'name' => $c,
+                        'role' => 'Jadwal Reguler',
+                        'subjects' => []
+                    ];
+                }
+                if (!empty($j['mata_pelajaran'])) {
+                    if (isset($classes[$c]) && !in_array($j['mata_pelajaran'], $classes[$c]['subjects'])) {
+                        $classes[$c]['subjects'][] = $j['mata_pelajaran'];
+                    }
+                    if (!in_array($j['mata_pelajaran'], $subjects)) {
+                        $subjects[] = $j['mata_pelajaran'];
+                    }
+                }
+            }
+
+            echo json_encode([
+                'success' => true,
+                'guru' => $pegawai,
+                'classes' => array_values($classes),
+                'subjects' => array_values($subjects),
+                'schedules' => $jadwalRows
+            ]);
+            exit;
+        } catch (Throwable $e) {
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            exit;
+        }
+    }
+
+    /**
+     * API Siswa per Kelas untuk Web Admin Modal
+     */
+    public static function apiSiswaKelas(): void
+    {
+        header('Content-Type: application/json; charset=utf-8');
+        try {
+            $db = Database::getInstance();
+            $className = trim($_GET['kelas'] ?? '');
+            if (empty($className)) {
+                echo json_encode(['success' => false, 'message' => 'Kelas tidak ditentukan.']);
+                exit;
+            }
+
+            $cleanName = trim(preg_replace('/^kelas\s+/i', '', $className));
+
+            $students = $db->findAll("
+                SELECT id, nisn, nis, COALESCE(nama_lengkap, nama) as nama, jenis_kelamin
+                FROM siswa 
+                WHERE (kelas = ? OR kelas = ? OR REPLACE(kelas, 'Kelas ', '') = ? OR ? = REPLACE(kelas, 'Kelas ', ''))
+                  AND (is_active = 1 OR is_active IS NULL OR status_siswa = 'Aktif')
+                ORDER BY COALESCE(nama_lengkap, nama) ASC
+            ", [$className, $cleanName, $cleanName, $cleanName]);
+
+            echo json_encode([
+                'success' => true,
+                'kelas' => $className,
+                'total' => count($students),
+                'data' => $students
+            ]);
+            exit;
+        } catch (Throwable $e) {
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            exit;
+        }
     }
 
     /**

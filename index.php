@@ -557,6 +557,8 @@ $router->post('/kelola-perangkat-pembelajaran/delete/{id}', [PerangkatController
 $router->get('/kelola-jurnal-guru', [JurnalGuruAdminController::class, 'index'], [Middleware::permissionRequired('jurnal.view')]);
 $router->get('/kelola-jurnal-guru/cetak', [JurnalGuruAdminController::class, 'cetak'], [Middleware::permissionRequired('jurnal.view')]);
 $router->get('/kelola-jurnal-guru/api/detail/{id}', [JurnalGuruAdminController::class, 'apiDetail'], [Middleware::permissionRequired('jurnal.view')]);
+$router->get('/kelola-jurnal-guru/api/guru-assignments/{id}', [JurnalGuruAdminController::class, 'apiGuruAssignments'], [Middleware::permissionRequired('jurnal.view')]);
+$router->get('/kelola-jurnal-guru/api/siswa-kelas', [JurnalGuruAdminController::class, 'apiSiswaKelas'], [Middleware::permissionRequired('jurnal.view')]);
 $router->post('/kelola-jurnal-guru/store', [JurnalGuruAdminController::class, 'store'], [Middleware::permissionRequired('jurnal.manage')]);
 $router->post('/kelola-jurnal-guru/status/{id}', [JurnalGuruAdminController::class, 'updateStatus'], [Middleware::permissionRequired('jurnal.manage')]);
 $router->post('/kelola-jurnal-guru/delete/{id}', [JurnalGuruAdminController::class, 'delete'], [Middleware::permissionRequired('jurnal.delete')]);
@@ -923,6 +925,7 @@ $router->get('/mobile/api/jurnal/detail/{id}', [PortalGuruController::class, 'ap
 $router->get('/mobile/api/siswa-kelas', [PortalGuruController::class, 'apiSiswaKelas'], [[PortalGuruAuthController::class, 'authRequired']]);
 $router->get('/mobile/kelas', [PortalGuruController::class, 'kelas'], [[PortalGuruAuthController::class, 'authRequired']]);
 $router->get('/mobile/absensi-kelas', [PortalGuruController::class, 'absensiKelas'], [[PortalGuruAuthController::class, 'authRequired']]);
+$router->post('/mobile/absensi-kelas/simpan', [PortalGuruController::class, 'simpanAbsensiKelas'], [[PortalGuruAuthController::class, 'authRequired']]);
 $router->get('/mobile/murid', [PortalGuruController::class, 'murid'], [[PortalGuruAuthController::class, 'authRequired']]);
 $router->get('/mobile/profil', [PortalGuruController::class, 'profil'], [[PortalGuruAuthController::class, 'authRequired']]);
 $router->get('/mobile/notifikasi', [PortalGuruController::class, 'notifikasi'], [[PortalGuruAuthController::class, 'authRequired']]);

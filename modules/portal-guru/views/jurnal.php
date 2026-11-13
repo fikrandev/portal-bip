@@ -744,11 +744,12 @@
         });
     }
 
-    // Auto-open modal jika URL memuat param jadwal_id
+    // Auto-open modal jika URL memuat param jadwal_id atau kelas
     document.addEventListener('DOMContentLoaded', () => {
         const urlParams = new URLSearchParams(window.location.search);
         const jId = urlParams.get('jadwal_id');
         const editId = urlParams.get('edit_id');
+        const kelasParam = urlParams.get('kelas');
 
         if (jId) {
             const card = document.querySelector(`.schedule-item-card[data-id="${jId}"]`);
@@ -764,6 +765,33 @@
             }
         } else if (editId) {
             openEditJournalModal(parseInt(editId));
+        } else if (kelasParam) {
+            const mapelParam = urlParams.get('mapel') || 'SbdP';
+            const jamParam = urlParams.get('jam_ke') || '1';
+            const jpParam = parseInt(urlParams.get('jp') || 2);
+            const kehadiranParam = urlParams.get('kehadiran') || 'Semua Siswa Hadir';
+
+            document.getElementById('input_jadwal_id').value = '';
+            document.getElementById('input_jurnal_id').value = '';
+            document.getElementById('input_kelas').value = kelasParam;
+            document.getElementById('input_mapel').value = mapelParam;
+            document.getElementById('input_jam_ke').value = jamParam;
+            document.getElementById('input_jumlah_jp').value = jpParam;
+            document.getElementById('input_materi').value = '';
+            document.getElementById('input_kegiatan').value = '';
+            document.getElementById('input_catatan').value = '';
+            document.getElementById('input_kehadiran').value = kehadiranParam;
+
+            document.getElementById('badge_mapel').textContent = mapelParam;
+            document.getElementById('badge_kelas').textContent = kelasParam;
+            document.getElementById('badge_jam_ke').textContent = jamParam;
+            document.getElementById('badge_jumlah_jp').textContent = jpParam;
+
+            document.getElementById('form-modal-title').innerText = 'Isi Jurnal Mengajar';
+            document.getElementById('form-modal-subtitle').innerText = `${kelasParam} • ${mapelParam} (Presensi Tersinkron)`;
+
+            loadClassStudents(kelasParam, kehadiranParam);
+            showModalSheet();
         }
     });
 </script>
