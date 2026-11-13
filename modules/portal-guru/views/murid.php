@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Daftar Siswa (Murid) Screen
  * Compact mobile size with Center Data Loading and Android Bottom Sheet student profile.

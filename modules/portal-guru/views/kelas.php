@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Kelas Diampu Screen
  * Shows PIC / Mendampingi stacked JP summary, and "Masuk" modal with Textarea (max 15 chars) and keyboard-aware "Simpan" button.

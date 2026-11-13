@@ -63,7 +63,14 @@ class PortalGuruController
             $pegawai = $db->find("SELECT * FROM pegawai WHERE email = ? LIMIT 1", [$user['email']]);
         }
         if (!$pegawai && !empty($user['full_name'])) {
-            $pegawai = $db->find("SELECT * FROM pegawai WHERE nama = ? LIMIT 1", [$user['full_name']]);
+            $pegawai = $db->find("SELECT * FROM pegawai WHERE nama = ? OR nama LIKE ? LIMIT 1", [$user['full_name'], '%' . $user['full_name'] . '%']);
+        }
+        if (!$pegawai && !empty($user['phone'])) {
+            $pegawai = $db->find("SELECT * FROM pegawai WHERE no_wa = ? LIMIT 1", [$user['phone']]);
+        }
+        if (!$pegawai && !empty($user['username'])) {
+            $cleanName = str_replace(['.', '_', '-'], ' ', $user['username']);
+            $pegawai = $db->find("SELECT * FROM pegawai WHERE nama LIKE ? LIMIT 1", ['%' . $cleanName . '%']);
         }
 
         // Jika user adalah admin dan belum terhubung ke pegawai, gunakan Ayu Musdalifah (id 17) sebagai default guru contoh

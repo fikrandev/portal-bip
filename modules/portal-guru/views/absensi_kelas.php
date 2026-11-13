@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Absensi Siswa per Kelas Screen
  * Sinkron dengan SK Penugasan Guru & Integrasi Langsung ke Pengisian Jurnal Mengajar.
