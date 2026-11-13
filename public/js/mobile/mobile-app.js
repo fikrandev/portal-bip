@@ -532,6 +532,7 @@ window.MobileRouter = (function() {
   const CACHE_TTL_MAX   = 120000;    // 2m max stale-while-revalidate
   let progressTimer = null;
   let activeNavigationUrl = null;
+  let isNavigating = false;
 
   function normalizeUrl(rawUrl) {
     try {
@@ -735,6 +736,14 @@ window.MobileRouter = (function() {
     const norm = normalizeUrl(targetUrl);
     const currentNorm = normalizeUrl(window.location.href);
 
+    // Reset any stuck body scroll locks or stray modals before route transition
+    document.body.classList.remove('overflow-hidden');
+    document.body.style.overflow = '';
+    const stuckModal = document.getElementById('journal-input-modal');
+    if (stuckModal && !stuckModal.classList.contains('hidden')) {
+      stuckModal.classList.add('hidden');
+    }
+
     // Close any open Bottom Sheet immediately
     if (window.AndroidUI && typeof window.AndroidUI.closeBottomSheet === 'function') {
       window.AndroidUI.closeBottomSheet();
@@ -773,10 +782,12 @@ window.MobileRouter = (function() {
     }
 
     // Case 2: Fetch from Network (or await in-flight prefetch)
+    isNavigating = true;
     startProgressBar();
 
     return fetchAndCache(targetUrl)
       .then(parsed => {
+        isNavigating = false;
         finishProgressBar();
         if (activeNavigationUrl !== norm || !parsed) return;
         if (pushState) {
@@ -785,6 +796,7 @@ window.MobileRouter = (function() {
         hydrateSwappedView(parsed, options.scrollToTop !== false);
       })
       .catch(() => {
+        isNavigating = false;
         finishProgressBar();
         // Fallback to native navigation if network/parse fails
         window.location.href = targetUrl;
@@ -792,6 +804,7 @@ window.MobileRouter = (function() {
   }
 
   function prefetch(targetUrl) {
+    if (isNavigating) return;
     if (!isSpaEligibleUrl(targetUrl)) return;
     const norm = normalizeUrl(targetUrl);
     const cached = pageCache.get(norm);
@@ -843,26 +856,25 @@ window.MobileRouter = (function() {
       }
     });
 
-    // 4. Idle Pre-warming of Core Tabs so first tap is 0ms
+    // 4. Staggered lazy pre-warming of primary routes only (avoids saturating connections & session locks)
     const prewarmCoreTabs = () => {
+      if (isNavigating) return;
       const base = window.APP_BASE_URL || '';
       const coreRoutes = [
         `${base}/mobile`,
-        `${base}/mobile/kelas`,
-        `${base}/mobile/murid`,
-        `${base}/mobile/profil`,
-        `${base}/mobile/jurnal`,
-        `${base}/mobile/absen`
+        `${base}/mobile/jurnal`
       ];
       coreRoutes.forEach((route, idx) => {
-        setTimeout(() => prefetch(route), idx * 180);
+        setTimeout(() => {
+          if (!isNavigating) prefetch(route);
+        }, idx * 600);
       });
     };
 
     if ('requestIdleCallback' in window) {
-      requestIdleCallback(prewarmCoreTabs, { timeout: 1200 });
+      requestIdleCallback(() => setTimeout(prewarmCoreTabs, 1200), { timeout: 2500 });
     } else {
-      setTimeout(prewarmCoreTabs, 450);
+      setTimeout(prewarmCoreTabs, 2000);
     }
   }
 

@@ -30,6 +30,11 @@ class CutiModel
         }
         self::$tablesInitialized = true;
 
+        $stampFile = BASE_PATH . '/storage/logs/.schema_cuti_' . date('Y_m_d') . '.stamp';
+        if (file_exists($stampFile)) {
+            return;
+        }
+
         $pdo = self::db()->getConnection();
 
         // 1. Tabel Master Jenis Cuti
@@ -122,6 +127,11 @@ class CutiModel
 
         self::seedDefaultJenisCuti();
         self::syncAllPegawaiSaldo();
+
+        if (!is_dir(dirname($stampFile))) {
+            @mkdir(dirname($stampFile), 0755, true);
+        }
+        @file_put_contents($stampFile, (string)time());
     }
 
     /**

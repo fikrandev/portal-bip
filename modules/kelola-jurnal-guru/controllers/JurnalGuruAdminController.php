@@ -138,14 +138,15 @@ class JurnalGuruAdminController
         ");
         $kpiToday = $stmtToday->fetch(PDO::FETCH_ASSOC);
 
-        // KPI Bulan Ini
-        $stmtMonth = $pdo->query("
+        // KPI Bulan Ini (sargable date range agar indeks tanggal terpakai)
+        $stmtMonth = $pdo->prepare("
             SELECT 
                 COUNT(*) as count_month,
                 COALESCE(SUM(jumlah_jp), 0) as jp_month
             FROM jurnal_mengajar 
-            WHERE YEAR(tanggal) = YEAR(CURDATE()) AND MONTH(tanggal) = MONTH(CURDATE())
+            WHERE tanggal >= ? AND tanggal <= ?
         ");
+        $stmtMonth->execute([date('Y-m-01'), date('Y-m-t')]);
         $kpiMonth = $stmtMonth->fetch(PDO::FETCH_ASSOC);
 
         // 4. Pagination & Query untuk Tab 2 (Data Jurnal)
@@ -210,6 +211,20 @@ class JurnalGuruAdminController
         // 6. Ambil Jadwal Pelajaran Aktif (Grup Jadwal Aktif) & Penugasan Mengajar (PIC)
         $activeSchedules = [];
         try {
+            $activeGrupIds = $pdo->query("SELECT id FROM jadwal_grup WHERE is_active = 1")->fetchAll(PDO::FETCH_COLUMN);
+            if (empty($activeGrupIds)) {
+                $fallbackId = $pdo->query("SELECT id FROM jadwal_grup ORDER BY id DESC LIMIT 1")->fetchColumn();
+                if ($fallbackId) {
+                    $activeGrupIds = [(int)$fallbackId];
+                }
+            }
+            $grupWhere = '';
+            $schParams = [];
+            if (!empty($activeGrupIds)) {
+                $ph = implode(',', array_fill(0, count($activeGrupIds), '?'));
+                $grupWhere = "WHERE jp.grup_id IN ({$ph})";
+                $schParams = array_map('intval', $activeGrupIds);
+            }
             $sqlSch = "
                 SELECT jp.*,
                        COALESCE(p.nama, jp.nama_guru, 'Guru') as resolved_nama_guru,
@@ -217,12 +232,13 @@ class JurnalGuruAdminController
                        p.nik,
                        p.no_wa
                 FROM jadwal_pelajaran jp
-                LEFT JOIN jadwal_grup jg ON jp.grup_id = jg.id
                 LEFT JOIN pegawai p ON jp.pegawai_id = p.id
-                WHERE (jg.is_active = 1 OR jp.grup_id = (SELECT id FROM jadwal_grup ORDER BY is_active DESC, id DESC LIMIT 1))
+                {$grupWhere}
                 ORDER BY FIELD(jp.hari, 'Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'), jp.jam_ke ASC
             ";
-            $activeSchedules = $pdo->query($sqlSch)->fetchAll(PDO::FETCH_ASSOC);
+            $stmtSch = $pdo->prepare($sqlSch);
+            $stmtSch->execute($schParams);
+            $activeSchedules = $stmtSch->fetchAll(PDO::FETCH_ASSOC);
         } catch (Throwable $e) {
             $activeSchedules = [];
         }
@@ -720,14 +736,23 @@ class JurnalGuruAdminController
                     }
                 }
 
-                foreach ($siswaStatuses as $sId => $stVal) {
-                    $db->insert('presensi_kelas_detail', [
-                        'presensi_kelas_id' => $presensiId,
-                        'siswa_id' => (int)$sId,
-                        'nama_siswa' => $namesMap[$sId] ?? "Siswa #{$sId}",
-                        'status' => in_array($stVal, ['H', 'S', 'I', 'A']) ? $stVal : 'H',
-                        'created_at' => date('Y-m-d H:i:s')
-                    ]);
+                if (!empty($siswaStatuses)) {
+                    $nowTs = date('Y-m-d H:i:s');
+                    $valGroups = [];
+                    $batchParams = [];
+                    foreach ($siswaStatuses as $sId => $stVal) {
+                        $valGroups[] = '(?, ?, ?, ?, ?)';
+                        $batchParams[] = $presensiId;
+                        $batchParams[] = (int)$sId;
+                        $batchParams[] = $namesMap[$sId] ?? "Siswa #{$sId}";
+                        $batchParams[] = in_array($stVal, ['H', 'S', 'I', 'A'], true) ? $stVal : 'H';
+                        $batchParams[] = $nowTs;
+                    }
+                    $pdo = $db->getConnection();
+                    $stmtBatch = $pdo->prepare(
+                        "INSERT INTO presensi_kelas_detail (presensi_kelas_id, siswa_id, nama_siswa, status, created_at) VALUES " . implode(', ', $valGroups)
+                    );
+                    $stmtBatch->execute($batchParams);
                 }
             } catch (Throwable $e) {}
         }
@@ -759,6 +784,9 @@ class JurnalGuruAdminController
      */
     public static function apiGuruAssignments(int $id): void
     {
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_write_close();
+        }
         header('Content-Type: application/json; charset=utf-8');
         try {
             $db = Database::getInstance();
@@ -859,6 +887,9 @@ class JurnalGuruAdminController
      */
     public static function apiSiswaKelas(): void
     {
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_write_close();
+        }
         header('Content-Type: application/json; charset=utf-8');
         try {
             $db = Database::getInstance();
@@ -896,6 +927,9 @@ class JurnalGuruAdminController
      */
     public static function apiDetail(int $id): void
     {
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_write_close();
+        }
         header('Content-Type: application/json; charset=utf-8');
         try {
             $db = Database::getInstance();

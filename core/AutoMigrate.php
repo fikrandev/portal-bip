@@ -86,6 +86,7 @@ class AutoMigrate
             '2026_11_11_000048_add_spmb_daftar_tunggu_wa_columns'         => 'migration048AddSpmbDaftarTungguWaColumns',
             '2026_11_11_000049_register_kelola_jurnal_guru_module'         => 'migration049RegisterKelolaJurnalGuruModule',
             '2026_11_13_000050_sync_portal_guru_schedules_and_rules'       => 'migration050SyncPortalGuruSchedulesAndRules',
+            '2026_11_14_000051_add_performance_indexes'                    => 'migration051AddPerformanceIndexes',
         ];
     }
     /**
@@ -3288,6 +3289,31 @@ class AutoMigrate
                     $sch['ruangan'],
                 ]);
             }
+        }
+    }
+
+    /**
+     * 051. Add composite performance indexes for scalable queries across portal web & mobile
+     */
+    private static function migration051AddPerformanceIndexes(PDO $pdo): void
+    {
+        $indexes = [
+            ['jurnal_mengajar', 'idx_jm_tanggal_guru', '`tanggal`, `guru_id`'],
+            ['jurnal_mengajar', 'idx_jm_jadwal_tanggal', '`jadwal_id`, `tanggal`'],
+            ['jadwal_pelajaran', 'idx_jp_grup_pegawai_hari', '`grup_id`, `pegawai_id`, `hari`'],
+            ['jadwal_pelajaran', 'idx_jp_grup_hari_kelas', '`grup_id`, `hari`, `nama_kelas`'],
+            ['presensi_kelas', 'idx_pk_tanggal_kelas', '`tanggal`, `kelas`'],
+            ['presensi_kelas_detail', 'idx_pkd_presensi_siswa', '`presensi_kelas_id`, `siswa_id`'],
+            ['siswa', 'idx_siswa_active_kelas', '`is_active`, `kelas`'],
+            ['pegawai', 'idx_pegawai_email', '`email`'],
+            ['pegawai', 'idx_pegawai_nama', '`nama`'],
+            ['pegawai_penugasan', 'idx_pp_grup_pegawai', '`grup_id`, `pegawai_id`'],
+            ['pegawai_penugasan', 'idx_pp_grup_wali', '`grup_id`, `wali_kelas_nama`'],
+            ['pegawai_penugasan_mengajar', 'idx_ppm_grup_pegawai', '`grup_id`, `pegawai_id`'],
+        ];
+
+        foreach ($indexes as [$table, $indexName, $columns]) {
+            self::addIndexIfNotExists($pdo, $table, $indexName, $columns);
         }
     }
 }

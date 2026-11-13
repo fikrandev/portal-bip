@@ -14,8 +14,19 @@
 
 class PerangkatModel
 {
+    private static bool $tablesVerified = false;
+
     private static function ensureTables(): void
     {
+        if (self::$tablesVerified) {
+            return;
+        }
+        $stampFile = BASE_PATH . '/storage/logs/.schema_perangkat_v2.stamp';
+        if (file_exists($stampFile)) {
+            self::$tablesVerified = true;
+            return;
+        }
+
         $db = Database::getInstance();
         $db->getConnection()->exec("
             CREATE TABLE IF NOT EXISTS `perangkat_pembelajaran` (
@@ -89,6 +100,12 @@ class PerangkatModel
                 KEY `idx_pal_user` (`user_id`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
         ");
+
+        if (!is_dir(dirname($stampFile))) {
+            @mkdir(dirname($stampFile), 0755, true);
+        }
+        @file_put_contents($stampFile, (string)time());
+        self::$tablesVerified = true;
     }
 
     /**

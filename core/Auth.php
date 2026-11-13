@@ -8,6 +8,8 @@
 class Auth
 {
     private static ?array $currentUser = null;
+    private static ?string $cachedAvatar = null;
+    private static bool $avatarResolved = false;
 
     /**
      * Attempt to log in a user
@@ -59,8 +61,11 @@ class Auth
         $_SESSION['login_time'] = time();
         $_SESSION['ip_address'] = $_SERVER['REMOTE_ADDR'] ?? '';
 
-        // Reset static cache
+        // Reset static cache & avatar cache
         self::$currentUser = null;
+        self::$cachedAvatar = null;
+        self::$avatarResolved = false;
+        unset($_SESSION['user_avatar_resolved'], $_SESSION['user_avatar_resolved_ts'], $_SESSION['user_avatar_resolved_uid']);
 
         // Update last login
         $db->update('users', ['last_login' => date('Y-m-d H:i:s')], 'id = ?', [$user['id']]);
@@ -115,8 +120,11 @@ class Auth
         $_SESSION['login_time'] = time();
         $_SESSION['ip_address'] = $_SERVER['REMOTE_ADDR'] ?? '';
 
-        // Reset static cache
+        // Reset static cache & avatar cache
         self::$currentUser = null;
+        self::$cachedAvatar = null;
+        self::$avatarResolved = false;
+        unset($_SESSION['user_avatar_resolved'], $_SESSION['user_avatar_resolved_ts'], $_SESSION['user_avatar_resolved_uid']);
 
         // Update last login
         $db->update('users', ['last_login' => date('Y-m-d H:i:s')], 'id = ?', [$user['id']]);
@@ -240,38 +248,67 @@ class Auth
      */
     public static function avatar(): ?string
     {
+        if (self::$avatarResolved) {
+            return self::$cachedAvatar;
+        }
+
         $user = self::user();
         if (!$user) {
+            self::$avatarResolved = true;
+            self::$cachedAvatar = null;
             return null;
         }
 
+        $uid = (int)($user['id'] ?? 0);
+        if (
+            isset($_SESSION['user_avatar_resolved'], $_SESSION['user_avatar_resolved_ts'], $_SESSION['user_avatar_resolved_uid']) &&
+            (int)$_SESSION['user_avatar_resolved_uid'] === $uid &&
+            (time() - (int)$_SESSION['user_avatar_resolved_ts']) < 300
+        ) {
+            self::$cachedAvatar = $_SESSION['user_avatar_resolved'] !== '' ? $_SESSION['user_avatar_resolved'] : null;
+            self::$avatarResolved = true;
+            return self::$cachedAvatar;
+        }
+
+        $resolved = null;
+
         // 1. Cek avatar di tabel users
         if (!empty($user['avatar'])) {
-            return self::resolvePhotoUrl($user['avatar']);
+            $resolved = self::resolvePhotoUrl($user['avatar']);
         }
 
         // 2. Cek foto di tabel pegawai yang terhubung (by email, nama, phone, atau username)
-        $db = Database::getInstance();
-        $pegawai = null;
-        if (!empty($user['email'])) {
-            $pegawai = $db->find("SELECT foto FROM pegawai WHERE email = ? AND foto IS NOT NULL AND foto != '' LIMIT 1", [$user['email']]);
-        }
-        if (!$pegawai && !empty($user['full_name'])) {
-            $pegawai = $db->find("SELECT foto FROM pegawai WHERE (nama = ? OR nama LIKE ?) AND foto IS NOT NULL AND foto != '' LIMIT 1", [$user['full_name'], '%' . $user['full_name'] . '%']);
-        }
-        if (!$pegawai && !empty($user['phone'])) {
-            $pegawai = $db->find("SELECT foto FROM pegawai WHERE no_wa = ? AND foto IS NOT NULL AND foto != '' LIMIT 1", [$user['phone']]);
-        }
-        if (!$pegawai && !empty($user['username'])) {
-            $cleanName = str_replace(['.', '_', '-'], ' ', $user['username']);
-            $pegawai = $db->find("SELECT foto FROM pegawai WHERE nama LIKE ? AND foto IS NOT NULL AND foto != '' LIMIT 1", ['%' . $cleanName . '%']);
+        if ($resolved === null) {
+            $db = Database::getInstance();
+            $pegawai = null;
+            if (!empty($user['email'])) {
+                $pegawai = $db->find("SELECT foto FROM pegawai WHERE email = ? AND foto IS NOT NULL AND foto != '' LIMIT 1", [$user['email']]);
+            }
+            if (!$pegawai && !empty($user['full_name'])) {
+                $pegawai = $db->find("SELECT foto FROM pegawai WHERE (nama = ? OR nama LIKE ?) AND foto IS NOT NULL AND foto != '' LIMIT 1", [$user['full_name'], '%' . $user['full_name'] . '%']);
+            }
+            if (!$pegawai && !empty($user['phone'])) {
+                $pegawai = $db->find("SELECT foto FROM pegawai WHERE no_wa = ? AND foto IS NOT NULL AND foto != '' LIMIT 1", [$user['phone']]);
+            }
+            if (!$pegawai && !empty($user['username'])) {
+                $cleanName = str_replace(['.', '_', '-'], ' ', $user['username']);
+                $pegawai = $db->find("SELECT foto FROM pegawai WHERE nama LIKE ? AND foto IS NOT NULL AND foto != '' LIMIT 1", ['%' . $cleanName . '%']);
+            }
+
+            if ($pegawai && !empty($pegawai['foto'])) {
+                $resolved = self::resolvePhotoUrl($pegawai['foto']);
+            }
         }
 
-        if ($pegawai && !empty($pegawai['foto'])) {
-            return self::resolvePhotoUrl($pegawai['foto']);
+        self::$cachedAvatar = $resolved;
+        self::$avatarResolved = true;
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            $_SESSION['user_avatar_resolved'] = $resolved ?? '';
+            $_SESSION['user_avatar_resolved_ts'] = time();
+            $_SESSION['user_avatar_resolved_uid'] = $uid;
         }
 
-        return null;
+        return $resolved;
     }
 
     /**
@@ -298,6 +335,13 @@ class Auth
     {
         static $checked = false;
         if ($checked) return;
+
+        $stampFile = BASE_PATH . '/storage/logs/.login_attempts_table.stamp';
+        if (file_exists($stampFile)) {
+            $checked = true;
+            return;
+        }
+
         try {
             $db = Database::getInstance();
             $db->query("CREATE TABLE IF NOT EXISTS `login_attempts` (
@@ -309,6 +353,7 @@ class Auth
                 INDEX `idx_la_user_time` (`username`, `attempted_at`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
             $checked = true;
+            @file_put_contents($stampFile, (string)time());
         } catch (Throwable $e) {
             // Proceed gracefully if DB table creation is not permitted
         }

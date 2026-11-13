@@ -759,14 +759,20 @@
         }, 300);
     }
 
-    // Auto Keyboard Avoidance untuk virtual keyboard mobile
+    // Auto Keyboard Avoidance untuk virtual keyboard mobile (deduplicated across SPA navigations)
     if (window.visualViewport) {
-        window.visualViewport.addEventListener('resize', () => {
+        if (window._jurnalVpResizeHandler) {
+            window.visualViewport.removeEventListener('resize', window._jurnalVpResizeHandler);
+        }
+        window._jurnalVpResizeHandler = () => {
+            const modal = document.getElementById('journal-input-modal');
+            if (!modal || modal.classList.contains('hidden')) return;
             const wrapper = document.getElementById('journal-input-wrapper');
             if (!wrapper) return;
             const offset = Math.max(0, window.innerHeight - window.visualViewport.height - (window.visualViewport.offsetTop || 0));
             wrapper.style.bottom = offset > 40 ? `${offset}px` : '0px';
-        });
+        };
+        window.visualViewport.addEventListener('resize', window._jurnalVpResizeHandler);
     }
 
     // Inisialisasi mount ke body sesegera mungkin
@@ -804,7 +810,14 @@
 
             if (res && res.success) {
                 closeJournalModal();
+                document.body.classList.remove('overflow-hidden');
+                document.body.style.overflow = '';
                 AndroidUI.toast(res.message || 'Jurnal pembelajaran berhasil disimpan!', 'success');
+
+                // Invalidate seluruh cache SPA router agar tab Beranda/Jurnal/Kelas langsung memuat data terbaru
+                if (window.MobileRouter && typeof window.MobileRouter.invalidate === 'function') {
+                    window.MobileRouter.invalidate();
+                }
 
                 // Bersihkan query param kelas/jadwal agar tidak auto-open modal lagi setelah reload
                 const cleanUrl = '<?= url("mobile/jurnal") ?>';
@@ -813,8 +826,12 @@
                 }
 
                 setTimeout(() => {
-                    window.location.href = cleanUrl;
-                }, 400);
+                    if (window.MobileRouter && typeof window.MobileRouter.navigate === 'function') {
+                        window.MobileRouter.navigate(cleanUrl, { pushState: false, forceReload: true, scrollToTop: false });
+                    } else {
+                        window.location.href = cleanUrl;
+                    }
+                }, 350);
             } else {
                 AndroidUI.toast(res.message || 'Gagal menyimpan jurnal.', 'error');
             }

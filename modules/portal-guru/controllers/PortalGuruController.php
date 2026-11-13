@@ -8,6 +8,24 @@ require_once __DIR__ . '/../models/PortalGuruModel.php';
 
 class PortalGuruController
 {
+    private static ?array $cachedTeacher = null;
+    private static ?string $cachedTeacherKey = null;
+
+    /**
+     * Flush and release PHP session file lock early for read-only requests
+     * so concurrent mobile/API requests never serialize behind flock().
+     */
+    private static function releaseSessionLock(): void
+    {
+        Auth::avatar();
+        if (class_exists('CSRF') && method_exists('CSRF', 'token')) {
+            CSRF::token();
+        }
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_write_close();
+        }
+    }
+
     /**
      * Render a mobile view with mobile app shell layout
      */
@@ -33,11 +51,18 @@ class PortalGuruController
 
         // 1. Dukungan Switch / Preview Guru via URL (?guru_id=17) atau Session
         $previewId = (int)($_GET['guru_id'] ?? $_SESSION['portal_guru_preview_id'] ?? 0);
+        $cacheKey = $previewId > 0 ? ('preview_' . $previewId) : ('user_' . (int)($user['id'] ?? 0));
+        if (self::$cachedTeacher !== null && self::$cachedTeacherKey === $cacheKey) {
+            return self::$cachedTeacher;
+        }
+
         if ($previewId > 0) {
             $_SESSION['portal_guru_preview_id'] = $previewId;
             $previewPegawai = $db->find("SELECT * FROM pegawai WHERE id = ? LIMIT 1", [$previewId]);
             if ($previewPegawai) {
-                return self::formatTeacherArray($previewPegawai, $user);
+                self::$cachedTeacherKey = $cacheKey;
+                self::$cachedTeacher = self::formatTeacherArray($previewPegawai, $user);
+                return self::$cachedTeacher;
             }
         }
 
@@ -58,8 +83,18 @@ class PortalGuruController
             ];
         }
 
+        $uid = (int)($user['id'] ?? 0);
         $pegawai = null;
-        if (!empty($user['email'])) {
+
+        // Fast primary-key lookup when pegawai_id is cached in session for this user
+        if (
+            !empty($_SESSION['portal_guru_pegawai_id']) &&
+            (int)($_SESSION['portal_guru_cache_uid'] ?? 0) === $uid
+        ) {
+            $pegawai = $db->find("SELECT * FROM pegawai WHERE id = ? LIMIT 1", [(int)$_SESSION['portal_guru_pegawai_id']]);
+        }
+
+        if (!$pegawai && !empty($user['email'])) {
             $pegawai = $db->find("SELECT * FROM pegawai WHERE email = ? LIMIT 1", [$user['email']]);
         }
         if (!$pegawai && !empty($user['full_name'])) {
@@ -74,21 +109,28 @@ class PortalGuruController
         }
 
         // Jika user adalah admin dan belum terhubung ke pegawai, gunakan Ayu Musdalifah (id 17) sebagai default guru contoh
-        if (!$pegawai && (Auth::hasRole('super_admin') || ($user['id'] ?? 0) === 1)) {
+        if (!$pegawai && (Auth::hasRole('super_admin') || $uid === 1)) {
             $pegawai = $db->find("SELECT * FROM pegawai WHERE id = 17 LIMIT 1");
         }
 
         if ($pegawai) {
-            return self::formatTeacherArray($pegawai, $user);
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                $_SESSION['portal_guru_pegawai_id'] = (int)$pegawai['id'];
+                $_SESSION['portal_guru_cache_uid'] = $uid;
+            }
+            self::$cachedTeacherKey = $cacheKey;
+            self::$cachedTeacher = self::formatTeacherArray($pegawai, $user);
+            return self::$cachedTeacher;
         }
 
         $fullName = !empty($user['full_name']) ? $user['full_name'] : 'Guru';
         $role = Auth::hasRole('super_admin') ? 'Super Administrator' : 'Guru Pengajar';
 
-        return [
+        self::$cachedTeacherKey = $cacheKey;
+        self::$cachedTeacher = [
             'id' => null,
             'pegawai_id' => null,
-            'user_id' => (int)$user['id'],
+            'user_id' => $uid,
             'name' => $fullName,
             'nip' => '-',
             'role' => $role,
@@ -99,6 +141,7 @@ class PortalGuruController
             'teachingHours' => '24 Jam / Minggu',
             'academicYear' => defined('SYS_TAHUN_AKADEMIK_NAME') ? SYS_TAHUN_AKADEMIK_NAME : '2026/2027 Ganjil'
         ];
+        return self::$cachedTeacher;
     }
 
     /**
@@ -200,14 +243,33 @@ class PortalGuruController
 
         // 3. Dari Jadwal Pelajaran (jadwal_pelajaran)
         try {
+            $activeGrupIds = [];
+            $activeGrups = $db->findAll("SELECT id FROM jadwal_grup WHERE is_active = 1");
+            foreach ($activeGrups as $ag) {
+                $activeGrupIds[] = (int)$ag['id'];
+            }
+            if (empty($activeGrupIds)) {
+                $fallbackGrup = $db->find("SELECT id FROM jadwal_grup ORDER BY id DESC LIMIT 1");
+                if ($fallbackGrup) {
+                    $activeGrupIds[] = (int)$fallbackGrup['id'];
+                }
+            }
+
+            $jParams = [$pegawaiId ?: 0, '%' . $guruName . '%'];
+            $grupClause = '';
+            if (!empty($activeGrupIds)) {
+                $ph = implode(',', array_fill(0, count($activeGrupIds), '?'));
+                $grupClause = " AND jp.grup_id IN ({$ph})";
+                $jParams = array_merge($jParams, $activeGrupIds);
+            }
+
             $jadwalRows = $db->findAll("
                 SELECT jp.nama_kelas, jp.mata_pelajaran, jp.hari, jp.jam_ke, jp.jam_mulai, jp.jam_selesai, jp.ruangan
                 FROM jadwal_pelajaran jp
-                LEFT JOIN jadwal_grup jg ON jp.grup_id = jg.id
                 WHERE (jp.pegawai_id = ? OR jp.nama_guru LIKE ?)
-                  AND (jg.is_active = 1 OR jp.grup_id = (SELECT id FROM jadwal_grup ORDER BY is_active DESC, id DESC LIMIT 1))
+                  {$grupClause}
                 ORDER BY FIELD(jp.hari, 'Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'), jp.jam_ke ASC
-            ", [$pegawaiId ?: 0, '%' . $guruName . '%']);
+            ", $jParams);
 
             foreach ($jadwalRows as $j) {
                 $cName = trim($j['nama_kelas']);
@@ -248,43 +310,45 @@ class PortalGuruController
             ];
         }
 
-        // Hitung jumlah siswa riil dari tabel siswa untuk setiap kelas
-        $pdo = $db->getConnection();
+        // Hitung jumlah siswa riil & wali kelas secara batch (hindari N+1 query loop)
+        $siswaCountMap = [];
+        try {
+            $countRows = $db->findAll("
+                SELECT LOWER(TRIM(REPLACE(kelas, 'Kelas ', ''))) AS clean_k, COUNT(*) AS cnt
+                FROM siswa
+                WHERE kelas IS NOT NULL AND kelas != ''
+                  AND (is_active = 1 OR is_active IS NULL OR status_siswa = 'Aktif')
+                GROUP BY LOWER(TRIM(REPLACE(kelas, 'Kelas ', '')))
+            ");
+            foreach ($countRows as $cr) {
+                $siswaCountMap[$cr['clean_k']] = (int)$cr['cnt'];
+            }
+        } catch (Throwable $e) {}
+
+        $waliMap = [];
+        try {
+            $waliAllRows = $db->findAll("
+                SELECT LOWER(TRIM(REPLACE(pp.wali_kelas_nama, 'Kelas ', ''))) AS clean_w,
+                       COALESCE(p.nama, pp.wali_kelas_nama) AS wali_nama
+                FROM pegawai_penugasan pp
+                JOIN penugasan_grup pg ON pp.grup_id = pg.id
+                JOIN pegawai p ON pp.pegawai_id = p.id
+                WHERE pg.is_active = 1 AND pp.wali_kelas_nama IS NOT NULL AND pp.wali_kelas_nama != ''
+            ");
+            foreach ($waliAllRows as $wr) {
+                $waliMap[$wr['clean_w']] = $wr['wali_nama'];
+            }
+        } catch (Throwable $e) {}
+
         $colorPalette = ['emerald', 'blue', 'indigo', 'purple', 'teal', 'sky', 'amber'];
         $cIndex = 0;
 
         foreach ($classes as $cName => &$info) {
-            $cleanName = trim(preg_replace('/^kelas\s+/i', '', $cName));
-            try {
-                $st = $pdo->prepare("
-                    SELECT COUNT(*) 
-                    FROM siswa 
-                    WHERE (kelas = ? OR kelas = ? OR REPLACE(kelas, 'Kelas ', '') = ? OR ? = REPLACE(kelas, 'Kelas ', ''))
-                      AND (is_active = 1 OR is_active IS NULL OR status_siswa = 'Aktif')
-                ");
-                $st->execute([$cName, $cleanName, $cleanName, $cleanName]);
-                $info['totalStudents'] = (int)$st->fetchColumn();
-            } catch (Throwable $e) {
-                $info['totalStudents'] = 0;
-            }
+            $cleanKey = strtolower(trim(preg_replace('/^kelas\s+/i', '', $cName)));
+            $info['totalStudents'] = $siswaCountMap[$cleanKey] ?? 0;
 
-            // Cari nama Wali Kelas jika guru ini bukan wali kelasnya
             if (!$info['is_wali']) {
-                try {
-                    $stWali = $pdo->prepare("
-                        SELECT COALESCE(p.nama, pp.wali_kelas_nama) 
-                        FROM pegawai_penugasan pp
-                        JOIN penugasan_grup pg ON pp.grup_id = pg.id
-                        JOIN pegawai p ON pp.pegawai_id = p.id
-                        WHERE (pp.wali_kelas_nama = ? OR pp.wali_kelas_nama = ?) AND pg.is_active = 1
-                        LIMIT 1
-                    ");
-                    $stWali->execute([$cName, $cleanName]);
-                    $waliFound = $stWali->fetchColumn();
-                    $info['homeroom'] = $waliFound ?: 'Wali Kelas BIP';
-                } catch (Throwable $e) {
-                    $info['homeroom'] = 'Wali Kelas BIP';
-                }
+                $info['homeroom'] = $waliMap[$cleanKey] ?? 'Wali Kelas BIP';
             } else {
                 $info['homeroom'] = $guruName . ' (Anda)';
             }
@@ -312,8 +376,30 @@ class PortalGuruController
     public static function getTeacherSchedules(?int $pegawaiId, string $guruName, ?string $hari = null): array
     {
         $db = Database::getInstance();
+
+        // Ambil grup jadwal aktif terlebih dahulu (hindari correlated subquery berulang)
+        $activeGrupIds = [];
+        try {
+            $activeGrups = $db->findAll("SELECT id FROM jadwal_grup WHERE is_active = 1");
+            foreach ($activeGrups as $ag) {
+                $activeGrupIds[] = (int)$ag['id'];
+            }
+            if (empty($activeGrupIds)) {
+                $fallbackGrup = $db->find("SELECT id FROM jadwal_grup ORDER BY id DESC LIMIT 1");
+                if ($fallbackGrup) {
+                    $activeGrupIds[] = (int)$fallbackGrup['id'];
+                }
+            }
+        } catch (Throwable $e) {}
+
         $params = [];
         $where = "1=1";
+
+        if (!empty($activeGrupIds)) {
+            $ph = implode(',', array_fill(0, count($activeGrupIds), '?'));
+            $where .= " AND jp.grup_id IN ({$ph})";
+            $params = array_merge($params, $activeGrupIds);
+        }
 
         if ($pegawaiId) {
             $where .= " AND (jp.pegawai_id = ? OR jp.nama_guru LIKE ?)";
@@ -330,21 +416,9 @@ class PortalGuruController
         }
 
         $sql = "
-            SELECT jp.*, 
-                   COALESCE(jp.jumlah_jp, 2) as jp_alokasi,
-                   jm.id as jurnal_id, 
-                   jm.kode_jurnal, 
-                   jm.status as jurnal_status, 
-                   jm.materi_pokok as jurnal_materi,
-                   jm.uraian_kegiatan as jurnal_kegiatan,
-                   jm.catatan_kelas as jurnal_catatan,
-                   jm.jumlah_jp as jurnal_jp,
-                   jm.kehadiran_summary as jurnal_kehadiran
+            SELECT jp.*, COALESCE(jp.jumlah_jp, 2) as jp_alokasi
             FROM jadwal_pelajaran jp
-            LEFT JOIN jadwal_grup jg ON jp.grup_id = jg.id
-            LEFT JOIN jurnal_mengajar jm ON (jm.jadwal_id = jp.id OR (jm.guru_id = jp.pegawai_id AND jm.kelas = jp.nama_kelas COLLATE utf8mb4_unicode_ci AND jm.mata_pelajaran = jp.mata_pelajaran COLLATE utf8mb4_unicode_ci AND jm.jam_ke = CONCAT(jp.jam_ke))) AND jm.tanggal = CURDATE()
             WHERE {$where}
-              AND (jg.is_active = 1 OR jp.grup_id = (SELECT id FROM jadwal_grup ORDER BY is_active DESC, id DESC LIMIT 1))
             ORDER BY FIELD(jp.hari, 'Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'), jp.jam_ke ASC, jp.jam_mulai ASC
         ";
 
@@ -353,6 +427,26 @@ class PortalGuruController
         } catch (Throwable $e) {
             $rows = [];
         }
+
+        // Fetch jurnal hari ini secara terpisah agar indeks (tanggal, guru_id) terpakai maksimal (tanpa OR/COLLATE join)
+        $todayJurnalByJadwal = [];
+        $todayJurnalByKey = [];
+        try {
+            $todayDate = date('Y-m-d');
+            $jurnalRows = $db->findAll(
+                "SELECT id, jadwal_id, guru_id, kelas, mata_pelajaran, jam_ke, kode_jurnal, status, materi_pokok, uraian_kegiatan, catatan_kelas, jumlah_jp, kehadiran_summary
+                 FROM jurnal_mengajar
+                 WHERE tanggal = ?",
+                [$todayDate]
+            );
+            foreach ($jurnalRows as $jr) {
+                if (!empty($jr['jadwal_id'])) {
+                    $todayJurnalByJadwal[(int)$jr['jadwal_id']] = $jr;
+                }
+                $kKey = (int)$jr['guru_id'] . '|' . strtolower(trim((string)$jr['kelas'])) . '|' . strtolower(trim((string)$jr['mata_pelajaran'])) . '|' . trim((string)$jr['jam_ke']);
+                $todayJurnalByKey[$kKey] = $jr;
+            }
+        } catch (Throwable $e) {}
 
         $now = date('H:i:s');
         $schedules = [];
@@ -370,7 +464,13 @@ class PortalGuruController
                 }
             }
 
-            $hasJurnal = !empty($r['jurnal_id']);
+            $jurnalMatch = $todayJurnalByJadwal[(int)$r['id']] ?? null;
+            if (!$jurnalMatch) {
+                $lookupKey = (int)($r['pegawai_id'] ?? 0) . '|' . strtolower(trim((string)$r['nama_kelas'])) . '|' . strtolower(trim((string)$r['mata_pelajaran'])) . '|' . trim((string)$r['jam_ke']);
+                $jurnalMatch = $todayJurnalByKey[$lookupKey] ?? null;
+            }
+
+            $hasJurnal = !empty($jurnalMatch['id']);
 
             $schedules[] = [
                 'id' => (int)$r['id'],
@@ -385,14 +485,14 @@ class PortalGuruController
                 'room' => !empty($r['ruangan']) ? $r['ruangan'] : 'Ruang Kelas',
                 'status' => $status,
                 'has_jurnal' => $hasJurnal,
-                'jurnal_id' => $r['jurnal_id'],
-                'jurnal_kode' => $r['kode_jurnal'],
-                'jurnal_status' => $r['jurnal_status'],
-                'jurnal_materi' => $r['jurnal_materi'],
-                'jurnal_kegiatan' => $r['jurnal_kegiatan'],
-                'jurnal_catatan' => $r['jurnal_catatan'],
-                'jurnal_jp' => $r['jurnal_jp'],
-                'jurnal_kehadiran' => $r['jurnal_kehadiran'],
+                'jurnal_id' => $jurnalMatch['id'] ?? null,
+                'jurnal_kode' => $jurnalMatch['kode_jurnal'] ?? null,
+                'jurnal_status' => $jurnalMatch['status'] ?? null,
+                'jurnal_materi' => $jurnalMatch['materi_pokok'] ?? null,
+                'jurnal_kegiatan' => $jurnalMatch['uraian_kegiatan'] ?? null,
+                'jurnal_catatan' => $jurnalMatch['catatan_kelas'] ?? null,
+                'jurnal_jp' => $jurnalMatch['jumlah_jp'] ?? null,
+                'jurnal_kehadiran' => $jurnalMatch['kehadiran_summary'] ?? null,
             ];
         }
 
@@ -405,6 +505,7 @@ class PortalGuruController
     public static function beranda(): void
     {
         $teacher = self::getLoggedInTeacher();
+        self::releaseSessionLock();
 
         $indonesianDays = [
             'Sunday' => 'Minggu',
@@ -417,8 +518,8 @@ class PortalGuruController
         ];
         $todayName = $indonesianDays[date('l')] ?? 'Senin';
 
-        $todaySchedule = self::getTeacherSchedules($teacher['pegawai_id'], $teacher['name'], $todayName);
         $allTeacherSchedules = self::getTeacherSchedules($teacher['pegawai_id'], $teacher['name']);
+        $todaySchedule = array_values(array_filter($allTeacherSchedules, static fn($s) => ($s['hari'] ?? '') === $todayName));
         
         $classesTaught = array_unique(array_filter(array_column($allTeacherSchedules, 'class')));
         $totalClasses = count($classesTaught) ?: 1;
@@ -455,14 +556,17 @@ class PortalGuruController
         $schoolCoords = ['lat' => -5.147665, 'lng' => 119.432732];
         $lokasiSourceLabel = 'Lokasi Semula (Default)';
 
+        $pegawaiId = (int)($_SESSION['user']['pegawai_id'] ?? $_GET['pegawai_id'] ?? 0);
+        $namaLengkapSession = $_SESSION['user']['nama_lengkap'] ?? '';
+        self::releaseSessionLock();
+
         if (file_exists(MODULES_PATH . '/kelola-absen-pegawai/models/AbsenPegawaiModel.php')) {
             require_once MODULES_PATH . '/kelola-absen-pegawai/models/AbsenPegawaiModel.php';
-            $pegawaiId = (int)($_SESSION['user']['pegawai_id'] ?? $_GET['pegawai_id'] ?? 0);
-            if ($pegawaiId <= 0 && !empty($_SESSION['user']['nama_lengkap'])) {
+            if ($pegawaiId <= 0 && !empty($namaLengkapSession)) {
                 try {
                     $db = Database::getInstance()->getConnection();
                     $st = $db->prepare("SELECT id FROM pegawai WHERE nama_lengkap = ? LIMIT 1");
-                    $st->execute([$_SESSION['user']['nama_lengkap']]);
+                    $st->execute([$namaLengkapSession]);
                     $pegawaiId = (int)$st->fetchColumn();
                 } catch (Throwable $e) {}
             }
@@ -498,6 +602,7 @@ class PortalGuruController
     public static function jurnal(): void
     {
         $teacher = self::getLoggedInTeacher();
+        self::releaseSessionLock();
         $db = Database::getInstance();
 
         $indonesianDays = [
@@ -511,9 +616,9 @@ class PortalGuruController
         ];
         $todayName = $indonesianDays[date('l')] ?? 'Senin';
 
-        // Ambil jadwal hari ini dan seluruh jadwal guru
-        $todaySchedule = self::getTeacherSchedules($teacher['pegawai_id'], $teacher['name'], $todayName);
+        // Ambil seluruh jadwal guru sekali saja lalu filter jadwal hari ini di PHP
         $allSchedules = self::getTeacherSchedules($teacher['pegawai_id'], $teacher['name']);
+        $todaySchedule = array_values(array_filter($allSchedules, static fn($s) => ($s['hari'] ?? '') === $todayName));
 
         // Riwayat jurnal dari database
         $recentJournals = [];
@@ -749,6 +854,7 @@ class PortalGuruController
      */
     public static function apiJurnalDetail(int $id): void
     {
+        self::releaseSessionLock();
         header('Content-Type: application/json; charset=utf-8');
         $db = Database::getInstance();
         $jurnal = $db->find("SELECT * FROM jurnal_mengajar WHERE id = ?", [$id]);
@@ -767,6 +873,7 @@ class PortalGuruController
      */
     public static function apiSiswaKelas(): void
     {
+        self::releaseSessionLock();
         header('Content-Type: application/json; charset=utf-8');
         $className = trim($_GET['kelas'] ?? '');
         $tanggal = trim($_GET['tanggal'] ?? date('Y-m-d'));
@@ -833,6 +940,7 @@ class PortalGuruController
     public static function kelas(): void
     {
         $teacher = self::getLoggedInTeacher();
+        self::releaseSessionLock();
         $classesMap = self::getTeacherClasses($teacher['pegawai_id'], $teacher['name']);
         $classList = array_values($classesMap);
 
@@ -870,6 +978,7 @@ class PortalGuruController
     public static function absensiKelas(): void
     {
         $teacher = self::getLoggedInTeacher();
+        self::releaseSessionLock();
         $db = Database::getInstance();
         $classesMap = self::getTeacherClasses($teacher['pegawai_id'], $teacher['name']);
         
@@ -1006,6 +1115,8 @@ class PortalGuruController
                 ORDER BY id DESC LIMIT 1
             ", [$kelas, $cleanName, $cleanName, $tanggal, $guruId]);
 
+            $pdo->beginTransaction();
+
             if ($existing) {
                 $presensiId = (int)$existing['id'];
                 $db->update('presensi_kelas', [
@@ -1034,7 +1145,7 @@ class PortalGuruController
                 ]);
             }
 
-            // Hapus detail lama dan masukkan detail baru
+            // Hapus detail lama dan masukkan detail baru dalam 1 batch INSERT
             $pdo->prepare("DELETE FROM presensi_kelas_detail WHERE presensi_kelas_id = ?")->execute([$presensiId]);
 
             // Ambil nama-nama siswa untuk pencatatan di detail
@@ -1048,16 +1159,26 @@ class PortalGuruController
                 }
             }
 
-            foreach ($statuses as $sId => $stat) {
-                $statVal = in_array($stat, ['H', 'S', 'I', 'A']) ? $stat : 'H';
-                $db->insert('presensi_kelas_detail', [
-                    'presensi_kelas_id' => $presensiId,
-                    'siswa_id' => (int)$sId,
-                    'nama_siswa' => $namesMap[$sId] ?? "Siswa #{$sId}",
-                    'status' => $statVal,
-                    'created_at' => date('Y-m-d H:i:s')
-                ]);
+            if (!empty($statuses)) {
+                $nowTs = date('Y-m-d H:i:s');
+                $valueGroups = [];
+                $insertParams = [];
+                foreach ($statuses as $sId => $stat) {
+                    $statVal = in_array($stat, ['H', 'S', 'I', 'A'], true) ? $stat : 'H';
+                    $valueGroups[] = '(?, ?, ?, ?, ?)';
+                    $insertParams[] = $presensiId;
+                    $insertParams[] = (int)$sId;
+                    $insertParams[] = $namesMap[$sId] ?? "Siswa #{$sId}";
+                    $insertParams[] = $statVal;
+                    $insertParams[] = $nowTs;
+                }
+                $stmtBatch = $pdo->prepare(
+                    "INSERT INTO presensi_kelas_detail (presensi_kelas_id, siswa_id, nama_siswa, status, created_at) VALUES " . implode(', ', $valueGroups)
+                );
+                $stmtBatch->execute($insertParams);
             }
+
+            $pdo->commit();
 
             $redirectUrl = url('mobile/jurnal?kelas=' . urlencode($kelas) . '&mapel=' . urlencode($mapel) . '&kehadiran=' . urlencode($summary));
 
@@ -1069,6 +1190,9 @@ class PortalGuruController
             ]);
             exit;
         } catch (Throwable $e) {
+            if (isset($pdo) && $pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
             echo json_encode(['success' => false, 'message' => 'Gagal menyimpan presensi: ' . $e->getMessage()]);
             exit;
         }
@@ -1080,6 +1204,7 @@ class PortalGuruController
     public static function murid(): void
     {
         $teacher = self::getLoggedInTeacher();
+        self::releaseSessionLock();
         $classesMap = self::getTeacherClasses($teacher['pegawai_id'], $teacher['name']);
         
         $classesList = array_keys($classesMap);
@@ -1154,6 +1279,7 @@ class PortalGuruController
     public static function profil(): void
     {
         $teacher = self::getLoggedInTeacher();
+        self::releaseSessionLock();
 
         self::render('profil', [
             'pageTitle' => 'Profil Guru & Pengaturan PWA',
@@ -1282,6 +1408,7 @@ class PortalGuruController
      */
     public static function apiSuratList(): void
     {
+        self::releaseSessionLock();
         header('Content-Type: application/json; charset=utf-8');
         header('Access-Control-Allow-Origin: *');
 
@@ -1326,6 +1453,7 @@ class PortalGuruController
      */
     public static function apiSuratDetail($nomor): void
     {
+        self::releaseSessionLock();
         header('Content-Type: application/json; charset=utf-8');
         header('Access-Control-Allow-Origin: *');
 
@@ -1376,6 +1504,7 @@ class PortalGuruController
      */
     public static function apiPageDetail($page): void
     {
+        self::releaseSessionLock();
         header('Content-Type: application/json; charset=utf-8');
         header('Access-Control-Allow-Origin: *');
 
@@ -1452,6 +1581,7 @@ class PortalGuruController
      */
     public static function cuti(): void
     {
+        self::releaseSessionLock();
         $leavesData = PortalGuruModel::getTeacherLeaves();
 
         self::render('cuti', [

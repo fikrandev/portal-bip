@@ -24,7 +24,7 @@ class Router
     /**
      * Register a GET route
      */
-    public function get(string $path, callable $handler, array $middleware = []): self
+    public function get(string $path, callable|array $handler, array $middleware = []): self
     {
         $this->addRoute('GET', $path, $handler, $middleware);
         return $this;
@@ -33,7 +33,7 @@ class Router
     /**
      * Register a POST route
      */
-    public function post(string $path, callable $handler, array $middleware = []): self
+    public function post(string $path, callable|array $handler, array $middleware = []): self
     {
         $this->addRoute('POST', $path, $handler, $middleware);
         return $this;
@@ -42,7 +42,7 @@ class Router
     /**
      * Register both GET and POST
      */
-    public function any(string $path, callable $handler, array $middleware = []): self
+    public function any(string $path, callable|array $handler, array $middleware = []): self
     {
         $this->addRoute('GET', $path, $handler, $middleware);
         $this->addRoute('POST', $path, $handler, $middleware);
@@ -52,18 +52,23 @@ class Router
     /**
      * Add a route to the registry
      */
-    private function addRoute(string $method, string $path, callable $handler, array $middleware): void
+    private function addRoute(string $method, string $path, callable|array $handler, array $middleware): void
     {
-        // Convert path parameters like {id} to regex
-        $pattern = preg_replace('/\{([a-zA-Z_]+)\}/', '(?P<$1>[^/]+)', $path);
-        $pattern = '#^' . $pattern . '$#';
+        $isStatic = strpos($path, '{') === false;
+        $pattern = '';
+        if (!$isStatic) {
+            // Convert path parameters like {id} to regex
+            $pattern = preg_replace('/\{([a-zA-Z_]+)\}/', '(?P<$1>[^/]+)', $path);
+            $pattern = '#^' . $pattern . '$#';
+        }
 
         $this->routes[] = [
             'method'     => $method,
             'path'       => $path,
+            'is_static'  => $isStatic,
             'pattern'    => $pattern,
             'handler'    => $handler,
-            'middleware'  => $middleware,
+            'middleware' => $middleware,
         ];
     }
 
@@ -80,24 +85,32 @@ class Router
                 continue;
             }
 
-            if (preg_match($route['pattern'], $uri, $matches)) {
+            $params = [];
+            if ($route['is_static']) {
+                if ($route['path'] !== $uri) {
+                    continue;
+                }
+            } else {
+                if (!preg_match($route['pattern'], $uri, $matches)) {
+                    continue;
+                }
                 // Extract named parameters
                 $params = array_filter($matches, 'is_string', ARRAY_FILTER_USE_KEY);
+            }
 
-                // Run middleware
-                foreach ($route['middleware'] as $mw) {
-                    if (is_callable($mw)) {
-                        $result = call_user_func($mw);
-                        if ($result === false) {
-                            return; // Middleware blocked the request
-                        }
+            // Run middleware
+            foreach ($route['middleware'] as $mw) {
+                if (is_callable($mw)) {
+                    $result = call_user_func($mw);
+                    if ($result === false) {
+                        return; // Middleware blocked the request
                     }
                 }
-
-                // Call handler with positional arguments
-                call_user_func_array($route['handler'], array_values($params));
-                return;
             }
+
+            // Call handler with positional arguments
+            call_user_func_array($route['handler'], array_values($params));
+            return;
         }
 
         // No route matched → 404

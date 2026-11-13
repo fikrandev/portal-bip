@@ -9,6 +9,8 @@
 class RBAC
 {
     private static ?array $cachedPermissions = null;
+    private static ?array $cachedModules = null;
+    private static array $cachedModuleAccess = [];
 
     /**
      * Check if current user has a specific permission
@@ -47,24 +49,27 @@ class RBAC
             return true;
         }
 
-        $db = Database::getInstance();
-        $userId = Auth::id();
+        if (isset(self::$cachedModuleAccess[$moduleSlug])) {
+            return self::$cachedModuleAccess[$moduleSlug];
+        }
 
+        $userId = Auth::id();
         if (!$userId) {
             return false;
         }
 
-        $result = $db->find(
-            "SELECT COUNT(*) as has_access 
-             FROM modules m
-             JOIN module_permissions mp ON m.id = mp.module_id
-             JOIN role_permissions rp ON mp.permission_id = rp.permission_id
-             JOIN user_roles ur ON rp.role_id = ur.role_id
-             WHERE m.slug = ? AND ur.user_id = ? AND m.is_active = 1",
-            [$moduleSlug, $userId]
-        );
+        // Reuse cached accessible modules list to avoid redundant multi-table JOINs
+        $modules = self::getAccessibleModules();
+        $hasAccess = false;
+        foreach ($modules as $m) {
+            if (($m['slug'] ?? '') === $moduleSlug) {
+                $hasAccess = true;
+                break;
+            }
+        }
 
-        return ($result['has_access'] ?? 0) > 0;
+        self::$cachedModuleAccess[$moduleSlug] = $hasAccess;
+        return $hasAccess;
     }
 
     /**
@@ -117,30 +122,55 @@ class RBAC
      */
     public static function getAccessibleModules(): array
     {
-        $db = Database::getInstance();
-        $userId = Auth::id();
+        if (self::$cachedModules !== null) {
+            return self::$cachedModules;
+        }
 
+        $userId = Auth::id();
         if (!$userId) {
             return [];
         }
 
+        $isSuperAdmin = Auth::isSuperAdmin();
+        if (
+            isset($_SESSION['rbac_modules_cache'], $_SESSION['rbac_modules_ts'], $_SESSION['rbac_modules_uid']) &&
+            (int)$_SESSION['rbac_modules_uid'] === (int)$userId &&
+            ($_SESSION['rbac_modules_sa'] ?? false) === $isSuperAdmin &&
+            (time() - (int)$_SESSION['rbac_modules_ts']) < 300
+        ) {
+            self::$cachedModules = $_SESSION['rbac_modules_cache'];
+            return self::$cachedModules;
+        }
+
+        $db = Database::getInstance();
+
         // Super admin sees all active modules
-        if (Auth::isSuperAdmin()) {
-            return $db->findAll(
+        if ($isSuperAdmin) {
+            $modules = $db->findAll(
                 "SELECT * FROM modules WHERE is_active = 1 ORDER BY sort_order ASC"
+            );
+        } else {
+            $modules = $db->findAll(
+                "SELECT DISTINCT m.* 
+                 FROM modules m
+                 JOIN module_permissions mp ON m.id = mp.module_id
+                 JOIN role_permissions rp ON mp.permission_id = rp.permission_id
+                 JOIN user_roles ur ON rp.role_id = ur.role_id
+                 WHERE ur.user_id = ? AND m.is_active = 1
+                 ORDER BY m.sort_order ASC",
+                [$userId]
             );
         }
 
-        return $db->findAll(
-            "SELECT DISTINCT m.* 
-             FROM modules m
-             JOIN module_permissions mp ON m.id = mp.module_id
-             JOIN role_permissions rp ON mp.permission_id = rp.permission_id
-             JOIN user_roles ur ON rp.role_id = ur.role_id
-             WHERE ur.user_id = ? AND m.is_active = 1
-             ORDER BY m.sort_order ASC",
-            [$userId]
-        );
+        self::$cachedModules = $modules;
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            $_SESSION['rbac_modules_cache'] = $modules;
+            $_SESSION['rbac_modules_ts'] = time();
+            $_SESSION['rbac_modules_uid'] = (int)$userId;
+            $_SESSION['rbac_modules_sa'] = $isSuperAdmin;
+        }
+
+        return $modules;
     }
 
     /**
@@ -200,7 +230,16 @@ class RBAC
     public static function clearCache(): void
     {
         self::$cachedPermissions = null;
-        unset($_SESSION['user_permissions'], $_SESSION['permissions_cached_at']);
+        self::$cachedModules = null;
+        self::$cachedModuleAccess = [];
+        unset(
+            $_SESSION['user_permissions'],
+            $_SESSION['permissions_cached_at'],
+            $_SESSION['rbac_modules_cache'],
+            $_SESSION['rbac_modules_ts'],
+            $_SESSION['rbac_modules_uid'],
+            $_SESSION['rbac_modules_sa']
+        );
     }
 
     /**

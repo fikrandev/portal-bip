@@ -3,14 +3,8 @@
  * Enables PWA offline capabilities, pre-caching, WebAPK installation compliance, and background sync.
  */
 
-const CACHE_NAME = 'portal-bip-pwa-v6';
+const CACHE_NAME = 'portal-bip-pwa-v7';
 const STATIC_ASSETS = [
-  './mobile',
-  './mobile/absen',
-  './mobile/jurnal',
-  './mobile/kelas',
-  './mobile/murid',
-  './mobile/profil',
   './mobile/manifest.json',
   './manifest.json',
   './public/manifest.json',
@@ -65,8 +59,8 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Never intercept requests for Sarpras Mobile
-  if (request.url.includes('/mobile-sarpras')) {
+  // Never intercept requests for Sarpras Mobile or live API endpoints
+  if (request.url.includes('/mobile-sarpras') || request.url.includes('/api/')) {
     return;
   }
 
@@ -103,27 +97,8 @@ self.addEventListener('fetch', (event) => {
         });
       })
     );
-  } else {
-    // Network First with Cache Fallback for dynamic pages & API
-    event.respondWith(
-      fetch(request)
-        .then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200) {
-            const responseClone = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, responseClone));
-          }
-          return networkResponse;
-        })
-        .catch(() => {
-          return caches.match(request).then((cachedResponse) => {
-            if (cachedResponse) {
-              return cachedResponse;
-            }
-            return caches.match('./mobile');
-          });
-        })
-    );
   }
+  // Dynamic HTML routes bypass Cache Storage to avoid stale auth/CSRF/data & write overhead
 });
 
 // Message Event - Handle client requests for cache status or updates

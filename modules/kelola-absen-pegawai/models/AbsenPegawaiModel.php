@@ -32,6 +32,11 @@ class AbsenPegawaiModel
         }
         self::$initialized = true;
 
+        $stampFile = BASE_PATH . '/storage/logs/.schema_absen_pegawai_v2.stamp';
+        if (file_exists($stampFile)) {
+            return;
+        }
+
         $pdo = self::db()->getConnection();
 
         // 1. Tabel Pengaturan Global Absen (Radius Global & Lokasi Semula/Default)
@@ -132,6 +137,11 @@ class AbsenPegawaiModel
                 INDEX `idx_log_tanggal` (`tanggal`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
         ");
+
+        if (!is_dir(dirname($stampFile))) {
+            @mkdir(dirname($stampFile), 0755, true);
+        }
+        @file_put_contents($stampFile, (string)time());
     }
 
     /**

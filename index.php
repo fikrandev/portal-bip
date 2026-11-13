@@ -44,17 +44,37 @@ require_once BASE_PATH . '/core/AutoMigrate.php';
 // ── Auto Migrate Database (Pastikan struktur database server selalu mutakhir) ──
 AutoMigrate::run();
 
-// ── Global System Settings ──────────────────────────
+// ── Global System Settings (Session-Cached 300s) ───
 try {
-    $dbSettings = Database::getInstance();
-    $sysSettings = $dbSettings->findAll("SELECT setting_key, setting_value FROM settings");
-    $globalSettings = [];
-    foreach ($sysSettings as $row) {
-        $globalSettings[$row['setting_key']] = $row['setting_value'];
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+        unset($_SESSION['_sys_boot_cache']);
     }
-    
-    // Fetch active academic year
-    $activeAcademicYear = $dbSettings->find("SELECT id, nama_tahun FROM tahun_akademik WHERE is_active = 1 LIMIT 1");
+    $now = time();
+    if (
+        isset($_SESSION['_sys_boot_cache']) &&
+        is_array($_SESSION['_sys_boot_cache']) &&
+        ($now - ($_SESSION['_sys_boot_cache']['ts'] ?? 0)) < 300
+    ) {
+        $globalSettings = $_SESSION['_sys_boot_cache']['globalSettings'] ?? [];
+        $activeAcademicYear = $_SESSION['_sys_boot_cache']['activeAcademicYear'] ?? null;
+    } else {
+        $dbSettings = Database::getInstance();
+        $sysSettings = $dbSettings->findAll("SELECT setting_key, setting_value FROM settings");
+        $globalSettings = [];
+        foreach ($sysSettings as $row) {
+            $globalSettings[$row['setting_key']] = $row['setting_value'];
+        }
+        
+        // Fetch active academic year
+        $activeAcademicYear = $dbSettings->find("SELECT id, nama_tahun FROM tahun_akademik WHERE is_active = 1 LIMIT 1");
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            $_SESSION['_sys_boot_cache'] = [
+                'ts' => $now,
+                'globalSettings' => $globalSettings,
+                'activeAcademicYear' => $activeAcademicYear,
+            ];
+        }
+    }
 } catch (Exception $e) {
     $globalSettings = [];
     $activeAcademicYear = null;
@@ -166,36 +186,45 @@ if ($basePath === '\\' || $basePath === '/' || $basePath === '.') {
 
 $router = new Router($basePath);
 
-// ── Load Controllers ────────────────────────────────
-require_once BASE_PATH . '/modules/auth/controllers/AuthController.php';
-require_once BASE_PATH . '/modules/dashboard/controllers/DashboardController.php';
-require_once BASE_PATH . '/modules/users/controllers/UserController.php';
-require_once BASE_PATH . '/modules/roles/controllers/RoleController.php';
-require_once BASE_PATH . '/modules/modules-manager/controllers/ModuleController.php';
-require_once BASE_PATH . '/modules/kelola-siswa/controllers/SiswaController.php';
-require_once BASE_PATH . '/modules/kelola-kelas/controllers/KelasController.php';
-require_once BASE_PATH . '/modules/kelola-pegawai/controllers/PegawaiController.php';
-require_once BASE_PATH . '/modules/pengaturan-sistem/controllers/SettingsController.php';
-require_once BASE_PATH . '/modules/portal-guru/controllers/PortalGuruController.php';
-require_once BASE_PATH . '/modules/portal-guru/controllers/PortalGuruAuthController.php';
-require_once BASE_PATH . '/modules/kelola-perangkat-pembelajaran/controllers/PerangkatController.php';
-require_once BASE_PATH . '/modules/kelola-perangkat-pembelajaran/controllers/JadwalController.php';
-require_once BASE_PATH . '/modules/kelola-nilai/controllers/NilaiController.php';
-require_once BASE_PATH . '/modules/kelola-raport/controllers/RaportController.php';
-require_once BASE_PATH . '/modules/kelola-absen-siswa/controllers/AbsenSiswaController.php';
-require_once BASE_PATH . '/modules/kelola-absen-pegawai/controllers/AbsenPegawaiController.php';
-require_once BASE_PATH . '/modules/kelola-quran-siswa/controllers/QuranSiswaController.php';
-require_once BASE_PATH . '/modules/kelola-ujian/controllers/UjianController.php';
-require_once BASE_PATH . '/modules/kelola-quran-pegawai/controllers/QuranPegawaiController.php';
-require_once BASE_PATH . '/modules/kelola-cuti/controllers/CutiController.php';
-require_once BASE_PATH . '/modules/kelola-kpi/controllers/KpiController.php';
-require_once BASE_PATH . '/modules/kelola-ibadah-guru/controllers/IbadahGuruController.php';
-require_once BASE_PATH . '/modules/kelola-spmb/controllers/SpmbController.php';
-require_once BASE_PATH . '/modules/kelola-pelanggaran-siswa/controllers/PelanggaranSiswaController.php';
-require_once BASE_PATH . '/modules/kelola-izin-guru/controllers/IzinGuruController.php';
-require_once BASE_PATH . '/modules/kelola-buku-angkatan-siswa/controllers/BukuAngkatanSiswaController.php';
-require_once BASE_PATH . '/modules/kelola-sarpras/controllers/SarprasController.php';
-require_once BASE_PATH . '/modules/kelola-jurnal-guru/controllers/JurnalGuruAdminController.php';
+// ── Lazy Autoload Controllers ───────────────────────
+spl_autoload_register(static function (string $class): void {
+    static $controllerMap = [
+        'AuthController'            => '/modules/auth/controllers/AuthController.php',
+        'DashboardController'       => '/modules/dashboard/controllers/DashboardController.php',
+        'UserController'            => '/modules/users/controllers/UserController.php',
+        'RoleController'            => '/modules/roles/controllers/RoleController.php',
+        'ModuleController'          => '/modules/modules-manager/controllers/ModuleController.php',
+        'SiswaController'           => '/modules/kelola-siswa/controllers/SiswaController.php',
+        'KelasController'           => '/modules/kelola-kelas/controllers/KelasController.php',
+        'PegawaiController'         => '/modules/kelola-pegawai/controllers/PegawaiController.php',
+        'SettingsController'        => '/modules/pengaturan-sistem/controllers/SettingsController.php',
+        'PortalGuruController'      => '/modules/portal-guru/controllers/PortalGuruController.php',
+        'PortalGuruAuthController'  => '/modules/portal-guru/controllers/PortalGuruAuthController.php',
+        'PerangkatController'       => '/modules/kelola-perangkat-pembelajaran/controllers/PerangkatController.php',
+        'JadwalController'          => '/modules/kelola-perangkat-pembelajaran/controllers/JadwalController.php',
+        'NilaiController'           => '/modules/kelola-nilai/controllers/NilaiController.php',
+        'RaportController'          => '/modules/kelola-raport/controllers/RaportController.php',
+        'AbsenSiswaController'      => '/modules/kelola-absen-siswa/controllers/AbsenSiswaController.php',
+        'AbsenPegawaiController'    => '/modules/kelola-absen-pegawai/controllers/AbsenPegawaiController.php',
+        'QuranSiswaController'      => '/modules/kelola-quran-siswa/controllers/QuranSiswaController.php',
+        'UjianController'           => '/modules/kelola-ujian/controllers/UjianController.php',
+        'QuranPegawaiController'    => '/modules/kelola-quran-pegawai/controllers/QuranPegawaiController.php',
+        'CutiController'            => '/modules/kelola-cuti/controllers/CutiController.php',
+        'KpiController'             => '/modules/kelola-kpi/controllers/KpiController.php',
+        'IbadahGuruController'      => '/modules/kelola-ibadah-guru/controllers/IbadahGuruController.php',
+        'SpmbController'            => '/modules/kelola-spmb/controllers/SpmbController.php',
+        'PelanggaranSiswaController'=> '/modules/kelola-pelanggaran-siswa/controllers/PelanggaranSiswaController.php',
+        'IzinGuruController'        => '/modules/kelola-izin-guru/controllers/IzinGuruController.php',
+        'BukuAngkatanSiswaController'=> '/modules/kelola-buku-angkatan-siswa/controllers/BukuAngkatanSiswaController.php',
+        'SarprasController'         => '/modules/kelola-sarpras/controllers/SarprasController.php',
+        'JurnalGuruAdminController' => '/modules/kelola-jurnal-guru/controllers/JurnalGuruAdminController.php',
+        'MobileSarprasController'   => '/modules/mobile-sarpras/controllers/MobileSarprasController.php',
+        'MobileSarprasAuthController' => '/modules/mobile-sarpras/controllers/MobileSarprasAuthController.php',
+    ];
+    if (isset($controllerMap[$class])) {
+        require_once BASE_PATH . $controllerMap[$class];
+    }
+});
 
 // ── Define Routes ───────────────────────────────────
 
@@ -222,46 +251,6 @@ $router->post('/spmb/observasi/{token}/submit', [SpmbController::class, 'observa
 
 // -- Dashboard (requires auth) --
 $router->get('/', function() {
-    // Auto-migrate if accessed via root
-    $scripts = glob(BASE_PATH . '/database/migrate_*.php');
-    if (!is_array($scripts)) $scripts = [];
-    usort($scripts, function($a, $b) {
-        $a_tables = strpos($a, '_tables.php') !== false;
-        $b_tables = strpos($b, '_tables.php') !== false;
-        if ($a_tables && !$b_tables) return -1;
-        if (!$a_tables && $b_tables) return 1;
-        return strcmp($a, $b);
-    });
-    $scripts[] = BASE_PATH . '/mobile-migrate/migrate_distribusi.php';
-    $scripts[] = BASE_PATH . '/database/schema.sql'; // If there's a way to run sql, but let's stick to php scripts
-
-    $execEnabled = false; // Force inline migration for shared hosting compatibility
-    
-    if ($execEnabled) {
-        foreach ($scripts as $script) {
-            if (file_exists($script)) {
-                $cmd = 'php ' . escapeshellarg($script);
-                if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-                    pclose(popen("start /B " . $cmd, "r"));
-                } else {
-                    exec($cmd . " > /dev/null 2>&1 &");
-                }
-            }
-        }
-    } else {
-        ob_start();
-        foreach ($scripts as $script) {
-            if (file_exists($script) && pathinfo($script, PATHINFO_EXTENSION) === 'php') {
-                try {
-                    // Use an isolated scope for variables
-                    call_user_func(function() use ($script) {
-                        @require_once $script;
-                    });
-                } catch (Throwable $e) {}
-            }
-        }
-        ob_end_clean();
-    }
     Response::redirect(url('dashboard'));
 }, [[]]);
 
@@ -942,55 +931,13 @@ $router->get('/mobile/cuti', [PortalGuruController::class, 'cuti'], [[PortalGuru
 // ==============================================================================
 // MOBILE SARPRAS PWA ROUTES
 // ==============================================================================
-require_once MODULES_PATH . '/mobile-sarpras/controllers/MobileSarprasController.php';
-require_once MODULES_PATH . '/mobile-sarpras/controllers/MobileSarprasAuthController.php';
 
 $router->get('/mobile-sarpras/login', [MobileSarprasAuthController::class, 'showLogin'], [[MobileSarprasAuthController::class, 'guestOnly']]);
 $router->post('/mobile-sarpras/login', [MobileSarprasAuthController::class, 'login']);
 $router->get('/mobile-sarpras/logout', [MobileSarprasAuthController::class, 'logout']);
 $router->post('/mobile-sarpras/api/token-login', [MobileSarprasAuthController::class, 'tokenLogin']);
 
-$router->get('/mobile-sarpras', function() {
-    // Auto-migrate if accessed via mobile-sarpras dashboard
-    $scripts = glob(BASE_PATH . '/database/migrate_*.php');
-    if (!is_array($scripts)) $scripts = [];
-    usort($scripts, function($a, $b) {
-        $a_tables = strpos($a, '_tables.php') !== false;
-        $b_tables = strpos($b, '_tables.php') !== false;
-        if ($a_tables && !$b_tables) return -1;
-        if (!$a_tables && $b_tables) return 1;
-        return strcmp($a, $b);
-    });
-    $scripts[] = BASE_PATH . '/mobile-migrate/migrate_distribusi.php';
-    
-    $execEnabled = false; // Force inline migration for shared hosting compatibility
-    
-    if ($execEnabled) {
-        foreach ($scripts as $script) {
-            if (file_exists($script)) {
-                $cmd = 'php ' . escapeshellarg($script);
-                if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-                    pclose(popen("start /B " . $cmd, "r"));
-                } else {
-                    exec($cmd . " > /dev/null 2>&1 &");
-                }
-            }
-        }
-    } else {
-        ob_start();
-        foreach ($scripts as $script) {
-            if (file_exists($script) && pathinfo($script, PATHINFO_EXTENSION) === 'php') {
-                try {
-                    call_user_func(function() use ($script) {
-                        @require_once $script;
-                    });
-                } catch (Throwable $e) {}
-            }
-        }
-        ob_end_clean();
-    }
-    MobileSarprasController::dashboard();
-}, [[MobileSarprasAuthController::class, 'authRequired']]);
+$router->get('/mobile-sarpras', [MobileSarprasController::class, 'dashboard'], [[MobileSarprasAuthController::class, 'authRequired']]);
 $router->get('/mobile-sarpras/scan', [MobileSarprasController::class, 'scan'], [[MobileSarprasAuthController::class, 'authRequired']]);
 $router->get('/mobile-sarpras/detail/{id}', [MobileSarprasController::class, 'detail'], [[MobileSarprasAuthController::class, 'authRequired']]);
 

@@ -5,6 +5,8 @@
 
 class PegawaiController
 {
+    private static bool $penugasanTableChecked = false;
+
     /**
      * Dashboard & Monitoring Kepegawaian
      */
@@ -1253,6 +1255,15 @@ class PegawaiController
 
     public static function ensurePenugasanMengajarTable(): void
     {
+        if (self::$penugasanTableChecked) {
+            return;
+        }
+        $stampFile = BASE_PATH . '/storage/logs/.schema_penugasan_mengajar_v2.stamp';
+        if (file_exists($stampFile)) {
+            self::$penugasanTableChecked = true;
+            return;
+        }
+
         $db = Database::getInstance();
         $db->getConnection()->exec("
             CREATE TABLE IF NOT EXISTS `pegawai_penugasan_mengajar` (
@@ -1295,6 +1306,12 @@ class PegawaiController
         } catch (Exception $e) {
             // Silently continue if column already exists
         }
+
+        if (!is_dir(dirname($stampFile))) {
+            @mkdir(dirname($stampFile), 0755, true);
+        }
+        @file_put_contents($stampFile, (string)time());
+        self::$penugasanTableChecked = true;
     }
 
     public static function getMasterMataPelajaran(?string $unit = null): array
