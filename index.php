@@ -668,7 +668,10 @@ $router->post('/kelola-cuti/tambah-bulanan', [CutiController::class, 'triggerTam
 $router->get('/kelola-cuti/cetak/{id}', [CutiController::class, 'cetakSurat'], [Middleware::permissionRequired('cuti.view')]);
 $router->get('/kelola-cuti/export', [CutiController::class, 'exportCsv'], [Middleware::permissionRequired('cuti.view')]);
 $router->get('/kelola-kpi', [KpiController::class, 'index'], [Middleware::permissionRequired('kpi.view')]);
-$router->get('/kelola-ibadah-guru', [IbadahGuruController::class, 'index'], [Middleware::permissionRequired('ibadah_guru.view')]);
+$router->get('/kelola-ibadah-guru', [IbadahGuruController::class, 'index'], [[Middleware::class, 'authRequired']]);
+$router->post('/kelola-ibadah-guru/store', [IbadahGuruController::class, 'store'], [[Middleware::class, 'authRequired']]);
+$router->post('/kelola-ibadah-guru/delete/{id}', [IbadahGuruController::class, 'delete'], [Middleware::permissionRequired('ibadah_guru.delete')]);
+$router->get('/kelola-ibadah-guru/cetak', [IbadahGuruController::class, 'cetak'], [[Middleware::class, 'authRequired']]);
 // -- Kelola SPMB (Seleksi Penerimaan Murid Baru) --
 // 1. Dashboard
 $router->get('/kelola-spmb', [SpmbController::class, 'index'], [Middleware::permissionRequired('spmb.view')]);
@@ -930,6 +933,8 @@ $router->get('/mobile/pesan-kelas', [PortalGuruController::class, 'pesanKelas'],
 $router->get('/mobile/bank-soal', [PortalGuruController::class, 'bankSoal'], [[PortalGuruAuthController::class, 'authRequired']]);
 $router->get('/mobile/quran', [PortalGuruController::class, 'quran'], [[PortalGuruAuthController::class, 'authRequired']]);
 $router->get('/mobile/dzikir', [PortalGuruController::class, 'dzikir'], [[PortalGuruAuthController::class, 'authRequired']]);
+$router->get('/mobile/api/ibadah/today', [PortalGuruController::class, 'apiIbadahToday'], [[PortalGuruAuthController::class, 'authRequired']]);
+$router->post('/mobile/ibadah/simpan', [PortalGuruController::class, 'simpanIbadah'], [[PortalGuruAuthController::class, 'authRequired']]);
 $router->get('/mobile/keterlambatan-siswa', [PortalGuruController::class, 'keterlambatanSiswa'], [[PortalGuruAuthController::class, 'authRequired']]);
 $router->get('/mobile/izin', [PortalGuruController::class, 'izin'], [[PortalGuruAuthController::class, 'authRequired']]);
 $router->get('/mobile/cuti', [PortalGuruController::class, 'cuti'], [[PortalGuruAuthController::class, 'authRequired']]);

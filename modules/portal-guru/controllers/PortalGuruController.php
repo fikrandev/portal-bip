@@ -75,6 +75,7 @@ class PortalGuruController
                 'nip' => '-',
                 'role' => 'Tenaga Pendidik',
                 'status' => 'Aktif',
+                'gender' => 'P',
                 'email' => '',
                 'phone' => '',
                 'avatar' => null,
@@ -135,6 +136,7 @@ class PortalGuruController
             'nip' => '-',
             'role' => $role,
             'status' => 'Pegawai Aktif',
+            'gender' => 'P',
             'email' => $user['email'] ?? '-',
             'phone' => $user['phone'] ?? '-',
             'avatar' => Auth::avatar(),
@@ -156,6 +158,8 @@ class PortalGuruController
         $status = !empty($pegawai['status_pegawai']) ? $pegawai['status_pegawai'] : 'Pegawai Aktif';
         $foto = !empty($pegawai['foto']) ? $pegawai['foto'] : ($user['avatar'] ?? null);
         $pegawaiId = (int)$pegawai['id'];
+        $rawJk = strtoupper(trim((string)($pegawai['jenis_kelamin'] ?? 'P')));
+        $gender = ($rawJk === 'L' || str_starts_with($rawJk, 'LAKI')) ? 'L' : 'P';
 
         return [
             'id' => $pegawaiId,
@@ -165,12 +169,95 @@ class PortalGuruController
             'nip' => $nip,
             'role' => $role,
             'status' => $status,
+            'gender' => $gender,
             'email' => $pegawai['email'] ?: ($user['email'] ?? '-'),
             'phone' => $phone,
             'avatar' => $foto ? Auth::resolvePhotoUrl($foto) : null,
             'teachingHours' => '24 Jam / Minggu',
             'academicYear' => defined('SYS_TAHUN_AKADEMIK_NAME') ? SYS_TAHUN_AKADEMIK_NAME : '2026/2027 Ganjil'
         ];
+    }
+
+    /**
+     * Ambil status Ibadah Harian guru HARI INI dari tabel mutabaah_ibadah_guru.
+     * Jika belum ada catatan untuk tanggal hari ini, semua default TIDAK tercentang.
+     */
+    public static function getTodayIbadahState(?int $guruId, string $gender = 'P'): array
+    {
+        $todayDate = date('Y-m-d');
+        $normGender = (strtoupper(trim($gender)) === 'L') ? 'L' : 'P';
+        $defaultLoc = ($normGender === 'P') ? 'rumah' : 'masjid';
+
+        $state = [
+            'date' => $todayDate,
+            'guru_id' => (int)$guruId,
+            'gender' => $normGender,
+            'sholat' => [
+                'subuh'   => ['checked' => false, 'loc' => $defaultLoc],
+                'dzuhur'  => ['checked' => false, 'loc' => $defaultLoc],
+                'ashar'   => ['checked' => false, 'loc' => $defaultLoc],
+                'maghrib' => ['checked' => false, 'loc' => $defaultLoc],
+                'isya'    => ['checked' => false, 'loc' => $defaultLoc],
+            ],
+            'tilawah' => [
+                'checked' => false,
+                'text' => '',
+                'duration_seconds' => 0,
+            ],
+            'dzikir' => [
+                'istighfar' => false,
+                'sholawat' => false,
+            ],
+            'tadabbur' => [
+                'checked' => false,
+                'text' => '',
+            ],
+        ];
+
+        if (!$guruId || $guruId <= 0) {
+            return $state;
+        }
+
+        try {
+            $db = Database::getInstance();
+            $row = $db->find(
+                "SELECT * FROM mutabaah_ibadah_guru WHERE guru_id = ? AND tanggal = ? LIMIT 1",
+                [$guruId, $todayDate]
+            );
+            if ($row) {
+                $rowGender = $normGender;
+                foreach (['subuh', 'dzuhur', 'ashar', 'maghrib', 'isya'] as $w) {
+                    $chk = !empty($row['sholat_' . $w]);
+                    $locVal = $row['sholat_' . $w . '_loc'] ?? $defaultLoc;
+                    if ($rowGender === 'P') {
+                        $locVal = 'rumah';
+                    } elseif ($locVal !== 'masjid' && $locVal !== 'rumah') {
+                        $locVal = $defaultLoc;
+                    }
+                    $state['sholat'][$w] = [
+                        'checked' => $chk,
+                        'loc' => $locVal,
+                    ];
+                }
+                $state['tilawah'] = [
+                    'checked' => !empty($row['tilawah_checked']),
+                    'text' => (string)($row['tilawah_surah'] ?? ''),
+                    'duration_seconds' => (int)($row['tilawah_duration_seconds'] ?? 0),
+                ];
+                $state['dzikir'] = [
+                    'istighfar' => !empty($row['dzikir_istighfar']),
+                    'sholawat' => !empty($row['dzikir_sholawat']),
+                ];
+                $state['tadabbur'] = [
+                    'checked' => !empty($row['tadabbur_checked']),
+                    'text' => (string)($row['tadabbur_notes'] ?? ''),
+                ];
+            }
+        } catch (Throwable $e) {
+            error_log('getTodayIbadahState error: ' . $e->getMessage());
+        }
+
+        return $state;
     }
 
     /**
@@ -526,6 +613,9 @@ class PortalGuruController
 
         $todayJp = array_sum(array_column($todaySchedule, 'jumlah_jp'));
         $todayFilledJurnal = count(array_filter($todaySchedule, fn($s) => $s['has_jurnal']));
+        $guruIdForIbadah = (int)($teacher['pegawai_id'] ?: $teacher['user_id'] ?: 0);
+        $teacherGender = $teacher['gender'] ?? 'P';
+        $todayIbadahState = self::getTodayIbadahState($guruIdForIbadah, $teacherGender);
 
         self::render('beranda', [
             'pageTitle' => 'Beranda Guru',
@@ -534,6 +624,9 @@ class PortalGuruController
             'teacherRole' => $teacher['role'],
             'teacherAvatar' => $teacher['avatar'],
             'teacherNip' => $teacher['nip'],
+            'teacherGender' => $teacherGender,
+            'teacherPegawaiId' => $guruIdForIbadah,
+            'todayIbadahState' => $todayIbadahState,
             'totalClasses' => $totalClasses,
             'todayName' => $todayName,
             'todayDate' => date('d F Y'),
@@ -1386,9 +1479,17 @@ class PortalGuruController
      */
     public static function quran(): void
     {
+        $teacher = self::getLoggedInTeacher();
+        self::releaseSessionLock();
+        $guruIdForIbadah = (int)($teacher['pegawai_id'] ?: $teacher['user_id'] ?: 0);
+        $teacherGender = $teacher['gender'] ?? 'P';
+
         self::render('quran', [
             'pageTitle' => 'Al-Qur\'an Digital',
-            'activeTab' => 'quran'
+            'activeTab' => 'quran',
+            'teacherGender' => $teacherGender,
+            'teacherPegawaiId' => $guruIdForIbadah,
+            'todayIbadahState' => self::getTodayIbadahState($guruIdForIbadah, $teacherGender),
         ]);
     }
 
@@ -1397,10 +1498,206 @@ class PortalGuruController
      */
     public static function dzikir(): void
     {
+        $teacher = self::getLoggedInTeacher();
+        self::releaseSessionLock();
+        $guruIdForIbadah = (int)($teacher['pegawai_id'] ?: $teacher['user_id'] ?: 0);
+        $teacherGender = $teacher['gender'] ?? 'P';
+
         self::render('dzikir', [
             'pageTitle' => 'Dzikir Pagi & Petang (Al-Ma\'tsurat)',
-            'activeTab' => 'dzikir'
+            'activeTab' => 'dzikir',
+            'teacherGender' => $teacherGender,
+            'teacherPegawaiId' => $guruIdForIbadah,
+            'todayIbadahState' => self::getTodayIbadahState($guruIdForIbadah, $teacherGender),
         ]);
+    }
+
+    /**
+     * API: Ambil status Ibadah Harian hari ini dari database (mutabaah_ibadah_guru)
+     */
+    public static function apiIbadahToday(): void
+    {
+        $teacher = self::getLoggedInTeacher();
+        self::releaseSessionLock();
+        header('Content-Type: application/json; charset=utf-8');
+
+        $guruId = (int)($teacher['pegawai_id'] ?: $teacher['user_id'] ?: 0);
+        $gender = $teacher['gender'] ?? 'P';
+
+        echo json_encode([
+            'success' => true,
+            'data' => self::getTodayIbadahState($guruId, $gender),
+        ]);
+        exit;
+    }
+
+    /**
+     * Simpan / Sinkronkan Ibadah Harian guru ke database mutabaah_ibadah_guru
+     * Mendukung full payload dari Beranda maupun partial action ('mark_tilawah', 'mark_dzikir').
+     */
+    public static function simpanIbadah(): void
+    {
+        $teacher = self::getLoggedInTeacher();
+        self::releaseSessionLock();
+        header('Content-Type: application/json; charset=utf-8');
+
+        $guruId = (int)($teacher['pegawai_id'] ?: $teacher['user_id'] ?: 0);
+        if ($guruId <= 0) {
+            echo json_encode(['success' => false, 'message' => 'Identitas guru tidak ditemukan.']);
+            exit;
+        }
+
+        $rawInput = file_get_contents('php://input');
+        $payload = [];
+        if ($rawInput) {
+            $decoded = json_decode($rawInput, true);
+            if (is_array($decoded)) {
+                $payload = $decoded;
+            }
+        }
+        if (empty($payload) && !empty($_POST)) {
+            $payload = $_POST;
+        }
+
+        $todayDate = date('Y-m-d');
+        $teacherGender = $teacher['gender'] ?? 'P';
+        $payloadGender = strtoupper(trim((string)($payload['gender'] ?? $teacherGender))) === 'L' ? 'L' : 'P';
+        // Gunakan jenis_kelamin asli dari pegawai jika guru Perempuan ('P'), agar sholat otomatis Rumah
+        $gender = ($teacherGender === 'P') ? 'P' : $payloadGender;
+
+        // Ambil state yang ada hari ini di DB terlebih dahulu
+        $current = self::getTodayIbadahState($guruId, $gender);
+        $action = trim((string)($payload['action'] ?? 'full'));
+
+        if ($action === 'mark_tilawah') {
+            $current['tilawah']['checked'] = true;
+            if (!empty($payload['tilawah_surah'])) {
+                $current['tilawah']['text'] = mb_substr(trim((string)$payload['tilawah_surah']), 0, 100);
+            }
+            if (isset($payload['tilawah_duration_seconds'])) {
+                $current['tilawah']['duration_seconds'] = max(0, (int)$payload['tilawah_duration_seconds']);
+            }
+        } elseif ($action === 'mark_dzikir') {
+            $current['dzikir']['istighfar'] = true;
+            $current['dzikir']['sholawat'] = true;
+        } else {
+            // Full update dari modal / kartu Beranda
+            $sholatIn = is_array($payload['sholat'] ?? null) ? $payload['sholat'] : [];
+            foreach (['subuh', 'dzuhur', 'ashar', 'maghrib', 'isya'] as $w) {
+                if (isset($sholatIn[$w]) && is_array($sholatIn[$w])) {
+                    $chk = !empty($sholatIn[$w]['checked']);
+                    $loc = ($sholatIn[$w]['loc'] ?? 'rumah') === 'masjid' ? 'masjid' : 'rumah';
+                    // Aturan khusus perempuan: semua lokasi sholat otomatis 'rumah'
+                    if ($gender === 'P') {
+                        $loc = 'rumah';
+                    }
+                    $current['sholat'][$w] = ['checked' => $chk, 'loc' => $loc];
+                } elseif ($gender === 'P') {
+                    $current['sholat'][$w]['loc'] = 'rumah';
+                }
+            }
+
+            if (isset($payload['tilawah']) && is_array($payload['tilawah'])) {
+                $current['tilawah']['checked'] = !empty($payload['tilawah']['checked']);
+                $current['tilawah']['text'] = mb_substr(trim((string)($payload['tilawah']['text'] ?? '')), 0, 100);
+                if (isset($payload['tilawah']['duration_seconds'])) {
+                    $current['tilawah']['duration_seconds'] = max(0, (int)$payload['tilawah']['duration_seconds']);
+                }
+            }
+
+            if (isset($payload['dzikir']) && is_array($payload['dzikir'])) {
+                $current['dzikir']['istighfar'] = !empty($payload['dzikir']['istighfar']);
+                $current['dzikir']['sholawat'] = !empty($payload['dzikir']['sholawat']);
+            }
+
+            if (isset($payload['tadabbur']) && is_array($payload['tadabbur'])) {
+                $current['tadabbur']['checked'] = !empty($payload['tadabbur']['checked']);
+                $current['tadabbur']['text'] = trim((string)($payload['tadabbur']['text'] ?? ''));
+            }
+        }
+
+        try {
+            $pdo = Database::getInstance()->getConnection();
+            $stmt = $pdo->prepare("
+                INSERT INTO mutabaah_ibadah_guru (
+                    guru_id, tanggal, gender,
+                    sholat_subuh, sholat_subuh_loc,
+                    sholat_dzuhur, sholat_dzuhur_loc,
+                    sholat_ashar, sholat_ashar_loc,
+                    sholat_maghrib, sholat_maghrib_loc,
+                    sholat_isya, sholat_isya_loc,
+                    tilawah_checked, tilawah_surah, tilawah_duration_seconds,
+                    dzikir_istighfar, dzikir_sholawat,
+                    tadabbur_checked, tadabbur_notes
+                ) VALUES (
+                    ?, ?, ?,
+                    ?, ?,
+                    ?, ?,
+                    ?, ?,
+                    ?, ?,
+                    ?, ?,
+                    ?, ?, ?,
+                    ?, ?,
+                    ?, ?
+                ) ON DUPLICATE KEY UPDATE
+                    gender = VALUES(gender),
+                    sholat_subuh = VALUES(sholat_subuh),
+                    sholat_subuh_loc = VALUES(sholat_subuh_loc),
+                    sholat_dzuhur = VALUES(sholat_dzuhur),
+                    sholat_dzuhur_loc = VALUES(sholat_dzuhur_loc),
+                    sholat_ashar = VALUES(sholat_ashar),
+                    sholat_ashar_loc = VALUES(sholat_ashar_loc),
+                    sholat_maghrib = VALUES(sholat_maghrib),
+                    sholat_maghrib_loc = VALUES(sholat_maghrib_loc),
+                    sholat_isya = VALUES(sholat_isya),
+                    sholat_isya_loc = VALUES(sholat_isya_loc),
+                    tilawah_checked = VALUES(tilawah_checked),
+                    tilawah_surah = VALUES(tilawah_surah),
+                    tilawah_duration_seconds = VALUES(tilawah_duration_seconds),
+                    dzikir_istighfar = VALUES(dzikir_istighfar),
+                    dzikir_sholawat = VALUES(dzikir_sholawat),
+                    tadabbur_checked = VALUES(tadabbur_checked),
+                    tadabbur_notes = VALUES(tadabbur_notes),
+                    updated_at = CURRENT_TIMESTAMP
+            ");
+
+            $stmt->execute([
+                $guruId,
+                $todayDate,
+                $gender,
+                !empty($current['sholat']['subuh']['checked']) ? 1 : 0,
+                $gender === 'P' ? 'rumah' : $current['sholat']['subuh']['loc'],
+                !empty($current['sholat']['dzuhur']['checked']) ? 1 : 0,
+                $gender === 'P' ? 'rumah' : $current['sholat']['dzuhur']['loc'],
+                !empty($current['sholat']['ashar']['checked']) ? 1 : 0,
+                $gender === 'P' ? 'rumah' : $current['sholat']['ashar']['loc'],
+                !empty($current['sholat']['maghrib']['checked']) ? 1 : 0,
+                $gender === 'P' ? 'rumah' : $current['sholat']['maghrib']['loc'],
+                !empty($current['sholat']['isya']['checked']) ? 1 : 0,
+                $gender === 'P' ? 'rumah' : $current['sholat']['isya']['loc'],
+                !empty($current['tilawah']['checked']) ? 1 : 0,
+                $current['tilawah']['text'] !== '' ? $current['tilawah']['text'] : null,
+                (int)($current['tilawah']['duration_seconds'] ?? 0),
+                !empty($current['dzikir']['istighfar']) ? 1 : 0,
+                !empty($current['dzikir']['sholawat']) ? 1 : 0,
+                !empty($current['tadabbur']['checked']) ? 1 : 0,
+                $current['tadabbur']['text'] !== '' ? $current['tadabbur']['text'] : null,
+            ]);
+
+            echo json_encode([
+                'success' => true,
+                'message' => 'Mutaba\'ah Ibadah Harian berhasil disimpan.',
+                'data' => self::getTodayIbadahState($guruId, $gender),
+            ]);
+            exit;
+        } catch (Throwable $e) {
+            error_log('simpanIbadah error: ' . $e->getMessage());
+            echo json_encode([
+                'success' => false,
+                'message' => 'Gagal menyimpan ibadah: ' . $e->getMessage(),
+            ]);
+            exit;
+        }
     }
 
     /**

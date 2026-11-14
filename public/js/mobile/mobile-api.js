@@ -69,64 +69,170 @@ window.MobileAPI = (function() {
 
     // ── 3. IBADAH HARIAN (MUTABA'AH YAUMIYYAH) ───────────────
     const Ibadah = {
-        STORAGE_KEY: 'ibadah_today',
+        getLocalDateString() {
+            const d = new Date();
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${y}-${m}-${day}`;
+        },
 
-        getDefaultState() {
+        getScopedKey(guruId = null, dateStr = null) {
+            const ctx = window.PORTAL_IBADAH_CTX || {};
+            const gId = guruId || ctx.guru_id || '0';
+            const dt = dateStr || ctx.date || this.getLocalDateString();
+            return `ibadah_v2_${gId}_${dt}`;
+        },
+
+        clearLegacyKeys() {
+            try {
+                localStorage.removeItem('portal_guru_ibadah_today');
+                localStorage.removeItem('portal_bip_ibadah_today');
+            } catch (e) {}
+        },
+
+        getDefaultState(gender = null, guruId = null, dateStr = null) {
+            const ctx = window.PORTAL_IBADAH_CTX || {};
+            const normGender = ((gender || ctx.gender || 'P') === 'L') ? 'L' : 'P';
+            const defaultLoc = normGender === 'P' ? 'rumah' : 'masjid';
             return {
-                date: new Date().toISOString().split('T')[0],
-                gender: 'P', // 'P' (Perempuan -> default di rumah) or 'L' (Laki-laki -> default di masjid)
+                date: dateStr || ctx.date || this.getLocalDateString(),
+                guru_id: Number(guruId || ctx.guru_id || 0),
+                gender: normGender,
                 sholat: {
-                    subuh: { checked: false, loc: 'rumah' },
-                    dzuhur: { checked: false, loc: 'rumah' },
-                    ashar: { checked: false, loc: 'rumah' },
-                    maghrib: { checked: false, loc: 'rumah' },
-                    isya: { checked: false, loc: 'rumah' }
+                    subuh: { checked: false, loc: defaultLoc },
+                    dzuhur: { checked: false, loc: defaultLoc },
+                    ashar: { checked: false, loc: defaultLoc },
+                    maghrib: { checked: false, loc: defaultLoc },
+                    isya: { checked: false, loc: defaultLoc }
                 },
-                tilawah: { checked: false, text: '' },
+                tilawah: { checked: false, text: '', duration_seconds: 0 },
                 dzikir: { istighfar: false, sholawat: false },
                 tadabbur: { checked: false, text: '' }
             };
         },
 
-        getToday() {
-            // Also check old legacy key if exists
-            let data = Storage.get(this.STORAGE_KEY);
-            if (!data) {
-                const legacy = localStorage.getItem('portal_guru_ibadah_today');
-                if (legacy) {
-                    try {
-                        data = JSON.parse(legacy);
-                        this.save(data);
-                    } catch (e) {}
+        normalizeState(raw, fallbackGender = null) {
+            const base = this.getDefaultState(fallbackGender || raw?.gender, raw?.guru_id, raw?.date);
+            if (!raw || typeof raw !== 'object') return base;
+            const normGender = base.gender;
+            const defaultLoc = normGender === 'P' ? 'rumah' : 'masjid';
+
+            ['subuh', 'dzuhur', 'ashar', 'maghrib', 'isya'].forEach(w => {
+                const src = raw.sholat && raw.sholat[w];
+                if (src && typeof src === 'object') {
+                    base.sholat[w] = {
+                        checked: Boolean(src.checked),
+                        loc: normGender === 'P' ? 'rumah' : (src.loc === 'masjid' ? 'masjid' : (src.loc === 'rumah' ? 'rumah' : defaultLoc))
+                    };
                 }
+            });
+
+            if (raw.tilawah && typeof raw.tilawah === 'object') {
+                base.tilawah = {
+                    checked: Boolean(raw.tilawah.checked),
+                    text: String(raw.tilawah.text || ''),
+                    duration_seconds: Number(raw.tilawah.duration_seconds || 0)
+                };
             }
-            return data ? Object.assign(this.getDefaultState(), data) : this.getDefaultState();
+            if (raw.dzikir && typeof raw.dzikir === 'object') {
+                base.dzikir = {
+                    istighfar: Boolean(raw.dzikir.istighfar),
+                    sholawat: Boolean(raw.dzikir.sholawat)
+                };
+            }
+            if (raw.tadabbur && typeof raw.tadabbur === 'object') {
+                base.tadabbur = {
+                    checked: Boolean(raw.tadabbur.checked),
+                    text: String(raw.tadabbur.text || '')
+                };
+            }
+            return base;
+        },
+
+        setServerState(serverState) {
+            this.clearLegacyKeys();
+            const normalized = this.normalizeState(serverState);
+            Storage.set(this.getScopedKey(normalized.guru_id, normalized.date), normalized);
+            return normalized;
+        },
+
+        getToday() {
+            this.clearLegacyKeys();
+            const ctx = window.PORTAL_IBADAH_CTX || {};
+            if (ctx.serverState) {
+                return this.setServerState(ctx.serverState);
+            }
+            const todayStr = ctx.date || this.getLocalDateString();
+            const scoped = Storage.get(this.getScopedKey(ctx.guru_id, todayStr));
+            if (scoped && scoped.date === todayStr && (!ctx.guru_id || Number(scoped.guru_id) === Number(ctx.guru_id))) {
+                return this.normalizeState(scoped, ctx.gender);
+            }
+            return this.getDefaultState(ctx.gender, ctx.guru_id, todayStr);
         },
 
         save(data) {
-            const success = Storage.set(this.STORAGE_KEY, data);
-            // Sync with legacy key for backward compatibility
-            localStorage.setItem('portal_guru_ibadah_today', JSON.stringify(data));
-            Events.emit('ibadah:updated', data);
+            this.clearLegacyKeys();
+            const normalized = this.normalizeState(data);
+            const success = Storage.set(this.getScopedKey(normalized.guru_id, normalized.date), normalized);
+            if (window.PORTAL_IBADAH_CTX) {
+                window.PORTAL_IBADAH_CTX.serverState = normalized;
+            }
+            Events.emit('ibadah:updated', normalized);
             return success;
+        },
+
+        syncToServer(payload, baseUrl = null) {
+            const base = baseUrl !== null ? baseUrl : (window.APP_BASE_URL || '');
+            return fetch(`${base}/mobile/ibadah/simpan`, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(r => r.json())
+            .then(res => {
+                if (res && res.success && res.data) {
+                    const updated = this.setServerState(res.data);
+                    if (window.PORTAL_IBADAH_CTX) {
+                        window.PORTAL_IBADAH_CTX.serverState = updated;
+                    }
+                    if (window.MobileRouter && typeof window.MobileRouter.invalidate === 'function') {
+                        window.MobileRouter.invalidate(`${base}/mobile`);
+                    }
+                    Events.emit('ibadah:updated', updated);
+                }
+                return res;
+            })
+            .catch(err => {
+                console.warn('[MobileAPI.ibadah] Gagal sinkron ke server:', err);
+                return null;
+            });
         },
 
         toggleSholat(waktu, isMasjid = false) {
             const data = this.getToday();
             if (data.sholat[waktu]) {
                 data.sholat[waktu].checked = !data.sholat[waktu].checked;
-                data.sholat[waktu].loc = isMasjid ? 'masjid' : 'rumah';
+                data.sholat[waktu].loc = data.gender === 'P' ? 'rumah' : (isMasjid ? 'masjid' : 'rumah');
             }
             this.save(data);
+            this.syncToServer(data);
             return data;
         },
 
-        markTilawah(surahName = 'Tilawah Selesai') {
+        markTilawah(surahName = 'Tilawah Selesai', durationSeconds = 120) {
             const data = this.getToday();
             data.tilawah.checked = true;
             data.tilawah.text = surahName;
+            data.tilawah.duration_seconds = durationSeconds;
             this.save(data);
-            return data;
+            return this.syncToServer({
+                action: 'mark_tilawah',
+                gender: data.gender,
+                tilawah_surah: surahName,
+                tilawah_duration_seconds: durationSeconds
+            });
         },
 
         markDzikir(completed = true) {
@@ -134,7 +240,10 @@ window.MobileAPI = (function() {
             data.dzikir.istighfar = completed;
             data.dzikir.sholawat = completed;
             this.save(data);
-            return data;
+            return this.syncToServer({
+                action: 'mark_dzikir',
+                gender: data.gender
+            });
         }
     };
 

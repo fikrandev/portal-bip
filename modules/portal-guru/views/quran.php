@@ -463,6 +463,13 @@
         21: 402, 22: 422, 23: 442, 24: 462, 25: 482, 26: 502, 27: 522, 28: 542, 29: 562, 30: 582
     };
 
+    window.PORTAL_IBADAH_CTX = {
+        date: '<?= date('Y-m-d') ?>',
+        guru_id: <?= (int)($teacherPegawaiId ?? 0) ?>,
+        gender: '<?= e($teacherGender ?? 'P') ?>',
+        serverState: <?= json_encode($todayIbadahState ?? null, JSON_UNESCAPED_UNICODE) ?>
+    };
+
     // ── 2-MINUTE READING TIMER STATE ──────────────────────────
     let readingSeconds = 0;
     let readingTimerInterval = null;
@@ -470,17 +477,17 @@
     let isTilawahCompleted = false;
 
     function initReadingTimer() {
-        // Check if Tilawah was already completed today
-        const savedIbadah = localStorage.getItem('portal_guru_ibadah_today');
-        if (savedIbadah) {
-            try {
-                const parsed = JSON.parse(savedIbadah);
-                if (parsed.tilawah && parsed.tilawah.checked) {
-                    isTilawahCompleted = true;
-                    setTimerCompletedUI();
-                    return;
-                }
-            } catch (e) {}
+        // Cek apakah Tilawah HARI INI sudah selesai di database
+        const serverTilawahDone = Boolean(window.PORTAL_IBADAH_CTX?.serverState?.tilawah?.checked);
+        let apiTilawahDone = false;
+        if (window.MobileAPI && MobileAPI.ibadah) {
+            const st = MobileAPI.ibadah.getToday();
+            apiTilawahDone = Boolean(st?.tilawah?.checked);
+        }
+        if (serverTilawahDone || apiTilawahDone) {
+            isTilawahCompleted = true;
+            setTimerCompletedUI();
+            return;
         }
 
         // Start 1-second interval tracker while on this page
@@ -517,28 +524,34 @@
         if (progressBar) progressBar.style.width = `${percent}%`;
     }
 
-    function triggerTilawahCompletion() {
+    async function triggerTilawahCompletion() {
         isTilawahCompleted = true;
         if (readingTimerInterval) clearInterval(readingTimerInterval);
 
-        // Auto Save to localStorage
-        let ibadah = {
-            gender: 'P',
-            sholat: { subuh: { checked: false }, dzuhur: { checked: false }, ashar: { checked: false }, maghrib: { checked: false }, isya: { checked: false } },
-            tilawah: { checked: true, text: currentSurahData ? `QS. ${currentSurahData.namaLatin}` : 'Tilawah 2 Menit Selesai' },
-            dzikir: { istighfar: false, sholawat: false },
-            tadabbur: { checked: false, text: '' }
-        };
+        const surahLabel = currentSurahData ? `QS. ${currentSurahData.namaLatin}` : 'Tilawah 2 Menit Selesai';
 
-        const existing = localStorage.getItem('portal_guru_ibadah_today');
-        if (existing) {
-            try {
-                ibadah = Object.assign(ibadah, JSON.parse(existing));
-            } catch (e) {}
+        try {
+            if (window.MobileAPI && MobileAPI.ibadah) {
+                await MobileAPI.ibadah.markTilawah(surahLabel, readingSeconds || 120);
+            } else {
+                await fetch(`${APP_BASE_URL}/mobile/ibadah/simpan`, {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'mark_tilawah',
+                        gender: '<?= e($teacherGender ?? 'P') ?>',
+                        tilawah_surah: surahLabel,
+                        tilawah_duration_seconds: readingSeconds || 120
+                    })
+                });
+            }
+            if (window.MobileRouter && typeof window.MobileRouter.invalidate === 'function') {
+                window.MobileRouter.invalidate(`${APP_BASE_URL}/mobile`);
+            }
+        } catch (err) {
+            console.warn('Gagal simpan tilawah ke server:', err);
         }
-        ibadah.tilawah.checked = true;
-        if (currentSurahData) ibadah.tilawah.text = `QS. ${currentSurahData.namaLatin}`;
-        localStorage.setItem('portal_guru_ibadah_today', JSON.stringify(ibadah));
 
         setTimerCompletedUI();
 
@@ -546,7 +559,7 @@
         AndroidUI.success({
             title: 'Alhamdulillah! 📖🎉',
             subtitle: 'Target 2 Menit Tilawah Tercapai',
-            message: `MasyaAllah, Anda telah membaca Al-Qur'an selama <strong>2 menit</strong>.<br>Ibadah <strong>Tilawah Harian</strong> Anda telah otomatis dicentang selesai! 🤲`,
+            message: `MasyaAllah, Anda telah membaca Al-Qur'an selama <strong>2 menit</strong>.<br>Ibadah <strong>Tilawah Harian</strong> Anda telah otomatis dicentang dan tersimpan ke server! 🤲`,
             buttonText: 'Lanjut Membaca'
         });
     }
@@ -1977,7 +1990,7 @@
     // Touch Swipe Gesture for Page Turning on Mobile
     let touchStartX = 0;
     let touchEndX = 0;
-    document.addEventListener('DOMContentLoaded', () => {
+    function initQuranPage() {
         loadSurahCatalog();
         initReadingTimer();
         updateLastReadCard();
@@ -1994,7 +2007,13 @@
                 handleMushafSwipe();
             }, { passive: true });
         }
-    });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initQuranPage);
+    } else {
+        initQuranPage();
+    }
 
     function handleMushafSwipe() {
         const threshold = 50; // px

@@ -87,6 +87,7 @@ class AutoMigrate
             '2026_11_11_000049_register_kelola_jurnal_guru_module'         => 'migration049RegisterKelolaJurnalGuruModule',
             '2026_11_13_000050_sync_portal_guru_schedules_and_rules'       => 'migration050SyncPortalGuruSchedulesAndRules',
             '2026_11_14_000051_add_performance_indexes'                    => 'migration051AddPerformanceIndexes',
+            '2026_11_14_000052_sync_mutabaah_ibadah_guru_schema'           => 'migration052SyncMutabaahIbadahGuruSchema',
         ];
     }
     /**
@@ -3314,6 +3315,80 @@ class AutoMigrate
 
         foreach ($indexes as [$table, $indexName, $columns]) {
             self::addIndexIfNotExists($pdo, $table, $indexName, $columns);
+        }
+    }
+
+    /**
+     * 052. Synchronize mutabaah_ibadah_guru schema and indexes for Mobile + Web Portal Rekap Ibadah
+     */
+    private static function migration052SyncMutabaahIbadahGuruSchema(PDO $pdo): void
+    {
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `mutabaah_ibadah_guru` (
+                `id` int(11) NOT NULL AUTO_INCREMENT,
+                `guru_id` int(11) NOT NULL,
+                `tanggal` date NOT NULL,
+                `gender` enum('L','P') DEFAULT 'P',
+                `sholat_subuh` tinyint(1) DEFAULT 0,
+                `sholat_subuh_loc` enum('rumah','masjid') DEFAULT 'rumah',
+                `sholat_dzuhur` tinyint(1) DEFAULT 0,
+                `sholat_dzuhur_loc` enum('rumah','masjid') DEFAULT 'rumah',
+                `sholat_ashar` tinyint(1) DEFAULT 0,
+                `sholat_ashar_loc` enum('rumah','masjid') DEFAULT 'rumah',
+                `sholat_maghrib` tinyint(1) DEFAULT 0,
+                `sholat_maghrib_loc` enum('rumah','masjid') DEFAULT 'rumah',
+                `sholat_isya` tinyint(1) DEFAULT 0,
+                `sholat_isya_loc` enum('rumah','masjid') DEFAULT 'rumah',
+                `tilawah_checked` tinyint(1) DEFAULT 0,
+                `tilawah_surah` varchar(100) DEFAULT NULL,
+                `tilawah_duration_seconds` int(11) DEFAULT 0,
+                `dzikir_istighfar` tinyint(1) DEFAULT 0,
+                `dzikir_sholawat` tinyint(1) DEFAULT 0,
+                `tadabbur_checked` tinyint(1) DEFAULT 0,
+                `tadabbur_notes` text DEFAULT NULL,
+                `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `unique_guru_tanggal` (`guru_id`, `tanggal`),
+                KEY `idx_mig_tanggal` (`tanggal`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
+
+        if (!self::hasColumn($pdo, 'mutabaah_ibadah_guru', 'guru_id')) {
+            self::addColumnIfNotExists($pdo, 'mutabaah_ibadah_guru', 'guru_id', 'INT(11) NOT NULL DEFAULT 0', 'id');
+            if (self::hasColumn($pdo, 'mutabaah_ibadah_guru', 'pegawai_id')) {
+                try {
+                    $pdo->exec("UPDATE `mutabaah_ibadah_guru` SET `guru_id` = `pegawai_id` WHERE `guru_id` = 0");
+                } catch (Throwable $e) {}
+            }
+        }
+
+        self::addColumnIfNotExists($pdo, 'mutabaah_ibadah_guru', 'gender', "ENUM('L','P') DEFAULT 'P'", 'tanggal');
+        self::addColumnIfNotExists($pdo, 'mutabaah_ibadah_guru', 'sholat_subuh_loc', "ENUM('rumah','masjid') DEFAULT 'rumah'", 'sholat_subuh');
+        self::addColumnIfNotExists($pdo, 'mutabaah_ibadah_guru', 'sholat_dzuhur_loc', "ENUM('rumah','masjid') DEFAULT 'rumah'", 'sholat_dzuhur');
+        self::addColumnIfNotExists($pdo, 'mutabaah_ibadah_guru', 'sholat_ashar_loc', "ENUM('rumah','masjid') DEFAULT 'rumah'", 'sholat_ashar');
+        self::addColumnIfNotExists($pdo, 'mutabaah_ibadah_guru', 'sholat_maghrib_loc', "ENUM('rumah','masjid') DEFAULT 'rumah'", 'sholat_maghrib');
+        self::addColumnIfNotExists($pdo, 'mutabaah_ibadah_guru', 'sholat_isya_loc', "ENUM('rumah','masjid') DEFAULT 'rumah'", 'sholat_isya');
+        self::addColumnIfNotExists($pdo, 'mutabaah_ibadah_guru', 'tilawah_checked', 'TINYINT(1) DEFAULT 0', 'sholat_isya_loc');
+        self::addColumnIfNotExists($pdo, 'mutabaah_ibadah_guru', 'tilawah_surah', 'VARCHAR(100) DEFAULT NULL', 'tilawah_checked');
+        self::addColumnIfNotExists($pdo, 'mutabaah_ibadah_guru', 'tilawah_duration_seconds', 'INT(11) DEFAULT 0', 'tilawah_surah');
+        self::addColumnIfNotExists($pdo, 'mutabaah_ibadah_guru', 'dzikir_istighfar', 'TINYINT(1) DEFAULT 0', 'tilawah_duration_seconds');
+        self::addColumnIfNotExists($pdo, 'mutabaah_ibadah_guru', 'dzikir_sholawat', 'TINYINT(1) DEFAULT 0', 'dzikir_istighfar');
+        self::addColumnIfNotExists($pdo, 'mutabaah_ibadah_guru', 'tadabbur_checked', 'TINYINT(1) DEFAULT 0', 'dzikir_sholawat');
+        self::addColumnIfNotExists($pdo, 'mutabaah_ibadah_guru', 'tadabbur_notes', 'TEXT DEFAULT NULL', 'tadabbur_checked');
+        self::addColumnIfNotExists($pdo, 'mutabaah_ibadah_guru', 'updated_at', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP', 'created_at');
+
+        self::addIndexIfNotExists($pdo, 'mutabaah_ibadah_guru', 'unique_guru_tanggal', '`guru_id`, `tanggal`', true);
+        self::addIndexIfNotExists($pdo, 'mutabaah_ibadah_guru', 'idx_mig_tanggal', '`tanggal`');
+
+        // Pastikan modul kelola-ibadah-guru & permissions aktif
+        if (self::hasTable($pdo, 'modules')) {
+            $checkMod = $pdo->prepare("SELECT id FROM modules WHERE slug = ? LIMIT 1");
+            $checkMod->execute(['kelola-ibadah-guru']);
+            $modId = $checkMod->fetchColumn();
+            if ($modId) {
+                $pdo->prepare("UPDATE modules SET is_active = 1 WHERE id = ?")->execute([$modId]);
+            }
         }
     }
 }

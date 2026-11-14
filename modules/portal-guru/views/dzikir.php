@@ -435,44 +435,55 @@
         renderDzikirList();
     }
 
-    function finishDzikirSession(btn) {
+    async function finishDzikirSession(btn) {
         AndroidUI.setButtonLoading(btn, 'Menyimpan Mutaba\'ah...');
 
-        setTimeout(() => {
-            AndroidUI.resetButton(btn);
+        window.PORTAL_IBADAH_CTX = {
+            date: '<?= date('Y-m-d') ?>',
+            guru_id: <?= (int)($teacherPegawaiId ?? 0) ?>,
+            gender: '<?= e($teacherGender ?? 'P') ?>',
+            serverState: <?= json_encode($todayIbadahState ?? null, JSON_UNESCAPED_UNICODE) ?>
+        };
 
-            // Update Ibadah Harian in localStorage
-            let ibadah = {
-                gender: 'P',
-                sholat: { subuh: { checked: false }, dzuhur: { checked: false }, ashar: { checked: false }, maghrib: { checked: false }, isya: { checked: false } },
-                tilawah: { checked: false, text: '' },
-                dzikir: { istighfar: true, sholawat: true },
-                tadabbur: { checked: false, text: '' }
-            };
-
-            const existing = localStorage.getItem('portal_guru_ibadah_today');
-            if (existing) {
-                try {
-                    ibadah = Object.assign(ibadah, JSON.parse(existing));
-                } catch (e) {}
+        try {
+            if (window.MobileAPI && MobileAPI.ibadah) {
+                await MobileAPI.ibadah.markDzikir(true);
+            } else {
+                await fetch('<?= url("mobile/ibadah/simpan") ?>', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'mark_dzikir',
+                        gender: '<?= e($teacherGender ?? 'P') ?>'
+                    })
+                });
             }
-            ibadah.dzikir.istighfar = true;
-            ibadah.dzikir.sholawat = true;
-            localStorage.setItem('portal_guru_ibadah_today', JSON.stringify(ibadah));
+            if (window.MobileRouter && typeof window.MobileRouter.invalidate === 'function') {
+                window.MobileRouter.invalidate('<?= url("mobile") ?>');
+            }
+        } catch (err) {
+            console.warn('Gagal simpan dzikir ke server:', err);
+        }
 
-            AndroidUI.success({
-                title: 'Alhamdulillah! 📿🎉',
-                subtitle: `Dzikir ${currentMode === 'pagi' ? 'Pagi' : 'Petang'} Selesai`,
-                message: `Mutaba'ah dzikir Al-Ma'tsurat <strong>${currentVersion === 'sugro' ? 'Sugro' : 'Kubro'}</strong> telah tersimpan.<br>Ibadah <strong>Dzikir & Sholawat</strong> di Beranda telah otomatis dicentang selesai! 🤲`,
-                buttonText: 'Kembali ke Beranda',
-                onOk: () => {
-                    window.location.href = '<?= url("mobile") ?>';
-                }
-            });
-        }, 500);
+        AndroidUI.resetButton(btn);
+
+        AndroidUI.success({
+            title: 'Alhamdulillah! 📿🎉',
+            subtitle: `Dzikir ${currentMode === 'pagi' ? 'Pagi' : 'Petang'} Selesai`,
+            message: `Mutaba'ah dzikir Al-Ma'tsurat <strong>${currentVersion === 'sugro' ? 'Sugro' : 'Kubro'}</strong> telah tersimpan ke server.<br>Ibadah <strong>Dzikir & Sholawat</strong> di Beranda telah otomatis dicentang selesai! 🤲`,
+            buttonText: 'Kembali ke Beranda',
+            onOk: () => {
+                window.location.href = '<?= url("mobile") ?>';
+            }
+        });
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            initDzikir();
+        });
+    } else {
         initDzikir();
-    });
+    }
 </script>

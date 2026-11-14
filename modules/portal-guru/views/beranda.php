@@ -473,17 +473,32 @@ if ($hourNow < 11) {
 
 <!-- Interactive Modal & Card Script for Ibadah Harian -->
 <script>
-    // State Store
-    let ibadahData = {
-        gender: 'P', // Default female (Bu Rina)
+    window.APP_IBADAH_BASE = '<?= url('') ?>';
+    window.PORTAL_IBADAH_CTX = {
+        date: '<?= date('Y-m-d') ?>',
+        guru_id: <?= (int)($teacherPegawaiId ?? 0) ?>,
+        gender: '<?= e($teacherGender ?? 'P') ?>',
+        serverState: <?= json_encode($todayIbadahState ?? null, JSON_UNESCAPED_UNICODE) ?>
+    };
+
+    try {
+        localStorage.removeItem('portal_guru_ibadah_today');
+        localStorage.removeItem('portal_bip_ibadah_today');
+    } catch (e) {}
+
+    // State Store (Authoritative dari Database Hari Ini)
+    var ibadahData = window.PORTAL_IBADAH_CTX.serverState || {
+        date: window.PORTAL_IBADAH_CTX.date,
+        guru_id: window.PORTAL_IBADAH_CTX.guru_id,
+        gender: window.PORTAL_IBADAH_CTX.gender || 'P',
         sholat: {
-            subuh: { checked: false, loc: 'rumah' },
-            dzuhur: { checked: false, loc: 'rumah' },
-            ashar: { checked: false, loc: 'rumah' },
-            maghrib: { checked: false, loc: 'rumah' },
-            isya: { checked: false, loc: 'rumah' }
+            subuh: { checked: false, loc: (window.PORTAL_IBADAH_CTX.gender === 'L' ? 'masjid' : 'rumah') },
+            dzuhur: { checked: false, loc: (window.PORTAL_IBADAH_CTX.gender === 'L' ? 'masjid' : 'rumah') },
+            ashar: { checked: false, loc: (window.PORTAL_IBADAH_CTX.gender === 'L' ? 'masjid' : 'rumah') },
+            maghrib: { checked: false, loc: (window.PORTAL_IBADAH_CTX.gender === 'L' ? 'masjid' : 'rumah') },
+            isya: { checked: false, loc: (window.PORTAL_IBADAH_CTX.gender === 'L' ? 'masjid' : 'rumah') }
         },
-        tilawah: { checked: false, text: '' },
+        tilawah: { checked: false, text: '', duration_seconds: 0 },
         dzikir: { istighfar: false, sholawat: false },
         tadabbur: { checked: false, text: '' }
     };
@@ -498,16 +513,26 @@ if ($hourNow < 11) {
             { id: 'isya', name: 'Isya', time: '19.25' }
         ];
 
+        // Jika Perempuan ('P'), pastikan semua tab lokasi sholat berada di Rumah
+        if (ibadahData.gender === 'P') {
+            sholats.forEach(s => {
+                if (!ibadahData.sholat[s.id]) ibadahData.sholat[s.id] = { checked: false, loc: 'rumah' };
+                ibadahData.sholat[s.id].loc = 'rumah';
+            });
+        }
+
         let listHtml = '';
         sholats.forEach(s => {
-            const isChecked = ibadahData.sholat[s.id].checked;
-            const currentLoc = ibadahData.sholat[s.id].loc || (ibadahData.gender === 'P' ? 'rumah' : 'masjid');
+            const isChecked = ibadahData.sholat[s.id] && ibadahData.sholat[s.id].checked;
+            const currentLoc = ibadahData.gender === 'P'
+                ? 'rumah'
+                : (ibadahData.sholat[s.id]?.loc || 'masjid');
             const isRumah = currentLoc === 'rumah';
 
             listHtml += `
                 <div class="flex items-center justify-between p-2.5 rounded-2xl bg-slate-50 border border-slate-100 gap-2">
                     <label class="flex items-center gap-2.5 cursor-pointer min-w-0 flex-1">
-                        <input type="checkbox" id="modal-sholat-${s.id}" ${isChecked ? 'checked' : ''} class="w-4 h-4 rounded text-primary-600 focus:ring-emerald-500">
+                        <input type="checkbox" id="modal-sholat-${s.id}" ${isChecked ? 'checked' : ''} onchange="onModalSholatCheckChange('${s.id}', this.checked)" class="w-4 h-4 rounded text-primary-600 focus:ring-emerald-500">
                         <div class="min-w-0">
                             <p class="text-xs font-bold text-slate-800 leading-tight">${s.name}</p>
                             <p class="text-[10px] text-slate-400 font-mono">${s.time} WITA</p>
@@ -516,10 +541,10 @@ if ($hourNow < 11) {
 
                     <!-- Location Toggle Pill -->
                     <div class="flex items-center bg-white p-0.5 rounded-xl border border-slate-200 text-[10px] font-bold shrink-0" data-modal-sholat="${s.id}">
-                        <button type="button" onclick="setModalSholatLoc('${s.id}', 'rumah')" class="modal-loc-rumah px-2 py-1 rounded-lg ${isRumah ? 'bg-primary-50 text-primary-700 border border-primary-200' : 'text-slate-500'} font-bold transition-all">
+                        <button type="button" onclick="setModalSholatLoc('${s.id}', 'rumah')" class="modal-loc-rumah px-2 py-1 rounded-lg ${isRumah ? 'bg-primary-50 text-primary-700 border border-primary-200 font-bold' : 'text-slate-500 font-medium'} transition-all">
                             🏠 Rumah
                         </button>
-                        <button type="button" onclick="setModalSholatLoc('${s.id}', 'masjid')" class="modal-loc-masjid px-2 py-1 rounded-lg ${!isRumah ? 'bg-primary-50 text-primary-700 border border-primary-200' : 'text-slate-500'} font-bold transition-all">
+                        <button type="button" onclick="setModalSholatLoc('${s.id}', 'masjid')" class="modal-loc-masjid px-2 py-1 rounded-lg ${!isRumah ? 'bg-primary-50 text-primary-700 border border-primary-200 font-bold' : 'text-slate-500 font-medium'} transition-all">
                             🕌 Masjid
                         </button>
                     </div>
@@ -529,12 +554,14 @@ if ($hourNow < 11) {
 
         AndroidUI.bottomSheet({
             title: 'Sholat Fardhu 5 Waktu',
-            subtitle: 'Pilih waktu sholat dan tempat pelaksanaan',
+            subtitle: ibadahData.gender === 'P'
+                ? 'Jenis kelamin Perempuan: centang sholat otomatis ke tab Rumah semua'
+                : 'Pilih waktu sholat dan tempat pelaksanaan',
             icon: '🕌',
             iconBg: 'bg-primary-100 text-primary-700',
             content: `
                 <div class="space-y-2.5 pt-1 text-left">
-                    <!-- Gender Selector -->
+                    <!-- Gender Indicator / Selector -->
                     <div class="flex items-center justify-between p-2 rounded-2xl bg-slate-100 text-xs">
                         <span class="text-[11px] font-bold text-slate-600">Default Lokasi:</span>
                         <div class="flex items-center gap-1 bg-white p-0.5 rounded-xl border border-slate-200 text-[10px] font-bold">
@@ -561,30 +588,55 @@ if ($hourNow < 11) {
                     text: 'Simpan',
                     className: 'flex-1 py-3 bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs rounded-2xl shadow-md text-center press-bounce',
                     autoClose: false,
-                    onClick: (e, btn) => {
+                    onClick: async (e, btn) => {
                         AndroidUI.setButtonLoading(btn, 'Menyimpan...');
-                        setTimeout(() => {
-                            ['subuh', 'dzuhur', 'ashar', 'maghrib', 'isya'].forEach(s => {
-                                const chk = document.getElementById(`modal-sholat-${s}`);
-                                if (chk) ibadahData.sholat[s].checked = chk.checked;
-                            });
-                            saveIbadahState();
-                            AndroidUI.closeBottomSheet();
-                            AndroidUI.toast('Data Sholat 5 Waktu diperbarui!', 'success');
-                        }, 400);
+                        ['subuh', 'dzuhur', 'ashar', 'maghrib', 'isya'].forEach(s => {
+                            const chk = document.getElementById(`modal-sholat-${s}`);
+                            if (!ibadahData.sholat[s]) ibadahData.sholat[s] = { checked: false, loc: 'rumah' };
+                            if (chk) ibadahData.sholat[s].checked = chk.checked;
+                            if (ibadahData.gender === 'P') {
+                                ibadahData.sholat[s].loc = 'rumah';
+                            }
+                        });
+                        await saveIbadahState();
+                        AndroidUI.closeBottomSheet();
+                        AndroidUI.toast('Data Sholat 5 Waktu tersimpan ke server!', 'success');
                     }
                 }
             ]
         });
     }
 
+    function onModalSholatCheckChange(sholatId, isChecked) {
+        if (!ibadahData.sholat[sholatId]) {
+            ibadahData.sholat[sholatId] = { checked: Boolean(isChecked), loc: ibadahData.gender === 'P' ? 'rumah' : 'masjid' };
+        } else {
+            ibadahData.sholat[sholatId].checked = Boolean(isChecked);
+        }
+        // Aturan wajib: Jika guru Perempuan ('P') mencentang sholat, otomatis pindah ke tab Rumah semua
+        if (ibadahData.gender === 'P' && isChecked) {
+            ['subuh', 'dzuhur', 'ashar', 'maghrib', 'isya'].forEach(pId => {
+                setModalSholatLoc(pId, 'rumah');
+            });
+        }
+    }
+
     function setModalSholatLoc(sholatId, loc) {
-        ibadahData.sholat[sholatId].loc = loc;
+        // Jika jenis kelamin Perempuan ('P'), paksa tab Rumah saat memilih sholat
+        const effectiveLoc = (ibadahData.gender === 'P' && loc === 'masjid') ? 'rumah' : loc;
+        if (!ibadahData.sholat[sholatId]) {
+            ibadahData.sholat[sholatId] = { checked: false, loc: effectiveLoc };
+        } else {
+            ibadahData.sholat[sholatId].loc = effectiveLoc;
+        }
+        if (ibadahData.gender === 'P' && loc === 'masjid') {
+            AndroidUI.toast('Guru perempuan otomatis menggunakan tab Rumah', 'info');
+        }
         const container = document.querySelector(`[data-modal-sholat="${sholatId}"]`);
         if (!container) return;
         const btnR = container.querySelector('.modal-loc-rumah');
         const btnM = container.querySelector('.modal-loc-masjid');
-        if (loc === 'rumah') {
+        if (effectiveLoc === 'rumah') {
             btnR.className = 'modal-loc-rumah px-2 py-1 rounded-lg bg-primary-50 text-primary-700 border border-primary-200 font-bold transition-all';
             btnM.className = 'modal-loc-masjid px-2 py-1 rounded-lg text-slate-500 font-medium transition-all';
         } else {
@@ -594,6 +646,10 @@ if ($hourNow < 11) {
     }
 
     function switchModalGender(gender) {
+        if ((window.PORTAL_IBADAH_CTX?.gender || 'P') === 'P' && gender === 'L') {
+            AndroidUI.toast('Akun guru perempuan otomatis menggunakan mode Rumah', 'info');
+            return;
+        }
         ibadahData.gender = gender;
         const defaultLoc = gender === 'P' ? 'rumah' : 'masjid';
         ['subuh', 'dzuhur', 'ashar', 'maghrib', 'isya'].forEach(s => {
@@ -799,21 +855,53 @@ if ($hourNow < 11) {
     }
 
     // ── Save & Render Main Cards ────────────────────────────
-    function saveIbadahState() {
-        localStorage.setItem('portal_guru_ibadah_today', JSON.stringify(ibadahData));
+    async function saveIbadahState() {
+        // Pastikan untuk guru Perempuan ('P') lokasi semua sholat tersimpan sebagai 'rumah'
+        if (ibadahData.gender === 'P') {
+            ['subuh', 'dzuhur', 'ashar', 'maghrib', 'isya'].forEach(s => {
+                if (!ibadahData.sholat[s]) ibadahData.sholat[s] = { checked: false, loc: 'rumah' };
+                ibadahData.sholat[s].loc = 'rumah';
+            });
+        }
+
+        if (window.MobileAPI && MobileAPI.ibadah) {
+            ibadahData = MobileAPI.ibadah.normalizeState(ibadahData, window.PORTAL_IBADAH_CTX?.gender);
+            MobileAPI.ibadah.save(ibadahData);
+        }
         renderIbadahCards();
+
+        try {
+            if (window.MobileAPI && MobileAPI.ibadah) {
+                await MobileAPI.ibadah.syncToServer(ibadahData, window.APP_IBADAH_BASE);
+            } else {
+                const res = await fetch(`${window.APP_IBADAH_BASE}/mobile/ibadah/simpan`, {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(ibadahData)
+                });
+                const json = await res.json();
+                if (json && json.success && json.data) {
+                    ibadahData = json.data;
+                    renderIbadahCards();
+                }
+            }
+        } catch (err) {
+            console.warn('Gagal menyinkronkan ibadah ke server:', err);
+        }
     }
 
     function renderIbadahCards() {
+        const cardSholat = document.getElementById('card-ibadah-sholat');
+        const badgeSholat = document.getElementById('badge-ibadah-sholat');
+        const subSholat = document.getElementById('sub-ibadah-sholat');
+        if (!cardSholat || !badgeSholat || !subSholat) return;
+
         // 1. Sholat Card
         let sholatDone = 0;
         ['subuh', 'dzuhur', 'ashar', 'maghrib', 'isya'].forEach(s => {
             if (ibadahData.sholat[s] && ibadahData.sholat[s].checked) sholatDone++;
         });
-
-        const cardSholat = document.getElementById('card-ibadah-sholat');
-        const badgeSholat = document.getElementById('badge-ibadah-sholat');
-        const subSholat = document.getElementById('sub-ibadah-sholat');
 
         if (sholatDone === 5) {
             badgeSholat.className = 'absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full bg-primary-500 text-white flex items-center justify-center text-[8px] font-bold shadow-xs';
@@ -837,7 +925,7 @@ if ($hourNow < 11) {
         const badgeTilawah = document.getElementById('badge-ibadah-tilawah');
         const subTilawah = document.getElementById('sub-ibadah-tilawah');
 
-        if (ibadahData.tilawah.checked) {
+        if (ibadahData.tilawah && ibadahData.tilawah.checked) {
             badgeTilawah.className = 'absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full bg-primary-500 text-white flex items-center justify-center text-[8px] font-bold shadow-xs';
             badgeTilawah.innerHTML = '✓';
             subTilawah.textContent = 'Selesai ✓';
@@ -855,8 +943,8 @@ if ($hourNow < 11) {
         const subDzikir = document.getElementById('sub-ibadah-dzikir');
 
         let dzikirCount = 0;
-        if (ibadahData.dzikir.istighfar) dzikirCount++;
-        if (ibadahData.dzikir.sholawat) dzikirCount++;
+        if (ibadahData.dzikir && ibadahData.dzikir.istighfar) dzikirCount++;
+        if (ibadahData.dzikir && ibadahData.dzikir.sholawat) dzikirCount++;
 
         if (dzikirCount === 2) {
             badgeDzikir.className = 'absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full bg-purple-500 text-white flex items-center justify-center text-[8px] font-bold shadow-xs';
@@ -880,7 +968,7 @@ if ($hourNow < 11) {
         const badgeTadabbur = document.getElementById('badge-ibadah-tadabbur');
         const subTadabbur = document.getElementById('sub-ibadah-tadabbur');
 
-        if (ibadahData.tadabbur.checked) {
+        if (ibadahData.tadabbur && ibadahData.tadabbur.checked) {
             badgeTadabbur.className = 'absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full bg-amber-500 text-white flex items-center justify-center text-[8px] font-bold shadow-xs';
             badgeTadabbur.innerHTML = '✓';
             subTadabbur.textContent = 'Tercatat ✓';
@@ -895,9 +983,9 @@ if ($hourNow < 11) {
         // Total Completed Count
         let totalCompleted = 0;
         if (sholatDone === 5) totalCompleted++;
-        if (ibadahData.tilawah.checked) totalCompleted++;
+        if (ibadahData.tilawah && ibadahData.tilawah.checked) totalCompleted++;
         if (dzikirCount === 2) totalCompleted++;
-        if (ibadahData.tadabbur.checked) totalCompleted++;
+        if (ibadahData.tadabbur && ibadahData.tadabbur.checked) totalCompleted++;
 
         const totalBadge = document.getElementById('ibadah-total-badge');
         if (totalBadge) {
@@ -912,31 +1000,45 @@ if ($hourNow < 11) {
 
     function loadSavedIbadah() {
         if (window.MobileAPI && MobileAPI.ibadah) {
-            ibadahData = MobileAPI.ibadah.getToday();
-        } else {
-            const raw = localStorage.getItem('portal_guru_ibadah_today');
-            if (raw) {
-                try {
-                    const parsed = JSON.parse(raw);
-                    ibadahData = Object.assign(ibadahData, parsed);
-                } catch (e) {
-                    console.error('Error parsing ibadah data:', e);
-                }
-            }
+            ibadahData = MobileAPI.ibadah.setServerState(window.PORTAL_IBADAH_CTX.serverState || ibadahData);
         }
         renderIbadahCards();
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
-        loadSavedIbadah();
-    });
+    async function refreshIbadahFromServer() {
+        if (!document.getElementById('card-ibadah-sholat')) return;
+        try {
+            const res = await fetch(`${window.APP_IBADAH_BASE}/mobile/api/ibadah/today`, {
+                method: 'GET',
+                credentials: 'same-origin'
+            });
+            const json = await res.json();
+            if (json && json.success && json.data) {
+                if (window.PORTAL_IBADAH_CTX) {
+                    window.PORTAL_IBADAH_CTX.serverState = json.data;
+                }
+                ibadahData = (window.MobileAPI && MobileAPI.ibadah)
+                    ? MobileAPI.ibadah.setServerState(json.data)
+                    : json.data;
+                renderIbadahCards();
+            }
+        } catch (e) {}
+    }
 
-    window.addEventListener('focus', loadSavedIbadah);
-    window.addEventListener('storage', loadSavedIbadah);
-    if (window.MobileAPI && MobileAPI.events) {
-        MobileAPI.events.on('ibadah:updated', (data) => {
-            ibadahData = data;
-            renderIbadahCards();
-        });
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', loadSavedIbadah);
+    } else {
+        loadSavedIbadah();
+    }
+
+    if (!window._berandaIbadahListenersBound) {
+        window._berandaIbadahListenersBound = true;
+        window.addEventListener('focus', refreshIbadahFromServer);
+        if (window.MobileAPI && MobileAPI.events) {
+            MobileAPI.events.on('ibadah:updated', (data) => {
+                ibadahData = data;
+                renderIbadahCards();
+            });
+        }
     }
 </script>
