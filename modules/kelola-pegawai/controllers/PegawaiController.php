@@ -3608,5 +3608,651 @@ class PegawaiController
 
         include MODULES_PATH . '/kelola-pegawai/views/cetak_cv.php';
     }
+
+    /**
+     * Format data profil pegawai menjadi struktur seragam untuk fitur jurnal personal.
+     */
+    private static function formatPersonalTeacherRow(array $pegawai, ?array $user, bool $isPreview): array
+    {
+        $foto = !empty($pegawai['foto']) ? $pegawai['foto'] : ($user['avatar'] ?? null);
+        return [
+            'id' => (int)$pegawai['id'],
+            'pegawai_id' => (int)$pegawai['id'],
+            'user_id' => (int)($user['id'] ?? 0),
+            'name' => !empty($pegawai['nama']) ? $pegawai['nama'] : ($user['full_name'] ?? 'Guru'),
+            'nip' => !empty($pegawai['niy']) ? $pegawai['niy'] : (!empty($pegawai['nik']) ? $pegawai['nik'] : '-'),
+            'role' => !empty($pegawai['jabatan']) ? $pegawai['jabatan'] : 'Wali Kelas & Guru Pengajar',
+            'unit_tugas' => $pegawai['unit_tugas'] ?? '-',
+            'status' => !empty($pegawai['status_pegawai']) ? $pegawai['status_pegawai'] : 'Pegawai Aktif',
+            'email' => $pegawai['email'] ?: ($user['email'] ?? '-'),
+            'phone' => !empty($pegawai['no_wa']) ? $pegawai['no_wa'] : ($user['phone'] ?? '-'),
+            'avatar' => $foto ? Auth::resolvePhotoUrl($foto) : null,
+            'academicYear' => defined('SYS_TAHUN_AKADEMIK_NAME') ? SYS_TAHUN_AKADEMIK_NAME : '2026/2027 Ganjil',
+            'is_preview' => $isPreview,
+        ];
+    }
+
+    /**
+     * Selesaikan profil pegawai/guru untuk pengguna yang sedang login.
+     * Hanya Super Admin yang diizinkan memilih preview guru lain secara eksplisit.
+     */
+    public static function resolvePersonalTeacher(?int $overrideGuruId = null): array
+    {
+        $user = Auth::user();
+        $db = Database::getInstance();
+
+        if ($overrideGuruId !== null && $overrideGuruId > 0 && Auth::isSuperAdmin()) {
+            $previewPegawai = $db->find("SELECT * FROM pegawai WHERE id = ? LIMIT 1", [$overrideGuruId]);
+            if ($previewPegawai) {
+                return self::formatPersonalTeacherRow($previewPegawai, $user, true);
+            }
+        }
+
+        if (!$user) {
+            return [
+                'id' => null,
+                'pegawai_id' => null,
+                'user_id' => null,
+                'name' => 'Guru',
+                'nip' => '-',
+                'role' => 'Tenaga Pendidik',
+                'unit_tugas' => '-',
+                'status' => 'Aktif',
+                'email' => '-',
+                'phone' => '-',
+                'avatar' => null,
+                'academicYear' => defined('SYS_TAHUN_AKADEMIK_NAME') ? SYS_TAHUN_AKADEMIK_NAME : '2026/2027 Ganjil',
+                'is_preview' => false,
+            ];
+        }
+
+        $uid = (int)($user['id'] ?? 0);
+        $pegawai = null;
+
+        if (!empty($user['email'])) {
+            $pegawai = $db->find("SELECT * FROM pegawai WHERE email = ? LIMIT 1", [$user['email']]);
+        }
+        if (!$pegawai && !empty($user['full_name'])) {
+            $pegawai = $db->find("SELECT * FROM pegawai WHERE nama = ? LIMIT 1", [$user['full_name']]);
+            if (!$pegawai) {
+                $pegawai = $db->find("SELECT * FROM pegawai WHERE nama LIKE ? LIMIT 1", ['%' . $user['full_name'] . '%']);
+            }
+        }
+        if (!$pegawai && !empty($user['phone'])) {
+            $pegawai = $db->find("SELECT * FROM pegawai WHERE no_wa = ? LIMIT 1", [$user['phone']]);
+        }
+        if (!$pegawai && !empty($user['username'])) {
+            $cleanName = str_replace(['.', '_', '-'], ' ', $user['username']);
+            $pegawai = $db->find("SELECT * FROM pegawai WHERE nama LIKE ? LIMIT 1", ['%' . $cleanName . '%']);
+        }
+
+        $isPreviewDefault = false;
+        if (!$pegawai && (Auth::hasRole('super_admin') || $uid === 1)) {
+            $pegawai = $db->find("SELECT * FROM pegawai WHERE id = 17 LIMIT 1");
+            if ($pegawai) {
+                $isPreviewDefault = true;
+            }
+        }
+
+        if ($pegawai) {
+            return self::formatPersonalTeacherRow($pegawai, $user, $isPreviewDefault);
+        }
+
+        return [
+            'id' => null,
+            'pegawai_id' => null,
+            'user_id' => $uid,
+            'name' => !empty($user['full_name']) ? $user['full_name'] : 'Guru',
+            'nip' => '-',
+            'role' => Auth::hasRole('super_admin') ? 'Super Administrator' : 'Guru Pengajar',
+            'unit_tugas' => '-',
+            'status' => 'Pegawai Aktif',
+            'email' => $user['email'] ?? '-',
+            'phone' => $user['phone'] ?? '-',
+            'avatar' => Auth::avatar(),
+            'academicYear' => defined('SYS_TAHUN_AKADEMIK_NAME') ? SYS_TAHUN_AKADEMIK_NAME : '2026/2027 Ganjil',
+            'is_preview' => false,
+        ];
+    }
+
+    /**
+     * Kumpulkan seluruh konteks jadwal, kelas, KPI, dan riwayat jurnal personal
+     * untuk digunakan oleh modul Kepegawaian (/kelola-pegawai/jurnal) maupun tab Jurnal Saya di Kelola Jurnal Guru.
+     */
+    public static function buildPersonalJurnalContext(?int $explicitPreviewGuruId = null, array $filters = []): array
+    {
+        $db = Database::getInstance();
+        $pdo = $db->getConnection();
+
+        $myTeacher = self::resolvePersonalTeacher($explicitPreviewGuruId);
+        $pegawaiId = !empty($myTeacher['pegawai_id']) ? (int)$myTeacher['pegawai_id'] : null;
+        $userId = !empty($myTeacher['user_id']) ? (int)$myTeacher['user_id'] : null;
+        $teacherName = trim((string)($myTeacher['name'] ?? 'Guru'));
+
+        $indonesianDays = [
+            'Sunday' => 'Minggu',
+            'Monday' => 'Senin',
+            'Tuesday' => 'Selasa',
+            'Wednesday' => 'Rabu',
+            'Thursday' => 'Kamis',
+            'Friday' => 'Jumat',
+            'Saturday' => 'Sabtu',
+        ];
+        $todayName = $indonesianDays[date('l')] ?? 'Senin';
+        $todayDate = date('Y-m-d');
+
+        $allSchedules = PortalGuruController::getTeacherSchedules($pegawaiId, $teacherName);
+        $todaySchedules = array_values(array_filter(
+            $allSchedules,
+            static fn($s) => ($s['hari'] ?? '') === $todayName
+        ));
+
+        $teacherClasses = PortalGuruController::getTeacherClasses($pegawaiId, $teacherName);
+        $classOptions = array_keys($teacherClasses);
+        $subjectOptions = [];
+
+        foreach ($teacherClasses as $cInfo) {
+            foreach ($cInfo['subjects'] ?? [] as $sb) {
+                if (!empty($sb) && !in_array($sb, $subjectOptions, true)) {
+                    $subjectOptions[] = $sb;
+                }
+            }
+        }
+        foreach ($allSchedules as $sch) {
+            if (!empty($sch['class']) && !in_array($sch['class'], $classOptions, true)) {
+                $classOptions[] = $sch['class'];
+            }
+            if (!empty($sch['subject']) && !in_array($sch['subject'], $subjectOptions, true)) {
+                $subjectOptions[] = $sch['subject'];
+            }
+        }
+
+        // Lengkapi opsi kelas & mapel jika guru belum memiliki jadwal/penugasan formal
+        if (empty($classOptions)) {
+            try {
+                $classOptions = $pdo->query("SELECT DISTINCT nama_kelas FROM kelas WHERE nama_kelas IS NOT NULL AND nama_kelas != '' ORDER BY nama_kelas ASC")->fetchAll(PDO::FETCH_COLUMN);
+            } catch (Throwable $e) {}
+        }
+        if (empty($subjectOptions)) {
+            try {
+                $subjectOptions = $pdo->query("SELECT DISTINCT nama_mapel FROM master_mata_pelajaran WHERE is_active = 1 AND nama_mapel IS NOT NULL AND nama_mapel != '' ORDER BY nama_mapel ASC")->fetchAll(PDO::FETCH_COLUMN);
+            } catch (Throwable $e) {}
+        }
+
+        // Kepemilikan jurnal milik akun yang login (prioritas pegawai_id, fallback user_id bila tidak terhubung pegawai, serta nama_guru)
+        $ownerClauses = [];
+        $ownerParams = [];
+        $primaryOwnerId = ($pegawaiId && $pegawaiId > 0) ? $pegawaiId : (($userId && $userId > 0 && empty($myTeacher['is_preview'])) ? $userId : 0);
+        if ($primaryOwnerId > 0) {
+            $ownerClauses[] = "jm.guru_id = ?";
+            $ownerParams[] = $primaryOwnerId;
+        }
+        if ($teacherName !== '') {
+            $ownerClauses[] = "LOWER(TRIM(jm.nama_guru)) = LOWER(TRIM(?))";
+            $ownerParams[] = $teacherName;
+        }
+        $ownerSql = !empty($ownerClauses) ? ('(' . implode(' OR ', $ownerClauses) . ')') : '1=0';
+
+        // KPI personal guru (tanpa filter pencarian)
+        $myKpiStats = ['total_sesi' => 0, 'total_jp' => 0, 'hari_ini_db' => 0];
+        try {
+            $stmtKpi = $pdo->prepare("
+                SELECT 
+                    COUNT(*) AS total_sesi,
+                    COALESCE(SUM(jm.jumlah_jp), 0) AS total_jp,
+                    SUM(CASE WHEN jm.tanggal = ? THEN 1 ELSE 0 END) AS hari_ini_db
+                FROM jurnal_mengajar jm
+                WHERE {$ownerSql}
+            ");
+            $stmtKpi->execute(array_merge([$todayDate], $ownerParams));
+            $rowKpi = $stmtKpi->fetch(PDO::FETCH_ASSOC);
+            if ($rowKpi) {
+                $myKpiStats = [
+                    'total_sesi' => (int)($rowKpi['total_sesi'] ?? 0),
+                    'total_jp' => (int)($rowKpi['total_jp'] ?? 0),
+                    'hari_ini_db' => (int)($rowKpi['hari_ini_db'] ?? 0),
+                ];
+            }
+        } catch (Throwable $e) {}
+
+        // Query riwayat jurnal pribadi sesuai filter
+        $filterSearch = trim((string)($filters['search'] ?? ''));
+        $filterKelas = trim((string)($filters['kelas'] ?? ''));
+        $filterStart = trim((string)($filters['start_date'] ?? ''));
+        $filterEnd = trim((string)($filters['end_date'] ?? ''));
+
+        $whereParts = [$ownerSql];
+        $queryParams = $ownerParams;
+
+        if ($filterSearch !== '') {
+            $whereParts[] = "(jm.kode_jurnal LIKE ? OR jm.materi_pokok LIKE ? OR jm.uraian_kegiatan LIKE ? OR jm.mata_pelajaran LIKE ? OR jm.kelas LIKE ?)";
+            $sp = '%' . $filterSearch . '%';
+            array_push($queryParams, $sp, $sp, $sp, $sp, $sp);
+        }
+        if ($filterKelas !== '') {
+            $whereParts[] = "jm.kelas = ?";
+            $queryParams[] = $filterKelas;
+        }
+        if ($filterStart !== '') {
+            $whereParts[] = "jm.tanggal >= ?";
+            $queryParams[] = $filterStart;
+        }
+        if ($filterEnd !== '') {
+            $whereParts[] = "jm.tanggal <= ?";
+            $queryParams[] = $filterEnd;
+        }
+
+        $myJournalList = [];
+        try {
+            $whereSql = implode(' AND ', $whereParts);
+            $stmtList = $pdo->prepare("
+                SELECT jm.*, jp.jam_mulai, jp.jam_selesai, jp.ruangan
+                FROM jurnal_mengajar jm
+                LEFT JOIN jadwal_pelajaran jp ON jm.jadwal_id = jp.id
+                WHERE {$whereSql}
+                ORDER BY jm.tanggal DESC, jm.jam_ke ASC, jm.id DESC
+                LIMIT 150
+            ");
+            $stmtList->execute($queryParams);
+            $myJournalList = $stmtList->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Throwable $e) {}
+
+        // Daftar semua guru aktif untuk mode pratinjau Super Admin
+        $previewGuruList = [];
+        if (Auth::isSuperAdmin()) {
+            try {
+                $previewGuruList = $pdo->query("
+                    SELECT id, nama, niy, nik, jabatan
+                    FROM pegawai
+                    WHERE (status_pegawai != 'Keluar' OR status_pegawai IS NULL) AND is_active = 1
+                    ORDER BY nama ASC
+                ")->fetchAll(PDO::FETCH_ASSOC);
+            } catch (Throwable $e) {}
+        }
+
+        $todayScheduleFilled = count(array_filter($todaySchedules, static fn($s) => !empty($s['has_jurnal'])));
+
+        return [
+            'myTeacher' => $myTeacher,
+            'myTodayName' => $todayName,
+            'myTodayDate' => $todayDate,
+            'myAllSchedules' => $allSchedules,
+            'myTodaySchedules' => $todaySchedules,
+            'myTeacherClasses' => $teacherClasses,
+            'myClassOptions' => array_values($classOptions),
+            'mySubjectOptions' => array_values($subjectOptions),
+            'myJournalList' => $myJournalList,
+            'myKpi' => [
+                'jadwal_hari_ini' => count($todaySchedules),
+                'terisi_hari_ini' => max($todayScheduleFilled, (int)$myKpiStats['hari_ini_db']),
+                'total_sesi_saya' => (int)$myKpiStats['total_sesi'],
+                'total_jp_saya' => (int)$myKpiStats['total_jp'],
+                'kelas_diampu' => count($teacherClasses),
+            ],
+            'myFilters' => [
+                'search' => $filterSearch,
+                'kelas' => $filterKelas,
+                'start_date' => $filterStart,
+                'end_date' => $filterEnd,
+            ],
+            'myPreviewGuruList' => $previewGuruList,
+        ];
+    }
+
+    /**
+     * Halaman Kepegawaian: Isi Jurnal & Data Jurnal Saya (Personal Pegawai/Guru yang Login)
+     */
+    public static function jurnalSaya(): void
+    {
+        $pageTitle = 'Isi Jurnal & Data Jurnal Saya';
+        $breadcrumbs = [
+            ['label' => 'Kelola Pegawai', 'url' => url('kelola-pegawai')],
+            ['label' => 'Isi Jurnal & Jurnal Saya']
+        ];
+
+        $previewGuruId = (Auth::isSuperAdmin() && !empty($_GET['guru_id'])) ? (int)$_GET['guru_id'] : null;
+        $ctx = self::buildPersonalJurnalContext($previewGuruId, [
+            'search' => $_GET['search'] ?? '',
+            'kelas' => $_GET['kelas'] ?? '',
+            'start_date' => $_GET['start_date'] ?? '',
+            'end_date' => $_GET['end_date'] ?? '',
+        ]);
+
+        extract($ctx);
+        $personalFormAction = url('kelola-pegawai/jurnal/store');
+        $personalFilterAction = url('kelola-pegawai/jurnal');
+        $personalReturnUrl = 'kelola-pegawai/jurnal' . ($previewGuruId ? ('?guru_id=' . $previewGuruId) : '');
+        $personalTabMode = false;
+
+        ob_start();
+        include MODULES_PATH . '/kelola-pegawai/views/jurnal/index.php';
+        $content = ob_get_clean();
+        $customSidebar = MODULES_PATH . '/kelola-pegawai/views/sidebar.php';
+        include TEMPLATES_PATH . '/layouts/app.php';
+    }
+
+    /**
+     * Simpan / Perbarui Jurnal Mengajar Personal (Wajib Hari H) + Presensi Siswa Real-Time
+     */
+    public static function storeJurnalSaya(): void
+    {
+        $rawReturn = trim((string)($_POST['return_url'] ?? 'kelola-pegawai/jurnal'));
+        $allowedBase = str_starts_with($rawReturn, 'kelola-jurnal-guru') ? 'kelola-jurnal-guru?tab=jurnal_saya' : 'kelola-pegawai/jurnal';
+
+        $previewGuruId = (Auth::isSuperAdmin() && !empty($_POST['preview_guru_id'])) ? (int)$_POST['preview_guru_id'] : null;
+        $redirectTarget = url($allowedBase . ($previewGuruId ? ((str_contains($allowedBase, '?') ? '&' : '?') . (str_starts_with($allowedBase, 'kelola-jurnal-guru') ? 'my_guru_id=' : 'guru_id=') . $previewGuruId) : ''));
+
+        if (!CSRF::validate($_POST['csrf_token'] ?? '')) {
+            Response::redirect($redirectTarget, 'Token keamanan tidak valid. Silakan muat ulang halaman.', 'error');
+            return;
+        }
+
+        $teacher = self::resolvePersonalTeacher($previewGuruId);
+        $guruId = !empty($teacher['pegawai_id']) ? (int)$teacher['pegawai_id'] : (int)Auth::id();
+        $namaGuru = trim((string)($teacher['name'] ?? Auth::name() ?? 'Guru'));
+
+        $jurnalId = !empty($_POST['jurnal_id']) ? (int)$_POST['jurnal_id'] : null;
+        $jadwalId = !empty($_POST['jadwal_id']) ? (int)$_POST['jadwal_id'] : null;
+        $tanggal = trim($_POST['tanggal'] ?? date('Y-m-d'));
+        $kelas = trim($_POST['kelas'] ?? '');
+        $mapel = trim($_POST['mata_pelajaran'] ?? '');
+        $jamKe = trim($_POST['jam_ke'] ?? '1-2');
+        $jumlahJp = max(1, min(12, (int)($_POST['jumlah_jp'] ?? 2)));
+        $materi = trim($_POST['materi_pokok'] ?? '');
+        $kegiatan = trim($_POST['uraian_kegiatan'] ?? '');
+        $catatan = trim($_POST['catatan_kelas'] ?? '');
+        $kehadiran = trim($_POST['kehadiran_summary'] ?? 'Semua Siswa Hadir');
+
+        if ($kelas === '' || $mapel === '' || $materi === '') {
+            Response::redirect($redirectTarget, 'Kelas, Mata Pelajaran, dan Materi Pokok wajib diisi.', 'error');
+            return;
+        }
+
+        $indonesianDays = [
+            'Sunday' => 'Minggu',
+            'Monday' => 'Senin',
+            'Tuesday' => 'Selasa',
+            'Wednesday' => 'Rabu',
+            'Thursday' => 'Kamis',
+            'Friday' => 'Jumat',
+            'Saturday' => 'Sabtu',
+        ];
+        $todayName = $indonesianDays[date('l')] ?? 'Senin';
+        $todayDate = date('Y-m-d');
+
+        // Aturan Hari H: jurnal hanya boleh diisi/diubah untuk tanggal hari ini
+        if ($tanggal !== $todayDate) {
+            Response::redirect(
+                $redirectTarget,
+                'Pengisian jurnal KBM hanya diperbolehkan untuk hari ini (' . $todayName . ', ' . date('d/m/Y') . ').',
+                'error'
+            );
+            return;
+        }
+
+        $db = Database::getInstance();
+        $pdo = $db->getConnection();
+
+        if ($jadwalId) {
+            $checkJadwal = $db->find("SELECT hari, nama_kelas FROM jadwal_pelajaran WHERE id = ? LIMIT 1", [$jadwalId]);
+            if ($checkJadwal && strcasecmp(trim((string)$checkJadwal['hari']), $todayName) !== 0) {
+                Response::redirect(
+                    $redirectTarget,
+                    'Jadwal ' . ($checkJadwal['nama_kelas'] ?? $kelas) . ' terjadwal pada hari ' . $checkJadwal['hari'] . ', sehingga hanya dapat diisi pada hari tersebut.',
+                    'error'
+                );
+                return;
+            }
+        }
+
+        $siswaStatuses = $_POST['siswa_status'] ?? [];
+        if (!empty($siswaStatuses) && is_array($siswaStatuses)) {
+            $h = 0; $s = 0; $i = 0; $a = 0;
+            foreach ($siswaStatuses as $stVal) {
+                if ($stVal === 'H') $h++;
+                elseif ($stVal === 'S') $s++;
+                elseif ($stVal === 'I') $i++;
+                elseif ($stVal === 'A') $a++;
+            }
+            $tot = count($siswaStatuses);
+            if ($tot > 0) {
+                if ($s + $i + $a === 0) {
+                    $kehadiran = "{$tot}/{$tot} Hadir Lengkap";
+                } else {
+                    $parts = ["{$h} Hadir"];
+                    if ($s > 0) $parts[] = "{$s} Sakit";
+                    if ($i > 0) $parts[] = "{$i} Izin";
+                    if ($a > 0) $parts[] = "{$a} Alpa";
+                    $kehadiran = "{$tot} Siswa (" . implode(', ', $parts) . ")";
+                }
+            }
+        }
+
+        try {
+            $pdo->beginTransaction();
+
+            // Cek apakah update jurnal hari ini milik pengguna yang login
+            $existingId = null;
+            if ($jurnalId) {
+                $ownedRow = $db->find(
+                    "SELECT id FROM jurnal_mengajar WHERE id = ? AND tanggal = ? AND (guru_id = ? OR LOWER(TRIM(nama_guru)) = LOWER(TRIM(?))) LIMIT 1",
+                    [$jurnalId, $todayDate, $guruId, $namaGuru]
+                );
+                if ($ownedRow) {
+                    $existingId = (int)$ownedRow['id'];
+                }
+            } elseif ($jadwalId) {
+                $sameScheduleRow = $db->find(
+                    "SELECT id FROM jurnal_mengajar WHERE jadwal_id = ? AND tanggal = ? AND (guru_id = ? OR LOWER(TRIM(nama_guru)) = LOWER(TRIM(?))) LIMIT 1",
+                    [$jadwalId, $todayDate, $guruId, $namaGuru]
+                );
+                if ($sameScheduleRow) {
+                    $existingId = (int)$sameScheduleRow['id'];
+                }
+            }
+
+            if ($existingId) {
+                $db->update('jurnal_mengajar', [
+                    'jadwal_id'         => $jadwalId,
+                    'kelas'             => $kelas,
+                    'mata_pelajaran'    => $mapel,
+                    'jam_ke'            => $jamKe,
+                    'jumlah_jp'         => $jumlahJp,
+                    'materi_pokok'      => $materi,
+                    'uraian_kegiatan'   => $kegiatan,
+                    'catatan_kelas'     => $catatan,
+                    'kehadiran_summary' => $kehadiran,
+                    'status'            => 'selesai',
+                    'updated_at'        => date('Y-m-d H:i:s'),
+                ], 'id = ?', [$existingId]);
+                $msg = 'Jurnal mengajar hari ini berhasil diperbarui!';
+            } else {
+                $kodeJurnal = 'JRN-' . date('Ymd', strtotime($tanggal)) . '-' . strtoupper(substr(uniqid('', true), -4));
+                $db->insert('jurnal_mengajar', [
+                    'kode_jurnal'       => $kodeJurnal,
+                    'jadwal_id'         => $jadwalId,
+                    'guru_id'           => $guruId,
+                    'nama_guru'         => $namaGuru,
+                    'kelas'             => $kelas,
+                    'mata_pelajaran'    => $mapel,
+                    'tanggal'           => $tanggal,
+                    'jam_ke'            => $jamKe,
+                    'jumlah_jp'         => $jumlahJp,
+                    'materi_pokok'      => $materi,
+                    'uraian_kegiatan'   => $kegiatan,
+                    'catatan_kelas'     => $catatan,
+                    'kehadiran_summary' => $kehadiran,
+                    'status'            => 'selesai',
+                    'created_at'        => date('Y-m-d H:i:s'),
+                    'updated_at'        => date('Y-m-d H:i:s'),
+                ]);
+                $msg = 'Jurnal mengajar berhasil disimpan!';
+            }
+
+            // Sinkronisasi presensi siswa ke presensi_kelas & presensi_kelas_detail
+            if (!empty($siswaStatuses) && is_array($siswaStatuses)) {
+                $cleanKls = trim(preg_replace('/^kelas\s+/i', '', $kelas));
+                $existingPres = $db->find("
+                    SELECT id FROM presensi_kelas
+                    WHERE (kelas = ? OR kelas = ? OR REPLACE(kelas, 'Kelas ', '') = ?)
+                      AND tanggal = ?
+                      AND LOWER(TRIM(mata_pelajaran)) = LOWER(TRIM(?))
+                      AND (guru_id = ? OR guru_id = 0)
+                    LIMIT 1
+                ", [$kelas, $cleanKls, $cleanKls, $tanggal, $mapel, $guruId]);
+
+                if ($existingPres) {
+                    $presensiId = (int)$existingPres['id'];
+                    $db->update('presensi_kelas', [
+                        'guru_id'        => $guruId,
+                        'jam_ke'         => $jamKe,
+                        'jp'             => $jumlahJp,
+                        'catatan'        => $catatan ?: $kehadiran,
+                        'waktu_presensi' => date('H:i:s'),
+                        'updated_at'     => date('Y-m-d H:i:s'),
+                    ], 'id = ?', [$presensiId]);
+                    $pdo->prepare("DELETE FROM presensi_kelas_detail WHERE presensi_kelas_id = ?")->execute([$presensiId]);
+                } else {
+                    $presensiId = $db->insert('presensi_kelas', [
+                        'guru_id'        => $guruId,
+                        'kelas'          => $kelas,
+                        'mata_pelajaran' => $mapel,
+                        'tanggal'        => $tanggal,
+                        'jam_ke'         => $jamKe,
+                        'role_mengajar'  => 'PIC',
+                        'jp'             => $jumlahJp,
+                        'tipe_presensi'  => 'mapel',
+                        'catatan'        => $catatan ?: $kehadiran,
+                        'created_by'     => (int)Auth::id() ?: 1,
+                        'waktu_presensi' => date('H:i:s'),
+                        'created_at'     => date('Y-m-d H:i:s'),
+                        'updated_at'     => date('Y-m-d H:i:s'),
+                    ]);
+                }
+
+                $siswaIds = array_map('intval', array_keys($siswaStatuses));
+                $namesMap = [];
+                if (!empty($siswaIds)) {
+                    $placeholders = implode(',', array_fill(0, count($siswaIds), '?'));
+                    $sRows = $db->findAll("SELECT id, COALESCE(nama_lengkap, nama) AS nama FROM siswa WHERE id IN ({$placeholders})", $siswaIds);
+                    foreach ($sRows as $sr) {
+                        $namesMap[(int)$sr['id']] = $sr['nama'];
+                    }
+                }
+
+                $nowTs = date('Y-m-d H:i:s');
+                $valGroups = [];
+                $batchParams = [];
+                foreach ($siswaStatuses as $sIdRaw => $stVal) {
+                    $sId = (int)$sIdRaw;
+                    if ($sId <= 0) continue;
+                    $valGroups[] = '(?, ?, ?, ?, ?)';
+                    $batchParams[] = $presensiId;
+                    $batchParams[] = $sId;
+                    $batchParams[] = $namesMap[$sId] ?? "Siswa #{$sId}";
+                    $batchParams[] = in_array($stVal, ['H', 'S', 'I', 'A'], true) ? $stVal : 'H';
+                    $batchParams[] = $nowTs;
+                }
+                if (!empty($valGroups)) {
+                    $stmtBatch = $pdo->prepare(
+                        "INSERT INTO presensi_kelas_detail (presensi_kelas_id, siswa_id, nama_siswa, status, created_at) VALUES " . implode(', ', $valGroups)
+                    );
+                    $stmtBatch->execute($batchParams);
+                }
+            }
+
+            $pdo->commit();
+            Response::redirect($redirectTarget, $msg, 'success');
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            error_log('storeJurnalSaya error: ' . $e->getMessage());
+            Response::redirect($redirectTarget, 'Gagal menyimpan jurnal: ' . $e->getMessage(), 'error');
+        }
+    }
+
+    /**
+     * API Siswa per Kelas + Status Presensi Hari Ini (untuk Modal Isi Jurnal Saya)
+     */
+    public static function apiSiswaKelasJurnal(): void
+    {
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_write_close();
+        }
+        header('Content-Type: application/json; charset=utf-8');
+
+        try {
+            $db = Database::getInstance();
+            $className = trim($_GET['kelas'] ?? '');
+            $mapel = trim($_GET['mapel'] ?? '');
+            $tanggal = trim($_GET['tanggal'] ?? date('Y-m-d'));
+
+            if ($className === '') {
+                echo json_encode(['success' => false, 'message' => 'Kelas tidak ditentukan.']);
+                exit;
+            }
+
+            $cleanName = trim(preg_replace('/^kelas\s+/i', '', $className));
+
+            $students = $db->findAll("
+                SELECT id, nisn, nis, COALESCE(nama_lengkap, nama) AS nama, jenis_kelamin
+                FROM siswa
+                WHERE (kelas = ? OR kelas = ? OR REPLACE(kelas, 'Kelas ', '') = ?)
+                  AND (is_active = 1 OR is_active IS NULL OR status_siswa = 'Aktif')
+                ORDER BY COALESCE(nama_lengkap, nama) ASC
+            ", [$className, $cleanName, $cleanName]);
+
+            $savedMap = [];
+            try {
+                $presensiHeader = null;
+                if ($mapel !== '') {
+                    $presensiHeader = $db->find("
+                        SELECT id FROM presensi_kelas
+                        WHERE (kelas = ? OR kelas = ? OR REPLACE(kelas, 'Kelas ', '') = ?)
+                          AND tanggal = ?
+                          AND LOWER(TRIM(mata_pelajaran)) = LOWER(TRIM(?))
+                        ORDER BY id DESC LIMIT 1
+                    ", [$className, $cleanName, $cleanName, $tanggal, $mapel]);
+                }
+                if (!$presensiHeader) {
+                    $presensiHeader = $db->find("
+                        SELECT id FROM presensi_kelas
+                        WHERE (kelas = ? OR kelas = ? OR REPLACE(kelas, 'Kelas ', '') = ?)
+                          AND tanggal = ?
+                        ORDER BY id DESC LIMIT 1
+                    ", [$className, $cleanName, $cleanName, $tanggal]);
+                }
+
+                if ($presensiHeader) {
+                    $detailRows = $db->findAll(
+                        "SELECT siswa_id, status FROM presensi_kelas_detail WHERE presensi_kelas_id = ?",
+                        [(int)$presensiHeader['id']]
+                    );
+                    foreach ($detailRows as $dr) {
+                        $savedMap[(int)$dr['siswa_id']] = $dr['status'];
+                    }
+                }
+            } catch (Throwable $pe) {}
+
+            foreach ($students as &$st) {
+                $stId = (int)$st['id'];
+                $st['saved_status'] = $savedMap[$stId] ?? 'H';
+            }
+            unset($st);
+
+            echo json_encode([
+                'success' => true,
+                'kelas' => $className,
+                'total' => count($students),
+                'has_saved_attendance' => !empty($savedMap),
+                'data' => $students,
+            ]);
+            exit;
+        } catch (Throwable $e) {
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            exit;
+        }
+    }
 }
 

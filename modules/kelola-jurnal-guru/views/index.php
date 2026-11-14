@@ -64,8 +64,17 @@ $cetakQuery = http_build_query([
             </div>
         </div>
 
-        <!-- 5 Navigation Tabs -->
+        <!-- 6 Navigation Tabs -->
         <div class="pt-4 flex items-center gap-2 overflow-x-auto no-scrollbar">
+            <button type="button"
+                    onclick="switchJurnalTab('jurnal_saya')"
+                    data-jurnal-tab-btn="jurnal_saya"
+                    class="jurnal-tab-btn inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all <?= $activeTab === 'jurnal_saya' ? 'bg-primary-600 text-white shadow-md shadow-primary-600/20' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/70' ?>">
+                <span>✍️</span>
+                <span>Isi Jurnal & Jurnal Saya</span>
+                <span class="px-2 py-0.5 text-[10px] rounded-full <?= $activeTab === 'jurnal_saya' ? 'bg-black/20 text-white' : 'bg-emerald-600 text-white' ?> font-extrabold"><?= (int)($myKpi['terisi_hari_ini'] ?? 0) ?>/<?= (int)($myKpi['jadwal_hari_ini'] ?? 0) ?></span>
+            </button>
+
             <button type="button"
                     onclick="switchJurnalTab('dashboard')"
                     data-jurnal-tab-btn="dashboard"
@@ -114,7 +123,7 @@ $cetakQuery = http_build_query([
     <!-- ===================================================================== -->
     <!-- GLOBAL FILTER BAR (Berlaku untuk Data Jurnal, Rekap PIC, Matrix, dll) -->
     <!-- ===================================================================== -->
-    <div class="bg-white rounded-3xl border border-slate-200/80 shadow-sm p-5">
+    <div id="global-jurnal-filter-bar" class="bg-white rounded-3xl border border-slate-200/80 shadow-sm p-5 <?= $activeTab === 'jurnal_saya' ? 'hidden' : '' ?>">
         <form method="GET" action="<?= url('kelola-jurnal-guru') ?>" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 items-end">
             <input type="hidden" name="tab" id="filter_active_tab" value="<?= e($activeTab) ?>">
 
@@ -189,6 +198,13 @@ $cetakQuery = http_build_query([
                 <?php endif; ?>
             </div>
         </form>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- TAB 0: ISI JURNAL & JURNAL SAYA (PERSONAL AKUN LOGIN)                 -->
+    <!-- ===================================================================== -->
+    <div id="tab-panel-jurnal_saya" class="jurnal-tab-panel space-y-6 <?= $activeTab === 'jurnal_saya' ? '' : 'hidden' ?>">
+        <?php include MODULES_PATH . '/kelola-pegawai/views/jurnal/_personal_jurnal_section.php'; ?>
     </div>
 
     <!-- ===================================================================== -->
@@ -1001,6 +1017,12 @@ $cetakQuery = http_build_query([
             activePanel.classList.remove('hidden');
         }
 
+        // 1b. Sembunyikan global admin filter bar pada tab personal Jurnal Saya
+        const globalFilterBar = document.getElementById('global-jurnal-filter-bar');
+        if (globalFilterBar) {
+            globalFilterBar.classList.toggle('hidden', tabKey === 'jurnal_saya');
+        }
+
         // 2. Update Top Tab Buttons
         document.querySelectorAll('[data-jurnal-tab-btn]').forEach(btn => {
             const key = btn.getAttribute('data-jurnal-tab-btn');
@@ -1013,6 +1035,8 @@ $cetakQuery = http_build_query([
             } else {
                 if (key === 'kosong') {
                     btn.className = 'jurnal-tab-btn inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200/70';
+                } else if (key === 'jurnal_saya') {
+                    btn.className = 'jurnal-tab-btn inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/70';
                 } else {
                     btn.className = 'jurnal-tab-btn inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all bg-slate-100 text-slate-600 hover:bg-slate-200/80';
                 }

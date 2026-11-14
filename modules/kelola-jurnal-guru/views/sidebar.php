@@ -85,7 +85,7 @@ $totalUnfilledCount = (int)($unfilledTotalCount ?? 0);
             <ul class="space-y-1">
                 <?php
                 if (!function_exists('renderJurnalSidebarItem')) {
-                    function renderJurnalSidebarItem(string $tabKey, string $label, string $iconSvg, string $activeTab, ?int $badge = null, string $badgeClass = 'bg-primary-500 text-white'): void {
+                    function renderJurnalSidebarItem(string $tabKey, string $label, string $iconSvg, string $activeTab, int|string|null $badge = null, string $badgeClass = 'bg-primary-500 text-white'): void {
                         $isActive = ($activeTab === $tabKey);
                         $cls = $isActive
                             ? 'bg-primary-600/30 text-white font-semibold shadow-sm border border-primary-500/40'
@@ -102,13 +102,23 @@ $totalUnfilledCount = (int)($unfilledTotalCount ?? 0);
                                     <span class="w-5 h-5 [&>svg]:w-5 [&>svg]:h-5 ' . $iconCls . ' transition-colors shrink-0">' . $iconSvg . '</span>
                                     <span class="text-sm truncate">' . e($label) . '</span>
                                 </div>';
-                        if ($badge !== null && $badge > 0) {
-                            echo '<span class="px-2 py-0.5 text-[10px] font-extrabold rounded-full ' . $badgeClass . ' shrink-0">' . $badge . '</span>';
+                        if ($badge !== null && ((is_int($badge) && $badge > 0) || (is_string($badge) && $badge !== ''))) {
+                            echo '<span class="px-2 py-0.5 text-[10px] font-extrabold rounded-full ' . $badgeClass . ' shrink-0">' . e((string)$badge) . '</span>';
                         }
                         echo '</a>
                         </li>';
                     }
                 }
+
+                // 0. Isi Jurnal & Jurnal Saya (Akun Login)
+                renderJurnalSidebarItem(
+                    'jurnal_saya',
+                    'Isi Jurnal & Jurnal Saya',
+                    '<svg fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"/></svg>',
+                    $activeTab,
+                    'Akun Login',
+                    'bg-emerald-500/20 text-emerald-300 border border-emerald-400/30'
+                );
 
                 // 1. Dashboard
                 renderJurnalSidebarItem(
@@ -176,6 +186,15 @@ $totalUnfilledCount = (int)($unfilledTotalCount ?? 0);
                 Modul Terkait
             </h3>
             <ul class="space-y-1">
+                <li>
+                    <a href="<?= url('kelola-pegawai/jurnal') ?>" 
+                       class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-primary-200 font-medium hover:bg-primary-800/60 hover:text-white border border-transparent transition-all duration-200 group">
+                        <svg class="w-5 h-5 text-primary-400 group-hover:text-primary-300 transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+                        </svg>
+                        <span class="text-sm truncate">Jurnal Kepegawaian Saya</span>
+                    </a>
+                </li>
                 <li>
                     <a href="<?= url('kelola-perangkat-pembelajaran/jadwal') ?>" 
                        class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-primary-200 font-medium hover:bg-primary-800/60 hover:text-white border border-transparent transition-all duration-200 group">

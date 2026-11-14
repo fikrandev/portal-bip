@@ -349,6 +349,11 @@ $router->post('/kelola-pegawai/import', [PegawaiController::class, 'import'], [M
 $router->get('/kelola-pegawai/keluar', [PegawaiController::class, 'keluar'], [Middleware::permissionRequired('pegawai.view')]);
 $router->get('/kelola-pegawai/cetak-cv/{id}', [PegawaiController::class, 'cetakCv'], [Middleware::permissionRequired('pegawai.export')]);
 
+// Isi Jurnal & Data Jurnal Saya (Personal Pegawai/Guru yang Login)
+$router->get('/kelola-pegawai/jurnal', [PegawaiController::class, 'jurnalSaya'], [[Middleware::class, 'authRequired']]);
+$router->post('/kelola-pegawai/jurnal/store', [PegawaiController::class, 'storeJurnalSaya'], [[Middleware::class, 'authRequired']]);
+$router->get('/kelola-pegawai/jurnal/api-siswa', [PegawaiController::class, 'apiSiswaKelasJurnal'], [[Middleware::class, 'authRequired']]);
+
 // -- Kelola Penugasan & Grup SK --
 $router->get('/kelola-pegawai/penugasan', [PegawaiController::class, 'penugasan'], [Middleware::permissionRequired('pegawai.penugasan')]);
 $router->get('/kelola-pegawai/penugasan/grup/create', [PegawaiController::class, 'createGrup'], [Middleware::permissionRequired('pegawai.penugasan')]);
@@ -549,6 +554,7 @@ $router->get('/kelola-jurnal-guru/api/detail/{id}', [JurnalGuruAdminController::
 $router->get('/kelola-jurnal-guru/api/guru-assignments/{id}', [JurnalGuruAdminController::class, 'apiGuruAssignments'], [Middleware::permissionRequired('jurnal.view')]);
 $router->get('/kelola-jurnal-guru/api/siswa-kelas', [JurnalGuruAdminController::class, 'apiSiswaKelas'], [Middleware::permissionRequired('jurnal.view')]);
 $router->post('/kelola-jurnal-guru/store', [JurnalGuruAdminController::class, 'store'], [Middleware::permissionRequired('jurnal.manage')]);
+$router->post('/kelola-jurnal-guru/store-saya', [PegawaiController::class, 'storeJurnalSaya'], [[Middleware::class, 'authRequired']]);
 $router->post('/kelola-jurnal-guru/status/{id}', [JurnalGuruAdminController::class, 'updateStatus'], [Middleware::permissionRequired('jurnal.manage')]);
 $router->post('/kelola-jurnal-guru/delete/{id}', [JurnalGuruAdminController::class, 'delete'], [Middleware::permissionRequired('jurnal.delete')]);
 

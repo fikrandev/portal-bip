@@ -57,7 +57,7 @@ class JurnalGuruAdminController
 
         // 1. Parameter Filter & Tab Aktif
         $activeTab = trim($_GET['tab'] ?? 'dashboard');
-        if (!in_array($activeTab, ['dashboard', 'data', 'rekap', 'matrix', 'kosong'], true)) {
+        if (!in_array($activeTab, ['dashboard', 'jurnal_saya', 'data', 'rekap', 'matrix', 'kosong'], true)) {
             $activeTab = 'dashboard';
         }
 
@@ -633,6 +633,20 @@ class JurnalGuruAdminController
                 'jp'    => $jpOnDay,
             ];
         }
+
+        // 11. Data Personal Akun yang Login (Tab Isi Jurnal & Jurnal Saya)
+        $personalPreviewId = (Auth::isSuperAdmin() && !empty($_GET['my_guru_id'])) ? (int)$_GET['my_guru_id'] : null;
+        $personalCtx = PegawaiController::buildPersonalJurnalContext($personalPreviewId, [
+            'search' => $_GET['my_search'] ?? '',
+            'kelas' => $_GET['my_kelas'] ?? '',
+            'start_date' => $_GET['my_start_date'] ?? '',
+            'end_date' => $_GET['my_end_date'] ?? '',
+        ]);
+        extract($personalCtx);
+        $personalFormAction = url('kelola-jurnal-guru/store-saya');
+        $personalFilterAction = url('kelola-jurnal-guru');
+        $personalReturnUrl = 'kelola-jurnal-guru?tab=jurnal_saya' . ($personalPreviewId ? ('&my_guru_id=' . $personalPreviewId) : '');
+        $personalTabMode = true;
 
         $pageTitle = 'Kelola Jurnal Guru & Jam Pelajaran (JP)';
         $breadcrumbs = [
