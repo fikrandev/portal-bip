@@ -1,4 +1,4 @@
-﻿<?php /** Create Role View with Advanced Permission Matrix */ ?>
+<?php /** Create Role View with Advanced Permission Matrix */ ?>
 <div class="max-w-5xl mx-auto space-y-6">
     <!-- Breadcrumb & Header -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
