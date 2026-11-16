@@ -248,6 +248,8 @@ $router->get('/spmb/psikolog/{token}/download', [SpmbController::class, 'screeni
 $router->get('/spmb/psikolog/{token}/raw', [SpmbController::class, 'screeningPsikologPublicRaw']);
 $router->get('/spmb/observasi/{token}', [SpmbController::class, 'observasiAwalPublicForm']);
 $router->post('/spmb/observasi/{token}/submit', [SpmbController::class, 'observasiAwalPublicSubmit']);
+$router->get('/spmb/observasi/{token}/join-group', [SpmbController::class, 'observasiAwalPublicJoinGroup']);
+$router->post('/spmb/observasi/{token}/join-group', [SpmbController::class, 'observasiAwalPublicJoinGroup']);
 
 // -- Dashboard (requires auth) --
 $router->get('/', function() {
@@ -771,6 +773,10 @@ $router->get('/kelola-spmb/observasi-awal/detail/{id}', [SpmbController::class, 
 $router->post('/kelola-spmb/observasi-awal/send-wa/{id}', [SpmbController::class, 'observasiAwalSendWaSingle'], [Middleware::permissionRequired('spmb.update')]);
 $router->get('/kelola-spmb/observasi-awal/broadcast-data', [SpmbController::class, 'observasiAwalBroadcastData'], [Middleware::permissionRequired('spmb.view')]);
 $router->post('/kelola-spmb/observasi-awal/broadcast-send-single', [SpmbController::class, 'observasiAwalSendWaSingle'], [Middleware::permissionRequired('spmb.update')]);
+$router->post('/kelola-spmb/observasi-awal/send-wa-group/{id}', [SpmbController::class, 'observasiAwalSendWaGroupSingle'], [Middleware::permissionRequired('spmb.update')]);
+$router->get('/kelola-spmb/observasi-awal/broadcast-group-data', [SpmbController::class, 'observasiAwalBroadcastGroupData'], [Middleware::permissionRequired('spmb.view')]);
+$router->post('/kelola-spmb/observasi-awal/broadcast-group-send', [SpmbController::class, 'observasiAwalBroadcastGroupSendSingle'], [Middleware::permissionRequired('spmb.update')]);
+$router->post('/kelola-spmb/observasi-awal/toggle-group-status/{id}', [SpmbController::class, 'observasiAwalToggleGroupStatus'], [Middleware::permissionRequired('spmb.update')]);
 $router->get('/kelola-spmb/observasi-awal/export', [SpmbController::class, 'observasiAwalExport'], [Middleware::permissionRequired('spmb.view')]);
 $router->get('/kelola-spmb/observasi-awal/cetak-rekap', [SpmbController::class, 'observasiAwalCetakRekap'], [Middleware::permissionRequired('spmb.view')]);
 $router->get('/kelola-spmb/observasi-awal/cetak/{id}', [SpmbController::class, 'observasiAwalCetak'], [Middleware::permissionRequired('spmb.view')]);

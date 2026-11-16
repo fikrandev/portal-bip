@@ -14,9 +14,11 @@
  */
 
 $csrfToken = CSRF::token();
-$selectedJenjang = $filters['jenjang'] ?? '';
-$selectedStatus  = $filters['status_observasi'] ?? '';
-$searchKeyword   = $filters['search'] ?? '';
+$selectedJenjang     = $filters['jenjang'] ?? '';
+$selectedStatus      = $filters['status_observasi'] ?? '';
+$selectedStatusGroup = $filters['status_group'] ?? '';
+$searchKeyword       = $filters['search'] ?? '';
+$groupLinks          = $groupLinks ?? [];
 ?>
 
 <div class="space-y-6">
@@ -45,12 +47,20 @@ $searchKeyword   = $filters['search'] ?? '';
                 Pengaturan Soal & Aspek
             </a>
             <button type="button" 
+                    onclick="openModalBroadcastGroup()" 
+                    class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-teal-300 text-xs sm:text-sm font-semibold text-teal-700 bg-teal-50 hover:bg-teal-100 transition-colors shadow-sm">
+                <svg class="w-4 h-4 text-teal-600" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
+                </svg>
+                Broadcast Group WA
+            </button>
+            <button type="button" 
                     onclick="openModalBroadcast()" 
                     class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-emerald-300 text-xs sm:text-sm font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-colors shadow-sm">
                 <svg class="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5" />
                 </svg>
-                Kirim Broadcast Link WA
+                Broadcast Link WA
             </button>
             <a href="<?= url('kelola-spmb/observasi-awal/cetak-rekap?' . http_build_query($filters)) ?>" 
                target="_blank" 
@@ -72,7 +82,7 @@ $searchKeyword   = $filters['search'] ?? '';
     </div>
 
     <!-- Statistik Cards -->
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5 sm:gap-4">
         <!-- Total Calon Siswa -->
         <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm">
             <div class="flex items-center justify-between">
@@ -126,8 +136,32 @@ $searchKeyword   = $filters['search'] ?? '';
             <p class="text-[11px] text-slate-400 mt-1">Perlu dikirimi tautan observasi</p>
         </div>
 
-        <!-- Rata-rata Skor Capaian -->
+        <!-- Masuk Group WA -->
+        <?php 
+        $totSiswa = max(1, (int)($stats['total_siswa'] ?? 0));
+        $totGabung = (int)($stats['total_gabung_group'] ?? 0);
+        $pctGabung = round(($totGabung / $totSiswa) * 100);
+        ?>
         <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Group WA</span>
+                <div class="w-8 h-8 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
+                    </svg>
+                </div>
+            </div>
+            <div class="mt-3 flex items-baseline gap-2">
+                <span class="text-2xl font-bold text-teal-600"><?= number_format($totGabung) ?></span>
+                <span class="text-xs font-bold text-teal-700 bg-teal-50 px-2 py-0.5 rounded-full border border-teal-200">
+                    <?= $pctGabung ?>%
+                </span>
+            </div>
+            <p class="text-[11px] text-slate-400 mt-1"><?= number_format($stats['total_belum_gabung_group'] ?? 0) ?> belum bergabung</p>
+        </div>
+
+        <!-- Rata-rata Skor Capaian -->
+        <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm col-span-2 md:col-span-1">
             <div class="flex items-center justify-between">
                 <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Rata-rata Skor</span>
                 <div class="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
@@ -162,11 +196,20 @@ $searchKeyword   = $filters['search'] ?? '';
             </div>
 
             <!-- Status Observasi -->
-            <div class="w-full md:w-48 shrink-0">
+            <div class="w-full md:w-44 shrink-0">
                 <select name="status_observasi" onchange="this.form.submit()" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs sm:text-sm font-medium focus:ring-2 focus:ring-sky-500 bg-white">
                     <option value="">Semua Status Observasi</option>
                     <option value="sudah" <?= $selectedStatus === 'sudah' ? 'selected' : '' ?>>Sudah Mengisi</option>
-                    <option value="belum" <?= $selectedStatus === 'belum' ? 'selected' : '' ?>>Belum Mengisi (Menunggu)</option>
+                    <option value="belum" <?= $selectedStatus === 'belum' ? 'selected' : '' ?>>Belum Mengisi</option>
+                </select>
+            </div>
+
+            <!-- Status Masuk Group WA -->
+            <div class="w-full md:w-48 shrink-0">
+                <select name="status_group" onchange="this.form.submit()" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs sm:text-sm font-medium focus:ring-2 focus:ring-sky-500 bg-white">
+                    <option value="">Semua Status Group WA</option>
+                    <option value="sudah" <?= $selectedStatusGroup === 'sudah' ? 'selected' : '' ?>>✓ Sudah Masuk Group</option>
+                    <option value="belum" <?= $selectedStatusGroup === 'belum' ? 'selected' : '' ?>>⚠️ Belum Masuk Group</option>
                 </select>
             </div>
 
@@ -188,7 +231,7 @@ $searchKeyword   = $filters['search'] ?? '';
                 <button type="submit" class="w-full md:w-auto px-4 py-2 rounded-xl bg-slate-800 text-white text-xs sm:text-sm font-semibold hover:bg-slate-900 transition-colors">
                     Filter
                 </button>
-                <?php if ($selectedJenjang || $selectedStatus || $searchKeyword): ?>
+                <?php if ($selectedJenjang || $selectedStatus || $selectedStatusGroup || $searchKeyword): ?>
                     <a href="<?= url('kelola-spmb/observasi-awal') ?>" class="w-full md:w-auto px-3.5 py-2 rounded-xl border border-slate-300 text-xs sm:text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors text-center">
                         Reset
                     </a>
@@ -207,6 +250,7 @@ $searchKeyword   = $filters['search'] ?? '';
                         <th class="py-3.5 px-4">Calon Siswa</th>
                         <th class="py-3.5 px-4">Unit / Jenjang</th>
                         <th class="py-3.5 px-4">Status & Hasil Observasi</th>
+                        <th class="py-3.5 px-4 text-center">Status Group WA</th>
                         <th class="py-3.5 px-4">Tautan Khusus Orang Tua</th>
                         <th class="py-3.5 px-4 text-center">Aksi</th>
                     </tr>
@@ -214,7 +258,7 @@ $searchKeyword   = $filters['search'] ?? '';
                 <tbody class="divide-y divide-slate-100 text-slate-700 font-normal">
                     <?php if (empty($items)): ?>
                         <tr>
-                            <td colspan="6" class="py-12 text-center text-slate-400">
+                            <td colspan="7" class="py-12 text-center text-slate-400">
                                 <svg class="w-12 h-12 mx-auto mb-2 text-slate-300" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
                                 </svg>
@@ -292,6 +336,37 @@ $searchKeyword   = $filters['search'] ?? '';
                                     <?php endif; ?>
                                 </td>
 
+                                <!-- Status Group WA -->
+                                <td class="py-4 px-4 text-center">
+                                    <?php if (!empty($it['is_gabung_group'])): ?>
+                                        <div class="inline-flex flex-col items-center gap-0.5">
+                                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-teal-50 text-teal-700 border border-teal-200">
+                                                <svg class="w-3.5 h-3.5 text-teal-600" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                                                </svg>
+                                                Sudah Masuk
+                                            </span>
+                                            <?php if (!empty($it['tgl_gabung_group'])): ?>
+                                                <span class="text-[10px] text-slate-400">
+                                                    <?= date('d/m/Y H:i', strtotime($it['tgl_gabung_group'])) ?>
+                                                </span>
+                                            <?php endif; ?>
+                                        </div>
+                                    <?php else: ?>
+                                        <div class="inline-flex flex-col items-center gap-0.5">
+                                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                                                Belum Masuk
+                                            </span>
+                                            <?php if (!empty($it['wa_group_sent_at'])): ?>
+                                                <span class="text-[10px] text-slate-400">
+                                                    Undangan: <?= (int)($it['wa_group_sent_count'] ?? 1) ?>x (<?= date('d/m H:i', strtotime($it['wa_group_sent_at'])) ?>)
+                                                </span>
+                                            <?php endif; ?>
+                                        </div>
+                                    <?php endif; ?>
+                                </td>
+
                                 <!-- Tautan Khusus Orang Tua -->
                                 <td class="py-4 px-4">
                                     <div class="flex items-center gap-2">
@@ -306,9 +381,9 @@ $searchKeyword   = $filters['search'] ?? '';
                                         </button>
 
                                         <a href="<?= htmlspecialchars($publicLink) ?>" 
-                                           target="_blank" 
-                                           class="p-1.5 rounded-lg text-slate-400 hover:text-sky-600 hover:bg-sky-50 transition-colors"
-                                           title="Buka Formulir Observasi">
+                                            target="_blank" 
+                                            class="p-1.5 rounded-lg text-slate-400 hover:text-sky-600 hover:bg-sky-50 transition-colors"
+                                            title="Buka Formulir Observasi">
                                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
                                             </svg>
@@ -330,11 +405,34 @@ $searchKeyword   = $filters['search'] ?? '';
                                             </svg>
                                         </button>
 
+                                        <!-- Tombol Kirim Undangan Group WA Satuan -->
+                                        <?php 
+                                        $groupLinkThis = $it['group_wa_link'] ?? ($groupLinks[strtoupper($it['jenjang'] ?? 'SD')] ?? '');
+                                        ?>
+                                        <button type="button" 
+                                                onclick="openModalWaGroupSingle(<?= (int)$it['pendaftar_id'] ?>, '<?= htmlspecialchars(addslashes($it['nama_lengkap'])) ?>', '<?= htmlspecialchars(addslashes($it['jenjang'])) ?>', '<?= htmlspecialchars(addslashes($it['target_phone'] ?: '')) ?>', '<?= htmlspecialchars(addslashes($groupLinkThis)) ?>')"
+                                                class="p-2 rounded-xl text-teal-600 hover:text-teal-700 hover:bg-teal-50 border border-teal-200 transition-colors"
+                                                title="Kirim Undangan Group WhatsApp">
+                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
+                                            </svg>
+                                        </button>
+
+                                        <!-- Tombol Toggle Status Masuk Group WA Manual -->
+                                        <button type="button" 
+                                                onclick="toggleGroupStatus(<?= (int)$it['pendaftar_id'] ?>, '<?= htmlspecialchars(addslashes($it['nama_lengkap'])) ?>', <?= !empty($it['is_gabung_group']) ? '1' : '0' ?>)"
+                                                class="p-2 rounded-xl <?= !empty($it['is_gabung_group']) ? 'text-teal-600 hover:text-rose-600 hover:bg-rose-50 border border-teal-200' : 'text-slate-400 hover:text-teal-600 hover:bg-teal-50 border border-slate-200' ?> transition-colors"
+                                                title="<?= !empty($it['is_gabung_group']) ? 'Sudah Masuk (Klik untuk ubah jadi Belum Masuk)' : 'Tandai Manual Sudah Masuk Group' ?>">
+                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                                            </svg>
+                                        </button>
+
                                         <!-- Tombol Kirim WA Link Satuan -->
                                         <button type="button" 
                                                 onclick="openModalWaSingle(<?= (int)$it['pendaftar_id'] ?>, '<?= htmlspecialchars(addslashes($it['nama_lengkap'])) ?>', '<?= htmlspecialchars(addslashes($it['target_phone'] ?: '')) ?>', '<?= htmlspecialchars(addslashes($publicLink)) ?>')"
                                                 class="p-2 rounded-xl text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 border border-emerald-200 transition-colors"
-                                                title="Kirim Link via WhatsApp">
+                                                title="Kirim Link Observasi via WhatsApp">
                                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 0 1-2.555-.337A5.972 5.972 0 0 1 5.41 20.97a5.969 5.969 0 0 1-.474-.065 4.48 4.48 0 0 0 .978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z" />
                                             </svg>
@@ -342,9 +440,9 @@ $searchKeyword   = $filters['search'] ?? '';
 
                                         <!-- Tombol Cetak -->
                                         <a href="<?= url('kelola-spmb/observasi-awal/cetak/' . (int)$it['pendaftar_id']) ?>" 
-                                           target="_blank" 
-                                           class="p-2 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 border border-slate-200 transition-colors"
-                                           title="Cetak Lembar Observasi">
+                                            target="_blank" 
+                                            class="p-2 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 border border-slate-200 transition-colors"
+                                            title="Cetak Lembar Observasi">
                                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24-1.076-.673-2.103-1.272-3.036m12.984 0c-.598.933-1.032 1.96-1.272 3.036m-10.44 0a6.375 6.375 0 0 1 10.44 0m-10.44 0A6.375 6.375 0 0 0 12 18.75a6.375 6.375 0 0 0 5.22-4.921m-10.44 0L3 18.75m14.44-4.921L21 18.75M12 3v9m0 0L8.25 8.25M12 12l3.75-3.75" />
                                             </svg>
@@ -578,6 +676,191 @@ $searchKeyword   = $filters['search'] ?? '';
                 </button>
                 <button type="button" id="bc-btn-start" onclick="startBroadcast()" class="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/20 transition-all">
                     <span>Mulai Broadcast</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- MODAL KIRIM UNDANGAN GROUP WA SATUAN -->
+<!-- ========================================================================= -->
+<div id="modal-wa-group-single" class="fixed inset-0 z-50 hidden overflow-y-auto bg-slate-900/60 backdrop-blur-sm transition-opacity">
+    <div class="flex min-h-screen items-center justify-center p-4">
+        <div class="relative w-full max-w-lg rounded-2xl bg-white shadow-2xl border border-slate-100 overflow-hidden">
+            <div class="flex items-center justify-between border-b border-slate-100 bg-teal-50/80 px-6 py-4">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-xl bg-teal-100 text-teal-700 flex items-center justify-center font-bold">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-slate-800">Undangan Group WhatsApp</h3>
+                        <p class="text-xs text-slate-500">Kirim tautan group resmi unit ke orang tua calon siswa</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeModalWaGroupSingle()" class="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/50">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <div class="p-6 space-y-4">
+                <input type="hidden" id="wa-group-pendaftar-id" value="">
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <span class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Calon Siswa</span>
+                        <p id="wa-group-nama" class="text-sm font-bold text-slate-900"></p>
+                    </div>
+                    <div>
+                        <span class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Unit / Jenjang</span>
+                        <span id="wa-group-jenjang" class="px-2 py-0.5 rounded-lg text-xs font-bold bg-sky-50 text-sky-700 border border-sky-200"></span>
+                    </div>
+                </div>
+
+                <div>
+                    <span class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Nomor Tujuan WA</span>
+                    <input type="text" id="wa-group-phone" readonly class="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm font-mono font-semibold text-slate-700">
+                </div>
+
+                <div>
+                    <span class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Tautan Group WhatsApp Unit</span>
+                    <input type="text" id="wa-group-link" readonly class="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono text-teal-700 font-semibold">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                        Pesan WhatsApp
+                    </label>
+                    <textarea id="wa-group-template" rows="5" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs text-slate-700 font-mono leading-relaxed focus:ring-2 focus:ring-teal-500"></textarea>
+                    <p class="text-[11px] text-slate-400 mt-1">Variabel otomatis: <code>{nama_siswa}</code>, <code>{nomor_pendaftaran}</code>, <code>{jenjang}</code>, <code>{link_group}</code></p>
+                </div>
+            </div>
+
+            <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2">
+                <button type="button" onclick="closeModalWaGroupSingle()" class="px-4 py-2 rounded-xl border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition-colors">
+                    Batal
+                </button>
+                <button type="button" id="btn-send-wa-group-single" onclick="submitSendWaGroupSingle()" class="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold shadow-md shadow-teal-600/20 transition-all">
+                    <span>Kirim Undangan Sekarang</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- MODAL BROADCAST LINK GROUP WA -->
+<!-- ========================================================================= -->
+<div id="modal-broadcast-group" class="fixed inset-0 z-50 hidden overflow-y-auto bg-slate-900/60 backdrop-blur-sm transition-opacity">
+    <div class="flex min-h-screen items-center justify-center p-4">
+        <div class="relative w-full max-w-xl rounded-2xl bg-white shadow-2xl border border-slate-100 overflow-hidden my-8">
+            <div class="flex items-center justify-between border-b border-slate-100 bg-teal-50/80 px-6 py-4">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-xl bg-teal-100 text-teal-700 flex items-center justify-center font-bold">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-slate-800">Broadcast Link Group WhatsApp</h3>
+                        <p class="text-xs text-slate-500">Kirim tautan group WhatsApp 4 Unit (PAUD, SD, SMP, SMA) secara massal</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeModalBroadcastGroup()" class="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/50">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <div class="p-6 space-y-4">
+                <!-- Pengaturan Filter Broadcast Group -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Filter Unit / Jenjang</label>
+                        <select id="bcg-filter-jenjang" onchange="loadBroadcastGroupPreview()" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs sm:text-sm font-semibold bg-white">
+                            <option value="">Semua Unit (PAUD, SD, SMP, SMA)</option>
+                            <option value="PAUD">PAUD</option>
+                            <option value="SD">SD</option>
+                            <option value="SMP">SMP</option>
+                            <option value="SMA">SMA</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Target Calon Siswa</label>
+                        <select id="bcg-filter-target" onchange="loadBroadcastGroupPreview()" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs sm:text-sm font-semibold bg-white">
+                            <option value="belum" selected>Hanya yang Belum Masuk Group</option>
+                            <option value="semua_observasi">Sudah Mengisi Observasi (Belum Masuk)</option>
+                            <option value="semua">Semua Siswa Terdaftar</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Batasi Jumlah Kirim</label>
+                        <select id="bcg-filter-limit" onchange="loadBroadcastGroupPreview()" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs sm:text-sm font-semibold bg-white">
+                            <option value="0">Kirim ke Semua Target</option>
+                            <option value="5">Maksimal 5 Nomor (Aman)</option>
+                            <option value="10" selected>Maksimal 10 Nomor</option>
+                            <option value="20">Maksimal 20 Nomor</option>
+                            <option value="50">Maksimal 50 Nomor</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Jeda Antar Pesan</label>
+                        <select id="bcg-filter-delay" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs sm:text-sm font-semibold bg-white">
+                            <option value="3">3 Detik (Cepat)</option>
+                            <option value="5" selected>5 Detik (Disarankan)</option>
+                            <option value="8">8 Detik (Sangat Aman)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Alert Keamanan WA -->
+                <div class="p-3 bg-teal-50 border border-teal-200 rounded-xl text-[11px] text-teal-800 flex items-start gap-2">
+                    <svg class="w-4 h-4 text-teal-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                    </svg>
+                    <span><strong>Otomatisasi Tautan Unit:</strong> Sistem akan otomatis mencocokkan tautan grup WhatsApp sesuai jenjang masing-masing siswa (PAUD, SD, SMP, SMA).</span>
+                </div>
+
+                <!-- Ringkasan Target -->
+                <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-xs">
+                    <span class="font-semibold text-slate-600">Target Siswa Penerima:</span>
+                    <span id="bcg-target-count" class="font-bold text-teal-700 text-sm">0 Siswa</span>
+                </div>
+
+                <!-- Template Pesan -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Template Pesan Undangan</label>
+                    <textarea id="bcg-template" rows="4" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs text-slate-700 font-mono leading-relaxed focus:ring-2 focus:ring-teal-500"></textarea>
+                    <p class="text-[11px] text-slate-400 mt-1">Variabel otomatis: <code>{nama_siswa}</code>, <code>{nomor_pendaftaran}</code>, <code>{jenjang}</code>, <code>{link_group}</code></p>
+                </div>
+
+                <!-- Live Progress Bar (Saat Mengirim) -->
+                <div id="bcg-progress-container" class="hidden space-y-2 pt-2 border-t border-slate-100">
+                    <div class="flex items-center justify-between text-xs font-semibold">
+                        <span id="bcg-progress-status" class="text-slate-700">Mengirim undangan...</span>
+                        <span id="bcg-progress-percent" class="text-teal-700 font-bold">0%</span>
+                    </div>
+                    <div class="w-full h-3 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
+                        <div id="bcg-progress-bar" class="h-full bg-teal-600 rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                    <div id="bcg-progress-log" class="text-[11px] font-mono text-slate-500 max-h-24 overflow-y-auto custom-scrollbar p-2 bg-slate-50 rounded-lg"></div>
+                </div>
+            </div>
+
+            <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2">
+                <button type="button" id="bcg-btn-cancel" onclick="closeModalBroadcastGroup()" class="px-4 py-2 rounded-xl border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition-colors">
+                    Tutup
+                </button>
+                <button type="button" id="bcg-btn-start" onclick="startBroadcastGroup()" class="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold shadow-md shadow-teal-600/20 transition-all">
+                    <span>Mulai Broadcast Group</span>
                 </button>
             </div>
         </div>
@@ -963,6 +1246,261 @@ async function startBroadcast() {
         title: 'Broadcast Selesai',
         html: `Proses broadcast selesai.<br><strong>Berhasil:</strong> ${successCount}<br><strong>Gagal/Dilewati:</strong> ${failCount}`,
         icon: 'success'
+    });
+}
+
+// --- Kirim Undangan Group WA Satuan ---
+const defaultGroupTpl = <?= json_encode(SpmbModel::getDefaultWaGroupInviteTemplate()) ?>;
+
+function openModalWaGroupSingle(pendaftarId, nama, jenjang, phone, groupLink) {
+    document.getElementById('wa-group-pendaftar-id').value = pendaftarId;
+    document.getElementById('wa-group-nama').innerText = nama;
+    document.getElementById('wa-group-jenjang').innerText = jenjang || 'SD';
+    document.getElementById('wa-group-phone').value = phone || '(Nomor belum tersedia)';
+    document.getElementById('wa-group-link').value = groupLink || '(Tautan group belum diatur di pengaturan SPMB)';
+
+    let tpl = defaultGroupTpl
+        .replace(/{nama_siswa}/g, nama)
+        .replace(/{jenjang}/g, jenjang)
+        .replace(/{link_group}/g, groupLink || '');
+    document.getElementById('wa-group-template').value = tpl;
+
+    document.getElementById('modal-wa-group-single').classList.remove('hidden');
+}
+
+function closeModalWaGroupSingle() {
+    document.getElementById('modal-wa-group-single').classList.add('hidden');
+}
+
+function submitSendWaGroupSingle() {
+    const id = document.getElementById('wa-group-pendaftar-id').value;
+    const phone = document.getElementById('wa-group-phone').value;
+    const tpl = document.getElementById('wa-group-template').value;
+    const btn = document.getElementById('btn-send-wa-group-single');
+
+    if (!phone || phone.includes('belum')) {
+        Swal.fire('Perhatian', 'Nomor WhatsApp calon siswa belum diisi.', 'warning');
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = `Mengirim...`;
+
+    fetch(`<?= url('kelola-spmb/observasi-awal/send-wa-group/') ?>${id}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': CSRF_TOKEN
+        },
+        body: new URLSearchParams({
+            <?= json_encode(CSRF_TOKEN_NAME) ?>: CSRF_TOKEN,
+            csrf_token: CSRF_TOKEN,
+            pendaftar_id: id,
+            template: tpl
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        btn.disabled = false;
+        btn.innerHTML = `Kirim Undangan Sekarang`;
+        if (data.success) {
+            closeModalWaGroupSingle();
+            Swal.fire('Alhamdulillah', data.message || 'Undangan Group WhatsApp berhasil dikirim!', 'success')
+                .then(() => location.reload());
+        } else {
+            Swal.fire('Gagal', data.message || 'Gagal mengirim pesan WhatsApp.', 'error');
+        }
+    })
+    .catch(err => {
+        btn.disabled = false;
+        btn.innerHTML = `Kirim Undangan Sekarang`;
+        Swal.fire('Kesalahan', err.message || 'Terjadi kesalahan sistem.', 'error');
+    });
+}
+
+// --- Toggle Status Masuk Group WA Manual ---
+function toggleGroupStatus(pendaftarId, nama, currentStatus) {
+    const statusText = currentStatus ? 'Belum Masuk' : 'Sudah Masuk';
+    Swal.fire({
+        title: 'Ubah Status Group WA?',
+        html: `Ubah status calon siswa <strong>${escapeHtml(nama)}</strong> menjadi <strong>${statusText} Group WA</strong>?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Ya, Ubah',
+        cancelButtonText: 'Batal',
+        confirmButtonColor: '#0d9488'
+    }).then(res => {
+        if (!res.isConfirmed) return;
+        fetch(`<?= url('kelola-spmb/observasi-awal/toggle-group-status/') ?>${pendaftarId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': CSRF_TOKEN
+            },
+            body: new URLSearchParams({
+                <?= json_encode(CSRF_TOKEN_NAME) ?>: CSRF_TOKEN,
+                csrf_token: CSRF_TOKEN,
+                pendaftar_id: pendaftarId
+            })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                showToast(data.message || 'Status berhasil diperbarui!');
+                setTimeout(() => location.reload(), 600);
+            } else {
+                Swal.fire('Gagal', data.message || 'Gagal mengubah status', 'error');
+            }
+        })
+        .catch(err => {
+            Swal.fire('Kesalahan', err.message, 'error');
+        });
+    });
+}
+
+// --- Broadcast Group WhatsApp ---
+let broadcastGroupTargets = [];
+let isBroadcastingGroup = false;
+
+function openModalBroadcastGroup() {
+    document.getElementById('modal-broadcast-group').classList.remove('hidden');
+    loadBroadcastGroupPreview();
+}
+
+function closeModalBroadcastGroup() {
+    if (isBroadcastingGroup) {
+        Swal.fire('Peringatan', 'Proses broadcast group sedang berjalan. Mohon tunggu hingga selesai.', 'warning');
+        return;
+    }
+    document.getElementById('modal-broadcast-group').classList.add('hidden');
+}
+
+function loadBroadcastGroupPreview() {
+    const jenjang = document.getElementById('bcg-filter-jenjang').value;
+    const target = document.getElementById('bcg-filter-target').value;
+    const targetLabel = document.getElementById('bcg-target-count');
+
+    targetLabel.innerText = 'Menghitung...';
+
+    fetch(`<?= url('kelola-spmb/observasi-awal/broadcast-group-data') ?>?jenjang=${encodeURIComponent(jenjang)}&target=${encodeURIComponent(target)}`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                broadcastGroupTargets = data.items || [];
+                const limitVal = parseInt(document.getElementById('bcg-filter-limit').value) || 0;
+                let finalCount = broadcastGroupTargets.length;
+                if (limitVal > 0 && finalCount > limitVal) {
+                    finalCount = limitVal;
+                }
+                targetLabel.innerText = `${finalCount} dari total ${broadcastGroupTargets.length} Siswa`;
+
+                if (!document.getElementById('bcg-template').value.trim() && data.defaultTemplate) {
+                    document.getElementById('bcg-template').value = data.defaultTemplate;
+                }
+            } else {
+                targetLabel.innerText = '0 Siswa';
+            }
+        })
+        .catch(() => {
+            targetLabel.innerText = 'Gagal memuat data';
+        });
+}
+
+async function startBroadcastGroup() {
+    const limitVal = parseInt(document.getElementById('bcg-filter-limit').value) || 0;
+    const delaySec = parseInt(document.getElementById('bcg-filter-delay').value) || 5;
+    const template = document.getElementById('bcg-template').value.trim();
+
+    let targets = [...broadcastGroupTargets];
+    if (limitVal > 0) {
+        targets = targets.slice(0, limitVal);
+    }
+
+    if (targets.length === 0) {
+        Swal.fire('Perhatian', 'Tidak ada target calon siswa yang memenuhi kriteria filter.', 'warning');
+        return;
+    }
+
+    const confirm = await Swal.fire({
+        title: 'Mulai Broadcast Link Group WA?',
+        html: `Akan mengirim undangan link Group WhatsApp ke <strong>${targets.length} orang tua calon siswa</strong> dengan jeda <strong>${delaySec} detik</strong> antar pesan.<br><br>Lanjutkan?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Ya, Jalankan Broadcast',
+        cancelButtonText: 'Batal',
+        confirmButtonColor: '#0d9488'
+    });
+
+    if (!confirm.isConfirmed) return;
+
+    isBroadcastingGroup = true;
+    document.getElementById('bcg-btn-start').disabled = true;
+    document.getElementById('bcg-btn-cancel').disabled = true;
+    document.getElementById('bcg-progress-container').classList.remove('hidden');
+
+    const progressBar = document.getElementById('bcg-progress-bar');
+    const progressStatus = document.getElementById('bcg-progress-status');
+    const progressPercent = document.getElementById('bcg-progress-percent');
+    const progressLog = document.getElementById('bcg-progress-log');
+    progressLog.innerHTML = '';
+
+    let successCount = 0;
+    let failCount = 0;
+
+    for (let i = 0; i < targets.length; i++) {
+        const item = targets[i];
+        const percent = Math.round(((i + 1) / targets.length) * 100);
+        progressStatus.innerText = `Mengirim ke (${i + 1}/${targets.length}): ${item.nama_lengkap} (${item.jenjang})`;
+        progressBar.style.width = percent + '%';
+        progressPercent.innerText = percent + '%';
+
+        try {
+            const res = await fetch(`<?= url('kelola-spmb/observasi-awal/broadcast-group-send') ?>`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': CSRF_TOKEN
+                },
+                body: new URLSearchParams({
+                    <?= json_encode(CSRF_TOKEN_NAME) ?>: CSRF_TOKEN,
+                    csrf_token: CSRF_TOKEN,
+                    pendaftar_id: item.pendaftar_id,
+                    template: template
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                successCount++;
+                progressLog.innerHTML += `<div class="text-teal-700">✓ [${i+1}] Berhasil kirim ke ${escapeHtml(item.nama_lengkap)} [${escapeHtml(item.jenjang)}] (${escapeHtml(item.target_phone || '')})</div>`;
+            } else {
+                failCount++;
+                progressLog.innerHTML += `<div class="text-rose-600">✗ [${i+1}] Gagal ke ${escapeHtml(item.nama_lengkap)}: ${escapeHtml(data.message || 'Error')}</div>`;
+            }
+        } catch (e) {
+            failCount++;
+            progressLog.innerHTML += `<div class="text-rose-600">✗ [${i+1}] Gagal jaringan ke ${escapeHtml(item.nama_lengkap)}: ${escapeHtml(e.message)}</div>`;
+        }
+        progressLog.scrollTop = progressLog.scrollHeight;
+
+        if (i < targets.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, delaySec * 1000));
+        }
+    }
+
+    isBroadcastingGroup = false;
+    document.getElementById('bcg-btn-start').disabled = false;
+    document.getElementById('bcg-btn-cancel').disabled = false;
+    progressStatus.innerText = `Selesai! Berhasil: ${successCount}, Gagal: ${failCount}`;
+
+    Swal.fire({
+        title: 'Broadcast Group Selesai',
+        html: `Proses broadcast undangan group WhatsApp selesai.<br><strong>Berhasil:</strong> ${successCount}<br><strong>Gagal/Dilewati:</strong> ${failCount}`,
+        icon: 'success'
+    }).then(() => {
+        location.reload();
     });
 }
 

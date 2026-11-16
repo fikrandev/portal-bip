@@ -89,6 +89,7 @@ class AutoMigrate
             '2026_11_14_000051_add_performance_indexes'                    => 'migration051AddPerformanceIndexes',
             '2026_11_14_000052_sync_mutabaah_ibadah_guru_schema'           => 'migration052SyncMutabaahIbadahGuruSchema',
             '2026_11_16_000053_add_dashboard_feature_permissions_to_all_modules' => 'migration053AddDashboardFeaturePermissionsToAllModules',
+            '2026_11_16_000054_add_spmb_group_wa_observasi_features'       => 'migration054AddSpmbGroupWaObservasiFeatures',
         ];
     }
     /**
@@ -3589,6 +3590,48 @@ class AutoMigrate
                 SELECT module_id, id FROM permissions 
                 WHERE module_id IS NOT NULL AND module_id > 0
             ");
+        }
+    }
+
+    /**
+     * Migration 054: Tambah fitur link group WA observasi untuk 4 unit (PAUD, SD, SMP, SMA)
+     * dan pencatatan konfirmasi masuk group di sistem.
+     */
+    protected static function migration054AddSpmbGroupWaObservasiFeatures(PDO $pdo): void
+    {
+        if (self::hasTable($pdo, 'spmb_pendaftar')) {
+            self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'is_gabung_group', 'TINYINT(1) NOT NULL DEFAULT 0', 'tgl_observasi');
+            self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'tgl_gabung_group', 'DATETIME NULL', 'is_gabung_group');
+            self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'wa_group_sent_at', 'DATETIME NULL', 'tgl_gabung_group');
+            self::addColumnIfNotExists($pdo, 'spmb_pendaftar', 'wa_group_sent_count', 'INT NOT NULL DEFAULT 0', 'wa_group_sent_at');
+
+            try {
+                $idxCols = $pdo->query("SHOW INDEX FROM `spmb_pendaftar` WHERE Key_name = 'idx_spmb_gabung_group'")->fetchAll();
+                if (empty($idxCols)) {
+                    $pdo->exec("ALTER TABLE `spmb_pendaftar` ADD INDEX `idx_spmb_gabung_group` (`is_gabung_group`)");
+                }
+            } catch (Throwable $e) {}
+        }
+
+        // Default setting keys in settings table
+        if (self::hasTable($pdo, 'settings')) {
+            $defaultSettings = [
+                'spmb_wa_group_paud'            => '',
+                'spmb_wa_group_sd'              => '',
+                'spmb_wa_group_smp'             => '',
+                'spmb_wa_group_sma'             => '',
+                'spmb_wa_template_group_invite' => "Assalamu'alaikum Warahmatullahi Wabarakatuh.\n\nYth. Ayah/Bunda dari ananda *{nama_siswa}* ({jenjang}),\nNo. Pendaftaran: *{nomor_pendaftaran}*\n\nTerima kasih telah melengkapi kuesioner observasi awal SPMB SIT Bina Insan Palu Tahun Ajaran *{tahun_ajaran}*.\n\nBagi Ayah/Bunda yang belum bergabung, kami mengundang untuk segera masuk ke *Group WhatsApp Resmi Calon Wali Murid {jenjang}* melalui tautan berikut:\n\n🔗 *Tautan Group WhatsApp:*\n{link_group}\n\nGrup ini berfungsi sebagai sarana koordinasi panitia SPMB, pembagian jadwal wawancara/observasi lanjutan, dan informasi pengumuman penting.\n\nJika ada pertanyaan, silakan hubungi kontak panitia SPMB SIT Bina Insan Palu.\nWassalamu'alaikum Warahmatullahi Wabarakatuh.\n_Panitia SPMB SIT Bina Insan Palu_"
+            ];
+
+            $stmtCheck = $pdo->prepare("SELECT id FROM `settings` WHERE `setting_key` = ?");
+            $stmtInsert = $pdo->prepare("INSERT INTO `settings` (`setting_key`, `setting_value`, `setting_type`, `setting_group`) VALUES (?, ?, 'string', 'spmb')");
+
+            foreach ($defaultSettings as $key => $val) {
+                $stmtCheck->execute([$key]);
+                if (!$stmtCheck->fetch()) {
+                    $stmtInsert->execute([$key, $val]);
+                }
+            }
         }
     }
 }

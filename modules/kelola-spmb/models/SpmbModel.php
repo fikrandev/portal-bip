@@ -3125,6 +3125,14 @@ class SpmbModel
             }
         }
 
+        if (!empty($filters['status_group'])) {
+            if ($filters['status_group'] === 'sudah') {
+                $conditions[] = "p.is_gabung_group = 1";
+            } elseif ($filters['status_group'] === 'belum') {
+                $conditions[] = "(p.is_gabung_group = 0 OR p.is_gabung_group IS NULL)";
+            }
+        }
+
         if (!empty($filters['search'])) {
             $term = '%' . trim($filters['search']) . '%';
             $conditions[] = "(p.nama_lengkap LIKE ? OR p.nomor_pendaftaran LIKE ? OR p.nisn LIKE ? OR obs.nama_pengisi LIKE ?)";
@@ -3140,6 +3148,7 @@ class SpmbModel
             SELECT p.id as pendaftar_id, p.id, p.nomor_pendaftaran, p.nama_lengkap, p.nama_panggilan,
                    p.jenjang, p.jenis_pendaftaran, p.no_wa, p.no_hp, p.no_hp_ayah, p.no_hp_ibu,
                    p.observasi_token, p.biodata_token, p.status_observasi, p.skor_observasi, p.kategori_observasi, p.tgl_observasi,
+                   p.is_gabung_group, p.tgl_gabung_group, p.wa_group_sent_at, p.wa_group_sent_count,
                    obs.id as respon_id, obs.nama_pengisi, obs.hubungan_pengisi, obs.total_skor, obs.skor_maksimal, obs.persentase,
                    obs.kategori_hasil, obs.catatan_orang_tua, obs.harapan_orang_tua, obs.submitted_at
             FROM `spmb_pendaftar` p
@@ -3163,6 +3172,7 @@ class SpmbModel
             $targetPhone = !empty($r['no_wa']) ? $r['no_wa'] : (!empty($r['no_hp']) ? $r['no_hp'] : (!empty($r['no_hp_ayah']) ? $r['no_hp_ayah'] : (!empty($r['no_hp_ibu']) ? $r['no_hp_ibu'] : '')));
             $r['target_phone'] = $targetPhone;
             $r['public_url'] = self::makeUrl('spmb/observasi/' . $r['observasi_token']);
+            $r['group_wa_link'] = self::getGroupWaLink($r['jenjang'] ?? 'SD');
         }
         unset($r);
 
@@ -3192,6 +3202,14 @@ class SpmbModel
                 $conditions[] = "p.status_observasi = 'Sudah Mengisi'";
             } elseif ($filters['status_observasi'] === 'belum') {
                 $conditions[] = "(p.status_observasi IS NULL OR p.status_observasi != 'Sudah Mengisi')";
+            }
+        }
+
+        if (!empty($filters['status_group'])) {
+            if ($filters['status_group'] === 'sudah') {
+                $conditions[] = "p.is_gabung_group = 1";
+            } elseif ($filters['status_group'] === 'belum') {
+                $conditions[] = "(p.is_gabung_group = 0 OR p.is_gabung_group IS NULL)";
             }
         }
 
@@ -3234,6 +3252,8 @@ class SpmbModel
                 COUNT(p.id) as total_siswa,
                 SUM(CASE WHEN p.status_observasi = 'Sudah Mengisi' THEN 1 ELSE 0 END) as total_sudah,
                 SUM(CASE WHEN p.status_observasi IS NULL OR p.status_observasi != 'Sudah Mengisi' THEN 1 ELSE 0 END) as total_belum,
+                SUM(CASE WHEN p.is_gabung_group = 1 THEN 1 ELSE 0 END) as total_gabung_group,
+                SUM(CASE WHEN p.is_gabung_group = 0 OR p.is_gabung_group IS NULL THEN 1 ELSE 0 END) as total_belum_gabung_group,
                 AVG(CASE WHEN obs.persentase > 0 THEN obs.persentase ELSE NULL END) as rata_persentase,
                 SUM(CASE WHEN obs.kategori_hasil = 'Sangat Baik / Mandiri' THEN 1 ELSE 0 END) as total_sangat_baik,
                 SUM(CASE WHEN obs.kategori_hasil = 'Baik / Berkembang' THEN 1 ELSE 0 END) as total_baik,
@@ -3252,15 +3272,17 @@ class SpmbModel
         $rataPersen = round((float)($res['rata_persentase'] ?? 0), 1);
 
         return [
-            'total_siswa'       => $totalSiswa,
-            'total_sudah'       => $sudah,
-            'total_belum'       => $belum,
-            'persen_selesai'    => $persen,
-            'rata_persentase'   => $rataPersen,
-            'total_sangat_baik' => (int)($res['total_sangat_baik'] ?? 0),
-            'total_baik'        => (int)($res['total_baik'] ?? 0),
-            'total_cukup'       => (int)($res['total_cukup'] ?? 0),
-            'total_kurang'      => (int)($res['total_kurang'] ?? 0),
+            'total_siswa'              => $totalSiswa,
+            'total_sudah'              => $sudah,
+            'total_belum'              => $belum,
+            'total_gabung_group'       => (int)($res['total_gabung_group'] ?? 0),
+            'total_belum_gabung_group' => (int)($res['total_belum_gabung_group'] ?? 0),
+            'persen_selesai'           => $persen,
+            'rata_persentase'          => $rataPersen,
+            'total_sangat_baik'        => (int)($res['total_sangat_baik'] ?? 0),
+            'total_baik'               => (int)($res['total_baik'] ?? 0),
+            'total_cukup'              => (int)($res['total_cukup'] ?? 0),
+            'total_kurang'             => (int)($res['total_kurang'] ?? 0),
         ];
     }
 
@@ -3391,6 +3413,167 @@ class SpmbModel
              . "Terima kasih atas kerja sama dan kepercayaan Bapak/Ibu kepada SIT Bina Insan Palu.\n\n"
              . "Wassalamu'alaikum Warahmatullahi Wabarakatuh.\n"
              . "_Panitia SPMB SIT Bina Insan Palu_";
+    }
+
+    /**
+     * Dapatkan link Group WhatsApp resmi berdasarkan unit jenjang pendaftar
+     */
+    public static function getGroupWaLink(string $jenjang): string
+    {
+        $normJenjang = strtoupper(trim($jenjang));
+        $key = match($normJenjang) {
+            'PAUD'  => 'spmb_wa_group_paud',
+            'SD'    => 'spmb_wa_group_sd',
+            'SMP'   => 'spmb_wa_group_smp',
+            'SMA'   => 'spmb_wa_group_sma',
+            default => 'spmb_wa_group_sd'
+        };
+        return trim((string)self::getSetting($key, ''));
+    }
+
+    /**
+     * Dapatkan seluruh tautan grup WhatsApp 4 unit
+     */
+    public static function getAllGroupWaLinks(): array
+    {
+        return [
+            'PAUD' => trim((string)self::getSetting('spmb_wa_group_paud', '')),
+            'SD'   => trim((string)self::getSetting('spmb_wa_group_sd', '')),
+            'SMP'  => trim((string)self::getSetting('spmb_wa_group_smp', '')),
+            'SMA'  => trim((string)self::getSetting('spmb_wa_group_sma', '')),
+        ];
+    }
+
+    /**
+     * Template standar pesan WhatsApp Undangan / Reminder Masuk ke Group Unit
+     */
+    public static function getDefaultWaGroupInviteTemplate(): string
+    {
+        $saved = self::getSetting('spmb_wa_template_group_invite');
+        if (!empty(trim((string)$saved))) {
+            return (string)$saved;
+        }
+
+        return "Assalamu'alaikum Warahmatullahi Wabarakatuh.\n\n"
+             . "Yth. Ayah/Bunda dari ananda *{nama_siswa}* ({jenjang}),\n"
+             . "No. Pendaftaran: *{nomor_pendaftaran}*\n\n"
+             . "Terima kasih telah melengkapi kuesioner observasi awal SPMB SIT Bina Insan Palu Tahun Ajaran *{tahun_ajaran}*.\n\n"
+             . "Bagi Ayah/Bunda yang belum bergabung, kami mengundang untuk segera masuk ke *Group WhatsApp Resmi Calon Wali Murid {jenjang}* melalui tautan berikut:\n\n"
+             . "🔗 *Tautan Group WhatsApp:*\n"
+             . "{link_group}\n\n"
+             . "Grup ini berfungsi sebagai sarana koordinasi panitia SPMB, pembagian jadwal wawancara/observasi lanjutan, dan informasi pengumuman penting.\n\n"
+             . "Jika ada pertanyaan, silakan hubungi kontak panitia SPMB SIT Bina Insan Palu.\n"
+             . "Wassalamu'alaikum Warahmatullahi Wabarakatuh.\n"
+             . "_Panitia SPMB SIT Bina Insan Palu_";
+    }
+
+    /**
+     * Catat pendaftar telah mengonfirmasi / bergabung ke Group WhatsApp
+     */
+    public static function markJoinedGroup(int $pendaftarId): void
+    {
+        self::db()->query(
+            "UPDATE `spmb_pendaftar` 
+             SET `is_gabung_group` = 1, 
+                 `tgl_gabung_group` = IFNULL(`tgl_gabung_group`, NOW()),
+                 `updated_at` = NOW() 
+             WHERE `id` = ?",
+            [$pendaftarId]
+        );
+    }
+
+    /**
+     * Toggle status bergabung grup secara manual oleh admin
+     */
+    public static function toggleJoinedGroup(int $pendaftarId): array
+    {
+        $p = self::getPendaftarById($pendaftarId);
+        if (!$p) {
+            return ['success' => false, 'message' => 'Data calon siswa tidak ditemukan.'];
+        }
+
+        $newStatus = empty($p['is_gabung_group']) ? 1 : 0;
+        $tglGabung = $newStatus === 1 ? date('Y-m-d H:i:s') : null;
+
+        self::db()->query(
+            "UPDATE `spmb_pendaftar` 
+             SET `is_gabung_group` = ?, 
+                 `tgl_gabung_group` = ?, 
+                 `updated_at` = NOW() 
+             WHERE `id` = ?",
+            [$newStatus, $tglGabung, $pendaftarId]
+        );
+
+        return [
+            'success'   => true,
+            'is_joined' => $newStatus,
+            'message'   => $newStatus === 1 ? 'Status diubah: Sudah Gabung Group.' : 'Status diubah: Belum Gabung Group.'
+        ];
+    }
+
+    /**
+     * Kirim undangan tautan Group WhatsApp ke nomor WhatsApp orang tua/wali
+     */
+    public static function sendWaGroupInvite(int $pendaftarId, ?string $customTemplate = null): array
+    {
+        $pendaftar = self::getPendaftarById($pendaftarId);
+        if (!$pendaftar) {
+            return ['success' => false, 'message' => 'Data calon siswa tidak ditemukan.'];
+        }
+
+        $targetPhone = !empty($pendaftar['no_wa']) ? $pendaftar['no_wa'] :
+                      (!empty($pendaftar['no_hp']) ? $pendaftar['no_hp'] :
+                      (!empty($pendaftar['no_hp_ayah']) ? $pendaftar['no_hp_ayah'] :
+                      (!empty($pendaftar['no_hp_ibu']) ? $pendaftar['no_hp_ibu'] : '')));
+
+        if (empty($targetPhone)) {
+            return ['success' => false, 'message' => 'Nomor WhatsApp atau No HP orang tua/wali belum diisi pada formulir pendaftaran.'];
+        }
+
+        $jenjang = strtoupper(trim($pendaftar['jenjang'] ?? 'SD'));
+        $linkGroup = self::getGroupWaLink($jenjang);
+        if (empty($linkGroup)) {
+            return ['success' => false, 'message' => "Tautan Group WhatsApp untuk unit {$jenjang} belum diisi pada Pengaturan SPMB."];
+        }
+
+        $group = !empty($pendaftar['group_id']) ? self::getGroupById((int)$pendaftar['group_id']) : self::getActiveGroup();
+        $tahunAjaran = $group['tahun_ajaran'] ?? ($group['nama_group'] ?? '2026/2027');
+        $namaUnit = self::getNamaSekolahByJenjang($jenjang);
+        $publicUrl = self::makeUrl('spmb/observasi/' . ($pendaftar['observasi_token'] ?? ''));
+
+        $template = !empty(trim($customTemplate ?? '')) ? $customTemplate : self::getDefaultWaGroupInviteTemplate();
+
+        $replacements = [
+            '{nama_siswa}'          => $pendaftar['nama_lengkap'],
+            '{nomor_pendaftaran}'   => $pendaftar['nomor_pendaftaran'],
+            '{no_daftar}'           => $pendaftar['nomor_pendaftaran'],
+            '{nama_sekolah}'        => $namaUnit,
+            '{nama_unit}'           => $namaUnit,
+            '{jenjang}'             => $jenjang,
+            '{tahun_ajaran}'        => $tahunAjaran,
+            '{link_group}'          => $linkGroup,
+            '{link_observasi}'      => $publicUrl,
+        ];
+
+        $pesan = str_replace(array_keys($replacements), array_values($replacements), $template);
+
+        $res = WaGateway::send($targetPhone, $pesan, [
+            'module'         => 'spmb_group_wa',
+            'include_footer' => true
+        ]);
+
+        if (!empty($res['success'])) {
+            self::db()->query(
+                "UPDATE `spmb_pendaftar` 
+                 SET `wa_group_sent_at` = NOW(), 
+                     `wa_group_sent_count` = `wa_group_sent_count` + 1 
+                 WHERE `id` = ?",
+                [$pendaftarId]
+            );
+        }
+
+        $res['phone'] = $targetPhone;
+        return $res;
     }
 
     /**

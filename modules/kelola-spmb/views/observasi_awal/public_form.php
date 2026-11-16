@@ -37,6 +37,11 @@ foreach ($structure as $g) {
 $isEditMode = isset($_GET['edit']) && $_GET['edit'] === '1';
 $isSuccessPage = isset($_GET['sukses']) && $_GET['sukses'] === '1';
 
+$jenjangPendaftar = strtoupper(trim($pendaftar['jenjang'] ?? 'SD'));
+$groupWaLink = SpmbModel::getGroupWaLink($jenjangPendaftar);
+$isJoinedGroup = !empty($pendaftar['is_gabung_group']);
+$tglJoinedGroup = !empty($pendaftar['tgl_gabung_group']) ? date('d/m/Y, H:i', strtotime($pendaftar['tgl_gabung_group'])) : '';
+
 $sbLogo = '';
 if (defined('SYS_APP_LOGO') && !empty(SYS_APP_LOGO)) {
     $sbLogo = url(ltrim(SYS_APP_LOGO, '/'));
@@ -196,6 +201,46 @@ if (defined('SYS_APP_LOGO') && !empty(SYS_APP_LOGO)) {
                         <span class="block text-[11px] text-emerald-200 mt-1">Formulir Selesai</span>
                     </div>
                 </div>
+
+                <!-- Konfirmasi Masuk Group WhatsApp Unit -->
+                <?php if (!empty($groupWaLink)): ?>
+                    <div id="cardGroupWaConfirm" class="p-5 sm:p-6 rounded-2xl <?= $isJoinedGroup ? 'bg-gradient-to-r from-emerald-50 via-teal-50 to-green-50 border-2 border-emerald-300' : 'bg-gradient-to-br from-emerald-600 via-teal-700 to-emerald-800 text-white shadow-xl shadow-emerald-700/20 border border-emerald-500' ?> transition-all">
+                        <div class="flex flex-col sm:flex-row items-center justify-between gap-5">
+                            <div class="flex items-start gap-4 text-center sm:text-left">
+                                <div class="w-14 h-14 rounded-2xl <?= $isJoinedGroup ? 'bg-emerald-100 text-emerald-700' : 'bg-white/20 text-white backdrop-blur-md' ?> flex items-center justify-center shrink-0 text-3xl shadow-md mx-auto sm:mx-0">
+                                    <svg class="w-8 h-8 fill-current" viewBox="0 0 24 24"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.664-.699c.971.53 1.838.823 2.796.823 3.183 0 5.769-2.586 5.769-5.768 0-3.181-2.586-5.767-5.769-5.767zm3.364 8.163c-.14.394-.717.728-1.002.775-.286.046-.66.077-2.073-.487-1.413-.564-2.316-1.996-2.386-2.089-.07-.093-.574-.764-.574-1.458 0-.694.364-1.036.494-1.176.13-.14.286-.175.38-.175.094 0 .188.001.27.006.086.004.202-.033.316.241.117.28.4 1.018.435 1.091.036.073.06.159.012.256-.048.097-.072.158-.144.241-.072.083-.152.186-.217.25-.072.071-.148.149-.064.293.084.143.373.615.8 1 .552.497 1.018.652 1.162.724.144.072.228.06.313-.037.085-.097.363-.424.46-.57.097-.146.195-.122.327-.073.132.049.839.396.983.468.144.073.24.109.276.17.036.06.036.353-.104.747zM12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2.05 22l4.986-1.308A9.957 9.957 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18.2c-1.632 0-3.15-.465-4.436-1.272l-.318-.2-2.96.776.79-2.884-.218-.348C3.992 14.887 3.5 13.504 3.5 12c0-4.687 3.813-8.5 8.5-8.5s8.5 3.813 8.5 8.5-3.813 8.5-8.5 8.5z"/></svg>
+                                </div>
+                                <div class="space-y-1">
+                                    <div class="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[11px] font-bold <?= $isJoinedGroup ? 'bg-emerald-200 text-emerald-900' : 'bg-emerald-500/30 text-emerald-200 border border-emerald-400/40' ?>">
+                                        <span id="labelStatusGroup"><?= $isJoinedGroup ? '✓ Status: Terdaftar di Grup' : '⚡ Langkah Terakhir: Wajib Masuk Group' ?></span>
+                                    </div>
+                                    <h4 id="titleStatusGroup" class="text-base sm:text-lg font-extrabold <?= $isJoinedGroup ? 'text-slate-900' : 'text-white' ?>">
+                                        <?= $isJoinedGroup ? 'Anda Sudah Mengonfirmasi Masuk Group WhatsApp ' . e($jenjangPendaftar) : 'Masuk ke Group WhatsApp Calon Wali Murid ' . e($jenjangPendaftar) ?>
+                                    </h4>
+                                    <p id="descStatusGroup" class="text-xs <?= $isJoinedGroup ? 'text-slate-600' : 'text-emerald-100' ?> max-w-lg leading-relaxed">
+                                        <?= $isJoinedGroup 
+                                            ? 'Terima kasih, konfirmasi Anda tercatat pada sistem pada <strong>' . e($tglJoinedGroup) . ' WITA</strong>. Anda dapat membuka grup kapan saja melalui tombol di samping.' 
+                                            : 'Alhamdulillah kuesioner observasi ananda telah tersimpan. Untuk informasi jadwal observasi offline, wawancara, dan pengumuman seleksi, mohon Ayah/Bunda <strong>segera bergabung</strong> ke Group WhatsApp resmi ini.' ?>
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="shrink-0 w-full sm:w-auto text-center space-y-2">
+                                <a href="<?= url('spmb/observasi/' . $token . '/join-group') ?>" 
+                                   target="_blank"
+                                   onclick="handleJoinGroupClick(event, this)"
+                                   id="btnJoinGroupWa"
+                                   class="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-2xl <?= $isJoinedGroup ? 'bg-slate-800 hover:bg-slate-900 text-white' : 'bg-white hover:bg-emerald-50 text-emerald-800 font-extrabold shadow-lg shadow-black/10' ?> text-xs sm:text-sm font-bold transition-all transform hover:-translate-y-0.5 cursor-pointer">
+                                    <svg class="w-5 h-5 fill-current text-emerald-600" viewBox="0 0 24 24"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.664-.699c.971.53 1.838.823 2.796.823 3.183 0 5.769-2.586 5.769-5.768 0-3.181-2.586-5.767-5.769-5.767zm3.364 8.163c-.14.394-.717.728-1.002.775-.286.046-.66.077-2.073-.487-1.413-.564-2.316-1.996-2.386-2.089-.07-.093-.574-.764-.574-1.458 0-.694.364-1.036.494-1.176.13-.14.286-.175.38-.175.094 0 .188.001.27.006.086.004.202-.033.316.241.117.28.4 1.018.435 1.091.036.073.06.159.012.256-.048.097-.072.158-.144.241-.072.083-.152.186-.217.25-.072.071-.148.149-.064.293.084.143.373.615.8 1 .552.497 1.018.652 1.162.724.144.072.228.06.313-.037.085-.097.363-.424.46-.57.097-.146.195-.122.327-.073.132.049.839.396.983.468.144.073.24.109.276.17.036.06.036.353-.104.747zM12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2.05 22l4.986-1.308A9.957 9.957 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18.2c-1.632 0-3.15-.465-4.436-1.272l-.318-.2-2.96.776.79-2.884-.218-.348C3.992 14.887 3.5 13.504 3.5 12c0-4.687 3.813-8.5 8.5-8.5s8.5 3.813 8.5 8.5-3.813 8.5-8.5 8.5z"/></svg>
+                                    <span id="btnTextJoinGroup"><?= $isJoinedGroup ? 'Buka Kembali Group WhatsApp' : '👉 Masuk ke Group WhatsApp Sekarang' ?></span>
+                                </a>
+                                <p class="text-[10px] <?= $isJoinedGroup ? 'text-slate-400' : 'text-emerald-200' ?>">
+                                    Kehadiran Anda di grup tercatat otomatis oleh sistem
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                <?php endif; ?>
 
                 <!-- Rincian Responden -->
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 p-5 rounded-2xl bg-slate-50 border border-slate-200 text-xs">
@@ -530,6 +575,22 @@ if (defined('SYS_APP_LOGO') && !empty(SYS_APP_LOGO)) {
                 statusEl.innerText = `${total - count} butir belum dijawab`;
             }
         }
+    }
+
+    function handleJoinGroupClick(e, btn) {
+        fetch('<?= url('spmb/observasi/' . $token . '/join-group') ?>', {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        }).then(r => r.json()).then(res => {
+            if (res.success) {
+                const label = document.getElementById('labelStatusGroup');
+                if (label) label.innerText = '✓ Status: Terdaftar di Grup';
+                const btnText = document.getElementById('btnTextJoinGroup');
+                if (btnText) btnText.innerText = 'Buka Kembali Group WhatsApp';
+            }
+        }).catch(err => console.log('Join error:', err));
     }
 
     // Inisialisasi saat halaman dimuat

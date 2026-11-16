@@ -19,6 +19,11 @@ $valDatetimeLocal = date('Y-m-d\TH:i', strtotime($rawBatasPengisian));
 $waNotifEnabled = ($spmbOptions['wa_notif_enabled'] ?? true);
 $waTemplate = SpmbModel::getSetting('spmb_wa_template_biodata') ?: ($spmbOptions['wa_template_biodata'] ?? '');
 $templateDapodik = $spmbOptions['template_dapodik'] ?? '';
+$rawGroupPaud = SpmbModel::getSetting('spmb_wa_group_paud', '');
+$rawGroupSd = SpmbModel::getSetting('spmb_wa_group_sd', '');
+$rawGroupSmp = SpmbModel::getSetting('spmb_wa_group_smp', '');
+$rawGroupSma = SpmbModel::getSetting('spmb_wa_group_sma', '');
+$rawTemplateGroupInvite = SpmbModel::getDefaultWaGroupInviteTemplate();
 ?>
 
 <div class="space-y-6">
@@ -676,6 +681,107 @@ $templateDapodik = $spmbOptions['template_dapodik'] ?? '';
                         <code class="bg-emerald-100 text-emerald-800 px-1 py-0.5 rounded font-bold">{no_daftar}</code>,
                         <code
                             class="bg-emerald-100 text-emerald-800 px-1 py-0.5 rounded font-bold">{link_biodata}</code>
+                    </p>
+                </div>
+            </div>
+
+            <!-- ── Tautan Group WhatsApp Unit (PAUD, SD, SMP, SMA) & Template Observasi ── -->
+            <div id="sectionGroupWa" class="p-6 rounded-2xl bg-gradient-to-br from-teal-50/90 via-emerald-50/60 to-cyan-50/40 border border-teal-200/90 shadow-sm space-y-5">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-teal-100">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-600 to-teal-700 text-white flex items-center justify-center text-xl shrink-0 shadow-md shadow-emerald-600/20">
+                            👥
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+                                <span>Tautan Group WhatsApp 4 Unit (PAUD, SD, SMP, SMA)</span>
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-teal-100 text-teal-800 border border-teal-200">Observasi Ortu</span>
+                            </h4>
+                            <p class="text-xs text-slate-600 mt-0.5">
+                                Masukkan tautan undangan Group WhatsApp untuk masing-masing unit. Setelah orang tua menyelesaikan kuesioner observasi awal, sistem akan menampilkan tombol konfirmasi bergabung ke grup unit terkait dan mencatat kehadirannya secara otomatis.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4 Input Links -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+                    <!-- PAUD -->
+                    <div class="bg-white p-4 rounded-xl border border-teal-200/80 shadow-2xs space-y-1.5">
+                        <div class="flex items-center justify-between">
+                            <label class="block text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                                <span>Link Group WhatsApp PAUD</span>
+                            </label>
+                            <span class="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">TK / PAUD</span>
+                        </div>
+                        <input type="url" name="spmb_wa_group_paud" value="<?= htmlspecialchars($rawGroupPaud) ?>"
+                            placeholder="https://chat.whatsapp.com/..."
+                            class="w-full text-xs font-mono p-2.5 rounded-lg border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-teal-500 outline-none">
+                        <p class="text-[10px] text-slate-400">Contoh tautan undangan grup WhatsApp untuk calon murid PAUD.</p>
+                    </div>
+
+                    <!-- SD -->
+                    <div class="bg-white p-4 rounded-xl border border-teal-200/80 shadow-2xs space-y-1.5">
+                        <div class="flex items-center justify-between">
+                            <label class="block text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-red-500"></span>
+                                <span>Link Group WhatsApp SD</span>
+                            </label>
+                            <span class="text-[10px] font-bold text-red-700 bg-red-50 px-2 py-0.5 rounded border border-red-200">SDIT</span>
+                        </div>
+                        <input type="url" name="spmb_wa_group_sd" value="<?= htmlspecialchars($rawGroupSd) ?>"
+                            placeholder="https://chat.whatsapp.com/..."
+                            class="w-full text-xs font-mono p-2.5 rounded-lg border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-teal-500 outline-none">
+                        <p class="text-[10px] text-slate-400">Tautan grup WhatsApp untuk calon murid SDIT.</p>
+                    </div>
+
+                    <!-- SMP -->
+                    <div class="bg-white p-4 rounded-xl border border-teal-200/80 shadow-2xs space-y-1.5">
+                        <div class="flex items-center justify-between">
+                            <label class="block text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-sky-500"></span>
+                                <span>Link Group WhatsApp SMP</span>
+                            </label>
+                            <span class="text-[10px] font-bold text-sky-700 bg-sky-50 px-2 py-0.5 rounded border border-sky-200">SMPIT</span>
+                        </div>
+                        <input type="url" name="spmb_wa_group_smp" value="<?= htmlspecialchars($rawGroupSmp) ?>"
+                            placeholder="https://chat.whatsapp.com/..."
+                            class="w-full text-xs font-mono p-2.5 rounded-lg border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-teal-500 outline-none">
+                        <p class="text-[10px] text-slate-400">Tautan grup WhatsApp untuk calon murid SMPIT.</p>
+                    </div>
+
+                    <!-- SMA -->
+                    <div class="bg-white p-4 rounded-xl border border-teal-200/80 shadow-2xs space-y-1.5">
+                        <div class="flex items-center justify-between">
+                            <label class="block text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
+                                <span>Link Group WhatsApp SMA</span>
+                            </label>
+                            <span class="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">SMAIT</span>
+                        </div>
+                        <input type="url" name="spmb_wa_group_sma" value="<?= htmlspecialchars($rawGroupSma) ?>"
+                            placeholder="https://chat.whatsapp.com/..."
+                            class="w-full text-xs font-mono p-2.5 rounded-lg border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-teal-500 outline-none">
+                        <p class="text-[10px] text-slate-400">Tautan grup WhatsApp untuk calon murid SMAIT.</p>
+                    </div>
+                </div>
+
+                <!-- Template Pesan WhatsApp Undangan/Reminder Group -->
+                <div class="pt-2">
+                    <label class="block text-xs font-bold text-slate-800 mb-1.5">
+                        Template Pesan WhatsApp Undangan & Broadcast Gabung Group
+                    </label>
+                    <textarea name="spmb_wa_template_group_invite" rows="5"
+                        class="w-full text-xs font-mono p-3 rounded-xl border border-teal-200 bg-white focus:border-teal-500 outline-none leading-relaxed"><?= htmlspecialchars($rawTemplateGroupInvite) ?></textarea>
+                    <p class="text-[11px] text-slate-500 mt-1 flex items-center gap-1">
+                        <span>💡</span>
+                        Placeholder yang tersedia: <code class="bg-teal-100 text-teal-800 px-1 py-0.5 rounded font-bold">{nama_siswa}</code>,
+                        <code class="bg-teal-100 text-teal-800 px-1 py-0.5 rounded font-bold">{nomor_pendaftaran}</code>,
+                        <code class="bg-teal-100 text-teal-800 px-1 py-0.5 rounded font-bold">{jenjang}</code>,
+                        <code class="bg-teal-100 text-teal-800 px-1 py-0.5 rounded font-bold">{link_group}</code>,
+                        <code class="bg-teal-100 text-teal-800 px-1 py-0.5 rounded font-bold">{nama_sekolah}</code>,
+                        <code class="bg-teal-100 text-teal-800 px-1 py-0.5 rounded font-bold">{tahun_ajaran}</code>
                     </p>
                 </div>
             </div>

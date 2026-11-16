@@ -2011,7 +2011,12 @@ SVG;
             'spmb_opt_penghasilan',
             'spmb_opt_kebutuhan_khusus',
             'spmb_wa_notif_enabled',
-            'spmb_wa_template_biodata'
+            'spmb_wa_template_biodata',
+            'spmb_wa_group_paud',
+            'spmb_wa_group_sd',
+            'spmb_wa_group_smp',
+            'spmb_wa_group_sma',
+            'spmb_wa_template_group_invite'
         ];
 
         $db = Database::getInstance();
@@ -3300,6 +3305,7 @@ SVG;
             'group_id'         => $groupId,
             'jenjang'          => trim($_GET['jenjang'] ?? ''),
             'status_observasi' => trim($_GET['status_observasi'] ?? ''),
+            'status_group'     => trim($_GET['status_group'] ?? ''),
             'search'           => trim($_GET['search'] ?? '')
         ];
 
@@ -3307,6 +3313,7 @@ SVG;
         $totalPages = ($limit >= 999999 || $totalItems <= 0) ? 1 : (int)ceil($totalItems / $limit);
         $items = SpmbModel::getDaftarHasilObservasiAwal($filters, $limit, $offset);
         $stats = SpmbModel::getObservasiStats($groupId);
+        $groupLinks = SpmbModel::getAllGroupWaLinks();
 
         self::view(
             'observasi_awal/index',
@@ -3315,6 +3322,7 @@ SVG;
                 'items'         => $items,
                 'stats'         => $stats,
                 'filters'       => $filters,
+                'groupLinks'    => $groupLinks,
                 'page'          => $page,
                 'currentPage'   => $page,
                 'totalPages'    => $totalPages,
@@ -3776,6 +3784,128 @@ SVG;
             $_SESSION['flash_error'] = $res['message'];
             Response::redirect(url('spmb/observasi/' . $token));
         }
+    }
+
+    /**
+     * Konfirmasi Bergabung ke Group WhatsApp oleh Orang Tua Calon Siswa (Publik)
+     * Langsung mencatat ke database dan mengarahkan ke link WA Group
+     */
+    public static function observasiAwalPublicJoinGroup(string $token): void
+    {
+        $token = trim($token);
+        $pendaftar = SpmbModel::getPendaftarByObservasiToken($token);
+
+        if (!$pendaftar) {
+            http_response_code(404);
+            Response::json(['success' => false, 'message' => 'Data pendaftar tidak valid atau token kedaluwarsa.'], 404);
+            return;
+        }
+
+        $jenjang = strtoupper(trim($pendaftar['jenjang'] ?? 'SD'));
+        $groupUrl = SpmbModel::getGroupWaLink($jenjang);
+
+        // Catat bergabung ke grup di database
+        SpmbModel::markJoinedGroup((int)$pendaftar['id']);
+
+        $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+        if ($isAjax) {
+            Response::json([
+                'success'   => true,
+                'message'   => 'Konfirmasi bergabung ke group WhatsApp berhasil dicatat.',
+                'group_url' => $groupUrl
+            ]);
+            return;
+        }
+
+        if (!empty($groupUrl)) {
+            header('Location: ' . $groupUrl);
+            exit;
+        }
+
+        $_SESSION['flash_warning'] = 'Tautan Group WhatsApp belum diatur oleh panitia di Pengaturan SPMB.';
+        Response::redirect(url('spmb/observasi/' . $token));
+    }
+
+    /**
+     * Kirim Pesan WhatsApp Undangan Link Group WhatsApp ke Orang Tua (Single)
+     */
+    public static function observasiAwalSendWaGroupSingle(int $id = 0): void
+    {
+        if (!CSRF::validate(false)) {
+            Response::json(['success' => false, 'message' => 'Token CSRF tidak valid atau sesi telah kedaluwarsa.'], 403);
+            return;
+        }
+
+        $pendaftarId = $id > 0 ? $id : (int)($_POST['pendaftar_id'] ?? 0);
+        if ($pendaftarId <= 0) {
+            Response::json(['success' => false, 'message' => 'ID calon siswa tidak valid.'], 400);
+            return;
+        }
+
+        $customTemplate = !empty($_POST['template']) ? trim($_POST['template']) : null;
+        $res = SpmbModel::sendWaGroupInvite($pendaftarId, $customTemplate);
+
+        $httpCode = !empty($res['success']) ? 200 : 400;
+        Response::json($res, $httpCode);
+    }
+
+    /**
+     * Dapatkan Data Siswa Penerima Broadcast Undangan Group WhatsApp (AJAX)
+     */
+    public static function observasiAwalBroadcastGroupData(): void
+    {
+        $activeGroup = SpmbModel::getActiveGroup();
+        $targetFilter = trim($_GET['target'] ?? 'belum'); // 'belum', 'semua_observasi', 'semua'
+        $jenjang = trim($_GET['jenjang'] ?? '');
+
+        $filters = [
+            'group_id' => $activeGroup['id'] ?? null,
+            'jenjang'  => $jenjang,
+        ];
+
+        if ($targetFilter === 'belum') {
+            $filters['status_group'] = 'belum';
+        } elseif ($targetFilter === 'semua_observasi') {
+            $filters['status_observasi'] = 'sudah';
+        }
+
+        $items = SpmbModel::getDaftarHasilObservasiAwal($filters, 2000, 0);
+
+        foreach ($items as &$it) {
+            $it['link_group'] = SpmbModel::getGroupWaLink($it['jenjang'] ?? 'SD');
+        }
+        unset($it);
+
+        Response::json([
+            'success'         => true,
+            'total'           => count($items),
+            'items'           => $items,
+            'defaultTemplate' => SpmbModel::getDefaultWaGroupInviteTemplate(),
+            'groupLinks'      => SpmbModel::getAllGroupWaLinks()
+        ]);
+    }
+
+    /**
+     * Kirim Pesan WhatsApp Undangan Group WhatsApp untuk 1 Siswa pada Proses Broadcast (Batch)
+     */
+    public static function observasiAwalBroadcastGroupSendSingle(): void
+    {
+        self::observasiAwalSendWaGroupSingle();
+    }
+
+    /**
+     * Toggle status bergabung grup secara manual oleh Admin (AJAX)
+     */
+    public static function observasiAwalToggleGroupStatus(int $id = 0): void
+    {
+        if (!CSRF::validate(false)) {
+            Response::json(['success' => false, 'message' => 'Token CSRF tidak valid.'], 403);
+            return;
+        }
+
+        $pendaftarId = $id > 0 ? $id : (int)($_POST['pendaftar_id'] ?? 0);
+        $res = SpmbModel::toggleJoinedGroup($pendaftarId);
+        Response::json($res, $res['success'] ? 200 : 400);
     }
 }
 
