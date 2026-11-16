@@ -487,10 +487,33 @@ class SarprasController
     // ΓöÇΓöÇ PEMELIHARAAN & PERBAIKAN ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
     public static function pemeliharaanList(): void
     {
+        if (!RBAC::can('sarpras.perbaikan.view') && !RBAC::can('sarpras.view') && !Auth::isSuperAdmin()) {
+            $_SESSION['flash_error'] = 'Anda tidak memiliki hak akses untuk melihat pemeliharaan sarpras.';
+            Response::redirect(url('dashboard'));
+            return;
+        }
+
         $status = trim($_GET['status'] ?? '');
-        $items = SarprasModel::getPemeliharaanList($status ?: null);
+        $statusVerif = trim($_GET['status_verifikasi'] ?? '');
+        $urgensi = trim($_GET['tingkat_urgensi'] ?? '');
+        $ruanganId = (int)($_GET['ruangan_id'] ?? 0);
+        $search = trim($_GET['search'] ?? '');
+
+        $filters = [
+            'status_verifikasi' => $statusVerif,
+            'tingkat_urgensi'   => $urgensi,
+            'ruangan_id'        => $ruanganId,
+            'search'            => $search
+        ];
+
+        $items = SarprasModel::getPemeliharaanList($status ?: null, $filters);
+        $stats = SarprasModel::getPemeliharaanStats();
         $barangList = SarprasModel::getBarangList([], 500, 0);
         $ruanganList = SarprasModel::getAllRuangan();
+
+        $canVerify = RBAC::can('sarpras.perbaikan.verify') || RBAC::can('sarpras.approve') || Auth::isSuperAdmin();
+        $canCreate = RBAC::can('sarpras.perbaikan.create') || RBAC::can('sarpras.create') || Auth::isSuperAdmin();
+        $canDelete = RBAC::can('sarpras.perbaikan.delete') || RBAC::can('sarpras.delete') || Auth::isSuperAdmin();
 
         // Siapkan mapping barang per ruangan agar responsif instan
         $db = Database::getInstance();
@@ -516,13 +539,18 @@ class SarprasController
 
         self::view('pemeliharaan/index', [
             'items' => $items,
+            'stats' => $stats,
             'status' => $status,
+            'filters' => $filters,
             'barangList' => $barangList,
             'ruanganList' => $ruanganList,
-            'barangByRuangan' => $barangByRuangan
+            'barangByRuangan' => $barangByRuangan,
+            'canVerify' => $canVerify,
+            'canCreate' => $canCreate,
+            'canDelete' => $canDelete
         ], 'Pemeliharaan & Perbaikan Sarpras', [
             ['label' => 'Sarpras', 'url' => url('kelola-sarpras')],
-            ['label' => 'Pemeliharaan']
+            ['label' => 'Pemeliharaan & Perbaikan']
         ]);
     }
 
@@ -542,8 +570,14 @@ class SarprasController
     {
         CSRF::validate();
 
+        if (!RBAC::can('sarpras.perbaikan.create') && !RBAC::can('sarpras.create') && !Auth::isSuperAdmin()) {
+            $_SESSION['flash_error'] = 'Anda tidak memiliki hak akses untuk mengajukan perbaikan.';
+            Response::redirect(url('kelola-sarpras/pemeliharaan'));
+            return;
+        }
+
         $judul = trim($_POST['judul_laporan'] ?? '');
-        $pelapor = trim($_POST['pelapor_nama'] ?? Auth::name());
+        $pelapor = trim($_POST['pelapor_nama'] ?? (Auth::name() ?: 'Pelapor'));
         $barangId = !empty($_POST['barang_id']) ? (int)$_POST['barang_id'] : null;
         $ruanganId = !empty($_POST['ruangan_id']) ? (int)$_POST['ruangan_id'] : null;
         $urgensi = trim($_POST['tingkat_urgensi'] ?? 'Sedang');
@@ -575,20 +609,51 @@ class SarprasController
         $kodeMnt = 'MNT-' . date('Ymd') . '-' . substr(strtoupper(uniqid()), -4);
 
         SarprasModel::insertPemeliharaan([
-            'kode_perbaikan' => $kodeMnt,
-            'barang_id' => $barangId,
-            'ruangan_id' => $ruanganId,
-            'judul_laporan' => $judul,
-            'pelapor_nama' => $pelapor,
-            'tanggal_lapor' => date('Y-m-d'),
-            'tingkat_urgensi' => $urgensi,
+            'kode_perbaikan'      => $kodeMnt,
+            'barang_id'           => $barangId,
+            'ruangan_id'          => $ruanganId,
+            'judul_laporan'       => $judul,
+            'pelapor_nama'        => $pelapor,
+            'user_id'             => Auth::id() ?: null,
+            'tanggal_lapor'       => date('Y-m-d'),
+            'tingkat_urgensi'     => $urgensi,
             'deskripsi_kerusakan' => $deskripsi,
-            'status' => 'Menunggu',
-            'estimasi_biaya' => $estimasiBiaya,
-            'foto_kerusakan' => $fotoPath
+            'status'              => 'Menunggu',
+            'status_verifikasi'   => 'Menunggu',
+            'estimasi_biaya'      => $estimasiBiaya,
+            'foto_kerusakan'      => $fotoPath
         ]);
 
-        $_SESSION['flash_success'] = "Laporan pengaduan kerusakan berhasil diajukan ({$kodeMnt})!";
+        $_SESSION['flash_success'] = "Laporan pengaduan perbaikan berhasil diajukan ({$kodeMnt})!";
+        Response::redirect(url('kelola-sarpras/pemeliharaan'));
+    }
+
+    public static function pemeliharaanVerifikasi(int $id): void
+    {
+        CSRF::validate();
+
+        if (!RBAC::can('sarpras.perbaikan.verify') && !RBAC::can('sarpras.approve') && !Auth::isSuperAdmin()) {
+            $_SESSION['flash_error'] = 'Anda tidak memiliki hak akses verifikasi pengajuan perbaikan.';
+            Response::redirect(url('kelola-sarpras/pemeliharaan'));
+            return;
+        }
+
+        $m = SarprasModel::getPemeliharaanById($id);
+        if (!$m) {
+            $_SESSION['flash_error'] = 'Data perbaikan tidak ditemukan!';
+            Response::redirect(url('kelola-sarpras/pemeliharaan'));
+            return;
+        }
+
+        $statusVerif = trim($_POST['status_verifikasi'] ?? 'Disetujui');
+        $statusPengerjaan = trim($_POST['status'] ?? ($statusVerif === 'Ditolak' ? 'Ditolak' : 'Diproses'));
+        $catatan = trim($_POST['catatan_verifikasi'] ?? '');
+        $estimasi = (float)str_replace(['.', ','], ['', '.'], $_POST['estimasi_biaya'] ?? '0');
+        $teknisi = trim($_POST['teknisi_pihak'] ?? '');
+
+        SarprasModel::verifikasiPemeliharaan($id, $statusVerif, $statusPengerjaan, $catatan, $estimasi, $teknisi);
+
+        $_SESSION['flash_success'] = "Pengajuan perbaikan {$m['kode_perbaikan']} berhasil diverifikasi ({$statusVerif})!";
         Response::redirect(url('kelola-sarpras/pemeliharaan'));
     }
 
@@ -604,6 +669,235 @@ class SarprasController
         SarprasModel::updateStatusPemeliharaan($id, $status, $tindakan, $biaya, $teknisi);
         $_SESSION['flash_success'] = "Status pemeliharaan/perbaikan berhasil diperbarui!";
         Response::redirect(url('kelola-sarpras/pemeliharaan'));
+    }
+
+    public static function pemeliharaanDelete(int $id): void
+    {
+        CSRF::validate();
+
+        if (!RBAC::can('sarpras.perbaikan.delete') && !RBAC::can('sarpras.delete') && !Auth::isSuperAdmin()) {
+            $_SESSION['flash_error'] = 'Anda tidak memiliki hak akses untuk menghapus tiket perbaikan.';
+            Response::redirect(url('kelola-sarpras/pemeliharaan'));
+            return;
+        }
+
+        SarprasModel::deletePemeliharaan($id);
+        $_SESSION['flash_success'] = 'Tiket pemeliharaan/perbaikan berhasil dihapus!';
+        Response::redirect(url('kelola-sarpras/pemeliharaan'));
+    }
+
+    public static function pemeliharaanCetak(int $id): void
+    {
+        if (!RBAC::can('sarpras.perbaikan.view') && !RBAC::can('sarpras.view') && !Auth::isSuperAdmin()) {
+            $_SESSION['flash_error'] = 'Akses ditolak!';
+            Response::redirect(url('dashboard'));
+            return;
+        }
+
+        $item = SarprasModel::getPemeliharaanById($id);
+        if (!$item) {
+            $_SESSION['flash_error'] = 'Data perbaikan tidak ditemukan!';
+            Response::redirect(url('kelola-sarpras/pemeliharaan'));
+            return;
+        }
+
+        include BASE_PATH . '/modules/kelola-sarpras/views/pemeliharaan/cetak.php';
+    }
+
+    // ── PENGAJUAN PEMBELIAN BARU ────────────────────────────────────
+    public static function pengajuanList(): void
+    {
+        if (!RBAC::can('sarpras.pengajuan.view') && !RBAC::can('sarpras.view') && !Auth::isSuperAdmin()) {
+            $_SESSION['flash_error'] = 'Anda tidak memiliki hak akses untuk melihat pengajuan pembelian.';
+            Response::redirect(url('dashboard'));
+            return;
+        }
+
+        $filters = [
+            'status'            => trim($_GET['status'] ?? ''),
+            'status_verifikasi' => trim($_GET['status_verifikasi'] ?? ''),
+            'unit'              => trim($_GET['unit'] ?? ''),
+            'kategori_id'       => trim($_GET['kategori_id'] ?? ''),
+            'search'            => trim($_GET['search'] ?? '')
+        ];
+
+        $page = max(1, (int)($_GET['page'] ?? 1));
+        $limit = 20;
+        $offset = ($page - 1) * $limit;
+
+        $totalItems = SarprasModel::countPengajuanList($filters);
+        $totalPages = (int)ceil($totalItems / $limit);
+        $items = SarprasModel::getPengajuanList($filters, $limit, $offset);
+        $stats = SarprasModel::getPengajuanStats();
+        $kategoriList = SarprasModel::getKategoriList();
+        $ruanganList = SarprasModel::getAllRuangan();
+
+        $canVerify = RBAC::can('sarpras.pengajuan.verify') || RBAC::can('sarpras.approve') || Auth::isSuperAdmin();
+        $canCreate = RBAC::can('sarpras.pengajuan.create') || RBAC::can('sarpras.create') || Auth::isSuperAdmin();
+        $canDelete = RBAC::can('sarpras.pengajuan.delete') || RBAC::can('sarpras.delete') || Auth::isSuperAdmin();
+
+        self::view('pengajuan/index', [
+            'items'        => $items,
+            'stats'        => $stats,
+            'filters'      => $filters,
+            'kategoriList' => $kategoriList,
+            'ruanganList'  => $ruanganList,
+            'page'         => $page,
+            'totalPages'   => $totalPages,
+            'totalItems'   => $totalItems,
+            'limit'        => $limit,
+            'canVerify'    => $canVerify,
+            'canCreate'    => $canCreate,
+            'canDelete'    => $canDelete
+        ], 'Pengajuan Pembelian Barang Baru', [
+            ['label' => 'Sarpras', 'url' => url('kelola-sarpras')],
+            ['label' => 'Pengajuan Pembelian']
+        ]);
+    }
+
+    public static function pengajuanStore(): void
+    {
+        CSRF::validate();
+
+        if (!RBAC::can('sarpras.pengajuan.create') && !RBAC::can('sarpras.create') && !Auth::isSuperAdmin()) {
+            $_SESSION['flash_error'] = 'Anda tidak memiliki hak akses untuk membuat pengajuan pembelian.';
+            Response::redirect(url('kelola-sarpras/pengajuan'));
+            return;
+        }
+
+        $namaBarang = trim($_POST['nama_barang'] ?? '');
+        $keperluan = trim($_POST['keperluan'] ?? '');
+        $unit = trim($_POST['unit'] ?? 'Umum');
+        $kategoriId = !empty($_POST['kategori_id']) ? (int)$_POST['kategori_id'] : null;
+        $ruanganId = !empty($_POST['ruangan_id']) ? (int)$_POST['ruangan_id'] : null;
+        $spesifikasi = trim($_POST['spesifikasi'] ?? '');
+        $jumlah = max(1, (int)($_POST['jumlah'] ?? 1));
+        $satuan = trim($_POST['satuan'] ?? 'Unit');
+        $estimasiHarga = (float)str_replace(['.', ','], ['', '.'], $_POST['estimasi_harga'] ?? '0');
+        $totalEstimasi = $estimasiHarga * $jumlah;
+        $pengaju = trim($_POST['pengaju'] ?? (Auth::name() ?: 'Staff Sarpras'));
+        $tanggal = trim($_POST['tanggal_pengajuan'] ?? date('Y-m-d'));
+
+        if (empty($namaBarang) || empty($keperluan)) {
+            $_SESSION['flash_error'] = 'Nama barang dan alasan/keperluan pengajuan wajib diisi!';
+            Response::redirect(url('kelola-sarpras/pengajuan'));
+            return;
+        }
+
+        $filePath = null;
+        if (!empty($_FILES['file_pendukung']['name']) && $_FILES['file_pendukung']['error'] === UPLOAD_ERR_OK) {
+            $file = $_FILES['file_pendukung'];
+            $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+            if (in_array($ext, ['jpg', 'jpeg', 'png', 'pdf', 'webp'])) {
+                $dir = BASE_PATH . '/public/uploads/sarpras/pengajuan';
+                if (!is_dir($dir)) {
+                    @mkdir($dir, 0777, true);
+                }
+                $filename = 'beli_' . time() . '_' . substr(md5(uniqid()), 0, 6) . '.' . $ext;
+                if (move_uploaded_file($file['tmp_name'], $dir . '/' . $filename)) {
+                    $filePath = 'uploads/sarpras/pengajuan/' . $filename;
+                }
+            }
+        }
+
+        $kodePengajuan = SarprasModel::generateKodePengajuan();
+
+        SarprasModel::insertPengajuan([
+            'kode_pengajuan'    => $kodePengajuan,
+            'nama_barang'       => $namaBarang,
+            'unit'              => $unit,
+            'kategori_id'       => $kategoriId,
+            'ruangan_id'        => $ruanganId,
+            'user_id'           => Auth::id() ?: null,
+            'spesifikasi'       => $spesifikasi,
+            'jumlah'            => $jumlah,
+            'satuan'            => $satuan,
+            'estimasi_harga'    => $estimasiHarga,
+            'total_estimasi'    => $totalEstimasi,
+            'keperluan'         => $keperluan,
+            'file_pendukung'    => $filePath,
+            'pengaju'           => $pengaju,
+            'tanggal_pengajuan' => $tanggal,
+            'status'            => 'Diajukan',
+            'status_verifikasi' => 'Menunggu'
+        ]);
+
+        $_SESSION['flash_success'] = "Pengajuan pembelian baru ({$kodePengajuan}) berhasil diajukan!";
+        Response::redirect(url('kelola-sarpras/pengajuan'));
+    }
+
+    public static function pengajuanVerifikasi(int $id): void
+    {
+        CSRF::validate();
+
+        if (!RBAC::can('sarpras.pengajuan.verify') && !RBAC::can('sarpras.approve') && !Auth::isSuperAdmin()) {
+            $_SESSION['flash_error'] = 'Anda tidak memiliki hak akses verifikasi pengajuan pembelian.';
+            Response::redirect(url('kelola-sarpras/pengajuan'));
+            return;
+        }
+
+        $p = SarprasModel::getPengajuanById($id);
+        if (!$p) {
+            $_SESSION['flash_error'] = 'Data pengajuan tidak ditemukan!';
+            Response::redirect(url('kelola-sarpras/pengajuan'));
+            return;
+        }
+
+        $action = trim($_POST['status_verifikasi'] ?? 'Disetujui'); // 'Disetujui', 'Ditolak', 'Selesai'
+        $catatan = trim($_POST['catatan_verifikasi'] ?? '');
+        $realisasi = (float)str_replace(['.', ','], ['', '.'], $_POST['realisasi_harga'] ?? '0');
+
+        if ($action === 'Disetujui') {
+            $statusVerif = 'Disetujui';
+            $statusFinal = 'Disetujui';
+        } elseif ($action === 'Ditolak') {
+            $statusVerif = 'Ditolak';
+            $statusFinal = 'Ditolak';
+        } elseif ($action === 'Selesai') {
+            $statusVerif = 'Disetujui';
+            $statusFinal = 'Selesai';
+        } else {
+            $statusVerif = 'Menunggu';
+            $statusFinal = 'Diajukan';
+        }
+
+        SarprasModel::verifikasiPengajuan($id, $statusVerif, $statusFinal, $catatan, $realisasi);
+
+        $_SESSION['flash_success'] = "Pengajuan pembelian {$p['kode_pengajuan']} berhasil diverifikasi ({$statusFinal})!";
+        Response::redirect(url('kelola-sarpras/pengajuan'));
+    }
+
+    public static function pengajuanDelete(int $id): void
+    {
+        CSRF::validate();
+
+        if (!RBAC::can('sarpras.pengajuan.delete') && !RBAC::can('sarpras.delete') && !Auth::isSuperAdmin()) {
+            $_SESSION['flash_error'] = 'Anda tidak memiliki hak akses untuk menghapus pengajuan pembelian.';
+            Response::redirect(url('kelola-sarpras/pengajuan'));
+            return;
+        }
+
+        SarprasModel::deletePengajuan($id);
+        $_SESSION['flash_success'] = 'Data pengajuan pembelian berhasil dihapus!';
+        Response::redirect(url('kelola-sarpras/pengajuan'));
+    }
+
+    public static function pengajuanCetak(int $id): void
+    {
+        if (!RBAC::can('sarpras.pengajuan.view') && !RBAC::can('sarpras.view') && !Auth::isSuperAdmin()) {
+            $_SESSION['flash_error'] = 'Akses ditolak!';
+            Response::redirect(url('dashboard'));
+            return;
+        }
+
+        $item = SarprasModel::getPengajuanById($id);
+        if (!$item) {
+            $_SESSION['flash_error'] = 'Data pengajuan tidak ditemukan!';
+            Response::redirect(url('kelola-sarpras/pengajuan'));
+            return;
+        }
+
+        include BASE_PATH . '/modules/kelola-sarpras/views/pengajuan/cetak.php';
     }
 
     // ΓöÇΓöÇ MASTER RUANGAN ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ

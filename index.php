@@ -810,6 +810,16 @@ $router->get('/kelola-sarpras/pemeliharaan', [SarprasController::class, 'pemelih
 $router->get('/kelola-sarpras/pemeliharaan/barang-by-ruangan', [SarprasController::class, 'getBarangByRuanganJson'], [Middleware::permissionRequired('sarpras.view')]);
 $router->post('/kelola-sarpras/pemeliharaan/store', [SarprasController::class, 'pemeliharaanStore'], [Middleware::permissionRequired('sarpras.create')]);
 $router->post('/kelola-sarpras/pemeliharaan/update-status/{id}', [SarprasController::class, 'pemeliharaanUpdate'], [Middleware::permissionRequired('sarpras.update')]);
+$router->post('/kelola-sarpras/pemeliharaan/verifikasi/{id}', [SarprasController::class, 'pemeliharaanVerifikasi'], [Middleware::permissionRequired('sarpras.view')]);
+$router->post('/kelola-sarpras/pemeliharaan/delete/{id}', [SarprasController::class, 'pemeliharaanDelete'], [Middleware::permissionRequired('sarpras.delete')]);
+$router->get('/kelola-sarpras/pemeliharaan/cetak/{id}', [SarprasController::class, 'pemeliharaanCetak'], [Middleware::permissionRequired('sarpras.view')]);
+
+// Pengajuan Pembelian Baru Sarpras
+$router->get('/kelola-sarpras/pengajuan', [SarprasController::class, 'pengajuanList'], [Middleware::permissionRequired('sarpras.view')]);
+$router->post('/kelola-sarpras/pengajuan/store', [SarprasController::class, 'pengajuanStore'], [Middleware::permissionRequired('sarpras.create')]);
+$router->post('/kelola-sarpras/pengajuan/verifikasi/{id}', [SarprasController::class, 'pengajuanVerifikasi'], [Middleware::permissionRequired('sarpras.view')]);
+$router->post('/kelola-sarpras/pengajuan/delete/{id}', [SarprasController::class, 'pengajuanDelete'], [Middleware::permissionRequired('sarpras.delete')]);
+$router->get('/kelola-sarpras/pengajuan/cetak/{id}', [SarprasController::class, 'pengajuanCetak'], [Middleware::permissionRequired('sarpras.view')]);
 
 // Ruangan
 $router->get('/kelola-sarpras/ruangan', [SarprasController::class, 'ruanganList'], [Middleware::permissionRequired('sarpras.view')]);

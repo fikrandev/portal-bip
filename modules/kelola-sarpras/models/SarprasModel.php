@@ -435,14 +435,15 @@ class SarprasModel
     }
 
     // ── PEMELIHARAAN & PERBAIKAN ───────────────────────────────────
-    public static function getPemeliharaanList(?string $status = null): array
+    public static function getPemeliharaanList(?string $status = null, array $filters = []): array
     {
         $db = self::db();
         $sql = "
-            SELECT m.*, b.nama_barang, b.kode_barang, r.nama_ruangan
+            SELECT m.*, b.nama_barang, b.kode_barang, b.merk_model, b.satuan, r.nama_ruangan, r.kode_ruangan, r.unit as unit_ruangan, u.name as pelapor_account_name
             FROM sarpras_pemeliharaan m
             LEFT JOIN sarpras_barang b ON m.barang_id = b.id
             LEFT JOIN sarpras_ruangan r ON m.ruangan_id = r.id
+            LEFT JOIN users u ON m.user_id = u.id
             WHERE 1=1
         ";
         $params = [];
@@ -450,8 +451,117 @@ class SarprasModel
             $sql .= " AND m.status = ?";
             $params[] = $status;
         }
+
+        if (!empty($filters['status_verifikasi'])) {
+            $sql .= " AND m.status_verifikasi = ?";
+            $params[] = $filters['status_verifikasi'];
+        }
+
+        if (!empty($filters['tingkat_urgensi'])) {
+            $sql .= " AND m.tingkat_urgensi = ?";
+            $params[] = $filters['tingkat_urgensi'];
+        }
+
+        if (!empty($filters['ruangan_id'])) {
+            $sql .= " AND m.ruangan_id = ?";
+            $params[] = (int)$filters['ruangan_id'];
+        }
+
+        if (!empty($filters['search'])) {
+            $kw = '%' . trim($filters['search']) . '%';
+            $sql .= " AND (m.judul_laporan LIKE ? OR m.kode_perbaikan LIKE ? OR m.pelapor_nama LIKE ? OR m.deskripsi_kerusakan LIKE ? OR b.nama_barang LIKE ? OR r.nama_ruangan LIKE ?)";
+            $params[] = $kw;
+            $params[] = $kw;
+            $params[] = $kw;
+            $params[] = $kw;
+            $params[] = $kw;
+            $params[] = $kw;
+        }
+
         $sql .= " ORDER BY m.id DESC";
         return $db->findAll($sql, $params);
+    }
+
+    public static function getPemeliharaanById(int $id): ?array
+    {
+        $db = self::db();
+        return $db->find("
+            SELECT m.*, b.nama_barang, b.kode_barang, b.merk_model, b.satuan, r.nama_ruangan, r.kode_ruangan, r.unit as unit_ruangan, u.name as pelapor_account_name
+            FROM sarpras_pemeliharaan m
+            LEFT JOIN sarpras_barang b ON m.barang_id = b.id
+            LEFT JOIN sarpras_ruangan r ON m.ruangan_id = r.id
+            LEFT JOIN users u ON m.user_id = u.id
+            WHERE m.id = ?
+        ", [$id]);
+    }
+
+    public static function verifikasiPemeliharaan(int $id, string $statusVerifikasi, string $statusPengerjaan, ?string $catatan, float $estimasiBiaya = 0, ?string $teknisi = null, ?int $verifierId = null, ?string $verifierName = null): bool
+    {
+        $db = self::db();
+        $m = self::getPemeliharaanById($id);
+        if (!$m) return false;
+
+        $updateData = [
+            'status_verifikasi'  => $statusVerifikasi,
+            'status'             => $statusPengerjaan,
+            'catatan_verifikasi' => $catatan,
+            'verified_by'        => $verifierId ?: (Auth::id() ?: null),
+            'verified_by_name'   => $verifierName ?: (Auth::name() ?: 'Admin Sarpras'),
+            'verified_at'        => date('Y-m-d H:i:s')
+        ];
+
+        if ($estimasiBiaya > 0) {
+            $updateData['estimasi_biaya'] = $estimasiBiaya;
+        }
+        if (!empty($teknisi)) {
+            $updateData['teknisi_pihak'] = $teknisi;
+        }
+
+        // Jika ditolak, kembalikan status barang ke Tersedia
+        if ($statusVerifikasi === 'Ditolak' && !empty($m['barang_id'])) {
+            $db->update('sarpras_barang', ['status' => 'Tersedia'], 'id = ?', [$m['barang_id']]);
+        }
+
+        return $db->update('sarpras_pemeliharaan', $updateData, 'id = ?', [$id]);
+    }
+
+    public static function deletePemeliharaan(int $id): bool
+    {
+        $db = self::db();
+        $m = self::getPemeliharaanById($id);
+        if (!$m) return false;
+
+        if (!empty($m['foto_kerusakan']) && file_exists(BASE_PATH . '/public/' . $m['foto_kerusakan'])) {
+            @unlink(BASE_PATH . '/public/' . $m['foto_kerusakan']);
+        }
+        if (!empty($m['foto_selesai']) && file_exists(BASE_PATH . '/public/' . $m['foto_selesai'])) {
+            @unlink(BASE_PATH . '/public/' . $m['foto_selesai']);
+        }
+
+        if (!empty($m['barang_id']) && $m['status'] !== 'Selesai' && $m['status'] !== 'Afkir') {
+            $db->update('sarpras_barang', ['status' => 'Tersedia'], 'id = ?', [$m['barang_id']]);
+        }
+
+        return $db->delete('sarpras_pemeliharaan', 'id = ?', [$id]);
+    }
+
+    public static function getPemeliharaanStats(): array
+    {
+        $db = self::db();
+        $row = $db->find("
+            SELECT 
+                COUNT(*) as total_laporan,
+                SUM(CASE WHEN status_verifikasi = 'Menunggu' THEN 1 ELSE 0 END) as total_menunggu_verifikasi,
+                SUM(CASE WHEN status = 'Disetujui' OR (status_verifikasi = 'Disetujui' AND status = 'Menunggu') THEN 1 ELSE 0 END) as total_disetujui,
+                SUM(CASE WHEN status = 'Diproses' THEN 1 ELSE 0 END) as total_diproses,
+                SUM(CASE WHEN status = 'Selesai' THEN 1 ELSE 0 END) as total_selesai,
+                SUM(CASE WHEN status = 'Ditolak' OR status_verifikasi = 'Ditolak' THEN 1 ELSE 0 END) as total_ditolak,
+                SUM(CASE WHEN status = 'Afkir' THEN 1 ELSE 0 END) as total_afkir,
+                COALESCE(SUM(biaya_realisasi), 0) as total_biaya_realisasi,
+                COALESCE(SUM(estimasi_biaya), 0) as total_estimasi_biaya
+            FROM sarpras_pemeliharaan
+        ");
+        return $row ?: [];
     }
 
     public static function insertPemeliharaan(array $data): int
@@ -536,6 +646,194 @@ class SarprasModel
         }
 
         return $db->update('sarpras_pemeliharaan', $updateData, 'id = ?', [$id]);
+    }
+
+    // ── PENGAJUAN PEMBELIAN BARU ────────────────────────────────────
+    public static function generateKodePengajuan(): string
+    {
+        $db = self::db();
+        $prefix = 'PB-' . date('Ym') . '-';
+        $latest = $db->find("SELECT kode_pengajuan FROM sarpras_pengajuan WHERE kode_pengajuan LIKE ? ORDER BY id DESC LIMIT 1", [$prefix . '%']);
+        if ($latest && preg_match('/-(\d+)$/', $latest['kode_pengajuan'], $matches)) {
+            $num = (int)$matches[1] + 1;
+        } else {
+            $num = 1;
+        }
+        return $prefix . str_pad((string)$num, 4, '0', STR_PAD_LEFT);
+    }
+
+    public static function getPengajuanList(array $filters = [], int $limit = 50, int $offset = 0): array
+    {
+        $db = self::db();
+        $sql = "
+            SELECT p.*, k.nama_kategori, r.nama_ruangan, r.unit as unit_ruangan, u.name as user_account_name
+            FROM sarpras_pengajuan p
+            LEFT JOIN sarpras_kategori k ON p.kategori_id = k.id
+            LEFT JOIN sarpras_ruangan r ON p.ruangan_id = r.id
+            LEFT JOIN users u ON p.user_id = u.id
+            WHERE 1=1
+        ";
+        $params = [];
+
+        if (!empty($filters['status'])) {
+            $sql .= " AND p.status = ?";
+            $params[] = $filters['status'];
+        }
+
+        if (!empty($filters['status_verifikasi'])) {
+            $sql .= " AND p.status_verifikasi = ?";
+            $params[] = $filters['status_verifikasi'];
+        }
+
+        if (!empty($filters['unit'])) {
+            $sql .= " AND p.unit = ?";
+            $params[] = $filters['unit'];
+        }
+
+        if (!empty($filters['kategori_id'])) {
+            $sql .= " AND p.kategori_id = ?";
+            $params[] = (int)$filters['kategori_id'];
+        }
+
+        if (!empty($filters['search'])) {
+            $kw = '%' . trim($filters['search']) . '%';
+            $sql .= " AND (p.nama_barang LIKE ? OR p.kode_pengajuan LIKE ? OR p.pengaju LIKE ? OR p.keperluan LIKE ? OR p.spesifikasi LIKE ?)";
+            $params[] = $kw;
+            $params[] = $kw;
+            $params[] = $kw;
+            $params[] = $kw;
+            $params[] = $kw;
+        }
+
+        $sql .= " ORDER BY p.id DESC LIMIT " . (int)$limit . " OFFSET " . (int)$offset;
+        return $db->findAll($sql, $params);
+    }
+
+    public static function countPengajuanList(array $filters = []): int
+    {
+        $db = self::db();
+        $sql = "SELECT COUNT(*) as total FROM sarpras_pengajuan p WHERE 1=1";
+        $params = [];
+
+        if (!empty($filters['status'])) {
+            $sql .= " AND p.status = ?";
+            $params[] = $filters['status'];
+        }
+
+        if (!empty($filters['status_verifikasi'])) {
+            $sql .= " AND p.status_verifikasi = ?";
+            $params[] = $filters['status_verifikasi'];
+        }
+
+        if (!empty($filters['unit'])) {
+            $sql .= " AND p.unit = ?";
+            $params[] = $filters['unit'];
+        }
+
+        if (!empty($filters['kategori_id'])) {
+            $sql .= " AND p.kategori_id = ?";
+            $params[] = (int)$filters['kategori_id'];
+        }
+
+        if (!empty($filters['search'])) {
+            $kw = '%' . trim($filters['search']) . '%';
+            $sql .= " AND (p.nama_barang LIKE ? OR p.kode_pengajuan LIKE ? OR p.pengaju LIKE ? OR p.keperluan LIKE ? OR p.spesifikasi LIKE ?)";
+            $params[] = $kw;
+            $params[] = $kw;
+            $params[] = $kw;
+            $params[] = $kw;
+            $params[] = $kw;
+        }
+
+        $row = $db->find($sql, $params);
+        return (int)($row['total'] ?? 0);
+    }
+
+    public static function getPengajuanById(int $id): ?array
+    {
+        $db = self::db();
+        return $db->find("
+            SELECT p.*, k.nama_kategori, r.nama_ruangan, r.kode_ruangan, r.unit as unit_ruangan, u.name as user_account_name, u.email as user_email
+            FROM sarpras_pengajuan p
+            LEFT JOIN sarpras_kategori k ON p.kategori_id = k.id
+            LEFT JOIN sarpras_ruangan r ON p.ruangan_id = r.id
+            LEFT JOIN users u ON p.user_id = u.id
+            WHERE p.id = ?
+        ", [$id]);
+    }
+
+    public static function insertPengajuan(array $data): int
+    {
+        $db = self::db();
+        if (empty($data['kode_pengajuan'])) {
+            $data['kode_pengajuan'] = self::generateKodePengajuan();
+        }
+        if (empty($data['total_estimasi'])) {
+            $data['total_estimasi'] = ((float)($data['estimasi_harga'] ?? 0)) * ((int)($data['jumlah'] ?? 1));
+        }
+        return $db->insert('sarpras_pengajuan', $data);
+    }
+
+    public static function updatePengajuan(int $id, array $data): bool
+    {
+        $db = self::db();
+        if (isset($data['estimasi_harga']) && isset($data['jumlah']) && !isset($data['total_estimasi'])) {
+            $data['total_estimasi'] = ((float)$data['estimasi_harga']) * ((int)$data['jumlah']);
+        }
+        return $db->update('sarpras_pengajuan', $data, 'id = ?', [$id]);
+    }
+
+    public static function verifikasiPengajuan(int $id, string $statusVerifikasi, string $statusFinal, ?string $catatan, float $realisasiHarga = 0, ?int $verifierId = null, ?string $verifierName = null): bool
+    {
+        $db = self::db();
+        $p = self::getPengajuanById($id);
+        if (!$p) return false;
+
+        $updateData = [
+            'status_verifikasi'  => $statusVerifikasi,
+            'status'             => $statusFinal,
+            'catatan_verifikasi' => $catatan,
+            'verified_by'        => $verifierId ?: (Auth::id() ?: null),
+            'verified_by_name'   => $verifierName ?: (Auth::name() ?: 'Admin Sarpras'),
+            'verified_at'        => date('Y-m-d H:i:s')
+        ];
+
+        if ($realisasiHarga > 0 || $statusFinal === 'Selesai') {
+            $updateData['realisasi_harga'] = $realisasiHarga;
+            $updateData['tanggal_selesai'] = date('Y-m-d');
+        }
+
+        return $db->update('sarpras_pengajuan', $updateData, 'id = ?', [$id]);
+    }
+
+    public static function deletePengajuan(int $id): bool
+    {
+        $db = self::db();
+        $p = self::getPengajuanById($id);
+        if (!$p) return false;
+
+        if (!empty($p['file_pendukung']) && file_exists(BASE_PATH . '/public/' . $p['file_pendukung'])) {
+            @unlink(BASE_PATH . '/public/' . $p['file_pendukung']);
+        }
+
+        return $db->delete('sarpras_pengajuan', 'id = ?', [$id]);
+    }
+
+    public static function getPengajuanStats(): array
+    {
+        $db = self::db();
+        $row = $db->find("
+            SELECT 
+                COUNT(*) as total_pengajuan,
+                SUM(CASE WHEN status_verifikasi = 'Menunggu' OR status = 'Diajukan' THEN 1 ELSE 0 END) as total_menunggu,
+                SUM(CASE WHEN status = 'Disetujui' OR (status_verifikasi = 'Disetujui' AND status != 'Selesai') THEN 1 ELSE 0 END) as total_disetujui,
+                SUM(CASE WHEN status = 'Ditolak' OR status_verifikasi = 'Ditolak' THEN 1 ELSE 0 END) as total_ditolak,
+                SUM(CASE WHEN status = 'Selesai' THEN 1 ELSE 0 END) as total_selesai,
+                COALESCE(SUM(total_estimasi), 0) as total_nilai_estimasi,
+                COALESCE(SUM(realisasi_harga), 0) as total_nilai_realisasi
+            FROM sarpras_pengajuan
+        ");
+        return $row ?: [];
     }
 
     // ── DATA TANAH (ASET TANAH) ────────────────────────────────────

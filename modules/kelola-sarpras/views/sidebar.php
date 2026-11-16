@@ -61,6 +61,7 @@ if (defined('SYS_APP_FAVICON') && !empty(SYS_APP_FAVICON)) {
                 $isBarangActive = (strpos($currentUri, 'kelola-sarpras/barang') !== false);
                 $isPinjamActive = (strpos($currentUri, 'kelola-sarpras/peminjaman') !== false);
                 $isMntActive = (strpos($currentUri, 'kelola-sarpras/pemeliharaan') !== false);
+                $isPengajuanActive = (strpos($currentUri, 'kelola-sarpras/pengajuan') !== false);
                 $isKategoriActive = (strpos($currentUri, 'kelola-sarpras/kategori') !== false);
                 $isReferensiActive = (strpos($currentUri, 'kelola-sarpras/referensi') !== false);
 
@@ -197,13 +198,25 @@ if (defined('SYS_APP_FAVICON') && !empty(SYS_APP_FAVICON)) {
                     $isPinjamActive
                 );
 
-                // 7. PEMELIHARAAN
-                renderSarprasMenuItem(
-                    'Pemeliharaan & Kerusakan',
-                    url('kelola-sarpras/pemeliharaan'),
-                    '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.017l-3.35 3.35m0 0l3.03 2.496c.384.317.626.74.766 1.208M14.25 3.75a3.75 3.75 0 013.75 3.75c0 .762-.228 1.47-.62 2.064l-2.03 2.463-3.664-3.664 2.464-2.03c.594-.392 1.302-.62 2.064-.62z" /></svg>',
-                    $isMntActive
-                );
+                // 7. PENGAJUAN PEMBELIAN BARU (RBAC)
+                if (RBAC::can('sarpras.pengajuan.view') || RBAC::can('sarpras.view') || Auth::isSuperAdmin()) {
+                    renderSarprasMenuItem(
+                        'Pengajuan Pembelian',
+                        url('kelola-sarpras/pengajuan'),
+                        '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 0 0-16.536-1.84M7.5 14.25 5.106 5.272M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" /></svg>',
+                        $isPengajuanActive
+                    );
+                }
+
+                // 8. PEMELIHARAAN & KERUSAKAN (RBAC)
+                if (RBAC::can('sarpras.perbaikan.view') || RBAC::can('sarpras.view') || Auth::isSuperAdmin()) {
+                    renderSarprasMenuItem(
+                        'Pemeliharaan & Kerusakan',
+                        url('kelola-sarpras/pemeliharaan'),
+                        '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.017l-3.35 3.35m0 0l3.03 2.496c.384.317.626.74.766 1.208M14.25 3.75a3.75 3.75 0 013.75 3.75c0 .762-.228 1.47-.62 2.064l-2.03 2.463-3.664-3.664 2.464-2.03c.594-.392 1.302-.62 2.064-.62z" /></svg>',
+                        $isMntActive
+                    );
+                }
 
                 // 8. KATEGORI ASET
                 renderSarprasMenuItem(

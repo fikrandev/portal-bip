@@ -22,27 +22,113 @@
             </p>
         </div>
         <div class="flex items-center gap-2.5">
+            <?php if ($canCreate): ?>
             <button onclick="openModalLapor()" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-md shadow-amber-600/20 transition-all">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
                 <span>+ Lapor Kerusakan Baru</span>
             </button>
+            <?php endif; ?>
         </div>
     </div>
 
-    <!-- Filter Tabs -->
-    <div class="flex items-center gap-2 border-b border-slate-200 pb-3 text-xs">
-        <a href="<?= url('kelola-sarpras/pemeliharaan') ?>" class="px-4 py-2 rounded-xl font-bold transition-all <?= empty($status) ? 'bg-amber-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100' ?>">
-            Semua Laporan
-        </a>
-        <a href="<?= url('kelola-sarpras/pemeliharaan?status=Menunggu') ?>" class="px-4 py-2 rounded-xl font-bold transition-all <?= $status === 'Menunggu' ? 'bg-amber-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100' ?>">
-            Menunggu Tindakan
-        </a>
-        <a href="<?= url('kelola-sarpras/pemeliharaan?status=Diproses') ?>" class="px-4 py-2 rounded-xl font-bold transition-all <?= $status === 'Diproses' ? 'bg-amber-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100' ?>">
-            Sedang Diperbaiki
-        </a>
-        <a href="<?= url('kelola-sarpras/pemeliharaan?status=Selesai') ?>" class="px-4 py-2 rounded-xl font-bold transition-all <?= $status === 'Selesai' ? 'bg-amber-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100' ?>">
-            Selesai Diperbaiki
-        </a>
+    <!-- Stat Cards -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+        <!-- Total -->
+        <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm">
+            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Tiket</p>
+            <h3 class="text-xl sm:text-2xl font-extrabold text-slate-800 mt-1"><?= number_format($stats['total'] ?? 0) ?></h3>
+            <p class="text-[10px] text-slate-500 mt-0.5">Semua pengaduan</p>
+        </div>
+        <!-- Menunggu Verifikasi -->
+        <div class="bg-amber-50/60 rounded-2xl p-4 border border-amber-200/80 shadow-sm">
+            <p class="text-[11px] font-bold text-amber-700 uppercase tracking-wider">Menunggu Verif</p>
+            <h3 class="text-xl sm:text-2xl font-extrabold text-amber-800 mt-1"><?= number_format($stats['menunggu_verif'] ?? 0) ?></h3>
+            <p class="text-[10px] text-amber-600 mt-0.5">Perlu diverifikasi</p>
+        </div>
+        <!-- Disetujui -->
+        <div class="bg-emerald-50/60 rounded-2xl p-4 border border-emerald-200/80 shadow-sm">
+            <p class="text-[11px] font-bold text-emerald-700 uppercase tracking-wider">Disetujui</p>
+            <h3 class="text-xl sm:text-2xl font-extrabold text-emerald-800 mt-1"><?= number_format($stats['disetujui'] ?? 0) ?></h3>
+            <p class="text-[10px] text-emerald-600 mt-0.5">Siap dikerjakan</p>
+        </div>
+        <!-- Diproses -->
+        <div class="bg-blue-50/60 rounded-2xl p-4 border border-blue-200/80 shadow-sm">
+            <p class="text-[11px] font-bold text-blue-700 uppercase tracking-wider">Diproses</p>
+            <h3 class="text-xl sm:text-2xl font-extrabold text-blue-800 mt-1"><?= number_format($stats['diproses'] ?? 0) ?></h3>
+            <p class="text-[10px] text-blue-600 mt-0.5">Sedang diperbaiki</p>
+        </div>
+        <!-- Selesai -->
+        <div class="bg-teal-50/60 rounded-2xl p-4 border border-teal-200/80 shadow-sm">
+            <p class="text-[11px] font-bold text-teal-700 uppercase tracking-wider">Selesai</p>
+            <h3 class="text-xl sm:text-2xl font-extrabold text-teal-800 mt-1"><?= number_format($stats['selesai'] ?? 0) ?></h3>
+            <p class="text-[10px] text-teal-600 mt-0.5">Telah diperbaiki</p>
+        </div>
+        <!-- Ditolak / Afkir -->
+        <div class="bg-rose-50/60 rounded-2xl p-4 border border-rose-200/80 shadow-sm">
+            <p class="text-[11px] font-bold text-rose-700 uppercase tracking-wider">Ditolak / Afkir</p>
+            <h3 class="text-xl sm:text-2xl font-extrabold text-rose-800 mt-1"><?= number_format(($stats['ditolak'] ?? 0) + ($stats['afkir'] ?? 0)) ?></h3>
+            <p class="text-[10px] text-rose-600 mt-0.5">Real: Rp <?= number_format($stats['total_realisasi'] ?? 0, 0, ',', '.') ?></p>
+        </div>
+    </div>
+
+    <!-- Filter Card -->
+    <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm">
+        <form method="GET" action="<?= url('kelola-sarpras/pemeliharaan') ?>" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
+            <!-- Search -->
+            <div>
+                <label class="block font-bold text-slate-700 mb-1">Cari Tiket / Pelapor</label>
+                <div class="relative">
+                    <input type="text" name="search" value="<?= e($filters['search'] ?? '') ?>" placeholder="Judul / kode / pelapor..." class="w-full pl-8 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-amber-500 font-medium">
+                    <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"/></svg>
+                </div>
+            </div>
+
+            <!-- Status Verifikasi -->
+            <div>
+                <label class="block font-bold text-slate-700 mb-1">Status Verifikasi</label>
+                <select name="status_verifikasi" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-amber-500 font-medium">
+                    <option value="">Semua Status Verifikasi</option>
+                    <option value="Menunggu" <?= ($filters['status_verifikasi'] ?? '') === 'Menunggu' ? 'selected' : '' ?>>⏳ Menunggu Verifikasi</option>
+                    <option value="Disetujui" <?= ($filters['status_verifikasi'] ?? '') === 'Disetujui' ? 'selected' : '' ?>>✓ Disetujui</option>
+                    <option value="Ditolak" <?= ($filters['status_verifikasi'] ?? '') === 'Ditolak' ? 'selected' : '' ?>>✕ Ditolak</option>
+                </select>
+            </div>
+
+            <!-- Status Pengerjaan -->
+            <div>
+                <label class="block font-bold text-slate-700 mb-1">Status Pengerjaan</label>
+                <select name="status" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-amber-500 font-medium">
+                    <option value="">Semua Status Pengerjaan</option>
+                    <option value="Menunggu" <?= ($status ?? '') === 'Menunggu' ? 'selected' : '' ?>>Menunggu Tindakan</option>
+                    <option value="Diproses" <?= ($status ?? '') === 'Diproses' ? 'selected' : '' ?>>Sedang Diperbaiki</option>
+                    <option value="Selesai" <?= ($status ?? '') === 'Selesai' ? 'selected' : '' ?>>Selesai Diperbaiki</option>
+                    <option value="Afkir" <?= ($status ?? '') === 'Afkir' ? 'selected' : '' ?>>Barang Rusak Berat / Afkir</option>
+                </select>
+            </div>
+
+            <!-- Urgensi -->
+            <div>
+                <label class="block font-bold text-slate-700 mb-1">Tingkat Urgensi</label>
+                <select name="tingkat_urgensi" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-amber-500 font-medium">
+                    <option value="">Semua Tingkat Urgensi</option>
+                    <option value="Darurat" <?= ($filters['tingkat_urgensi'] ?? '') === 'Darurat' ? 'selected' : '' ?>>Darurat</option>
+                    <option value="Tinggi" <?= ($filters['tingkat_urgensi'] ?? '') === 'Tinggi' ? 'selected' : '' ?>>Tinggi</option>
+                    <option value="Sedang" <?= ($filters['tingkat_urgensi'] ?? '') === 'Sedang' ? 'selected' : '' ?>>Sedang</option>
+                    <option value="Rendah" <?= ($filters['tingkat_urgensi'] ?? '') === 'Rendah' ? 'selected' : '' ?>>Rendah</option>
+                </select>
+            </div>
+
+            <!-- Filter Buttons -->
+            <div class="flex items-end gap-2">
+                <button type="submit" class="flex-1 py-2 px-4 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm">
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"/></svg>
+                    <span>Filter</span>
+                </button>
+                <a href="<?= url('kelola-sarpras/pemeliharaan') ?>" class="py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold transition-all text-center">
+                    Reset
+                </a>
+            </div>
+        </form>
     </div>
 
     <!-- Table Card -->
@@ -57,8 +143,9 @@
                         <th class="py-3.5 px-4">Pelapor &bull; Tanggal</th>
                         <th class="py-3.5 px-4 text-center">Urgensi</th>
                         <th class="py-3.5 px-4 text-right">Biaya (Est / Real)</th>
+                        <th class="py-3.5 px-4 text-center">Verifikasi</th>
                         <th class="py-3.5 px-4 text-center">Status</th>
-                        <th class="py-3.5 px-4 text-center w-28">Tindakan</th>
+                        <th class="py-3.5 px-4 text-center w-36">Tindakan</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
@@ -113,6 +200,27 @@
                                     </div>
                                 </td>
                                 <td class="py-3.5 px-4 text-center">
+                                    <?php if (($m['status_verifikasi'] ?? '') === 'Disetujui'): ?>
+                                        <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 block">
+                                            ✓ Disetujui
+                                        </span>
+                                        <?php if (!empty($m['verified_by_name'])): ?>
+                                            <span class="text-[9px] text-slate-400 block mt-0.5" title="<?= e($m['catatan_verifikasi'] ?? '') ?>">oleh <?= e($m['verified_by_name']) ?></span>
+                                        <?php endif; ?>
+                                    <?php elseif (($m['status_verifikasi'] ?? '') === 'Ditolak'): ?>
+                                        <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200 block">
+                                            ✕ Ditolak
+                                        </span>
+                                        <?php if (!empty($m['verified_by_name'])): ?>
+                                            <span class="text-[9px] text-slate-400 block mt-0.5" title="<?= e($m['catatan_verifikasi'] ?? '') ?>">oleh <?= e($m['verified_by_name']) ?></span>
+                                        <?php endif; ?>
+                                    <?php else: ?>
+                                        <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200 block">
+                                            ⏳ Menunggu Verifikasi
+                                        </span>
+                                    <?php endif; ?>
+                                </td>
+                                <td class="py-3.5 px-4 text-center">
                                     <?php if ($m['status'] === 'Selesai'): ?>
                                         <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-primary-50 text-primary-700 border border-primary-200">Selesai</span>
                                     <?php elseif ($m['status'] === 'Diproses'): ?>
@@ -124,9 +232,30 @@
                                     <?php endif; ?>
                                 </td>
                                 <td class="py-3.5 px-4 text-center">
-                                    <button onclick="openModalUpdate(<?= htmlspecialchars(json_encode($m)) ?>)" class="px-3 py-1.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-[11px] shadow-sm transition-all">
-                                        Update
-                                    </button>
+                                    <div class="flex items-center justify-center gap-1.5 flex-wrap">
+                                        <?php if ($canVerify): ?>
+                                            <button onclick="openModalVerifikasiPemeliharaan(<?= htmlspecialchars(json_encode($m)) ?>)" class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] shadow-sm transition-all" title="Verifikasi Pengajuan Perbaikan">
+                                                Verifikasi
+                                            </button>
+                                        <?php endif; ?>
+
+                                        <button onclick="openModalUpdate(<?= htmlspecialchars(json_encode($m)) ?>)" class="px-2.5 py-1 rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-bold text-[10px] shadow-sm transition-all" title="Update Pengerjaan & Biaya">
+                                            Update
+                                        </button>
+
+                                        <a href="<?= url('kelola-sarpras/pemeliharaan/cetak/' . $m['id']) ?>" target="_blank" class="px-2 py-1 rounded-lg bg-teal-50 hover:bg-teal-100 text-teal-700 font-bold text-[10px] border border-teal-200 transition-all" title="Cetak SPK Perbaikan">
+                                            SPK
+                                        </a>
+
+                                        <?php if ($canDelete): ?>
+                                            <form action="<?= url('kelola-sarpras/pemeliharaan/delete/' . $m['id']) ?>" method="POST" onsubmit="return confirm('Yakin ingin menghapus tiket pemeliharaan ini?')" class="inline">
+                                                <?= CSRF::field() ?>
+                                                <button type="submit" class="p-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 transition-all" title="Hapus Laporan">
+                                                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"/></svg>
+                                                </button>
+                                            </form>
+                                        <?php endif; ?>
+                                    </div>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -384,6 +513,84 @@
             <div class="mt-5 pt-3 border-t border-slate-100 flex justify-end gap-2">
                 <button type="button" onclick="closeModalUpdate()" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold">Batal</button>
                 <button type="submit" class="px-5 py-2 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold shadow-md">Simpan Pembaruan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal Verifikasi Pemeliharaan / Perbaikan (RBAC) -->
+<div id="modal-verifikasi-pemeliharaan" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm opacity-0 pointer-events-none transition-all duration-200">
+    <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-lg w-full max-h-[92vh] overflow-y-auto custom-scrollbar transform scale-95 transition-all duration-200 p-6 sm:p-7">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3.5 mb-5">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-200/60 flex items-center justify-center shadow-sm">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 0 1-1.043 3.296 3.745 3.745 0 0 1-3.296 1.043A3.745 3.745 0 0 1 12 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 0 1-3.296-1.043 3.745 3.745 0 0 1-1.043-3.296A3.745 3.745 0 0 1 3 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 0 1 1.043-3.296 3.746 3.746 0 0 1 3.296-1.043A3.746 3.746 0 0 1 12 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 0 1 3.296 1.043 3.746 3.746 0 0 1 1.043 3.296A3.745 3.745 0 0 1 21 12Z" />
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-base font-bold text-slate-800">Verifikasi Pengajuan Perbaikan</h3>
+                    <p class="text-[11px] text-slate-500">Tinjau laporan kerusakan dan sahkan persetujuan perbaikan/anggaran</p>
+                </div>
+            </div>
+            <button type="button" onclick="closeModalVerifikasiPemeliharaan()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-600 flex items-center justify-center text-lg font-bold transition-colors">&times;</button>
+        </div>
+
+        <form id="form-verifikasi-pemeliharaan" action="" method="POST" class="space-y-4 text-xs">
+            <?= CSRF::field() ?>
+
+            <!-- Ringkasan Tiket -->
+            <div class="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 space-y-1.5">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="font-mono text-[10px] font-bold text-amber-700" id="mnt-verif-kode">MNT-xxxx</span>
+                        <h4 class="font-bold text-slate-800 text-sm" id="mnt-verif-judul">Judul Tiket</h4>
+                    </div>
+                    <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-white text-slate-700 border border-slate-200" id="mnt-verif-urgensi">Urgensi</span>
+                </div>
+                <div class="text-slate-500 flex items-center justify-between text-[11px] pt-1 border-t border-slate-200/60">
+                    <span>Pelapor: <strong id="mnt-verif-pelapor" class="text-slate-700">Nama</strong></span>
+                    <span>Est. Biaya: <strong id="mnt-verif-biaya" class="text-emerald-700">Rp 0</strong></span>
+                </div>
+                <div class="text-[11px] text-slate-600 pt-1">
+                    Kerusakan: <span class="italic text-slate-700" id="mnt-verif-deskripsi">Deskripsi...</span>
+                </div>
+            </div>
+
+            <!-- Keputusan Verifikasi -->
+            <div>
+                <label class="block font-bold text-slate-700 mb-2">Keputusan Verifikasi <span class="text-rose-500">*</span></label>
+                <div class="grid grid-cols-2 gap-3">
+                    <label class="flex items-center gap-2.5 p-3 rounded-2xl border border-emerald-200 bg-emerald-50/50 hover:bg-emerald-50 cursor-pointer transition-all">
+                        <input type="radio" name="status_verifikasi" value="Disetujui" id="mnt-opt-setuju" required class="text-emerald-600 focus:ring-emerald-500">
+                        <div>
+                            <span class="font-bold text-emerald-800 block">✓ Setujui Perbaikan</span>
+                            <span class="text-[10px] text-emerald-600">Terbitkan SPK / siap dikerjakan</span>
+                        </div>
+                    </label>
+                    <label class="flex items-center gap-2.5 p-3 rounded-2xl border border-rose-200 bg-rose-50/50 hover:bg-rose-50 cursor-pointer transition-all">
+                        <input type="radio" name="status_verifikasi" value="Ditolak" id="mnt-opt-tolak" class="text-rose-600 focus:ring-rose-500">
+                        <div>
+                            <span class="font-bold text-rose-800 block">✕ Tolak Pengajuan</span>
+                            <span class="text-[10px] text-rose-600">Usulan perbaikan ditolak</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Catatan Verifikasi -->
+            <div>
+                <label class="block font-bold text-slate-700 mb-1">Catatan / Arahan Verifikator <span class="text-rose-500">*</span></label>
+                <textarea name="catatan_verifikasi" id="mnt-verif-catatan" rows="3" required placeholder="Tuliskan arahan penunjukan teknisi, persetujuan estimasi biaya, atau alasan penolakan..." class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-amber-500 font-medium"></textarea>
+            </div>
+
+            <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2.5">
+                <button type="button" onclick="closeModalVerifikasiPemeliharaan()" class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold transition-all">
+                    Batal
+                </button>
+                <button type="submit" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-md shadow-emerald-600/20 transition-all">
+                    Simpan Verifikasi
+                </button>
             </div>
         </form>
     </div>
@@ -818,5 +1025,36 @@ function formatRupiah(el) {
 
     rupiah = split[1] !== undefined ? rupiah + ',' + split[1] : rupiah;
     el.value = rupiah;
+}
+
+// ── MODAL VERIFIKASI PEMELIHARAAN LOGIC ────────────────────────────────────
+function openModalVerifikasiPemeliharaan(item) {
+    document.getElementById('mnt-verif-kode').innerText = item.kode_perbaikan;
+    document.getElementById('mnt-verif-judul').innerText = item.judul_laporan;
+    document.getElementById('mnt-verif-urgensi').innerText = item.tingkat_urgensi;
+    document.getElementById('mnt-verif-pelapor').innerText = item.pelapor_nama;
+    document.getElementById('mnt-verif-biaya').innerText = 'Rp ' + (parseInt(item.estimasi_biaya) || 0).toLocaleString('id-ID');
+    document.getElementById('mnt-verif-deskripsi').innerText = item.deskripsi_kerusakan || '-';
+
+    if (item.status_verifikasi === 'Disetujui') {
+        document.getElementById('mnt-opt-setuju').checked = true;
+    } else if (item.status_verifikasi === 'Ditolak') {
+        document.getElementById('mnt-opt-tolak').checked = true;
+    } else {
+        document.getElementById('mnt-opt-setuju').checked = true;
+    }
+
+    document.getElementById('mnt-verif-catatan').value = item.catatan_verifikasi || '';
+    document.getElementById('form-verifikasi-pemeliharaan').action = '<?= url("kelola-sarpras/pemeliharaan/verifikasi/") ?>' + item.id;
+
+    const m = document.getElementById('modal-verifikasi-pemeliharaan');
+    m.classList.remove('opacity-0', 'pointer-events-none');
+    m.firstElementChild.classList.remove('scale-95');
+}
+
+function closeModalVerifikasiPemeliharaan() {
+    const m = document.getElementById('modal-verifikasi-pemeliharaan');
+    m.classList.add('opacity-0', 'pointer-events-none');
+    m.firstElementChild.classList.add('scale-95');
 }
 </script>

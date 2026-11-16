@@ -90,6 +90,7 @@ class AutoMigrate
             '2026_11_14_000052_sync_mutabaah_ibadah_guru_schema'           => 'migration052SyncMutabaahIbadahGuruSchema',
             '2026_11_16_000053_add_dashboard_feature_permissions_to_all_modules' => 'migration053AddDashboardFeaturePermissionsToAllModules',
             '2026_11_16_000054_add_spmb_group_wa_observasi_features'       => 'migration054AddSpmbGroupWaObservasiFeatures',
+            '2026_11_17_000055_add_sarpras_pengajuan_pembelian_and_perbaikan_verifikasi' => 'migration055AddSarprasPengajuanPembelianAndPerbaikanVerifikasi',
         ];
     }
     /**
@@ -3630,6 +3631,185 @@ class AutoMigrate
                 $stmtCheck->execute([$key]);
                 if (!$stmtCheck->fetch()) {
                     $stmtInsert->execute([$key, $val]);
+                }
+            }
+        }
+    }
+
+    protected static function migration055AddSarprasPengajuanPembelianAndPerbaikanVerifikasi(PDO $pdo): void
+    {
+        // 1. Pastikan tabel sarpras_pengajuan ada dan memiliki kolom lengkap
+        if (!self::hasTable($pdo, 'sarpras_pengajuan')) {
+            $pdo->exec("
+                CREATE TABLE IF NOT EXISTS `sarpras_pengajuan` (
+                    `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+                    `kode_pengajuan` varchar(50) DEFAULT NULL,
+                    `nama_barang` varchar(255) NOT NULL,
+                    `unit` varchar(20) NOT NULL DEFAULT 'Umum',
+                    `kategori_id` int(11) DEFAULT NULL,
+                    `ruangan_id` int(11) DEFAULT NULL,
+                    `user_id` bigint(20) unsigned DEFAULT NULL,
+                    `spesifikasi` text DEFAULT NULL,
+                    `jumlah` int(11) NOT NULL DEFAULT 1,
+                    `satuan` varchar(50) NOT NULL DEFAULT 'Unit',
+                    `estimasi_harga` decimal(15,2) NOT NULL DEFAULT 0.00,
+                    `total_estimasi` decimal(15,2) NOT NULL DEFAULT 0.00,
+                    `realisasi_harga` decimal(15,2) NOT NULL DEFAULT 0.00,
+                    `keperluan` text NOT NULL,
+                    `file_pendukung` varchar(255) DEFAULT NULL,
+                    `pengaju` varchar(100) NOT NULL,
+                    `tanggal_pengajuan` date NOT NULL,
+                    `status` enum('Draft','Diajukan','Disetujui','Ditolak','Selesai') NOT NULL DEFAULT 'Diajukan',
+                    `status_verifikasi` enum('Menunggu','Disetujui','Ditolak') NOT NULL DEFAULT 'Menunggu',
+                    `verified_by` bigint(20) unsigned DEFAULT NULL,
+                    `verified_by_name` varchar(150) DEFAULT NULL,
+                    `verified_at` datetime DEFAULT NULL,
+                    `catatan_verifikasi` text DEFAULT NULL,
+                    `tanggal_selesai` date DEFAULT NULL,
+                    `keterangan_admin` text DEFAULT NULL,
+                    `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+                    `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+                    PRIMARY KEY (`id`),
+                    KEY `idx_pengajuan_kode` (`kode_pengajuan`),
+                    KEY `idx_pengajuan_status` (`status`),
+                    KEY `idx_pengajuan_verif` (`status_verifikasi`),
+                    KEY `idx_pengajuan_unit` (`unit`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+            ");
+        } else {
+            self::addColumnIfNotExists($pdo, 'sarpras_pengajuan', 'kode_pengajuan', 'VARCHAR(50) NULL', 'id');
+            self::addColumnIfNotExists($pdo, 'sarpras_pengajuan', 'unit', "VARCHAR(20) NOT NULL DEFAULT 'Umum'", 'nama_barang');
+            self::addColumnIfNotExists($pdo, 'sarpras_pengajuan', 'kategori_id', 'INT(11) NULL', 'unit');
+            self::addColumnIfNotExists($pdo, 'sarpras_pengajuan', 'ruangan_id', 'INT(11) NULL', 'kategori_id');
+            self::addColumnIfNotExists($pdo, 'sarpras_pengajuan', 'user_id', 'BIGINT(20) UNSIGNED NULL', 'ruangan_id');
+            self::addColumnIfNotExists($pdo, 'sarpras_pengajuan', 'satuan', "VARCHAR(50) NOT NULL DEFAULT 'Unit'", 'jumlah');
+            self::addColumnIfNotExists($pdo, 'sarpras_pengajuan', 'total_estimasi', 'DECIMAL(15,2) NOT NULL DEFAULT 0.00', 'estimasi_harga');
+            self::addColumnIfNotExists($pdo, 'sarpras_pengajuan', 'realisasi_harga', 'DECIMAL(15,2) NOT NULL DEFAULT 0.00', 'total_estimasi');
+            self::addColumnIfNotExists($pdo, 'sarpras_pengajuan', 'file_pendukung', 'VARCHAR(255) NULL', 'keperluan');
+            self::addColumnIfNotExists($pdo, 'sarpras_pengajuan', 'status_verifikasi', "ENUM('Menunggu','Disetujui','Ditolak') NOT NULL DEFAULT 'Menunggu'", 'status');
+            self::addColumnIfNotExists($pdo, 'sarpras_pengajuan', 'verified_by', 'BIGINT(20) UNSIGNED NULL', 'status_verifikasi');
+            self::addColumnIfNotExists($pdo, 'sarpras_pengajuan', 'verified_by_name', 'VARCHAR(150) NULL', 'verified_by');
+            self::addColumnIfNotExists($pdo, 'sarpras_pengajuan', 'verified_at', 'DATETIME NULL', 'verified_by_name');
+            self::addColumnIfNotExists($pdo, 'sarpras_pengajuan', 'catatan_verifikasi', 'TEXT NULL', 'verified_at');
+            self::addColumnIfNotExists($pdo, 'sarpras_pengajuan', 'tanggal_selesai', 'DATE NULL', 'catatan_verifikasi');
+
+            try {
+                $idxCols = $pdo->query("SHOW INDEX FROM `sarpras_pengajuan` WHERE Key_name = 'idx_pengajuan_kode'")->fetchAll();
+                if (empty($idxCols)) {
+                    $pdo->exec("ALTER TABLE `sarpras_pengajuan` ADD INDEX `idx_pengajuan_kode` (`kode_pengajuan`)");
+                }
+            } catch (Throwable $e) {}
+            try {
+                $idxCols = $pdo->query("SHOW INDEX FROM `sarpras_pengajuan` WHERE Key_name = 'idx_pengajuan_status'")->fetchAll();
+                if (empty($idxCols)) {
+                    $pdo->exec("ALTER TABLE `sarpras_pengajuan` ADD INDEX `idx_pengajuan_status` (`status`)");
+                }
+            } catch (Throwable $e) {}
+        }
+
+        // 2. Update sarpras_pemeliharaan
+        if (self::hasTable($pdo, 'sarpras_pemeliharaan')) {
+            try {
+                $pdo->exec("ALTER TABLE `sarpras_pemeliharaan` MODIFY `status` ENUM('Menunggu','Disetujui','Ditolak','Diproses','Selesai','Afkir') NOT NULL DEFAULT 'Menunggu'");
+            } catch (Throwable $e) {}
+
+            self::addColumnIfNotExists($pdo, 'sarpras_pemeliharaan', 'status_verifikasi', "ENUM('Menunggu','Disetujui','Ditolak') NOT NULL DEFAULT 'Menunggu'", 'deskripsi_kerusakan');
+            self::addColumnIfNotExists($pdo, 'sarpras_pemeliharaan', 'verified_by', 'BIGINT(20) UNSIGNED NULL', 'status_verifikasi');
+            self::addColumnIfNotExists($pdo, 'sarpras_pemeliharaan', 'verified_by_name', 'VARCHAR(150) NULL', 'verified_by');
+            self::addColumnIfNotExists($pdo, 'sarpras_pemeliharaan', 'verified_at', 'DATETIME NULL', 'verified_by_name');
+            self::addColumnIfNotExists($pdo, 'sarpras_pemeliharaan', 'catatan_verifikasi', 'TEXT NULL', 'verified_at');
+            self::addColumnIfNotExists($pdo, 'sarpras_pemeliharaan', 'user_id', 'BIGINT(20) UNSIGNED NULL', 'pelapor_nama');
+            self::addColumnIfNotExists($pdo, 'sarpras_pemeliharaan', 'foto_selesai', 'VARCHAR(255) NULL', 'foto_kerusakan');
+
+            try {
+                $idxCols = $pdo->query("SHOW INDEX FROM `sarpras_pemeliharaan` WHERE Key_name = 'idx_mnt_verif'")->fetchAll();
+                if (empty($idxCols)) {
+                    $pdo->exec("ALTER TABLE `sarpras_pemeliharaan` ADD INDEX `idx_mnt_verif` (`status_verifikasi`)");
+                }
+            } catch (Throwable $e) {}
+        }
+
+        // 3. Daftarkan Hak Akses RBAC untuk Sarpras Pengajuan Pembelian & Pengajuan Perbaikan
+        if (self::hasTable($pdo, 'permissions') && self::hasTable($pdo, 'modules')) {
+            $stmtMod = $pdo->prepare("SELECT id FROM `modules` WHERE `slug` = 'kelola-sarpras'");
+            $stmtMod->execute();
+            $sarprasModId = $stmtMod->fetchColumn();
+
+            if ($sarprasModId) {
+                $newPermissions = [
+                    [
+                        'name'        => 'Lihat Pengajuan Pembelian',
+                        'slug'        => 'sarpras.pengajuan.view',
+                        'description' => 'Melihat daftar pengajuan pembelian barang dan aset sarpras baru'
+                    ],
+                    [
+                        'name'        => 'Tambah Pengajuan Pembelian',
+                        'slug'        => 'sarpras.pengajuan.create',
+                        'description' => 'Membuat permohonan pengajuan pembelian barang dan aset sarpras baru'
+                    ],
+                    [
+                        'name'        => 'Verifikasi Pengajuan Pembelian',
+                        'slug'        => 'sarpras.pengajuan.verify',
+                        'description' => 'Memverifikasi, menyetujui, atau menolak pengajuan pembelian baru sarpras'
+                    ],
+                    [
+                        'name'        => 'Hapus Pengajuan Pembelian',
+                        'slug'        => 'sarpras.pengajuan.delete',
+                        'description' => 'Menghapus data permohonan pengajuan pembelian sarpras'
+                    ],
+                    [
+                        'name'        => 'Lihat Pengajuan Perbaikan',
+                        'slug'        => 'sarpras.perbaikan.view',
+                        'description' => 'Melihat tiket pengaduan kerusakan dan pemeliharaan perbaikan sarpras'
+                    ],
+                    [
+                        'name'        => 'Tambah Pengajuan Perbaikan',
+                        'slug'        => 'sarpras.perbaikan.create',
+                        'description' => 'Membuat laporan pengaduan kerusakan dan permohonan perbaikan sarpras'
+                    ],
+                    [
+                        'name'        => 'Verifikasi Pengajuan Perbaikan',
+                        'slug'        => 'sarpras.perbaikan.verify',
+                        'description' => 'Memverifikasi, menyetujui, atau menolak permohonan perbaikan sarpras'
+                    ],
+                    [
+                        'name'        => 'Hapus Pengajuan Perbaikan',
+                        'slug'        => 'sarpras.perbaikan.delete',
+                        'description' => 'Menghapus tiket pengaduan kerusakan dan pemeliharaan sarpras'
+                    ],
+                ];
+
+                $stmtCheckPerm = $pdo->prepare("SELECT id FROM `permissions` WHERE `slug` = ?");
+                $stmtInsertPerm = $pdo->prepare("INSERT INTO `permissions` (`name`, `slug`, `module_id`, `description`, `created_at`) VALUES (?, ?, ?, ?, NOW())");
+
+                $permIdsAdded = [];
+                foreach ($newPermissions as $np) {
+                    $stmtCheckPerm->execute([$np['slug']]);
+                    $existingId = $stmtCheckPerm->fetchColumn();
+                    if (!$existingId) {
+                        $stmtInsertPerm->execute([$np['name'], $np['slug'], $sarprasModId, $np['description']]);
+                        $permIdsAdded[] = (int)$pdo->lastInsertId();
+                    } else {
+                        $permIdsAdded[] = (int)$existingId;
+                    }
+                }
+
+                // Berikan hak akses ini ke Super Admin dan Admin role
+                if (self::hasTable($pdo, 'roles') && self::hasTable($pdo, 'role_permissions')) {
+                    $stmtRoles = $pdo->query("SELECT id FROM `roles` WHERE `slug` IN ('super-admin', 'admin')");
+                    $roleIds = $stmtRoles->fetchAll(PDO::FETCH_COLUMN);
+
+                    $stmtCheckRp = $pdo->prepare("SELECT 1 FROM `role_permissions` WHERE `role_id` = ? AND `permission_id` = ?");
+                    $stmtInsertRp = $pdo->prepare("INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES (?, ?)");
+
+                    foreach ($roleIds as $rId) {
+                        foreach ($permIdsAdded as $pId) {
+                            $stmtCheckRp->execute([$rId, $pId]);
+                            if (!$stmtCheckRp->fetchColumn()) {
+                                $stmtInsertRp->execute([$rId, $pId]);
+                            }
+                        }
+                    }
                 }
             }
         }
