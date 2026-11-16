@@ -43,10 +43,15 @@ $filters = $filters ?? [];
                 <span>🎓</span>
                 <span>Tetapkan Siswa Diterima</span>
             </button>
-            <a href="<?= url('kelola-spmb/siswa-baru/export?' . http_build_query($filters)) ?>" 
+            <?php
+            $exportParams = array_filter($filters ?? [], fn($v) => $v !== '' && $v !== null);
+            ?>
+            <a href="<?= url('kelola-spmb/siswa-baru/export?' . http_build_query($exportParams)) ?>" 
+               id="btnExportExcelSiswaBaru"
+               onclick="const params = new URLSearchParams(window.location.search); const form = document.getElementById('filterFormSiswaBaru'); if(form){ new FormData(form).forEach((v,k)=>{ if(v) params.set(k,v); else params.delete(k); }); } this.href = '<?= url('kelola-spmb/siswa-baru/export') ?>?' + params.toString();"
                data-download="true"
                data-no-loading="true"
-               download="Data_Siswa_Baru_SPMB.xlsx"
+               download="Data_Siswa_Baru_SPMB.xls"
                class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-colors">
                 <svg class="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" /></svg>
                 <span>Export Excel</span>
@@ -96,8 +101,17 @@ $filters = $filters ?? [];
 
     <!-- Filter Form -->
     <div class="bg-white p-5 rounded-2xl border border-primary-100/70 shadow-sm">
-        <form method="GET" action="<?= url('kelola-spmb/siswa-baru') ?>" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-3">
+        <form method="GET" action="<?= url('kelola-spmb/siswa-baru') ?>" id="filterFormSiswaBaru" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-3">
             <input type="hidden" name="per_page" value="<?= e($perPageParam ?? '50') ?>">
+            <?php if (!empty($filters['status_kelulusan'])): ?>
+                <input type="hidden" name="status_kelulusan" value="<?= e($filters['status_kelulusan']) ?>">
+            <?php endif; ?>
+            <?php if (!empty($_GET['group_id'])): ?>
+                <input type="hidden" name="group_id" value="<?= e($_GET['group_id']) ?>">
+            <?php endif; ?>
+            <?php if (!empty($filters['status_pembayaran'])): ?>
+                <input type="hidden" name="status_pembayaran" value="<?= e($filters['status_pembayaran']) ?>">
+            <?php endif; ?>
             <!-- Search -->
             <div class="lg:col-span-2">
                 <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Cari Nama / No. Daftar / NISN</label>

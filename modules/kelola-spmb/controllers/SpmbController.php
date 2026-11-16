@@ -96,16 +96,28 @@ class SpmbController
         $offset = $pagination['offset'];
         $perPageParam = $pagination['perPageParam'];
 
+        $selectedGroupId = $groupId;
+        if (isset($_GET['group_id'])) {
+            if ($_GET['group_id'] === 'all' || $_GET['group_id'] === '') {
+                $selectedGroupId = null;
+            } else {
+                $selectedGroupId = (int)$_GET['group_id'];
+            }
+        }
+
         $filters = [
-            'jenis_pendaftaran' => 'Siswa Baru',
-            'group_id' => !empty($_GET['group_id']) ? (int)$_GET['group_id'] : $groupId,
-            'jenjang' => $_GET['jenjang'] ?? '',
-            'kategori_pendaftar' => $_GET['kategori_pendaftar'] ?? '',
-            'status_kelulusan' => $_GET['status_kelulusan'] ?? '',
-            'status_pembayaran' => $_GET['status_pembayaran'] ?? '',
-            'status_berkas' => $_GET['status_berkas'] ?? '',
-            'is_dari_daftar_tunggu' => $_GET['is_dari_daftar_tunggu'] ?? '',
-            'search' => $_GET['search'] ?? ''
+            'jenis_pendaftaran'     => 'Siswa Baru',
+            'group_id'              => $selectedGroupId,
+            'jenjang'               => trim($_GET['jenjang'] ?? ''),
+            'kategori_pendaftar'    => trim($_GET['kategori_pendaftar'] ?? ''),
+            'status_kelulusan'      => trim($_GET['status_kelulusan'] ?? ''),
+            'status_pembayaran'     => trim($_GET['status_pembayaran'] ?? ''),
+            'status_ttd_komitmen'   => trim($_GET['status_ttd_komitmen'] ?? ''),
+            'status_berkas'         => trim($_GET['status_berkas'] ?? ''),
+            'is_dari_daftar_tunggu' => (isset($_GET['is_dari_daftar_tunggu']) && $_GET['is_dari_daftar_tunggu'] !== '') ? trim((string)$_GET['is_dari_daftar_tunggu']) : '',
+            'gelombang'             => trim($_GET['gelombang'] ?? ''),
+            'biodata_status'        => trim($_GET['biodata_status'] ?? ''),
+            'search'                => trim($_GET['search'] ?? '')
         ];
 
         $totalRows = SpmbModel::countPendaftar($filters);
@@ -491,44 +503,120 @@ class SpmbController
 
     public static function siswaBaruExport(): void
     {
+        $activeGroup = SpmbModel::getActiveGroup();
+        $groupId = $activeGroup['id'] ?? null;
+        $selectedGroupId = $groupId;
+        if (isset($_GET['group_id'])) {
+            if ($_GET['group_id'] === 'all' || $_GET['group_id'] === '') {
+                $selectedGroupId = null;
+            } else {
+                $selectedGroupId = (int)$_GET['group_id'];
+            }
+        }
+
         $filters = [
-            'jenis_pendaftaran' => 'Siswa Baru',
-            'jenjang' => $_GET['jenjang'] ?? '',
-            'kategori_pendaftar' => $_GET['kategori_pendaftar'] ?? '',
-            'status_kelulusan' => $_GET['status_kelulusan'] ?? '',
-            'search' => $_GET['search'] ?? ''
+            'jenis_pendaftaran'     => 'Siswa Baru',
+            'group_id'              => $selectedGroupId,
+            'jenjang'               => trim($_GET['jenjang'] ?? ''),
+            'kategori_pendaftar'    => trim($_GET['kategori_pendaftar'] ?? ''),
+            'status_kelulusan'      => trim($_GET['status_kelulusan'] ?? ''),
+            'status_pembayaran'     => trim($_GET['status_pembayaran'] ?? ''),
+            'status_ttd_komitmen'   => trim($_GET['status_ttd_komitmen'] ?? ''),
+            'status_berkas'         => trim($_GET['status_berkas'] ?? ''),
+            'is_dari_daftar_tunggu' => (isset($_GET['is_dari_daftar_tunggu']) && $_GET['is_dari_daftar_tunggu'] !== '') ? trim((string)$_GET['is_dari_daftar_tunggu']) : '',
+            'gelombang'             => trim($_GET['gelombang'] ?? ''),
+            'biodata_status'        => trim($_GET['biodata_status'] ?? ''),
+            'search'                => trim($_GET['search'] ?? '')
         ];
-        $data = SpmbModel::getPendaftarList($filters, 5000, 0);
 
-        header('Content-Type: text/csv; charset=utf-8');
-        header('Content-Disposition: attachment; filename=Siswa_Baru_SPMB_' . date('Ymd_His') . '.csv');
+        // Ambil semua data sesuai filter (maks 20.000)
+        $data = SpmbModel::getPendaftarList($filters, 20000, 0);
 
-        $out = fopen('php://output', 'w');
-        fputcsv($out, ['No', 'No. Pendaftaran', 'Nama Lengkap', 'Jenis Kelamin', 'Umur', 'Jenjang', 'Kategori Pendaftar', 'Asal Pendaftaran', 'No. Daftar Tunggu Asal', 'NISN', 'Asal Sekolah', 'Nama Ayah', 'Nama Ibu', 'No HP', 'Status Bayar', 'Tgl Daftar']);
+        $headers = [
+            'No',
+            'No. Pendaftaran',
+            'Nama Lengkap',
+            'Jenis Kelamin',
+            'Tempat Lahir',
+            'Tanggal Lahir',
+            'Umur',
+            'Jenjang',
+            'Gelombang',
+            'Kategori Pendaftar',
+            'Asal Pendaftaran',
+            'No. DT Asal',
+            'NISN',
+            'NIK',
+            'No. KK',
+            'Asal Sekolah',
+            'Nama Ayah',
+            'No. HP Ayah / Kontak',
+            'Pekerjaan Ayah',
+            'Nama Ibu',
+            'No. HP Ibu',
+            'Pekerjaan Ibu',
+            'Alamat Lengkap',
+            'Status Berkas',
+            'Status TTD Komitmen',
+            'Status Bayar',
+            'Status Kelulusan',
+            'Tgl Daftar'
+        ];
 
+        $rows = [];
         $no = 1;
         foreach ($data as $r) {
             $umur = !empty($r['umur']) ? $r['umur'] : SpmbModel::hitungUmur($r['tanggal_lahir'] ?? null, $r['tanggal_patokan_umur'] ?? null);
-            fputcsv($out, [
-                $no++,
-                $r['nomor_pendaftaran'],
-                $r['nama_lengkap'],
-                $r['jenis_kelamin'],
-                $umur ?: '-',
-                $r['jenjang'],
-                $r['kategori_pendaftar'] ?: ($r['jalur_pendaftaran'] ?: 'Umum (Luar Bina Insan)'),
-                !empty($r['is_dari_daftar_tunggu']) ? 'Eks Daftar Tunggu' : 'Reguler',
-                !empty($r['is_dari_daftar_tunggu']) ? ($r['nomor_daftar_tunggu'] ?? '-') : '-',
-                $r['nisn'],
-                $r['asal_sekolah'],
-                $r['nama_ayah'],
-                $r['nama_ibu'],
-                $r['no_hp'],
-                $r['status_pembayaran'],
-                $r['tanggal_daftar']
+
+            $alamatBagian = array_filter([
+                $r['alamat'] ?? '',
+                !empty($r['rt']) ? 'RT ' . $r['rt'] : '',
+                !empty($r['rw']) ? 'RW ' . $r['rw'] : '',
+                $r['kelurahan'] ?? '',
+                $r['kecamatan'] ?? '',
+                $r['kota'] ?? ''
             ]);
+            $alamatLengkap = implode(', ', $alamatBagian);
+
+            $rows[] = [
+                $no++,
+                $r['nomor_pendaftaran'] ?? '',
+                $r['nama_lengkap'] ?? '',
+                ($r['jenis_kelamin'] ?? '') === 'L' ? 'Laki-laki' : (($r['jenis_kelamin'] ?? '') === 'P' ? 'Perempuan' : ($r['jenis_kelamin'] ?? '-')),
+                $r['tempat_lahir'] ?? '',
+                !empty($r['tanggal_lahir']) ? date('d/m/Y', strtotime($r['tanggal_lahir'])) : '',
+                $umur ?: '-',
+                $r['jenjang'] ?? '',
+                $r['gelombang'] ?? 'Gelombang 1',
+                $r['kategori_pendaftar'] ?: ($r['jalur_pendaftaran'] ?: 'Umum (Luar Bina Insan)'),
+                !empty($r['is_dari_daftar_tunggu']) ? 'Eks Daftar Tunggu' : 'Reguler Langsung',
+                !empty($r['is_dari_daftar_tunggu']) ? ($r['nomor_daftar_tunggu'] ?? '-') : '-',
+                $r['nisn'] ?? '',
+                $r['nik'] ?? '',
+                $r['no_kk'] ?? '',
+                $r['asal_sekolah'] ?? '',
+                $r['nama_ayah'] ?? '',
+                $r['no_hp'] ?: ($r['no_hp_ayah'] ?: ''),
+                $r['pekerjaan_ayah'] ?? '',
+                $r['nama_ibu'] ?? '',
+                $r['no_hp_ibu'] ?? '',
+                $r['pekerjaan_ibu'] ?? '',
+                $alamatLengkap ?: '-',
+                $r['status_berkas'] ?? 'Belum Dikembalikan',
+                $r['status_ttd_komitmen'] ?? 'Belum TTD',
+                $r['status_pembayaran'] ?? 'Belum Bayar',
+                $r['status_kelulusan'] ?? 'Belum Ditetapkan',
+                !empty($r['tanggal_daftar']) ? date('d/m/Y', strtotime($r['tanggal_daftar'])) : ''
+            ];
         }
-        fclose($out);
+
+        $isCsv = (isset($_GET['format']) && strtolower($_GET['format']) === 'csv') || (isset($_GET['download']) && str_ends_with(strtolower($_GET['download']), '.csv'));
+
+        if ($isCsv) {
+            ExcelHelper::exportCSV('Data_Siswa_Baru_SPMB_' . date('Ymd_His') . '.csv', $headers, $rows);
+        } else {
+            ExcelHelper::exportXLS('Data_Siswa_Baru_SPMB_' . date('Ymd_His') . '.xls', $headers, $rows, 'Siswa Baru');
+        }
         exit;
     }
 
@@ -813,41 +901,64 @@ class SpmbController
 
     public static function pindahanExport(): void
     {
+        $activeGroup = SpmbModel::getActiveGroup();
+        $groupId = $activeGroup['id'] ?? null;
+        $selectedGroupId = $groupId;
+        if (isset($_GET['group_id'])) {
+            if ($_GET['group_id'] === 'all' || $_GET['group_id'] === '') {
+                $selectedGroupId = null;
+            } else {
+                $selectedGroupId = (int)$_GET['group_id'];
+            }
+        }
+
         $filters = [
-            'jenis_pendaftaran' => 'Pindahan',
-            'jenjang' => $_GET['jenjang'] ?? '',
-            'status_kelulusan' => $_GET['status_kelulusan'] ?? '',
-            'search' => $_GET['search'] ?? ''
+            'jenis_pendaftaran'     => 'Pindahan',
+            'group_id'              => $selectedGroupId,
+            'jenjang'               => trim($_GET['jenjang'] ?? ''),
+            'kategori_pendaftar'    => trim($_GET['kategori_pendaftar'] ?? ''),
+            'status_kelulusan'      => trim($_GET['status_kelulusan'] ?? ''),
+            'status_pembayaran'     => trim($_GET['status_pembayaran'] ?? ''),
+            'status_berkas'         => trim($_GET['status_berkas'] ?? ''),
+            'is_dari_daftar_tunggu' => (isset($_GET['is_dari_daftar_tunggu']) && $_GET['is_dari_daftar_tunggu'] !== '') ? trim((string)$_GET['is_dari_daftar_tunggu']) : '',
+            'search'                => trim($_GET['search'] ?? '')
         ];
-        $data = SpmbModel::getPendaftarList($filters, 5000, 0);
+        $data = SpmbModel::getPendaftarList($filters, 20000, 0);
 
-        header('Content-Type: text/csv; charset=utf-8');
-        header('Content-Disposition: attachment; filename=Siswa_Pindahan_SPMB_' . date('Ymd_His') . '.csv');
+        $headers = ['No', 'No. Pendaftaran', 'Nama Lengkap', 'Jenis Kelamin', 'Umur', 'Sekolah Asal', 'NPSN Asal', 'Kelas Tujuan', 'Jenjang', 'No Surat Pindah', 'Alasan Pindah', 'Nama Ayah', 'Nama Ibu', 'No HP', 'Status Berkas', 'Status Bayar', 'Status Seleksi', 'Tgl Daftar'];
 
-        $out = fopen('php://output', 'w');
-        fputcsv($out, ['No', 'No. Pendaftaran', 'Nama Lengkap', 'Jenis Kelamin', 'Umur', 'Sekolah Asal', 'NPSN Asal', 'Kelas Tujuan', 'Jenjang', 'No Surat Pindah', 'Alasan Pindah', 'No HP', 'Status Seleksi', 'Tgl Daftar']);
-
+        $rows = [];
         $no = 1;
         foreach ($data as $r) {
             $umur = !empty($r['umur']) ? $r['umur'] : SpmbModel::hitungUmur($r['tanggal_lahir'] ?? null, $r['tanggal_patokan_umur'] ?? null);
-            fputcsv($out, [
+            $rows[] = [
                 $no++,
-                $r['nomor_pendaftaran'],
-                $r['nama_lengkap'],
-                $r['jenis_kelamin'] ?: '-',
+                $r['nomor_pendaftaran'] ?? '',
+                $r['nama_lengkap'] ?? '',
+                ($r['jenis_kelamin'] ?? '') === 'L' ? 'Laki-laki' : (($r['jenis_kelamin'] ?? '') === 'P' ? 'Perempuan' : ($r['jenis_kelamin'] ?? '-')),
                 $umur ?: '-',
-                $r['asal_sekolah'],
-                $r['npsn_asal'],
-                $r['kelas_tujuan'],
-                $r['jenjang'],
-                $r['nomor_surat_pindah'],
-                $r['alasan_pindah'],
-                $r['no_hp'],
-                $r['status_kelulusan'],
-                $r['tanggal_daftar']
-            ]);
+                $r['asal_sekolah'] ?? '',
+                $r['npsn_asal'] ?? '',
+                $r['kelas_tujuan'] ?? '',
+                $r['jenjang'] ?? '',
+                $r['nomor_surat_pindah'] ?? '',
+                $r['alasan_pindah'] ?? '',
+                $r['nama_ayah'] ?? '',
+                $r['nama_ibu'] ?? '',
+                $r['no_hp'] ?: ($r['no_hp_ayah'] ?: ''),
+                $r['status_berkas'] ?? 'Belum Dikembalikan',
+                $r['status_pembayaran'] ?? '',
+                $r['status_kelulusan'] ?? '',
+                !empty($r['tanggal_daftar']) ? date('d/m/Y', strtotime($r['tanggal_daftar'])) : ''
+            ];
         }
-        fclose($out);
+
+        $isCsv = (isset($_GET['format']) && strtolower($_GET['format']) === 'csv');
+        if ($isCsv) {
+            ExcelHelper::exportCSV('Siswa_Pindahan_SPMB_' . date('Ymd_His') . '.csv', $headers, $rows);
+        } else {
+            ExcelHelper::exportXLS('Siswa_Pindahan_SPMB_' . date('Ymd_His') . '.xls', $headers, $rows, 'Siswa Pindahan');
+        }
         exit;
     }
 
@@ -1103,41 +1214,57 @@ class SpmbController
 
     public static function daftarTungguExport(): void
     {
+        $activeGroup = SpmbModel::getActiveGroup();
+        $groupId = $activeGroup['id'] ?? null;
+        $selectedGroupId = $groupId;
+        if (isset($_GET['group_id'])) {
+            if ($_GET['group_id'] === 'all' || $_GET['group_id'] === '') {
+                $selectedGroupId = null;
+            } else {
+                $selectedGroupId = (int)$_GET['group_id'];
+            }
+        }
+
         $filters = [
-            'jenis_pendaftaran' => 'Daftar Tunggu',
-            'jenjang' => $_GET['jenjang'] ?? '',
-            'kategori_pendaftar' => $_GET['kategori_pendaftar'] ?? '',
-            'status_kelulusan' => $_GET['status_kelulusan'] ?? '',
-            'search' => $_GET['search'] ?? ''
+            'jenis_pendaftaran'     => 'Daftar Tunggu',
+            'group_id'              => $selectedGroupId,
+            'jenjang'               => trim($_GET['jenjang'] ?? ''),
+            'kategori_pendaftar'    => trim($_GET['kategori_pendaftar'] ?? ''),
+            'status_kelulusan'      => trim($_GET['status_kelulusan'] ?? ''),
+            'search'                => trim($_GET['search'] ?? '')
         ];
-        $data = SpmbModel::getPendaftarList($filters, 5000, 0);
+        $data = SpmbModel::getPendaftarList($filters, 20000, 0);
 
-        header('Content-Type: text/csv; charset=utf-8');
-        header('Content-Disposition: attachment; filename=Daftar_Tunggu_SPMB_' . date('Ymd_His') . '.csv');
+        $headers = ['No', 'No. Pendaftaran', 'Nama Lengkap', 'Jenis Kelamin', 'Umur', 'Jenjang', 'Rekomendasi', 'Nama Rekomendasi', 'Asal Sekolah', 'Nama Ayah', 'Nama Ibu', 'No HP', 'Status Seleksi', 'Tgl Daftar'];
 
-        $out = fopen('php://output', 'w');
-        fputcsv($out, ['No', 'No. Pendaftaran', 'Nama Lengkap', 'Jenis Kelamin', 'Umur', 'Jenjang', 'Rekomendasi', 'Nama Rekomendasi', 'Asal Sekolah', 'Nama Ayah', 'No HP', 'Status Seleksi', 'Tgl Daftar']);
-
+        $rows = [];
         $no = 1;
         foreach ($data as $r) {
             $umur = !empty($r['umur']) ? $r['umur'] : SpmbModel::hitungUmur($r['tanggal_lahir'] ?? null, $r['tanggal_patokan_umur'] ?? null);
-            fputcsv($out, [
+            $rows[] = [
                 $no++,
-                $r['nomor_pendaftaran'],
-                $r['nama_lengkap'],
-                $r['jenis_kelamin'] ?: '-',
+                $r['nomor_pendaftaran'] ?? '',
+                $r['nama_lengkap'] ?? '',
+                ($r['jenis_kelamin'] ?? '') === 'L' ? 'Laki-laki' : (($r['jenis_kelamin'] ?? '') === 'P' ? 'Perempuan' : ($r['jenis_kelamin'] ?? '-')),
                 $umur ?: '-',
-                $r['jenjang'],
-                $r['kategori_pendaftar'],
+                $r['jenjang'] ?? '',
+                $r['kategori_pendaftar'] ?? '',
                 $r['nama_rekomendasi'] ?? '-',
-                $r['asal_sekolah'],
-                $r['nama_ayah'],
-                $r['no_hp'],
-                $r['status_kelulusan'],
-                $r['tanggal_daftar']
-            ]);
+                $r['asal_sekolah'] ?? '',
+                $r['nama_ayah'] ?? '',
+                $r['nama_ibu'] ?? '',
+                $r['no_hp'] ?: ($r['no_hp_ayah'] ?: ''),
+                $r['status_kelulusan'] ?? '',
+                !empty($r['tanggal_daftar']) ? date('d/m/Y', strtotime($r['tanggal_daftar'])) : ''
+            ];
         }
-        fclose($out);
+
+        $isCsv = (isset($_GET['format']) && strtolower($_GET['format']) === 'csv');
+        if ($isCsv) {
+            ExcelHelper::exportCSV('Daftar_Tunggu_SPMB_' . date('Ymd_His') . '.csv', $headers, $rows);
+        } else {
+            ExcelHelper::exportXLS('Daftar_Tunggu_SPMB_' . date('Ymd_His') . '.xls', $headers, $rows, 'Daftar Tunggu');
+        }
         exit;
     }
 

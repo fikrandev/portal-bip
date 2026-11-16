@@ -36,13 +36,18 @@ $filters = $filters ?? [];
                 <span>Broadcast WA</span>
                 <span id="badgeCheckedDt" class="hidden px-2 py-0.5 rounded-full text-[10px] bg-white text-emerald-800 font-extrabold shadow-xs">0</span>
             </button>
-            <a href="<?= url('kelola-spmb/daftar-tunggu/export?' . http_build_query($filters)) ?>" 
+            <?php
+            $exportParamsDt = array_filter($filters ?? [], fn($v) => $v !== '' && $v !== null);
+            ?>
+            <a href="<?= url('kelola-spmb/daftar-tunggu/export?' . http_build_query($exportParamsDt)) ?>" 
+               id="btnExportExcelDaftarTunggu"
+               onclick="const params = new URLSearchParams(window.location.search); const form = document.querySelector('form[action*=\'kelola-spmb/daftar-tunggu\']'); if(form){ new FormData(form).forEach((v,k)=>{ if(v) params.set(k,v); else params.delete(k); }); } this.href = '<?= url('kelola-spmb/daftar-tunggu/export') ?>?' + params.toString();"
                data-download="true"
                data-no-loading="true"
-               download="Data_Daftar_Tunggu_SPMB.csv"
+               download="Data_Daftar_Tunggu_SPMB.xls"
                class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-colors">
                 <svg class="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" /></svg>
-                <span>Export CSV</span>
+                <span>Export Excel</span>
             </a>
             <button type="button" onclick="openModalTambahDaftarTunggu()" 
                class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-white font-semibold text-xs shadow-md shadow-amber-500/20 transition-all transform hover:-translate-y-0.5 cursor-pointer">

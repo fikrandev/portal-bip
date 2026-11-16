@@ -329,8 +329,12 @@ class SpmbModel
         }
 
         if (!empty($filters['status_berkas'])) {
-            $conditions[] = "p.status_berkas = ?";
-            $params[] = $filters['status_berkas'];
+            if ($filters['status_berkas'] === 'Belum Dikembalikan' || $filters['status_berkas'] === 'Belum Lengkap') {
+                $conditions[] = "(p.status_berkas = 'Belum Dikembalikan' OR p.status_berkas = 'Belum Lengkap' OR p.status_berkas IS NULL OR p.status_berkas = '')";
+            } else {
+                $conditions[] = "p.status_berkas = ?";
+                $params[] = $filters['status_berkas'];
+            }
         }
 
         if (isset($filters['is_dari_daftar_tunggu']) && $filters['is_dari_daftar_tunggu'] !== '') {
@@ -421,8 +425,12 @@ class SpmbModel
         }
 
         if (!empty($filters['status_berkas'])) {
-            $conditions[] = "p.status_berkas = ?";
-            $params[] = $filters['status_berkas'];
+            if ($filters['status_berkas'] === 'Belum Dikembalikan' || $filters['status_berkas'] === 'Belum Lengkap') {
+                $conditions[] = "(p.status_berkas = 'Belum Dikembalikan' OR p.status_berkas = 'Belum Lengkap' OR p.status_berkas IS NULL OR p.status_berkas = '')";
+            } else {
+                $conditions[] = "p.status_berkas = ?";
+                $params[] = $filters['status_berkas'];
+            }
         }
 
         if (isset($filters['is_dari_daftar_tunggu']) && $filters['is_dari_daftar_tunggu'] !== '') {
