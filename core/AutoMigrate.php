@@ -88,6 +88,7 @@ class AutoMigrate
             '2026_11_13_000050_sync_portal_guru_schedules_and_rules'       => 'migration050SyncPortalGuruSchedulesAndRules',
             '2026_11_14_000051_add_performance_indexes'                    => 'migration051AddPerformanceIndexes',
             '2026_11_14_000052_sync_mutabaah_ibadah_guru_schema'           => 'migration052SyncMutabaahIbadahGuruSchema',
+            '2026_11_16_000053_add_dashboard_feature_permissions_to_all_modules' => 'migration053AddDashboardFeaturePermissionsToAllModules',
         ];
     }
     /**
@@ -3389,6 +3390,205 @@ class AutoMigrate
             if ($modId) {
                 $pdo->prepare("UPDATE modules SET is_active = 1 WHERE id = ?")->execute([$modId]);
             }
+        }
+    }
+
+    /**
+     * 053. Add granular Dashboard Feature permissions to all modules and sync RBAC matrix.
+     */
+    private static function migration053AddDashboardFeaturePermissionsToAllModules(PDO $pdo): void
+    {
+        if (!self::hasTable($pdo, 'permissions') || !self::hasTable($pdo, 'modules')) {
+            return;
+        }
+
+        // 0. Bersihkan izin terbalik/duplikat (jika ada nama dan slug tertukar)
+        $swapped = $pdo->query("SELECT id, name, slug FROM permissions WHERE name LIKE '%.%' AND (slug NOT LIKE '%.%' OR slug IS NULL)")->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($swapped as $sw) {
+            $realSlug = $sw['name'];
+            $realName = $sw['slug'] ?: $realSlug;
+            $canon = $pdo->prepare("SELECT id, module_id FROM permissions WHERE slug = ? AND id != ? LIMIT 1");
+            $canon->execute([$realSlug, $sw['id']]);
+            $canRow = $canon->fetch(PDO::FETCH_ASSOC);
+            if ($canRow) {
+                if (self::hasTable($pdo, 'role_permissions')) {
+                    $pdo->prepare("UPDATE IGNORE role_permissions SET permission_id = ? WHERE permission_id = ?")->execute([$canRow['id'], $sw['id']]);
+                    $pdo->prepare("DELETE FROM role_permissions WHERE permission_id = ?")->execute([$sw['id']]);
+                }
+                $pdo->prepare("DELETE FROM permissions WHERE id = ?")->execute([$sw['id']]);
+            } else {
+                $modSlug = null;
+                if (str_starts_with($realSlug, 'quran_siswa.')) $modSlug = 'kelola-quran-siswa';
+                elseif (str_starts_with($realSlug, 'spmb.')) $modSlug = 'kelola-spmb';
+                elseif (str_starts_with($realSlug, 'absen_siswa.')) $modSlug = 'kelola-absen-siswa';
+                elseif (str_starts_with($realSlug, 'nilai.')) $modSlug = 'kelola-nilai';
+                elseif (str_starts_with($realSlug, 'pegawai.')) $modSlug = 'kelola-pegawai';
+
+                $modId = null;
+                if ($modSlug) {
+                    $mStmt = $pdo->prepare("SELECT id FROM modules WHERE slug = ? LIMIT 1");
+                    $mStmt->execute([$modSlug]);
+                    $modId = $mStmt->fetchColumn() ?: null;
+                }
+                $pdo->prepare("UPDATE permissions SET name = ?, slug = ?, module_id = ? WHERE id = ?")->execute([$realName, $realSlug, $modId, $sw['id']]);
+                if ($modId && self::hasTable($pdo, 'module_permissions')) {
+                    $pdo->prepare("INSERT IGNORE INTO module_permissions (module_id, permission_id) VALUES (?, ?)")->execute([$modId, $sw['id']]);
+                }
+            }
+        }
+
+        // 1. Perbaiki permission yang belum terikat ke module_id
+        $fixModuleMap = [
+            'absen_siswa.%'        => 'kelola-absen-siswa',
+            'quran_siswa.%'        => 'kelola-quran-siswa',
+            'nilai.%'              => 'kelola-nilai',
+            'pegawai.penugasan'    => 'kelola-pegawai',
+            'spmb.%'               => 'kelola-spmb',
+            'jurnal.%'             => 'kelola-jurnal-guru',
+            'ibadah_guru.%'        => 'kelola-ibadah-guru',
+            'sarpras.%'            => 'kelola-sarpras',
+            'cuti.%'               => 'kelola-cuti',
+            'izin_guru.%'          => 'kelola-izin-guru',
+            'pelanggaran_siswa.%'  => 'kelola-pelanggaran-siswa',
+            'buku_angkatan.%'      => 'kelola-buku-angkatan-siswa',
+            'ujian.%'              => 'kelola-ujian',
+            'raport.%'             => 'kelola-raport',
+            'kpi.%'                => 'kelola-kpi',
+            'quran_pegawai.%'      => 'kelola-quran-pegawai',
+            'perangkat.%'          => 'kelola-perangkat-pembelajaran',
+            'siswa.%'              => 'kelola-siswa',
+            'pegawai.%'            => 'kelola-pegawai',
+            'kelas.%'              => 'kelola-kelas',
+            'users.%'              => 'kelola-pengguna',
+            'roles.%'              => 'kelola-peran',
+            'modules.%'            => 'manajemen-modul',
+            'settings.%'           => 'pengaturan-sistem',
+            'dashboard.%'          => 'dashboard',
+        ];
+
+        foreach ($fixModuleMap as $pattern => $moduleSlug) {
+            $stmtMod = $pdo->prepare("SELECT id FROM modules WHERE slug = ? LIMIT 1");
+            $stmtMod->execute([$moduleSlug]);
+            $modId = $stmtMod->fetchColumn();
+            if ($modId) {
+                if (str_contains($pattern, '%')) {
+                    $upd = $pdo->prepare("UPDATE permissions SET module_id = ? WHERE (module_id IS NULL OR module_id = 0) AND slug LIKE ?");
+                    $upd->execute([$modId, $pattern]);
+                } else {
+                    $upd = $pdo->prepare("UPDATE permissions SET module_id = ? WHERE (module_id IS NULL OR module_id = 0) AND slug = ?");
+                    $upd->execute([$modId, $pattern]);
+                }
+            }
+        }
+
+        // 2. Daftar Fitur Dashboard untuk seluruh modul
+        $dashboardPermDefs = [
+            'kelola-siswa'                  => ['slug' => 'siswa.dashboard', 'name' => 'Dashboard Siswa', 'desc' => 'Akses fitur dan widget ringkasan statistik kesiswaan pada dashboard'],
+            'kelola-pegawai'                => ['slug' => 'pegawai.dashboard', 'name' => 'Dashboard Pegawai', 'desc' => 'Akses fitur dan widget ringkasan statistik kepegawaian pada dashboard'],
+            'kelola-kelas'                  => ['slug' => 'kelas.dashboard', 'name' => 'Dashboard Kelas', 'desc' => 'Akses fitur dan widget data rombel & wali kelas pada dashboard'],
+            'kelola-perangkat-pembelajaran' => ['slug' => 'perangkat.dashboard', 'name' => 'Dashboard Perangkat', 'desc' => 'Akses fitur dan widget ringkasan verifikasi perangkat ajar pada dashboard'],
+            'kelola-nilai'                  => ['slug' => 'nilai.dashboard', 'name' => 'Dashboard Nilai', 'desc' => 'Akses fitur dan widget ringkasan capaian penilaian siswa pada dashboard'],
+            'kelola-raport'                 => ['slug' => 'raport.dashboard', 'name' => 'Dashboard Raport', 'desc' => 'Akses fitur dan widget ringkasan cetak raport siswa pada dashboard'],
+            'kelola-jurnal-guru'            => ['slug' => 'jurnal.dashboard', 'name' => 'Dashboard Jurnal Guru', 'desc' => 'Akses fitur dan widget monitoring pengisian jurnal mengajar pada dashboard'],
+            'kelola-absen-siswa'            => ['slug' => 'absen_siswa.dashboard', 'name' => 'Dashboard Absen Siswa', 'desc' => 'Akses fitur dan widget presensi harian santri/siswa pada dashboard'],
+            'kelola-absen-pegawai'          => ['slug' => 'absen_pegawai.dashboard', 'name' => 'Dashboard Absen Pegawai', 'desc' => 'Akses fitur dan widget presensi harian guru & pegawai pada dashboard'],
+            'kelola-quran-siswa'            => ['slug' => 'quran_siswa.dashboard', 'name' => 'Dashboard Qur\'an Siswa', 'desc' => 'Akses fitur dan widget capaian setoran Quran siswa pada dashboard'],
+            'kelola-quran-siswa-paud'       => ['slug' => 'quran_paud.dashboard', 'name' => 'Dashboard Qur\'an PAUD', 'desc' => 'Akses fitur dan widget Quran PAUD pada dashboard'],
+            'kelola-quran-siswa-sd'         => ['slug' => 'quran_sd.dashboard', 'name' => 'Dashboard Qur\'an SD', 'desc' => 'Akses fitur dan widget Quran SD pada dashboard'],
+            'kelola-quran-siswa-smp-sma'    => ['slug' => 'quran_smp_sma.dashboard', 'name' => 'Dashboard Qur\'an SMP/SMA', 'desc' => 'Akses fitur dan widget Quran SMP/SMA pada dashboard'],
+            'kelola-ujian'                  => ['slug' => 'ujian.dashboard', 'name' => 'Dashboard Ujian', 'desc' => 'Akses fitur dan widget monitoring sesi ujian CBT pada dashboard'],
+            'kelola-cuti'                   => ['slug' => 'cuti.dashboard', 'name' => 'Dashboard Cuti', 'desc' => 'Akses fitur dan widget status pengajuan & approval cuti pada dashboard'],
+            'kelola-quran-pegawai'          => ['slug' => 'quran_pegawai.dashboard', 'name' => 'Dashboard Qur\'an Pegawai', 'desc' => 'Akses fitur dan widget tilawah Al-Quran pegawai pada dashboard'],
+            'kelola-kpi'                    => ['slug' => 'kpi.dashboard', 'name' => 'Dashboard KPI', 'desc' => 'Akses fitur dan widget evaluasi kinerja & KPI pegawai pada dashboard'],
+            'kelola-ibadah-guru'            => ['slug' => 'ibadah_guru.dashboard', 'name' => 'Dashboard Ibadah Guru', 'desc' => 'Akses fitur dan widget mutaba\'ah ibadah harian guru pada dashboard'],
+            'kelola-spmb'                   => ['slug' => 'spmb.dashboard', 'name' => 'Dashboard SPMB', 'desc' => 'Akses fitur dan widget analitik pendaftar & seleksi SPMB pada dashboard'],
+            'kelola-pelanggaran-siswa'      => ['slug' => 'pelanggaran_siswa.dashboard', 'name' => 'Dashboard Pelanggaran Siswa', 'desc' => 'Akses fitur dan widget rekap poin kedisiplinan siswa pada dashboard'],
+            'kelola-izin-guru'              => ['slug' => 'izin_guru.dashboard', 'name' => 'Dashboard Izin Guru', 'desc' => 'Akses fitur dan widget pengajuan izin guru pada dashboard'],
+            'kelola-buku-angkatan-siswa'    => ['slug' => 'buku_angkatan.dashboard', 'name' => 'Dashboard Buku Angkatan', 'desc' => 'Akses fitur dan widget data buku angkatan siswa pada dashboard'],
+            'kelola-sarpras'                => ['slug' => 'sarpras.dashboard', 'name' => 'Dashboard Sarpras', 'desc' => 'Akses fitur dan widget inventaris sarana prasarana pada dashboard'],
+            'kelola-pengguna'               => ['slug' => 'users.dashboard', 'name' => 'Dashboard Pengguna', 'desc' => 'Akses fitur dan widget statistik pengguna sistem pada dashboard'],
+            'kelola-peran'                  => ['slug' => 'roles.dashboard', 'name' => 'Dashboard Peran', 'desc' => 'Akses fitur dan widget matriks hak akses peran pada dashboard'],
+            'manajemen-modul'               => ['slug' => 'modules.dashboard', 'name' => 'Dashboard Modul', 'desc' => 'Akses fitur dan widget status modul aplikasi pada dashboard'],
+            'pengaturan-sistem'             => ['slug' => 'settings.dashboard', 'name' => 'Dashboard Pengaturan Sistem', 'desc' => 'Akses fitur dan widget status konfigurasi & sistem pada dashboard'],
+        ];
+
+        // Pastikan modul yang ada di database dicek
+        $modules = $pdo->query("SELECT id, slug, name FROM modules")->fetchAll(PDO::FETCH_ASSOC);
+        $modMap = [];
+        foreach ($modules as $m) {
+            $modMap[$m['slug']] = $m;
+        }
+
+        $stmtCheckPerm = $pdo->prepare("SELECT id FROM permissions WHERE slug = ? LIMIT 1");
+        $stmtInsPerm = $pdo->prepare("INSERT INTO permissions (name, slug, description, module_id, created_at) VALUES (?, ?, ?, ?, NOW())");
+        $stmtUpdPerm = $pdo->prepare("UPDATE permissions SET module_id = ?, name = COALESCE(NULLIF(name, ''), ?), description = COALESCE(NULLIF(description, ''), ?) WHERE id = ?");
+        
+        $adminRoleIds = [];
+        if (self::hasTable($pdo, 'roles')) {
+            $adminRoleIds = $pdo->query("SELECT id FROM roles WHERE slug IN ('super_admin', 'admin')")->fetchAll(PDO::FETCH_COLUMN);
+        }
+
+        $stmtRolePerm = self::hasTable($pdo, 'role_permissions') ? $pdo->prepare("INSERT IGNORE INTO role_permissions (role_id, permission_id) VALUES (?, ?)") : null;
+        $stmtModPerm = self::hasTable($pdo, 'module_permissions') ? $pdo->prepare("INSERT IGNORE INTO module_permissions (module_id, permission_id) VALUES (?, ?)") : null;
+
+        foreach ($dashboardPermDefs as $modSlug => $def) {
+            if (!isset($modMap[$modSlug])) {
+                continue;
+            }
+            $moduleId = (int)$modMap[$modSlug]['id'];
+
+            $stmtCheckPerm->execute([$def['slug']]);
+            $permId = $stmtCheckPerm->fetchColumn();
+
+            if (!$permId) {
+                $stmtInsPerm->execute([$def['name'], $def['slug'], $def['desc'], $moduleId]);
+                $permId = (int)$pdo->lastInsertId();
+            } else {
+                $stmtUpdPerm->execute([$moduleId, $def['name'], $def['desc'], $permId]);
+            }
+
+            // Sync ke module_permissions
+            if ($stmtModPerm && $permId) {
+                $stmtModPerm->execute([$moduleId, $permId]);
+            }
+
+            // Berikan ke Super Admin dan Admin
+            if ($stmtRolePerm && $permId) {
+                foreach ($adminRoleIds as $rId) {
+                    $stmtRolePerm->execute([$rId, $permId]);
+                }
+            }
+
+            // Sinkronkan ke peran non-admin yang SUDAH memiliki izin view/akses modul ini sebelumnya
+            // (misal Role Divisi Sarpras yang punya sarpras.view otomatis dapat sarpras.dashboard)
+            if (self::hasTable($pdo, 'role_permissions')) {
+                $viewSlugCandidates = [
+                    str_replace('.dashboard', '.view', $def['slug']),
+                    str_replace('.dashboard', '.manage', $def['slug']),
+                ];
+                foreach ($viewSlugCandidates as $vSlug) {
+                    $rolesWithView = $pdo->prepare("
+                        SELECT DISTINCT rp.role_id 
+                        FROM role_permissions rp
+                        JOIN permissions p ON rp.permission_id = p.id
+                        WHERE p.slug = ?
+                    ");
+                    $rolesWithView->execute([$vSlug]);
+                    $roleIds = $rolesWithView->fetchAll(PDO::FETCH_COLUMN);
+                    foreach ($roleIds as $rId) {
+                        $stmtRolePerm->execute([$rId, $permId]);
+                    }
+                }
+            }
+        }
+
+        // 3. Pastikan semua permissions yang sudah ada tersinkron ke module_permissions
+        if ($stmtModPerm) {
+            $pdo->exec("
+                INSERT IGNORE INTO module_permissions (module_id, permission_id)
+                SELECT module_id, id FROM permissions 
+                WHERE module_id IS NOT NULL AND module_id > 0
+            ");
         }
     }
 }

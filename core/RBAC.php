@@ -38,6 +38,22 @@ class RBAC
     }
 
     /**
+     * Check if current user has permission to access a specific dashboard feature
+     * 
+     * @param string $featureSlug e.g. 'siswa.dashboard' or 'siswa'
+     * @return bool
+     */
+    public static function canAccessDashboardFeature(string $featureSlug): bool
+    {
+        if (Auth::isSuperAdmin()) {
+            return true;
+        }
+
+        $permSlug = strpos($featureSlug, '.') !== false ? $featureSlug : $featureSlug . '.dashboard';
+        return self::hasPermission($permSlug);
+    }
+
+    /**
      * Check if current user can access a module by slug
      * 
      * @param string $moduleSlug  e.g., 'kelola-siswa'

@@ -71,7 +71,7 @@
                         Konfigurasi Hak Akses Fitur & Approval
                     </h2>
                     <p class="text-xs text-slate-500 mt-0.5">
-                        Centang hak akses yang diizinkan untuk peran baru ini. Kotak berwarna <span class="font-bold text-purple-600">Ungu (⭐)</span> adalah akses persetujuan/verifikasi (*Approval*).
+                        Centang hak akses yang diizinkan untuk peran baru ini. Kotak berwarna <span class="font-bold text-sky-600">Biru Langit (📊)</span> adalah akses widget/fitur Dashboard, dan <span class="font-bold text-purple-600">Ungu (⭐)</span> adalah akses persetujuan/verifikasi (*Approval*).
                     </p>
                 </div>
 
@@ -91,6 +91,11 @@
                         </svg>
                         Kosongkan
                     </button>
+                    <button type="button" onclick="toggleOnlyDashboard(true)" 
+                            class="px-3 py-1.5 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 font-bold text-xs transition-colors flex items-center gap-1.5 shadow-sm">
+                        <span>📊</span>
+                        Centang Semua Dashboard
+                    </button>
                     <button type="button" onclick="toggleOnlyApprove(true)" 
                             class="px-3 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 font-bold text-xs transition-colors flex items-center gap-1.5 shadow-sm">
                         <span>⭐</span>
@@ -102,7 +107,7 @@
             <!-- Quick Filter Input -->
             <div class="relative">
                 <input type="text" id="permSearch" onkeyup="filterPermissions()" 
-                       placeholder="🔍 Cari modul atau hak akses (misal: perangkat, approve, siswa, cuti)..." 
+                       placeholder="🔍 Cari modul atau hak akses (misal: dashboard, perangkat, approve, siswa, cuti)..." 
                        class="w-full px-4 py-3 pl-11 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all">
                 <svg class="w-4 h-4 text-slate-400 absolute left-4 top-3.5 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
@@ -151,10 +156,14 @@
                     <!-- Permission Checkboxes -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
                         <?php foreach ($perms as $p): 
+                            $isDashboard = str_ends_with($p['slug'], '.dashboard') || (strpos($p['slug'], 'dashboard.') !== false);
                             $isApprove = (strpos($p['slug'], '.approve') !== false) || (strpos(strtolower($p['name']), 'verifikasi') !== false) || (strpos(strtolower($p['name']), 'persetujuan') !== false) || (strpos(strtolower($p['name']), 'pengesahan') !== false);
 
                             // Action styles
-                            if ($isApprove) {
+                            if ($isDashboard) {
+                                $borderStyle = 'border-sky-300 bg-sky-50/40 hover:bg-sky-50 hover:border-sky-400 has-[:checked]:bg-sky-100 has-[:checked]:border-sky-600 has-[:checked]:ring-1 has-[:checked]:ring-sky-400/30';
+                                $badgeClass = 'bg-sky-600 text-white font-black text-[9px] px-2 py-0.5 rounded-md uppercase tracking-wider';
+                            } elseif ($isApprove) {
                                 $borderStyle = 'border-purple-300 bg-purple-50/40 hover:bg-purple-50 hover:border-purple-400 has-[:checked]:bg-purple-100 has-[:checked]:border-purple-600 has-[:checked]:ring-1 has-[:checked]:ring-purple-400/30';
                                 $badgeClass = 'bg-purple-600 text-white font-black text-[9px] px-2 py-0.5 rounded-md uppercase tracking-wider';
                             } elseif (str_ends_with($p['slug'], '.delete') || str_ends_with($p['slug'], '.reset')) {
@@ -173,6 +182,7 @@
                         ?>
                         <label class="perm-item relative flex items-start gap-3 p-3 rounded-2xl border <?= $borderStyle ?> cursor-pointer transition-all select-none"
                                data-perm-name="<?= strtolower(e($p['name'] . ' ' . $p['slug'] . ' ' . ($p['description'] ?? ''))) ?>"
+                               data-is-dashboard="<?= $isDashboard ? '1' : '0' ?>"
                                data-is-approve="<?= $isApprove ? '1' : '0' ?>"
                                title="<?= e($p['description'] ?? $p['name']) ?>">
                             <input type="checkbox" name="permissions[]" value="<?= $p['id'] ?>" 
@@ -181,7 +191,9 @@
                             <div class="flex-1 min-w-0">
                                 <div class="flex items-center gap-1.5 mb-0.5">
                                     <span class="text-xs font-bold text-slate-800 truncate"><?= e($p['name']) ?></span>
-                                    <?php if ($isApprove): ?>
+                                    <?php if ($isDashboard): ?>
+                                        <span class="<?= $badgeClass ?>">📊 DASHBOARD</span>
+                                    <?php elseif ($isApprove): ?>
                                         <span class="<?= $badgeClass ?>">⭐ APPROVE</span>
                                     <?php endif; ?>
                                 </div>
@@ -271,6 +283,20 @@ function toggleAllPermissions(state) {
     });
 }
 
+function toggleOnlyDashboard(state) {
+    document.querySelectorAll('.perm-item').forEach(item => {
+        if (item.getAttribute('data-is-dashboard') === '1') {
+            const cb = item.querySelector('.perm-checkbox');
+            if (cb) cb.checked = state;
+        }
+    });
+    document.querySelectorAll('.module-card').forEach(card => {
+        const checked = card.querySelectorAll('.perm-checkbox:checked').length;
+        const counterSpan = card.querySelector('.mod-selected-count');
+        if (counterSpan) counterSpan.textContent = checked;
+    });
+}
+
 function toggleOnlyApprove(state) {
     document.querySelectorAll('.perm-item').forEach(item => {
         if (item.getAttribute('data-is-approve') === '1') {
@@ -300,9 +326,13 @@ function filterPermissions() {
         } else {
             items.forEach(item => {
                 const text = item.getAttribute('data-perm-name') || '';
+                const isDashboard = item.getAttribute('data-is-dashboard') === '1';
                 const isApprove = item.getAttribute('data-is-approve') === '1';
                 
-                if (query === 'approve' && isApprove) {
+                if (query === 'dashboard' && isDashboard) {
+                    item.style.display = '';
+                    hasVisibleChild = true;
+                } else if (query === 'approve' && isApprove) {
                     item.style.display = '';
                     hasVisibleChild = true;
                 } else if (text.includes(query)) {

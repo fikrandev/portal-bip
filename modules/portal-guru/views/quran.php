@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Al-Qur'an Digital View (Mobile & PWA)
  * Features:

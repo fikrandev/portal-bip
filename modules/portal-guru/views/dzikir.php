@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Dzikir Pagi & Petang View (Al-Ma'tsurat Sugro & Kubro)
  * Features interactive digital tasbih counters, audio/vibration feedback, and auto-check integration for Ibadah Harian.
