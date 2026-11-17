@@ -44,8 +44,14 @@ $cetakQuery = http_build_query([
             <div class="flex flex-wrap items-center gap-2.5 shrink-0">
                 <?php if ($canManage): ?>
                 <button type="button"
+                        onclick="openModalPengaturanPeriodeJurnal()"
+                        class="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs sm:text-sm font-bold transition-all cursor-pointer shadow-xs">
+                    <span>⚙️</span>
+                    <span>Atur Periode Rekap</span>
+                </button>
+                <button type="button"
                         onclick="openInputJurnalModal()"
-                        class="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold shadow-md shadow-emerald-600/20 transition-all">
+                        class="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold shadow-md shadow-emerald-600/20 transition-all cursor-pointer">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
                     </svg>
@@ -1350,4 +1356,107 @@ $cetakQuery = http_build_query([
             inputKehadiran.value = `${total} Siswa (${parts.join(', ')})`;
         }
     }
+
+    function openModalPengaturanPeriodeJurnal() {
+        const modal = document.getElementById('modal-pengaturan-periode-jurnal');
+        if (modal) {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+    }
+
+    function closeModalPengaturanPeriodeJurnal() {
+        const modal = document.getElementById('modal-pengaturan-periode-jurnal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+    }
+
+    function setPeriodeJurnal(preset) {
+        const awalEl = document.getElementById('inp_periode_awal_jurnal');
+        const akhirEl = document.getElementById('inp_periode_akhir_jurnal');
+        if (!awalEl || !akhirEl) return;
+
+        const now = new Date();
+        const y = now.getFullYear();
+        const m = now.getMonth();
+
+        if (preset === 'bulan_ini') {
+            const first = new Date(y, m, 1);
+            const last = new Date(y, m + 1, 0);
+            awalEl.value = first.toISOString().slice(0, 10);
+            akhirEl.value = last.toISOString().slice(0, 10);
+        } else if (preset === 'bulan_lalu') {
+            const first = new Date(y, m - 1, 1);
+            const last = new Date(y, m, 0);
+            awalEl.value = first.toISOString().slice(0, 10);
+            akhirEl.value = last.toISOString().slice(0, 10);
+        } else if (preset === 'semester_ini') {
+            const startMonth = m >= 6 ? 6 : 0;
+            const endMonth = m >= 6 ? 11 : 5;
+            const first = new Date(y, startMonth, 1);
+            const last = new Date(y, endMonth + 1, 0);
+            awalEl.value = first.toISOString().slice(0, 10);
+            akhirEl.value = last.toISOString().slice(0, 10);
+        }
+    }
 </script>
+
+<!-- Modal Pengaturan Periode Rekap Jurnal PIC -->
+<div id="modal-pengaturan-periode-jurnal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs hidden items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div class="flex items-center gap-2.5">
+                <div class="w-10 h-10 rounded-2xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-base shadow-xs">
+                    ⚙️
+                </div>
+                <div>
+                    <h3 class="font-extrabold text-slate-900 text-base">Pengaturan Periode Rekap Jurnal</h3>
+                    <p class="text-xs text-slate-400">Atur periode default monitoring PIC & Portal Mobile</p>
+                </div>
+            </div>
+            <button type="button" onclick="closeModalPengaturanPeriodeJurnal()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:text-slate-800 flex items-center justify-center text-sm font-bold cursor-pointer">
+                ✕
+            </button>
+        </div>
+
+        <form action="<?= url('kelola-jurnal-guru/pengaturan-periode') ?>" method="POST" class="space-y-4">
+            <input type="hidden" name="csrf_token" value="<?= CSRF::getToken() ?>">
+            <input type="hidden" name="return_tab" value="<?= e($activeTab) ?>">
+
+            <div class="p-3.5 rounded-2xl bg-indigo-50/70 border border-indigo-200 text-xs text-indigo-900 leading-relaxed">
+                Rentang tanggal ini akan menjadi <strong>periode default</strong> saat guru membuka menu <strong>Rekap Jurnal PIC</strong> di Portal Guru Mobile dan halaman admin ini.
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Tanggal Awal <span class="text-rose-500">*</span></label>
+                    <input type="date" name="periode_awal" id="inp_periode_awal_jurnal" value="<?= e($jurnalConfig['periode_awal'] ?? date('Y-m-01')) ?>" required
+                           class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Tanggal Akhir <span class="text-rose-500">*</span></label>
+                    <input type="date" name="periode_akhir" id="inp_periode_akhir_jurnal" value="<?= e($jurnalConfig['periode_akhir'] ?? date('Y-m-t')) ?>" required
+                           class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 outline-none focus:border-indigo-500">
+                </div>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-1.5">
+                <span class="text-[11px] font-bold text-slate-500">Pilihan Cepat:</span>
+                <button type="button" onclick="setPeriodeJurnal('bulan_ini')" class="px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-indigo-600 hover:text-white text-[11px] font-semibold text-slate-700 transition-colors cursor-pointer">Bulan Ini</button>
+                <button type="button" onclick="setPeriodeJurnal('bulan_lalu')" class="px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-indigo-600 hover:text-white text-[11px] font-semibold text-slate-700 transition-colors cursor-pointer">Bulan Lalu</button>
+                <button type="button" onclick="setPeriodeJurnal('semester_ini')" class="px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-indigo-600 hover:text-white text-[11px] font-semibold text-slate-700 transition-colors cursor-pointer">Semester Ini</button>
+            </div>
+
+            <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                <button type="button" onclick="closeModalPengaturanPeriodeJurnal()" class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer">
+                    Batal
+                </button>
+                <button type="submit" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-600/30 cursor-pointer">
+                    Simpan Periode
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

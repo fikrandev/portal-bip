@@ -32,7 +32,7 @@ class AbsenPegawaiModel
         }
         self::$initialized = true;
 
-        $stampFile = BASE_PATH . '/storage/logs/.schema_absen_pegawai_v3.stamp';
+        $stampFile = BASE_PATH . '/storage/logs/.schema_absen_pegawai_v4.stamp';
         if (file_exists($stampFile)) {
             return;
         }
@@ -50,10 +50,41 @@ class AbsenPegawaiModel
                 `jam_masuk_mulai` TIME NOT NULL DEFAULT '06:00:00',
                 `jam_masuk_batas` TIME NOT NULL DEFAULT '07:30:00',
                 `jam_pulang_mulai` TIME NOT NULL DEFAULT '15:00:00',
+                `periode_awal` DATE NULL,
+                `periode_akhir` DATE NULL,
                 `updated_by` INT NULL,
                 `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
         ");
+
+        // Pastikan kolom periode_awal dan periode_akhir ada pada absen_pegawai_pengaturan
+        try {
+            $colsPeriode = $pdo->query("SHOW COLUMNS FROM `absen_pegawai_pengaturan` LIKE 'periode_awal'")->fetchAll();
+            if (empty($colsPeriode)) {
+                $pdo->exec("ALTER TABLE `absen_pegawai_pengaturan` ADD COLUMN `periode_awal` DATE NULL AFTER `jam_pulang_mulai`, ADD COLUMN `periode_akhir` DATE NULL AFTER `periode_awal`");
+                $pdo->exec("UPDATE `absen_pegawai_pengaturan` SET `periode_awal` = DATE_FORMAT(NOW(), '%Y-%m-01'), `periode_akhir` = LAST_DAY(NOW()) WHERE `id` = 1 AND `periode_awal` IS NULL");
+            }
+        } catch (Throwable $e) {}
+
+        // Pastikan tabel pengaturan rekap jurnal guru tersedia
+        try {
+            $pdo->exec("
+                CREATE TABLE IF NOT EXISTS `jurnal_guru_pengaturan` (
+                    `id` INT NOT NULL DEFAULT 1,
+                    `periode_awal` DATE NULL,
+                    `periode_akhir` DATE NULL,
+                    `keterangan` VARCHAR(255) NULL,
+                    `updated_by` INT NULL,
+                    `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    PRIMARY KEY (`id`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+            ");
+            $pdo->exec("
+                INSERT IGNORE INTO `jurnal_guru_pengaturan`
+                (`id`, `periode_awal`, `periode_akhir`, `keterangan`)
+                VALUES (1, DATE_FORMAT(NOW(), '%Y-%m-01'), LAST_DAY(NOW()), 'Default Periode Rekap Jurnal PIC')
+            ");
+        } catch (Throwable $e) {}
 
         // Pastikan baris pengaturan default ID=1 selalu ada
         $pdo->exec("
@@ -172,14 +203,22 @@ class AbsenPegawaiModel
                 'radius_meter' => 10,
                 'jam_masuk_mulai' => '06:00:00',
                 'jam_masuk_batas' => '07:30:00',
-                'jam_pulang_mulai' => '15:00:00'
+                'jam_pulang_mulai' => '15:00:00',
+                'periode_awal' => date('Y-m-01'),
+                'periode_akhir' => date('Y-m-t')
             ];
+        }
+        if (empty($row['periode_awal'])) {
+            $row['periode_awal'] = date('Y-m-01');
+        }
+        if (empty($row['periode_akhir'])) {
+            $row['periode_akhir'] = date('Y-m-t');
         }
         return $row;
     }
 
     /**
-     * Simpan pengaturan global (Radius Global untuk semua + Lokasi Semula/Default)
+     * Simpan pengaturan global (Radius Global untuk semua + Lokasi Semula/Default + Periode Rekap Absen)
      */
     public static function savePengaturanGlobal(array $data, ?int $userId = null): void
     {
@@ -194,6 +233,8 @@ class AbsenPegawaiModel
         $jamMasukMulai = trim($data['jam_masuk_mulai'] ?? '06:00:00') ?: '06:00:00';
         $jamMasukBatas = trim($data['jam_masuk_batas'] ?? '07:30:00') ?: '07:30:00';
         $jamPulangMulai = trim($data['jam_pulang_mulai'] ?? '15:00:00') ?: '15:00:00';
+        $periodeAwal = !empty($data['periode_awal']) ? trim($data['periode_awal']) : date('Y-m-01');
+        $periodeAkhir = !empty($data['periode_akhir']) ? trim($data['periode_akhir']) : date('Y-m-t');
 
         self::db()->query("
             UPDATE `absen_pegawai_pengaturan`
@@ -204,9 +245,11 @@ class AbsenPegawaiModel
                 `jam_masuk_mulai` = ?,
                 `jam_masuk_batas` = ?,
                 `jam_pulang_mulai` = ?,
+                `periode_awal` = ?,
+                `periode_akhir` = ?,
                 `updated_by` = ?
             WHERE `id` = 1
-        ", [$namaKantor, $lat, $lng, $radius, $jamMasukMulai, $jamMasukBatas, $jamPulangMulai, $userId]);
+        ", [$namaKantor, $lat, $lng, $radius, $jamMasukMulai, $jamMasukBatas, $jamPulangMulai, $periodeAwal, $periodeAkhir, $userId]);
 
         // Perbarui juga baris di absen_pegawai_lokasi yang mode_lokasi = 'default' agar selaras dengan lokasi semula terbaru
         self::db()->query("
@@ -214,6 +257,198 @@ class AbsenPegawaiModel
             SET `nama_kantor` = ?, `latitude` = ?, `longitude` = ?
             WHERE `mode_lokasi` = 'default'
         ", [$namaKantor, $lat, $lng]);
+    }
+
+    /**
+     * Ambil rekapitulasi presensi individu pegawai dalam rentang tanggal tertentu
+     * Menyajikan ringkasan KPI, daftar hari terlambat, dan daftar hari tidak absen (alpa)
+     */
+    public static function getRekapAbsenPegawai(int $pegawaiId, ?string $startDate = null, ?string $endDate = null): array
+    {
+        self::init();
+        $global = self::getPengaturanGlobal();
+
+        $startDate = !empty($startDate) ? trim($startDate) : ($global['periode_awal'] ?: date('Y-m-01'));
+        $endDate   = !empty($endDate) ? trim($endDate) : ($global['periode_akhir'] ?: date('Y-m-d'));
+        if (strtotime($startDate) > strtotime($endDate)) {
+            $tmp = $startDate;
+            $startDate = $endDate;
+            $endDate = $tmp;
+        }
+
+        $today = date('Y-m-d');
+        // Hanya evaluasi hari kerja sampai hari ini (jangan tandai hari depan sebagai alpa)
+        $evalEnd = (strtotime($endDate) > strtotime($today)) ? $today : $endDate;
+
+        // Ambil semua log absensi guru dalam rentang tanggal
+        $logs = self::db()->findAll(
+            "SELECT * FROM `absen_pegawai_log` 
+             WHERE `pegawai_id` = ? AND `tanggal` BETWEEN ? AND ? 
+             ORDER BY `tanggal` ASC",
+            [$pegawaiId, $startDate, $endDate]
+        );
+
+        $logsByDate = [];
+        foreach ($logs as $l) {
+            $logsByDate[$l['tanggal']] = $l;
+        }
+
+        $dayMap = [
+            1 => 'Senin',
+            2 => 'Selasa',
+            3 => 'Rabu',
+            4 => 'Kamis',
+            5 => 'Jumat',
+            6 => 'Sabtu',
+            7 => 'Minggu'
+        ];
+
+        $totalHariKerja = 0;
+        $totalHadir = 0;
+        $totalTepatWaktu = 0;
+        $totalTerlambat = 0;
+        $totalMenitTerlambat = 0;
+        $totalTidakAbsen = 0;
+
+        $listTerlambat = [];
+        $listTidakAbsen = [];
+        $allDaysHistory = [];
+
+        // Loop dari startDate s/d evalEnd untuk hari-hari yang sudah/sedang berjalan
+        $currentTs = strtotime($startDate);
+        $endTs = strtotime($evalEnd);
+
+        while ($currentTs <= $endTs) {
+            $curDate = date('Y-m-d', $currentTs);
+            $dayOfWeek = (int)date('N', $currentTs);
+            $namaHari = $dayMap[$dayOfWeek] ?? 'Senin';
+            $isSunday = ($dayOfWeek === 7);
+
+            $log = $logsByDate[$curDate] ?? null;
+
+            if ($isSunday) {
+                // Hari Minggu libur, hanya catat jika ada log presensi khusus
+                if ($log) {
+                    $allDaysHistory[] = [
+                        'tanggal' => $curDate,
+                        'hari' => $namaHari,
+                        'status' => $log['status'],
+                        'jam_masuk' => $log['jam_masuk'] ? substr($log['jam_masuk'], 0, 5) . ' WITA' : '-',
+                        'jam_pulang' => $log['jam_pulang'] ? substr($log['jam_pulang'], 0, 5) . ' WITA' : '-',
+                        'keterangan' => $log['keterangan'] ?: 'Presensi Hari Libur',
+                        'jarak' => (float)($log['jarak_masuk_meter'] ?? 0),
+                        'badge' => 'emerald'
+                    ];
+                }
+                $currentTs = strtotime('+1 day', $currentTs);
+                continue;
+            }
+
+            // Hari Kerja (Senin - Sabtu)
+            $totalHariKerja++;
+
+            if ($log && !empty($log['jam_masuk'])) {
+                $status = $log['status'] ?? 'Hadir';
+                $jamMasukFmt = substr($log['jam_masuk'], 0, 5) . ' WITA';
+                $jamPulangFmt = !empty($log['jam_pulang']) ? substr($log['jam_pulang'], 0, 5) . ' WITA' : '-';
+
+                if ($status === 'Terlambat') {
+                    $totalTerlambat++;
+                    $totalHadir++;
+
+                    // Ekstrak menit terlambat dari keterangan jika ada
+                    $menit = 0;
+                    if (preg_match('/(\d+)\s*Menit/i', $log['keterangan'] ?? '', $m)) {
+                        $menit = (int)$m[1];
+                    }
+                    $totalMenitTerlambat += $menit;
+
+                    $itemLate = [
+                        'tanggal' => $curDate,
+                        'hari' => $namaHari,
+                        'jam_masuk' => $jamMasukFmt,
+                        'jam_pulang' => $jamPulangFmt,
+                        'menit_terlambat' => $menit,
+                        'keterangan' => $log['keterangan'] ?: "Terlambat {$menit} Menit",
+                        'lokasi' => $log['nama_kantor_absen'] ?: 'Sekolah',
+                        'jarak' => (float)($log['jarak_masuk_meter'] ?? 0),
+                        'badge' => 'amber'
+                    ];
+                    $listTerlambat[] = $itemLate;
+                    $allDaysHistory[] = array_merge($itemLate, ['status' => 'Terlambat']);
+                } elseif (in_array($status, ['Izin', 'Sakit', 'Cuti', 'Dinas Luar'], true)) {
+                    $allDaysHistory[] = [
+                        'tanggal' => $curDate,
+                        'hari' => $namaHari,
+                        'status' => $status,
+                        'jam_masuk' => '-',
+                        'jam_pulang' => '-',
+                        'keterangan' => $log['keterangan'] ?: $status,
+                        'jarak' => 0,
+                        'badge' => 'indigo'
+                    ];
+                } else {
+                    // Hadir Tepat Waktu
+                    $totalHadir++;
+                    $totalTepatWaktu++;
+                    $allDaysHistory[] = [
+                        'tanggal' => $curDate,
+                        'hari' => $namaHari,
+                        'status' => 'Hadir',
+                        'jam_masuk' => $jamMasukFmt,
+                        'jam_pulang' => $jamPulangFmt,
+                        'keterangan' => $log['keterangan'] ?: 'Hadir Tepat Waktu',
+                        'jarak' => (float)($log['jarak_masuk_meter'] ?? 0),
+                        'badge' => 'emerald'
+                    ];
+                }
+            } else {
+                // Hari kerja aktif tapi tidak ada log absensi sama sekali (Tidak Absen / Alpa)
+                $totalTidakAbsen++;
+                $itemMissing = [
+                    'tanggal' => $curDate,
+                    'hari' => $namaHari,
+                    'status' => 'Tidak Absen',
+                    'jam_masuk' => '-',
+                    'jam_pulang' => '-',
+                    'keterangan' => 'Tidak melakukan presensi (Alpa/Tanpa Keterangan)',
+                    'jarak' => 0,
+                    'badge' => 'rose'
+                ];
+                $listTidakAbsen[] = $itemMissing;
+                $allDaysHistory[] = $itemMissing;
+            }
+
+            $currentTs = strtotime('+1 day', $currentTs);
+        }
+
+        // Urutkan riwayat dari yang paling baru ke lama
+        usort($allDaysHistory, fn($a, $b) => strcmp($b['tanggal'], $a['tanggal']));
+        usort($listTerlambat, fn($a, $b) => strcmp($b['tanggal'], $a['tanggal']));
+        usort($listTidakAbsen, fn($a, $b) => strcmp($b['tanggal'], $a['tanggal']));
+
+        $persenKehadiran = $totalHariKerja > 0 ? round(($totalHadir / $totalHariKerja) * 100, 1) : 0;
+
+        return [
+            'summary' => [
+                'total_hari_kerja'      => $totalHariKerja,
+                'total_hadir'           => $totalHadir,
+                'hadir_tepat_waktu'     => $totalTepatWaktu,
+                'terlambat'             => $totalTerlambat,
+                'total_menit_terlambat' => $totalMenitTerlambat,
+                'tidak_absen'           => $totalTidakAbsen,
+                'persen_kehadiran'      => $persenKehadiran,
+            ],
+            'list_terlambat'   => $listTerlambat,
+            'list_tidak_absen' => $listTidakAbsen,
+            'all_logs'         => $allDaysHistory,
+            'periode' => [
+                'start' => $startDate,
+                'end'   => $endDate,
+                'start_formatted' => date('d M Y', strtotime($startDate)),
+                'end_formatted'   => date('d M Y', strtotime($endDate))
+            ]
+        ];
     }
 
     /**

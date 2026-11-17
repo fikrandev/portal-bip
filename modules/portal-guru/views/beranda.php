@@ -470,6 +470,48 @@ if ($hourNow < 11) {
         </div>
     </div>
 
+    <!-- 5c. Rekapitulasi Presensi & Jurnal PIC Guru -->
+    <div class="pt-1">
+        <div class="flex items-center justify-between mb-3 px-1">
+            <h3 class="font-bold text-slate-800 text-sm">Rekapitulasi & Monitoring Guru</h3>
+            <span class="text-[10px] font-bold text-primary-600 bg-primary-50 px-2 py-0.5 rounded-full">Periode Aktif</span>
+        </div>
+        
+        <div class="grid grid-cols-2 gap-3">
+            <!-- Rekap Presensi & Keterlambatan -->
+            <a href="<?= url('mobile/rekap-absen') ?>" class="bg-gradient-to-br from-indigo-50 to-white rounded-3xl p-3.5 shadow-sm border border-indigo-100 hover:border-indigo-300 transition-all press-bounce block relative overflow-hidden group">
+                <div class="flex items-center justify-between mb-2">
+                    <div class="w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-lg shadow-md shadow-indigo-500/20">
+                        📊
+                    </div>
+                    <span class="text-[9px] font-bold text-indigo-700 bg-indigo-100/70 px-2 py-0.5 rounded-full">Presensi</span>
+                </div>
+                <h4 class="font-black text-slate-900 text-xs leading-tight">Rekap Presensi & Terlambat</h4>
+                <p class="text-[10px] text-slate-500 mt-1">Cek hadir tepat waktu, jam telat & alpa</p>
+                <div class="flex items-center gap-1 text-[10px] font-bold text-indigo-600 mt-2.5 pt-2 border-t border-indigo-100/60">
+                    <span>Lihat Rekap</span>
+                    <i data-lucide="arrow-right" class="w-3 h-3 group-hover:translate-x-1 transition-transform"></i>
+                </div>
+            </a>
+
+            <!-- Rekap Jurnal PIC & Ketuntasan KBM -->
+            <a href="<?= url('mobile/rekap-jurnal') ?>" class="bg-gradient-to-br from-purple-50 to-white rounded-3xl p-3.5 shadow-sm border border-purple-100 hover:border-purple-300 transition-all press-bounce block relative overflow-hidden group">
+                <div class="flex items-center justify-between mb-2">
+                    <div class="w-10 h-10 rounded-2xl bg-purple-600 text-white flex items-center justify-center text-lg shadow-md shadow-purple-500/20">
+                        📝
+                    </div>
+                    <span class="text-[9px] font-bold text-purple-700 bg-purple-100/70 px-2 py-0.5 rounded-full">Jurnal PIC</span>
+                </div>
+                <h4 class="font-black text-slate-900 text-xs leading-tight">Rekap Jurnal & KBM Terlewat</h4>
+                <p class="text-[10px] text-slate-500 mt-1">Cek sesi kosong & ketuntasan jurnal</p>
+                <div class="flex items-center gap-1 text-[10px] font-bold text-purple-600 mt-2.5 pt-2 border-t border-purple-100/60">
+                    <span>Lihat Rekap</span>
+                    <i data-lucide="arrow-right" class="w-3 h-3 group-hover:translate-x-1 transition-transform"></i>
+                </div>
+            </a>
+        </div>
+    </div>
+
     <!-- 6. Motivational Banner Card (Guru Hebat) -->
     <div class="bg-gradient-to-r from-primary-50 via-sky-50 to-indigo-50 rounded-3xl p-4 border border-primary-100/70 shadow-sm relative overflow-hidden flex items-center justify-between gap-3">
         

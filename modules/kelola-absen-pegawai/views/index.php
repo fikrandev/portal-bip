@@ -869,6 +869,40 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
                         </div>
                     </div>
 
+                    <!-- Periode Rekap Presensi (Untuk Portal Mobile & Web) -->
+                    <div class="p-4 rounded-2xl bg-indigo-50/70 border border-indigo-200 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <span class="text-base">📅</span>
+                                <div>
+                                    <h4 class="text-xs font-extrabold text-indigo-950">Periode Default Rekap Presensi</h4>
+                                    <p class="text-[11px] text-indigo-800">Menentukan rentang tanggal awal & akhir default di menu Rekap Portal Mobile Guru.</p>
+                                </div>
+                            </div>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-200 text-indigo-800">Mobile & Web</span>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                            <div>
+                                <label class="block text-[11px] font-bold text-indigo-950 mb-1">Tanggal Awal Rekap <span class="text-rose-500">*</span></label>
+                                <input type="date" name="periode_awal" id="periode_awal_absen" value="<?= e($globalConfig['periode_awal'] ?? date('Y-m-01')) ?>" required
+                                       class="w-full px-3 py-2 rounded-xl border border-indigo-300 bg-white text-xs font-bold text-slate-800 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-indigo-950 mb-1">Tanggal Akhir Rekap <span class="text-rose-500">*</span></label>
+                                <input type="date" name="periode_akhir" id="periode_akhir_absen" value="<?= e($globalConfig['periode_akhir'] ?? date('Y-m-t')) ?>" required
+                                       class="w-full px-3 py-2 rounded-xl border border-indigo-300 bg-white text-xs font-bold text-slate-800 outline-none">
+                            </div>
+                        </div>
+
+                        <div class="flex flex-wrap items-center gap-1.5 pt-1">
+                            <span class="text-[10px] font-bold text-indigo-700">Pilihan Cepat:</span>
+                            <button type="button" onclick="setPeriodeAbsen('bulan_ini')" class="px-2 py-0.5 rounded-lg bg-white hover:bg-indigo-600 hover:text-white border border-indigo-200 text-[10px] font-semibold text-indigo-800 transition-colors cursor-pointer">Bulan Ini</button>
+                            <button type="button" onclick="setPeriodeAbsen('bulan_lalu')" class="px-2 py-0.5 rounded-lg bg-white hover:bg-indigo-600 hover:text-white border border-indigo-200 text-[10px] font-semibold text-indigo-800 transition-colors cursor-pointer">Bulan Lalu</button>
+                            <button type="button" onclick="setPeriodeAbsen('semester_ini')" class="px-2 py-0.5 rounded-lg bg-white hover:bg-indigo-600 hover:text-white border border-indigo-200 text-[10px] font-semibold text-indigo-800 transition-colors cursor-pointer">Semester Ini</button>
+                        </div>
+                    </div>
+
                     <div class="flex items-center justify-between pt-3 border-t border-slate-100">
                         <button type="button" onclick="ambilGpsUntukDefault()"
                                 class="px-3.5 py-2 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 font-bold text-xs cursor-pointer">
@@ -1275,6 +1309,36 @@ const GLOBAL_RADIUS = <?= json_encode($radiusGlobal) ?>;
 let defaultMap = null, defaultMarker = null, defaultCircle = null;
 let pegMap = null, pegMarker = null, pegCircle = null;
 let unitMap = null, unitMarker = null, unitCircle = null;
+
+function setPeriodeAbsen(preset) {
+    const awalEl = document.getElementById('periode_awal_absen');
+    const akhirEl = document.getElementById('periode_akhir_absen');
+    if (!awalEl || !akhirEl) return;
+
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = now.getMonth(); // 0-based
+
+    if (preset === 'bulan_ini') {
+        const first = new Date(y, m, 1);
+        const last = new Date(y, m + 1, 0);
+        awalEl.value = first.toISOString().slice(0, 10);
+        akhirEl.value = last.toISOString().slice(0, 10);
+    } else if (preset === 'bulan_lalu') {
+        const first = new Date(y, m - 1, 1);
+        const last = new Date(y, m, 0);
+        awalEl.value = first.toISOString().slice(0, 10);
+        akhirEl.value = last.toISOString().slice(0, 10);
+    } else if (preset === 'semester_ini') {
+        // Ganjil: Jul-Des, Genap: Jan-Jun
+        const startMonth = m >= 6 ? 6 : 0;
+        const endMonth = m >= 6 ? 11 : 5;
+        const first = new Date(y, startMonth, 1);
+        const last = new Date(y, endMonth + 1, 0);
+        awalEl.value = first.toISOString().slice(0, 10);
+        akhirEl.value = last.toISOString().slice(0, 10);
+    }
+}
 
 function switchAbsenTab(tabName) {
     document.querySelectorAll('.absen-tab-panel').forEach(el => el.classList.add('hidden'));

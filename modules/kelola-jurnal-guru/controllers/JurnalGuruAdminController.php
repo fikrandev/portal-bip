@@ -68,9 +68,13 @@ class JurnalGuruAdminController
         $startDate = trim($_GET['start_date'] ?? '');
         $endDate   = trim($_GET['end_date'] ?? '');
 
-        // Rentang tanggal default untuk Rekap, Matrix & Jurnal Kosong (Default: awal bulan ini s/d hari ini, maks 31 hari)
-        $periodStart = $startDate !== '' ? $startDate : date('Y-m-01');
-        $periodEnd   = $endDate !== '' ? $endDate : date('Y-m-d');
+        // 1b. Pengaturan Periode Rekap Jurnal PIC
+        require_once MODULES_PATH . '/kelola-jurnal-guru/models/JurnalGuruPengaturan.php';
+        $jurnalConfig = JurnalGuruPengaturan::getPengaturan();
+
+        // Rentang tanggal default untuk Rekap, Matrix & Jurnal Kosong (Default: dari pengaturan jurnal atau awal bulan s/d hari ini)
+        $periodStart = $startDate !== '' ? $startDate : ($jurnalConfig['periode_awal'] ?: date('Y-m-01'));
+        $periodEnd   = $endDate !== '' ? $endDate : ($jurnalConfig['periode_akhir'] ?: date('Y-m-d'));
         if (strtotime($periodStart) > strtotime($periodEnd)) {
             $tmp = $periodStart;
             $periodStart = $periodEnd;
@@ -659,6 +663,33 @@ class JurnalGuruAdminController
         include MODULES_PATH . '/kelola-jurnal-guru/views/index.php';
         $content = ob_get_clean();
         include TEMPLATES_PATH . '/layouts/app.php';
+    }
+
+    /**
+     * Simpan Pengaturan Periode Rekap Jurnal PIC
+     */
+    public static function savePengaturanPeriode(): void
+    {
+        if (!CSRF::validate($_POST['csrf_token'] ?? '')) {
+            Response::redirect(url('kelola-jurnal-guru'), 'Token keamanan tidak valid.', 'error');
+            return;
+        }
+
+        require_once MODULES_PATH . '/kelola-jurnal-guru/models/JurnalGuruPengaturan.php';
+        $returnTab = trim($_POST['return_tab'] ?? 'rekap');
+
+        try {
+            JurnalGuruPengaturan::savePengaturan($_POST, Auth::id());
+            $pAwal = trim($_POST['periode_awal'] ?? '');
+            $pAkhir = trim($_POST['periode_akhir'] ?? '');
+            Response::redirect(
+                url('kelola-jurnal-guru?tab=' . urlencode($returnTab)),
+                "Pengaturan periode rekap jurnal berhasil disimpan: " . date('d M Y', strtotime($pAwal)) . " s/d " . date('d M Y', strtotime($pAkhir)) . ".",
+                'success'
+            );
+        } catch (Throwable $e) {
+            Response::redirect(url('kelola-jurnal-guru?tab=' . urlencode($returnTab)), $e->getMessage(), 'error');
+        }
     }
 
     /**

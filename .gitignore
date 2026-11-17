@@ -9,3 +9,5 @@ public/uploads/spmb/berkas/*
 .idea/
 *.tmp
 storage/logs/*.log
+storage/logs/.*.stamp
+storage/logs/*.stamp

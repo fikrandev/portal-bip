@@ -686,6 +686,62 @@ class PortalGuruController
     }
 
     /**
+     * Rekap Presensi & Keterlambatan Guru
+     */
+    public static function rekapAbsen(): void
+    {
+        $teacher = self::getLoggedInTeacher();
+        $pegawaiId = (int)($teacher['pegawai_id'] ?: $teacher['user_id'] ?: 0);
+        self::releaseSessionLock();
+
+        require_once MODULES_PATH . '/kelola-absen-pegawai/models/AbsenPegawaiModel.php';
+        $globalConfig = AbsenPegawaiModel::getPengaturanGlobal();
+
+        $startDate = trim($_GET['start_date'] ?? ($globalConfig['periode_awal'] ?: date('Y-m-01')));
+        $endDate   = trim($_GET['end_date'] ?? ($globalConfig['periode_akhir'] ?: date('Y-m-d')));
+
+        $rekap = AbsenPegawaiModel::getRekapAbsenPegawai($pegawaiId, $startDate, $endDate);
+
+        self::render('rekap_absen', [
+            'pageTitle' => 'Rekap Presensi & Keterlambatan',
+            'activeTab' => 'absen',
+            'teacher' => $teacher,
+            'rekap' => $rekap,
+            'globalConfig' => $globalConfig,
+            'startDate' => $rekap['periode']['start'],
+            'endDate' => $rekap['periode']['end'],
+        ]);
+    }
+
+    /**
+     * Rekap Jurnal PIC & Monitoring KBM Guru
+     */
+    public static function rekapJurnal(): void
+    {
+        $teacher = self::getLoggedInTeacher();
+        $pegawaiId = (int)($teacher['pegawai_id'] ?: $teacher['user_id'] ?: 0);
+        self::releaseSessionLock();
+
+        require_once MODULES_PATH . '/kelola-jurnal-guru/models/JurnalGuruPengaturan.php';
+        $jurnalConfig = JurnalGuruPengaturan::getPengaturan();
+
+        $startDate = trim($_GET['start_date'] ?? ($jurnalConfig['periode_awal'] ?: date('Y-m-01')));
+        $endDate   = trim($_GET['end_date'] ?? ($jurnalConfig['periode_akhir'] ?: date('Y-m-d')));
+
+        $rekap = JurnalGuruPengaturan::getRekapJurnalGuru($pegawaiId, $teacher['name'], $startDate, $endDate);
+
+        self::render('rekap_jurnal', [
+            'pageTitle' => 'Rekap Jurnal PIC & Monitoring KBM',
+            'activeTab' => 'jurnal',
+            'teacher' => $teacher,
+            'rekap' => $rekap,
+            'jurnalConfig' => $jurnalConfig,
+            'startDate' => $rekap['periode']['start'],
+            'endDate' => $rekap['periode']['end'],
+        ]);
+    }
+
+    /**
      * API: Cek status presensi hari ini guru & titik lokasi efektif
      */
     public static function apiAbsenToday(): void

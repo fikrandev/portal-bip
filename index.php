@@ -563,6 +563,7 @@ $router->post('/kelola-jurnal-guru/store', [JurnalGuruAdminController::class, 's
 $router->post('/kelola-jurnal-guru/store-saya', [PegawaiController::class, 'storeJurnalSaya'], [[Middleware::class, 'authRequired']]);
 $router->post('/kelola-jurnal-guru/status/{id}', [JurnalGuruAdminController::class, 'updateStatus'], [Middleware::permissionRequired('jurnal.manage')]);
 $router->post('/kelola-jurnal-guru/delete/{id}', [JurnalGuruAdminController::class, 'delete'], [Middleware::permissionRequired('jurnal.delete')]);
+$router->post('/kelola-jurnal-guru/pengaturan-periode', [JurnalGuruAdminController::class, 'savePengaturanPeriode'], [Middleware::permissionRequired('jurnal.manage')]);
 
 // Base Routes Modul Tambahan Lainnya
 $router->get('/kelola-nilai', [NilaiController::class, 'index'], [[Middleware::class, 'authRequired']]);
@@ -941,10 +942,12 @@ $router->get('/guru', function() {
     exit;
 });
 $router->get('/mobile/absen', [PortalGuruController::class, 'absen'], [[PortalGuruAuthController::class, 'authRequired']]);
+$router->get('/mobile/rekap-absen', [PortalGuruController::class, 'rekapAbsen'], [[PortalGuruAuthController::class, 'authRequired']]);
 $router->get('/mobile/api/absen/today', [PortalGuruController::class, 'apiAbsenToday'], [[PortalGuruAuthController::class, 'authRequired']]);
 $router->post('/mobile/api/absen/checkin', [PortalGuruController::class, 'apiCheckin'], [[PortalGuruAuthController::class, 'authRequired']]);
 $router->post('/mobile/api/absen/checkout', [PortalGuruController::class, 'apiCheckout'], [[PortalGuruAuthController::class, 'authRequired']]);
 $router->get('/mobile/jurnal', [PortalGuruController::class, 'jurnal'], [[PortalGuruAuthController::class, 'authRequired']]);
+$router->get('/mobile/rekap-jurnal', [PortalGuruController::class, 'rekapJurnal'], [[PortalGuruAuthController::class, 'authRequired']]);
 $router->post('/mobile/jurnal/simpan', [PortalGuruController::class, 'simpanJurnal'], [[PortalGuruAuthController::class, 'authRequired']]);
 $router->get('/mobile/api/jurnal/detail/{id}', [PortalGuruController::class, 'apiJurnalDetail'], [[PortalGuruAuthController::class, 'authRequired']]);
 $router->get('/mobile/api/siswa-kelas', [PortalGuruController::class, 'apiSiswaKelas'], [[PortalGuruAuthController::class, 'authRequired']]);

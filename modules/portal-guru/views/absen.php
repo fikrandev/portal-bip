@@ -26,8 +26,8 @@
         <i data-lucide="arrow-left" class="w-5 h-5"></i>
     </a>
     <h2 class="font-bold text-slate-800 text-base">Presensi Geolokasi</h2>
-    <a href="<?= url('mobile/profil') ?>" class="w-9 h-9 rounded-full bg-primary-50 text-primary-600 flex items-center justify-center">
-        <i data-lucide="history" class="w-4 h-4"></i>
+    <a href="<?= url('mobile/rekap-absen') ?>" class="w-9 h-9 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center press-bounce" title="Lihat Rekap Absensi">
+        <i data-lucide="bar-chart-2" class="w-4 h-4"></i>
     </a>
 </div>
 
@@ -112,7 +112,13 @@
 
     <!-- 4. Riwayat Presensi Hari Ini & Sebelumnya -->
     <div class="bg-white rounded-3xl p-4 shadow-sm border border-slate-100 space-y-3">
-        <h3 class="font-bold text-slate-800 text-xs">Riwayat Presensi Terbaru</h3>
+        <div class="flex items-center justify-between">
+            <h3 class="font-bold text-slate-800 text-xs">Riwayat Presensi Terbaru</h3>
+            <a href="<?= url('mobile/rekap-absen') ?>" class="text-[11px] font-bold text-primary-600 hover:text-primary-700 flex items-center gap-1">
+                <span>Rekap Lengkap</span>
+                <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+            </a>
+        </div>
         <div class="space-y-2">
             <?php foreach ($recentLogs as $log): ?>
             <div class="flex items-center justify-between p-2.5 rounded-2xl bg-slate-50 border border-slate-100">

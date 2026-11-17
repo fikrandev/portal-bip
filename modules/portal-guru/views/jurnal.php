@@ -16,21 +16,29 @@
             <p class="text-[10px] text-slate-400 font-medium">Sinkron dengan Jadwal KBM</p>
         </div>
     </div>
-    <a href="<?= url('mobile/absensi-kelas') ?>" class="w-9 h-9 rounded-2xl bg-primary-50 text-primary-600 flex items-center justify-center press-bounce shadow-xs" title="Absensi Kelas">
-        <i data-lucide="check-square" class="w-4 h-4"></i>
-    </a>
+    <div class="flex items-center gap-1.5">
+        <a href="<?= url('mobile/rekap-jurnal') ?>" class="w-9 h-9 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center press-bounce shadow-xs" title="Rekap Jurnal PIC & Monitoring KBM">
+            <i data-lucide="bar-chart-2" class="w-4 h-4"></i>
+        </a>
+        <a href="<?= url('mobile/absensi-kelas') ?>" class="w-9 h-9 rounded-2xl bg-primary-50 text-primary-600 flex items-center justify-center press-bounce shadow-xs" title="Absensi Kelas">
+            <i data-lucide="check-square" class="w-4 h-4"></i>
+        </a>
+    </div>
 </div>
 
 <div class="p-4 space-y-4">
 
-    <!-- Tab Switcher: Jadwal & Isi Jurnal vs Riwayat -->
-    <div class="flex p-1 bg-slate-200/70 rounded-2xl">
+    <!-- Tab Switcher: Jadwal & Isi Jurnal vs Riwayat vs Rekap PIC -->
+    <div class="flex p-1 bg-slate-200/70 rounded-2xl gap-1">
         <button type="button" onclick="switchMainTab('jadwal')" id="btn-tab-jadwal" class="flex-1 py-2 text-xs font-bold rounded-xl bg-white text-primary-600 shadow-sm transition-all">
-            📅 Jadwal & Isi Jurnal
+            📅 Jadwal
         </button>
         <button type="button" onclick="switchMainTab('history')" id="btn-tab-history" class="flex-1 py-2 text-xs font-semibold rounded-xl text-slate-600 hover:text-slate-900 transition-all">
-            📋 Riwayat Jurnal (<?= count($recentJournals) ?>)
+            📋 Riwayat (<?= count($recentJournals) ?>)
         </button>
+        <a href="<?= url('mobile/rekap-jurnal') ?>" class="flex-1 py-2 text-xs font-bold rounded-xl text-purple-700 bg-purple-50/80 hover:bg-purple-100 flex items-center justify-center gap-1 transition-all">
+            <span>📊 Rekap PIC</span>
+        </a>
     </div>
 
     <!-- ======================================================== -->
@@ -896,6 +904,15 @@
                     card.getAttribute('data-jam'),
                     parseInt(card.getAttribute('data-jp') || 2),
                     card.getAttribute('data-time')
+                );
+            } else {
+                openFillJournalModal(
+                    jId,
+                    urlParams.get('kelas') || '',
+                    urlParams.get('mapel') || '',
+                    urlParams.get('jam_ke') || '1',
+                    parseInt(urlParams.get('alokasi_jp') || 2),
+                    `Jam ke-${urlParams.get('jam_ke') || '1'}`
                 );
             }
         } else if (editId) {

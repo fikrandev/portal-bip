@@ -118,27 +118,27 @@
     <!-- 3. Account & Portal Navigation List -->
     <div class="bg-white rounded-3xl p-2 shadow-sm border border-slate-100 divide-y divide-slate-100">
         
-        <a href="<?= url('mobile/absen') ?>" class="flex items-center justify-between p-3.5 hover:bg-slate-50 rounded-2xl transition-all press-bounce">
+        <a href="<?= url('mobile/rekap-absen') ?>" class="flex items-center justify-between p-3.5 hover:bg-slate-50 rounded-2xl transition-all press-bounce">
             <div class="flex items-center gap-3">
-                <div class="w-9 h-9 rounded-xl bg-primary-50 text-primary-600 flex items-center justify-center">
+                <div class="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
                     <i data-lucide="calendar-check" class="w-4 h-4"></i>
                 </div>
                 <div>
-                    <h4 class="font-bold text-xs text-slate-800">Riwayat Presensi Saya</h4>
-                    <p class="text-[10px] text-slate-400">Rekapitulasi kehadiran bulan berjalan</p>
+                    <h4 class="font-bold text-xs text-slate-800">Rekap Presensi & Keterlambatan</h4>
+                    <p class="text-[10px] text-slate-400">Rincian jam hadir, telat & alpa periode</p>
                 </div>
             </div>
             <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
         </a>
 
-        <a href="<?= url('mobile/jurnal') ?>" class="flex items-center justify-between p-3.5 hover:bg-slate-50 rounded-2xl transition-all press-bounce">
+        <a href="<?= url('mobile/rekap-jurnal') ?>" class="flex items-center justify-between p-3.5 hover:bg-slate-50 rounded-2xl transition-all press-bounce">
             <div class="flex items-center gap-3">
-                <div class="w-9 h-9 rounded-xl bg-primary-50 text-primary-600 flex items-center justify-center">
+                <div class="w-9 h-9 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
                     <i data-lucide="book-check" class="w-4 h-4"></i>
                 </div>
                 <div>
-                    <h4 class="font-bold text-xs text-slate-800">Arsip Jurnal Mengajar</h4>
-                    <p class="text-[10px] text-slate-400">Lihat semua laporan jurnal harian</p>
+                    <h4 class="font-bold text-xs text-slate-800">Rekap Jurnal PIC & Ketuntasan KBM</h4>
+                    <p class="text-[10px] text-slate-400">Monitoring sesi KBM & jadwal belum diisi</p>
                 </div>
             </div>
             <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
