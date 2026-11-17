@@ -92,6 +92,7 @@ class AutoMigrate
             '2026_11_16_000054_add_spmb_group_wa_observasi_features'       => 'migration054AddSpmbGroupWaObservasiFeatures',
             '2026_11_17_000055_add_sarpras_pengajuan_pembelian_and_perbaikan_verifikasi' => 'migration055AddSarprasPengajuanPembelianAndPerbaikanVerifikasi',
             '2026_11_17_000056_add_rbac_jenjang_filter'                   => 'migration056AddRbacJenjangFilter',
+            '2026_11_17_000057_make_spmb_rbac_granular_permissions'       => 'migration057MakeSpmbRbacGranularPermissions',
         ];
     }
     /**
@@ -3826,6 +3827,95 @@ class AutoMigrate
         // 2. Tambah kolom allowed_jenjang pada tabel users
         if (self::hasTable($pdo, 'users')) {
             self::addColumnIfNotExists($pdo, 'users', 'allowed_jenjang', 'VARCHAR(100) NULL DEFAULT NULL AFTER `phone`');
+        }
+    }
+
+    protected static function migration057MakeSpmbRbacGranularPermissions(PDO $pdo): void
+    {
+        if (!self::hasTable($pdo, 'permissions') || !self::hasTable($pdo, 'modules')) {
+            return;
+        }
+
+        // Cari ID modul kelola-spmb
+        $stmtMod = $pdo->prepare("SELECT id FROM `modules` WHERE `slug` = 'kelola-spmb' LIMIT 1");
+        $stmtMod->execute();
+        $modId = $stmtMod->fetchColumn();
+        if (!$modId) {
+            return;
+        }
+
+        // 1. Rename spmb.view -> spmb.siswa_baru jika masih ada
+        try {
+            $pdo->exec("UPDATE `permissions` SET `slug` = 'spmb.siswa_baru', `name` = 'Lihat Siswa Baru', `description` = 'Melihat daftar calon siswa baru, biodata lengkap, dan formulir pendaftaran' WHERE `slug` = 'spmb.view'");
+        } catch (Throwable $e) {}
+
+        // 2. Definisi hak akses granular SPMB
+        $spmbPerms = [
+            ['spmb.dashboard', 'Dashboard SPMB', 'Melihat statistik analitik, ringkasan pendaftar, dan grafik seleksi SPMB'],
+            ['spmb.siswa_baru', 'Lihat Siswa Baru', 'Melihat daftar calon siswa baru, biodata lengkap, dan formulir pendaftaran'],
+            ['spmb.pindahan', 'Lihat Siswa Pindahan', 'Melihat daftar calon siswa pindahan/mutasi masuk dan kelengkapan dokumen'],
+            ['spmb.daftar_tunggu', 'Lihat Daftar Tunggu', 'Melihat antrean daftar tunggu calon siswa dan monitoring kuota'],
+            ['spmb.surat_pernyataan', 'Surat Pernyataan Komitmen', 'Melihat rekap komitmen orang tua, kelola format surat, dan verifikasi TTD digital'],
+            ['spmb.psikolog', 'Screening Psikolog SPMB', 'Upload berkas asesmen, tinjau hasil psikotes, dan broadcast ke orang tua'],
+            ['spmb.observasi', 'Observasi Awal & Grup WA', 'Kelola formulir observasi awal orang tua dan monitoring link WhatsApp group'],
+            ['spmb.pengaturan', 'Pengaturan SPMB', 'Mengatur periode tahun ajaran, gelombang group SPMB, kuota, biaya, dan kop surat'],
+            ['spmb.create', 'Daftarkan Calon Siswa', 'Menginput pendaftar baru manual untuk siswa baru, pindahan, atau daftar tunggu'],
+            ['spmb.update', 'Edit Berkas & Data SPMB', 'Memperbarui data pendaftar, unggah berkas, dan ubah status pendaftaran'],
+            ['spmb.delete', 'Hapus Data SPMB', 'Menghapus data pendaftaran calon siswa atau pembatalan pendaftar'],
+            ['spmb.approve', 'Verifikasi & Kelulusan SPMB', 'Wewenang khusus verifikasi kelengkapan berkas dan pengesahan status kelulusan/diterima'],
+            ['spmb.export', 'Export Data SPMB', 'Mengekspor data pendaftar ke format Excel dan cetak rekapitulasi data'],
+        ];
+
+        $stmtCheck = $pdo->prepare("SELECT id FROM `permissions` WHERE `slug` = ? LIMIT 1");
+        $stmtInsert = $pdo->prepare("INSERT INTO `permissions` (`module_id`, `name`, `slug`, `description`) VALUES (?, ?, ?, ?)");
+        $stmtUpdate = $pdo->prepare("UPDATE `permissions` SET `module_id` = ?, `name` = ?, `description` = ? WHERE `id` = ?");
+        $stmtCheckMp = $pdo->prepare("SELECT 1 FROM `module_permissions` WHERE `module_id` = ? AND `permission_id` = ?");
+        $stmtInsertMp = $pdo->prepare("INSERT INTO `module_permissions` (`module_id`, `permission_id`) VALUES (?, ?)");
+
+        $allPermIds = [];
+        foreach ($spmbPerms as $sp) {
+            $slug = $sp[0];
+            $name = $sp[1];
+            $desc = $sp[2];
+
+            $stmtCheck->execute([$slug]);
+            $permId = $stmtCheck->fetchColumn();
+
+            if ($permId) {
+                $stmtUpdate->execute([$modId, $name, $desc, $permId]);
+            } else {
+                $stmtInsert->execute([$modId, $name, $slug, $desc]);
+                $permId = $pdo->lastInsertId();
+            }
+
+            if ($permId) {
+                $allPermIds[] = (int)$permId;
+                $stmtCheckMp->execute([$modId, $permId]);
+                if (!$stmtCheckMp->fetchColumn()) {
+                    $stmtInsertMp->execute([$modId, $permId]);
+                }
+            }
+        }
+
+        // Berikan seluruh hak akses SPMB ke Super Admin dan Admin
+        $stmtRoles = $pdo->query("SELECT id FROM `roles` WHERE `slug` IN ('super_admin', 'admin', 'super-admin')");
+        $roleIds = $stmtRoles->fetchAll(PDO::FETCH_COLUMN);
+
+        $stmtCheckRp = $pdo->prepare("SELECT 1 FROM `role_permissions` WHERE `role_id` = ? AND `permission_id` = ?");
+        $stmtInsertRp = $pdo->prepare("INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES (?, ?)");
+
+        foreach ($roleIds as $rId) {
+            foreach ($allPermIds as $pId) {
+                $stmtCheckRp->execute([$rId, $pId]);
+                if (!$stmtCheckRp->fetchColumn()) {
+                    $stmtInsertRp->execute([$rId, $pId]);
+                }
+            }
+        }
+
+        // Clear session cache RBAC jika class RBAC ada
+        if (class_exists('RBAC')) {
+            RBAC::clearCache();
         }
     }
 }

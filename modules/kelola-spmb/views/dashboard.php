@@ -42,8 +42,18 @@ $group = $stats['activeGroup'] ?? null;
                 </div>
             </div>
 
-            <!-- Quick Action Buttons (Sinkron dengan Menu Fitur Sidebar) -->
+            <!-- Quick Action Buttons (Sinkron dengan Menu Fitur Sidebar & Hak Akses RBAC) -->
+            <?php
+            $canSiswaBaru = class_exists('RBAC') ? RBAC::hasPermission('spmb.siswa_baru') : true;
+            $canPindahan  = class_exists('RBAC') ? RBAC::hasPermission('spmb.pindahan') : true;
+            $canDaftarTunggu = class_exists('RBAC') ? RBAC::hasPermission('spmb.daftar_tunggu') : true;
+            $canSuratPernyataan = class_exists('RBAC') ? RBAC::hasPermission('spmb.surat_pernyataan') : true;
+            $canPsikolog = class_exists('RBAC') ? RBAC::hasPermission('spmb.psikolog') : true;
+            $canObservasi = class_exists('RBAC') ? RBAC::hasPermission('spmb.observasi') : true;
+            $canPengaturan = class_exists('RBAC') ? RBAC::hasPermission('spmb.pengaturan') : true;
+            ?>
             <div class="flex flex-col sm:flex-row gap-2.5 shrink-0">
+                <?php if ($canSiswaBaru): ?>
                 <a href="<?= url('kelola-spmb/siswa-baru') ?>" 
                    class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-semibold text-xs shadow-lg shadow-sky-500/25 transition-all transform hover:-translate-y-0.5">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
@@ -51,6 +61,8 @@ $group = $stats['activeGroup'] ?? null;
                     </svg>
                     <span>Siswa Baru</span>
                 </a>
+                <?php endif; ?>
+                <?php if ($canPindahan): ?>
                 <a href="<?= url('kelola-spmb/pindahan') ?>" 
                    class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-semibold text-xs border border-white/20 backdrop-blur-sm transition-all transform hover:-translate-y-0.5">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
@@ -58,6 +70,8 @@ $group = $stats['activeGroup'] ?? null;
                     </svg>
                     <span>Pindahan</span>
                 </a>
+                <?php endif; ?>
+                <?php if ($canDaftarTunggu): ?>
                 <a href="<?= url('kelola-spmb/daftar-tunggu') ?>" 
                    class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 hover:text-white font-semibold text-xs border border-amber-400/30 backdrop-blur-sm transition-all transform hover:-translate-y-0.5">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
@@ -65,6 +79,7 @@ $group = $stats['activeGroup'] ?? null;
                     </svg>
                     <span>Daftar Tunggu</span>
                 </a>
+                <?php endif; ?>
             </div>
         </div>
     </div>
@@ -180,7 +195,13 @@ $group = $stats['activeGroup'] ?? null;
         </div>
     </div>
 
-    <!-- Aksi Cepat Menu Fitur SPMB (100% Selaras dengan Sidebar) -->
+    <!-- Aksi Cepat Menu Fitur SPMB (100% Selaras dengan Sidebar & Hak Akses RBAC) -->
+    <?php
+    $activeFeatureCount = ($canSiswaBaru ? 1 : 0) + ($canPindahan ? 1 : 0) + ($canDaftarTunggu ? 1 : 0) +
+                          ($canSuratPernyataan ? 1 : 0) + ($canPsikolog ? 1 : 0) + ($canObservasi ? 1 : 0) +
+                          ($canPengaturan ? 1 : 0);
+    ?>
+    <?php if ($activeFeatureCount > 0): ?>
     <div class="bg-white rounded-3xl p-5 sm:p-6 border border-primary-100/70 shadow-sm">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 pb-3 border-b border-slate-100">
             <div>
@@ -188,13 +209,14 @@ $group = $stats['activeGroup'] ?? null;
                     <span class="w-2.5 h-2.5 rounded-full bg-sky-500"></span>
                     <span>Menu Fitur SPMB</span>
                 </h3>
-                <p class="text-xs text-slate-500">Pintasan navigasi langsung ke seluruh modul dan menu fitur di sidebar</p>
+                <p class="text-xs text-slate-500">Pintasan navigasi langsung ke modul dan menu fitur sesuai hak akses Anda</p>
             </div>
-            <span class="text-[11px] font-semibold text-slate-400 self-start sm:self-auto">7 Fitur Aktif</span>
+            <span class="text-[11px] font-semibold text-slate-400 self-start sm:self-auto"><?= $activeFeatureCount ?> Fitur Aktif</span>
         </div>
 
         <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
             <!-- 1. Siswa Baru -->
+            <?php if ($canSiswaBaru): ?>
             <a href="<?= url('kelola-spmb/siswa-baru') ?>" 
                class="group p-3.5 rounded-2xl bg-slate-50/70 hover:bg-sky-50/80 border border-slate-200/80 hover:border-sky-300 transition-all text-center flex flex-col items-center justify-between shadow-xs hover:shadow-sm">
                 <div class="w-10 h-10 rounded-xl bg-sky-100 text-sky-600 group-hover:scale-110 flex items-center justify-center transition-transform mb-2">
@@ -205,8 +227,10 @@ $group = $stats['activeGroup'] ?? null;
                 <div class="font-bold text-slate-800 group-hover:text-sky-700 text-xs">Siswa Baru</div>
                 <span class="text-[10px] text-slate-400 mt-0.5">Kelola & Verifikasi</span>
             </a>
+            <?php endif; ?>
 
             <!-- 2. Pindahan -->
+            <?php if ($canPindahan): ?>
             <a href="<?= url('kelola-spmb/pindahan') ?>" 
                class="group p-3.5 rounded-2xl bg-slate-50/70 hover:bg-blue-50/80 border border-slate-200/80 hover:border-blue-300 transition-all text-center flex flex-col items-center justify-between shadow-xs hover:shadow-sm">
                 <div class="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 group-hover:scale-110 flex items-center justify-center transition-transform mb-2">
@@ -217,8 +241,10 @@ $group = $stats['activeGroup'] ?? null;
                 <div class="font-bold text-slate-800 group-hover:text-blue-700 text-xs">Pindahan</div>
                 <span class="text-[10px] text-slate-400 mt-0.5">Mutasi Masuk</span>
             </a>
+            <?php endif; ?>
 
             <!-- 3. Daftar Tunggu -->
+            <?php if ($canDaftarTunggu): ?>
             <a href="<?= url('kelola-spmb/daftar-tunggu') ?>" 
                class="group p-3.5 rounded-2xl bg-slate-50/70 hover:bg-amber-50/80 border border-slate-200/80 hover:border-amber-300 transition-all text-center flex flex-col items-center justify-between shadow-xs hover:shadow-sm">
                 <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 group-hover:scale-110 flex items-center justify-center transition-transform mb-2">
@@ -229,8 +255,10 @@ $group = $stats['activeGroup'] ?? null;
                 <div class="font-bold text-slate-800 group-hover:text-amber-700 text-xs">Daftar Tunggu</div>
                 <span class="text-[10px] text-slate-400 mt-0.5">Waiting List</span>
             </a>
+            <?php endif; ?>
 
             <!-- 4. Surat Pernyataan -->
+            <?php if ($canSuratPernyataan): ?>
             <a href="<?= url('kelola-spmb/surat-pernyataan') ?>" 
                class="group p-3.5 rounded-2xl bg-slate-50/70 hover:bg-emerald-50/80 border border-slate-200/80 hover:border-emerald-300 transition-all text-center flex flex-col items-center justify-between shadow-xs hover:shadow-sm">
                 <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 group-hover:scale-110 flex items-center justify-center transition-transform mb-2">
@@ -241,8 +269,10 @@ $group = $stats['activeGroup'] ?? null;
                 <div class="font-bold text-slate-800 group-hover:text-emerald-700 text-xs truncate w-full">Surat Pernyataan</div>
                 <span class="text-[10px] text-slate-400 mt-0.5">Komitmen & TTD</span>
             </a>
+            <?php endif; ?>
 
             <!-- 5. Hasil Psikolog -->
+            <?php if ($canPsikolog): ?>
             <a href="<?= url('kelola-spmb/screening-psikolog') ?>" 
                class="group p-3.5 rounded-2xl bg-slate-50/70 hover:bg-purple-50/80 border border-slate-200/80 hover:border-purple-300 transition-all text-center flex flex-col items-center justify-between shadow-xs hover:shadow-sm">
                 <div class="w-10 h-10 rounded-xl bg-purple-100 text-purple-600 group-hover:scale-110 flex items-center justify-center transition-transform mb-2">
@@ -253,8 +283,10 @@ $group = $stats['activeGroup'] ?? null;
                 <div class="font-bold text-slate-800 group-hover:text-purple-700 text-xs">Hasil Psikolog</div>
                 <span class="text-[10px] text-slate-400 mt-0.5">Screening PDF</span>
             </a>
+            <?php endif; ?>
 
             <!-- 6. Observasi Awal -->
+            <?php if ($canObservasi): ?>
             <a href="<?= url('kelola-spmb/observasi-awal') ?>" 
                class="group p-3.5 rounded-2xl bg-slate-50/70 hover:bg-teal-50/80 border border-slate-200/80 hover:border-teal-300 transition-all text-center flex flex-col items-center justify-between shadow-xs hover:shadow-sm">
                 <div class="w-10 h-10 rounded-xl bg-teal-100 text-teal-600 group-hover:scale-110 flex items-center justify-center transition-transform mb-2">
@@ -265,20 +297,24 @@ $group = $stats['activeGroup'] ?? null;
                 <div class="font-bold text-slate-800 group-hover:text-teal-700 text-xs">Observasi Awal</div>
                 <span class="text-[10px] text-slate-400 mt-0.5">Kuesioner Ortu</span>
             </a>
+            <?php endif; ?>
 
             <!-- 7. Pengaturan -->
+            <?php if ($canPengaturan): ?>
             <a href="<?= url('kelola-spmb/pengaturan') ?>" 
                class="group p-3.5 rounded-2xl bg-slate-50/70 hover:bg-slate-100 border border-slate-200/80 hover:border-slate-300 transition-all text-center flex flex-col items-center justify-between shadow-xs hover:shadow-sm">
                 <div class="w-10 h-10 rounded-xl bg-slate-200 text-slate-700 group-hover:scale-110 flex items-center justify-center transition-transform mb-2">
                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 1 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
                     </svg>
                 </div>
                 <div class="font-bold text-slate-800 group-hover:text-slate-900 text-xs">Pengaturan</div>
                 <span class="text-[10px] text-slate-400 mt-0.5">Group & Biaya</span>
             </a>
+            <?php endif; ?>
         </div>
     </div>
+    <?php endif; ?>
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Kuota per Jenjang -->
         <div class="bg-white rounded-2xl p-6 border border-primary-100/70 shadow-sm">

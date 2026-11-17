@@ -59,7 +59,9 @@ try {
                     <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                     Group Aktif
                 </span>
-                <a href="<?= url('kelola-spmb/pengaturan') ?>" class="text-xs text-primary-300 hover:text-white underline font-semibold">Ubah</a>
+                <?php if (class_exists('RBAC') && RBAC::hasPermission('spmb.pengaturan')): ?>
+                    <a href="<?= url('kelola-spmb/pengaturan') ?>" class="text-xs text-primary-300 hover:text-white underline font-semibold">Ubah</a>
+                <?php endif; ?>
             </div>
             <div class="text-white font-bold text-sm tracking-wide flex items-center justify-between">
                 <span class="truncate"><?= e($activeGroupSidebar['nama_group'] ?? 'SPMB 2026/2027') ?></span>
@@ -88,6 +90,16 @@ try {
                 $isScreeningPsikologActive = (strpos($currentUri, 'kelola-spmb/screening-psikolog') !== false);
                 $isObservasiAwalActive = (strpos($currentUri, 'kelola-spmb/observasi-awal') !== false);
                 $isPengaturanActive = (strpos($currentUri, 'kelola-spmb/pengaturan') !== false);
+
+                // Check RBAC Permissions
+                $canDashboard = class_exists('RBAC') ? (RBAC::hasPermission('spmb.dashboard') || RBAC::hasPermission('spmb.view')) : true;
+                $canSiswaBaru = class_exists('RBAC') ? RBAC::hasPermission('spmb.siswa_baru') : true;
+                $canPindahan  = class_exists('RBAC') ? RBAC::hasPermission('spmb.pindahan') : true;
+                $canDaftarTunggu = class_exists('RBAC') ? RBAC::hasPermission('spmb.daftar_tunggu') : true;
+                $canSuratPernyataan = class_exists('RBAC') ? RBAC::hasPermission('spmb.surat_pernyataan') : true;
+                $canScreeningPsikolog = class_exists('RBAC') ? RBAC::hasPermission('spmb.psikolog') : true;
+                $canObservasiAwal = class_exists('RBAC') ? RBAC::hasPermission('spmb.observasi') : true;
+                $canPengaturan = class_exists('RBAC') ? RBAC::hasPermission('spmb.pengaturan') : true;
                 
                 // Helper render menu item
                 if (!function_exists('renderSpmbNav')) {
@@ -109,84 +121,100 @@ try {
                 }
 
                 // 1. DASHBOARD
-                renderSpmbNav(
-                    'Dashboard',
-                    url('kelola-spmb'),
-                    '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z" />
-                    </svg>',
-                    $isDashboardActive
-                );
+                if ($canDashboard) {
+                    renderSpmbNav(
+                        'Dashboard',
+                        url('kelola-spmb'),
+                        '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z" />
+                        </svg>',
+                        $isDashboardActive
+                    );
+                }
 
                 // 2. SISWA BARU
-                renderSpmbNav(
-                    'Siswa Baru',
-                    url('kelola-spmb/siswa-baru'),
-                    '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M18 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0ZM3 19.235v-.11a6.375 6.375 0 0 1 12.75 0v.109A12.318 12.318 0 0 1 9.374 21c-2.331 0-4.512-.645-6.374-1.766Z" />
-                    </svg>',
-                    $isSiswaBaruActive
-                );
+                if ($canSiswaBaru) {
+                    renderSpmbNav(
+                        'Siswa Baru',
+                        url('kelola-spmb/siswa-baru'),
+                        '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M18 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0ZM3 19.235v-.11a6.375 6.375 0 0 1 12.75 0v.109A12.318 12.318 0 0 1 9.374 21c-2.331 0-4.512-.645-6.374-1.766Z" />
+                        </svg>',
+                        $isSiswaBaruActive
+                    );
+                }
 
                 // 3. PINDAHAN
-                renderSpmbNav(
-                    'Pindahan',
-                    url('kelola-spmb/pindahan'),
-                    '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21 3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
-                    </svg>',
-                    $isPindahanActive
-                );
+                if ($canPindahan) {
+                    renderSpmbNav(
+                        'Pindahan',
+                        url('kelola-spmb/pindahan'),
+                        '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21 3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
+                        </svg>',
+                        $isPindahanActive
+                    );
+                }
 
                 // 4. DAFTAR TUNGGU
-                renderSpmbNav(
-                    'Daftar Tunggu',
-                    url('kelola-spmb/daftar-tunggu'),
-                    '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                    </svg>',
-                    $isDaftarTungguActive
-                );
+                if ($canDaftarTunggu) {
+                    renderSpmbNav(
+                        'Daftar Tunggu',
+                        url('kelola-spmb/daftar-tunggu'),
+                        '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                        </svg>',
+                        $isDaftarTungguActive
+                    );
+                }
 
                 // 5. SURAT PERNYATAAN KOMITMEN
-                renderSpmbNav(
-                    'Surat Pernyataan',
-                    url('kelola-spmb/surat-pernyataan'),
-                    '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
-                    </svg>',
-                    $isSuratPernyataanActive
-                );
+                if ($canSuratPernyataan) {
+                    renderSpmbNav(
+                        'Surat Pernyataan',
+                        url('kelola-spmb/surat-pernyataan'),
+                        '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                        </svg>',
+                        $isSuratPernyataanActive
+                    );
+                }
 
                 // 6. HASIL SCREENING PSIKOLOG
-                renderSpmbNav(
-                    'Hasil Psikolog',
-                    url('kelola-spmb/screening-psikolog'),
-                    '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25ZM6.75 12h.008v.008H6.75V12Zm0 3h.008v.008H6.75V15Zm0 3h.008v.008H6.75V18Z" />
-                    </svg>',
-                    $isScreeningPsikologActive
-                );
+                if ($canScreeningPsikolog) {
+                    renderSpmbNav(
+                        'Hasil Psikolog',
+                        url('kelola-spmb/screening-psikolog'),
+                        '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25ZM6.75 12h.008v.008H6.75V12Zm0 3h.008v.008H6.75V15Zm0 3h.008v.008H6.75V18Z" />
+                        </svg>',
+                        $isScreeningPsikologActive
+                    );
+                }
 
                 // 7. OBSERVASI AWAL
-                renderSpmbNav(
-                    'Observasi Awal',
-                    url('kelola-spmb/observasi-awal'),
-                    '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                    </svg>',
-                    $isObservasiAwalActive
-                );
+                if ($canObservasiAwal) {
+                    renderSpmbNav(
+                        'Observasi Awal',
+                        url('kelola-spmb/observasi-awal'),
+                        '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                        </svg>',
+                        $isObservasiAwalActive
+                    );
+                }
 
                 // 8. PENGATURAN
-                renderSpmbNav(
-                    'Pengaturan',
-                    url('kelola-spmb/pengaturan'),
-                    '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
-                    </svg>',
-                    $isPengaturanActive
-                );
+                if ($canPengaturan) {
+                    renderSpmbNav(
+                        'Pengaturan',
+                        url('kelola-spmb/pengaturan'),
+                        '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
+                        </svg>',
+                        $isPengaturanActive
+                    );
+                }
                 ?>
             </ul>
         </div>

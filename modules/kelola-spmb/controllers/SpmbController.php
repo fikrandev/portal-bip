@@ -35,6 +35,46 @@ class SpmbController
 
     public static function index(): void
     {
+        // Cek izin akses dashboard
+        $canDashboard = RBAC::hasPermission('spmb.dashboard') || RBAC::hasPermission('spmb.view');
+
+        if (!$canDashboard) {
+            // Jika tidak boleh akses dashboard, arahkan otomatis ke sub-fitur pertama yang boleh diakses
+            if (RBAC::hasPermission('spmb.siswa_baru')) {
+                header('Location: ' . url('kelola-spmb/siswa-baru'));
+                exit;
+            }
+            if (RBAC::hasPermission('spmb.pindahan')) {
+                header('Location: ' . url('kelola-spmb/pindahan'));
+                exit;
+            }
+            if (RBAC::hasPermission('spmb.daftar_tunggu')) {
+                header('Location: ' . url('kelola-spmb/daftar-tunggu'));
+                exit;
+            }
+            if (RBAC::hasPermission('spmb.surat_pernyataan')) {
+                header('Location: ' . url('kelola-spmb/surat-pernyataan'));
+                exit;
+            }
+            if (RBAC::hasPermission('spmb.psikolog')) {
+                header('Location: ' . url('kelola-spmb/screening-psikolog'));
+                exit;
+            }
+            if (RBAC::hasPermission('spmb.observasi')) {
+                header('Location: ' . url('kelola-spmb/observasi-awal'));
+                exit;
+            }
+            if (RBAC::hasPermission('spmb.pengaturan')) {
+                header('Location: ' . url('kelola-spmb/pengaturan'));
+                exit;
+            }
+
+            // Jika sama sekali tidak memiliki hak akses di SPMB
+            http_response_code(403);
+            include TEMPLATES_PATH . '/errors/403.php';
+            exit;
+        }
+
         $activeGroup = SpmbModel::getActiveGroup();
         $groupId = $activeGroup['id'] ?? null;
         $stats = SpmbModel::getDashboardStats($groupId);

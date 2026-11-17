@@ -26,7 +26,19 @@ class RBAC
         }
 
         $permissions = self::getUserPermissions();
-        return in_array($permissionSlug, $permissions, true);
+        if (in_array($permissionSlug, $permissions, true)) {
+            return true;
+        }
+
+        // Backwards compatibility alias untuk SPMB
+        if ($permissionSlug === 'spmb.siswa_baru' && in_array('spmb.view', $permissions, true)) {
+            return true;
+        }
+        if ($permissionSlug === 'spmb.view' && (in_array('spmb.siswa_baru', $permissions, true) || in_array('spmb.dashboard', $permissions, true))) {
+            return true;
+        }
+
+        return false;
     }
 
     /**
