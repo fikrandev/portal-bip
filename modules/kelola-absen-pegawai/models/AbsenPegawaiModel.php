@@ -969,9 +969,9 @@ class AbsenPegawaiModel
 
         $jarak = self::calculateDistance($lat, $lng, $targetLat, $targetLng);
 
-        // Validasi radius (dengan toleransi akurasi GPS jika akurasi agak longgar, maksimal toleransi +20m)
-        $toleransiAkurasi = ($accuracy !== null && $accuracy > 0) ? min(20.0, (float)$accuracy) : 0.0;
-        $maxAllowedDistance = $radiusBatas + $toleransiAkurasi;
+        // Validasi radius (dengan toleransi akurasi GPS jika akurasi agak longgar, maksimal toleransi +60m untuk smartphone indoor)
+        $toleransiAkurasi = ($accuracy !== null && $accuracy > 0) ? min(60.0, max(15.0, (float)$accuracy)) : 15.0;
+        $maxAllowedDistance = max((float)$radiusBatas, 15.0) + $toleransiAkurasi;
 
         if ($jarak > $maxAllowedDistance) {
             return [
@@ -1151,8 +1151,8 @@ class AbsenPegawaiModel
         $namaKantor = $efektif['nama_kantor'];
 
         $jarak = self::calculateDistance($lat, $lng, $targetLat, $targetLng);
-        $toleransiAkurasi = ($accuracy !== null && $accuracy > 0) ? min(20.0, (float)$accuracy) : 0.0;
-        $maxAllowedDistance = $radiusBatas + $toleransiAkurasi;
+        $toleransiAkurasi = ($accuracy !== null && $accuracy > 0) ? min(60.0, max(15.0, (float)$accuracy)) : 15.0;
+        $maxAllowedDistance = max((float)$radiusBatas, 15.0) + $toleransiAkurasi;
 
         if ($jarak > $maxAllowedDistance) {
             return [

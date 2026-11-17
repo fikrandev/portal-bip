@@ -424,6 +424,13 @@ const AndroidUI = (function() {
         },
 
         /**
+         * Restore Button Loading State (alias of resetButton for backward compatibility)
+         */
+        restoreButton: function(btn) {
+            return this.resetButton(btn);
+        },
+
+        /**
          * Center Screen Data Loading Spinner (for fetch, refresh, tab data load)
          */
         showCenterLoading: function(message = 'Memuat data...', timeoutMs = 3500) {

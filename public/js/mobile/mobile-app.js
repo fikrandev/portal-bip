@@ -3,18 +3,33 @@
  * Handles Geolocation GPS, Map Radar, Attendance Check-in/Check-out State (15:00 device time lock), Journal forms, and Mobile UI interactions.
  */
 
-// School Center Coordinates (Default: Kampus Utama BIP, can be overridden per employee/unit via window.CUSTOM_SCHOOL_COORDS)
-const SCHOOL_COORDS = Object.assign({
-  lat: -5.147665,
-  lng: 119.432732,
-  name: "Kampus Utama BIP",
-  radius: 150 // radius in meters
-}, window.CUSTOM_SCHOOL_COORDS || {});
+// School Center Coordinates (Default: Kampus Utama SIT Bina Insan Palu)
+const SCHOOL_COORDS = {
+  lat: -0.891700,
+  lng: 119.870700,
+  name: "Kampus Utama SIT Bina Insan Palu",
+  radius: 15 // radius in meters
+};
+
+window.getEffectiveSchoolCoords = function() {
+  if (window.CUSTOM_SCHOOL_COORDS && typeof window.CUSTOM_SCHOOL_COORDS === 'object') {
+    if (typeof window.CUSTOM_SCHOOL_COORDS.lat === 'number') SCHOOL_COORDS.lat = window.CUSTOM_SCHOOL_COORDS.lat;
+    if (typeof window.CUSTOM_SCHOOL_COORDS.lng === 'number') SCHOOL_COORDS.lng = window.CUSTOM_SCHOOL_COORDS.lng;
+    if (window.CUSTOM_SCHOOL_COORDS.name) SCHOOL_COORDS.name = window.CUSTOM_SCHOOL_COORDS.name;
+    if (typeof window.CUSTOM_SCHOOL_COORDS.radius === 'number') SCHOOL_COORDS.radius = window.CUSTOM_SCHOOL_COORDS.radius;
+  }
+  return SCHOOL_COORDS;
+};
+
+if (window.CUSTOM_SCHOOL_COORDS) {
+  window.getEffectiveSchoolCoords();
+}
 
 let userCoords = null;
 let leafletMap = null;
 let userMarker = null;
 let schoolCircle = null;
+let _geoWatchId = null;
 
 // Calculate Haversine Distance (in meters)
 function calculateDistance(lat1, lon1, lat2, lon2) {
@@ -32,54 +47,91 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
   return Math.round(R * c);
 }
 
-// ── Geolocation & Map Logic ─────────────────────────────
+// ── Geolocation & Map Logic (Lightning Fast & Non-blocking) ─────────────────
 window.initGeolocation = function(showLoader = false) {
   const statusEl = document.getElementById('gps-status-text');
+  const school = window.getEffectiveSchoolCoords();
 
-  if (showLoader) {
-    AndroidUI.showCenterLoading('Mengunci sinyal GPS satelit...');
+  if (showLoader && typeof AndroidUI !== 'undefined' && AndroidUI.showCenterLoading) {
+    AndroidUI.showCenterLoading('Mengunci sinyal GPS...', 2000);
   }
 
   if (!navigator.geolocation) {
-    if (statusEl) statusEl.textContent = 'Perangkat tidak mendukung GPS. Menggunakan simulasi sekolah.';
+    if (statusEl) statusEl.textContent = 'Perangkat tidak mendukung GPS. Menggunakan titik sekolah.';
     fallbackToSimulatedGPS();
-    if (showLoader) setTimeout(() => AndroidUI.hideCenterLoading(), 300);
+    if (showLoader && typeof AndroidUI !== 'undefined') AndroidUI.hideCenterLoading();
     return;
   }
 
   if (statusEl) statusEl.innerHTML = '<span class="inline-block animate-spin mr-1">⟳</span> Mengunci koordinat GPS...';
 
-  navigator.geolocation.getCurrentPosition(
-    (position) => {
-      userCoords = {
-        lat: position.coords.latitude,
-        lng: position.coords.longitude,
-        accuracy: Math.round(position.coords.accuracy)
-      };
+  let handled = false;
+  const onPos = (position) => {
+    if (handled) return;
+    handled = true;
+    userCoords = {
+      lat: position.coords.latitude,
+      lng: position.coords.longitude,
+      accuracy: Math.round(position.coords.accuracy || 5)
+    };
+    updateGPSDisplay(userCoords);
+    if (showLoader && typeof AndroidUI !== 'undefined') AndroidUI.hideCenterLoading();
+  };
 
-      updateGPSDisplay(userCoords);
-      if (showLoader) setTimeout(() => AndroidUI.hideCenterLoading(), 300);
-    },
-    (err) => {
-      console.warn('[GPS] Error getting real GPS position:', err.message);
-      if (statusEl) statusEl.textContent = 'Izin GPS ditolak atau tidak tersedia. Menggunakan titik sekolah.';
-      fallbackToSimulatedGPS();
-      if (showLoader) setTimeout(() => AndroidUI.hideCenterLoading(), 300);
-    },
-    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-  );
+  const onErr = (err) => {
+    if (handled) return;
+    handled = true;
+    console.warn('[GPS] Position warning:', err ? err.message : 'timeout');
+    if (statusEl) statusEl.textContent = 'Menggunakan koordinat sekolah terkunci.';
+    fallbackToSimulatedGPS();
+    if (showLoader && typeof AndroidUI !== 'undefined') AndroidUI.hideCenterLoading();
+  };
+
+  // Toleransi cache 5 menit agar GPS smartphone langsung dapat posisi dalam < 100ms
+  navigator.geolocation.getCurrentPosition(onPos, onErr, {
+    enableHighAccuracy: true,
+    timeout: 3000,
+    maximumAge: 300000
+  });
+
+  // Safety fallback 2.5s jika GPS dialog tertahan
+  setTimeout(() => {
+    if (!handled && !userCoords) {
+      onErr({ message: 'GPS timeout, fallback ke sekolah' });
+    }
+  }, 2500);
+
+  // Background watcher agar posisi terus terbarui
+  if (!_geoWatchId && navigator.geolocation.watchPosition) {
+    try {
+      _geoWatchId = navigator.geolocation.watchPosition(
+        (pos) => {
+          userCoords = {
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+            accuracy: Math.round(pos.coords.accuracy || 5)
+          };
+          updateGPSDisplay(userCoords);
+        },
+        () => {},
+        { enableHighAccuracy: true, maximumAge: 30000, timeout: 8000 }
+      );
+    } catch (e) {}
+  }
 };
 
 function fallbackToSimulatedGPS() {
+  const school = window.getEffectiveSchoolCoords();
   userCoords = {
-    lat: SCHOOL_COORDS.lat + (Math.random() * 0.0002 - 0.0001),
-    lng: SCHOOL_COORDS.lng + (Math.random() * 0.0002 - 0.0001),
-    accuracy: 6
+    lat: school.lat,
+    lng: school.lng,
+    accuracy: 5
   };
   updateGPSDisplay(userCoords, true);
 }
 
 function updateGPSDisplay(coords, isSimulated = false) {
+  const school = window.getEffectiveSchoolCoords();
   const statusEl = document.getElementById('gps-status-text');
   const latEl = document.getElementById('gps-lat');
   const lngEl = document.getElementById('gps-lng');
@@ -87,7 +139,7 @@ function updateGPSDisplay(coords, isSimulated = false) {
   const radiusBadge = document.getElementById('gps-radius-badge');
   const accuracyEl = document.getElementById('gps-accuracy');
 
-  const distance = calculateDistance(coords.lat, coords.lng, SCHOOL_COORDS.lat, SCHOOL_COORDS.lng);
+  const distance = calculateDistance(coords.lat, coords.lng, school.lat, school.lng);
 
   if (statusEl) {
     statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500 inline-block mr-1 animate-ping"></span> GPS Terkunci`;
@@ -97,7 +149,7 @@ function updateGPSDisplay(coords, isSimulated = false) {
   if (accuracyEl) accuracyEl.textContent = `±${coords.accuracy}m`;
   if (distEl) distEl.textContent = `${distance} Meter`;
 
-  const isWithinRadius = distance <= SCHOOL_COORDS.radius;
+  const isWithinRadius = distance <= Math.max(school.radius, 25);
   if (radiusBadge) {
     if (isWithinRadius) {
       radiusBadge.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300';
@@ -121,9 +173,7 @@ function initOrUpdateMap(coords, isWithinRadius) {
     return;
   }
 
-  if (window.CUSTOM_SCHOOL_COORDS) {
-    Object.assign(SCHOOL_COORDS, window.CUSTOM_SCHOOL_COORDS);
-  }
+  const school = window.getEffectiveSchoolCoords();
 
   // If SPA swapped the DOM, clean up detached map instance
   if (leafletMap && leafletMap.getContainer() !== mapContainer) {
@@ -267,89 +317,121 @@ window.fetchServerAttendanceState = function() {
   });
 };
 
-window.handleDoCheckin = function(btn) {
-  AndroidUI.confirm({
-    title: 'Konfirmasi Check-in',
-    subtitle: 'Presensi Masuk Pagi',
-    icon: '📍',
-    iconBg: 'bg-emerald-100 text-emerald-700',
-    message: 'Apakah Anda ingin melakukan Check-in Masuk dengan titik koordinat GPS saat ini?',
-    confirmText: 'Ya, Check-in',
-    cancelText: 'Batal',
-    onConfirm: () => {
-      const targetBtn = btn || document.querySelector('#absen-action-container button');
-      AndroidUI.setButtonLoading(targetBtn, 'Merekam GPS & Presensi...');
+window.handleDoCheckin = async function(btn) {
+  const targetBtn = btn || document.querySelector('#absen-action-container button');
+  if (targetBtn && targetBtn.disabled) return;
 
-      // Pastikan ada koordinat GPS
-      const coords = userCoords || { lat: SCHOOL_COORDS.lat, lng: SCHOOL_COORDS.lng, accuracy: 10 };
-      const baseUrl = window.APP_BASE_URL || '';
+  const resetTargetBtn = () => {
+    if (targetBtn && typeof AndroidUI !== 'undefined') {
+      if (typeof AndroidUI.resetButton === 'function') AndroidUI.resetButton(targetBtn);
+      else if (typeof AndroidUI.restoreButton === 'function') AndroidUI.restoreButton(targetBtn);
+    }
+  };
 
-      fetch(baseUrl + '/mobile/api/absen/checkin', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({
-          latitude: coords.lat,
-          longitude: coords.lng,
-          accuracy: coords.accuracy || null
-        })
+  if (targetBtn && typeof AndroidUI !== 'undefined' && AndroidUI.setButtonLoading) {
+    AndroidUI.setButtonLoading(targetBtn, 'Mencatat Presensi...');
+  }
+
+  try {
+    const school = window.getEffectiveSchoolCoords();
+    // Gunakan koordinat GPS yang terkunci, atau fallback langsung ke lokasi sekolah
+    let coords = userCoords;
+    if (!coords || !coords.lat || !coords.lng) {
+      coords = { lat: school.lat, lng: school.lng, accuracy: 5 };
+    }
+
+    const baseUrl = (window.APP_BASE_URL || '').replace(/\/+$/, '');
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 7000);
+
+    const res = await fetch(baseUrl + '/mobile/api/absen/checkin', {
+      method: 'POST',
+      credentials: 'same-origin',
+      signal: controller.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      body: JSON.stringify({
+        latitude: coords.lat,
+        longitude: coords.lng,
+        accuracy: coords.accuracy || null
       })
-      .then(res => res.json())
-      .then(json => {
-        AndroidUI.restoreButton(targetBtn);
-        if (json.success) {
-          const resData = json.data || {};
-          const timeStr = resData.jam_masuk || (new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WITA');
-          const isLate = (resData.status === 'Terlambat');
-          const ketStr = resData.keterangan || (isLate ? 'Terlambat' : 'Tepat Waktu');
+    });
+    clearTimeout(timeoutId);
 
-          const state = getAttendanceState();
-          state.checkin = {
-            time: timeStr,
-            timestamp: Date.now(),
-            location: resData.nama_kantor || SCHOOL_COORDS.name,
-            status: ketStr
-          };
-          saveAttendanceState(state);
-          renderAttendancePageUI();
+    const json = await res.json();
+    resetTargetBtn();
 
-          const subMsg = isLate
-            ? `<span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800">⚠️ ${ketStr}</span>`
-            : `<span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">✓ Hadir Tepat Waktu</span>`;
+    if (json && json.success) {
+      const resData = json.data || {};
+      const timeStr = resData.jam_masuk || (new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WITA');
+      const isLate = (resData.status === 'Terlambat');
+      const ketStr = resData.keterangan || (isLate ? 'Terlambat' : 'Tepat Waktu');
 
-          AndroidUI.success({
-            title: isLate ? 'Check-in Tercatat (Terlambat)' : 'Check-in Berhasil!',
-            subtitle: isLate ? 'Presensi masuk dicatat sebagai terlambat' : 'Presensi masuk tepat waktu dicatat di server',
-            message: `Absen masuk Anda tercatat pada pukul <strong class="text-slate-900 font-extrabold">${timeStr}</strong>.<br><div class="my-2">${subMsg}</div><span class="text-slate-400 text-xs">Jarak ke kantor: ${Math.round(resData.jarak_meter || 0)}m &bull; Absen Pulang buka jam 15.00 WITA.</span>`,
-            buttonText: 'Selesai'
-          });
-        } else {
-          AndroidUI.alert({
-            title: 'Presensi Gagal',
-            subtitle: 'Check-in Belum Berhasil',
-            message: json.message || 'Gagal merekam presensi masuk. Pastikan Anda berada dalam radius kantor.',
-            icon: '⚠️',
-            iconBg: 'bg-rose-100 text-rose-700'
-          });
-        }
-      })
-      .catch(err => {
-        AndroidUI.restoreButton(targetBtn);
-        AndroidUI.alert({
-          title: 'Kesalahan Jaringan',
-          subtitle: 'Koneksi Gagal',
-          message: 'Terjadi gangguan saat menghubungi server: ' + err.message,
-          icon: '⚠️',
-          iconBg: 'bg-rose-100 text-rose-700'
-        });
+      const state = getAttendanceState();
+      state.checkin = {
+        time: timeStr,
+        timestamp: Date.now(),
+        location: resData.nama_kantor || school.name,
+        status: ketStr
+      };
+      saveAttendanceState(state);
+
+      if (window.SERVER_ATTENDANCE_TODAY) {
+        window.SERVER_ATTENDANCE_TODAY.has_checkin = true;
+        window.SERVER_ATTENDANCE_TODAY.jam_masuk = resData.jam_masuk_raw || timeStr;
+        window.SERVER_ATTENDANCE_TODAY.status = resData.status;
+        window.SERVER_ATTENDANCE_TODAY.keterangan = ketStr;
+      }
+
+      renderAttendancePageUI();
+      if (typeof syncBerandaAttendanceUI === 'function') syncBerandaAttendanceUI();
+
+      // Invalidate SPA cache beranda agar status baru langsung muncul
+      if (window.MobileRouter && typeof window.MobileRouter.invalidate === 'function') {
+        window.MobileRouter.invalidate(baseUrl + '/mobile');
+      }
+
+      const subMsg = isLate
+        ? `<span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800">⚠️ ${ketStr}</span>`
+        : `<span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">✓ Hadir Tepat Waktu</span>`;
+
+      AndroidUI.success({
+        title: isLate ? 'Check-in Tercatat (Terlambat)' : 'Check-in Berhasil!',
+        subtitle: isLate ? 'Presensi masuk dicatat sebagai terlambat' : 'Presensi masuk tepat waktu berhasil dicatat',
+        message: `Absen masuk Anda tercatat pada pukul <strong class="text-slate-900 font-extrabold">${timeStr}</strong>.<br><div class="my-2">${subMsg}</div><span class="text-slate-400 text-xs">Jarak ke kantor: ${Math.round(resData.jarak_meter || 0)}m &bull; Absen Pulang buka jam 15.00 WITA.</span>`,
+        buttonText: 'Selesai'
+      });
+    } else {
+      AndroidUI.alert({
+        title: 'Presensi Belum Berhasil',
+        subtitle: 'Validasi Presensi',
+        message: (json && json.message) || 'Gagal merekam presensi masuk. Pastikan Anda berada dalam radius kantor.',
+        icon: '⚠️',
+        iconBg: 'bg-rose-100 text-rose-700'
       });
     }
-  });
+  } catch (err) {
+    resetTargetBtn();
+    const isTimeout = err.name === 'AbortError';
+    AndroidUI.alert({
+      title: isTimeout ? 'Koneksi Lambat' : 'Kesalahan Jaringan',
+      subtitle: isTimeout ? 'Waktu Habis' : 'Koneksi Gagal',
+      message: isTimeout
+        ? 'Proses presensi membutuhkan waktu lebih lama karena sinyal lemah. Silakan klik tombol Check-in sekali lagi.'
+        : 'Terjadi gangguan jaringan: ' + (err.message || 'Gagal menghubungi server') + '. Silakan coba lagi.',
+      icon: '⚠️',
+      iconBg: 'bg-rose-100 text-rose-700'
+    });
+  }
 };
 
 window.handleDoCheckout = function(btn) {
+  const targetBtn = btn || document.querySelector('#absen-action-container button');
+  if (targetBtn && targetBtn.disabled) return;
+
   AndroidUI.confirm({
     title: 'Konfirmasi Absen Pulang',
     subtitle: 'Presensi Pulang Sore',
@@ -358,40 +440,72 @@ window.handleDoCheckout = function(btn) {
     message: 'Apakah Anda ingin melakukan Absen Pulang sekarang?',
     confirmText: 'Ya, Absen Pulang',
     cancelText: 'Batal',
-    onConfirm: () => {
-      const targetBtn = btn || document.querySelector('#absen-action-container button');
-      AndroidUI.setButtonLoading(targetBtn, 'Menyimpan Absen Pulang...');
+    onConfirm: async () => {
+      const resetTargetBtn = () => {
+        if (targetBtn && typeof AndroidUI !== 'undefined') {
+          if (typeof AndroidUI.resetButton === 'function') AndroidUI.resetButton(targetBtn);
+          else if (typeof AndroidUI.restoreButton === 'function') AndroidUI.restoreButton(targetBtn);
+        }
+      };
 
-      const coords = userCoords || { lat: SCHOOL_COORDS.lat, lng: SCHOOL_COORDS.lng, accuracy: 10 };
-      const baseUrl = window.APP_BASE_URL || '';
+      if (targetBtn && typeof AndroidUI !== 'undefined' && AndroidUI.setButtonLoading) {
+        AndroidUI.setButtonLoading(targetBtn, 'Menyimpan Absen Pulang...');
+      }
 
-      fetch(baseUrl + '/mobile/api/absen/checkout', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({
-          latitude: coords.lat,
-          longitude: coords.lng,
-          accuracy: coords.accuracy || null
-        })
-      })
-      .then(res => res.json())
-      .then(json => {
-        AndroidUI.restoreButton(targetBtn);
-        if (json.success) {
+      try {
+        const school = window.getEffectiveSchoolCoords();
+        let coords = userCoords;
+        if (!coords || !coords.lat || !coords.lng) {
+          coords = { lat: school.lat, lng: school.lng, accuracy: 5 };
+        }
+
+        const baseUrl = (window.APP_BASE_URL || '').replace(/\/+$/, '');
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 7000);
+
+        const res = await fetch(baseUrl + '/mobile/api/absen/checkout', {
+          method: 'POST',
+          credentials: 'same-origin',
+          signal: controller.signal,
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          body: JSON.stringify({
+            latitude: coords.lat,
+            longitude: coords.lng,
+            accuracy: coords.accuracy || null
+          })
+        });
+        clearTimeout(timeoutId);
+
+        const json = await res.json();
+        resetTargetBtn();
+
+        if (json && json.success) {
           const resData = json.data || {};
           const timeStr = resData.jam_pulang || (new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WITA');
           const state = getAttendanceState();
           state.checkout = {
             time: timeStr,
             timestamp: Date.now(),
-            location: SCHOOL_COORDS.name,
+            location: school.name,
             status: 'Selesai Tugas'
           };
           saveAttendanceState(state);
+
+          if (window.SERVER_ATTENDANCE_TODAY) {
+            window.SERVER_ATTENDANCE_TODAY.has_checkout = true;
+            window.SERVER_ATTENDANCE_TODAY.jam_pulang = resData.jam_pulang_raw || timeStr;
+          }
+
           renderAttendancePageUI();
+          if (typeof syncBerandaAttendanceUI === 'function') syncBerandaAttendanceUI();
+
+          if (window.MobileRouter && typeof window.MobileRouter.invalidate === 'function') {
+            window.MobileRouter.invalidate(baseUrl + '/mobile');
+          }
 
           AndroidUI.success({
             title: 'Absen Pulang Berhasil!',
@@ -402,7 +516,7 @@ window.handleDoCheckout = function(btn) {
                 text: 'Ke Beranda',
                 className: 'w-full py-3 bg-primary-600 text-white font-bold text-xs rounded-2xl shadow-md text-center press-bounce',
                 onClick: () => {
-                  const target = (window.APP_BASE_URL || '') + '/mobile';
+                  const target = baseUrl + '/mobile';
                   if (window.MobileRouter) window.MobileRouter.navigate(target);
                   else window.location.href = target;
                 }
@@ -413,22 +527,24 @@ window.handleDoCheckout = function(btn) {
           AndroidUI.alert({
             title: 'Absen Pulang Gagal',
             subtitle: 'Belum Memenuhi Syarat',
-            message: json.message || 'Gagal menyimpan absen pulang.',
+            message: (json && json.message) || 'Gagal menyimpan absen pulang.',
             icon: '⚠️',
             iconBg: 'bg-rose-100 text-rose-700'
           });
         }
-      })
-      .catch(err => {
-        AndroidUI.restoreButton(targetBtn);
+      } catch (err) {
+        resetTargetBtn();
+        const isTimeout = err.name === 'AbortError';
         AndroidUI.alert({
-          title: 'Kesalahan Jaringan',
-          subtitle: 'Koneksi Gagal',
-          message: 'Terjadi gangguan saat menghubungi server: ' + err.message,
+          title: isTimeout ? 'Koneksi Lambat' : 'Kesalahan Jaringan',
+          subtitle: isTimeout ? 'Waktu Habis' : 'Koneksi Gagal',
+          message: isTimeout
+            ? 'Proses absen pulang membutuhkan waktu lebih lama. Silakan coba tekan kembali.'
+            : 'Terjadi gangguan saat menghubungi server: ' + (err.message || 'Koneksi gagal'),
           icon: '⚠️',
           iconBg: 'bg-rose-100 text-rose-700'
         });
-      });
+      }
     }
   });
 };

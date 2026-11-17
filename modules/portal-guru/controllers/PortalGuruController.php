@@ -762,6 +762,9 @@ class PortalGuruController
         }
 
         $result = AbsenPegawaiModel::recordCheckin($pegawaiId, $lat, $lng, $accuracy);
+        if (ob_get_level() > 0) {
+            ob_clean();
+        }
         echo json_encode($result);
         exit;
     }
@@ -800,6 +803,9 @@ class PortalGuruController
         $accuracy = isset($payload['accuracy']) ? (float)$payload['accuracy'] : null;
 
         $result = AbsenPegawaiModel::recordCheckout($pegawaiId, $lat, $lng, $accuracy);
+        if (ob_get_level() > 0) {
+            ob_clean();
+        }
         echo json_encode($result);
         exit;
     }

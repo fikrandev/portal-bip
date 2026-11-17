@@ -5,6 +5,21 @@
  */
 ?>
 
+<script>
+    window.CUSTOM_SCHOOL_COORDS = {
+        lat: <?= json_encode((float)($schoolCoords['lat'] ?? -0.8917)) ?>,
+        lng: <?= json_encode((float)($schoolCoords['lng'] ?? 119.8707)) ?>,
+        name: <?= json_encode((string)($schoolName ?? 'Kampus Utama SIT Bina Insan Palu')) ?>,
+        radius: <?= json_encode((int)($schoolRadius ?? 10)) ?>
+    };
+    window.SERVER_ATTENDANCE_TODAY = <?= json_encode($todayAttendance ?? null) ?>;
+    window.SERVER_JAM_PULANG_MULAI = <?= json_encode($jamPulangMulai ?? '15:00:00') ?>;
+    window.SERVER_JAM_MASUK_BATAS = <?= json_encode($jamMasukBatas ?? '07:30:00') ?>;
+    if (typeof getEffectiveSchoolCoords === 'function') {
+        getEffectiveSchoolCoords();
+    }
+</script>
+
 <!-- Header with Back Button -->
 <div class="px-5 pt-4 pb-3 flex items-center justify-between bg-white border-b border-slate-100 sticky top-0 z-30">
     <a href="<?= url('mobile') ?>" class="w-9 h-9 rounded-2xl bg-slate-100 text-slate-700 flex items-center justify-center press-bounce">
