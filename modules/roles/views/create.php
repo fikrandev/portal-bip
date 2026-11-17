@@ -12,13 +12,32 @@
                 </a>
             </div>
             <h1 class="text-2xl font-bold text-slate-800 tracking-tight mt-1.5 flex items-center gap-2.5">
-                <span>Tambah Peran Baru</span>
+                <span><?= $sourceRole ? 'Duplikat Peran: ' . e($sourceRole['name']) : 'Tambah Peran Baru' ?></span>
             </h1>
             <p class="text-xs sm:text-sm text-slate-500 mt-1">
-                Tentukan nama peran dan pilih hak akses modul serta centang wewenang verifikasi & persetujuan (*Approve*).
+                <?= $sourceRole ? 'Menyalin hak akses dari peran <strong>' . e($sourceRole['name']) . '</strong>. Silakan sesuaikan nama peran, jenjang, atau pilih izin tambahan.' : 'Tentukan nama peran dan pilih hak akses modul serta centang wewenang verifikasi & persetujuan (*Approve*).' ?>
             </p>
         </div>
     </div>
+
+    <?php if ($sourceRole): ?>
+    <div class="p-4 rounded-2xl bg-teal-50/80 border border-teal-200 text-teal-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-teal-100 text-teal-700 flex items-center justify-center flex-shrink-0 text-lg">
+                📋
+            </div>
+            <div>
+                <h4 class="font-extrabold text-sm text-teal-950">Mode Duplikat Peran Aktif</h4>
+                <p class="text-xs text-teal-700">
+                    Template: <strong><?= e($sourceRole['name']) ?></strong> &bull; <?= count($selectedPermIds) ?> hak akses terpilih otomatis.
+                </p>
+            </div>
+        </div>
+        <a href="<?= url('roles/create') ?>" class="text-xs text-teal-700 hover:text-teal-900 font-bold underline whitespace-nowrap self-end sm:self-auto">
+            Buat Peran Kosong Baru &rarr;
+        </a>
+    </div>
+    <?php endif; ?>
 
     <!-- Form Container -->
     <form action="<?= url('roles/store') ?>" method="POST" id="roleForm" class="space-y-6">
@@ -28,7 +47,7 @@
         <div class="bg-white rounded-3xl border border-slate-200/80 shadow-sm p-6 sm:p-7 space-y-4">
             <h2 class="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2 border-b border-slate-100 pb-3">
                 <span class="w-2.5 h-2.5 rounded-full bg-primary-500"></span>
-                Identitas Peran Baru
+                Identitas Peran <?= $sourceRole ? 'Duplikasi' : 'Baru' ?>
             </h2>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -36,7 +55,7 @@
                     <label for="name" class="block text-xs font-bold text-slate-700 mb-1.5">
                         Nama Peran <span class="text-rose-500">*</span>
                     </label>
-                    <input type="text" id="name" name="name" value="<?= old('name') ?>" required
+                    <input type="text" id="name" name="name" value="<?= old('name', $sourceRole ? $sourceRole['name'] . ' (Salinan)' : '') ?>" required
                            placeholder="Contoh: Kepala Sekolah, Waka Kurikulum, Guru Mata Pelajaran"
                            onkeyup="generateSlug(this.value)"
                            class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-2xl text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 text-sm font-medium transition-all">
@@ -45,7 +64,7 @@
                     <label for="slug" class="block text-xs font-bold text-slate-700 mb-1.5">
                         Slug Sistem <span class="text-rose-500">*</span>
                     </label>
-                    <input type="text" id="slug" name="slug" value="<?= old('slug') ?>" required
+                    <input type="text" id="slug" name="slug" value="<?= old('slug', $sourceRole ? $sourceRole['slug'] . '_salinan' : '') ?>" required
                            placeholder="contoh: kepala_sekolah, waka_kurikulum"
                            class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-2xl text-slate-900 font-mono text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all">
                     <p class="text-[11px] text-slate-400 mt-1">Gunakan huruf kecil dan garis bawah (underscore) atau strip.</p>
@@ -58,13 +77,17 @@
                 </label>
                 <textarea id="description" name="description" rows="2"
                           class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-2xl text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 text-sm font-medium transition-all"
-                          placeholder="Deskripsikan wewenang atau tanggung jawab peran ini..."><?= old('description') ?></textarea>
+                          placeholder="Deskripsikan wewenang atau tanggung jawab peran ini..."><?= old('description', $sourceRole ? $sourceRole['description'] : '') ?></textarea>
             </div>
 
             <!-- Filter Jenjang Akses (RBAC Jenjang) -->
             <?php
-            $oldJenjang = old('allowed_jenjang') ?? [];
-            if (!is_array($oldJenjang)) {
+            $oldJenjang = old('allowed_jenjang');
+            if ($oldJenjang === null && !empty($sourceJenjang)) {
+                $oldJenjang = $sourceJenjang;
+            } elseif ($oldJenjang === null) {
+                $oldJenjang = [];
+            } elseif (!is_array($oldJenjang)) {
                 $oldJenjang = explode(',', strtoupper($oldJenjang));
             }
             $allJenjangList = [
@@ -168,6 +191,12 @@
 
                 foreach ($grouped as $modName => $perms): 
                     $totalInMod = count($perms);
+                    $checkedInMod = 0;
+                    if (!empty($selectedPermIds)) {
+                        foreach ($perms as $p) {
+                            if (in_array((int)$p['id'], $selectedPermIds, true)) $checkedInMod++;
+                        }
+                    }
                 ?>
                 <div class="module-card border border-slate-200 rounded-3xl p-5 hover:border-slate-300 transition-all bg-white shadow-xs" data-module-name="<?= strtolower(e($modName)) ?>">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 mb-3 border-b border-slate-100">
@@ -178,7 +207,7 @@
                             <div>
                                 <h3 class="text-sm font-bold text-slate-800 tracking-tight"><?= e($modName) ?></h3>
                                 <p class="text-[11px] text-slate-400">
-                                    <span class="mod-selected-count font-semibold text-primary-600">0</span> dari <?= $totalInMod ?> hak akses aktif
+                                    <span class="mod-selected-count font-semibold text-primary-600"><?= $checkedInMod ?></span> dari <?= $totalInMod ?> hak akses aktif
                                 </p>
                             </div>
                         </div>
@@ -229,6 +258,7 @@
                                data-is-approve="<?= $isApprove ? '1' : '0' ?>"
                                title="<?= e($p['description'] ?? $p['name']) ?>">
                             <input type="checkbox" name="permissions[]" value="<?= $p['id'] ?>" 
+                                   <?= (!empty($selectedPermIds) && in_array((int)$p['id'], $selectedPermIds, true)) ? 'checked' : '' ?>
                                    onchange="updateCardCounter(this)"
                                    class="perm-checkbox mt-0.5 rounded-lg border-slate-300 text-primary-600 focus:ring-0 focus:ring-transparent h-4 w-4">
                             <div class="flex-1 min-w-0">

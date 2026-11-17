@@ -22,6 +22,14 @@
             </p>
         </div>
         <div class="flex items-center gap-2 self-start sm:self-auto">
+            <?php if (RBAC::hasPermission('roles.create')): ?>
+            <a href="<?= url('roles/create?from=' . $role['id']) ?>" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-teal-50 hover:bg-teal-100 text-teal-700 border border-teal-200/80 text-xs font-bold transition-all shadow-xs" title="Duplikasi peran ini menjadi peran baru">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 0 1-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 0 1 1.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 0 0-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 0 1-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 0 0-3.375-3.375h-1.5a1.125 1.125 0 0 1-1.125-1.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H9.75" />
+                </svg>
+                <span>Salin Peran Ini</span>
+            </a>
+            <?php endif; ?>
             <span class="px-3 py-1.5 rounded-full text-xs font-semibold <?= $role['is_system'] ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-slate-100 text-slate-600' ?>">
                 <?= $role['is_system'] ? 'Peran Sistem (Kunci)' : 'Peran Kustom' ?>
             </span>

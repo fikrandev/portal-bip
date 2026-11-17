@@ -23,9 +23,25 @@ class RoleController
 
     public static function create(): void
     {
-        $pageTitle = 'Tambah Peran';
-        $breadcrumbs = [['label' => 'Kelola Peran', 'url' => url('roles')], ['label' => 'Tambah']];
         $db = Database::getInstance();
+        $fromId = !empty($_GET['from']) ? (int)$_GET['from'] : null;
+        $sourceRole = null;
+        $selectedPermIds = [];
+        $sourceJenjang = [];
+
+        if ($fromId) {
+            $sourceRole = $db->find("SELECT * FROM roles WHERE id = ?", [$fromId]);
+            if ($sourceRole) {
+                $rawPerms = $db->findAll("SELECT permission_id FROM role_permissions WHERE role_id = ?", [$fromId]);
+                $selectedPermIds = array_map('intval', array_column($rawPerms, 'permission_id'));
+                if (!empty($sourceRole['allowed_jenjang'])) {
+                    $sourceJenjang = explode(',', strtoupper($sourceRole['allowed_jenjang']));
+                }
+            }
+        }
+
+        $pageTitle = $sourceRole ? 'Duplikat Peran: ' . $sourceRole['name'] : 'Tambah Peran';
+        $breadcrumbs = [['label' => 'Kelola Peran', 'url' => url('roles')], ['label' => $sourceRole ? 'Duplikat' : 'Tambah']];
         $permissions = $db->findAll("SELECT p.*, m.name as module_name, m.slug as module_slug, m.icon_svg, m.color FROM permissions p LEFT JOIN modules m ON p.module_id = m.id ORDER BY m.sort_order, m.id, p.id");
         
         ob_start();
@@ -127,6 +143,88 @@ class RoleController
         } catch (Exception $e) {
             $db->rollback();
             Response::withError(url('roles/edit/' . $id), 'Gagal memperbarui peran.');
+        }
+    }
+
+    public static function copy(string $id): void
+    {
+        Response::redirect(url('roles/create?from=' . (int)$id));
+    }
+
+    public static function duplicate(string $id): void
+    {
+        if (!CSRF::validate()) { Response::withError(url('roles'), 'Token tidak valid.'); return; }
+        
+        $db = Database::getInstance();
+        $sourceRole = $db->find("SELECT * FROM roles WHERE id = ?", [$id]);
+        if (!$sourceRole) {
+            Response::withError(url('roles'), 'Peran sumber tidak ditemukan.');
+            return;
+        }
+
+        $name = trim($_POST['name'] ?? '');
+        $slug = trim($_POST['slug'] ?? '');
+        $description = trim($_POST['description'] ?? ($sourceRole['description'] ?? ''));
+
+        if (empty($name)) {
+            $name = $sourceRole['name'] . ' (Salinan)';
+        }
+        if (empty($slug)) {
+            $slug = strtolower(preg_replace('/[^a-zA-Z0-9_]/', '_', $name));
+        }
+
+        // Pastikan slug unik
+        $baseSlug = $slug;
+        $counter = 1;
+        while ($db->find("SELECT id FROM roles WHERE slug = ?", [$slug])) {
+            $slug = $baseSlug . '_' . $counter;
+            $counter++;
+        }
+
+        // Jenjang
+        $allowedJenjang = null;
+        if (isset($_POST['allowed_jenjang']) && is_array($_POST['allowed_jenjang'])) {
+            $cleanJenjang = array_filter(array_map('trim', $_POST['allowed_jenjang']));
+            if (!empty($cleanJenjang)) {
+                $allowedJenjang = implode(',', array_map('strtoupper', $cleanJenjang));
+            }
+        } elseif (isset($_POST['allowed_jenjang']) && is_string($_POST['allowed_jenjang']) && trim($_POST['allowed_jenjang']) !== '') {
+            $allowedJenjang = strtoupper(trim($_POST['allowed_jenjang']));
+        } else {
+            $allowedJenjang = $sourceRole['allowed_jenjang'] ?? null;
+        }
+
+        $db->beginTransaction();
+        try {
+            $newRoleId = $db->insert('roles', [
+                'name' => $name,
+                'slug' => $slug,
+                'description' => $description,
+                'allowed_jenjang' => $allowedJenjang,
+                'is_system' => 0
+            ]);
+
+            // Duplikasi semua permission_id dari peran sumber
+            $sourcePerms = $db->findAll("SELECT permission_id FROM role_permissions WHERE role_id = ?", [$id]);
+            $countCopied = 0;
+            foreach ($sourcePerms as $sp) {
+                $db->insert('role_permissions', [
+                    'role_id' => $newRoleId,
+                    'permission_id' => $sp['permission_id']
+                ]);
+                $countCopied++;
+            }
+
+            RBAC::clearCache();
+            $db->commit();
+
+            Response::withSuccess(
+                url('roles/edit/' . $newRoleId),
+                "Peran '{$name}' berhasil disalin dari '{$sourceRole['name']}' ({$countCopied} hak akses telah otomatis diduplikasi). Silakan sesuaikan jika diperlukan."
+            );
+        } catch (Exception $e) {
+            $db->rollback();
+            Response::withError(url('roles'), 'Gagal menyalin peran: ' . $e->getMessage());
         }
     }
 

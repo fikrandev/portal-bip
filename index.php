@@ -270,6 +270,8 @@ $router->post('/users/delete/{id}', [UserController::class, 'delete'], [Middlewa
 $router->get('/roles', [RoleController::class, 'index'], [Middleware::permissionRequired('roles.view')]);
 $router->get('/roles/create', [RoleController::class, 'create'], [Middleware::permissionRequired('roles.create')]);
 $router->post('/roles/store', [RoleController::class, 'store'], [Middleware::permissionRequired('roles.create')]);
+$router->get('/roles/copy/{id}', [RoleController::class, 'copy'], [Middleware::permissionRequired('roles.create')]);
+$router->post('/roles/duplicate/{id}', [RoleController::class, 'duplicate'], [Middleware::permissionRequired('roles.create')]);
 $router->get('/roles/edit/{id}', [RoleController::class, 'edit'], [Middleware::permissionRequired('roles.update')]);
 $router->post('/roles/update/{id}', [RoleController::class, 'update'], [Middleware::permissionRequired('roles.update')]);
 $router->post('/roles/delete/{id}', [RoleController::class, 'delete'], [Middleware::permissionRequired('roles.delete')]);
