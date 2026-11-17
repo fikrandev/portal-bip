@@ -27,8 +27,13 @@
             <div id="live-clock" class="text-3xl font-black tracking-tight my-0.5">
                 <?= date('H:i') ?><span class="text-xl opacity-80" id="live-seconds">:<?= date('s') ?></span> <span class="text-xs font-normal opacity-75">WITA</span>
             </div>
+            <?php
+                $hariIndo = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'][(int)date('w')];
+                $bulanIndo = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'][(int)date('n')];
+                $tglIndo = $hariIndo . ', ' . date('j') . ' ' . $bulanIndo . ' ' . date('Y');
+            ?>
             <p class="text-xs text-primary-100 font-medium">
-                <?= strftime('%A, %d %B %Y') ?? date('l, d F Y') ?>
+                <?= e($tglIndo) ?>
             </p>
         </div>
         <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-white/10 rounded-full blur-xl pointer-events-none"></div>
@@ -46,7 +51,7 @@
                     <p class="text-[10px] text-slate-400"><?= e($schoolName ?? 'Kampus Utama BIP') ?> • Radius <?= (int)($schoolRadius ?? 10) ?>m (<?= e($lokasiSourceLabel ?? 'Default') ?>)</p>
                 </div>
             </div>
-            <button type="button" onclick="window.initGeolocation()" class="px-2.5 py-1 text-[11px] font-semibold text-primary-600 bg-primary-50 rounded-xl hover:bg-primary-100 flex items-center gap-1 press-bounce">
+            <button type="button" onclick="window.initGeolocation(true)" class="px-2.5 py-1 text-[11px] font-semibold text-primary-600 bg-primary-50 rounded-xl hover:bg-primary-100 flex items-center gap-1 press-bounce">
                 <i data-lucide="refresh-cw" class="w-3 h-3"></i> Refresh GPS
             </button>
         </div>
@@ -55,28 +60,28 @@
         <div class="grid grid-cols-2 gap-2 bg-slate-50 p-3 rounded-2xl border border-slate-100 text-xs">
             <div>
                 <p class="text-[10px] text-slate-400">Latitude</p>
-                <p id="gps-lat" class="font-mono font-bold text-slate-700">-5.14766</p>
+                <p id="gps-lat" class="font-mono font-bold text-slate-700">-</p>
             </div>
             <div>
                 <p class="text-[10px] text-slate-400">Longitude</p>
-                <p id="gps-lng" class="font-mono font-bold text-slate-700">119.43273</p>
+                <p id="gps-lng" class="font-mono font-bold text-slate-700">-</p>
             </div>
             <div>
                 <p class="text-[10px] text-slate-400">Akurasi Perangkat</p>
-                <p id="gps-accuracy" class="font-mono font-bold text-slate-700">±8m</p>
+                <p id="gps-accuracy" class="font-mono font-bold text-slate-700">-</p>
             </div>
             <div>
                 <p class="text-[10px] text-slate-400">Jarak ke Sekolah</p>
-                <p id="gps-distance" class="font-mono font-bold text-primary-600">18 Meter</p>
+                <p id="gps-distance" class="font-mono font-bold text-primary-600">Menghitung...</p>
             </div>
         </div>
 
         <!-- GPS Status Badge -->
         <div class="flex items-center justify-between pt-1">
-            <span id="gps-radius-badge" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-primary-100 text-primary-800 border border-primary-300">
-                <span class="w-2 h-2 rounded-full bg-primary-600 animate-pulse"></span> Dalam Radius Sekolah (18m)
+            <span id="gps-radius-badge" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                <span class="w-2 h-2 rounded-full bg-slate-400 animate-pulse"></span> Mengunci GPS...
             </span>
-            <span id="gps-status-text" class="text-[10px] text-slate-400 font-medium">GPS Terkunci</span>
+            <span id="gps-status-text" class="text-[10px] text-slate-400 font-medium">Menghubungkan satelit...</span>
         </div>
 
         <!-- Leaflet Map Container -->
