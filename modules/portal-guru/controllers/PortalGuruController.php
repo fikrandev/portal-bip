@@ -679,9 +679,9 @@ class PortalGuruController
                 'lng' => (float)$efektif['longitude'],
             ],
             'lokasiSourceLabel' => $lokasiSourceLabel,
-            'jamMasukMulai' => $globalConfig['jam_masuk_mulai'] ?? '06:00:00',
-            'jamMasukBatas' => $globalConfig['jam_masuk_batas'] ?? '07:30:00',
-            'jamPulangMulai' => $globalConfig['jam_pulang_mulai'] ?? '15:00:00',
+            'jamMasukMulai' => $efektif['jam_masuk_mulai'] ?? ($globalConfig['jam_masuk_mulai'] ?? '06:00:00'),
+            'jamMasukBatas' => $efektif['jam_masuk_batas'] ?? ($globalConfig['jam_masuk_batas'] ?? '07:30:00'),
+            'jamPulangMulai' => $efektif['jam_pulang_mulai'] ?? ($globalConfig['jam_pulang_mulai'] ?? '15:00:00'),
         ]);
     }
 
@@ -715,9 +715,9 @@ class PortalGuruController
                         default  => 'Lokasi Semula (Default)'
                     }
                 ],
-                'jam_masuk_mulai' => $globalConfig['jam_masuk_mulai'] ?? '06:00:00',
-                'jam_masuk_batas' => $globalConfig['jam_masuk_batas'] ?? '07:30:00',
-                'jam_pulang_mulai' => $globalConfig['jam_pulang_mulai'] ?? '15:00:00',
+                'jam_masuk_mulai' => $efektif['jam_masuk_mulai'] ?? ($globalConfig['jam_masuk_mulai'] ?? '06:00:00'),
+                'jam_masuk_batas' => $efektif['jam_masuk_batas'] ?? ($globalConfig['jam_masuk_batas'] ?? '07:30:00'),
+                'jam_pulang_mulai' => $efektif['jam_pulang_mulai'] ?? ($globalConfig['jam_pulang_mulai'] ?? '15:00:00'),
             ]
         ]);
         exit;

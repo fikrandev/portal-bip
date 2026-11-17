@@ -82,20 +82,21 @@ if ($hourNow < 11) {
         <div class="flex items-center justify-between gap-3">
             
             <!-- Left Badge Icon -->
-            <div id="beranda-checkin-badge" class="w-13 h-13 rounded-2xl <?= $hasCheckout ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20' : ($hasCheckin ? ($isTerlambat ? 'bg-amber-500 text-white shadow-md shadow-amber-500/20' : 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20') : 'bg-primary-50 border border-primary-100') ?> flex flex-col items-center justify-center shrink-0">
+            <div id="beranda-checkin-badge" class="w-13 h-13 rounded-2xl <?= $hasCheckout ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20' : ($hasCheckin ? ($isTerlambat ? 'bg-amber-500 text-white shadow-md shadow-amber-500/20' : 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20') : 'bg-slate-50 border border-slate-200/80') ?> flex flex-col items-center justify-center shrink-0">
                 <?php if ($hasCheckout): ?>
-                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>
-                    <span class="text-[9px] font-bold mt-0.5">Selesai</span>
+                    <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>
+                    <span class="text-[9px] font-bold text-white mt-0.5">Selesai</span>
                 <?php elseif ($hasCheckin): ?>
-                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>
-                    <span class="text-[9px] font-bold mt-0.5"><?= $isTerlambat ? 'Terlambat' : 'Masuk' ?></span>
+                    <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>
+                    <span class="text-[9px] font-bold text-white mt-0.5"><?= $isTerlambat ? 'Terlambat' : 'Masuk' ?></span>
                 <?php else: ?>
-                    <div class="w-7 h-7 rounded-full bg-primary-500 text-white flex items-center justify-center shadow-sm">
-                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                    <div class="w-7 h-7 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center shadow-xs border border-slate-200">
+                        <svg class="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
                         </svg>
                     </div>
-                    <span class="text-[9px] font-bold text-primary-700 mt-0.5">Check-in</span>
+                    <span class="text-[9px] font-bold text-slate-500 mt-0.5">Belum</span>
                 <?php endif; ?>
             </div>
 
@@ -132,8 +133,8 @@ if ($hourNow < 11) {
         </div>
 
         <!-- Sub-bar: Status Kehadiran -->
-        <div class="rounded-2xl p-2.5 flex items-center gap-2.5 mt-3 border <?= $hasCheckout ? 'bg-emerald-50 border-emerald-100' : ($hasCheckin ? ($isTerlambat ? 'bg-amber-50 border-amber-200' : 'bg-emerald-50 border-emerald-100') : 'bg-[#f0fdf4] border-primary-100/70') ?>">
-            <div class="w-6 h-6 rounded-full <?= $hasCheckout ? 'bg-emerald-100 text-emerald-700' : ($hasCheckin ? ($isTerlambat ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700') : 'bg-primary-100 text-primary-700') ?> flex items-center justify-center shrink-0 text-xs">
+        <div class="rounded-2xl p-2.5 flex items-center gap-2.5 mt-3 border <?= $hasCheckout ? 'bg-emerald-50 border-emerald-100' : ($hasCheckin ? ($isTerlambat ? 'bg-amber-50 border-amber-200' : 'bg-emerald-50 border-emerald-100') : 'bg-slate-50 border-slate-200/80') ?>">
+            <div class="w-6 h-6 rounded-full <?= $hasCheckout ? 'bg-emerald-100 text-emerald-700' : ($hasCheckin ? ($isTerlambat ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700') : 'bg-slate-200/70 text-slate-500') ?> flex items-center justify-center shrink-0 text-xs">
                 <i data-lucide="clock" class="w-3.5 h-3.5"></i>
             </div>
             <div>
@@ -144,8 +145,8 @@ if ($hourNow < 11) {
                     <p id="beranda-checkin-status" class="text-xs font-bold text-slate-800 leading-tight">Sudah Masuk (<?= e($attJamMasuk) ?>)</p>
                     <p id="beranda-checkin-sub" class="text-[10px] <?= $isTerlambat ? 'text-amber-700 font-semibold' : 'text-slate-500' ?>"><?= e($attKet ?: ($isTerlambat ? 'Terlambat' : 'Tepat Waktu')) ?> &bull; Pulang jam 15.00+</p>
                 <?php else: ?>
-                    <p id="beranda-checkin-status" class="text-xs font-bold text-slate-800 leading-tight">Belum check-in hari ini</p>
-                    <p id="beranda-checkin-sub" class="text-[10px] text-slate-400">Waktu akan tercatat saat Anda check-in.</p>
+                    <p id="beranda-checkin-status" class="text-xs font-bold text-slate-700 leading-tight">Belum check-in hari ini</p>
+                    <p id="beranda-checkin-sub" class="text-[10px] text-slate-400">Silakan klik tombol Check-in untuk merekam kehadiran.</p>
                 <?php endif; ?>
             </div>
         </div>

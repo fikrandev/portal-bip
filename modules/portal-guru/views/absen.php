@@ -126,6 +126,10 @@
     window.SERVER_JAM_PULANG_MULAI = <?= json_encode($jamPulangMulai ?? '15:00:00') ?>;
     window.SERVER_JAM_MASUK_BATAS = <?= json_encode($jamMasukBatas ?? '07:30:00') ?>;
 
+    if (window.SERVER_ATTENDANCE_TODAY && typeof syncAttendanceFromTodayData === 'function') {
+        syncAttendanceFromTodayData(window.SERVER_ATTENDANCE_TODAY);
+    }
+
     // Realtime digital seconds clock & live check for 15.00 threshold
     if (window._absenClockTimer) {
         clearInterval(window._absenClockTimer);

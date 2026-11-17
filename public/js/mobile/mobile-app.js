@@ -183,46 +183,88 @@ function initOrUpdateMap(coords, isWithinRadius) {
 
 // ── Check-in Masuk & Check-out Pulang State Management ──────────────────────
 window.syncAttendanceFromTodayData = function(todayData) {
-  if (!todayData) return;
   const state = { checkin: null, checkout: null };
-  if (todayData.has_checkin && todayData.jam_masuk) {
+  if (todayData && todayData.has_checkin && todayData.jam_masuk) {
     state.checkin = {
       time: todayData.jam_masuk,
       timestamp: Date.now(),
-      location: todayData.nama_kantor || (SCHOOL_COORDS ? SCHOOL_COORDS.name : 'Kampus BIP'),
+      location: todayData.nama_kantor || (typeof SCHOOL_COORDS !== 'undefined' && SCHOOL_COORDS ? SCHOOL_COORDS.name : 'Kampus BIP'),
       status: todayData.keterangan || (todayData.status === 'Terlambat' ? 'Terlambat' : 'Tepat Waktu')
     };
   }
-  if (todayData.has_checkout && todayData.jam_pulang) {
+  if (todayData && todayData.has_checkout && todayData.jam_pulang) {
     state.checkout = {
       time: todayData.jam_pulang,
       timestamp: Date.now(),
-      location: todayData.nama_kantor || (SCHOOL_COORDS ? SCHOOL_COORDS.name : 'Kampus BIP'),
+      location: todayData.nama_kantor || (typeof SCHOOL_COORDS !== 'undefined' && SCHOOL_COORDS ? SCHOOL_COORDS.name : 'Kampus BIP'),
       status: 'Selesai Tugas'
     };
   }
-  localStorage.setItem('portal_guru_attendance_today', JSON.stringify(state));
+  const todayYmd = new Date().toISOString().slice(0, 10);
+  try {
+    localStorage.setItem('portal_guru_attendance_date', todayYmd);
+    localStorage.setItem('portal_guru_attendance_today', JSON.stringify(state));
+  } catch (e) {}
+
   if (typeof syncBerandaAttendanceUI === 'function') syncBerandaAttendanceUI();
   return state;
 };
 
 window.getAttendanceState = function() {
-  if (window.SERVER_ATTENDANCE_TODAY && !window._serverAttendanceSynced) {
-    window._serverAttendanceSynced = true;
+  const todayYmd = new Date().toISOString().slice(0, 10);
+  const storedDate = localStorage.getItem('portal_guru_attendance_date');
+
+  // Bila data server tersedia di window, SELALU prioritaskan data server (Single Source of Truth)
+  if (typeof window.SERVER_ATTENDANCE_TODAY !== 'undefined' && window.SERVER_ATTENDANCE_TODAY) {
     return window.syncAttendanceFromTodayData(window.SERVER_ATTENDANCE_TODAY);
   }
+
+  // Jika tanggal di localStorage bukan hari ini, hapus data lama
+  if (storedDate !== todayYmd) {
+    try {
+      localStorage.removeItem('portal_guru_attendance_today');
+      localStorage.setItem('portal_guru_attendance_date', todayYmd);
+    } catch (e) {}
+    return { checkin: null, checkout: null };
+  }
+
   const data = localStorage.getItem('portal_guru_attendance_today');
   if (!data) return { checkin: null, checkout: null };
   try {
-    return JSON.parse(data);
+    const parsed = JSON.parse(data);
+    return parsed && typeof parsed === 'object' ? parsed : { checkin: null, checkout: null };
   } catch (e) {
     return { checkin: null, checkout: null };
   }
 };
 
 window.saveAttendanceState = function(state) {
-  localStorage.setItem('portal_guru_attendance_today', JSON.stringify(state));
+  const todayYmd = new Date().toISOString().slice(0, 10);
+  try {
+    localStorage.setItem('portal_guru_attendance_date', todayYmd);
+    localStorage.setItem('portal_guru_attendance_today', JSON.stringify(state));
+  } catch (e) {}
   syncBerandaAttendanceUI();
+};
+
+window.fetchServerAttendanceState = function() {
+  const baseUrl = window.APP_BASE_URL || '';
+  return fetch(baseUrl + '/mobile/api/absen/today', {
+    headers: { 'Accept': 'application/json' }
+  })
+  .then(res => res.json())
+  .then(res => {
+    if (res && res.success && res.data && res.data.attendance) {
+      window.SERVER_ATTENDANCE_TODAY = res.data.attendance;
+      if (res.data.jam_pulang_mulai) window.SERVER_JAM_PULANG_MULAI = res.data.jam_pulang_mulai;
+      if (res.data.jam_masuk_batas) window.SERVER_JAM_MASUK_BATAS = res.data.jam_masuk_batas;
+      window.syncAttendanceFromTodayData(res.data.attendance);
+      if (typeof renderAttendancePageUI === 'function') renderAttendancePageUI();
+    }
+  })
+  .catch(err => {
+    console.warn('[Attendance Sync]', err);
+  });
 };
 
 window.handleDoCheckin = function(btn) {
@@ -542,13 +584,13 @@ function syncBerandaAttendanceUI() {
 
   if (!state.checkin) {
     berandaCheckinText.textContent = 'Belum check-in hari ini';
-    berandaCheckinSub.textContent = 'Waktu akan tercatat saat Anda check-in.';
+    berandaCheckinSub.textContent = 'Silakan klik tombol Check-in untuk merekam kehadiran.';
     berandaCheckinBtn.className = 'shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold bg-[#16a34a] hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20 press-bounce';
     berandaCheckinBtn.innerHTML = '<span>📍</span><span>Check-in</span>';
     berandaCheckinBtn.href = (window.APP_BASE_URL || '') + '/mobile/absen';
     if (berandaCheckinBadge) {
-      berandaCheckinBadge.className = 'w-13 h-13 rounded-2xl bg-emerald-50 border border-emerald-100 flex flex-col items-center justify-center shrink-0';
-      berandaCheckinBadge.innerHTML = `<div class="w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-sm"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg></div><span class="text-[9px] font-bold text-emerald-700 mt-0.5">Check-in</span>`;
+      berandaCheckinBadge.className = 'w-13 h-13 rounded-2xl bg-slate-50 border border-slate-200/80 flex flex-col items-center justify-center shrink-0';
+      berandaCheckinBadge.innerHTML = `<div class="w-7 h-7 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center shadow-xs border border-slate-200"><svg class="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" /></svg></div><span class="text-[9px] font-bold text-slate-500 mt-0.5">Belum</span>`;
     }
   } else if (state.checkin && !state.checkout) {
     const isLate = (state.checkin.status || '').toLowerCase().includes('terlambat');
@@ -842,6 +884,9 @@ window.MobileRouter = (function() {
     }
     syncBerandaAttendanceUI();
     renderAttendancePageUI();
+    if (typeof window.fetchServerAttendanceState === 'function') {
+      window.fetchServerAttendanceState();
+    }
   }
 
   function navigate(targetUrl, options = {}) {
@@ -1012,6 +1057,9 @@ window.MobileRouter = (function() {
 document.addEventListener('DOMContentLoaded', () => {
   syncBerandaAttendanceUI();
   renderAttendancePageUI();
+  if (typeof window.fetchServerAttendanceState === 'function') {
+    window.fetchServerAttendanceState();
+  }
 
   if (window.lucide) {
     window.lucide.createIcons();
