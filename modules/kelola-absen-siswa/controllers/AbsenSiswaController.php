@@ -23,6 +23,15 @@ class AbsenSiswaController
      */
     public static function index(): void
     {
+        if (!RBAC::hasPermission('absen_siswa.dashboard')) {
+            RBAC::redirectToFirstAllowedOr403([
+                'absen_siswa.group.view' => 'kelola-absen-siswa/group',
+                'absen_siswa.mapel.view' => 'kelola-absen-siswa/mapel',
+                'absen_siswa.kelas.view' => 'kelola-absen-siswa/kelas',
+                'absen_siswa.rekap'      => 'kelola-absen-siswa/rekap',
+            ]);
+        }
+
         $db = \Database::getInstance();
         $today = date('Y-m-d');
 

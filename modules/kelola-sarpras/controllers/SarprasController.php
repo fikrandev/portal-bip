@@ -23,6 +23,20 @@ class SarprasController
     // ΓöÇΓöÇ DASHBOARD SARPRAS ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
     public static function index(): void
     {
+        if (!RBAC::hasPermission('sarpras.dashboard')) {
+            RBAC::redirectToFirstAllowedOr403([
+                'sarpras.aset.view'       => 'kelola-sarpras/data-aset',
+                'sarpras.barang.view'     => 'kelola-sarpras/barang',
+                'sarpras.label.view'      => 'kelola-sarpras/cetak-label',
+                'sarpras.penyusutan.view' => 'kelola-sarpras/penyusutan',
+                'sarpras.laporan.view'    => 'kelola-sarpras/laporan',
+                'sarpras.peminjaman.view' => 'kelola-sarpras/peminjaman',
+                'sarpras.pengajuan.view'  => 'kelola-sarpras/pengajuan',
+                'sarpras.perbaikan.view'  => 'kelola-sarpras/pemeliharaan',
+                'sarpras.referensi.view'  => 'kelola-sarpras/referensi',
+            ]);
+        }
+
         $stats = SarprasModel::getDashboardStats();
         $recentBarang = SarprasModel::getBarangList([], 5, 0);
         $activePinjam = SarprasModel::getPeminjamanList('Dipinjam');

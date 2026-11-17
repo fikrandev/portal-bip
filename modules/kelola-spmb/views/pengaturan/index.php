@@ -45,6 +45,7 @@ $rawTemplateGroupInvite = SpmbModel::getDefaultWaGroupInviteTemplate();
             </p>
         </div>
         <div>
+            <?php if (RBAC::hasPermission('spmb.pengaturan.create')): ?>
             <button onclick="openModalTambahGroup()"
                 class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-500 hover:to-blue-500 text-white font-semibold text-xs shadow-md shadow-sky-600/20 transition-all transform hover:-translate-y-0.5">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
@@ -52,6 +53,7 @@ $rawTemplateGroupInvite = SpmbModel::getDefaultWaGroupInviteTemplate();
                 </svg>
                 <span>Buat Group SPMB Baru</span>
             </button>
+            <?php endif; ?>
         </div>
     </div>
 
@@ -102,15 +104,19 @@ $rawTemplateGroupInvite = SpmbModel::getDefaultWaGroupInviteTemplate();
                 </div>
 
                 <div class="flex flex-col sm:flex-row items-center gap-3">
+                    <?php if (RBAC::hasPermission('spmb.pengaturan.update')): ?>
                     <button
                         onclick="openModalEditGroup(<?= htmlspecialchars(json_encode($activeGroup), ENT_QUOTES, 'UTF-8') ?>)"
                         class="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-xs border border-white/20 backdrop-blur-sm transition-colors text-center">
                         Edit Group Ini
                     </button>
+                    <?php endif; ?>
+                    <?php if (RBAC::hasPermission('spmb.siswa_baru.create')): ?>
                     <a href="<?= url('kelola-spmb/siswa-baru/create') ?>"
                         class="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-bold text-xs shadow-md shadow-emerald-500/20 transition-all text-center">
                         Input Siswa ke Group Ini
                     </a>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>

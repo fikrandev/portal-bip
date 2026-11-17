@@ -287,49 +287,49 @@ $router->post('/modules-manager/update/{id}', [ModuleController::class, 'update'
 $router->post('/modules-manager/delete/{id}', [ModuleController::class, 'delete'], [Middleware::permissionRequired('modules.delete')]);
 
 // -- Kelola Siswa --
-$router->get('/kelola-siswa/statistik', [SiswaController::class, 'statistik'], [Middleware::permissionRequired('siswa.view')]);
-$router->get('/kelola-siswa', [SiswaController::class, 'index'], [Middleware::permissionRequired('siswa.view')]);
-$router->get('/kelola-siswa/create', [SiswaController::class, 'create'], [Middleware::permissionRequired('siswa.create')]);
-$router->post('/kelola-siswa/store', [SiswaController::class, 'store'], [Middleware::permissionRequired('siswa.create')]);
-$router->get('/kelola-siswa/detail/{id}', [SiswaController::class, 'detail'], [Middleware::permissionRequired('siswa.view')]);
-$router->get('/kelola-siswa/edit/{id}', [SiswaController::class, 'edit'], [Middleware::permissionRequired('siswa.update')]);
-$router->post('/kelola-siswa/update/{id}', [SiswaController::class, 'update'], [Middleware::permissionRequired('siswa.update')]);
-$router->post('/kelola-siswa/delete/{id}', [SiswaController::class, 'delete'], [Middleware::permissionRequired('siswa.delete')]);
-$router->get('/kelola-siswa/cetak/{id}', [SiswaController::class, 'cetak'], [Middleware::permissionRequired('siswa.view')]);
-$router->post('/kelola-siswa/sync', [SiswaController::class, 'syncJurnal'], [Middleware::permissionRequired('siswa.create')]);
-$router->post('/kelola-siswa/sync-dapodik', [SiswaController::class, 'syncDapodikOnline'], [Middleware::permissionRequired('siswa.create')]);
-$router->get('/kelola-siswa/export', [SiswaController::class, 'export'], [Middleware::permissionRequired('siswa.view')]);
-$router->get('/kelola-siswa/foto', [SiswaController::class, 'foto'], [Middleware::permissionRequired('siswa.view')]);
-$router->post('/kelola-siswa/upload-foto', [SiswaController::class, 'uploadFoto'], [Middleware::permissionRequired('siswa.update')]);
-$router->post('/kelola-siswa/upload-foto-zip', [SiswaController::class, 'uploadFotoZip'], [Middleware::permissionRequired('siswa.update')]);
-$router->get('/kelola-siswa/cetak-kartu-massal', [SiswaController::class, 'cetakKartuMassal'], [Middleware::permissionRequired('siswa.view')]);
-$router->get('/kelola-siswa/cetak-kartu/{id}', [SiswaController::class, 'cetakKartu'], [Middleware::permissionRequired('siswa.view')]);
-$router->post('/kelola-siswa/upload-template-kartu', [SiswaController::class, 'uploadTemplateKartu'], [Middleware::permissionRequired('siswa.update')]);
+$router->get('/kelola-siswa/statistik', [SiswaController::class, 'statistik'], [Middleware::permissionRequired('siswa.dashboard')]);
+$router->get('/kelola-siswa', [SiswaController::class, 'index'], [[Middleware::class, 'authRequired']]);
+$router->get('/kelola-siswa/create', [SiswaController::class, 'create'], [Middleware::permissionRequired('siswa.data.create')]);
+$router->post('/kelola-siswa/store', [SiswaController::class, 'store'], [Middleware::permissionRequired('siswa.data.create')]);
+$router->get('/kelola-siswa/detail/{id}', [SiswaController::class, 'detail'], [Middleware::permissionRequired('siswa.data.view')]);
+$router->get('/kelola-siswa/edit/{id}', [SiswaController::class, 'edit'], [Middleware::permissionRequired('siswa.data.update')]);
+$router->post('/kelola-siswa/update/{id}', [SiswaController::class, 'update'], [Middleware::permissionRequired('siswa.data.update')]);
+$router->post('/kelola-siswa/delete/{id}', [SiswaController::class, 'delete'], [Middleware::permissionRequired('siswa.data.delete')]);
+$router->get('/kelola-siswa/cetak/{id}', [SiswaController::class, 'cetak'], [Middleware::permissionRequired('siswa.data.export')]);
+$router->post('/kelola-siswa/sync', [SiswaController::class, 'syncJurnal'], [Middleware::permissionRequired('siswa.data.create')]);
+$router->post('/kelola-siswa/sync-dapodik', [SiswaController::class, 'syncDapodikOnline'], [Middleware::permissionRequired('siswa.data.create')]);
+$router->get('/kelola-siswa/export', [SiswaController::class, 'export'], [Middleware::permissionRequired('siswa.data.export')]);
+$router->get('/kelola-siswa/foto', [SiswaController::class, 'foto'], [Middleware::permissionRequired('siswa.foto.view')]);
+$router->post('/kelola-siswa/upload-foto', [SiswaController::class, 'uploadFoto'], [Middleware::permissionRequired('siswa.foto.create')]);
+$router->post('/kelola-siswa/upload-foto-zip', [SiswaController::class, 'uploadFotoZip'], [Middleware::permissionRequired('siswa.foto.create')]);
+$router->get('/kelola-siswa/cetak-kartu-massal', [SiswaController::class, 'cetakKartuMassal'], [Middleware::permissionRequired('siswa.foto.export')]);
+$router->get('/kelola-siswa/cetak-kartu/{id}', [SiswaController::class, 'cetakKartu'], [Middleware::permissionRequired('siswa.foto.export')]);
+$router->post('/kelola-siswa/upload-template-kartu', [SiswaController::class, 'uploadTemplateKartu'], [Middleware::permissionRequired('siswa.foto.update')]);
 
 // Buku Induk Siswa
-$router->get('/kelola-siswa/buku-induk', [SiswaController::class, 'bukuInduk'], [Middleware::permissionRequired('siswa.view')]);
-$router->get('/kelola-siswa/buku-induk/export', [SiswaController::class, 'exportBukuInduk'], [Middleware::permissionRequired('siswa.view')]);
-$router->get('/kelola-siswa/buku-induk/{id}', [SiswaController::class, 'detailBukuInduk'], [Middleware::permissionRequired('siswa.view')]);
-$router->get('/kelola-siswa/buku-induk/{id}/cetak', [SiswaController::class, 'cetakBukuInduk'], [Middleware::permissionRequired('siswa.view')]);
+$router->get('/kelola-siswa/buku-induk', [SiswaController::class, 'bukuInduk'], [Middleware::permissionRequired('siswa.buku_induk.view')]);
+$router->get('/kelola-siswa/buku-induk/export', [SiswaController::class, 'exportBukuInduk'], [Middleware::permissionRequired('siswa.buku_induk.export')]);
+$router->get('/kelola-siswa/buku-induk/{id}', [SiswaController::class, 'detailBukuInduk'], [Middleware::permissionRequired('siswa.buku_induk.view')]);
+$router->get('/kelola-siswa/buku-induk/{id}/cetak', [SiswaController::class, 'cetakBukuInduk'], [Middleware::permissionRequired('siswa.buku_induk.export')]);
 
 // Prestasi Siswa
-$router->get('/kelola-siswa/prestasi', [SiswaController::class, 'prestasi'], [Middleware::permissionRequired('siswa.view')]);
-$router->get('/kelola-siswa/prestasi/create', [SiswaController::class, 'createPrestasi'], [Middleware::permissionRequired('siswa.create')]);
-$router->post('/kelola-siswa/prestasi/store', [SiswaController::class, 'storePrestasi'], [Middleware::permissionRequired('siswa.create')]);
-$router->get('/kelola-siswa/prestasi/edit/{id}', [SiswaController::class, 'editPrestasi'], [Middleware::permissionRequired('siswa.update')]);
-$router->post('/kelola-siswa/prestasi/update/{id}', [SiswaController::class, 'updatePrestasi'], [Middleware::permissionRequired('siswa.update')]);
-$router->post('/kelola-siswa/prestasi/delete/{id}', [SiswaController::class, 'deletePrestasi'], [Middleware::permissionRequired('siswa.delete')]);
-$router->get('/kelola-siswa/prestasi/siswa/{id}', [SiswaController::class, 'timelinePrestasiSiswa'], [Middleware::permissionRequired('siswa.view')]);
+$router->get('/kelola-siswa/prestasi', [SiswaController::class, 'prestasi'], [Middleware::permissionRequired('siswa.prestasi.view')]);
+$router->get('/kelola-siswa/prestasi/create', [SiswaController::class, 'createPrestasi'], [Middleware::permissionRequired('siswa.prestasi.create')]);
+$router->post('/kelola-siswa/prestasi/store', [SiswaController::class, 'storePrestasi'], [Middleware::permissionRequired('siswa.prestasi.create')]);
+$router->get('/kelola-siswa/prestasi/edit/{id}', [SiswaController::class, 'editPrestasi'], [Middleware::permissionRequired('siswa.prestasi.update')]);
+$router->post('/kelola-siswa/prestasi/update/{id}', [SiswaController::class, 'updatePrestasi'], [Middleware::permissionRequired('siswa.prestasi.update')]);
+$router->post('/kelola-siswa/prestasi/delete/{id}', [SiswaController::class, 'deletePrestasi'], [Middleware::permissionRequired('siswa.prestasi.delete')]);
+$router->get('/kelola-siswa/prestasi/siswa/{id}', [SiswaController::class, 'timelinePrestasiSiswa'], [Middleware::permissionRequired('siswa.prestasi.view')]);
 
 // Siswa Keluar & Mutasi
-$router->get('/kelola-siswa/keluar', [SiswaController::class, 'siswaKeluar'], [Middleware::permissionRequired('siswa.view')]);
-$router->get('/kelola-siswa/keluar/create', [SiswaController::class, 'createSiswaKeluar'], [Middleware::permissionRequired('siswa.create')]);
-$router->post('/kelola-siswa/keluar/store', [SiswaController::class, 'storeSiswaKeluar'], [Middleware::permissionRequired('siswa.create')]);
-$router->get('/kelola-siswa/keluar/edit/{id}', [SiswaController::class, 'editSiswaKeluar'], [Middleware::permissionRequired('siswa.update')]);
-$router->post('/kelola-siswa/keluar/update/{id}', [SiswaController::class, 'updateSiswaKeluar'], [Middleware::permissionRequired('siswa.update')]);
-$router->post('/kelola-siswa/keluar/delete/{id}', [SiswaController::class, 'deleteSiswaKeluar'], [Middleware::permissionRequired('siswa.delete')]);
-$router->post('/kelola-siswa/keluar/reaktivasi/{id}', [SiswaController::class, 'reaktivasiSiswa'], [Middleware::permissionRequired('siswa.update')]);
-$router->get('/kelola-siswa/keluar/cetak/{id}', [SiswaController::class, 'cetakSuratPindah'], [Middleware::permissionRequired('siswa.view')]);
+$router->get('/kelola-siswa/keluar', [SiswaController::class, 'siswaKeluar'], [Middleware::permissionRequired('siswa.keluar.view')]);
+$router->get('/kelola-siswa/keluar/create', [SiswaController::class, 'createSiswaKeluar'], [Middleware::permissionRequired('siswa.keluar.create')]);
+$router->post('/kelola-siswa/keluar/store', [SiswaController::class, 'storeSiswaKeluar'], [Middleware::permissionRequired('siswa.keluar.create')]);
+$router->get('/kelola-siswa/keluar/edit/{id}', [SiswaController::class, 'editSiswaKeluar'], [Middleware::permissionRequired('siswa.keluar.update')]);
+$router->post('/kelola-siswa/keluar/update/{id}', [SiswaController::class, 'updateSiswaKeluar'], [Middleware::permissionRequired('siswa.keluar.update')]);
+$router->post('/kelola-siswa/keluar/delete/{id}', [SiswaController::class, 'deleteSiswaKeluar'], [Middleware::permissionRequired('siswa.keluar.delete')]);
+$router->post('/kelola-siswa/keluar/reaktivasi/{id}', [SiswaController::class, 'reaktivasiSiswa'], [Middleware::permissionRequired('siswa.keluar.update')]);
+$router->get('/kelola-siswa/keluar/cetak/{id}', [SiswaController::class, 'cetakSuratPindah'], [Middleware::permissionRequired('siswa.keluar.export')]);
 
 // -- Kelola Kelas --
 $router->get('/kelola-kelas', [KelasController::class, 'index'], [Middleware::permissionRequired('kelas.view')]);
@@ -342,18 +342,18 @@ $router->post('/kelola-kelas/copy', [KelasController::class, 'copyClasses'], [Mi
 $router->post('/kelola-kelas/sync-dapodik', [KelasController::class, 'syncDapodikOnline'], [Middleware::permissionRequired('kelas.create')]);
 
 // -- Kelola Pegawai --
-$router->get('/kelola-pegawai/statistik', [PegawaiController::class, 'statistik'], [Middleware::permissionRequired('pegawai.view')]);
-$router->get('/kelola-pegawai', [PegawaiController::class, 'index'], [Middleware::permissionRequired('pegawai.view')]);
-$router->get('/kelola-pegawai/create', [PegawaiController::class, 'create'], [Middleware::permissionRequired('pegawai.create')]);
-$router->post('/kelola-pegawai/store', [PegawaiController::class, 'store'], [Middleware::permissionRequired('pegawai.create')]);
-$router->get('/kelola-pegawai/edit/{id}', [PegawaiController::class, 'edit'], [Middleware::permissionRequired('pegawai.update')]);
-$router->post('/kelola-pegawai/update/{id}', [PegawaiController::class, 'update'], [Middleware::permissionRequired('pegawai.update')]);
-$router->post('/kelola-pegawai/delete/{id}', [PegawaiController::class, 'delete'], [Middleware::permissionRequired('pegawai.delete')]);
-$router->get('/kelola-pegawai/export', [PegawaiController::class, 'export'], [Middleware::permissionRequired('pegawai.export')]);
-$router->get('/kelola-pegawai/template', [PegawaiController::class, 'downloadTemplate'], [Middleware::permissionRequired('pegawai.view')]);
-$router->post('/kelola-pegawai/import', [PegawaiController::class, 'import'], [Middleware::permissionRequired('pegawai.create')]);
-$router->get('/kelola-pegawai/keluar', [PegawaiController::class, 'keluar'], [Middleware::permissionRequired('pegawai.view')]);
-$router->get('/kelola-pegawai/cetak-cv/{id}', [PegawaiController::class, 'cetakCv'], [Middleware::permissionRequired('pegawai.export')]);
+$router->get('/kelola-pegawai/statistik', [PegawaiController::class, 'statistik'], [Middleware::permissionRequired('pegawai.dashboard')]);
+$router->get('/kelola-pegawai', [PegawaiController::class, 'index'], [[Middleware::class, 'authRequired']]);
+$router->get('/kelola-pegawai/create', [PegawaiController::class, 'create'], [Middleware::permissionRequired('pegawai.data.create')]);
+$router->post('/kelola-pegawai/store', [PegawaiController::class, 'store'], [Middleware::permissionRequired('pegawai.data.create')]);
+$router->get('/kelola-pegawai/edit/{id}', [PegawaiController::class, 'edit'], [Middleware::permissionRequired('pegawai.data.update')]);
+$router->post('/kelola-pegawai/update/{id}', [PegawaiController::class, 'update'], [Middleware::permissionRequired('pegawai.data.update')]);
+$router->post('/kelola-pegawai/delete/{id}', [PegawaiController::class, 'delete'], [Middleware::permissionRequired('pegawai.data.delete')]);
+$router->get('/kelola-pegawai/export', [PegawaiController::class, 'export'], [Middleware::permissionRequired('pegawai.data.export')]);
+$router->get('/kelola-pegawai/template', [PegawaiController::class, 'downloadTemplate'], [Middleware::permissionRequired('pegawai.data.view')]);
+$router->post('/kelola-pegawai/import', [PegawaiController::class, 'import'], [Middleware::permissionRequired('pegawai.data.create')]);
+$router->get('/kelola-pegawai/keluar', [PegawaiController::class, 'keluar'], [Middleware::permissionRequired('pegawai.keluar.view')]);
+$router->get('/kelola-pegawai/cetak-cv/{id}', [PegawaiController::class, 'cetakCv'], [Middleware::permissionRequired('pegawai.data.export')]);
 
 // Isi Jurnal & Data Jurnal Saya (Personal Pegawai/Guru yang Login)
 $router->get('/kelola-pegawai/jurnal', [PegawaiController::class, 'jurnalSaya'], [[Middleware::class, 'authRequired']]);
@@ -361,197 +361,197 @@ $router->post('/kelola-pegawai/jurnal/store', [PegawaiController::class, 'storeJ
 $router->get('/kelola-pegawai/jurnal/api-siswa', [PegawaiController::class, 'apiSiswaKelasJurnal'], [[Middleware::class, 'authRequired']]);
 
 // -- Kelola Penugasan & Grup SK --
-$router->get('/kelola-pegawai/penugasan', [PegawaiController::class, 'penugasan'], [Middleware::permissionRequired('pegawai.penugasan')]);
-$router->get('/kelola-pegawai/penugasan/grup/create', [PegawaiController::class, 'createGrup'], [Middleware::permissionRequired('pegawai.penugasan')]);
-$router->post('/kelola-pegawai/penugasan/grup/store', [PegawaiController::class, 'storeGrup'], [Middleware::permissionRequired('pegawai.penugasan')]);
-$router->get('/kelola-pegawai/penugasan/grup/edit/{id}', [PegawaiController::class, 'editGrup'], [Middleware::permissionRequired('pegawai.penugasan')]);
-$router->post('/kelola-pegawai/penugasan/grup/update/{id}', [PegawaiController::class, 'updateGrup'], [Middleware::permissionRequired('pegawai.penugasan')]);
-$router->post('/kelola-pegawai/penugasan/grup/delete/{id}', [PegawaiController::class, 'deleteGrup'], [Middleware::permissionRequired('pegawai.delete')]);
-$router->post('/kelola-pegawai/penugasan/grup/set-aktif/{id}', [PegawaiController::class, 'setAktifGrup'], [Middleware::permissionRequired('pegawai.penugasan')]);
-$router->post('/kelola-pegawai/penugasan/grup/toggle-aktif/{id}', [PegawaiController::class, 'toggleAktifGrup'], [Middleware::permissionRequired('pegawai.penugasan')]);
-$router->post('/kelola-pegawai/penugasan/grup/salin/{id}', [PegawaiController::class, 'salinGrup'], [Middleware::permissionRequired('pegawai.penugasan')]);
+$router->get('/kelola-pegawai/penugasan', [PegawaiController::class, 'penugasan'], [Middleware::permissionRequired('pegawai.penugasan.view')]);
+$router->get('/kelola-pegawai/penugasan/grup/create', [PegawaiController::class, 'createGrup'], [Middleware::permissionRequired('pegawai.penugasan.create')]);
+$router->post('/kelola-pegawai/penugasan/grup/store', [PegawaiController::class, 'storeGrup'], [Middleware::permissionRequired('pegawai.penugasan.create')]);
+$router->get('/kelola-pegawai/penugasan/grup/edit/{id}', [PegawaiController::class, 'editGrup'], [Middleware::permissionRequired('pegawai.penugasan.update')]);
+$router->post('/kelola-pegawai/penugasan/grup/update/{id}', [PegawaiController::class, 'updateGrup'], [Middleware::permissionRequired('pegawai.penugasan.update')]);
+$router->post('/kelola-pegawai/penugasan/grup/delete/{id}', [PegawaiController::class, 'deleteGrup'], [Middleware::permissionRequired('pegawai.penugasan.delete')]);
+$router->post('/kelola-pegawai/penugasan/grup/set-aktif/{id}', [PegawaiController::class, 'setAktifGrup'], [Middleware::permissionRequired('pegawai.penugasan.update')]);
+$router->post('/kelola-pegawai/penugasan/grup/toggle-aktif/{id}', [PegawaiController::class, 'toggleAktifGrup'], [Middleware::permissionRequired('pegawai.penugasan.update')]);
+$router->post('/kelola-pegawai/penugasan/grup/salin/{id}', [PegawaiController::class, 'salinGrup'], [Middleware::permissionRequired('pegawai.penugasan.create')]);
 
 // Detail Anggota Penugasan dalam Grup
-$router->get('/kelola-pegawai/penugasan/grup/{id}', [PegawaiController::class, 'detailGrup'], [Middleware::permissionRequired('pegawai.penugasan')]);
-$router->get('/kelola-pegawai/penugasan/grup/{id}/cetak', [PegawaiController::class, 'cetakSkGrup'], [Middleware::permissionRequired('pegawai.penugasan')]);
-$router->post('/kelola-pegawai/penugasan/grup/{id}/update-sk-meta', [PegawaiController::class, 'updateSkMeta'], [Middleware::permissionRequired('pegawai.penugasan')]);
-$router->get('/kelola-pegawai/penugasan/grup/{id}/create', [PegawaiController::class, 'createPenugasanGrup'], [Middleware::permissionRequired('pegawai.penugasan')]);
-$router->post('/kelola-pegawai/penugasan/grup/{id}/store', [PegawaiController::class, 'storePenugasanGrup'], [Middleware::permissionRequired('pegawai.penugasan')]);
-$router->get('/kelola-pegawai/penugasan/detail/edit/{id}', [PegawaiController::class, 'editPenugasanGrup'], [Middleware::permissionRequired('pegawai.penugasan')]);
-$router->post('/kelola-pegawai/penugasan/detail/update/{id}', [PegawaiController::class, 'updatePenugasanGrup'], [Middleware::permissionRequired('pegawai.penugasan')]);
-$router->post('/kelola-pegawai/penugasan/detail/delete/{id}', [PegawaiController::class, 'deletePenugasanGrup'], [Middleware::permissionRequired('pegawai.delete')]);
+$router->get('/kelola-pegawai/penugasan/grup/{id}', [PegawaiController::class, 'detailGrup'], [Middleware::permissionRequired('pegawai.penugasan.view')]);
+$router->get('/kelola-pegawai/penugasan/grup/{id}/cetak', [PegawaiController::class, 'cetakSkGrup'], [Middleware::permissionRequired('pegawai.penugasan.view')]);
+$router->post('/kelola-pegawai/penugasan/grup/{id}/update-sk-meta', [PegawaiController::class, 'updateSkMeta'], [Middleware::permissionRequired('pegawai.penugasan.update')]);
+$router->get('/kelola-pegawai/penugasan/grup/{id}/create', [PegawaiController::class, 'createPenugasanGrup'], [Middleware::permissionRequired('pegawai.penugasan.create')]);
+$router->post('/kelola-pegawai/penugasan/grup/{id}/store', [PegawaiController::class, 'storePenugasanGrup'], [Middleware::permissionRequired('pegawai.penugasan.create')]);
+$router->get('/kelola-pegawai/penugasan/detail/edit/{id}', [PegawaiController::class, 'editPenugasanGrup'], [Middleware::permissionRequired('pegawai.penugasan.update')]);
+$router->post('/kelola-pegawai/penugasan/detail/update/{id}', [PegawaiController::class, 'updatePenugasanGrup'], [Middleware::permissionRequired('pegawai.penugasan.update')]);
+$router->post('/kelola-pegawai/penugasan/detail/delete/{id}', [PegawaiController::class, 'deletePenugasanGrup'], [Middleware::permissionRequired('pegawai.penugasan.delete')]);
 
 // Aliases for Penugasan member actions
-$router->get('/kelola-pegawai/penugasan/{id}/edit', [PegawaiController::class, 'editPenugasanGrup'], [Middleware::permissionRequired('pegawai.penugasan')]);
-$router->post('/kelola-pegawai/penugasan/{id}/update', [PegawaiController::class, 'updatePenugasanGrup'], [Middleware::permissionRequired('pegawai.penugasan')]);
-$router->post('/kelola-pegawai/penugasan/{id}/delete', [PegawaiController::class, 'deletePenugasanGrup'], [Middleware::permissionRequired('pegawai.delete')]);
+$router->get('/kelola-pegawai/penugasan/{id}/edit', [PegawaiController::class, 'editPenugasanGrup'], [Middleware::permissionRequired('pegawai.penugasan.update')]);
+$router->post('/kelola-pegawai/penugasan/{id}/update', [PegawaiController::class, 'updatePenugasanGrup'], [Middleware::permissionRequired('pegawai.penugasan.update')]);
+$router->post('/kelola-pegawai/penugasan/{id}/delete', [PegawaiController::class, 'deletePenugasanGrup'], [Middleware::permissionRequired('pegawai.penugasan.delete')]);
 
 // -- Riwayat Karir Pegawai & Guru (Otomatis dari SK & Manual) --
-$router->get('/kelola-pegawai/karir', [PegawaiController::class, 'karir'], [Middleware::permissionRequired('pegawai.view')]);
-$router->get('/kelola-pegawai/karir/create', [PegawaiController::class, 'createKarir'], [Middleware::permissionRequired('pegawai.create')]);
-$router->post('/kelola-pegawai/karir/store', [PegawaiController::class, 'storeKarir'], [Middleware::permissionRequired('pegawai.create')]);
-$router->get('/kelola-pegawai/karir/edit/{id}', [PegawaiController::class, 'editKarir'], [Middleware::permissionRequired('pegawai.update')]);
-$router->post('/kelola-pegawai/karir/update/{id}', [PegawaiController::class, 'updateKarir'], [Middleware::permissionRequired('pegawai.update')]);
-$router->post('/kelola-pegawai/karir/delete/{id}', [PegawaiController::class, 'deleteKarir'], [Middleware::permissionRequired('pegawai.delete')]);
-$router->get('/kelola-pegawai/karir/pegawai/{id}', [PegawaiController::class, 'timelinePegawai'], [Middleware::permissionRequired('pegawai.view')]);
+$router->get('/kelola-pegawai/karir', [PegawaiController::class, 'karir'], [Middleware::permissionRequired('pegawai.karir.view')]);
+$router->get('/kelola-pegawai/karir/create', [PegawaiController::class, 'createKarir'], [Middleware::permissionRequired('pegawai.karir.create')]);
+$router->post('/kelola-pegawai/karir/store', [PegawaiController::class, 'storeKarir'], [Middleware::permissionRequired('pegawai.karir.create')]);
+$router->get('/kelola-pegawai/karir/edit/{id}', [PegawaiController::class, 'editKarir'], [Middleware::permissionRequired('pegawai.karir.update')]);
+$router->post('/kelola-pegawai/karir/update/{id}', [PegawaiController::class, 'updateKarir'], [Middleware::permissionRequired('pegawai.karir.update')]);
+$router->post('/kelola-pegawai/karir/delete/{id}', [PegawaiController::class, 'deleteKarir'], [Middleware::permissionRequired('pegawai.karir.delete')]);
+$router->get('/kelola-pegawai/karir/pegawai/{id}', [PegawaiController::class, 'timelinePegawai'], [Middleware::permissionRequired('pegawai.karir.view')]);
 
 // -- Prestasi & Penghargaan Pegawai / Guru --
-$router->get('/kelola-pegawai/prestasi', [PegawaiController::class, 'prestasi'], [Middleware::permissionRequired('pegawai.view')]);
-$router->get('/kelola-pegawai/prestasi/create', [PegawaiController::class, 'createPrestasi'], [Middleware::permissionRequired('pegawai.create')]);
-$router->post('/kelola-pegawai/prestasi/store', [PegawaiController::class, 'storePrestasi'], [Middleware::permissionRequired('pegawai.create')]);
-$router->get('/kelola-pegawai/prestasi/edit/{id}', [PegawaiController::class, 'editPrestasi'], [Middleware::permissionRequired('pegawai.update')]);
-$router->post('/kelola-pegawai/prestasi/update/{id}', [PegawaiController::class, 'updatePrestasi'], [Middleware::permissionRequired('pegawai.update')]);
-$router->post('/kelola-pegawai/prestasi/delete/{id}', [PegawaiController::class, 'deletePrestasi'], [Middleware::permissionRequired('pegawai.delete')]);
-$router->get('/kelola-pegawai/prestasi/pegawai/{id}', [PegawaiController::class, 'prestasiPegawai'], [Middleware::permissionRequired('pegawai.view')]);
+$router->get('/kelola-pegawai/prestasi', [PegawaiController::class, 'prestasi'], [Middleware::permissionRequired('pegawai.prestasi.view')]);
+$router->get('/kelola-pegawai/prestasi/create', [PegawaiController::class, 'createPrestasi'], [Middleware::permissionRequired('pegawai.prestasi.create')]);
+$router->post('/kelola-pegawai/prestasi/store', [PegawaiController::class, 'storePrestasi'], [Middleware::permissionRequired('pegawai.prestasi.create')]);
+$router->get('/kelola-pegawai/prestasi/edit/{id}', [PegawaiController::class, 'editPrestasi'], [Middleware::permissionRequired('pegawai.prestasi.update')]);
+$router->post('/kelola-pegawai/prestasi/update/{id}', [PegawaiController::class, 'updatePrestasi'], [Middleware::permissionRequired('pegawai.prestasi.update')]);
+$router->post('/kelola-pegawai/prestasi/delete/{id}', [PegawaiController::class, 'deletePrestasi'], [Middleware::permissionRequired('pegawai.prestasi.delete')]);
+$router->get('/kelola-pegawai/prestasi/pegawai/{id}', [PegawaiController::class, 'prestasiPegawai'], [Middleware::permissionRequired('pegawai.prestasi.view')]);
 
 // -- Riwayat Pelatihan, Diklat & Workshop Pegawai / Guru --
-$router->get('/kelola-pegawai/pelatihan', [PegawaiController::class, 'pelatihan'], [Middleware::permissionRequired('pegawai.view')]);
-$router->get('/kelola-pegawai/pelatihan/create', [PegawaiController::class, 'createPelatihan'], [Middleware::permissionRequired('pegawai.create')]);
-$router->post('/kelola-pegawai/pelatihan/store', [PegawaiController::class, 'storePelatihan'], [Middleware::permissionRequired('pegawai.create')]);
-$router->get('/kelola-pegawai/pelatihan/edit/{id}', [PegawaiController::class, 'editPelatihan'], [Middleware::permissionRequired('pegawai.update')]);
-$router->post('/kelola-pegawai/pelatihan/update/{id}', [PegawaiController::class, 'updatePelatihan'], [Middleware::permissionRequired('pegawai.update')]);
-$router->post('/kelola-pegawai/pelatihan/delete/{id}', [PegawaiController::class, 'deletePelatihan'], [Middleware::permissionRequired('pegawai.delete')]);
-$router->get('/kelola-pegawai/pelatihan/pegawai/{id}', [PegawaiController::class, 'pelatihanPegawai'], [Middleware::permissionRequired('pegawai.view')]);
+$router->get('/kelola-pegawai/pelatihan', [PegawaiController::class, 'pelatihan'], [Middleware::permissionRequired('pegawai.pelatihan.view')]);
+$router->get('/kelola-pegawai/pelatihan/create', [PegawaiController::class, 'createPelatihan'], [Middleware::permissionRequired('pegawai.pelatihan.create')]);
+$router->post('/kelola-pegawai/pelatihan/store', [PegawaiController::class, 'storePelatihan'], [Middleware::permissionRequired('pegawai.pelatihan.create')]);
+$router->get('/kelola-pegawai/pelatihan/edit/{id}', [PegawaiController::class, 'editPelatihan'], [Middleware::permissionRequired('pegawai.pelatihan.update')]);
+$router->post('/kelola-pegawai/pelatihan/update/{id}', [PegawaiController::class, 'updatePelatihan'], [Middleware::permissionRequired('pegawai.pelatihan.update')]);
+$router->post('/kelola-pegawai/pelatihan/delete/{id}', [PegawaiController::class, 'deletePelatihan'], [Middleware::permissionRequired('pegawai.pelatihan.delete')]);
+$router->get('/kelola-pegawai/pelatihan/pegawai/{id}', [PegawaiController::class, 'pelatihanPegawai'], [Middleware::permissionRequired('pegawai.pelatihan.view')]);
 
 // -- Kelola Perangkat Pembelajaran --
-$router->get('/kelola-perangkat-pembelajaran', [PerangkatController::class, 'dashboard'], [Middleware::permissionRequired('perangkat.view')]);
-$router->get('/kelola-perangkat-pembelajaran/dashboard', [PerangkatController::class, 'dashboard'], [Middleware::permissionRequired('perangkat.view')]);
+$router->get('/kelola-perangkat-pembelajaran', [PerangkatController::class, 'dashboard'], [[Middleware::class, 'authRequired']]);
+$router->get('/kelola-perangkat-pembelajaran/dashboard', [PerangkatController::class, 'dashboard'], [Middleware::permissionRequired('perangkat.dashboard')]);
 $router->get('/kelola-rpp', function() {
     Response::redirect(url('kelola-perangkat-pembelajaran'));
 });
 
 // Jadwal Pelajaran & Auto-Generator
-$router->get('/kelola-perangkat-pembelajaran/jadwal', [JadwalController::class, 'index'], [Middleware::permissionRequired('perangkat.view')]);
-$router->get('/kelola-perangkat-pembelajaran/jadwal/create', [JadwalController::class, 'create'], [Middleware::permissionRequired('perangkat.create')]);
-$router->post('/kelola-perangkat-pembelajaran/jadwal/store', [JadwalController::class, 'store'], [Middleware::permissionRequired('perangkat.create')]);
-$router->get('/kelola-perangkat-pembelajaran/jadwal/edit/{id}', [JadwalController::class, 'edit'], [Middleware::permissionRequired('perangkat.update')]);
-$router->post('/kelola-perangkat-pembelajaran/jadwal/update/{id}', [JadwalController::class, 'update'], [Middleware::permissionRequired('perangkat.update')]);
-$router->post('/kelola-perangkat-pembelajaran/jadwal/delete/{id}', [JadwalController::class, 'delete'], [Middleware::permissionRequired('perangkat.delete')]);
-$router->post('/kelola-perangkat-pembelajaran/jadwal/set-active/{id}', [JadwalController::class, 'setActive'], [Middleware::permissionRequired('perangkat.update')]);
-$router->get('/kelola-perangkat-pembelajaran/jadwal/pengaturan-jp/{id}', [JadwalController::class, 'pengaturanJp'], [Middleware::permissionRequired('perangkat.update')]);
-$router->post('/kelola-perangkat-pembelajaran/jadwal/pengaturan-jp/{id}', [JadwalController::class, 'simpanPengaturanJp'], [Middleware::permissionRequired('perangkat.update')]);
-$router->post('/kelola-perangkat-pembelajaran/jadwal/slot-add/{id}', [JadwalController::class, 'tambahSlotKhusus'], [Middleware::permissionRequired('perangkat.update')]);
-$router->post('/kelola-perangkat-pembelajaran/jadwal/slot-delete/{id}/{slotId}', [JadwalController::class, 'hapusSlotWaktu'], [Middleware::permissionRequired('perangkat.delete')]);
-$router->post('/kelola-perangkat-pembelajaran/jadwal/slot-edit/{id}/{slotId}', [JadwalController::class, 'editSlotWaktu'], [Middleware::permissionRequired('perangkat.update')]);
-$router->post('/kelola-perangkat-pembelajaran/jadwal/slot-sync-day/{id}/{hari}', [JadwalController::class, 'syncHari'], [Middleware::permissionRequired('perangkat.update')]);
-$router->get('/kelola-perangkat-pembelajaran/jadwal/generate/{id}', [JadwalController::class, 'generate'], [Middleware::permissionRequired('perangkat.create')]);
-$router->post('/kelola-perangkat-pembelajaran/jadwal/run-generate/{id}', [JadwalController::class, 'runGenerate'], [Middleware::permissionRequired('perangkat.create')]);
-$router->get('/kelola-perangkat-pembelajaran/jadwal/matriks/{id}', [JadwalController::class, 'matriks'], [Middleware::permissionRequired('perangkat.view')]);
-$router->get('/kelola-perangkat-pembelajaran/jadwal/cetak-kelas/{id}', [JadwalController::class, 'cetakKelas'], [Middleware::permissionRequired('perangkat.view')]);
-$router->get('/kelola-perangkat-pembelajaran/jadwal/cetak-guru/{id}', [JadwalController::class, 'cetakGuru'], [Middleware::permissionRequired('perangkat.view')]);
-$router->get('/kelola-perangkat-pembelajaran/jadwal/export/{id}', [JadwalController::class, 'export'], [Middleware::permissionRequired('perangkat.view')]);
+$router->get('/kelola-perangkat-pembelajaran/jadwal', [JadwalController::class, 'index'], [Middleware::permissionRequired('perangkat.jadwal.view')]);
+$router->get('/kelola-perangkat-pembelajaran/jadwal/create', [JadwalController::class, 'create'], [Middleware::permissionRequired('perangkat.jadwal.create')]);
+$router->post('/kelola-perangkat-pembelajaran/jadwal/store', [JadwalController::class, 'store'], [Middleware::permissionRequired('perangkat.jadwal.create')]);
+$router->get('/kelola-perangkat-pembelajaran/jadwal/edit/{id}', [JadwalController::class, 'edit'], [Middleware::permissionRequired('perangkat.jadwal.update')]);
+$router->post('/kelola-perangkat-pembelajaran/jadwal/update/{id}', [JadwalController::class, 'update'], [Middleware::permissionRequired('perangkat.jadwal.update')]);
+$router->post('/kelola-perangkat-pembelajaran/jadwal/delete/{id}', [JadwalController::class, 'delete'], [Middleware::permissionRequired('perangkat.jadwal.delete')]);
+$router->post('/kelola-perangkat-pembelajaran/jadwal/set-active/{id}', [JadwalController::class, 'setActive'], [Middleware::permissionRequired('perangkat.jadwal.update')]);
+$router->get('/kelola-perangkat-pembelajaran/jadwal/pengaturan-jp/{id}', [JadwalController::class, 'pengaturanJp'], [Middleware::permissionRequired('perangkat.jadwal.update')]);
+$router->post('/kelola-perangkat-pembelajaran/jadwal/pengaturan-jp/{id}', [JadwalController::class, 'simpanPengaturanJp'], [Middleware::permissionRequired('perangkat.jadwal.update')]);
+$router->post('/kelola-perangkat-pembelajaran/jadwal/slot-add/{id}', [JadwalController::class, 'tambahSlotKhusus'], [Middleware::permissionRequired('perangkat.jadwal.update')]);
+$router->post('/kelola-perangkat-pembelajaran/jadwal/slot-delete/{id}/{slotId}', [JadwalController::class, 'hapusSlotWaktu'], [Middleware::permissionRequired('perangkat.jadwal.delete')]);
+$router->post('/kelola-perangkat-pembelajaran/jadwal/slot-edit/{id}/{slotId}', [JadwalController::class, 'editSlotWaktu'], [Middleware::permissionRequired('perangkat.jadwal.update')]);
+$router->post('/kelola-perangkat-pembelajaran/jadwal/slot-sync-day/{id}/{hari}', [JadwalController::class, 'syncHari'], [Middleware::permissionRequired('perangkat.jadwal.update')]);
+$router->get('/kelola-perangkat-pembelajaran/jadwal/generate/{id}', [JadwalController::class, 'generate'], [Middleware::permissionRequired('perangkat.jadwal.create')]);
+$router->post('/kelola-perangkat-pembelajaran/jadwal/run-generate/{id}', [JadwalController::class, 'runGenerate'], [Middleware::permissionRequired('perangkat.jadwal.create')]);
+$router->get('/kelola-perangkat-pembelajaran/jadwal/matriks/{id}', [JadwalController::class, 'matriks'], [Middleware::permissionRequired('perangkat.jadwal.view')]);
+$router->get('/kelola-perangkat-pembelajaran/jadwal/cetak-kelas/{id}', [JadwalController::class, 'cetakKelas'], [Middleware::permissionRequired('perangkat.jadwal.export')]);
+$router->get('/kelola-perangkat-pembelajaran/jadwal/cetak-guru/{id}', [JadwalController::class, 'cetakGuru'], [Middleware::permissionRequired('perangkat.jadwal.export')]);
+$router->get('/kelola-perangkat-pembelajaran/jadwal/export/{id}', [JadwalController::class, 'export'], [Middleware::permissionRequired('perangkat.jadwal.export')]);
 
 // Kalender Pendidikan (Kaldik)
-$router->get('/kelola-perangkat-pembelajaran/kaldik', [PerangkatController::class, 'kaldik'], [Middleware::permissionRequired('perangkat.view')]);
-$router->get('/kelola-perangkat-pembelajaran/kaldik/create', [PerangkatController::class, 'createKaldik'], [Middleware::permissionRequired('perangkat.create')]);
-$router->post('/kelola-perangkat-pembelajaran/kaldik/store', [PerangkatController::class, 'storeKaldik'], [Middleware::permissionRequired('perangkat.create')]);
-$router->get('/kelola-perangkat-pembelajaran/kaldik/edit/{id}', [PerangkatController::class, 'editKaldik'], [Middleware::permissionRequired('perangkat.update')]);
-$router->post('/kelola-perangkat-pembelajaran/kaldik/update/{id}', [PerangkatController::class, 'updateKaldik'], [Middleware::permissionRequired('perangkat.update')]);
-$router->get('/kelola-perangkat-pembelajaran/kaldik/detail/{id}', [PerangkatController::class, 'detailKaldik'], [Middleware::permissionRequired('perangkat.view')]);
-$router->get('/kelola-perangkat-pembelajaran/kaldik/cetak/{id}', [PerangkatController::class, 'cetakKaldik'], [Middleware::permissionRequired('perangkat.view')]);
-$router->post('/kelola-perangkat-pembelajaran/kaldik/toggle-active/{id}', [PerangkatController::class, 'toggleActiveKaldik'], [Middleware::permissionRequired('perangkat.update')]);
-$router->post('/kelola-perangkat-pembelajaran/kaldik/agenda/add/{id}', [PerangkatController::class, 'addKaldikAgenda'], [Middleware::permissionRequired('perangkat.update')]);
-$router->post('/kelola-perangkat-pembelajaran/kaldik/agenda/delete/{id}', [PerangkatController::class, 'deleteKaldikAgenda'], [Middleware::permissionRequired('perangkat.delete')]);
+$router->get('/kelola-perangkat-pembelajaran/kaldik', [PerangkatController::class, 'kaldik'], [Middleware::permissionRequired('perangkat.kaldik.view')]);
+$router->get('/kelola-perangkat-pembelajaran/kaldik/create', [PerangkatController::class, 'createKaldik'], [Middleware::permissionRequired('perangkat.kaldik.create')]);
+$router->post('/kelola-perangkat-pembelajaran/kaldik/store', [PerangkatController::class, 'storeKaldik'], [Middleware::permissionRequired('perangkat.kaldik.create')]);
+$router->get('/kelola-perangkat-pembelajaran/kaldik/edit/{id}', [PerangkatController::class, 'editKaldik'], [Middleware::permissionRequired('perangkat.kaldik.update')]);
+$router->post('/kelola-perangkat-pembelajaran/kaldik/update/{id}', [PerangkatController::class, 'updateKaldik'], [Middleware::permissionRequired('perangkat.kaldik.update')]);
+$router->get('/kelola-perangkat-pembelajaran/kaldik/detail/{id}', [PerangkatController::class, 'detailKaldik'], [Middleware::permissionRequired('perangkat.kaldik.view')]);
+$router->get('/kelola-perangkat-pembelajaran/kaldik/cetak/{id}', [PerangkatController::class, 'cetakKaldik'], [Middleware::permissionRequired('perangkat.kaldik.view')]);
+$router->post('/kelola-perangkat-pembelajaran/kaldik/toggle-active/{id}', [PerangkatController::class, 'toggleActiveKaldik'], [Middleware::permissionRequired('perangkat.kaldik.update')]);
+$router->post('/kelola-perangkat-pembelajaran/kaldik/agenda/add/{id}', [PerangkatController::class, 'addKaldikAgenda'], [Middleware::permissionRequired('perangkat.kaldik.update')]);
+$router->post('/kelola-perangkat-pembelajaran/kaldik/agenda/delete/{id}', [PerangkatController::class, 'deleteKaldikAgenda'], [Middleware::permissionRequired('perangkat.kaldik.delete')]);
 
 // Rincian Hari Efektif (HEB & HES Auto-Generated)
-$router->get('/kelola-perangkat-pembelajaran/rincian-hari-efektif', [PerangkatController::class, 'rincianHariEfektif'], [Middleware::permissionRequired('perangkat.view')]);
-$router->get('/kelola-perangkat-pembelajaran/rincian-hari-efektif/cetak', [PerangkatController::class, 'cetakRincianHariEfektif'], [Middleware::permissionRequired('perangkat.view')]);
+$router->get('/kelola-perangkat-pembelajaran/rincian-hari-efektif', [PerangkatController::class, 'rincianHariEfektif'], [Middleware::permissionRequired('perangkat.hari_efektif.view')]);
+$router->get('/kelola-perangkat-pembelajaran/rincian-hari-efektif/cetak', [PerangkatController::class, 'cetakRincianHariEfektif'], [Middleware::permissionRequired('perangkat.hari_efektif.view')]);
 
 // Hari Efektif Sekolah (HES)
-$router->get('/kelola-perangkat-pembelajaran/hes', [PerangkatController::class, 'hes'], [Middleware::permissionRequired('perangkat.view')]);
-$router->get('/kelola-perangkat-pembelajaran/hes/create', [PerangkatController::class, 'createHes'], [Middleware::permissionRequired('perangkat.create')]);
-$router->post('/kelola-perangkat-pembelajaran/hes/store', [PerangkatController::class, 'storeHes'], [Middleware::permissionRequired('perangkat.create')]);
-$router->get('/kelola-perangkat-pembelajaran/hes/edit/{id}', [PerangkatController::class, 'editHes'], [Middleware::permissionRequired('perangkat.update')]);
-$router->post('/kelola-perangkat-pembelajaran/hes/update/{id}', [PerangkatController::class, 'updateHes'], [Middleware::permissionRequired('perangkat.update')]);
-$router->get('/kelola-perangkat-pembelajaran/hes/detail/{id}', [PerangkatController::class, 'detailHes'], [Middleware::permissionRequired('perangkat.view')]);
-$router->get('/kelola-perangkat-pembelajaran/hes/cetak/{id}', [PerangkatController::class, 'cetakHes'], [Middleware::permissionRequired('perangkat.view')]);
+$router->get('/kelola-perangkat-pembelajaran/hes', [PerangkatController::class, 'hes'], [Middleware::permissionRequired('perangkat.hari_efektif.view')]);
+$router->get('/kelola-perangkat-pembelajaran/hes/create', [PerangkatController::class, 'createHes'], [Middleware::permissionRequired('perangkat.hari_efektif.create')]);
+$router->post('/kelola-perangkat-pembelajaran/hes/store', [PerangkatController::class, 'storeHes'], [Middleware::permissionRequired('perangkat.hari_efektif.create')]);
+$router->get('/kelola-perangkat-pembelajaran/hes/edit/{id}', [PerangkatController::class, 'editHes'], [Middleware::permissionRequired('perangkat.hari_efektif.update')]);
+$router->post('/kelola-perangkat-pembelajaran/hes/update/{id}', [PerangkatController::class, 'updateHes'], [Middleware::permissionRequired('perangkat.hari_efektif.update')]);
+$router->get('/kelola-perangkat-pembelajaran/hes/detail/{id}', [PerangkatController::class, 'detailHes'], [Middleware::permissionRequired('perangkat.hari_efektif.view')]);
+$router->get('/kelola-perangkat-pembelajaran/hes/cetak/{id}', [PerangkatController::class, 'cetakHes'], [Middleware::permissionRequired('perangkat.hari_efektif.view')]);
 
 // Hari Efektif Belajar (HEB)
-$router->get('/kelola-perangkat-pembelajaran/heb', [PerangkatController::class, 'heb'], [Middleware::permissionRequired('perangkat.view')]);
-$router->get('/kelola-perangkat-pembelajaran/heb/create', [PerangkatController::class, 'createHeb'], [Middleware::permissionRequired('perangkat.create')]);
-$router->post('/kelola-perangkat-pembelajaran/heb/store', [PerangkatController::class, 'storeHeb'], [Middleware::permissionRequired('perangkat.create')]);
-$router->get('/kelola-perangkat-pembelajaran/heb/edit/{id}', [PerangkatController::class, 'editHeb'], [Middleware::permissionRequired('perangkat.update')]);
-$router->post('/kelola-perangkat-pembelajaran/heb/update/{id}', [PerangkatController::class, 'updateHeb'], [Middleware::permissionRequired('perangkat.update')]);
-$router->get('/kelola-perangkat-pembelajaran/heb/detail/{id}', [PerangkatController::class, 'detailHeb'], [Middleware::permissionRequired('perangkat.view')]);
-$router->get('/kelola-perangkat-pembelajaran/heb/cetak/{id}', [PerangkatController::class, 'cetakHeb'], [Middleware::permissionRequired('perangkat.view')]);
+$router->get('/kelola-perangkat-pembelajaran/heb', [PerangkatController::class, 'heb'], [Middleware::permissionRequired('perangkat.hari_efektif.view')]);
+$router->get('/kelola-perangkat-pembelajaran/heb/create', [PerangkatController::class, 'createHeb'], [Middleware::permissionRequired('perangkat.hari_efektif.create')]);
+$router->post('/kelola-perangkat-pembelajaran/heb/store', [PerangkatController::class, 'storeHeb'], [Middleware::permissionRequired('perangkat.hari_efektif.create')]);
+$router->get('/kelola-perangkat-pembelajaran/heb/edit/{id}', [PerangkatController::class, 'editHeb'], [Middleware::permissionRequired('perangkat.hari_efektif.update')]);
+$router->post('/kelola-perangkat-pembelajaran/heb/update/{id}', [PerangkatController::class, 'updateHeb'], [Middleware::permissionRequired('perangkat.hari_efektif.update')]);
+$router->get('/kelola-perangkat-pembelajaran/heb/detail/{id}', [PerangkatController::class, 'detailHeb'], [Middleware::permissionRequired('perangkat.hari_efektif.view')]);
+$router->get('/kelola-perangkat-pembelajaran/heb/cetak/{id}', [PerangkatController::class, 'cetakHeb'], [Middleware::permissionRequired('perangkat.hari_efektif.view')]);
 
 // Capaian Pembelajaran & Alur Tujuan Pembelajaran (CP & ATP)
-$router->get('/kelola-perangkat-pembelajaran/cpatp', [PerangkatController::class, 'cpatp'], [Middleware::permissionRequired('perangkat.view')]);
-$router->get('/kelola-perangkat-pembelajaran/cpatp/ajax-penugasan/{guruId}', [PerangkatController::class, 'getPenugasanAjax'], [Middleware::permissionRequired('perangkat.view')]);
-$router->get('/kelola-perangkat-pembelajaran/cpatp/ajax-jadwal/{guruId}', [PerangkatController::class, 'getJadwalHariAjax'], [Middleware::permissionRequired('perangkat.view')]);
-$router->get('/kelola-perangkat-pembelajaran/cpatp/group/create', [PerangkatController::class, 'createCpatpGroup'], [Middleware::permissionRequired('perangkat.create')]);
-$router->post('/kelola-perangkat-pembelajaran/cpatp/group/store', [PerangkatController::class, 'storeCpatpGroup'], [Middleware::permissionRequired('perangkat.create')]);
-$router->post('/kelola-perangkat-pembelajaran/cpatp/group/delete/{id}', [PerangkatController::class, 'deleteCpatpGroup'], [Middleware::permissionRequired('perangkat.delete')]);
-$router->get('/kelola-perangkat-pembelajaran/cpatp/group/{id}', [PerangkatController::class, 'cpatpDetailGroup'], [Middleware::permissionRequired('perangkat.view')]);
-$router->get('/kelola-perangkat-pembelajaran/cpatp/create/{groupId}', [PerangkatController::class, 'createCpatp'], [Middleware::permissionRequired('perangkat.create')]);
-$router->post('/kelola-perangkat-pembelajaran/cpatp/store/{groupId}', [PerangkatController::class, 'storeCpatp'], [Middleware::permissionRequired('perangkat.create')]);
-$router->get('/kelola-perangkat-pembelajaran/cpatp/edit/{id}', [PerangkatController::class, 'editCpatp'], [Middleware::permissionRequired('perangkat.update')]);
-$router->post('/kelola-perangkat-pembelajaran/cpatp/update/{id}', [PerangkatController::class, 'updateCpatp'], [Middleware::permissionRequired('perangkat.update')]);
-$router->get('/kelola-perangkat-pembelajaran/cpatp/detail/{id}', [PerangkatController::class, 'detailCpatp'], [Middleware::permissionRequired('perangkat.view')]);
-$router->get('/kelola-perangkat-pembelajaran/cpatp/cetak/{id}', [PerangkatController::class, 'cetakCpatp'], [Middleware::permissionRequired('perangkat.view')]);
-$router->post('/kelola-perangkat-pembelajaran/cpatp/delete/{id}', [PerangkatController::class, 'deleteCpatp'], [Middleware::permissionRequired('perangkat.delete')]);
+$router->get('/kelola-perangkat-pembelajaran/cpatp', [PerangkatController::class, 'cpatp'], [Middleware::permissionRequired('perangkat.cpatp.view')]);
+$router->get('/kelola-perangkat-pembelajaran/cpatp/ajax-penugasan/{guruId}', [PerangkatController::class, 'getPenugasanAjax'], [Middleware::permissionRequired('perangkat.cpatp.view')]);
+$router->get('/kelola-perangkat-pembelajaran/cpatp/ajax-jadwal/{guruId}', [PerangkatController::class, 'getJadwalHariAjax'], [Middleware::permissionRequired('perangkat.cpatp.view')]);
+$router->get('/kelola-perangkat-pembelajaran/cpatp/group/create', [PerangkatController::class, 'createCpatpGroup'], [Middleware::permissionRequired('perangkat.cpatp.create')]);
+$router->post('/kelola-perangkat-pembelajaran/cpatp/group/store', [PerangkatController::class, 'storeCpatpGroup'], [Middleware::permissionRequired('perangkat.cpatp.create')]);
+$router->post('/kelola-perangkat-pembelajaran/cpatp/group/delete/{id}', [PerangkatController::class, 'deleteCpatpGroup'], [Middleware::permissionRequired('perangkat.cpatp.delete')]);
+$router->get('/kelola-perangkat-pembelajaran/cpatp/group/{id}', [PerangkatController::class, 'cpatpDetailGroup'], [Middleware::permissionRequired('perangkat.cpatp.view')]);
+$router->get('/kelola-perangkat-pembelajaran/cpatp/create/{groupId}', [PerangkatController::class, 'createCpatp'], [Middleware::permissionRequired('perangkat.cpatp.create')]);
+$router->post('/kelola-perangkat-pembelajaran/cpatp/store/{groupId}', [PerangkatController::class, 'storeCpatp'], [Middleware::permissionRequired('perangkat.cpatp.create')]);
+$router->get('/kelola-perangkat-pembelajaran/cpatp/edit/{id}', [PerangkatController::class, 'editCpatp'], [Middleware::permissionRequired('perangkat.cpatp.update')]);
+$router->post('/kelola-perangkat-pembelajaran/cpatp/update/{id}', [PerangkatController::class, 'updateCpatp'], [Middleware::permissionRequired('perangkat.cpatp.update')]);
+$router->get('/kelola-perangkat-pembelajaran/cpatp/detail/{id}', [PerangkatController::class, 'detailCpatp'], [Middleware::permissionRequired('perangkat.cpatp.view')]);
+$router->get('/kelola-perangkat-pembelajaran/cpatp/cetak/{id}', [PerangkatController::class, 'cetakCpatp'], [Middleware::permissionRequired('perangkat.cpatp.view')]);
+$router->post('/kelola-perangkat-pembelajaran/cpatp/delete/{id}', [PerangkatController::class, 'deleteCpatp'], [Middleware::permissionRequired('perangkat.cpatp.delete')]);
 
 // Program Tahunan (Prota)
-$router->get('/kelola-perangkat-pembelajaran/prota', [PerangkatController::class, 'prota'], [Middleware::permissionRequired('perangkat.view')]);
-$router->get('/kelola-perangkat-pembelajaran/prota/group/create', [PerangkatController::class, 'createProtaGroup'], [Middleware::permissionRequired('perangkat.create')]);
-$router->post('/kelola-perangkat-pembelajaran/prota/group/store', [PerangkatController::class, 'storeProtaGroup'], [Middleware::permissionRequired('perangkat.create')]);
-$router->post('/kelola-perangkat-pembelajaran/prota/group/delete/{id}', [PerangkatController::class, 'deleteProtaGroup'], [Middleware::permissionRequired('perangkat.delete')]);
-$router->get('/kelola-perangkat-pembelajaran/prota/group/{id}', [PerangkatController::class, 'protaDetailGroup'], [Middleware::permissionRequired('perangkat.view')]);
-$router->post('/kelola-perangkat-pembelajaran/prota/group/{id}/sync', [PerangkatController::class, 'syncProtaFromProsem'], [Middleware::permissionRequired('perangkat.update')]);
-$router->get('/kelola-perangkat-pembelajaran/prota/group/{id}/cetak-semua', [PerangkatController::class, 'cetakSemuaProtaGroup'], [Middleware::permissionRequired('perangkat.view')]);
-$router->get('/kelola-perangkat-pembelajaran/prota/create', [PerangkatController::class, 'createProta'], [Middleware::permissionRequired('perangkat.create')]);
-$router->get('/kelola-perangkat-pembelajaran/prota/create/{groupId}', [PerangkatController::class, 'createProta'], [Middleware::permissionRequired('perangkat.create')]);
-$router->post('/kelola-perangkat-pembelajaran/prota/store', [PerangkatController::class, 'storeProta'], [Middleware::permissionRequired('perangkat.create')]);
-$router->post('/kelola-perangkat-pembelajaran/prota/store/{groupId}', [PerangkatController::class, 'storeProta'], [Middleware::permissionRequired('perangkat.create')]);
-$router->get('/kelola-perangkat-pembelajaran/prota/edit/{id}', [PerangkatController::class, 'editProta'], [Middleware::permissionRequired('perangkat.update')]);
-$router->post('/kelola-perangkat-pembelajaran/prota/update/{id}', [PerangkatController::class, 'updateProta'], [Middleware::permissionRequired('perangkat.update')]);
-$router->get('/kelola-perangkat-pembelajaran/prota/detail/{id}', [PerangkatController::class, 'detailProta'], [Middleware::permissionRequired('perangkat.view')]);
-$router->get('/kelola-perangkat-pembelajaran/prota/cetak/{id}', [PerangkatController::class, 'cetakProta'], [Middleware::permissionRequired('perangkat.view')]);
-$router->post('/kelola-perangkat-pembelajaran/prota/delete/{id}', [PerangkatController::class, 'deleteProta'], [Middleware::permissionRequired('perangkat.delete')]);
+$router->get('/kelola-perangkat-pembelajaran/prota', [PerangkatController::class, 'prota'], [Middleware::permissionRequired('perangkat.prota.view')]);
+$router->get('/kelola-perangkat-pembelajaran/prota/group/create', [PerangkatController::class, 'createProtaGroup'], [Middleware::permissionRequired('perangkat.prota.create')]);
+$router->post('/kelola-perangkat-pembelajaran/prota/group/store', [PerangkatController::class, 'storeProtaGroup'], [Middleware::permissionRequired('perangkat.prota.create')]);
+$router->post('/kelola-perangkat-pembelajaran/prota/group/delete/{id}', [PerangkatController::class, 'deleteProtaGroup'], [Middleware::permissionRequired('perangkat.prota.delete')]);
+$router->get('/kelola-perangkat-pembelajaran/prota/group/{id}', [PerangkatController::class, 'protaDetailGroup'], [Middleware::permissionRequired('perangkat.prota.view')]);
+$router->post('/kelola-perangkat-pembelajaran/prota/group/{id}/sync', [PerangkatController::class, 'syncProtaFromProsem'], [Middleware::permissionRequired('perangkat.prota.update')]);
+$router->get('/kelola-perangkat-pembelajaran/prota/group/{id}/cetak-semua', [PerangkatController::class, 'cetakSemuaProtaGroup'], [Middleware::permissionRequired('perangkat.prota.view')]);
+$router->get('/kelola-perangkat-pembelajaran/prota/create', [PerangkatController::class, 'createProta'], [Middleware::permissionRequired('perangkat.prota.create')]);
+$router->get('/kelola-perangkat-pembelajaran/prota/create/{groupId}', [PerangkatController::class, 'createProta'], [Middleware::permissionRequired('perangkat.prota.create')]);
+$router->post('/kelola-perangkat-pembelajaran/prota/store', [PerangkatController::class, 'storeProta'], [Middleware::permissionRequired('perangkat.prota.create')]);
+$router->post('/kelola-perangkat-pembelajaran/prota/store/{groupId}', [PerangkatController::class, 'storeProta'], [Middleware::permissionRequired('perangkat.prota.create')]);
+$router->get('/kelola-perangkat-pembelajaran/prota/edit/{id}', [PerangkatController::class, 'editProta'], [Middleware::permissionRequired('perangkat.prota.update')]);
+$router->post('/kelola-perangkat-pembelajaran/prota/update/{id}', [PerangkatController::class, 'updateProta'], [Middleware::permissionRequired('perangkat.prota.update')]);
+$router->get('/kelola-perangkat-pembelajaran/prota/detail/{id}', [PerangkatController::class, 'detailProta'], [Middleware::permissionRequired('perangkat.prota.view')]);
+$router->get('/kelola-perangkat-pembelajaran/prota/cetak/{id}', [PerangkatController::class, 'cetakProta'], [Middleware::permissionRequired('perangkat.prota.view')]);
+$router->post('/kelola-perangkat-pembelajaran/prota/delete/{id}', [PerangkatController::class, 'deleteProta'], [Middleware::permissionRequired('perangkat.prota.delete')]);
 
 // Program Semester (Prosem)
-$router->get('/kelola-perangkat-pembelajaran/prosem', [PerangkatController::class, 'prosem'], [Middleware::permissionRequired('perangkat.view')]);
-$router->get('/kelola-perangkat-pembelajaran/prosem/group/create', [PerangkatController::class, 'createProsemGroup'], [Middleware::permissionRequired('perangkat.create')]);
-$router->post('/kelola-perangkat-pembelajaran/prosem/group/store', [PerangkatController::class, 'storeProsemGroup'], [Middleware::permissionRequired('perangkat.create')]);
-$router->post('/kelola-perangkat-pembelajaran/prosem/group/delete/{id}', [PerangkatController::class, 'deleteProsemGroup'], [Middleware::permissionRequired('perangkat.delete')]);
-$router->get('/kelola-perangkat-pembelajaran/prosem/group/{id}', [PerangkatController::class, 'prosemDetailGroup'], [Middleware::permissionRequired('perangkat.view')]);
-$router->post('/kelola-perangkat-pembelajaran/prosem/group/{id}/sync', [PerangkatController::class, 'syncProsemFromCpatp'], [Middleware::permissionRequired('perangkat.update')]);
-$router->get('/kelola-perangkat-pembelajaran/prosem/group/{id}/cetak-semua', [PerangkatController::class, 'cetakSemuaProsemGroup'], [Middleware::permissionRequired('perangkat.view')]);
-$router->get('/kelola-perangkat-pembelajaran/prosem/create', [PerangkatController::class, 'createProsem'], [Middleware::permissionRequired('perangkat.create')]);
-$router->get('/kelola-perangkat-pembelajaran/prosem/create/{groupId}', [PerangkatController::class, 'createProsem'], [Middleware::permissionRequired('perangkat.create')]);
-$router->post('/kelola-perangkat-pembelajaran/prosem/store', [PerangkatController::class, 'storeProsem'], [Middleware::permissionRequired('perangkat.create')]);
-$router->post('/kelola-perangkat-pembelajaran/prosem/store/{groupId}', [PerangkatController::class, 'storeProsem'], [Middleware::permissionRequired('perangkat.create')]);
-$router->get('/kelola-perangkat-pembelajaran/prosem/edit/{id}', [PerangkatController::class, 'editProsem'], [Middleware::permissionRequired('perangkat.update')]);
-$router->post('/kelola-perangkat-pembelajaran/prosem/update/{id}', [PerangkatController::class, 'updateProsem'], [Middleware::permissionRequired('perangkat.update')]);
-$router->get('/kelola-perangkat-pembelajaran/prosem/detail/{id}', [PerangkatController::class, 'detailProsem'], [Middleware::permissionRequired('perangkat.view')]);
-$router->get('/kelola-perangkat-pembelajaran/prosem/cetak/{id}', [PerangkatController::class, 'cetakProsem'], [Middleware::permissionRequired('perangkat.view')]);
-$router->post('/kelola-perangkat-pembelajaran/prosem/delete/{id}', [PerangkatController::class, 'deleteProsem'], [Middleware::permissionRequired('perangkat.delete')]);
+$router->get('/kelola-perangkat-pembelajaran/prosem', [PerangkatController::class, 'prosem'], [Middleware::permissionRequired('perangkat.prosem.view')]);
+$router->get('/kelola-perangkat-pembelajaran/prosem/group/create', [PerangkatController::class, 'createProsemGroup'], [Middleware::permissionRequired('perangkat.prosem.create')]);
+$router->post('/kelola-perangkat-pembelajaran/prosem/group/store', [PerangkatController::class, 'storeProsemGroup'], [Middleware::permissionRequired('perangkat.prosem.create')]);
+$router->post('/kelola-perangkat-pembelajaran/prosem/group/delete/{id}', [PerangkatController::class, 'deleteProsemGroup'], [Middleware::permissionRequired('perangkat.prosem.delete')]);
+$router->get('/kelola-perangkat-pembelajaran/prosem/group/{id}', [PerangkatController::class, 'prosemDetailGroup'], [Middleware::permissionRequired('perangkat.prosem.view')]);
+$router->post('/kelola-perangkat-pembelajaran/prosem/group/{id}/sync', [PerangkatController::class, 'syncProsemFromCpatp'], [Middleware::permissionRequired('perangkat.prosem.update')]);
+$router->get('/kelola-perangkat-pembelajaran/prosem/group/{id}/cetak-semua', [PerangkatController::class, 'cetakSemuaProsemGroup'], [Middleware::permissionRequired('perangkat.prosem.view')]);
+$router->get('/kelola-perangkat-pembelajaran/prosem/create', [PerangkatController::class, 'createProsem'], [Middleware::permissionRequired('perangkat.prosem.create')]);
+$router->get('/kelola-perangkat-pembelajaran/prosem/create/{groupId}', [PerangkatController::class, 'createProsem'], [Middleware::permissionRequired('perangkat.prosem.create')]);
+$router->post('/kelola-perangkat-pembelajaran/prosem/store', [PerangkatController::class, 'storeProsem'], [Middleware::permissionRequired('perangkat.prosem.create')]);
+$router->post('/kelola-perangkat-pembelajaran/prosem/store/{groupId}', [PerangkatController::class, 'storeProsem'], [Middleware::permissionRequired('perangkat.prosem.create')]);
+$router->get('/kelola-perangkat-pembelajaran/prosem/edit/{id}', [PerangkatController::class, 'editProsem'], [Middleware::permissionRequired('perangkat.prosem.update')]);
+$router->post('/kelola-perangkat-pembelajaran/prosem/update/{id}', [PerangkatController::class, 'updateProsem'], [Middleware::permissionRequired('perangkat.prosem.update')]);
+$router->get('/kelola-perangkat-pembelajaran/prosem/detail/{id}', [PerangkatController::class, 'detailProsem'], [Middleware::permissionRequired('perangkat.prosem.view')]);
+$router->get('/kelola-perangkat-pembelajaran/prosem/cetak/{id}', [PerangkatController::class, 'cetakProsem'], [Middleware::permissionRequired('perangkat.prosem.view')]);
+$router->post('/kelola-perangkat-pembelajaran/prosem/delete/{id}', [PerangkatController::class, 'deleteProsem'], [Middleware::permissionRequired('perangkat.prosem.delete')]);
 
 // RPP / Modul Ajar
-$router->get('/kelola-perangkat-pembelajaran/rpp', [PerangkatController::class, 'rpp'], [Middleware::permissionRequired('perangkat.view')]);
-$router->get('/kelola-perangkat-pembelajaran/rpp/group/create', [PerangkatController::class, 'createRppGroup'], [Middleware::permissionRequired('perangkat.create')]);
-$router->post('/kelola-perangkat-pembelajaran/rpp/group/store', [PerangkatController::class, 'storeRppGroup'], [Middleware::permissionRequired('perangkat.create')]);
-$router->post('/kelola-perangkat-pembelajaran/rpp/group/delete/{id}', [PerangkatController::class, 'deleteRppGroup'], [Middleware::permissionRequired('perangkat.delete')]);
-$router->get('/kelola-perangkat-pembelajaran/rpp/group/{id}', [PerangkatController::class, 'rppDetailGroup'], [Middleware::permissionRequired('perangkat.view')]);
-$router->post('/kelola-perangkat-pembelajaran/rpp/group/{id}/sync', [PerangkatController::class, 'syncRppFromCpatp'], [Middleware::permissionRequired('perangkat.update')]);
-$router->get('/kelola-perangkat-pembelajaran/rpp/group/{id}/cetak-semua', [PerangkatController::class, 'cetakSemuaRppGroup'], [Middleware::permissionRequired('perangkat.view')]);
-$router->get('/kelola-perangkat-pembelajaran/rpp/create', [PerangkatController::class, 'createRpp'], [Middleware::permissionRequired('perangkat.create')]);
-$router->get('/kelola-perangkat-pembelajaran/rpp/create/{groupId}', [PerangkatController::class, 'createRpp'], [Middleware::permissionRequired('perangkat.create')]);
-$router->post('/kelola-perangkat-pembelajaran/rpp/store', [PerangkatController::class, 'storeRpp'], [Middleware::permissionRequired('perangkat.create')]);
-$router->post('/kelola-perangkat-pembelajaran/rpp/store/{groupId}', [PerangkatController::class, 'storeRpp'], [Middleware::permissionRequired('perangkat.create')]);
-$router->get('/kelola-perangkat-pembelajaran/rpp/edit/{id}', [PerangkatController::class, 'editRpp'], [Middleware::permissionRequired('perangkat.update')]);
-$router->post('/kelola-perangkat-pembelajaran/rpp/update/{id}', [PerangkatController::class, 'updateRpp'], [Middleware::permissionRequired('perangkat.update')]);
-$router->get('/kelola-perangkat-pembelajaran/rpp/detail/{id}', [PerangkatController::class, 'detailRpp'], [Middleware::permissionRequired('perangkat.view')]);
-$router->get('/kelola-perangkat-pembelajaran/rpp/cetak/{id}', [PerangkatController::class, 'cetakRpp'], [Middleware::permissionRequired('perangkat.view')]);
-$router->post('/kelola-perangkat-pembelajaran/rpp/delete/{id}', [PerangkatController::class, 'deleteRpp'], [Middleware::permissionRequired('perangkat.delete')]);
+$router->get('/kelola-perangkat-pembelajaran/rpp', [PerangkatController::class, 'rpp'], [Middleware::permissionRequired('perangkat.rpp.view')]);
+$router->get('/kelola-perangkat-pembelajaran/rpp/group/create', [PerangkatController::class, 'createRppGroup'], [Middleware::permissionRequired('perangkat.rpp.create')]);
+$router->post('/kelola-perangkat-pembelajaran/rpp/group/store', [PerangkatController::class, 'storeRppGroup'], [Middleware::permissionRequired('perangkat.rpp.create')]);
+$router->post('/kelola-perangkat-pembelajaran/rpp/group/delete/{id}', [PerangkatController::class, 'deleteRppGroup'], [Middleware::permissionRequired('perangkat.rpp.delete')]);
+$router->get('/kelola-perangkat-pembelajaran/rpp/group/{id}', [PerangkatController::class, 'rppDetailGroup'], [Middleware::permissionRequired('perangkat.rpp.view')]);
+$router->post('/kelola-perangkat-pembelajaran/rpp/group/{id}/sync', [PerangkatController::class, 'syncRppFromCpatp'], [Middleware::permissionRequired('perangkat.rpp.update')]);
+$router->get('/kelola-perangkat-pembelajaran/rpp/group/{id}/cetak-semua', [PerangkatController::class, 'cetakSemuaRppGroup'], [Middleware::permissionRequired('perangkat.rpp.view')]);
+$router->get('/kelola-perangkat-pembelajaran/rpp/create', [PerangkatController::class, 'createRpp'], [Middleware::permissionRequired('perangkat.rpp.create')]);
+$router->get('/kelola-perangkat-pembelajaran/rpp/create/{groupId}', [PerangkatController::class, 'createRpp'], [Middleware::permissionRequired('perangkat.rpp.create')]);
+$router->post('/kelola-perangkat-pembelajaran/rpp/store', [PerangkatController::class, 'storeRpp'], [Middleware::permissionRequired('perangkat.rpp.create')]);
+$router->post('/kelola-perangkat-pembelajaran/rpp/store/{groupId}', [PerangkatController::class, 'storeRpp'], [Middleware::permissionRequired('perangkat.rpp.create')]);
+$router->get('/kelola-perangkat-pembelajaran/rpp/edit/{id}', [PerangkatController::class, 'editRpp'], [Middleware::permissionRequired('perangkat.rpp.update')]);
+$router->post('/kelola-perangkat-pembelajaran/rpp/update/{id}', [PerangkatController::class, 'updateRpp'], [Middleware::permissionRequired('perangkat.rpp.update')]);
+$router->get('/kelola-perangkat-pembelajaran/rpp/detail/{id}', [PerangkatController::class, 'detailRpp'], [Middleware::permissionRequired('perangkat.rpp.view')]);
+$router->get('/kelola-perangkat-pembelajaran/rpp/cetak/{id}', [PerangkatController::class, 'cetakRpp'], [Middleware::permissionRequired('perangkat.rpp.view')]);
+$router->post('/kelola-perangkat-pembelajaran/rpp/delete/{id}', [PerangkatController::class, 'deleteRpp'], [Middleware::permissionRequired('perangkat.rpp.delete')]);
 
 // Pusat Verifikasi & Lifecycle Actions (Wewenang Khusus Approve)
 $router->get('/kelola-perangkat-pembelajaran/verifikasi', [PerangkatController::class, 'verifikasi'], [Middleware::permissionRequired('perangkat.approve')]);
 $router->post('/kelola-perangkat-pembelajaran/approve/{id}', [PerangkatController::class, 'approve'], [Middleware::permissionRequired('perangkat.approve')]);
 $router->post('/kelola-perangkat-pembelajaran/reject/{id}', [PerangkatController::class, 'reject'], [Middleware::permissionRequired('perangkat.approve')]);
-$router->post('/kelola-perangkat-pembelajaran/submit/{id}', [PerangkatController::class, 'submitReview'], [Middleware::permissionRequired('perangkat.update')]);
-$router->post('/kelola-perangkat-pembelajaran/draft/{id}', [PerangkatController::class, 'draft'], [Middleware::permissionRequired('perangkat.update')]);
-$router->post('/kelola-perangkat-pembelajaran/delete/{id}', [PerangkatController::class, 'delete'], [Middleware::permissionRequired('perangkat.delete')]);
+$router->post('/kelola-perangkat-pembelajaran/submit/{id}', [PerangkatController::class, 'submitReview'], [Middleware::permissionRequired('perangkat.rpp.update')]);
+$router->post('/kelola-perangkat-pembelajaran/draft/{id}', [PerangkatController::class, 'draft'], [Middleware::permissionRequired('perangkat.rpp.update')]);
+$router->post('/kelola-perangkat-pembelajaran/delete/{id}', [PerangkatController::class, 'delete'], [Middleware::permissionRequired('perangkat.rpp.delete')]);
 
 // -- Kelola Jurnal Guru (KBM & Jam Pelajaran) --
 $router->get('/kelola-jurnal-guru', [JurnalGuruAdminController::class, 'index'], [Middleware::permissionRequired('jurnal.view')]);
@@ -565,53 +565,53 @@ $router->post('/kelola-jurnal-guru/status/{id}', [JurnalGuruAdminController::cla
 $router->post('/kelola-jurnal-guru/delete/{id}', [JurnalGuruAdminController::class, 'delete'], [Middleware::permissionRequired('jurnal.delete')]);
 
 // Base Routes Modul Tambahan Lainnya
-$router->get('/kelola-nilai', [NilaiController::class, 'index'], [Middleware::permissionRequired('nilai.view')]);
-$router->get('/kelola-nilai/group', [NilaiController::class, 'groupList'], [Middleware::permissionRequired('nilai.view')]);
-$router->get('/kelola-nilai/group/create', [NilaiController::class, 'groupCreate'], [Middleware::permissionRequired('nilai.create')]);
-$router->post('/kelola-nilai/group/store', [NilaiController::class, 'groupStore'], [Middleware::permissionRequired('nilai.create')]);
-$router->get('/kelola-nilai/group/edit/{id}', [NilaiController::class, 'groupEdit'], [Middleware::permissionRequired('nilai.update')]);
-$router->post('/kelola-nilai/group/update/{id}', [NilaiController::class, 'groupUpdate'], [Middleware::permissionRequired('nilai.update')]);
-$router->post('/kelola-nilai/group/toggle-status/{id}', [NilaiController::class, 'groupToggleStatus'], [Middleware::permissionRequired('nilai.update')]);
-$router->post('/kelola-nilai/group/delete/{id}', [NilaiController::class, 'groupDelete'], [Middleware::permissionRequired('nilai.delete')]);
-$router->get('/kelola-nilai/input/{groupId}', [NilaiController::class, 'inputNilai'], [Middleware::permissionRequired('nilai.view')]);
-$router->get('/kelola-nilai/input/{groupId}/guru/{guruId}', [NilaiController::class, 'guruDetail'], [Middleware::permissionRequired('nilai.view')]);
-$router->get('/kelola-nilai/input/{groupId}/doc/{cpatpDocId}', [NilaiController::class, 'inputNilaiForm'], [Middleware::permissionRequired('nilai.create')]);
-$router->post('/kelola-nilai/store/{groupId}/doc/{cpatpDocId}', [NilaiController::class, 'storeNilaiForm'], [Middleware::permissionRequired('nilai.create')]);
-$router->post('/kelola-nilai/autosave/{groupId}/doc/{cpatpDocId}', [NilaiController::class, 'autoSaveNilai'], [Middleware::permissionRequired('nilai.create')]);
-$router->get('/kelola-nilai/cetak/{groupId}/doc/{cpatpDocId}', [NilaiController::class, 'cetakNilai'], [Middleware::permissionRequired('nilai.view')]);
+$router->get('/kelola-nilai', [NilaiController::class, 'index'], [[Middleware::class, 'authRequired']]);
+$router->get('/kelola-nilai/group', [NilaiController::class, 'groupList'], [Middleware::permissionRequired('nilai.group.view')]);
+$router->get('/kelola-nilai/group/create', [NilaiController::class, 'groupCreate'], [Middleware::permissionRequired('nilai.group.create')]);
+$router->post('/kelola-nilai/group/store', [NilaiController::class, 'groupStore'], [Middleware::permissionRequired('nilai.group.create')]);
+$router->get('/kelola-nilai/group/edit/{id}', [NilaiController::class, 'groupEdit'], [Middleware::permissionRequired('nilai.group.update')]);
+$router->post('/kelola-nilai/group/update/{id}', [NilaiController::class, 'groupUpdate'], [Middleware::permissionRequired('nilai.group.update')]);
+$router->post('/kelola-nilai/group/toggle-status/{id}', [NilaiController::class, 'groupToggleStatus'], [Middleware::permissionRequired('nilai.group.update')]);
+$router->post('/kelola-nilai/group/delete/{id}', [NilaiController::class, 'groupDelete'], [Middleware::permissionRequired('nilai.group.delete')]);
+$router->get('/kelola-nilai/input/{groupId}', [NilaiController::class, 'inputNilai'], [Middleware::permissionRequired('nilai.input.view')]);
+$router->get('/kelola-nilai/input/{groupId}/guru/{guruId}', [NilaiController::class, 'guruDetail'], [Middleware::permissionRequired('nilai.input.view')]);
+$router->get('/kelola-nilai/input/{groupId}/doc/{cpatpDocId}', [NilaiController::class, 'inputNilaiForm'], [Middleware::permissionRequired('nilai.input.create')]);
+$router->post('/kelola-nilai/store/{groupId}/doc/{cpatpDocId}', [NilaiController::class, 'storeNilaiForm'], [Middleware::permissionRequired('nilai.input.create')]);
+$router->post('/kelola-nilai/autosave/{groupId}/doc/{cpatpDocId}', [NilaiController::class, 'autoSaveNilai'], [Middleware::permissionRequired('nilai.input.update')]);
+$router->get('/kelola-nilai/cetak/{groupId}/doc/{cpatpDocId}', [NilaiController::class, 'cetakNilai'], [Middleware::permissionRequired('nilai.input.view')]);
 $router->get('/kelola-nilai/rekap', [NilaiController::class, 'rekap'], [Middleware::permissionRequired('nilai.rekap')]);
 $router->get('/kelola-nilai/rekap/cetak', [NilaiController::class, 'rekapCetak'], [Middleware::permissionRequired('nilai.rekap')]);
 $router->get('/kelola-nilai/rekap/export', [NilaiController::class, 'rekapExport'], [Middleware::permissionRequired('nilai.export')]);
 $router->get('/kelola-raport', [RaportController::class, 'index'], [Middleware::permissionRequired('raport.view')]);
 // Modul Kelola Absen Siswa
-$router->get('/kelola-absen-siswa', [AbsenSiswaController::class, 'index'], [Middleware::permissionRequired('absen_siswa.view')]);
+$router->get('/kelola-absen-siswa', [AbsenSiswaController::class, 'index'], [[Middleware::class, 'authRequired']]);
 
 // Grup / Wadah Absen
-$router->get('/kelola-absen-siswa/group', [AbsenSiswaController::class, 'groupList'], [Middleware::permissionRequired('absen_siswa.view')]);
-$router->get('/kelola-absen-siswa/group/create', [AbsenSiswaController::class, 'groupCreate'], [Middleware::permissionRequired('absen_siswa.create')]);
-$router->post('/kelola-absen-siswa/group/store', [AbsenSiswaController::class, 'groupStore'], [Middleware::permissionRequired('absen_siswa.create')]);
-$router->get('/kelola-absen-siswa/group/edit/{id}', [AbsenSiswaController::class, 'groupEdit'], [Middleware::permissionRequired('absen_siswa.update')]);
-$router->post('/kelola-absen-siswa/group/update/{id}', [AbsenSiswaController::class, 'groupUpdate'], [Middleware::permissionRequired('absen_siswa.update')]);
-$router->post('/kelola-absen-siswa/group/toggle-status/{id}', [AbsenSiswaController::class, 'groupToggleStatus'], [Middleware::permissionRequired('absen_siswa.update')]);
-$router->post('/kelola-absen-siswa/group/delete/{id}', [AbsenSiswaController::class, 'groupDelete'], [Middleware::permissionRequired('absen_siswa.delete')]);
+$router->get('/kelola-absen-siswa/group', [AbsenSiswaController::class, 'groupList'], [Middleware::permissionRequired('absen_siswa.group.view')]);
+$router->get('/kelola-absen-siswa/group/create', [AbsenSiswaController::class, 'groupCreate'], [Middleware::permissionRequired('absen_siswa.group.create')]);
+$router->post('/kelola-absen-siswa/group/store', [AbsenSiswaController::class, 'groupStore'], [Middleware::permissionRequired('absen_siswa.group.create')]);
+$router->get('/kelola-absen-siswa/group/edit/{id}', [AbsenSiswaController::class, 'groupEdit'], [Middleware::permissionRequired('absen_siswa.group.update')]);
+$router->post('/kelola-absen-siswa/group/update/{id}', [AbsenSiswaController::class, 'groupUpdate'], [Middleware::permissionRequired('absen_siswa.group.update')]);
+$router->post('/kelola-absen-siswa/group/toggle-status/{id}', [AbsenSiswaController::class, 'groupToggleStatus'], [Middleware::permissionRequired('absen_siswa.group.update')]);
+$router->post('/kelola-absen-siswa/group/delete/{id}', [AbsenSiswaController::class, 'groupDelete'], [Middleware::permissionRequired('absen_siswa.group.delete')]);
 
 // Buka Wadah Absen (Pilih Guru -> Muncul Semua Kelas yang Dia Ampu)
-$router->get('/kelola-absen-siswa/input/{groupId}', [AbsenSiswaController::class, 'wadahDetail'], [Middleware::permissionRequired('absen_siswa.view')]);
-$router->get('/kelola-absen-siswa/mapel/wadah/{groupId}', [AbsenSiswaController::class, 'wadahDetail'], [Middleware::permissionRequired('absen_siswa.view')]);
+$router->get('/kelola-absen-siswa/input/{groupId}', [AbsenSiswaController::class, 'wadahDetail'], [Middleware::permissionRequired('absen_siswa.mapel.view')]);
+$router->get('/kelola-absen-siswa/mapel/wadah/{groupId}', [AbsenSiswaController::class, 'wadahDetail'], [Middleware::permissionRequired('absen_siswa.mapel.view')]);
 
 // Input Absen Mapel
-$router->get('/kelola-absen-siswa/mapel', [AbsenSiswaController::class, 'absenMapel'], [Middleware::permissionRequired('absen_siswa.view')]);
-$router->get('/kelola-absen-siswa/mapel/input', [AbsenSiswaController::class, 'absenMapelForm'], [Middleware::permissionRequired('absen_siswa.create')]);
-$router->post('/kelola-absen-siswa/mapel/store', [AbsenSiswaController::class, 'absenMapelStore'], [Middleware::permissionRequired('absen_siswa.create')]);
-$router->post('/kelola-absen-siswa/mapel/autosave', [AbsenSiswaController::class, 'absenMapelAutosave'], [Middleware::permissionRequired('absen_siswa.create')]);
-$router->get('/kelola-absen-siswa/mapel/cetak', [AbsenSiswaController::class, 'absenMapelCetak'], [Middleware::permissionRequired('absen_siswa.view')]);
+$router->get('/kelola-absen-siswa/mapel', [AbsenSiswaController::class, 'absenMapel'], [Middleware::permissionRequired('absen_siswa.mapel.view')]);
+$router->get('/kelola-absen-siswa/mapel/input', [AbsenSiswaController::class, 'absenMapelForm'], [Middleware::permissionRequired('absen_siswa.mapel.create')]);
+$router->post('/kelola-absen-siswa/mapel/store', [AbsenSiswaController::class, 'absenMapelStore'], [Middleware::permissionRequired('absen_siswa.mapel.create')]);
+$router->post('/kelola-absen-siswa/mapel/autosave', [AbsenSiswaController::class, 'absenMapelAutosave'], [Middleware::permissionRequired('absen_siswa.mapel.create')]);
+$router->get('/kelola-absen-siswa/mapel/cetak', [AbsenSiswaController::class, 'absenMapelCetak'], [Middleware::permissionRequired('absen_siswa.mapel.view')]);
 
 // Input Absen Kelas (Wali Kelas / Harian)
-$router->get('/kelola-absen-siswa/kelas', [AbsenSiswaController::class, 'absenKelas'], [Middleware::permissionRequired('absen_siswa.view')]);
-$router->get('/kelola-absen-siswa/kelas/input', [AbsenSiswaController::class, 'absenKelasForm'], [Middleware::permissionRequired('absen_siswa.create')]);
-$router->post('/kelola-absen-siswa/kelas/store', [AbsenSiswaController::class, 'absenKelasStore'], [Middleware::permissionRequired('absen_siswa.create')]);
-$router->post('/kelola-absen-siswa/kelas/autosave', [AbsenSiswaController::class, 'absenKelasAutosave'], [Middleware::permissionRequired('absen_siswa.create')]);
-$router->get('/kelola-absen-siswa/kelas/cetak', [AbsenSiswaController::class, 'absenKelasCetak'], [Middleware::permissionRequired('absen_siswa.view')]);
+$router->get('/kelola-absen-siswa/kelas', [AbsenSiswaController::class, 'absenKelas'], [Middleware::permissionRequired('absen_siswa.kelas.view')]);
+$router->get('/kelola-absen-siswa/kelas/input', [AbsenSiswaController::class, 'absenKelasForm'], [Middleware::permissionRequired('absen_siswa.kelas.create')]);
+$router->post('/kelola-absen-siswa/kelas/store', [AbsenSiswaController::class, 'absenKelasStore'], [Middleware::permissionRequired('absen_siswa.kelas.create')]);
+$router->post('/kelola-absen-siswa/kelas/autosave', [AbsenSiswaController::class, 'absenKelasAutosave'], [Middleware::permissionRequired('absen_siswa.kelas.create')]);
+$router->get('/kelola-absen-siswa/kelas/cetak', [AbsenSiswaController::class, 'absenKelasCetak'], [Middleware::permissionRequired('absen_siswa.kelas.view')]);
 
 // Rekap Absen Mapel + Kelas
 $router->get('/kelola-absen-siswa/rekap', [AbsenSiswaController::class, 'rekap'], [Middleware::permissionRequired('absen_siswa.rekap')]);
@@ -619,62 +619,62 @@ $router->get('/kelola-absen-siswa/rekap/cetak', [AbsenSiswaController::class, 'r
 $router->get('/kelola-absen-siswa/rekap/export', [AbsenSiswaController::class, 'rekapExport'], [Middleware::permissionRequired('absen_siswa.export')]);
 // -- Kelola Lokasi & Radius Absen Pegawai --
 $router->get('/kelola-absen-pegawai', [AbsenPegawaiController::class, 'index'], [Middleware::permissionRequired('absen_pegawai.view')]);
-$router->post('/kelola-absen-pegawai/pengaturan/save', [AbsenPegawaiController::class, 'savePengaturanGlobal'], [Middleware::permissionRequired('absen_pegawai.view')]);
-$router->post('/kelola-absen-pegawai/radius/update', [AbsenPegawaiController::class, 'updateRadiusQuick'], [Middleware::permissionRequired('absen_pegawai.view')]);
-$router->post('/kelola-absen-pegawai/pegawai/save', [AbsenPegawaiController::class, 'saveLokasiPegawai'], [Middleware::permissionRequired('absen_pegawai.view')]);
-$router->post('/kelola-absen-pegawai/pegawai/reset', [AbsenPegawaiController::class, 'resetLokasiPegawai'], [Middleware::permissionRequired('absen_pegawai.view')]);
-$router->post('/kelola-absen-pegawai/jam-kerja/save', [AbsenPegawaiController::class, 'saveJamKerjaPegawai'], [Middleware::permissionRequired('absen_pegawai.view')]);
-$router->post('/kelola-absen-pegawai/jam-kerja/reset', [AbsenPegawaiController::class, 'resetJamKerjaPegawai'], [Middleware::permissionRequired('absen_pegawai.view')]);
-$router->post('/kelola-absen-pegawai/unit/save', [AbsenPegawaiController::class, 'saveLokasiUnit'], [Middleware::permissionRequired('absen_pegawai.view')]);
-$router->post('/kelola-absen-pegawai/unit/reset', [AbsenPegawaiController::class, 'resetLokasiUnit'], [Middleware::permissionRequired('absen_pegawai.view')]);
-$router->post('/kelola-absen-pegawai/reset-semua', [AbsenPegawaiController::class, 'resetSemuaLokasi'], [Middleware::permissionRequired('absen_pegawai.view')]);
+$router->post('/kelola-absen-pegawai/pengaturan/save', [AbsenPegawaiController::class, 'savePengaturanGlobal'], [Middleware::permissionRequired('absen_pegawai.update')]);
+$router->post('/kelola-absen-pegawai/radius/update', [AbsenPegawaiController::class, 'updateRadiusQuick'], [Middleware::permissionRequired('absen_pegawai.update')]);
+$router->post('/kelola-absen-pegawai/pegawai/save', [AbsenPegawaiController::class, 'saveLokasiPegawai'], [Middleware::permissionRequired('absen_pegawai.update')]);
+$router->post('/kelola-absen-pegawai/pegawai/reset', [AbsenPegawaiController::class, 'resetLokasiPegawai'], [Middleware::permissionRequired('absen_pegawai.update')]);
+$router->post('/kelola-absen-pegawai/jam-kerja/save', [AbsenPegawaiController::class, 'saveJamKerjaPegawai'], [Middleware::permissionRequired('absen_pegawai.update')]);
+$router->post('/kelola-absen-pegawai/jam-kerja/reset', [AbsenPegawaiController::class, 'resetJamKerjaPegawai'], [Middleware::permissionRequired('absen_pegawai.update')]);
+$router->post('/kelola-absen-pegawai/unit/save', [AbsenPegawaiController::class, 'saveLokasiUnit'], [Middleware::permissionRequired('absen_pegawai.update')]);
+$router->post('/kelola-absen-pegawai/unit/reset', [AbsenPegawaiController::class, 'resetLokasiUnit'], [Middleware::permissionRequired('absen_pegawai.update')]);
+$router->post('/kelola-absen-pegawai/reset-semua', [AbsenPegawaiController::class, 'resetSemuaLokasi'], [Middleware::permissionRequired('absen_pegawai.delete')]);
 $router->get('/kelola-absen-pegawai/export', [AbsenPegawaiController::class, 'exportCsv'], [Middleware::permissionRequired('absen_pegawai.view')]);
 // Modul Qur'an Siswa (Hub + 3 Jenjang: SD, PAUD, SMP & SMA)
-$router->get('/kelola-quran-siswa', [QuranSiswaController::class, 'index'], [Middleware::permissionRequired('quran_siswa.view')]);
-$router->get('/kelola-quran-siswa-sd', [QuranSiswaController::class, 'sdIndex'], [Middleware::permissionRequired('quran_siswa.view')]);
-$router->get('/kelola-quran-siswa/sd', [QuranSiswaController::class, 'sdIndex'], [Middleware::permissionRequired('quran_siswa.view')]);
-$router->get('/kelola-quran-siswa-paud', [QuranSiswaController::class, 'paudIndex'], [Middleware::permissionRequired('quran_siswa.view')]);
-$router->get('/kelola-quran-siswa/paud', [QuranSiswaController::class, 'paudIndex'], [Middleware::permissionRequired('quran_siswa.view')]);
+$router->get('/kelola-quran-siswa', [QuranSiswaController::class, 'index'], [[Middleware::class, 'authRequired']]);
+$router->get('/kelola-quran-siswa-sd', [QuranSiswaController::class, 'sdIndex'], [Middleware::permissionRequired('quran_siswa.sd_smp.view')]);
+$router->get('/kelola-quran-siswa/sd', [QuranSiswaController::class, 'sdIndex'], [Middleware::permissionRequired('quran_siswa.sd_smp.view')]);
+$router->get('/kelola-quran-siswa-paud', [QuranSiswaController::class, 'paudIndex'], [Middleware::permissionRequired('quran_siswa.paud_target.view')]);
+$router->get('/kelola-quran-siswa/paud', [QuranSiswaController::class, 'paudIndex'], [Middleware::permissionRequired('quran_siswa.paud_target.view')]);
 
 // Fitur 2: Pengaturan Target Qur'an PAUD (a. Tahsin, b. Tahfidz)
-$router->get('/kelola-quran-siswa-paud/target', [QuranSiswaController::class, 'paudTargetList'], [Middleware::permissionRequired('quran_siswa.view')]);
-$router->get('/kelola-quran-siswa-paud/target/create', [QuranSiswaController::class, 'paudTargetCreate'], [Middleware::permissionRequired('quran_siswa.create')]);
-$router->post('/kelola-quran-siswa-paud/target/store', [QuranSiswaController::class, 'paudTargetStore'], [Middleware::permissionRequired('quran_siswa.create')]);
-$router->get('/kelola-quran-siswa-paud/target/manage/{id}', [QuranSiswaController::class, 'paudTargetManage'], [Middleware::permissionRequired('quran_siswa.view')]);
-$router->get('/kelola-quran-siswa-paud/target/{id}', [QuranSiswaController::class, 'paudTargetManage'], [Middleware::permissionRequired('quran_siswa.view')]);
-$router->post('/kelola-quran-siswa-paud/target/manage/{id}/store', [QuranSiswaController::class, 'paudTargetSaveMateri'], [Middleware::permissionRequired('quran_siswa.update')]);
-$router->get('/kelola-quran-siswa-paud/target/edit/{id}', [QuranSiswaController::class, 'paudTargetEdit'], [Middleware::permissionRequired('quran_siswa.update')]);
-$router->post('/kelola-quran-siswa-paud/target/update/{id}', [QuranSiswaController::class, 'paudTargetUpdate'], [Middleware::permissionRequired('quran_siswa.update')]);
-$router->post('/kelola-quran-siswa-paud/target/toggle-status/{id}', [QuranSiswaController::class, 'paudTargetToggleStatus'], [Middleware::permissionRequired('quran_siswa.update')]);
-$router->post('/kelola-quran-siswa-paud/target/delete/{id}', [QuranSiswaController::class, 'paudTargetDelete'], [Middleware::permissionRequired('quran_siswa.delete')]);
+$router->get('/kelola-quran-siswa-paud/target', [QuranSiswaController::class, 'paudTargetList'], [Middleware::permissionRequired('quran_siswa.paud_target.view')]);
+$router->get('/kelola-quran-siswa-paud/target/create', [QuranSiswaController::class, 'paudTargetCreate'], [Middleware::permissionRequired('quran_siswa.paud_target.create')]);
+$router->post('/kelola-quran-siswa-paud/target/store', [QuranSiswaController::class, 'paudTargetStore'], [Middleware::permissionRequired('quran_siswa.paud_target.create')]);
+$router->get('/kelola-quran-siswa-paud/target/manage/{id}', [QuranSiswaController::class, 'paudTargetManage'], [Middleware::permissionRequired('quran_siswa.paud_target.view')]);
+$router->get('/kelola-quran-siswa-paud/target/{id}', [QuranSiswaController::class, 'paudTargetManage'], [Middleware::permissionRequired('quran_siswa.paud_target.view')]);
+$router->post('/kelola-quran-siswa-paud/target/manage/{id}/store', [QuranSiswaController::class, 'paudTargetSaveMateri'], [Middleware::permissionRequired('quran_siswa.paud_target.update')]);
+$router->get('/kelola-quran-siswa-paud/target/edit/{id}', [QuranSiswaController::class, 'paudTargetEdit'], [Middleware::permissionRequired('quran_siswa.paud_target.update')]);
+$router->post('/kelola-quran-siswa-paud/target/update/{id}', [QuranSiswaController::class, 'paudTargetUpdate'], [Middleware::permissionRequired('quran_siswa.paud_target.update')]);
+$router->post('/kelola-quran-siswa-paud/target/toggle-status/{id}', [QuranSiswaController::class, 'paudTargetToggleStatus'], [Middleware::permissionRequired('quran_siswa.paud_target.update')]);
+$router->post('/kelola-quran-siswa-paud/target/delete/{id}', [QuranSiswaController::class, 'paudTargetDelete'], [Middleware::permissionRequired('quran_siswa.paud_target.delete')]);
 
 // Fitur 3: Input Penilaian Qur'an PAUD
-$router->get('/kelola-quran-siswa-paud/penilaian', [QuranSiswaController::class, 'paudPenilaianIndex'], [Middleware::permissionRequired('quran_siswa.view')]);
-$router->get('/kelola-quran-siswa-paud/penilaian/{groupId}', [QuranSiswaController::class, 'paudPenilaianForm'], [Middleware::permissionRequired('quran_siswa.create')]);
-$router->post('/kelola-quran-siswa-paud/penilaian/store/{groupId}', [QuranSiswaController::class, 'paudPenilaianStore'], [Middleware::permissionRequired('quran_siswa.create')]);
+$router->get('/kelola-quran-siswa-paud/penilaian', [QuranSiswaController::class, 'paudPenilaianIndex'], [Middleware::permissionRequired('quran_siswa.paud_penilaian.view')]);
+$router->get('/kelola-quran-siswa-paud/penilaian/{groupId}', [QuranSiswaController::class, 'paudPenilaianForm'], [Middleware::permissionRequired('quran_siswa.paud_penilaian.create')]);
+$router->post('/kelola-quran-siswa-paud/penilaian/store/{groupId}', [QuranSiswaController::class, 'paudPenilaianStore'], [Middleware::permissionRequired('quran_siswa.paud_penilaian.create')]);
 
 // Fitur 4: Rekap Nilai Qur'an PAUD
-$router->get('/kelola-quran-siswa-paud/rekap', [QuranSiswaController::class, 'paudRekapIndex'], [Middleware::permissionRequired('quran_siswa.view')]);
-$router->get('/kelola-quran-siswa-paud/rekap/cetak', [QuranSiswaController::class, 'paudRekapCetak'], [Middleware::permissionRequired('quran_siswa.view')]);
-$router->get('/kelola-quran-siswa-paud/rekap/export', [QuranSiswaController::class, 'paudRekapExport'], [Middleware::permissionRequired('quran_siswa.view')]);
-$router->get('/kelola-quran-siswa-smp-sma', [QuranSiswaController::class, 'smpSmaIndex'], [Middleware::permissionRequired('quran_siswa.view')]);
-$router->get('/kelola-quran-siswa/smp-sma', [QuranSiswaController::class, 'smpSmaIndex'], [Middleware::permissionRequired('quran_siswa.view')]);
-$router->post('/kelola-quran-siswa/setoran/store', [QuranSiswaController::class, 'storeSetoran'], [Middleware::permissionRequired('quran_siswa.create')]);
-$router->post('/kelola-quran-siswa/setoran/delete/{id}', [QuranSiswaController::class, 'deleteSetoran'], [Middleware::permissionRequired('quran_siswa.delete')]);
-$router->get('/kelola-quran-siswa/cetak', [QuranSiswaController::class, 'cetakRekap'], [Middleware::permissionRequired('quran_siswa.view')]);
-$router->get('/kelola-quran-siswa/export', [QuranSiswaController::class, 'exportExcel'], [Middleware::permissionRequired('quran_siswa.view')]);
+$router->get('/kelola-quran-siswa-paud/rekap', [QuranSiswaController::class, 'paudRekapIndex'], [Middleware::permissionRequired('quran_siswa.paud_rekap.view')]);
+$router->get('/kelola-quran-siswa-paud/rekap/cetak', [QuranSiswaController::class, 'paudRekapCetak'], [Middleware::permissionRequired('quran_siswa.paud_rekap.view')]);
+$router->get('/kelola-quran-siswa-paud/rekap/export', [QuranSiswaController::class, 'paudRekapExport'], [Middleware::permissionRequired('quran_siswa.paud_rekap.view')]);
+$router->get('/kelola-quran-siswa-smp-sma', [QuranSiswaController::class, 'smpSmaIndex'], [Middleware::permissionRequired('quran_siswa.sd_smp.view')]);
+$router->get('/kelola-quran-siswa/smp-sma', [QuranSiswaController::class, 'smpSmaIndex'], [Middleware::permissionRequired('quran_siswa.sd_smp.view')]);
+$router->post('/kelola-quran-siswa/setoran/store', [QuranSiswaController::class, 'storeSetoran'], [Middleware::permissionRequired('quran_siswa.sd_smp.create')]);
+$router->post('/kelola-quran-siswa/setoran/delete/{id}', [QuranSiswaController::class, 'deleteSetoran'], [Middleware::permissionRequired('quran_siswa.sd_smp.delete')]);
+$router->get('/kelola-quran-siswa/cetak', [QuranSiswaController::class, 'cetakRekap'], [Middleware::permissionRequired('quran_siswa.sd_smp.view')]);
+$router->get('/kelola-quran-siswa/export', [QuranSiswaController::class, 'exportExcel'], [Middleware::permissionRequired('quran_siswa.sd_smp.view')]);
 $router->get('/kelola-ujian', [UjianController::class, 'index'], [Middleware::permissionRequired('ujian.view')]);
 $router->get('/kelola-quran-pegawai', [QuranPegawaiController::class, 'index'], [Middleware::permissionRequired('quran_pegawai.view')]);
 // -- Kelola Cuti Pegawai --
-$router->get('/kelola-cuti', [CutiController::class, 'index'], [Middleware::permissionRequired('cuti.view')]);
-$router->post('/kelola-cuti/pengajuan/store', [CutiController::class, 'storePengajuan'], [Middleware::permissionRequired('cuti.view')]);
-$router->post('/kelola-cuti/pengajuan/approve', [CutiController::class, 'approve'], [Middleware::permissionRequired('cuti.view')]);
-$router->post('/kelola-cuti/jenis/store', [CutiController::class, 'storeJenisCuti'], [Middleware::permissionRequired('cuti.view')]);
-$router->post('/kelola-cuti/jenis/delete', [CutiController::class, 'deleteJenisCuti'], [Middleware::permissionRequired('cuti.view')]);
-$router->post('/kelola-cuti/saldo/adjust', [CutiController::class, 'adjustSaldo'], [Middleware::permissionRequired('cuti.view')]);
-$router->post('/kelola-cuti/tambah-bulanan', [CutiController::class, 'triggerTambahBulanan'], [Middleware::permissionRequired('cuti.view')]);
-$router->get('/kelola-cuti/cetak/{id}', [CutiController::class, 'cetakSurat'], [Middleware::permissionRequired('cuti.view')]);
-$router->get('/kelola-cuti/export', [CutiController::class, 'exportCsv'], [Middleware::permissionRequired('cuti.view')]);
+$router->get('/kelola-cuti', [CutiController::class, 'index'], [Middleware::permissionRequired('cuti.pengajuan.view')]);
+$router->post('/kelola-cuti/pengajuan/store', [CutiController::class, 'storePengajuan'], [Middleware::permissionRequired('cuti.pengajuan.create')]);
+$router->post('/kelola-cuti/pengajuan/approve', [CutiController::class, 'approve'], [Middleware::permissionRequired('cuti.approve')]);
+$router->post('/kelola-cuti/jenis/store', [CutiController::class, 'storeJenisCuti'], [Middleware::permissionRequired('cuti.master.update')]);
+$router->post('/kelola-cuti/jenis/delete', [CutiController::class, 'deleteJenisCuti'], [Middleware::permissionRequired('cuti.master.update')]);
+$router->post('/kelola-cuti/saldo/adjust', [CutiController::class, 'adjustSaldo'], [Middleware::permissionRequired('cuti.master.update')]);
+$router->post('/kelola-cuti/tambah-bulanan', [CutiController::class, 'triggerTambahBulanan'], [Middleware::permissionRequired('cuti.master.update')]);
+$router->get('/kelola-cuti/cetak/{id}', [CutiController::class, 'cetakSurat'], [Middleware::permissionRequired('cuti.pengajuan.view')]);
+$router->get('/kelola-cuti/export', [CutiController::class, 'exportCsv'], [Middleware::permissionRequired('cuti.export')]);
 $router->get('/kelola-kpi', [KpiController::class, 'index'], [Middleware::permissionRequired('kpi.view')]);
 $router->get('/kelola-ibadah-guru', [IbadahGuruController::class, 'index'], [[Middleware::class, 'authRequired']]);
 $router->post('/kelola-ibadah-guru/store', [IbadahGuruController::class, 'store'], [[Middleware::class, 'authRequired']]);
@@ -686,245 +686,245 @@ $router->get('/kelola-spmb', [SpmbController::class, 'index'], [[Middleware::cla
 $router->get('/kelola-spmb/dashboard', [SpmbController::class, 'index'], [Middleware::permissionRequired('spmb.dashboard')]);
 
 // 2. Siswa Baru
-$router->get('/kelola-spmb/siswa-baru', [SpmbController::class, 'siswaBaruIndex'], [Middleware::permissionRequired('spmb.siswa_baru')]);
-$router->get('/kelola-spmb/siswa-baru/get-nomor', [SpmbController::class, 'getNomorAjax'], [Middleware::permissionRequired('spmb.siswa_baru')]);
-$router->get('/kelola-spmb/siswa-baru/create', [SpmbController::class, 'siswaBaruCreate'], [Middleware::permissionRequired('spmb.create')]);
-$router->post('/kelola-spmb/siswa-baru/store', [SpmbController::class, 'siswaBaruStore'], [Middleware::permissionRequired('spmb.create')]);
-$router->get('/kelola-spmb/siswa-baru/edit/{id}', [SpmbController::class, 'siswaBaruEdit'], [Middleware::permissionRequired('spmb.update')]);
-$router->post('/kelola-spmb/siswa-baru/update/{id}', [SpmbController::class, 'siswaBaruUpdate'], [Middleware::permissionRequired('spmb.update')]);
-$router->get('/kelola-spmb/siswa-baru/detail/{id}', [SpmbController::class, 'siswaBaruDetail'], [Middleware::permissionRequired('spmb.siswa_baru')]);
-$router->get('/kelola-spmb/siswa-baru/delete/{id}', [SpmbController::class, 'siswaBaruDelete'], [Middleware::permissionRequired('spmb.delete')]);
-$router->post('/kelola-spmb/siswa-baru/status/{id}', [SpmbController::class, 'siswaBaruStatus'], [Middleware::permissionRequired('spmb.approve')]);
-$router->post('/kelola-spmb/siswa-baru/bulk-status', [SpmbController::class, 'siswaBaruBulkStatus'], [Middleware::permissionRequired('spmb.approve')]);
-$router->get('/kelola-spmb/siswa-baru/cetak/{id}', [SpmbController::class, 'siswaBaruCetak'], [Middleware::permissionRequired('spmb.siswa_baru')]);
-$router->get('/kelola-spmb/siswa-baru/export', [SpmbController::class, 'siswaBaruExport'], [Middleware::permissionRequired('spmb.export')]);
-$router->post('/kelola-spmb/kirim-wa-biodata/{id}', [SpmbController::class, 'kirimWaBiodata'], [Middleware::permissionRequired('spmb.update')]);
-$router->post('/kelola-spmb/update-status-biodata/{id}', [SpmbController::class, 'updateStatusBiodata'], [Middleware::permissionRequired('spmb.update')]);
+$router->get('/kelola-spmb/siswa-baru', [SpmbController::class, 'siswaBaruIndex'], [Middleware::permissionRequired('spmb.siswa_baru.view')]);
+$router->get('/kelola-spmb/siswa-baru/get-nomor', [SpmbController::class, 'getNomorAjax'], [Middleware::permissionRequired('spmb.siswa_baru.view')]);
+$router->get('/kelola-spmb/siswa-baru/create', [SpmbController::class, 'siswaBaruCreate'], [Middleware::permissionRequired('spmb.siswa_baru.create')]);
+$router->post('/kelola-spmb/siswa-baru/store', [SpmbController::class, 'siswaBaruStore'], [Middleware::permissionRequired('spmb.siswa_baru.create')]);
+$router->get('/kelola-spmb/siswa-baru/edit/{id}', [SpmbController::class, 'siswaBaruEdit'], [Middleware::permissionRequired('spmb.siswa_baru.update')]);
+$router->post('/kelola-spmb/siswa-baru/update/{id}', [SpmbController::class, 'siswaBaruUpdate'], [Middleware::permissionRequired('spmb.siswa_baru.update')]);
+$router->get('/kelola-spmb/siswa-baru/detail/{id}', [SpmbController::class, 'siswaBaruDetail'], [Middleware::permissionRequired('spmb.siswa_baru.view')]);
+$router->get('/kelola-spmb/siswa-baru/delete/{id}', [SpmbController::class, 'siswaBaruDelete'], [Middleware::permissionRequired('spmb.siswa_baru.delete')]);
+$router->post('/kelola-spmb/siswa-baru/status/{id}', [SpmbController::class, 'siswaBaruStatus'], [Middleware::permissionRequired('spmb.siswa_baru.approve')]);
+$router->post('/kelola-spmb/siswa-baru/bulk-status', [SpmbController::class, 'siswaBaruBulkStatus'], [Middleware::permissionRequired('spmb.siswa_baru.approve')]);
+$router->get('/kelola-spmb/siswa-baru/cetak/{id}', [SpmbController::class, 'siswaBaruCetak'], [Middleware::permissionRequired('spmb.siswa_baru.view')]);
+$router->get('/kelola-spmb/siswa-baru/export', [SpmbController::class, 'siswaBaruExport'], [Middleware::permissionRequired('spmb.siswa_baru.export')]);
+$router->post('/kelola-spmb/kirim-wa-biodata/{id}', [SpmbController::class, 'kirimWaBiodata'], [Middleware::permissionRequired(['spmb.siswa_baru.update', 'spmb.pindahan.update', 'spmb.daftar_tunggu.update'])]);
+$router->post('/kelola-spmb/update-status-biodata/{id}', [SpmbController::class, 'updateStatusBiodata'], [Middleware::permissionRequired(['spmb.siswa_baru.update', 'spmb.pindahan.update', 'spmb.daftar_tunggu.update'])]);
 
 // 3. Pindahan
-$router->get('/kelola-spmb/pindahan', [SpmbController::class, 'pindahanIndex'], [Middleware::permissionRequired('spmb.pindahan')]);
-$router->get('/kelola-spmb/pindahan/get-nomor', [SpmbController::class, 'pindahanGetNomorAjax'], [Middleware::permissionRequired('spmb.pindahan')]);
-$router->get('/kelola-spmb/pindahan/create', [SpmbController::class, 'pindahanCreate'], [Middleware::permissionRequired('spmb.create')]);
-$router->post('/kelola-spmb/pindahan/store', [SpmbController::class, 'pindahanStore'], [Middleware::permissionRequired('spmb.create')]);
-$router->get('/kelola-spmb/pindahan/edit/{id}', [SpmbController::class, 'pindahanEdit'], [Middleware::permissionRequired('spmb.update')]);
-$router->post('/kelola-spmb/pindahan/update/{id}', [SpmbController::class, 'pindahanUpdate'], [Middleware::permissionRequired('spmb.update')]);
-$router->get('/kelola-spmb/pindahan/detail/{id}', [SpmbController::class, 'pindahanDetail'], [Middleware::permissionRequired('spmb.pindahan')]);
-$router->get('/kelola-spmb/pindahan/delete/{id}', [SpmbController::class, 'pindahanDelete'], [Middleware::permissionRequired('spmb.delete')]);
-$router->post('/kelola-spmb/pindahan/status/{id}', [SpmbController::class, 'pindahanStatus'], [Middleware::permissionRequired('spmb.approve')]);
-$router->post('/kelola-spmb/pindahan/bulk-status', [SpmbController::class, 'pindahanBulkStatus'], [Middleware::permissionRequired('spmb.approve')]);
-$router->get('/kelola-spmb/pindahan/cetak/{id}', [SpmbController::class, 'pindahanCetak'], [Middleware::permissionRequired('spmb.pindahan')]);
-$router->get('/kelola-spmb/pindahan/export', [SpmbController::class, 'pindahanExport'], [Middleware::permissionRequired('spmb.export')]);
+$router->get('/kelola-spmb/pindahan', [SpmbController::class, 'pindahanIndex'], [Middleware::permissionRequired('spmb.pindahan.view')]);
+$router->get('/kelola-spmb/pindahan/get-nomor', [SpmbController::class, 'pindahanGetNomorAjax'], [Middleware::permissionRequired('spmb.pindahan.view')]);
+$router->get('/kelola-spmb/pindahan/create', [SpmbController::class, 'pindahanCreate'], [Middleware::permissionRequired('spmb.pindahan.create')]);
+$router->post('/kelola-spmb/pindahan/store', [SpmbController::class, 'pindahanStore'], [Middleware::permissionRequired('spmb.pindahan.create')]);
+$router->get('/kelola-spmb/pindahan/edit/{id}', [SpmbController::class, 'pindahanEdit'], [Middleware::permissionRequired('spmb.pindahan.update')]);
+$router->post('/kelola-spmb/pindahan/update/{id}', [SpmbController::class, 'pindahanUpdate'], [Middleware::permissionRequired('spmb.pindahan.update')]);
+$router->get('/kelola-spmb/pindahan/detail/{id}', [SpmbController::class, 'pindahanDetail'], [Middleware::permissionRequired('spmb.pindahan.view')]);
+$router->get('/kelola-spmb/pindahan/delete/{id}', [SpmbController::class, 'pindahanDelete'], [Middleware::permissionRequired('spmb.pindahan.delete')]);
+$router->post('/kelola-spmb/pindahan/status/{id}', [SpmbController::class, 'pindahanStatus'], [Middleware::permissionRequired('spmb.pindahan.approve')]);
+$router->post('/kelola-spmb/pindahan/bulk-status', [SpmbController::class, 'pindahanBulkStatus'], [Middleware::permissionRequired('spmb.pindahan.approve')]);
+$router->get('/kelola-spmb/pindahan/cetak/{id}', [SpmbController::class, 'pindahanCetak'], [Middleware::permissionRequired('spmb.pindahan.view')]);
+$router->get('/kelola-spmb/pindahan/export', [SpmbController::class, 'pindahanExport'], [Middleware::permissionRequired('spmb.pindahan.export')]);
 
 // 4. Daftar Tunggu
-$router->get('/kelola-spmb/daftar-tunggu', [SpmbController::class, 'daftarTungguIndex'], [Middleware::permissionRequired('spmb.daftar_tunggu')]);
-$router->get('/kelola-spmb/daftar-tunggu/get-nomor', [SpmbController::class, 'daftarTungguGetNomorAjax'], [Middleware::permissionRequired('spmb.daftar_tunggu')]);
-$router->get('/kelola-spmb/daftar-tunggu/create', [SpmbController::class, 'daftarTungguCreate'], [Middleware::permissionRequired('spmb.create')]);
-$router->post('/kelola-spmb/daftar-tunggu/store', [SpmbController::class, 'daftarTungguStore'], [Middleware::permissionRequired('spmb.create')]);
-$router->get('/kelola-spmb/daftar-tunggu/edit/{id}', [SpmbController::class, 'daftarTungguEdit'], [Middleware::permissionRequired('spmb.update')]);
-$router->post('/kelola-spmb/daftar-tunggu/update/{id}', [SpmbController::class, 'daftarTungguUpdate'], [Middleware::permissionRequired('spmb.update')]);
-$router->get('/kelola-spmb/daftar-tunggu/detail/{id}', [SpmbController::class, 'daftarTungguDetail'], [Middleware::permissionRequired('spmb.daftar_tunggu')]);
-$router->get('/kelola-spmb/daftar-tunggu/delete/{id}', [SpmbController::class, 'daftarTungguDelete'], [Middleware::permissionRequired('spmb.delete')]);
-$router->post('/kelola-spmb/daftar-tunggu/status/{id}', [SpmbController::class, 'daftarTungguStatus'], [Middleware::permissionRequired('spmb.approve')]);
-$router->post('/kelola-spmb/daftar-tunggu/promosikan/{id}', [SpmbController::class, 'daftarTungguPromosikan'], [Middleware::permissionRequired('spmb.update')]);
-$router->get('/kelola-spmb/daftar-tunggu/cetak/{id}', [SpmbController::class, 'daftarTungguCetak'], [Middleware::permissionRequired('spmb.daftar_tunggu')]);
-$router->get('/kelola-spmb/daftar-tunggu/export', [SpmbController::class, 'daftarTungguExport'], [Middleware::permissionRequired('spmb.export')]);
-$router->post('/kelola-spmb/daftar-tunggu/send-wa/{id}', [SpmbController::class, 'daftarTungguSendWaSingle'], [Middleware::permissionRequired('spmb.update')]);
-$router->post('/kelola-spmb/daftar-tunggu/broadcast-send-single', [SpmbController::class, 'daftarTungguSendWaSingle'], [Middleware::permissionRequired('spmb.update')]);
-$router->get('/kelola-spmb/daftar-tunggu/get-template-wa', [SpmbController::class, 'daftarTungguGetTemplateWa'], [Middleware::permissionRequired('spmb.daftar_tunggu')]);
+$router->get('/kelola-spmb/daftar-tunggu', [SpmbController::class, 'daftarTungguIndex'], [Middleware::permissionRequired('spmb.daftar_tunggu.view')]);
+$router->get('/kelola-spmb/daftar-tunggu/get-nomor', [SpmbController::class, 'daftarTungguGetNomorAjax'], [Middleware::permissionRequired('spmb.daftar_tunggu.view')]);
+$router->get('/kelola-spmb/daftar-tunggu/create', [SpmbController::class, 'daftarTungguCreate'], [Middleware::permissionRequired('spmb.daftar_tunggu.create')]);
+$router->post('/kelola-spmb/daftar-tunggu/store', [SpmbController::class, 'daftarTungguStore'], [Middleware::permissionRequired('spmb.daftar_tunggu.create')]);
+$router->get('/kelola-spmb/daftar-tunggu/edit/{id}', [SpmbController::class, 'daftarTungguEdit'], [Middleware::permissionRequired('spmb.daftar_tunggu.update')]);
+$router->post('/kelola-spmb/daftar-tunggu/update/{id}', [SpmbController::class, 'daftarTungguUpdate'], [Middleware::permissionRequired('spmb.daftar_tunggu.update')]);
+$router->get('/kelola-spmb/daftar-tunggu/detail/{id}', [SpmbController::class, 'daftarTungguDetail'], [Middleware::permissionRequired('spmb.daftar_tunggu.view')]);
+$router->get('/kelola-spmb/daftar-tunggu/delete/{id}', [SpmbController::class, 'daftarTungguDelete'], [Middleware::permissionRequired('spmb.daftar_tunggu.delete')]);
+$router->post('/kelola-spmb/daftar-tunggu/status/{id}', [SpmbController::class, 'daftarTungguStatus'], [Middleware::permissionRequired('spmb.daftar_tunggu.approve')]);
+$router->post('/kelola-spmb/daftar-tunggu/promosikan/{id}', [SpmbController::class, 'daftarTungguPromosikan'], [Middleware::permissionRequired('spmb.daftar_tunggu.update')]);
+$router->get('/kelola-spmb/daftar-tunggu/cetak/{id}', [SpmbController::class, 'daftarTungguCetak'], [Middleware::permissionRequired('spmb.daftar_tunggu.view')]);
+$router->get('/kelola-spmb/daftar-tunggu/export', [SpmbController::class, 'daftarTungguExport'], [Middleware::permissionRequired('spmb.daftar_tunggu.export')]);
+$router->post('/kelola-spmb/daftar-tunggu/send-wa/{id}', [SpmbController::class, 'daftarTungguSendWaSingle'], [Middleware::permissionRequired('spmb.daftar_tunggu.update')]);
+$router->post('/kelola-spmb/daftar-tunggu/broadcast-send-single', [SpmbController::class, 'daftarTungguSendWaSingle'], [Middleware::permissionRequired('spmb.daftar_tunggu.update')]);
+$router->get('/kelola-spmb/daftar-tunggu/get-template-wa', [SpmbController::class, 'daftarTungguGetTemplateWa'], [Middleware::permissionRequired('spmb.daftar_tunggu.view')]);
 
 // 5. Pengaturan Tahun Group SPMB
-$router->get('/kelola-spmb/pengaturan', [SpmbController::class, 'pengaturanIndex'], [Middleware::permissionRequired('spmb.pengaturan')]);
-$router->post('/kelola-spmb/pengaturan/store', [SpmbController::class, 'pengaturanStore'], [Middleware::permissionRequired('spmb.pengaturan')]);
-$router->post('/kelola-spmb/pengaturan/update/{id}', [SpmbController::class, 'pengaturanUpdate'], [Middleware::permissionRequired('spmb.pengaturan')]);
-$router->get('/kelola-spmb/pengaturan/set-active/{id}', [SpmbController::class, 'pengaturanSetActive'], [Middleware::permissionRequired('spmb.pengaturan')]);
-$router->get('/kelola-spmb/pengaturan/delete/{id}', [SpmbController::class, 'pengaturanDelete'], [Middleware::permissionRequired('spmb.pengaturan')]);
-$router->post('/kelola-spmb/pengaturan/upload-kop', [SpmbController::class, 'pengaturanUploadKop'], [Middleware::permissionRequired('spmb.pengaturan')]);
-$router->post('/kelola-spmb/pengaturan/hapus-kop', [SpmbController::class, 'pengaturanHapusKop'], [Middleware::permissionRequired('spmb.pengaturan')]);
-$router->post('/kelola-spmb/pengaturan/save-options', [SpmbController::class, 'pengaturanSaveOptions'], [Middleware::permissionRequired('spmb.pengaturan')]);
-$router->post('/kelola-spmb/pengaturan/upload-contoh-dapodik', [SpmbController::class, 'pengaturanUploadContohDapodik'], [Middleware::permissionRequired('spmb.pengaturan')]);
+$router->get('/kelola-spmb/pengaturan', [SpmbController::class, 'pengaturanIndex'], [Middleware::permissionRequired('spmb.pengaturan.view')]);
+$router->post('/kelola-spmb/pengaturan/store', [SpmbController::class, 'pengaturanStore'], [Middleware::permissionRequired('spmb.pengaturan.create')]);
+$router->post('/kelola-spmb/pengaturan/update/{id}', [SpmbController::class, 'pengaturanUpdate'], [Middleware::permissionRequired('spmb.pengaturan.update')]);
+$router->get('/kelola-spmb/pengaturan/set-active/{id}', [SpmbController::class, 'pengaturanSetActive'], [Middleware::permissionRequired('spmb.pengaturan.update')]);
+$router->get('/kelola-spmb/pengaturan/delete/{id}', [SpmbController::class, 'pengaturanDelete'], [Middleware::permissionRequired('spmb.pengaturan.delete')]);
+$router->post('/kelola-spmb/pengaturan/upload-kop', [SpmbController::class, 'pengaturanUploadKop'], [Middleware::permissionRequired('spmb.pengaturan.update')]);
+$router->post('/kelola-spmb/pengaturan/hapus-kop', [SpmbController::class, 'pengaturanHapusKop'], [Middleware::permissionRequired('spmb.pengaturan.update')]);
+$router->post('/kelola-spmb/pengaturan/save-options', [SpmbController::class, 'pengaturanSaveOptions'], [Middleware::permissionRequired('spmb.pengaturan.update')]);
+$router->post('/kelola-spmb/pengaturan/upload-contoh-dapodik', [SpmbController::class, 'pengaturanUploadContohDapodik'], [Middleware::permissionRequired('spmb.pengaturan.update')]);
 
 // 6. Surat Pernyataan
-$router->get('/kelola-spmb/surat-pernyataan', [SpmbController::class, 'suratPernyataanIndex'], [Middleware::permissionRequired('spmb.surat_pernyataan')]);
-$router->post('/kelola-spmb/surat-pernyataan/update', [SpmbController::class, 'suratPernyataanUpdate'], [Middleware::permissionRequired('spmb.surat_pernyataan')]);
-$router->post('/kelola-spmb/surat-pernyataan/upload-kop', [SpmbController::class, 'suratPernyataanUploadKop'], [Middleware::permissionRequired('spmb.surat_pernyataan')]);
-$router->post('/kelola-spmb/surat-pernyataan/hapus-kop', [SpmbController::class, 'suratPernyataanHapusKop'], [Middleware::permissionRequired('spmb.surat_pernyataan')]);
-$router->post('/kelola-spmb/surat-pernyataan/reset', [SpmbController::class, 'suratPernyataanReset'], [Middleware::permissionRequired('spmb.surat_pernyataan')]);
-$router->get('/kelola-spmb/surat-pernyataan/cetak/{id}', [SpmbController::class, 'suratPernyataanCetakAdmin'], [Middleware::permissionRequired('spmb.surat_pernyataan')]);
-$router->post('/kelola-spmb/surat-pernyataan/reset-ttd/{id}', [SpmbController::class, 'suratPernyataanResetTtd'], [Middleware::permissionRequired('spmb.surat_pernyataan')]);
-$router->post('/kelola-spmb/kirim-wa-komitmen/{id}', [SpmbController::class, 'kirimWaKomitmen'], [Middleware::permissionRequired('spmb.update')]);
-$router->get('/kelola-spmb/verifikasi-berkas/get/{id}', [SpmbController::class, 'getVerifikasiBerkasAjax'], [Middleware::permissionRequired('spmb.update')]);
-$router->post('/kelola-spmb/verifikasi-berkas/submit', [SpmbController::class, 'submitVerifikasiBerkas'], [Middleware::permissionRequired('spmb.approve')]);
-$router->get('/kelola-spmb/pengumuman-kelulusan/cetak', [SpmbController::class, 'pengumumanKelulusanCetak'], [Middleware::permissionRequired('spmb.approve')]);
-$router->get('/kelola-spmb/pengumuman-kelulusan/get-teks-wa', [SpmbController::class, 'getTeksPengumumanGrupAjax'], [Middleware::permissionRequired('spmb.approve')]);
-$router->post('/kelola-spmb/kirim-wa-kelulusan/{id}', [SpmbController::class, 'kirimWaKelulusan'], [Middleware::permissionRequired('spmb.approve')]);
-$router->post('/kelola-spmb/kirim-wa-kelulusan-bulk', [SpmbController::class, 'kirimWaKelulusanBulk'], [Middleware::permissionRequired('spmb.approve')]);
+$router->get('/kelola-spmb/surat-pernyataan', [SpmbController::class, 'suratPernyataanIndex'], [Middleware::permissionRequired('spmb.surat_pernyataan.view')]);
+$router->post('/kelola-spmb/surat-pernyataan/update', [SpmbController::class, 'suratPernyataanUpdate'], [Middleware::permissionRequired('spmb.surat_pernyataan.update')]);
+$router->post('/kelola-spmb/surat-pernyataan/upload-kop', [SpmbController::class, 'suratPernyataanUploadKop'], [Middleware::permissionRequired('spmb.surat_pernyataan.update')]);
+$router->post('/kelola-spmb/surat-pernyataan/hapus-kop', [SpmbController::class, 'suratPernyataanHapusKop'], [Middleware::permissionRequired('spmb.surat_pernyataan.update')]);
+$router->post('/kelola-spmb/surat-pernyataan/reset', [SpmbController::class, 'suratPernyataanReset'], [Middleware::permissionRequired('spmb.surat_pernyataan.update')]);
+$router->get('/kelola-spmb/surat-pernyataan/cetak/{id}', [SpmbController::class, 'suratPernyataanCetakAdmin'], [Middleware::permissionRequired('spmb.surat_pernyataan.view')]);
+$router->post('/kelola-spmb/surat-pernyataan/reset-ttd/{id}', [SpmbController::class, 'suratPernyataanResetTtd'], [Middleware::permissionRequired('spmb.surat_pernyataan.update')]);
+$router->post('/kelola-spmb/kirim-wa-komitmen/{id}', [SpmbController::class, 'kirimWaKomitmen'], [Middleware::permissionRequired('spmb.surat_pernyataan.update')]);
+$router->get('/kelola-spmb/verifikasi-berkas/get/{id}', [SpmbController::class, 'getVerifikasiBerkasAjax'], [Middleware::permissionRequired(['spmb.siswa_baru.update', 'spmb.pindahan.update'])]);
+$router->post('/kelola-spmb/verifikasi-berkas/submit', [SpmbController::class, 'submitVerifikasiBerkas'], [Middleware::permissionRequired(['spmb.siswa_baru.approve', 'spmb.pindahan.approve'])]);
+$router->get('/kelola-spmb/pengumuman-kelulusan/cetak', [SpmbController::class, 'pengumumanKelulusanCetak'], [Middleware::permissionRequired(['spmb.siswa_baru.approve', 'spmb.pindahan.approve'])]);
+$router->get('/kelola-spmb/pengumuman-kelulusan/get-teks-wa', [SpmbController::class, 'getTeksPengumumanGrupAjax'], [Middleware::permissionRequired(['spmb.siswa_baru.approve', 'spmb.pindahan.approve'])]);
+$router->post('/kelola-spmb/kirim-wa-kelulusan/{id}', [SpmbController::class, 'kirimWaKelulusan'], [Middleware::permissionRequired(['spmb.siswa_baru.approve', 'spmb.pindahan.approve'])]);
+$router->post('/kelola-spmb/kirim-wa-kelulusan-bulk', [SpmbController::class, 'kirimWaKelulusanBulk'], [Middleware::permissionRequired(['spmb.siswa_baru.approve', 'spmb.pindahan.approve'])]);
 
 // 7. Screening Psikolog (Galeri File PDF)
-$router->get('/kelola-spmb/screening-psikolog', [SpmbController::class, 'screeningPsikologIndex'], [Middleware::permissionRequired('spmb.psikolog')]);
-$router->post('/kelola-spmb/screening-psikolog/upload', [SpmbController::class, 'screeningPsikologUpload'], [Middleware::permissionRequired('spmb.psikolog')]);
-$router->post('/kelola-spmb/screening-psikolog/hapus/{id}', [SpmbController::class, 'screeningPsikologHapus'], [Middleware::permissionRequired('spmb.psikolog')]);
-$router->get('/kelola-spmb/screening-psikolog/view/{id}', [SpmbController::class, 'screeningPsikologView'], [Middleware::permissionRequired('spmb.psikolog')]);
-$router->get('/kelola-spmb/screening-psikolog/download/{id}', [SpmbController::class, 'screeningPsikologDownload'], [Middleware::permissionRequired('spmb.psikolog')]);
-$router->get('/kelola-spmb/screening-psikolog/export', [SpmbController::class, 'screeningPsikologExport'], [Middleware::permissionRequired('spmb.export')]);
-$router->get('/kelola-spmb/screening-psikolog/broadcast-data', [SpmbController::class, 'screeningPsikologBroadcastData'], [Middleware::permissionRequired('spmb.psikolog')]);
-$router->post('/kelola-spmb/screening-psikolog/send-wa/{id}', [SpmbController::class, 'screeningPsikologSendWaSingle'], [Middleware::permissionRequired('spmb.psikolog')]);
-$router->post('/kelola-spmb/screening-psikolog/broadcast-send-single', [SpmbController::class, 'screeningPsikologSendWaSingle'], [Middleware::permissionRequired('spmb.psikolog')]);
+$router->get('/kelola-spmb/screening-psikolog', [SpmbController::class, 'screeningPsikologIndex'], [Middleware::permissionRequired('spmb.psikolog.view')]);
+$router->post('/kelola-spmb/screening-psikolog/upload', [SpmbController::class, 'screeningPsikologUpload'], [Middleware::permissionRequired('spmb.psikolog.create')]);
+$router->post('/kelola-spmb/screening-psikolog/hapus/{id}', [SpmbController::class, 'screeningPsikologHapus'], [Middleware::permissionRequired('spmb.psikolog.delete')]);
+$router->get('/kelola-spmb/screening-psikolog/view/{id}', [SpmbController::class, 'screeningPsikologView'], [Middleware::permissionRequired('spmb.psikolog.view')]);
+$router->get('/kelola-spmb/screening-psikolog/download/{id}', [SpmbController::class, 'screeningPsikologDownload'], [Middleware::permissionRequired('spmb.psikolog.view')]);
+$router->get('/kelola-spmb/screening-psikolog/export', [SpmbController::class, 'screeningPsikologExport'], [Middleware::permissionRequired('spmb.psikolog.export')]);
+$router->get('/kelola-spmb/screening-psikolog/broadcast-data', [SpmbController::class, 'screeningPsikologBroadcastData'], [Middleware::permissionRequired('spmb.psikolog.update')]);
+$router->post('/kelola-spmb/screening-psikolog/send-wa/{id}', [SpmbController::class, 'screeningPsikologSendWaSingle'], [Middleware::permissionRequired('spmb.psikolog.update')]);
+$router->post('/kelola-spmb/screening-psikolog/broadcast-send-single', [SpmbController::class, 'screeningPsikologSendWaSingle'], [Middleware::permissionRequired('spmb.psikolog.update')]);
 
 // 8. Observasi Awal SPMB
-$router->get('/kelola-spmb/observasi-awal', [SpmbController::class, 'observasiAwalIndex'], [Middleware::permissionRequired('spmb.observasi')]);
-$router->get('/kelola-spmb/observasi-awal/pengaturan', [SpmbController::class, 'observasiAwalPengaturan'], [Middleware::permissionRequired('spmb.observasi')]);
-$router->post('/kelola-spmb/observasi-awal/group/store', [SpmbController::class, 'observasiAwalGroupStore'], [Middleware::permissionRequired('spmb.observasi')]);
-$router->post('/kelola-spmb/observasi-awal/group/delete/{id}', [SpmbController::class, 'observasiAwalGroupDelete'], [Middleware::permissionRequired('spmb.observasi')]);
-$router->post('/kelola-spmb/observasi-awal/pertanyaan/store', [SpmbController::class, 'observasiAwalPertanyaanStore'], [Middleware::permissionRequired('spmb.observasi')]);
-$router->post('/kelola-spmb/observasi-awal/pertanyaan/delete/{id}', [SpmbController::class, 'observasiAwalPertanyaanDelete'], [Middleware::permissionRequired('spmb.observasi')]);
-$router->get('/kelola-spmb/observasi-awal/detail/{id}', [SpmbController::class, 'observasiAwalDetail'], [Middleware::permissionRequired('spmb.observasi')]);
-$router->post('/kelola-spmb/observasi-awal/send-wa/{id}', [SpmbController::class, 'observasiAwalSendWaSingle'], [Middleware::permissionRequired('spmb.observasi')]);
-$router->get('/kelola-spmb/observasi-awal/broadcast-data', [SpmbController::class, 'observasiAwalBroadcastData'], [Middleware::permissionRequired('spmb.observasi')]);
-$router->post('/kelola-spmb/observasi-awal/broadcast-send-single', [SpmbController::class, 'observasiAwalSendWaSingle'], [Middleware::permissionRequired('spmb.observasi')]);
-$router->post('/kelola-spmb/observasi-awal/send-wa-group/{id}', [SpmbController::class, 'observasiAwalSendWaGroupSingle'], [Middleware::permissionRequired('spmb.observasi')]);
-$router->get('/kelola-spmb/observasi-awal/broadcast-group-data', [SpmbController::class, 'observasiAwalBroadcastGroupData'], [Middleware::permissionRequired('spmb.observasi')]);
-$router->post('/kelola-spmb/observasi-awal/broadcast-group-send', [SpmbController::class, 'observasiAwalBroadcastGroupSendSingle'], [Middleware::permissionRequired('spmb.observasi')]);
-$router->post('/kelola-spmb/observasi-awal/toggle-group-status/{id}', [SpmbController::class, 'observasiAwalToggleGroupStatus'], [Middleware::permissionRequired('spmb.observasi')]);
-$router->get('/kelola-spmb/observasi-awal/export', [SpmbController::class, 'observasiAwalExport'], [Middleware::permissionRequired('spmb.export')]);
-$router->get('/kelola-spmb/observasi-awal/cetak-rekap', [SpmbController::class, 'observasiAwalCetakRekap'], [Middleware::permissionRequired('spmb.observasi')]);
-$router->get('/kelola-spmb/observasi-awal/cetak/{id}', [SpmbController::class, 'observasiAwalCetak'], [Middleware::permissionRequired('spmb.observasi')]);
+$router->get('/kelola-spmb/observasi-awal', [SpmbController::class, 'observasiAwalIndex'], [Middleware::permissionRequired('spmb.observasi.view')]);
+$router->get('/kelola-spmb/observasi-awal/pengaturan', [SpmbController::class, 'observasiAwalPengaturan'], [Middleware::permissionRequired('spmb.observasi.create')]);
+$router->post('/kelola-spmb/observasi-awal/group/store', [SpmbController::class, 'observasiAwalGroupStore'], [Middleware::permissionRequired('spmb.observasi.create')]);
+$router->post('/kelola-spmb/observasi-awal/group/delete/{id}', [SpmbController::class, 'observasiAwalGroupDelete'], [Middleware::permissionRequired('spmb.observasi.delete')]);
+$router->post('/kelola-spmb/observasi-awal/pertanyaan/store', [SpmbController::class, 'observasiAwalPertanyaanStore'], [Middleware::permissionRequired('spmb.observasi.create')]);
+$router->post('/kelola-spmb/observasi-awal/pertanyaan/delete/{id}', [SpmbController::class, 'observasiAwalPertanyaanDelete'], [Middleware::permissionRequired('spmb.observasi.delete')]);
+$router->get('/kelola-spmb/observasi-awal/detail/{id}', [SpmbController::class, 'observasiAwalDetail'], [Middleware::permissionRequired('spmb.observasi.view')]);
+$router->post('/kelola-spmb/observasi-awal/send-wa/{id}', [SpmbController::class, 'observasiAwalSendWaSingle'], [Middleware::permissionRequired('spmb.observasi.update')]);
+$router->get('/kelola-spmb/observasi-awal/broadcast-data', [SpmbController::class, 'observasiAwalBroadcastData'], [Middleware::permissionRequired('spmb.observasi.update')]);
+$router->post('/kelola-spmb/observasi-awal/broadcast-send-single', [SpmbController::class, 'observasiAwalSendWaSingle'], [Middleware::permissionRequired('spmb.observasi.update')]);
+$router->post('/kelola-spmb/observasi-awal/send-wa-group/{id}', [SpmbController::class, 'observasiAwalSendWaGroupSingle'], [Middleware::permissionRequired('spmb.observasi.update')]);
+$router->get('/kelola-spmb/observasi-awal/broadcast-group-data', [SpmbController::class, 'observasiAwalBroadcastGroupData'], [Middleware::permissionRequired('spmb.observasi.update')]);
+$router->post('/kelola-spmb/observasi-awal/broadcast-group-send', [SpmbController::class, 'observasiAwalBroadcastGroupSendSingle'], [Middleware::permissionRequired('spmb.observasi.update')]);
+$router->post('/kelola-spmb/observasi-awal/toggle-group-status/{id}', [SpmbController::class, 'observasiAwalToggleGroupStatus'], [Middleware::permissionRequired('spmb.observasi.update')]);
+$router->get('/kelola-spmb/observasi-awal/export', [SpmbController::class, 'observasiAwalExport'], [Middleware::permissionRequired('spmb.observasi.export')]);
+$router->get('/kelola-spmb/observasi-awal/cetak-rekap', [SpmbController::class, 'observasiAwalCetakRekap'], [Middleware::permissionRequired('spmb.observasi.view')]);
+$router->get('/kelola-spmb/observasi-awal/cetak/{id}', [SpmbController::class, 'observasiAwalCetak'], [Middleware::permissionRequired('spmb.observasi.view')]);
 $router->get('/kelola-pelanggaran-siswa', [PelanggaranSiswaController::class, 'index'], [Middleware::permissionRequired('pelanggaran_siswa.view')]);
 $router->get('/kelola-izin-guru', [IzinGuruController::class, 'index'], [Middleware::permissionRequired('izin_guru.view')]);
 $router->get('/kelola-buku-angkatan-siswa', [BukuAngkatanSiswaController::class, 'index'], [Middleware::permissionRequired('buku_angkatan.view')]);
 
 // -- Kelola Sarpras (Sarana & Prasarana) --
-$router->get('/kelola-sarpras', [SarprasController::class, 'index'], [Middleware::permissionRequired('sarpras.view')]);
-$router->get('/kelola-sarpras/dashboard', [SarprasController::class, 'index'], [Middleware::permissionRequired('sarpras.view')]);
-$router->get('/kelola-sarpras/export', [SarprasController::class, 'exportExcel'], [Middleware::permissionRequired('sarpras.export')]);
-$router->get('/kelola-sarpras/cetak-label/print', [SarprasController::class, 'cetakLabelPrint'], [Middleware::permissionRequired('sarpras.export')]);
-$router->get('/kelola-sarpras/cetak-label', [SarprasController::class, 'cetakLabelIndex'], [Middleware::permissionRequired('sarpras.export')]);
+$router->get('/kelola-sarpras', [SarprasController::class, 'index'], [[Middleware::class, 'authRequired']]);
+$router->get('/kelola-sarpras/dashboard', [SarprasController::class, 'index'], [Middleware::permissionRequired('sarpras.dashboard')]);
+$router->get('/kelola-sarpras/export', [SarprasController::class, 'exportExcel'], [Middleware::permissionRequired('sarpras.barang.export')]);
+$router->get('/kelola-sarpras/cetak-label/print', [SarprasController::class, 'cetakLabelPrint'], [Middleware::permissionRequired('sarpras.label.view')]);
+$router->get('/kelola-sarpras/cetak-label', [SarprasController::class, 'cetakLabelIndex'], [Middleware::permissionRequired('sarpras.label.view')]);
 
 // Barang / Aset
-$router->get('/kelola-sarpras/barang', [SarprasController::class, 'barangList'], [Middleware::permissionRequired('sarpras.view')]);
-$router->get('/kelola-sarpras/barang/create', [SarprasController::class, 'barangCreate'], [Middleware::permissionRequired('sarpras.create')]);
-$router->post('/kelola-sarpras/barang/store', [SarprasController::class, 'barangStore'], [Middleware::permissionRequired('sarpras.create')]);
-$router->get('/kelola-sarpras/barang/edit/{id}', [SarprasController::class, 'barangEdit'], [Middleware::permissionRequired('sarpras.update')]);
-$router->post('/kelola-sarpras/barang/update/{id}', [SarprasController::class, 'barangUpdate'], [Middleware::permissionRequired('sarpras.update')]);
-$router->post('/kelola-sarpras/barang/delete/{id}', [SarprasController::class, 'barangDelete'], [Middleware::permissionRequired('sarpras.delete')]);
+$router->get('/kelola-sarpras/barang', [SarprasController::class, 'barangList'], [Middleware::permissionRequired('sarpras.barang.view')]);
+$router->get('/kelola-sarpras/barang/create', [SarprasController::class, 'barangCreate'], [Middleware::permissionRequired('sarpras.barang.create')]);
+$router->post('/kelola-sarpras/barang/store', [SarprasController::class, 'barangStore'], [Middleware::permissionRequired('sarpras.barang.create')]);
+$router->get('/kelola-sarpras/barang/edit/{id}', [SarprasController::class, 'barangEdit'], [Middleware::permissionRequired('sarpras.barang.update')]);
+$router->post('/kelola-sarpras/barang/update/{id}', [SarprasController::class, 'barangUpdate'], [Middleware::permissionRequired('sarpras.barang.update')]);
+$router->post('/kelola-sarpras/barang/delete/{id}', [SarprasController::class, 'barangDelete'], [Middleware::permissionRequired('sarpras.barang.delete')]);
 
 // Peminjaman
-$router->get('/kelola-sarpras/peminjaman', [SarprasController::class, 'peminjamanList'], [Middleware::permissionRequired('sarpras.view')]);
-$router->post('/kelola-sarpras/peminjaman/store', [SarprasController::class, 'peminjamanStore'], [Middleware::permissionRequired('sarpras.create')]);
-$router->post('/kelola-sarpras/peminjaman/update/{id}', [SarprasController::class, 'peminjamanUpdate'], [Middleware::permissionRequired('sarpras.update')]);
-$router->post('/kelola-sarpras/peminjaman/kembali/{id}', [SarprasController::class, 'peminjamanKembali'], [Middleware::permissionRequired('sarpras.update')]);
+$router->get('/kelola-sarpras/peminjaman', [SarprasController::class, 'peminjamanList'], [Middleware::permissionRequired('sarpras.peminjaman.view')]);
+$router->post('/kelola-sarpras/peminjaman/store', [SarprasController::class, 'peminjamanStore'], [Middleware::permissionRequired('sarpras.peminjaman.create')]);
+$router->post('/kelola-sarpras/peminjaman/update/{id}', [SarprasController::class, 'peminjamanUpdate'], [Middleware::permissionRequired('sarpras.peminjaman.update')]);
+$router->post('/kelola-sarpras/peminjaman/kembali/{id}', [SarprasController::class, 'peminjamanKembali'], [Middleware::permissionRequired('sarpras.peminjaman.update')]);
 
 // Pemeliharaan
-$router->get('/kelola-sarpras/pemeliharaan', [SarprasController::class, 'pemeliharaanList'], [Middleware::permissionRequired('sarpras.view')]);
-$router->get('/kelola-sarpras/pemeliharaan/barang-by-ruangan', [SarprasController::class, 'getBarangByRuanganJson'], [Middleware::permissionRequired('sarpras.view')]);
-$router->post('/kelola-sarpras/pemeliharaan/store', [SarprasController::class, 'pemeliharaanStore'], [Middleware::permissionRequired('sarpras.create')]);
-$router->post('/kelola-sarpras/pemeliharaan/update-status/{id}', [SarprasController::class, 'pemeliharaanUpdate'], [Middleware::permissionRequired('sarpras.update')]);
-$router->post('/kelola-sarpras/pemeliharaan/verifikasi/{id}', [SarprasController::class, 'pemeliharaanVerifikasi'], [Middleware::permissionRequired('sarpras.view')]);
-$router->post('/kelola-sarpras/pemeliharaan/delete/{id}', [SarprasController::class, 'pemeliharaanDelete'], [Middleware::permissionRequired('sarpras.delete')]);
-$router->get('/kelola-sarpras/pemeliharaan/cetak/{id}', [SarprasController::class, 'pemeliharaanCetak'], [Middleware::permissionRequired('sarpras.view')]);
+$router->get('/kelola-sarpras/pemeliharaan', [SarprasController::class, 'pemeliharaanList'], [Middleware::permissionRequired('sarpras.perbaikan.view')]);
+$router->get('/kelola-sarpras/pemeliharaan/barang-by-ruangan', [SarprasController::class, 'getBarangByRuanganJson'], [Middleware::permissionRequired('sarpras.perbaikan.view')]);
+$router->post('/kelola-sarpras/pemeliharaan/store', [SarprasController::class, 'pemeliharaanStore'], [Middleware::permissionRequired('sarpras.perbaikan.create')]);
+$router->post('/kelola-sarpras/pemeliharaan/update-status/{id}', [SarprasController::class, 'pemeliharaanUpdate'], [Middleware::permissionRequired('sarpras.perbaikan.verify')]);
+$router->post('/kelola-sarpras/pemeliharaan/verifikasi/{id}', [SarprasController::class, 'pemeliharaanVerifikasi'], [Middleware::permissionRequired('sarpras.perbaikan.verify')]);
+$router->post('/kelola-sarpras/pemeliharaan/delete/{id}', [SarprasController::class, 'pemeliharaanDelete'], [Middleware::permissionRequired('sarpras.perbaikan.delete')]);
+$router->get('/kelola-sarpras/pemeliharaan/cetak/{id}', [SarprasController::class, 'pemeliharaanCetak'], [Middleware::permissionRequired('sarpras.perbaikan.view')]);
 
 // Pengajuan Pembelian Baru Sarpras
-$router->get('/kelola-sarpras/pengajuan', [SarprasController::class, 'pengajuanList'], [Middleware::permissionRequired('sarpras.view')]);
-$router->post('/kelola-sarpras/pengajuan/store', [SarprasController::class, 'pengajuanStore'], [Middleware::permissionRequired('sarpras.create')]);
-$router->post('/kelola-sarpras/pengajuan/verifikasi/{id}', [SarprasController::class, 'pengajuanVerifikasi'], [Middleware::permissionRequired('sarpras.view')]);
-$router->post('/kelola-sarpras/pengajuan/delete/{id}', [SarprasController::class, 'pengajuanDelete'], [Middleware::permissionRequired('sarpras.delete')]);
-$router->get('/kelola-sarpras/pengajuan/cetak/{id}', [SarprasController::class, 'pengajuanCetak'], [Middleware::permissionRequired('sarpras.view')]);
+$router->get('/kelola-sarpras/pengajuan', [SarprasController::class, 'pengajuanList'], [Middleware::permissionRequired('sarpras.pengajuan.view')]);
+$router->post('/kelola-sarpras/pengajuan/store', [SarprasController::class, 'pengajuanStore'], [Middleware::permissionRequired('sarpras.pengajuan.create')]);
+$router->post('/kelola-sarpras/pengajuan/verifikasi/{id}', [SarprasController::class, 'pengajuanVerifikasi'], [Middleware::permissionRequired('sarpras.pengajuan.verify')]);
+$router->post('/kelola-sarpras/pengajuan/delete/{id}', [SarprasController::class, 'pengajuanDelete'], [Middleware::permissionRequired('sarpras.pengajuan.delete')]);
+$router->get('/kelola-sarpras/pengajuan/cetak/{id}', [SarprasController::class, 'pengajuanCetak'], [Middleware::permissionRequired('sarpras.pengajuan.view')]);
 
 // Ruangan
-$router->get('/kelola-sarpras/ruangan', [SarprasController::class, 'ruanganList'], [Middleware::permissionRequired('sarpras.view')]);
-$router->post('/kelola-sarpras/ruangan/store', [SarprasController::class, 'ruanganStore'], [Middleware::permissionRequired('sarpras.create')]);
-$router->post('/kelola-sarpras/ruangan/delete/{id}', [SarprasController::class, 'ruanganDelete'], [Middleware::permissionRequired('sarpras.delete')]);
-$router->get('/kelola-sarpras/ruangan/detail/{id}', [SarprasController::class, 'ruanganDetail'], [Middleware::permissionRequired('sarpras.view')]);
-$router->post('/kelola-sarpras/distribusi/store', [SarprasController::class, 'distribusiStore'], [Middleware::permissionRequired('sarpras.create')]);
-$router->post('/kelola-sarpras/distribusi/delete/{id}', [SarprasController::class, 'distribusiDelete'], [Middleware::permissionRequired('sarpras.delete')]);
+$router->get('/kelola-sarpras/ruangan', [SarprasController::class, 'ruanganList'], [Middleware::permissionRequired('sarpras.aset.view')]);
+$router->post('/kelola-sarpras/ruangan/store', [SarprasController::class, 'ruanganStore'], [Middleware::permissionRequired('sarpras.aset.create')]);
+$router->post('/kelola-sarpras/ruangan/delete/{id}', [SarprasController::class, 'ruanganDelete'], [Middleware::permissionRequired('sarpras.aset.delete')]);
+$router->get('/kelola-sarpras/ruangan/detail/{id}', [SarprasController::class, 'ruanganDetail'], [Middleware::permissionRequired('sarpras.aset.view')]);
+$router->post('/kelola-sarpras/distribusi/store', [SarprasController::class, 'distribusiStore'], [Middleware::permissionRequired('sarpras.barang.create')]);
+$router->post('/kelola-sarpras/distribusi/delete/{id}', [SarprasController::class, 'distribusiDelete'], [Middleware::permissionRequired('sarpras.barang.delete')]);
 
 // Kategori
-$router->get('/kelola-sarpras/kategori', [SarprasController::class, 'kategoriList'], [Middleware::permissionRequired('sarpras.view')]);
-$router->post('/kelola-sarpras/kategori/store', [SarprasController::class, 'kategoriStore'], [Middleware::permissionRequired('sarpras.create')]);
-$router->post('/kelola-sarpras/kategori/delete/{id}', [SarprasController::class, 'kategoriDelete'], [Middleware::permissionRequired('sarpras.delete')]);
+$router->get('/kelola-sarpras/kategori', [SarprasController::class, 'kategoriList'], [Middleware::permissionRequired('sarpras.referensi.view')]);
+$router->post('/kelola-sarpras/kategori/store', [SarprasController::class, 'kategoriStore'], [Middleware::permissionRequired('sarpras.referensi.create')]);
+$router->post('/kelola-sarpras/kategori/delete/{id}', [SarprasController::class, 'kategoriDelete'], [Middleware::permissionRequired('sarpras.referensi.delete')]);
 
 // Penyusutan Aset
-$router->get('/kelola-sarpras/penyusutan', [SarprasController::class, 'penyusutanList'], [Middleware::permissionRequired('sarpras.view')]);
-$router->get('/kelola-sarpras/penyusutan/cetak', [SarprasController::class, 'penyusutanCetak'], [Middleware::permissionRequired('sarpras.view')]);
-$router->get('/kelola-sarpras/penyusutan/export-excel', [SarprasController::class, 'penyusutanExportExcel'], [Middleware::permissionRequired('sarpras.view')]);
+$router->get('/kelola-sarpras/penyusutan', [SarprasController::class, 'penyusutanList'], [Middleware::permissionRequired('sarpras.penyusutan.view')]);
+$router->get('/kelola-sarpras/penyusutan/cetak', [SarprasController::class, 'penyusutanCetak'], [Middleware::permissionRequired('sarpras.penyusutan.view')]);
+$router->get('/kelola-sarpras/penyusutan/export-excel', [SarprasController::class, 'penyusutanExportExcel'], [Middleware::permissionRequired('sarpras.penyusutan.view')]);
 
 // Laporan Aset (Kondisi & Filter)
-$router->get('/kelola-sarpras/laporan', [SarprasController::class, 'laporanList'], [Middleware::permissionRequired('sarpras.view')]);
-$router->get('/kelola-sarpras/laporan/cetak', [SarprasController::class, 'laporanCetak'], [Middleware::permissionRequired('sarpras.view')]);
+$router->get('/kelola-sarpras/laporan', [SarprasController::class, 'laporanList'], [Middleware::permissionRequired('sarpras.laporan.view')]);
+$router->get('/kelola-sarpras/laporan/cetak', [SarprasController::class, 'laporanCetak'], [Middleware::permissionRequired('sarpras.laporan.export')]);
 
 // Data Aset: Hierarki (Accordion Tanah -> Bangunan -> Ruang)
-$router->get('/kelola-sarpras/data-aset', [SarprasController::class, 'dataAset'], [Middleware::permissionRequired('sarpras.view')]);
-$router->get('/kelola-sarpras/aset', [SarprasController::class, 'dataAset'], [Middleware::permissionRequired('sarpras.view')]);
+$router->get('/kelola-sarpras/data-aset', [SarprasController::class, 'dataAset'], [Middleware::permissionRequired('sarpras.aset.view')]);
+$router->get('/kelola-sarpras/aset', [SarprasController::class, 'dataAset'], [Middleware::permissionRequired('sarpras.aset.view')]);
 
 // Data Aset: Tanah
-$router->get('/kelola-sarpras/tanah', [SarprasController::class, 'tanahList'], [Middleware::permissionRequired('sarpras.view')]);
-$router->post('/kelola-sarpras/tanah/store', [SarprasController::class, 'tanahStore'], [Middleware::permissionRequired('sarpras.create')]);
-$router->post('/kelola-sarpras/tanah/update/{id}', [SarprasController::class, 'tanahUpdate'], [Middleware::permissionRequired('sarpras.update')]);
-$router->post('/kelola-sarpras/tanah/delete/{id}', [SarprasController::class, 'tanahDelete'], [Middleware::permissionRequired('sarpras.delete')]);
-$router->get('/kelola-sarpras/tanah/cetak-pdf', [SarprasController::class, 'tanahCetakPdf'], [Middleware::permissionRequired('sarpras.view')]);
+$router->get('/kelola-sarpras/tanah', [SarprasController::class, 'tanahList'], [Middleware::permissionRequired('sarpras.aset.view')]);
+$router->post('/kelola-sarpras/tanah/store', [SarprasController::class, 'tanahStore'], [Middleware::permissionRequired('sarpras.aset.create')]);
+$router->post('/kelola-sarpras/tanah/update/{id}', [SarprasController::class, 'tanahUpdate'], [Middleware::permissionRequired('sarpras.aset.update')]);
+$router->post('/kelola-sarpras/tanah/delete/{id}', [SarprasController::class, 'tanahDelete'], [Middleware::permissionRequired('sarpras.aset.delete')]);
+$router->get('/kelola-sarpras/tanah/cetak-pdf', [SarprasController::class, 'tanahCetakPdf'], [Middleware::permissionRequired('sarpras.aset.view')]);
 
 // Data Aset: Bangunan
-$router->get('/kelola-sarpras/bangunan', [SarprasController::class, 'bangunanList'], [Middleware::permissionRequired('sarpras.view')]);
-$router->post('/kelola-sarpras/bangunan/store', [SarprasController::class, 'bangunanStore'], [Middleware::permissionRequired('sarpras.create')]);
-$router->post('/kelola-sarpras/bangunan/update/{id}', [SarprasController::class, 'bangunanUpdate'], [Middleware::permissionRequired('sarpras.update')]);
-$router->post('/kelola-sarpras/bangunan/delete/{id}', [SarprasController::class, 'bangunanDelete'], [Middleware::permissionRequired('sarpras.delete')]);
+$router->get('/kelola-sarpras/bangunan', [SarprasController::class, 'bangunanList'], [Middleware::permissionRequired('sarpras.aset.view')]);
+$router->post('/kelola-sarpras/bangunan/store', [SarprasController::class, 'bangunanStore'], [Middleware::permissionRequired('sarpras.aset.create')]);
+$router->post('/kelola-sarpras/bangunan/update/{id}', [SarprasController::class, 'bangunanUpdate'], [Middleware::permissionRequired('sarpras.aset.update')]);
+$router->post('/kelola-sarpras/bangunan/delete/{id}', [SarprasController::class, 'bangunanDelete'], [Middleware::permissionRequired('sarpras.aset.delete')]);
 
 // Referensi Sarpras (Golongan, Kode Kelompok, Asal Anggaran)
-$router->get('/kelola-sarpras/referensi', [SarprasController::class, 'referensiList'], [Middleware::permissionRequired('sarpras.view')]);
-$router->post('/kelola-sarpras/referensi/golongan/store', [SarprasController::class, 'golonganStore'], [Middleware::permissionRequired('sarpras.create')]);
-$router->post('/kelola-sarpras/referensi/golongan/delete/{id}', [SarprasController::class, 'golonganDelete'], [Middleware::permissionRequired('sarpras.delete')]);
-$router->post('/kelola-sarpras/referensi/kelompok/store', [SarprasController::class, 'kelompokStore'], [Middleware::permissionRequired('sarpras.create')]);
-$router->post('/kelola-sarpras/referensi/kelompok/delete/{id}', [SarprasController::class, 'kelompokDelete'], [Middleware::permissionRequired('sarpras.delete')]);
-$router->post('/kelola-sarpras/referensi/asal-anggaran/store', [SarprasController::class, 'asalAnggaranStore'], [Middleware::permissionRequired('sarpras.create')]);
-$router->post('/kelola-sarpras/referensi/asal-anggaran/delete/{id}', [SarprasController::class, 'asalAnggaranDelete'], [Middleware::permissionRequired('sarpras.delete')]);
-$router->post('/kelola-sarpras/referensi/laporan/store', [SarprasController::class, 'pengaturanLaporanStore'], [Middleware::permissionRequired('sarpras.create')]);
+$router->get('/kelola-sarpras/referensi', [SarprasController::class, 'referensiList'], [Middleware::permissionRequired('sarpras.referensi.view')]);
+$router->post('/kelola-sarpras/referensi/golongan/store', [SarprasController::class, 'golonganStore'], [Middleware::permissionRequired('sarpras.referensi.create')]);
+$router->post('/kelola-sarpras/referensi/golongan/delete/{id}', [SarprasController::class, 'golonganDelete'], [Middleware::permissionRequired('sarpras.referensi.delete')]);
+$router->post('/kelola-sarpras/referensi/kelompok/store', [SarprasController::class, 'kelompokStore'], [Middleware::permissionRequired('sarpras.referensi.create')]);
+$router->post('/kelola-sarpras/referensi/kelompok/delete/{id}', [SarprasController::class, 'kelompokDelete'], [Middleware::permissionRequired('sarpras.referensi.delete')]);
+$router->post('/kelola-sarpras/referensi/asal-anggaran/store', [SarprasController::class, 'asalAnggaranStore'], [Middleware::permissionRequired('sarpras.referensi.create')]);
+$router->post('/kelola-sarpras/referensi/asal-anggaran/delete/{id}', [SarprasController::class, 'asalAnggaranDelete'], [Middleware::permissionRequired('sarpras.referensi.delete')]);
+$router->post('/kelola-sarpras/referensi/laporan/store', [SarprasController::class, 'pengaturanLaporanStore'], [Middleware::permissionRequired('sarpras.referensi.update')]);
 
 // Pengaturan Sistem
-$router->get('/pengaturan-sistem', [SettingsController::class, 'index'], [Middleware::permissionRequired('settings.view')]);
-$router->get('/pengaturan-sistem/identitas', [SettingsController::class, 'identitas'], [Middleware::permissionRequired('settings.view')]);
-$router->get('/pengaturan-sistem/akademik', [SettingsController::class, 'akademik'], [Middleware::permissionRequired('settings.view')]);
-$router->post('/pengaturan-sistem/akademik/store', [SettingsController::class, 'storeAkademik'], [Middleware::permissionRequired('settings.update')]);
-$router->get('/pengaturan-sistem/akademik/edit/{id}', [SettingsController::class, 'editAkademik'], [Middleware::permissionRequired('settings.update')]);
-$router->post('/pengaturan-sistem/akademik/update/{id}', [SettingsController::class, 'updateAkademik'], [Middleware::permissionRequired('settings.update')]);
-$router->post('/pengaturan-sistem/akademik/set-aktif/{id}', [SettingsController::class, 'setAktifAkademik'], [Middleware::permissionRequired('settings.update')]);
-$router->post('/pengaturan-sistem/akademik/delete/{id}', [SettingsController::class, 'deleteAkademik'], [Middleware::permissionRequired('settings.delete')]);
+$router->get('/pengaturan-sistem', [SettingsController::class, 'index'], [[Middleware::class, 'authRequired']]);
+$router->get('/pengaturan-sistem/identitas', [SettingsController::class, 'identitas'], [Middleware::permissionRequired('settings.identitas.view')]);
+$router->get('/pengaturan-sistem/akademik', [SettingsController::class, 'akademik'], [Middleware::permissionRequired('settings.identitas.view')]);
+$router->post('/pengaturan-sistem/akademik/store', [SettingsController::class, 'storeAkademik'], [Middleware::permissionRequired('settings.identitas.update')]);
+$router->get('/pengaturan-sistem/akademik/edit/{id}', [SettingsController::class, 'editAkademik'], [Middleware::permissionRequired('settings.identitas.update')]);
+$router->post('/pengaturan-sistem/akademik/update/{id}', [SettingsController::class, 'updateAkademik'], [Middleware::permissionRequired('settings.identitas.update')]);
+$router->post('/pengaturan-sistem/akademik/set-aktif/{id}', [SettingsController::class, 'setAktifAkademik'], [Middleware::permissionRequired('settings.identitas.update')]);
+$router->post('/pengaturan-sistem/akademik/delete/{id}', [SettingsController::class, 'deleteAkademik'], [Middleware::permissionRequired('settings.identitas.update')]);
 
-$router->get('/pengaturan-sistem/master-pegawai', [SettingsController::class, 'masterPegawai'], [Middleware::permissionRequired('settings.view')]);
-$router->post('/pengaturan-sistem/master-pegawai/unit-tugas/store', [SettingsController::class, 'storeUnitTugas'], [Middleware::permissionRequired('settings.update')]);
-$router->post('/pengaturan-sistem/master-pegawai/unit-tugas/delete/{id}', [SettingsController::class, 'deleteUnitTugas'], [Middleware::permissionRequired('settings.delete')]);
-$router->post('/pengaturan-sistem/master-pegawai/jabatan/store', [SettingsController::class, 'storeJabatan'], [Middleware::permissionRequired('settings.update')]);
-$router->post('/pengaturan-sistem/master-pegawai/jabatan/delete/{id}', [SettingsController::class, 'deleteJabatan'], [Middleware::permissionRequired('settings.delete')]);
-$router->post('/pengaturan-sistem/master-pegawai/status-kerja/store', [SettingsController::class, 'storeStatusKerja'], [Middleware::permissionRequired('settings.update')]);
-$router->post('/pengaturan-sistem/master-pegawai/status-kerja/delete/{id}', [SettingsController::class, 'deleteStatusKerja'], [Middleware::permissionRequired('settings.delete')]);
-$router->post('/pengaturan-sistem/master-pegawai/jenis-pegawai/store', [SettingsController::class, 'storeJenisPegawai'], [Middleware::permissionRequired('settings.update')]);
-$router->post('/pengaturan-sistem/master-pegawai/jenis-pegawai/delete/{id}', [SettingsController::class, 'deleteJenisPegawai'], [Middleware::permissionRequired('settings.delete')]);
+$router->get('/pengaturan-sistem/master-pegawai', [SettingsController::class, 'masterPegawai'], [Middleware::permissionRequired('settings.master.view')]);
+$router->post('/pengaturan-sistem/master-pegawai/unit-tugas/store', [SettingsController::class, 'storeUnitTugas'], [Middleware::permissionRequired('settings.master.update')]);
+$router->post('/pengaturan-sistem/master-pegawai/unit-tugas/delete/{id}', [SettingsController::class, 'deleteUnitTugas'], [Middleware::permissionRequired('settings.master.update')]);
+$router->post('/pengaturan-sistem/master-pegawai/jabatan/store', [SettingsController::class, 'storeJabatan'], [Middleware::permissionRequired('settings.master.update')]);
+$router->post('/pengaturan-sistem/master-pegawai/jabatan/delete/{id}', [SettingsController::class, 'deleteJabatan'], [Middleware::permissionRequired('settings.master.update')]);
+$router->post('/pengaturan-sistem/master-pegawai/status-kerja/store', [SettingsController::class, 'storeStatusKerja'], [Middleware::permissionRequired('settings.master.update')]);
+$router->post('/pengaturan-sistem/master-pegawai/status-kerja/delete/{id}', [SettingsController::class, 'deleteStatusKerja'], [Middleware::permissionRequired('settings.master.update')]);
+$router->post('/pengaturan-sistem/master-pegawai/jenis-pegawai/store', [SettingsController::class, 'storeJenisPegawai'], [Middleware::permissionRequired('settings.master.update')]);
+$router->post('/pengaturan-sistem/master-pegawai/jenis-pegawai/delete/{id}', [SettingsController::class, 'deleteJenisPegawai'], [Middleware::permissionRequired('settings.master.update')]);
 
-$router->get('/pengaturan-sistem/master-pembelajaran', [SettingsController::class, 'masterPembelajaran'], [Middleware::permissionRequired('settings.view')]);
-$router->post('/pengaturan-sistem/master-pembelajaran/store', [SettingsController::class, 'storeMataPelajaran'], [Middleware::permissionRequired('settings.update')]);
-$router->post('/pengaturan-sistem/master-pembelajaran/update/{id}', [SettingsController::class, 'updateMataPelajaran'], [Middleware::permissionRequired('settings.update')]);
-$router->post('/pengaturan-sistem/master-pembelajaran/toggle-aktif/{id}', [SettingsController::class, 'toggleAktifMataPelajaran'], [Middleware::permissionRequired('settings.update')]);
-$router->post('/pengaturan-sistem/master-pembelajaran/delete/{id}', [SettingsController::class, 'deleteMataPelajaran'], [Middleware::permissionRequired('settings.delete')]);
-$router->post('/pengaturan-sistem/master-pembelajaran/bulk-delete', [SettingsController::class, 'bulkDeleteMataPelajaran'], [Middleware::permissionRequired('settings.delete')]);
-$router->post('/pengaturan-sistem/master-pembelajaran/delete-all', [SettingsController::class, 'deleteAllMataPelajaran'], [Middleware::permissionRequired('settings.delete')]);
+$router->get('/pengaturan-sistem/master-pembelajaran', [SettingsController::class, 'masterPembelajaran'], [Middleware::permissionRequired('settings.master.view')]);
+$router->post('/pengaturan-sistem/master-pembelajaran/store', [SettingsController::class, 'storeMataPelajaran'], [Middleware::permissionRequired('settings.master.update')]);
+$router->post('/pengaturan-sistem/master-pembelajaran/update/{id}', [SettingsController::class, 'updateMataPelajaran'], [Middleware::permissionRequired('settings.master.update')]);
+$router->post('/pengaturan-sistem/master-pembelajaran/toggle-aktif/{id}', [SettingsController::class, 'toggleAktifMataPelajaran'], [Middleware::permissionRequired('settings.master.update')]);
+$router->post('/pengaturan-sistem/master-pembelajaran/delete/{id}', [SettingsController::class, 'deleteMataPelajaran'], [Middleware::permissionRequired('settings.master.update')]);
+$router->post('/pengaturan-sistem/master-pembelajaran/bulk-delete', [SettingsController::class, 'bulkDeleteMataPelajaran'], [Middleware::permissionRequired('settings.master.update')]);
+$router->post('/pengaturan-sistem/master-pembelajaran/delete-all', [SettingsController::class, 'deleteAllMataPelajaran'], [Middleware::permissionRequired('settings.master.update')]);
 
-$router->get('/pengaturan-sistem/reset-data', [SettingsController::class, 'resetDataView'], [Middleware::permissionRequired('settings.view')]);
-$router->post('/pengaturan-sistem/update', [SettingsController::class, 'update'], [Middleware::permissionRequired('settings.update')]);
-$router->post('/pengaturan-sistem/reset-data/process', [SettingsController::class, 'resetData'], [Middleware::permissionRequired('settings.update')]);
+$router->get('/pengaturan-sistem/reset-data', [SettingsController::class, 'resetDataView'], [Middleware::permissionRequired('settings.reset')]);
+$router->post('/pengaturan-sistem/update', [SettingsController::class, 'update'], [Middleware::permissionRequired('settings.identitas.update')]);
+$router->post('/pengaturan-sistem/reset-data/process', [SettingsController::class, 'resetData'], [Middleware::permissionRequired('settings.reset')]);
 $router->post('/pengaturan-sistem/reset', [SettingsController::class, 'resetData'], [Middleware::permissionRequired('settings.reset')]);
 
 // -- Server WA Gateway eportal --
-$router->get('/pengaturan-sistem/wa-gateway', [SettingsController::class, 'waGateway'], [Middleware::permissionRequired('settings.view')]);
-$router->get('/pengaturan-sistem/wa-gateway/status-ajax', [SettingsController::class, 'waStatusAjax'], [Middleware::permissionRequired('settings.view')]);
-$router->get('/pengaturan-sistem/wa-gateway/qr-ajax', [SettingsController::class, 'waQrAjax'], [Middleware::permissionRequired('settings.view')]);
-$router->post('/pengaturan-sistem/wa-gateway/logout-ajax', [SettingsController::class, 'waLogoutAjax'], [Middleware::permissionRequired('settings.update')]);
-$router->post('/pengaturan-sistem/wa-gateway/start-server', [SettingsController::class, 'waStartServerAjax'], [Middleware::permissionRequired('settings.update')]);
-$router->post('/pengaturan-sistem/wa-gateway/update', [SettingsController::class, 'updateWaGateway'], [Middleware::permissionRequired('settings.update')]);
-$router->post('/pengaturan-sistem/wa-gateway/test', [SettingsController::class, 'testSendWaGateway'], [Middleware::permissionRequired('settings.update')]);
-$router->post('/pengaturan-sistem/wa-gateway/clear-logs', [SettingsController::class, 'clearWaLogs'], [Middleware::permissionRequired('settings.update')]);
+$router->get('/pengaturan-sistem/wa-gateway', [SettingsController::class, 'waGateway'], [Middleware::permissionRequired('settings.wa.view')]);
+$router->get('/pengaturan-sistem/wa-gateway/status-ajax', [SettingsController::class, 'waStatusAjax'], [Middleware::permissionRequired('settings.wa.view')]);
+$router->get('/pengaturan-sistem/wa-gateway/qr-ajax', [SettingsController::class, 'waQrAjax'], [Middleware::permissionRequired('settings.wa.view')]);
+$router->post('/pengaturan-sistem/wa-gateway/logout-ajax', [SettingsController::class, 'waLogoutAjax'], [Middleware::permissionRequired('settings.wa.update')]);
+$router->post('/pengaturan-sistem/wa-gateway/start-server', [SettingsController::class, 'waStartServerAjax'], [Middleware::permissionRequired('settings.wa.update')]);
+$router->post('/pengaturan-sistem/wa-gateway/update', [SettingsController::class, 'updateWaGateway'], [Middleware::permissionRequired('settings.wa.update')]);
+$router->post('/pengaturan-sistem/wa-gateway/test', [SettingsController::class, 'testSendWaGateway'], [Middleware::permissionRequired('settings.wa.update')]);
+$router->post('/pengaturan-sistem/wa-gateway/clear-logs', [SettingsController::class, 'clearWaLogs'], [Middleware::permissionRequired('settings.wa.update')]);
 
 // -- Log Aktivitas Sistem --
-$router->get('/pengaturan-sistem/log-aktivitas', [SettingsController::class, 'logAktivitas'], [Middleware::permissionRequired('settings.view')]);
-$router->get('/pengaturan-sistem/log-aktivitas/export', [SettingsController::class, 'exportLogAktivitas'], [Middleware::permissionRequired('settings.view')]);
-$router->post('/pengaturan-sistem/log-aktivitas/clear', [SettingsController::class, 'clearLogAktivitas'], [Middleware::permissionRequired('settings.delete')]);
+$router->get('/pengaturan-sistem/log-aktivitas', [SettingsController::class, 'logAktivitas'], [Middleware::permissionRequired('settings.logs.view')]);
+$router->get('/pengaturan-sistem/log-aktivitas/export', [SettingsController::class, 'exportLogAktivitas'], [Middleware::permissionRequired('settings.logs.view')]);
+$router->post('/pengaturan-sistem/log-aktivitas/clear', [SettingsController::class, 'clearLogAktivitas'], [Middleware::permissionRequired('settings.reset')]);
 
 // -- Portal Guru Mobile (PWA) Auth & Routes --
 $router->get('/mobile/login', [PortalGuruAuthController::class, 'showLogin']);

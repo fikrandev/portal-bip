@@ -238,6 +238,17 @@ class PegawaiController
 
     public static function index(): void
     {
+        if (!RBAC::hasPermission('pegawai.data.view')) {
+            RBAC::redirectToFirstAllowedOr403([
+                'pegawai.dashboard'      => 'kelola-pegawai/statistik',
+                'pegawai.penugasan.view' => 'kelola-pegawai/penugasan',
+                'pegawai.prestasi.view'  => 'kelola-pegawai/prestasi',
+                'pegawai.pelatihan.view' => 'kelola-pegawai/pelatihan',
+                'pegawai.karir.view'     => 'kelola-pegawai/karir',
+                'pegawai.keluar.view'    => 'kelola-pegawai/keluar',
+            ]);
+        }
+
         $pageTitle = 'Data Pegawai';
         $breadcrumbs = [['label' => 'Kelola Pegawai', 'url' => url('kelola-pegawai')], ['label' => 'Data Pegawai']];
         

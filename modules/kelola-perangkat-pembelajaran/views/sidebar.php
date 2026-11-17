@@ -91,73 +91,90 @@ if (defined('SYS_APP_FAVICON') && !empty(SYS_APP_FAVICON)) {
                 }
 
                 // 1. Dashboard
-                renderPerangkatMenuItem(
-                    'Dashboard Overview',
-                    url('kelola-perangkat-pembelajaran'),
-                    '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z"/></svg>',
-                    $currentUri === '/kelola-perangkat-pembelajaran' || $currentUri === '/kelola-perangkat-pembelajaran/dashboard' || $currentUri === '/portal-bip/kelola-perangkat-pembelajaran'
-                );
+                if (RBAC::hasPermission('perangkat.dashboard')) {
+                    renderPerangkatMenuItem(
+                        'Dashboard Overview',
+                        url('kelola-perangkat-pembelajaran'),
+                        '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z"/></svg>',
+                        $currentUri === '/kelola-perangkat-pembelajaran' || $currentUri === '/kelola-perangkat-pembelajaran/dashboard' || $currentUri === '/portal-bip/kelola-perangkat-pembelajaran'
+                    );
+                }
 
                 // 2. Jadwal Pelajaran
-                renderPerangkatMenuItem(
-                    'Jadwal Pelajaran',
-                    url('kelola-perangkat-pembelajaran/jadwal'),
-                    '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>',
-                    strpos($currentUri, '/kelola-perangkat-pembelajaran/jadwal') !== false
-                );
+                if (RBAC::hasPermission('perangkat.jadwal.view')) {
+                    renderPerangkatMenuItem(
+                        'Jadwal Pelajaran',
+                        url('kelola-perangkat-pembelajaran/jadwal'),
+                        '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>',
+                        strpos($currentUri, '/kelola-perangkat-pembelajaran/jadwal') !== false
+                    );
+                }
 
                 // 3. Kalender Pendidikan
-                renderPerangkatMenuItem(
-                    'Kalender Pendidikan',
-                    url('kelola-perangkat-pembelajaran/kaldik'),
-                    '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5m-9-6h.008v.008H12v-.008ZM12 15h.008v.008H12V15Zm0 2.25h.008v.008H12v-.008ZM9.75 15h.008v.008H9.75V15Zm0 2.25h.008v.008H9.75v-.008ZM7.5 15h.008v.008H7.5V15Zm0 2.25h.008v.008H7.5v-.008Zm6.75-4.5h.008v.008h-.008v-.008Zm0 2.25h.008v.008h-.008V15Zm0 2.25h.008v.008h-.008v-.008Zm2.25-4.5h.008v.008H16.5v-.008Zm0 2.25h.008v.008H16.5V15Z" /></svg>',
-                    strpos($currentUri, '/kelola-perangkat-pembelajaran/kaldik') !== false
-                );
+                if (RBAC::hasPermission('perangkat.kaldik.view')) {
+                    renderPerangkatMenuItem(
+                        'Kalender Pendidikan',
+                        url('kelola-perangkat-pembelajaran/kaldik'),
+                        '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5m-9-6h.008v.008H12v-.008ZM12 15h.008v.008H12V15Zm0 2.25h.008v.008H12v-.008ZM9.75 15h.008v.008H9.75V15Zm0 2.25h.008v.008H9.75v-.008ZM7.5 15h.008v.008H7.5V15Zm0 2.25h.008v.008H7.5v-.008Zm6.75-4.5h.008v.008h-.008v-.008Zm0 2.25h.008v.008h-.008V15Zm0 2.25h.008v.008h-.008v-.008Zm2.25-4.5h.008v.008H16.5v-.008Zm0 2.25h.008v.008H16.5V15Z" /></svg>',
+                        strpos($currentUri, '/kelola-perangkat-pembelajaran/kaldik') !== false
+                    );
+                }
 
                 // 4. HEB & HES (Hari Efektif Belajar & Sekolah)
-                renderPerangkatMenuItem(
-                    'HEB & HES',
-                    url('kelola-perangkat-pembelajaran/rincian-hari-efektif'),
-                    '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>',
-                    strpos($currentUri, '/kelola-perangkat-pembelajaran/rincian-hari-efektif') !== false || strpos($currentUri, '/kelola-perangkat-pembelajaran/heb') !== false || strpos($currentUri, '/kelola-perangkat-pembelajaran/hes') !== false
-                );
+                if (RBAC::hasPermission('perangkat.hari_efektif.view')) {
+                    renderPerangkatMenuItem(
+                        'HEB & HES',
+                        url('kelola-perangkat-pembelajaran/rincian-hari-efektif'),
+                        '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>',
+                        strpos($currentUri, '/kelola-perangkat-pembelajaran/rincian-hari-efektif') !== false || strpos($currentUri, '/kelola-perangkat-pembelajaran/heb') !== false || strpos($currentUri, '/kelola-perangkat-pembelajaran/hes') !== false
+                    );
+                }
 
                 // 5. CP & ATP (Capaian Pembelajaran & Alur Tujuan Pembelajaran)
-                renderPerangkatMenuItem(
-                    'CP & ATP',
-                    url('kelola-perangkat-pembelajaran/cpatp'),
-                    '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25ZM6.75 12h.008v.008H6.75V12Zm0 3h.008v.008H6.75V15Zm0 3h.008v.008H6.75V18Z" /></svg>',
-                    strpos($currentUri, '/kelola-perangkat-pembelajaran/cpatp') !== false
-                );
+                if (RBAC::hasPermission('perangkat.cpatp.view')) {
+                    renderPerangkatMenuItem(
+                        'CP & ATP',
+                        url('kelola-perangkat-pembelajaran/cpatp'),
+                        '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25ZM6.75 12h.008v.008H6.75V12Zm0 3h.008v.008H6.75V15Zm0 3h.008v.008H6.75V18Z" /></svg>',
+                        strpos($currentUri, '/kelola-perangkat-pembelajaran/cpatp') !== false
+                    );
+                }
 
                 // 6. Prosem
-                renderPerangkatMenuItem(
-                    'Prosem',
-                    url('kelola-perangkat-pembelajaran/prosem'),
-                    '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3v11.25A2.25 2.25 0 0 0 6 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0 1 18 16.5h-2.25m-7.5 0h7.5m-7.5 0-1 3m8.5-3 1 3m0 0 .5 1.5m-.5-1.5h-9.5m0 0-.5 1.5m.75-9 3-3 2.148 2.148A12.061 12.061 0 0 1 16.5 7.605" /></svg>',
-                    strpos($currentUri, '/kelola-perangkat-pembelajaran/prosem') !== false
-                );
+                if (RBAC::hasPermission('perangkat.prosem.view')) {
+                    renderPerangkatMenuItem(
+                        'Prosem',
+                        url('kelola-perangkat-pembelajaran/prosem'),
+                        '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3v11.25A2.25 2.25 0 0 0 6 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0 1 18 16.5h-2.25m-7.5 0h7.5m-7.5 0-1 3m8.5-3 1 3m0 0 .5 1.5m-.5-1.5h-9.5m0 0-.5 1.5m.75-9 3-3 2.148 2.148A12.061 12.061 0 0 1 16.5 7.605" /></svg>',
+                        strpos($currentUri, '/kelola-perangkat-pembelajaran/prosem') !== false
+                    );
+                }
 
                 // 7. Prota
-                renderPerangkatMenuItem(
-                    'Prota',
-                    url('kelola-perangkat-pembelajaran/prota'),
-                    '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" /></svg>',
-                    strpos($currentUri, '/kelola-perangkat-pembelajaran/prota') !== false
-                );
+                if (RBAC::hasPermission('perangkat.prota.view')) {
+                    renderPerangkatMenuItem(
+                        'Prota',
+                        url('kelola-perangkat-pembelajaran/prota'),
+                        '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" /></svg>',
+                        strpos($currentUri, '/kelola-perangkat-pembelajaran/prota') !== false
+                    );
+                }
 
                 // 8. RPP / Modul Ajar
-                renderPerangkatMenuItem(
-                    'RPP / Modul Ajar',
-                    url('kelola-perangkat-pembelajaran/rpp'),
-                    '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" /></svg>',
-                    strpos($currentUri, '/kelola-perangkat-pembelajaran/rpp') !== false
-                );
+                if (RBAC::hasPermission('perangkat.rpp.view')) {
+                    renderPerangkatMenuItem(
+                        'RPP / Modul Ajar',
+                        url('kelola-perangkat-pembelajaran/rpp'),
+                        '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" /></svg>',
+                        strpos($currentUri, '/kelola-perangkat-pembelajaran/rpp') !== false
+                    );
+                }
                 ?>
             </ul>
         </div>
 
         <!-- Approval Hub -->
+        <?php if (RBAC::hasPermission('perangkat.approve')): ?>
         <div>
             <h3 class="px-3 mb-2 text-[11px] font-bold text-primary-400 uppercase tracking-wider">
                 Verifikasi & Pengesahan
@@ -174,6 +191,7 @@ if (defined('SYS_APP_FAVICON') && !empty(SYS_APP_FAVICON)) {
                 ?>
             </ul>
         </div>
+        <?php endif; ?>
 
     </div>
 

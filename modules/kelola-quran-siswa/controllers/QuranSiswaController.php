@@ -16,6 +16,15 @@ class QuranSiswaController
      */
     public static function index(): void
     {
+        if (!RBAC::hasPermission('quran_siswa.dashboard')) {
+            RBAC::redirectToFirstAllowedOr403([
+                'quran_siswa.paud_target.view'    => 'kelola-quran-siswa-paud/target',
+                'quran_siswa.paud_penilaian.view' => 'kelola-quran-siswa-paud/penilaian',
+                'quran_siswa.paud_rekap.view'     => 'kelola-quran-siswa-paud/rekap',
+                'quran_siswa.sd_smp.view'         => 'kelola-quran-siswa-sd',
+            ]);
+        }
+
         // Jika user memiliki filter jenjang tunggal, arahkan langsung ke halaman jenjang tersebut
         if (Auth::isJenjangRestricted()) {
             $allowed = Auth::getAllowedJenjang();

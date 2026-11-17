@@ -59,7 +59,7 @@ try {
                     <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                     Group Aktif
                 </span>
-                <?php if (class_exists('RBAC') && RBAC::hasPermission('spmb.pengaturan')): ?>
+                <?php if (class_exists('RBAC') && RBAC::hasAnyPermission(['spmb.pengaturan.view', 'spmb.pengaturan.update'])): ?>
                     <a href="<?= url('kelola-spmb/pengaturan') ?>" class="text-xs text-primary-300 hover:text-white underline font-semibold">Ubah</a>
                 <?php endif; ?>
             </div>
@@ -92,14 +92,14 @@ try {
                 $isPengaturanActive = (strpos($currentUri, 'kelola-spmb/pengaturan') !== false);
 
                 // Check RBAC Permissions
-                $canDashboard = class_exists('RBAC') ? (RBAC::hasPermission('spmb.dashboard') || RBAC::hasPermission('spmb.view')) : true;
-                $canSiswaBaru = class_exists('RBAC') ? RBAC::hasPermission('spmb.siswa_baru') : true;
-                $canPindahan  = class_exists('RBAC') ? RBAC::hasPermission('spmb.pindahan') : true;
-                $canDaftarTunggu = class_exists('RBAC') ? RBAC::hasPermission('spmb.daftar_tunggu') : true;
-                $canSuratPernyataan = class_exists('RBAC') ? RBAC::hasPermission('spmb.surat_pernyataan') : true;
-                $canScreeningPsikolog = class_exists('RBAC') ? RBAC::hasPermission('spmb.psikolog') : true;
-                $canObservasiAwal = class_exists('RBAC') ? RBAC::hasPermission('spmb.observasi') : true;
-                $canPengaturan = class_exists('RBAC') ? RBAC::hasPermission('spmb.pengaturan') : true;
+                $canDashboard = class_exists('RBAC') ? RBAC::hasPermission('spmb.dashboard') : true;
+                $canSiswaBaru = class_exists('RBAC') ? RBAC::hasPermission('spmb.siswa_baru.view') : true;
+                $canPindahan  = class_exists('RBAC') ? RBAC::hasPermission('spmb.pindahan.view') : true;
+                $canDaftarTunggu = class_exists('RBAC') ? RBAC::hasPermission('spmb.daftar_tunggu.view') : true;
+                $canSuratPernyataan = class_exists('RBAC') ? RBAC::hasPermission('spmb.surat_pernyataan.view') : true;
+                $canScreeningPsikolog = class_exists('RBAC') ? RBAC::hasPermission('spmb.psikolog.view') : true;
+                $canObservasiAwal = class_exists('RBAC') ? RBAC::hasPermission('spmb.observasi.view') : true;
+                $canPengaturan = class_exists('RBAC') ? RBAC::hasPermission('spmb.pengaturan.view') : true;
                 
                 // Helper render menu item
                 if (!function_exists('renderSpmbNav')) {

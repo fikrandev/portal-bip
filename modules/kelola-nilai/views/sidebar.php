@@ -70,7 +70,7 @@ if (defined('SYS_APP_FAVICON') && !empty(SYS_APP_FAVICON)) {
                 }
 
                 // 1. Dashboard
-                if (RBAC::hasPermission('nilai.view')) {
+                if (RBAC::hasPermission('nilai.dashboard')) {
                     renderNilaiMenuItem(
                         'Dashboard',
                         url('kelola-nilai'),
@@ -80,7 +80,7 @@ if (defined('SYS_APP_FAVICON') && !empty(SYS_APP_FAVICON)) {
                 }
 
                 // 2. Input Nilai
-                if (RBAC::hasPermission('nilai.view') || RBAC::hasPermission('nilai.create')) {
+                if (RBAC::hasAnyPermission(['nilai.group.view', 'nilai.input.view', 'nilai.input.create'])) {
                     renderNilaiMenuItem(
                         'Input Nilai',
                         url('kelola-nilai/group'),
@@ -90,7 +90,7 @@ if (defined('SYS_APP_FAVICON') && !empty(SYS_APP_FAVICON)) {
                 }
 
                 // 3. Rekap Nilai
-                if (RBAC::hasPermission('nilai.rekap') || RBAC::hasPermission('nilai.view')) {
+                if (RBAC::hasPermission('nilai.rekap')) {
                     renderNilaiMenuItem(
                         'Rekap Nilai',
                         url('kelola-nilai/rekap'),

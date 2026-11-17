@@ -51,16 +51,19 @@ class Middleware
     }
 
     /**
-     * Require a specific permission
+     * Require a specific permission (or any from a list of permissions)
      * 
-     * @param string $permissionSlug
+     * @param string|array $permissionSlug
      * @return callable
      */
-    public static function permissionRequired(string $permissionSlug): callable
+    public static function permissionRequired(string|array $permissionSlug): callable
     {
         return function () use ($permissionSlug) {
             Middleware::authRequired();
-            if (!RBAC::hasPermission($permissionSlug)) {
+            $allowed = is_array($permissionSlug)
+                ? RBAC::hasAnyPermission($permissionSlug)
+                : RBAC::hasPermission($permissionSlug);
+            if (!$allowed) {
                 http_response_code(403);
                 include TEMPLATES_PATH . '/errors/403.php';
                 exit;

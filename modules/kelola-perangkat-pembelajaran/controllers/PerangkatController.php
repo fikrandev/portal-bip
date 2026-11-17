@@ -74,6 +74,19 @@ class PerangkatController
 
     public static function dashboard(): void
     {
+        if (!RBAC::hasPermission('perangkat.dashboard')) {
+            RBAC::redirectToFirstAllowedOr403([
+                'perangkat.jadwal.view'       => 'kelola-perangkat-pembelajaran/jadwal',
+                'perangkat.kaldik.view'       => 'kelola-perangkat-pembelajaran/kaldik',
+                'perangkat.hari_efektif.view' => 'kelola-perangkat-pembelajaran/rincian-hari-efektif',
+                'perangkat.cpatp.view'        => 'kelola-perangkat-pembelajaran/cpatp',
+                'perangkat.prosem.view'       => 'kelola-perangkat-pembelajaran/prosem',
+                'perangkat.prota.view'        => 'kelola-perangkat-pembelajaran/prota',
+                'perangkat.rpp.view'          => 'kelola-perangkat-pembelajaran/rpp',
+                'perangkat.approve'           => 'kelola-perangkat-pembelajaran/verifikasi',
+            ]);
+        }
+
         $filters = self::getCommonFilters();
         $stats = PerangkatModel::getDashboardStats($filters['filter_ta'], $filters['filter_semester'], $filters['filter_unit']);
         

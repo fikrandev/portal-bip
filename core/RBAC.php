@@ -30,14 +30,62 @@ class RBAC
             return true;
         }
 
-        // Backwards compatibility alias untuk SPMB
-        if ($permissionSlug === 'spmb.siswa_baru' && in_array('spmb.view', $permissions, true)) {
-            return true;
-        }
-        if ($permissionSlug === 'spmb.view' && (in_array('spmb.siswa_baru', $permissions, true) || in_array('spmb.dashboard', $permissions, true))) {
-            return true;
+        $parts = explode('.', $permissionSlug);
+
+        // 2-part legacy check (e.g. 'siswa.view', 'spmb.siswa_baru', 'sarpras.create')
+        if (count($parts) === 2) {
+            [$prefix, $actionOrFeature] = $parts;
+
+            // Cek jika ini merupakan slug fitur SPMB tanpa .view (misal 'spmb.siswa_baru' -> 'spmb.siswa_baru.view')
+            if (in_array($prefix . '.' . $actionOrFeature . '.view', $permissions, true)) {
+                return true;
+            }
+
+            // Cek jika user memiliki izin granular '<prefix>.<fitur>.<action>' untuk aksi umum
+            $dotPrefix = $prefix . '.';
+            $dotAction = '.' . $actionOrFeature;
+            foreach ($permissions as $p) {
+                if (str_starts_with($p, $dotPrefix) && str_ends_with($p, $dotAction)) {
+                    return true;
+                }
+            }
+
+            // Jika cek 'spmb.view', cukup punya akses dashboard/fitur spmb
+            if ($permissionSlug === 'spmb.view') {
+                foreach ($permissions as $p) {
+                    if (str_starts_with($p, 'spmb.')) {
+                        return true;
+                    }
+                }
+            }
+        } elseif (count($parts) === 3) {
+            // 3-part granular check (e.g. 'siswa.data.view' atau 'spmb.siswa_baru.view')
+            [$prefix, $feature, $action] = $parts;
+            // Fallback jika session masih menyimpan permission legacy 2-part
+            if (in_array($prefix . '.' . $action, $permissions, true)) {
+                return true;
+            }
+            if ($action === 'view' && in_array($prefix . '.' . $feature, $permissions, true)) {
+                return true;
+            }
         }
 
+        return false;
+    }
+
+    /**
+     * Check if current user has any of the listed permissions
+     */
+    public static function hasAnyPermission(array $slugs): bool
+    {
+        if (Auth::isSuperAdmin()) {
+            return true;
+        }
+        foreach ($slugs as $slug) {
+            if (self::hasPermission($slug)) {
+                return true;
+            }
+        }
         return false;
     }
 
@@ -335,5 +383,23 @@ class RBAC
             include TEMPLATES_PATH . '/errors/403.php';
             exit;
         }
+    }
+
+    /**
+     * Redirect user to the first permitted sub-feature route, or render 403 Forbidden.
+     *
+     * @param array $candidates Map of permissionSlug => target relative URL path
+     */
+    public static function redirectToFirstAllowedOr403(array $candidates): void
+    {
+        foreach ($candidates as $permSlug => $targetPath) {
+            if (self::hasPermission($permSlug)) {
+                header('Location: ' . url(ltrim($targetPath, '/')));
+                exit;
+            }
+        }
+        http_response_code(403);
+        include TEMPLATES_PATH . '/errors/403.php';
+        exit;
     }
 }

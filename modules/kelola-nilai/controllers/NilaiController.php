@@ -4,6 +4,13 @@ class NilaiController
 {
     public static function index(): void
     {
+        if (!RBAC::hasPermission('nilai.dashboard')) {
+            RBAC::redirectToFirstAllowedOr403([
+                'nilai.group.view' => 'kelola-nilai/group',
+                'nilai.rekap'      => 'kelola-nilai/rekap',
+            ]);
+        }
+
         $pageTitle = 'Dashboard Kelola Nilai';
         $breadcrumbs = [['label' => 'Kelola Nilai']];
         

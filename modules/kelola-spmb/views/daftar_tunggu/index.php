@@ -28,6 +28,7 @@ $filters = $filters ?? [];
             </p>
         </div>
         <div class="flex flex-wrap items-center gap-2.5">
+            <?php if (RBAC::hasPermission('spmb.daftar_tunggu.update')): ?>
             <button type="button" onclick="bukaModalBroadcastDt()"
                class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition-all active:scale-95 cursor-pointer">
                 <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
@@ -36,6 +37,8 @@ $filters = $filters ?? [];
                 <span>Broadcast WA</span>
                 <span id="badgeCheckedDt" class="hidden px-2 py-0.5 rounded-full text-[10px] bg-white text-emerald-800 font-extrabold shadow-xs">0</span>
             </button>
+            <?php endif; ?>
+            <?php if (RBAC::hasPermission('spmb.daftar_tunggu.export')): ?>
             <?php
             $exportParamsDt = array_filter($filters ?? [], fn($v) => $v !== '' && $v !== null);
             ?>
@@ -49,11 +52,14 @@ $filters = $filters ?? [];
                 <svg class="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" /></svg>
                 <span>Export Excel</span>
             </a>
+            <?php endif; ?>
+            <?php if (RBAC::hasPermission('spmb.daftar_tunggu.create')): ?>
             <button type="button" onclick="openModalTambahDaftarTunggu()" 
                class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-white font-semibold text-xs shadow-md shadow-amber-500/20 transition-all transform hover:-translate-y-0.5 cursor-pointer">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
                 <span>Tambah Daftar Tunggu</span>
             </button>
+            <?php endif; ?>
         </div>
     </div>
 
@@ -241,37 +247,45 @@ $filters = $filters ?? [];
                                 </td>
                                 <td class="py-3 px-4 text-center whitespace-nowrap">
                                     <div class="inline-flex items-center gap-1">
+                                        <?php if (RBAC::hasPermission('spmb.daftar_tunggu.update')): ?>
                                         <button type="button" 
                                                 onclick="bukaModalBroadcastDtSingle(<?= (int)$item['id'] ?>, '<?= e(addslashes($item['nama_lengkap'])) ?>', '<?= e($targetPhone) ?>', '<?= e($item['jenjang']) ?>', '<?= e($item['nomor_pendaftaran']) ?>', '<?= e(addslashes($rekomStr)) ?>')" 
                                                 title="Kirim Pesan WhatsApp Japri"
                                                 class="p-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors cursor-pointer">
                                             <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
                                         </button>
+                                        <?php endif; ?>
                                         <a href="<?= url('kelola-spmb/daftar-tunggu/detail/' . $item['id']) ?>" 
                                             title="Detail Siswa"
                                             class="p-1.5 rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors">
                                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg>
                                         </a>
+                                        <?php if (RBAC::hasPermission('spmb.daftar_tunggu.update')): ?>
                                         <a href="<?= url('kelola-spmb/daftar-tunggu/edit/' . $item['id']) ?>" 
                                             title="Edit Data"
                                             class="p-1.5 rounded-lg bg-sky-50 text-sky-700 hover:bg-sky-100 transition-colors">
                                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" /></svg>
                                         </a>
+                                        <?php endif; ?>
                                         <a href="<?= url('kelola-spmb/daftar-tunggu/cetak/' . $item['id']) ?>" target="_blank"
                                             title="Cetak Bukti Pendaftaran"
                                             class="p-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors">
                                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0 1 10.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0 .229 2.523a1.125 1.125 0 0 1-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0 0 21 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 0 0-1.913-.247M6.34 18H5.25A2.25 2.25 0 0 1 3 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 0 1 1.913-.247m10.5 0a48.536 48.536 0 0 0-10.5 0m10.5 0V3.375c0-.621-.504-1.125-1.125-1.125h-8.25c-.621 0-1.125.504-1.125 1.125v3.656h10.5Z" /></svg>
                                         </a>
+                                        <?php if (RBAC::hasPermission('spmb.daftar_tunggu.update')): ?>
                                         <button type="button" onclick="bukaModalPromosi(<?= $item['id'] ?>)" 
                                                 title="Promosikan ke Siswa Baru"
                                                 class="p-1.5 rounded-lg bg-emerald-100 text-emerald-800 hover:bg-emerald-200 transition-colors font-bold">
                                             <svg class="w-4 h-4 text-emerald-700" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" /></svg>
                                         </button>
+                                        <?php endif; ?>
+                                        <?php if (RBAC::hasPermission('spmb.daftar_tunggu.delete')): ?>
                                         <button onclick="confirmDelete(<?= $item['id'] ?>, '<?= e(addslashes($item['nama_lengkap'])) ?>')" 
                                                 title="Hapus"
                                                 class="p-1.5 rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100 transition-colors">
                                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg>
                                         </button>
+                                        <?php endif; ?>
                                     </div>
                                 </td>
                             </tr>

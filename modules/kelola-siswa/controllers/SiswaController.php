@@ -8,6 +8,16 @@ class SiswaController
 {
     public static function index(): void
     {
+        if (!RBAC::hasPermission('siswa.data.view')) {
+            RBAC::redirectToFirstAllowedOr403([
+                'siswa.dashboard'       => 'kelola-siswa/statistik',
+                'siswa.foto.view'       => 'kelola-siswa/foto',
+                'siswa.buku_induk.view' => 'kelola-siswa/buku-induk',
+                'siswa.prestasi.view'   => 'kelola-siswa/prestasi',
+                'siswa.keluar.view'     => 'kelola-siswa/keluar',
+            ]);
+        }
+
         $pageTitle = 'Kelola Data Siswa';
         $breadcrumbs = [['label' => 'Kelola Siswa']];
         

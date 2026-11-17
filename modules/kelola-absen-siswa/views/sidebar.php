@@ -72,7 +72,7 @@ if (defined('SYS_APP_FAVICON') && !empty(SYS_APP_FAVICON)) {
                 }
 
                 // 1. Dashboard
-                if (RBAC::hasPermission('absen_siswa.view')) {
+                if (RBAC::hasPermission('absen_siswa.dashboard')) {
                     renderAbsenMenuItem(
                         'Dashboard',
                         url('kelola-absen-siswa'),
@@ -82,7 +82,7 @@ if (defined('SYS_APP_FAVICON') && !empty(SYS_APP_FAVICON)) {
                 }
 
                 // 2. Input Absen Mapel
-                if (RBAC::hasPermission('absen_siswa.view') || RBAC::hasPermission('absen_siswa.create')) {
+                if (RBAC::hasAnyPermission(['absen_siswa.mapel.view', 'absen_siswa.mapel.create'])) {
                     renderAbsenMenuItem(
                         'Input Absen Mapel',
                         url('kelola-absen-siswa/mapel'),
@@ -92,7 +92,7 @@ if (defined('SYS_APP_FAVICON') && !empty(SYS_APP_FAVICON)) {
                 }
 
                 // 3. Input Absen Kelas
-                if (RBAC::hasPermission('absen_siswa.view') || RBAC::hasPermission('absen_siswa.create')) {
+                if (RBAC::hasAnyPermission(['absen_siswa.kelas.view', 'absen_siswa.kelas.create'])) {
                     renderAbsenMenuItem(
                         'Input Absen Kelas',
                         url('kelola-absen-siswa/kelas'),
@@ -102,7 +102,7 @@ if (defined('SYS_APP_FAVICON') && !empty(SYS_APP_FAVICON)) {
                 }
 
                 // 4. Rekap Absen Mapel + Kelas
-                if (RBAC::hasPermission('absen_siswa.rekap') || RBAC::hasPermission('absen_siswa.view')) {
+                if (RBAC::hasPermission('absen_siswa.rekap')) {
                     renderAbsenMenuItem(
                         'Rekap Absen Siswa',
                         url('kelola-absen-siswa/rekap'),

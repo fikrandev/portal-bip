@@ -93,6 +93,7 @@ class AutoMigrate
             '2026_11_17_000055_add_sarpras_pengajuan_pembelian_and_perbaikan_verifikasi' => 'migration055AddSarprasPengajuanPembelianAndPerbaikanVerifikasi',
             '2026_11_17_000056_add_rbac_jenjang_filter'                   => 'migration056AddRbacJenjangFilter',
             '2026_11_17_000057_make_spmb_rbac_granular_permissions'       => 'migration057MakeSpmbRbacGranularPermissions',
+            '2026_11_17_000058_make_all_modules_rbac_granular'            => 'migration058MakeAllModulesRbacGranular',
         ];
     }
     /**
@@ -3914,6 +3915,378 @@ class AutoMigrate
         }
 
         // Clear session cache RBAC jika class RBAC ada
+        if (class_exists('RBAC')) {
+            RBAC::clearCache();
+        }
+    }
+
+    protected static function migration058MakeAllModulesRbacGranular(PDO $pdo): void
+    {
+        if (!self::hasTable($pdo, 'permissions') || !self::hasTable($pdo, 'modules')) {
+            return;
+        }
+
+        // Ambil mapping module slug => id
+        $stmtMods = $pdo->query("SELECT id, slug FROM `modules`");
+        $modMap = [];
+        foreach ($stmtMods->fetchAll(PDO::FETCH_ASSOC) as $m) {
+            $modMap[$m['slug']] = (int)$m['id'];
+        }
+
+        // Definisi hak akses granular per modul multi-fitur
+        $granularDefs = [
+            'kelola-siswa' => [
+                ['siswa.dashboard', 'Dashboard Statistik Siswa', 'Akses halaman statistik & widget dashboard kesiswaan'],
+                ['siswa.data.view', 'Lihat Data Siswa', 'Melihat daftar, profil lengkap, dan detail data siswa'],
+                ['siswa.data.create', 'Tambah Data Siswa', 'Menambah siswa baru dan sinkronisasi data dapodik/jurnal'],
+                ['siswa.data.update', 'Ubah Data Siswa', 'Mengedit data profil, status, dan identitas siswa'],
+                ['siswa.data.delete', 'Hapus Data Siswa', 'Menghapus data siswa dari database'],
+                ['siswa.data.export', 'Ekspor & Cetak Siswa', 'Mengekspor data siswa dan mencetak profil/kartu'],
+                ['siswa.foto.view', 'Lihat Galeri Foto', 'Melihat galeri foto dan kartu pelajar siswa'],
+                ['siswa.foto.create', 'Upload Foto Siswa', 'Mengunggah pas foto siswa satuan atau massal (ZIP)'],
+                ['siswa.foto.update', 'Atur Template Kartu', 'Mengunggah desain template kartu pelajar siswa'],
+                ['siswa.foto.export', 'Cetak Kartu Pelajar', 'Mencetak kartu pelajar siswa satuan maupun massal'],
+                ['siswa.buku_induk.view', 'Lihat Buku Induk', 'Melihat direktori dan rincian buku induk siswa'],
+                ['siswa.buku_induk.export', 'Ekspor & Cetak Buku Induk', 'Mengekspor dan mencetak buku induk resmi siswa'],
+                ['siswa.prestasi.view', 'Lihat Prestasi Siswa', 'Melihat daftar dan linimasa prestasi siswa'],
+                ['siswa.prestasi.create', 'Tambah Prestasi Siswa', 'Mencatat pencapaian dan prestasi baru siswa'],
+                ['siswa.prestasi.update', 'Ubah Prestasi Siswa', 'Mengubah rincian prestasi dan penghargaan siswa'],
+                ['siswa.prestasi.delete', 'Hapus Prestasi Siswa', 'Menghapus catatan prestasi siswa'],
+                ['siswa.keluar.view', 'Lihat Siswa Keluar & Mutasi', 'Melihat daftar siswa pindah, lulus, atau mutasi keluar'],
+                ['siswa.keluar.create', 'Tambah Siswa Keluar', 'Mencatat mutasi keluar / kelulusan siswa'],
+                ['siswa.keluar.update', 'Ubah & Reaktivasi Mutasi', 'Mengedit status keluar atau mereaktivasi siswa'],
+                ['siswa.keluar.delete', 'Hapus Catatan Mutasi', 'Menghapus catatan mutasi keluar siswa'],
+                ['siswa.keluar.export', 'Cetak Surat Pindah', 'Mencetak surat keterangan pindah/mutasi siswa'],
+            ],
+            'kelola-spmb' => [
+                ['spmb.dashboard', 'Dashboard SPMB', 'Melihat statistik analitik, ringkasan pendaftar, dan grafik seleksi SPMB'],
+                ['spmb.siswa_baru.view', 'Lihat Siswa Baru', 'Melihat daftar, detail, dan cetak formulir calon siswa baru'],
+                ['spmb.siswa_baru.create', 'Tambah Siswa Baru', 'Mendaftarkan calon siswa baru secara manual'],
+                ['spmb.siswa_baru.update', 'Ubah Siswa Baru', 'Mengedit biodata, unggah berkas, dan status biodata siswa baru'],
+                ['spmb.siswa_baru.delete', 'Hapus Siswa Baru', 'Menghapus pendaftaran calon siswa baru'],
+                ['spmb.siswa_baru.approve', 'Verifikasi & Kelulusan Siswa Baru', 'Verifikasi berkas, kelulusan, dan kirim pengumuman siswa baru'],
+                ['spmb.siswa_baru.export', 'Ekspor Siswa Baru', 'Mengekspor data pendaftar siswa baru ke Excel'],
+                ['spmb.pindahan.view', 'Lihat Siswa Pindahan', 'Melihat daftar dan detail pendaftar jalur pindahan/mutasi'],
+                ['spmb.pindahan.create', 'Tambah Siswa Pindahan', 'Mendaftarkan calon siswa pindahan secara manual'],
+                ['spmb.pindahan.update', 'Ubah Siswa Pindahan', 'Mengedit data dan kelengkapan berkas siswa pindahan'],
+                ['spmb.pindahan.delete', 'Hapus Siswa Pindahan', 'Menghapus pendaftaran jalur pindahan'],
+                ['spmb.pindahan.approve', 'Verifikasi & Kelulusan Pindahan', 'Verifikasi dan penetapan status diterima jalur pindahan'],
+                ['spmb.pindahan.export', 'Ekspor Siswa Pindahan', 'Mengekspor data pendaftar pindahan ke Excel'],
+                ['spmb.daftar_tunggu.view', 'Lihat Daftar Tunggu', 'Melihat daftar tunggu (waiting list) dan detail pendaftar'],
+                ['spmb.daftar_tunggu.create', 'Tambah Daftar Tunggu', 'Memasukkan pendaftar baru ke antrean daftar tunggu'],
+                ['spmb.daftar_tunggu.update', 'Ubah & Promosikan Daftar Tunggu', 'Mengedit data, kirim WA, dan mempromosikan daftar tunggu'],
+                ['spmb.daftar_tunggu.delete', 'Hapus Daftar Tunggu', 'Menghapus antrean daftar tunggu'],
+                ['spmb.daftar_tunggu.approve', 'Verifikasi Daftar Tunggu', 'Mengubah status persetujuan pada daftar tunggu'],
+                ['spmb.daftar_tunggu.export', 'Ekspor Daftar Tunggu', 'Mengekspor daftar tunggu ke Excel'],
+                ['spmb.surat_pernyataan.view', 'Lihat Surat Pernyataan', 'Melihat status surat pernyataan komitmen orang tua dan cetak'],
+                ['spmb.surat_pernyataan.update', 'Kelola & Reset Surat Pernyataan', 'Mengubah isi surat, kop surat, kirim WA, dan reset TTD'],
+                ['spmb.psikolog.view', 'Lihat Hasil Psikolog', 'Melihat dan mengunduh hasil screening psikolog siswa'],
+                ['spmb.psikolog.create', 'Upload Hasil Psikolog', 'Mengunggah file PDF hasil screening psikolog'],
+                ['spmb.psikolog.update', 'Kirim WA Hasil Psikolog', 'Mengirim notifikasi/broadcast hasil psikolog via WhatsApp'],
+                ['spmb.psikolog.delete', 'Hapus Hasil Psikolog', 'Menghapus berkas hasil screening psikolog'],
+                ['spmb.psikolog.export', 'Ekspor Hasil Psikolog', 'Mengekspor rekap hasil screening psikolog'],
+                ['spmb.observasi.view', 'Lihat Observasi Awal', 'Melihat jawaban observasi awal orang tua dan status grup WA'],
+                ['spmb.observasi.create', 'Tambah Grup & Pertanyaan Observasi', 'Membuat kategori grup dan pertanyaan instrumen observasi'],
+                ['spmb.observasi.update', 'Ubah & Broadcast Observasi/Grup WA', 'Mengelola status gabung grup dan broadcast undangan WA'],
+                ['spmb.observasi.delete', 'Hapus Pertanyaan/Grup Observasi', 'Menghapus instrumen pertanyaan atau grup observasi'],
+                ['spmb.observasi.export', 'Ekspor Observasi Awal', 'Mengekspor rekap hasil observasi awal orang tua'],
+                ['spmb.pengaturan.view', 'Lihat Pengaturan SPMB', 'Melihat daftar periode group SPMB, kuota, dan biaya'],
+                ['spmb.pengaturan.create', 'Tambah Group SPMB', 'Membuat periode tahun ajaran/gelombang group SPMB baru'],
+                ['spmb.pengaturan.update', 'Ubah Pengaturan SPMB', 'Mengedit kuota, link grup WA, kop surat, dan opsi SPMB'],
+                ['spmb.pengaturan.delete', 'Hapus Group SPMB', 'Menghapus data group SPMB'],
+            ],
+            'kelola-pegawai' => [
+                ['pegawai.dashboard', 'Dashboard Statistik Pegawai', 'Akses halaman statistik & widget dashboard kepegawaian'],
+                ['pegawai.data.view', 'Lihat Data Pegawai', 'Melihat daftar pegawai, guru, profil, dan unduh template'],
+                ['pegawai.data.create', 'Tambah & Import Pegawai', 'Menambah pegawai baru dan import data massal Excel'],
+                ['pegawai.data.update', 'Ubah Data Pegawai', 'Mengedit data profil, jabatan, dan status pegawai'],
+                ['pegawai.data.delete', 'Hapus Data Pegawai', 'Menghapus data pegawai dari sistem'],
+                ['pegawai.data.export', 'Ekspor & Cetak CV Pegawai', 'Mengekspor data pegawai dan mencetak CV resmi'],
+                ['pegawai.penugasan.view', 'Lihat Penugasan & SK', 'Melihat grup SK penugasan dan pembagian tugas mengajar'],
+                ['pegawai.penugasan.create', 'Tambah Grup & Anggota SK', 'Membuat grup SK baru, salin grup, dan tambah tugas'],
+                ['pegawai.penugasan.update', 'Ubah Grup & SK Penugasan', 'Mengedit detail penugasan, metadata SK, dan aktifkan grup'],
+                ['pegawai.penugasan.delete', 'Hapus Grup & Anggota SK', 'Menghapus grup SK atau anggota tugas mengajar'],
+                ['pegawai.prestasi.view', 'Lihat Prestasi Pegawai', 'Melihat daftar penghargaan dan prestasi pegawai'],
+                ['pegawai.prestasi.create', 'Tambah Prestasi Pegawai', 'Mencatat prestasi/penghargaan baru pegawai'],
+                ['pegawai.prestasi.update', 'Ubah Prestasi Pegawai', 'Mengedit catatan prestasi pegawai'],
+                ['pegawai.prestasi.delete', 'Hapus Prestasi Pegawai', 'Menghapus catatan prestasi pegawai'],
+                ['pegawai.pelatihan.view', 'Lihat Pelatihan & Diklat', 'Melihat riwayat diklat, workshop, dan seminar pegawai'],
+                ['pegawai.pelatihan.create', 'Tambah Riwayat Pelatihan', 'Menambah catatan pelatihan baru pegawai'],
+                ['pegawai.pelatihan.update', 'Ubah Riwayat Pelatihan', 'Mengedit data pelatihan/workshop pegawai'],
+                ['pegawai.pelatihan.delete', 'Hapus Riwayat Pelatihan', 'Menghapus catatan pelatihan pegawai'],
+                ['pegawai.karir.view', 'Lihat Riwayat Karir', 'Melihat riwayat karir dan mutasi jabatan pegawai'],
+                ['pegawai.karir.create', 'Tambah Riwayat Karir', 'Mencatat riwayat karir/kenaikan jabatan pegawai'],
+                ['pegawai.karir.update', 'Ubah Riwayat Karir', 'Mengedit data riwayat karir pegawai'],
+                ['pegawai.karir.delete', 'Hapus Riwayat Karir', 'Menghapus catatan riwayat karir'],
+                ['pegawai.keluar.view', 'Lihat Pegawai Keluar', 'Melihat daftar pegawai non-aktif/keluar/pensiun'],
+            ],
+            'kelola-sarpras' => [
+                ['sarpras.dashboard', 'Dashboard Sarpras', 'Akses dashboard ringkasan aset, nilai inventaris, dan statistik sarpras'],
+                ['sarpras.aset.view', 'Lihat Data Aset (Tanah/Bangunan/Ruang)', 'Melihat daftar tanah, gedung bangunan, dan ruangan'],
+                ['sarpras.aset.create', 'Tambah Data Aset', 'Menambah aset tanah, bangunan gedung, atau ruangan baru'],
+                ['sarpras.aset.update', 'Ubah Data Aset', 'Mengedit rincian luas, kondisi, dan lokasi aset'],
+                ['sarpras.aset.delete', 'Hapus Data Aset', 'Menghapus data tanah, bangunan, atau ruangan'],
+                ['sarpras.barang.view', 'Lihat Inventaris Barang', 'Melihat daftar barang inventaris dan distribusinya'],
+                ['sarpras.barang.create', 'Tambah Inventaris Barang', 'Menambah barang inventaris baru ke dalam sistem'],
+                ['sarpras.barang.update', 'Ubah Inventaris Barang', 'Mengedit data spesifikasi, kondisi, dan distribusi barang'],
+                ['sarpras.barang.delete', 'Hapus Inventaris Barang', 'Menghapus data barang inventaris'],
+                ['sarpras.barang.export', 'Ekspor Inventaris Barang', 'Mengekspor daftar inventaris barang'],
+                ['sarpras.label.view', 'Cetak Label Barcode & QR', 'Mencetak label kode inventaris barcode/QR barang'],
+                ['sarpras.penyusutan.view', 'Lihat Penyusutan Aset', 'Melihat perhitungan nilai susut aset dan inventaris'],
+                ['sarpras.laporan.view', 'Lihat Laporan Aset', 'Melihat rekapitulasi laporan kondisi dan nilai aset'],
+                ['sarpras.laporan.export', 'Ekspor & Cetak Laporan Aset', 'Mengekspor dan mencetak laporan resmi sarpras'],
+                ['sarpras.peminjaman.view', 'Lihat Sirkulasi Peminjaman', 'Melihat daftar peminjaman dan pengembalian sarana'],
+                ['sarpras.peminjaman.create', 'Tambah Peminjaman', 'Mencatat transaksi peminjaman barang/ruangan baru'],
+                ['sarpras.peminjaman.update', 'Ubah & Proses Kembali', 'Memperbarui status pengembalian atau kondisi pinjaman'],
+                ['sarpras.peminjaman.approve', 'Persetujuan Peminjaman', 'Menyetujui atau menolak pengajuan peminjaman sarpras'],
+                ['sarpras.referensi.view', 'Lihat Kategori & Referensi', 'Melihat master kategori aset dan sumber dana/referensi'],
+                ['sarpras.referensi.create', 'Tambah Kategori & Referensi', 'Menambah kategori barang atau referensi sarpras baru'],
+                ['sarpras.referensi.update', 'Ubah Kategori & Referensi', 'Mengedit master kategori dan referensi sarpras'],
+                ['sarpras.referensi.delete', 'Hapus Kategori & Referensi', 'Menghapus master kategori atau referensi'],
+            ],
+            'kelola-perangkat-pembelajaran' => [
+                ['perangkat.dashboard', 'Dashboard Perangkat', 'Akses dashboard ringkasan perangkat pembelajaran & jadwal'],
+                ['perangkat.jadwal.view', 'Lihat Jadwal Pelajaran', 'Melihat jadwal KBM, matriks kelas, dan jadwal guru'],
+                ['perangkat.jadwal.create', 'Buat & Generate Jadwal', 'Membuat jadwal baru dan menjalankan auto-generator jadwal'],
+                ['perangkat.jadwal.update', 'Ubah Jadwal & Slot JP', 'Mengedit slot waktu JP, hari efektif, dan mengaktifkan jadwal'],
+                ['perangkat.jadwal.delete', 'Hapus Jadwal & Slot JP', 'Menghapus jadwal pelajaran atau slot waktu khusus'],
+                ['perangkat.jadwal.export', 'Ekspor & Cetak Jadwal', 'Mengekspor jadwal ke Excel dan mencetak jadwal kelas/guru'],
+                ['perangkat.kaldik.view', 'Lihat Kalender Pendidikan', 'Melihat dokumen kalender pendidikan dan agenda sekolah'],
+                ['perangkat.kaldik.create', 'Tambah Kaldik', 'Membuat dokumen kalender pendidikan baru'],
+                ['perangkat.kaldik.update', 'Ubah Kaldik & Agenda', 'Mengedit kaldik, mengaktifkan, dan menambah agenda kaldik'],
+                ['perangkat.kaldik.delete', 'Hapus Agenda Kaldik', 'Menghapus agenda pada kalender pendidikan'],
+                ['perangkat.hari_efektif.view', 'Lihat Hari Efektif (HES/HEB)', 'Melihat rincian hari efektif sekolah dan hari efektif belajar'],
+                ['perangkat.hari_efektif.create', 'Tambah HES / HEB', 'Membuat dokumen hari efektif sekolah atau belajar baru'],
+                ['perangkat.hari_efektif.update', 'Ubah HES / HEB', 'Mengedit rincian hari efektif sekolah/belajar'],
+                ['perangkat.cpatp.view', 'Lihat CP & ATP', 'Melihat capaian pembelajaran dan alur tujuan pembelajaran'],
+                ['perangkat.cpatp.create', 'Tambah CP & ATP', 'Membuat grup dan dokumen CP & ATP baru'],
+                ['perangkat.cpatp.update', 'Ubah CP & ATP', 'Mengedit isi dokumen CP & ATP'],
+                ['perangkat.cpatp.delete', 'Hapus CP & ATP', 'Menghapus grup atau dokumen CP & ATP'],
+                ['perangkat.prota.view', 'Lihat Program Tahunan', 'Melihat dokumen Program Tahunan (Prota)'],
+                ['perangkat.prota.create', 'Tambah Program Tahunan', 'Membuat grup dan dokumen Prota baru'],
+                ['perangkat.prota.update', 'Ubah & Sinkron Prota', 'Mengedit dokumen Prota atau sinkronisasi dari Prosem'],
+                ['perangkat.prota.delete', 'Hapus Program Tahunan', 'Menghapus grup atau dokumen Prota'],
+                ['perangkat.prosem.view', 'Lihat Program Semester', 'Melihat dokumen Program Semester (Prosem)'],
+                ['perangkat.prosem.create', 'Tambah Program Semester', 'Membuat grup dan dokumen Prosem baru'],
+                ['perangkat.prosem.update', 'Ubah & Sinkron Prosem', 'Mengedit dokumen Prosem atau sinkronisasi dari CP/ATP'],
+                ['perangkat.prosem.delete', 'Hapus Program Semester', 'Menghapus grup atau dokumen Prosem'],
+                ['perangkat.rpp.view', 'Lihat RPP / Modul Ajar', 'Melihat daftar dan cetak RPP / Modul Ajar guru'],
+                ['perangkat.rpp.create', 'Tambah RPP / Modul Ajar', 'Membuat grup dan dokumen RPP / Modul Ajar baru'],
+                ['perangkat.rpp.update', 'Ubah & Ajukan Review RPP', 'Mengedit RPP, sinkronisasi, atau kirim untuk ditinjau'],
+                ['perangkat.rpp.delete', 'Hapus RPP / Modul Ajar', 'Menghapus grup atau dokumen RPP / Modul Ajar'],
+                ['perangkat.approve', 'Pusat Verifikasi / Pengesahan', 'Wewenang menyetujui (Approve) dan menolak (Reject) perangkat ajar'],
+            ],
+            'kelola-nilai' => [
+                ['nilai.dashboard', 'Dashboard Nilai', 'Akses dashboard ringkasan nilai akademik'],
+                ['nilai.group.view', 'Lihat Wadah / Group Nilai', 'Melihat daftar grup/periode penilaian semester'],
+                ['nilai.group.create', 'Tambah Group Nilai', 'Membuat wadah/group penilaian baru'],
+                ['nilai.group.update', 'Ubah Group Nilai', 'Mengedit konfigurasi atau status aktif group nilai'],
+                ['nilai.group.delete', 'Hapus Group Nilai', 'Menghapus group penilaian'],
+                ['nilai.input.view', 'Lihat Lembar Nilai', 'Melihat nilai siswa per mata pelajaran dan cetak'],
+                ['nilai.input.create', 'Input Nilai Siswa', 'Menginput dan menyimpan nilai formatif/sumatif siswa'],
+                ['nilai.input.update', 'Ubah Nilai Siswa', 'Mengoreksi atau memperbarui nilai yang telah diisi'],
+                ['nilai.rekap', 'Lihat Rekapitulasi Nilai', 'Melihat dan mencetak leger/rekapitulasi nilai siswa'],
+                ['nilai.export', 'Ekspor Rekap Nilai', 'Mengekspor rekap nilai akademik ke Excel'],
+            ],
+            'kelola-absen-siswa' => [
+                ['absen_siswa.dashboard', 'Dashboard Absen Siswa', 'Akses dashboard kehadiran harian siswa'],
+                ['absen_siswa.group.view', 'Lihat Grup / Wadah Absen', 'Melihat daftar wadah presensi siswa'],
+                ['absen_siswa.group.create', 'Tambah Grup Absen', 'Membuat grup/wadah presensi baru'],
+                ['absen_siswa.group.update', 'Ubah Grup Absen', 'Mengubah pengaturan atau status aktif grup absen'],
+                ['absen_siswa.group.delete', 'Hapus Grup Absen', 'Menghapus grup/wadah presensi'],
+                ['absen_siswa.mapel.view', 'Lihat Absen Mapel', 'Melihat data dan cetak presensi per mata pelajaran'],
+                ['absen_siswa.mapel.create', 'Input Absen Mapel', 'Mengisi kehadiran siswa saat jam mata pelajaran'],
+                ['absen_siswa.kelas.view', 'Lihat Absen Kelas', 'Melihat data dan cetak presensi harian kelas (wali kelas)'],
+                ['absen_siswa.kelas.create', 'Input Absen Kelas', 'Mengisi kehadiran harian siswa di kelas'],
+                ['absen_siswa.rekap', 'Lihat Rekap Absen Siswa', 'Melihat dan mencetak rekapitulasi absensi siswa'],
+                ['absen_siswa.export', 'Ekspor Absen Siswa', 'Mengekspor laporan kehadiran siswa ke Excel'],
+            ],
+            'kelola-quran-siswa' => [
+                ['quran_siswa.dashboard', 'Dashboard Qur\'an Siswa', 'Akses dashboard ringkasan capaian Qur\'an siswa'],
+                ['quran_siswa.paud_target.view', 'Lihat Target Materi PAUD', 'Melihat daftar target hafalan/tahsin Qur\'an PAUD'],
+                ['quran_siswa.paud_target.create', 'Tambah Target PAUD', 'Membuat target materi Tahsin/Tahfidz PAUD baru'],
+                ['quran_siswa.paud_target.update', 'Ubah Target PAUD', 'Mengedit materi atau status aktif target PAUD'],
+                ['quran_siswa.paud_target.delete', 'Hapus Target PAUD', 'Menghapus target materi Qur\'an PAUD'],
+                ['quran_siswa.paud_penilaian.view', 'Lihat Penilaian PAUD', 'Melihat daftar kelompok penilaian Qur\'an PAUD'],
+                ['quran_siswa.paud_penilaian.create', 'Input Penilaian PAUD', 'Mengisi nilai capaian tahsin/tahfidz siswa PAUD'],
+                ['quran_siswa.paud_rekap.view', 'Lihat & Ekspor Rekap PAUD', 'Melihat, mencetak, dan mengekspor rekap Qur\'an PAUD'],
+                ['quran_siswa.sd_smp.view', 'Lihat Setoran SD/SMP/SMA', 'Melihat capaian setoran dan cetak rekap Qur\'an SD/SMP/SMA'],
+                ['quran_siswa.sd_smp.create', 'Input Setoran SD/SMP/SMA', 'Mencatat setoran ziyadah/muroja\'ah siswa'],
+                ['quran_siswa.sd_smp.delete', 'Hapus Setoran SD/SMP/SMA', 'Menghapus catatan setoran tahfidz siswa'],
+            ],
+            'kelola-cuti' => [
+                ['cuti.dashboard', 'Dashboard Cuti', 'Akses dashboard statistik pengajuan cuti pegawai'],
+                ['cuti.pengajuan.view', 'Lihat Daftar & Surat Cuti', 'Melihat daftar permohonan cuti dan mencetak surat cuti'],
+                ['cuti.pengajuan.create', 'Ajukan Permohonan Cuti', 'Membuat pengajuan permohonan cuti baru'],
+                ['cuti.approve', 'Persetujuan / Approval Cuti', 'Wewenang menyetujui atau menolak permohonan cuti pegawai'],
+                ['cuti.master.update', 'Kelola Jenis & Saldo Cuti', 'Mengatur master jenis cuti, tambah bulanan, dan penyesuaian saldo'],
+                ['cuti.export', 'Ekspor Data Cuti', 'Mengekspor rekap pengajuan cuti ke CSV/Excel'],
+            ],
+            'pengaturan-sistem' => [
+                ['settings.dashboard', 'Dashboard Pengaturan', 'Akses halaman utama pengaturan sistem'],
+                ['settings.identitas.view', 'Lihat Identitas & Akademik', 'Melihat pengaturan identitas sekolah, logo, dan tahun akademik'],
+                ['settings.identitas.update', 'Ubah Identitas & Akademik', 'Mengubah profil sekolah, kop, dan tahun akademik aktif'],
+                ['settings.master.view', 'Lihat Master Pegawai & Mapel', 'Melihat data master kepegawaian dan mata pelajaran'],
+                ['settings.master.update', 'Ubah Master Data', 'Mengedit master jabatan, status pegawai, dan mata pelajaran'],
+                ['settings.wa.view', 'Lihat Pengaturan WA Gateway', 'Melihat status koneksi dan konfigurasi WhatsApp Gateway'],
+                ['settings.wa.update', 'Ubah WA Gateway', 'Mengubah konfigurasi server/token WhatsApp Gateway'],
+                ['settings.logs.view', 'Lihat Log Aktivitas', 'Melihat rekam jejak aktivitas dan audit sistem'],
+                ['settings.reset', 'Reset Data Sistem', 'Wewenang tingkat tinggi untuk mereset data operasional sistem'],
+            ],
+        ];
+
+        $stmtCheck = $pdo->prepare("SELECT id FROM `permissions` WHERE `slug` = ? LIMIT 1");
+        $stmtInsert = $pdo->prepare("INSERT INTO `permissions` (`module_id`, `name`, `slug`, `description`) VALUES (?, ?, ?, ?)");
+        $stmtUpdate = $pdo->prepare("UPDATE `permissions` SET `module_id` = ?, `name` = ?, `description` = ? WHERE `id` = ?");
+        $stmtCheckMp = $pdo->prepare("SELECT 1 FROM `module_permissions` WHERE `module_id` = ? AND `permission_id` = ?");
+        $stmtInsertMp = $pdo->prepare("INSERT INTO `module_permissions` (`module_id`, `permission_id`) VALUES (?, ?)");
+
+        $newSlugToId = [];
+        foreach ($granularDefs as $modSlug => $perms) {
+            if (!isset($modMap[$modSlug])) continue;
+            $modId = $modMap[$modSlug];
+            foreach ($perms as $p) {
+                [$slug, $name, $desc] = $p;
+                $stmtCheck->execute([$slug]);
+                $permId = $stmtCheck->fetchColumn();
+                if ($permId) {
+                    $stmtUpdate->execute([$modId, $name, $desc, $permId]);
+                } else {
+                    $stmtInsert->execute([$modId, $name, $slug, $desc]);
+                    $permId = $pdo->lastInsertId();
+                }
+                $permId = (int)$permId;
+                $newSlugToId[$slug] = $permId;
+
+                $stmtCheckMp->execute([$modId, $permId]);
+                if (!$stmtCheckMp->fetchColumn()) {
+                    $stmtInsertMp->execute([$modId, $permId]);
+                }
+            }
+        }
+
+        // Migrasi role_permissions lama -> baru agar peran existing tidak kehilangan akses
+        $legacyMigrationMap = [
+            // Kelola Siswa
+            'siswa.view'   => ['siswa.data.view', 'siswa.foto.view', 'siswa.buku_induk.view', 'siswa.prestasi.view', 'siswa.keluar.view'],
+            'siswa.create' => ['siswa.data.create', 'siswa.foto.create', 'siswa.prestasi.create', 'siswa.keluar.create'],
+            'siswa.update' => ['siswa.data.update', 'siswa.foto.update', 'siswa.prestasi.update', 'siswa.keluar.update'],
+            'siswa.delete' => ['siswa.data.delete', 'siswa.prestasi.delete', 'siswa.keluar.delete'],
+            'siswa.export' => ['siswa.data.export', 'siswa.foto.export', 'siswa.buku_induk.export', 'siswa.keluar.export'],
+
+            // Kelola SPMB
+            'spmb.view'             => ['spmb.siswa_baru.view'],
+            'spmb.siswa_baru'       => ['spmb.siswa_baru.view'],
+            'spmb.pindahan'         => ['spmb.pindahan.view'],
+            'spmb.daftar_tunggu'    => ['spmb.daftar_tunggu.view'],
+            'spmb.surat_pernyataan' => ['spmb.surat_pernyataan.view'],
+            'spmb.psikolog'         => ['spmb.psikolog.view'],
+            'spmb.observasi'        => ['spmb.observasi.view'],
+            'spmb.pengaturan'       => ['spmb.pengaturan.view'],
+            'spmb.create'           => ['spmb.siswa_baru.create', 'spmb.pindahan.create', 'spmb.daftar_tunggu.create', 'spmb.psikolog.create', 'spmb.observasi.create', 'spmb.pengaturan.create'],
+            'spmb.update'           => ['spmb.siswa_baru.update', 'spmb.pindahan.update', 'spmb.daftar_tunggu.update', 'spmb.surat_pernyataan.update', 'spmb.psikolog.update', 'spmb.observasi.update', 'spmb.pengaturan.update'],
+            'spmb.delete'           => ['spmb.siswa_baru.delete', 'spmb.pindahan.delete', 'spmb.daftar_tunggu.delete', 'spmb.psikolog.delete', 'spmb.observasi.delete', 'spmb.pengaturan.delete'],
+            'spmb.approve'          => ['spmb.siswa_baru.approve', 'spmb.pindahan.approve', 'spmb.daftar_tunggu.approve'],
+            'spmb.kelulusan'        => ['spmb.siswa_baru.approve', 'spmb.pindahan.approve', 'spmb.daftar_tunggu.approve'],
+            'spmb.export'           => ['spmb.siswa_baru.export', 'spmb.pindahan.export', 'spmb.daftar_tunggu.export', 'spmb.psikolog.export', 'spmb.observasi.export'],
+
+            // Kelola Pegawai
+            'pegawai.view'      => ['pegawai.data.view', 'pegawai.prestasi.view', 'pegawai.pelatihan.view', 'pegawai.karir.view', 'pegawai.keluar.view'],
+            'pegawai.create'    => ['pegawai.data.create', 'pegawai.prestasi.create', 'pegawai.pelatihan.create', 'pegawai.karir.create'],
+            'pegawai.update'    => ['pegawai.data.update', 'pegawai.prestasi.update', 'pegawai.pelatihan.update', 'pegawai.karir.update'],
+            'pegawai.delete'    => ['pegawai.data.delete', 'pegawai.penugasan.delete', 'pegawai.prestasi.delete', 'pegawai.pelatihan.delete', 'pegawai.karir.delete'],
+            'pegawai.export'    => ['pegawai.data.export'],
+            'pegawai.penugasan' => ['pegawai.penugasan.view', 'pegawai.penugasan.create', 'pegawai.penugasan.update'],
+
+            // Kelola Sarpras
+            'sarpras.view'    => ['sarpras.aset.view', 'sarpras.barang.view', 'sarpras.label.view', 'sarpras.penyusutan.view', 'sarpras.laporan.view', 'sarpras.peminjaman.view', 'sarpras.referensi.view'],
+            'sarpras.create'  => ['sarpras.aset.create', 'sarpras.barang.create', 'sarpras.peminjaman.create', 'sarpras.referensi.create'],
+            'sarpras.update'  => ['sarpras.aset.update', 'sarpras.barang.update', 'sarpras.peminjaman.update', 'sarpras.referensi.update'],
+            'sarpras.delete'  => ['sarpras.aset.delete', 'sarpras.barang.delete', 'sarpras.referensi.delete'],
+            'sarpras.export'  => ['sarpras.barang.export', 'sarpras.laporan.export'],
+            'sarpras.approve' => ['sarpras.peminjaman.approve'],
+
+            // Kelola Perangkat Pembelajaran
+            'perangkat.view'   => ['perangkat.jadwal.view', 'perangkat.kaldik.view', 'perangkat.hari_efektif.view', 'perangkat.cpatp.view', 'perangkat.prota.view', 'perangkat.prosem.view', 'perangkat.rpp.view'],
+            'perangkat.create' => ['perangkat.jadwal.create', 'perangkat.kaldik.create', 'perangkat.hari_efektif.create', 'perangkat.cpatp.create', 'perangkat.prota.create', 'perangkat.prosem.create', 'perangkat.rpp.create'],
+            'perangkat.update' => ['perangkat.jadwal.update', 'perangkat.kaldik.update', 'perangkat.hari_efektif.update', 'perangkat.cpatp.update', 'perangkat.prota.update', 'perangkat.prosem.update', 'perangkat.rpp.update'],
+            'perangkat.delete' => ['perangkat.jadwal.delete', 'perangkat.kaldik.delete', 'perangkat.cpatp.delete', 'perangkat.prota.delete', 'perangkat.prosem.delete', 'perangkat.rpp.delete'],
+
+            // Kelola Nilai
+            'nilai.view'   => ['nilai.group.view', 'nilai.input.view'],
+            'nilai.create' => ['nilai.group.create', 'nilai.input.create'],
+            'nilai.update' => ['nilai.group.update', 'nilai.input.update'],
+            'nilai.delete' => ['nilai.group.delete'],
+
+            // Kelola Absen Siswa
+            'absen_siswa.view'   => ['absen_siswa.group.view', 'absen_siswa.mapel.view', 'absen_siswa.kelas.view'],
+            'absen_siswa.create' => ['absen_siswa.group.create', 'absen_siswa.mapel.create', 'absen_siswa.kelas.create'],
+            'absen_siswa.update' => ['absen_siswa.group.update'],
+            'absen_siswa.delete' => ['absen_siswa.group.delete'],
+
+            // Kelola Qur'an Siswa
+            'quran_siswa.view'   => ['quran_siswa.paud_target.view', 'quran_siswa.paud_penilaian.view', 'quran_siswa.paud_rekap.view', 'quran_siswa.sd_smp.view'],
+            'quran_siswa.create' => ['quran_siswa.paud_target.create', 'quran_siswa.paud_penilaian.create', 'quran_siswa.sd_smp.create'],
+            'quran_siswa.update' => ['quran_siswa.paud_target.update'],
+            'quran_siswa.delete' => ['quran_siswa.paud_target.delete', 'quran_siswa.sd_smp.delete'],
+
+            // Kelola Cuti
+            'cuti.view'   => ['cuti.pengajuan.view'],
+            'cuti.create' => ['cuti.pengajuan.create'],
+            'cuti.update' => ['cuti.master.update'],
+            'cuti.delete' => [],
+
+            // Pengaturan Sistem
+            'settings.view'   => ['settings.identitas.view', 'settings.master.view', 'settings.wa.view', 'settings.logs.view'],
+            'settings.update' => ['settings.identitas.update', 'settings.master.update', 'settings.wa.update'],
+        ];
+
+        $stmtCheckRp = $pdo->prepare("SELECT 1 FROM `role_permissions` WHERE `role_id` = ? AND `permission_id` = ?");
+        $stmtInsertRp = $pdo->prepare("INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES (?, ?)");
+        $stmtGetRoleIdsByPerm = $pdo->prepare("SELECT rp.role_id FROM `role_permissions` rp JOIN `permissions` p ON rp.permission_id = p.id WHERE p.slug = ?");
+
+        foreach ($legacyMigrationMap as $oldSlug => $targetSlugs) {
+            $stmtGetRoleIdsByPerm->execute([$oldSlug]);
+            $rIds = $stmtGetRoleIdsByPerm->fetchAll(PDO::FETCH_COLUMN);
+            foreach ($rIds as $rId) {
+                foreach ($targetSlugs as $ts) {
+                    if (isset($newSlugToId[$ts])) {
+                        $stmtCheckRp->execute([$rId, $newSlugToId[$ts]]);
+                        if (!$stmtCheckRp->fetchColumn()) {
+                            $stmtInsertRp->execute([$rId, $newSlugToId[$ts]]);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Hapus permission lama yang sudah digantikan versi granular
+        $obsoleteSlugs = array_keys($legacyMigrationMap);
+        if (!empty($obsoleteSlugs)) {
+            $placeholders = implode(',', array_fill(0, count($obsoleteSlugs), '?'));
+            $stmtOldIds = $pdo->prepare("SELECT id FROM `permissions` WHERE `slug` IN ($placeholders)");
+            $stmtOldIds->execute($obsoleteSlugs);
+            $oldIds = $stmtOldIds->fetchAll(PDO::FETCH_COLUMN);
+            if (!empty($oldIds)) {
+                $idPlaceholders = implode(',', array_fill(0, count($oldIds), '?'));
+                $pdo->prepare("DELETE FROM `role_permissions` WHERE `permission_id` IN ($idPlaceholders)")->execute($oldIds);
+                $pdo->prepare("DELETE FROM `module_permissions` WHERE `permission_id` IN ($idPlaceholders)")->execute($oldIds);
+                $pdo->prepare("DELETE FROM `permissions` WHERE `id` IN ($idPlaceholders)")->execute($oldIds);
+            }
+        }
+
+        // Pastikan Super Admin & Admin mendapatkan seluruh permission baru
+        $stmtRoles = $pdo->query("SELECT id FROM `roles` WHERE `slug` IN ('super_admin', 'admin', 'super-admin')");
+        $adminRoleIds = $stmtRoles->fetchAll(PDO::FETCH_COLUMN);
+        foreach ($adminRoleIds as $rId) {
+            foreach ($newSlugToId as $pId) {
+                $stmtCheckRp->execute([$rId, $pId]);
+                if (!$stmtCheckRp->fetchColumn()) {
+                    $stmtInsertRp->execute([$rId, $pId]);
+                }
+            }
+        }
+
         if (class_exists('RBAC')) {
             RBAC::clearCache();
         }

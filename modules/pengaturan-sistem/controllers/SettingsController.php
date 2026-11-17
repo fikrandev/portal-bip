@@ -44,8 +44,13 @@ class SettingsController
      */
     public static function index(): void
     {
-        header('Location: ' . url('pengaturan-sistem/identitas'));
-        exit;
+        RBAC::redirectToFirstAllowedOr403([
+            'settings.identitas.view' => 'pengaturan-sistem/identitas',
+            'settings.master.view'    => 'pengaturan-sistem/master-pegawai',
+            'settings.wa.view'        => 'pengaturan-sistem/wa-gateway',
+            'settings.logs.view'      => 'pengaturan-sistem/log-aktivitas',
+            'settings.reset'          => 'pengaturan-sistem/reset-data',
+        ]);
     }
 
     /**

@@ -28,6 +28,7 @@ $filters = $filters ?? [];
             </p>
         </div>
         <div class="flex flex-wrap items-center gap-2.5">
+            <?php if (RBAC::hasPermission('spmb.siswa_baru.approve')): ?>
             <a href="<?= url('kelola-spmb/pengumuman-kelulusan/cetak?jenjang=' . (!empty($filters['jenjang']) ? $filters['jenjang'] : 'SD') . '&jenis=Siswa Baru') ?>" target="_blank"
                class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 font-semibold text-xs transition-colors" title="Cetak Surat Keputusan Pengumuman Kelulusan Resmi Format PDF">
                 <svg class="w-4 h-4 text-purple-600" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" /></svg>
@@ -43,6 +44,8 @@ $filters = $filters ?? [];
                 <span>🎓</span>
                 <span>Tetapkan Siswa Diterima</span>
             </button>
+            <?php endif; ?>
+            <?php if (RBAC::hasPermission('spmb.siswa_baru.export')): ?>
             <?php
             $exportParams = array_filter($filters ?? [], fn($v) => $v !== '' && $v !== null);
             ?>
@@ -56,11 +59,14 @@ $filters = $filters ?? [];
                 <svg class="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" /></svg>
                 <span>Export Excel</span>
             </a>
+            <?php endif; ?>
+            <?php if (RBAC::hasPermission('spmb.siswa_baru.create')): ?>
             <button type="button" onclick="openModalTambahSiswaBaru()" 
                class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-500 hover:to-blue-500 text-white font-semibold text-xs shadow-md shadow-sky-600/20 transition-all transform hover:-translate-y-0.5 cursor-pointer">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
                 <span>Tambah Siswa Baru</span>
             </button>
+            <?php endif; ?>
         </div>
     </div>
 
@@ -440,7 +446,7 @@ $filters = $filters ?? [];
                                              class="action-menu-dropdown hidden absolute right-0 z-30 w-56 rounded-xl bg-white shadow-xl ring-1 ring-slate-900/10 divide-y divide-slate-100 text-left transition-all">
                                             
                                             <!-- Action: Kirim WA Kelulusan jika sudah diterima -->
-                                            <?php if (($item['status_kelulusan'] ?? '') === 'Lulus / Diterima'): ?>
+                                            <?php if (($item['status_kelulusan'] ?? '') === 'Lulus / Diterima' && RBAC::hasPermission('spmb.siswa_baru.approve')): ?>
                                                 <div class="p-1">
                                                     <button type="button" 
                                                             onclick="kirimWaKelulusanSingle(<?= $item['id'] ?>, '<?= addslashes(e($item['nama_lengkap'])) ?>')"
@@ -456,6 +462,7 @@ $filters = $filters ?? [];
                                                 </div>
                                             <?php endif; ?>
 
+                                            <?php if (RBAC::hasPermission('spmb.siswa_baru.approve')): ?>
                                             <!-- Quick Primary Action: Cek & Terima Berkas -->
                                             <div class="p-1">
                                                 <button type="button" 
@@ -465,6 +472,7 @@ $filters = $filters ?? [];
                                                     <span>Cek & Terima Berkas</span>
                                                 </button>
                                             </div>
+                                            <?php endif; ?>
 
                                             <!-- Detail & Edit -->
                                             <div class="p-1 space-y-0.5">
@@ -473,13 +481,16 @@ $filters = $filters ?? [];
                                                     <svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg>
                                                     <span>Lihat Detail Pendaftar</span>
                                                 </a>
+                                                <?php if (RBAC::hasPermission('spmb.siswa_baru.update')): ?>
                                                 <a href="<?= url('kelola-spmb/siswa-baru/edit/' . $item['id']) ?>" 
                                                    class="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-slate-700 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition-colors">
                                                     <svg class="w-4 h-4 text-amber-500" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" /></svg>
                                                     <span>Edit Data Siswa</span>
                                                 </a>
+                                                <?php endif; ?>
                                             </div>
 
+                                            <?php if (RBAC::hasPermission('spmb.siswa_baru.approve')): ?>
                                             <!-- Ubah Status Seleksi Satuan -->
                                             <div class="p-1 space-y-0.5">
                                                 <div class="px-3 py-1 text-[9.5px] font-extrabold text-slate-400 uppercase tracking-wider">Ubah Status Seleksi</div>
@@ -514,6 +525,7 @@ $filters = $filters ?? [];
                                                     </form>
                                                 <?php endif; ?>
                                             </div>
+                                            <?php endif; ?>
 
                                             <!-- Cetak Dokumen -->
                                             <div class="p-1 space-y-0.5">
@@ -557,6 +569,7 @@ $filters = $filters ?? [];
                                                 </button>
                                             </div>
 
+                                            <?php if (RBAC::hasPermission('spmb.siswa_baru.delete')): ?>
                                             <!-- Danger Zone -->
                                             <div class="p-1">
                                                 <button type="button" 
@@ -566,6 +579,7 @@ $filters = $filters ?? [];
                                                     <span>Hapus Data Pendaftar</span>
                                                 </button>
                                             </div>
+                                            <?php endif; ?>
                                         </div>
                                     </div>
                                 </td>

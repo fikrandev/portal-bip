@@ -44,13 +44,13 @@ $group = $stats['activeGroup'] ?? null;
 
             <!-- Quick Action Buttons (Sinkron dengan Menu Fitur Sidebar & Hak Akses RBAC) -->
             <?php
-            $canSiswaBaru = class_exists('RBAC') ? RBAC::hasPermission('spmb.siswa_baru') : true;
-            $canPindahan  = class_exists('RBAC') ? RBAC::hasPermission('spmb.pindahan') : true;
-            $canDaftarTunggu = class_exists('RBAC') ? RBAC::hasPermission('spmb.daftar_tunggu') : true;
-            $canSuratPernyataan = class_exists('RBAC') ? RBAC::hasPermission('spmb.surat_pernyataan') : true;
-            $canPsikolog = class_exists('RBAC') ? RBAC::hasPermission('spmb.psikolog') : true;
-            $canObservasi = class_exists('RBAC') ? RBAC::hasPermission('spmb.observasi') : true;
-            $canPengaturan = class_exists('RBAC') ? RBAC::hasPermission('spmb.pengaturan') : true;
+            $canSiswaBaru = class_exists('RBAC') ? RBAC::hasPermission('spmb.siswa_baru.view') : true;
+            $canPindahan  = class_exists('RBAC') ? RBAC::hasPermission('spmb.pindahan.view') : true;
+            $canDaftarTunggu = class_exists('RBAC') ? RBAC::hasPermission('spmb.daftar_tunggu.view') : true;
+            $canSuratPernyataan = class_exists('RBAC') ? RBAC::hasPermission('spmb.surat_pernyataan.view') : true;
+            $canPsikolog = class_exists('RBAC') ? RBAC::hasPermission('spmb.psikolog.view') : true;
+            $canObservasi = class_exists('RBAC') ? RBAC::hasPermission('spmb.observasi.view') : true;
+            $canPengaturan = class_exists('RBAC') ? RBAC::hasPermission('spmb.pengaturan.view') : true;
             ?>
             <div class="flex flex-col sm:flex-row gap-2.5 shrink-0">
                 <?php if ($canSiswaBaru): ?>

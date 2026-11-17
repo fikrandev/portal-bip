@@ -38,6 +38,7 @@ $groupLinks          = $groupLinks ?? [];
             </p>
         </div>
         <div class="flex items-center gap-2.5 flex-wrap">
+            <?php if (RBAC::hasPermission('spmb.observasi.create')): ?>
             <a href="<?= url('kelola-spmb/observasi-awal/pengaturan') ?>" 
                class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm font-semibold text-slate-700 bg-white hover:bg-slate-50 transition-colors shadow-sm">
                 <svg class="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
@@ -46,6 +47,8 @@ $groupLinks          = $groupLinks ?? [];
                 </svg>
                 Pengaturan Soal & Aspek
             </a>
+            <?php endif; ?>
+            <?php if (RBAC::hasPermission('spmb.observasi.update')): ?>
             <button type="button" 
                     onclick="openModalBroadcastGroup()" 
                     class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-teal-300 text-xs sm:text-sm font-semibold text-teal-700 bg-teal-50 hover:bg-teal-100 transition-colors shadow-sm">
@@ -62,6 +65,7 @@ $groupLinks          = $groupLinks ?? [];
                 </svg>
                 Broadcast Link WA
             </button>
+            <?php endif; ?>
             <a href="<?= url('kelola-spmb/observasi-awal/cetak-rekap?' . http_build_query($filters)) ?>" 
                target="_blank" 
                class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-sky-300 text-xs sm:text-sm font-semibold text-sky-700 bg-sky-50 hover:bg-sky-100 transition-colors shadow-sm">
@@ -70,6 +74,7 @@ $groupLinks          = $groupLinks ?? [];
                 </svg>
                 Cetak Rekap Observasi
             </a>
+            <?php if (RBAC::hasPermission('spmb.observasi.export')): ?>
             <a href="<?= url('kelola-spmb/observasi-awal/export?' . http_build_query($filters)) ?>" 
                data-download="true" 
                class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-sky-600 to-blue-600 text-white text-xs sm:text-sm font-semibold hover:from-sky-700 hover:to-blue-700 transition-all shadow-md shadow-sky-600/20">
@@ -78,6 +83,7 @@ $groupLinks          = $groupLinks ?? [];
                 </svg>
                 Export CSV / Excel
             </a>
+            <?php endif; ?>
         </div>
     </div>
 
@@ -405,6 +411,7 @@ $groupLinks          = $groupLinks ?? [];
                                             </svg>
                                         </button>
 
+                                        <?php if (RBAC::hasPermission('spmb.observasi.update')): ?>
                                         <!-- Tombol Kirim Undangan Group WA Satuan -->
                                         <?php 
                                         $groupLinkThis = $it['group_wa_link'] ?? ($groupLinks[strtoupper($it['jenjang'] ?? 'SD')] ?? '');
@@ -437,6 +444,7 @@ $groupLinks          = $groupLinks ?? [];
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 0 1-2.555-.337A5.972 5.972 0 0 1 5.41 20.97a5.969 5.969 0 0 1-.474-.065 4.48 4.48 0 0 0 .978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z" />
                                             </svg>
                                         </button>
+                                        <?php endif; ?>
 
                                         <!-- Tombol Cetak -->
                                         <a href="<?= url('kelola-spmb/observasi-awal/cetak/' . (int)$it['pendaftar_id']) ?>" 
