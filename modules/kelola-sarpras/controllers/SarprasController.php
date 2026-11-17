@@ -773,16 +773,20 @@ class SarprasController
         }
 
         $namaBarang = trim($_POST['nama_barang'] ?? '');
-        $keperluan = trim($_POST['keperluan'] ?? '');
+        $keperluan = trim($_POST['keperluan'] ?? $_POST['alasan_kebutuhan'] ?? '');
         $unit = trim($_POST['unit'] ?? 'Umum');
         $kategoriId = !empty($_POST['kategori_id']) ? (int)$_POST['kategori_id'] : null;
         $ruanganId = !empty($_POST['ruangan_id']) ? (int)$_POST['ruangan_id'] : null;
         $spesifikasi = trim($_POST['spesifikasi'] ?? '');
         $jumlah = max(1, (int)($_POST['jumlah'] ?? 1));
         $satuan = trim($_POST['satuan'] ?? 'Unit');
-        $estimasiHarga = (float)str_replace(['.', ','], ['', '.'], $_POST['estimasi_harga'] ?? '0');
+        $rawHarga = preg_replace('/[^0-9]/', '', $_POST['estimasi_harga'] ?? '0');
+        $estimasiHarga = (float)($rawHarga !== '' ? $rawHarga : '0');
         $totalEstimasi = $estimasiHarga * $jumlah;
-        $pengaju = trim($_POST['pengaju'] ?? (Auth::name() ?: 'Staff Sarpras'));
+        $pengaju = trim($_POST['pengaju'] ?? '');
+        if (empty($pengaju)) {
+            $pengaju = Auth::name() ?: 'Staff Sarpras';
+        }
         $tanggal = trim($_POST['tanggal_pengajuan'] ?? date('Y-m-d'));
 
         if (empty($namaBarang) || empty($keperluan)) {

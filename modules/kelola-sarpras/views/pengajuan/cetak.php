@@ -168,7 +168,7 @@ $sekolahSub = defined('SYS_APP_TAGLINE') ? SYS_APP_TAGLINE : 'Sistem Informasi M
     </tr>
     <tr>
         <td class="label">Nama Pemohon</td>
-        <td class="val"><?= e($item['pemohon_nama']) ?></td>
+        <td class="val"><?= e($item['pemohon_nama'] ?? $item['pengaju'] ?? 'Staff') ?></td>
         <td class="label">Rencana Penempatan</td>
         <td class="val"><?= !empty($item['nama_ruangan']) ? e($item['nama_ruangan']) : 'Gudang / Fasilitas Bersama' ?></td>
     </tr>
@@ -203,7 +203,7 @@ $sekolahSub = defined('SYS_APP_TAGLINE') ? SYS_APP_TAGLINE : 'Sistem Informasi M
     <tr>
         <td class="label">Alasan / Urgensi Kebutuhan</td>
         <td class="val" colspan="3" style="min-height: 40px;">
-            <?= nl2br(e($item['alasan_kebutuhan'] ?: '-')) ?>
+            <?= nl2br(e($item['alasan_kebutuhan'] ?: $item['keperluan'] ?: '-')) ?>
         </td>
     </tr>
     <tr>

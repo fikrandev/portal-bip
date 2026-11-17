@@ -671,7 +671,7 @@ class SarprasModel
     {
         $db = self::db();
         $sql = "
-            SELECT p.*, k.nama_kategori, r.nama_ruangan, r.unit as unit_ruangan, u.full_name as user_account_name
+            SELECT p.*, COALESCE(p.pengaju, u.full_name, 'Staff') as pemohon_nama, p.keperluan as alasan_kebutuhan, k.nama_kategori, r.nama_ruangan, r.unit as unit_ruangan, u.full_name as user_account_name
             FROM sarpras_pengajuan p
             LEFT JOIN sarpras_kategori k ON p.kategori_id = k.id
             LEFT JOIN sarpras_ruangan r ON p.ruangan_id = r.id
@@ -758,7 +758,7 @@ class SarprasModel
     {
         $db = self::db();
         return $db->find("
-            SELECT p.*, k.nama_kategori, r.nama_ruangan, r.kode_ruangan, r.unit as unit_ruangan, u.full_name as user_account_name, u.email as user_email
+            SELECT p.*, COALESCE(p.pengaju, u.full_name, 'Staff') as pemohon_nama, p.keperluan as alasan_kebutuhan, k.nama_kategori, r.nama_ruangan, r.kode_ruangan, r.unit as unit_ruangan, u.full_name as user_account_name, u.email as user_email
             FROM sarpras_pengajuan p
             LEFT JOIN sarpras_kategori k ON p.kategori_id = k.id
             LEFT JOIN sarpras_ruangan r ON p.ruangan_id = r.id

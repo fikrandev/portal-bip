@@ -175,7 +175,7 @@
                                             <?= e($p['unit'] ?: 'Umum') ?>
                                         </span>
                                     </div>
-                                    <div class="font-semibold text-slate-800 mt-1"><?= e($p['pemohon_nama']) ?></div>
+                                    <div class="font-semibold text-slate-800 mt-1"><?= e($p['pemohon_nama'] ?? $p['pengaju'] ?? 'Staff') ?></div>
                                     <div class="text-[10px] text-slate-400"><?= !empty($p['nama_ruangan']) ? e($p['nama_ruangan']) : 'Ruang Umum' ?></div>
                                 </td>
                                 <td class="py-3.5 px-4">
@@ -391,10 +391,16 @@
                 <textarea name="spesifikasi" rows="2" placeholder="Sebutkan merk, tipe, dimensi, warna, atau standar spek teknis yang diharapkan..." class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-primary-500 font-medium"></textarea>
             </div>
 
+            <!-- Nama Pemohon / Pengaju -->
+            <div>
+                <label class="block font-bold text-slate-700 mb-1">Nama Pemohon / Pengaju <span class="text-rose-500">*</span></label>
+                <input type="text" name="pengaju" value="<?= e(Auth::name()) ?>" required placeholder="Nama lengkap pemohon..." class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-primary-500 font-medium">
+            </div>
+
             <!-- Alasan Kebutuhan -->
             <div>
                 <label class="block font-bold text-slate-700 mb-1">Alasan Kebutuhan / Urgensi <span class="text-rose-500">*</span></label>
-                <textarea name="alasan_kebutuhan" rows="2" required placeholder="Jelaskan untuk keperluan apa dan mengapa pengadaan ini dibutuhkan..." class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-primary-500 font-medium"></textarea>
+                <textarea name="keperluan" id="input_tambah_keperluan" rows="2" required placeholder="Jelaskan untuk keperluan apa dan mengapa pengadaan ini dibutuhkan..." class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-primary-500 font-medium"></textarea>
             </div>
 
             <!-- File Pendukung / Brosur / Quotation -->
@@ -620,10 +626,10 @@ function calcTotalEstimasi() {
 
 // ── MODAL VERIFIKASI PENGAJUAN ──────────────────────────────────────────────
 function openModalVerifikasiPengajuan(item) {
-    document.getElementById('verif-kode').innerText = item.kode_pengajuan;
-    document.getElementById('verif-barang').innerText = item.nama_barang;
+    document.getElementById('verif-kode').innerText = item.kode_pengajuan || '-';
+    document.getElementById('verif-barang').innerText = item.nama_barang || '-';
     document.getElementById('verif-unit').innerText = item.unit || 'Umum';
-    document.getElementById('verif-pemohon').innerText = item.pemohon_nama;
+    document.getElementById('verif-pemohon').innerText = item.pemohon_nama || item.pengaju || 'Staff';
     
     const total = item.total_estimasi || (item.jumlah * item.estimasi_harga);
     document.getElementById('verif-total').innerText = 'Rp ' + parseInt(total).toLocaleString('id-ID');
@@ -657,21 +663,21 @@ function closeModalVerifikasiPengajuan() {
 
 // ── MODAL DETAIL PENGAJUAN ──────────────────────────────────────────────────
 function openModalDetailPengajuan(item) {
-    document.getElementById('det-kode').innerText = item.kode_pengajuan;
-    document.getElementById('det-barang').innerText = item.nama_barang;
+    document.getElementById('det-kode').innerText = item.kode_pengajuan || '-';
+    document.getElementById('det-barang').innerText = item.nama_barang || '-';
     document.getElementById('det-unit').innerText = item.unit || 'Umum';
-    document.getElementById('det-pemohon').innerText = item.pemohon_nama;
-    document.getElementById('det-tanggal').innerText = item.tanggal_pengajuan;
+    document.getElementById('det-pemohon').innerText = item.pemohon_nama || item.pengaju || 'Staff';
+    document.getElementById('det-tanggal').innerText = item.tanggal_pengajuan || '-';
     document.getElementById('det-ruangan').innerText = item.nama_ruangan || 'Fasilitas Umum';
     
-    document.getElementById('det-jumlah').innerText = item.jumlah + ' ' + (item.satuan || 'Unit');
-    document.getElementById('det-harga-satuan').innerText = 'Rp ' + parseInt(item.estimasi_harga).toLocaleString('id-ID');
+    document.getElementById('det-jumlah').innerText = (item.jumlah || 1) + ' ' + (item.satuan || 'Unit');
+    document.getElementById('det-harga-satuan').innerText = 'Rp ' + parseInt(item.estimasi_harga || 0).toLocaleString('id-ID');
     
-    const total = item.total_estimasi || (item.jumlah * item.estimasi_harga);
+    const total = item.total_estimasi || ((item.jumlah || 1) * (item.estimasi_harga || 0));
     document.getElementById('det-total-estimasi').innerText = 'Rp ' + parseInt(total).toLocaleString('id-ID');
     
     document.getElementById('det-spek').innerText = item.spesifikasi || '-';
-    document.getElementById('det-alasan').innerText = item.alasan_kebutuhan || '-';
+    document.getElementById('det-alasan').innerText = item.alasan_kebutuhan || item.keperluan || '-';
     
     const boxVerif = document.getElementById('det-box-verif');
     const badgeVerif = document.getElementById('det-verif-badge');
