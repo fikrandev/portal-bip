@@ -132,6 +132,11 @@ class RoleController
 
     public static function switchActiveJenjang(): void
     {
+        if (!Auth::check()) {
+            Response::redirect(url('login'));
+            return;
+        }
+
         $jenjang = trim($_POST['jenjang'] ?? $_GET['jenjang'] ?? '');
         if ($jenjang !== '') {
             Auth::setActiveJenjang($jenjang);

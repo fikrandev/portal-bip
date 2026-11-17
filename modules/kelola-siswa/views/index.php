@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Kelola Siswa - Dashboard & Data Table View
  * Portal BIP - Complete Dapodik / BIP Student Management

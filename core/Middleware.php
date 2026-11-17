@@ -22,6 +22,16 @@ class Middleware
     }
 
     /**
+     * Auth middleware callable for route definitions
+     */
+    public static function auth(): callable
+    {
+        return function () {
+            return self::authRequired();
+        };
+    }
+
+    /**
      * Require a specific role
      * 
      * @param string $roleSlug

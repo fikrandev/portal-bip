@@ -1,4 +1,4 @@
-﻿<?php /** Roles List View */ ?>
+<?php /** Roles List View */ ?>
 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
     <div>
         <h1 class="text-2xl font-extrabold text-primary-950 tracking-tight flex items-center gap-3">
