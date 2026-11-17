@@ -49,6 +49,25 @@
 
     <!-- Class Cards List -->
     <div class="space-y-3" id="class-cards-container">
+        <?php if (empty($classList)): ?>
+        <div class="bg-white rounded-3xl p-8 text-center border border-slate-100 shadow-sm space-y-3">
+            <div class="w-14 h-14 bg-primary-50 text-primary-600 rounded-3xl flex items-center justify-center mx-auto text-2xl shadow-inner">
+                🏫
+            </div>
+            <div>
+                <h4 class="font-extrabold text-slate-800 text-sm">Belum Ada Kelas yang Diampu</h4>
+                <p class="text-xs text-slate-400 mt-1 max-w-xs mx-auto leading-relaxed">
+                    Akun Anda saat ini belum memiliki penugasan wali kelas atau plotting jadwal mengajar aktif di SIM KBM. Silakan hubungi bagian kurikulum.
+                </p>
+            </div>
+            <div class="pt-2">
+                <a href="<?= url('mobile') ?>" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold press-bounce">
+                    <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
+                    <span>Kembali ke Beranda</span>
+                </a>
+            </div>
+        </div>
+        <?php else: ?>
         <?php foreach ($classList as $k): ?>
         <div class="class-card bg-white rounded-3xl p-4 shadow-sm border border-slate-100 space-y-3" data-name="<?= strtolower(e($k['name'] . ' ' . $k['role'] . ' ' . $k['schedule'] . ' ' . ($k['subjectList'] ?? ''))) ?>">
             <div class="flex items-start justify-between">
@@ -102,6 +121,7 @@
             </div>
         </div>
         <?php endforeach; ?>
+        <?php endif; ?>
     </div>
 
 </div>

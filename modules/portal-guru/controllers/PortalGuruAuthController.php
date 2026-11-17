@@ -300,6 +300,15 @@ class PortalGuruAuthController
 
         // Bersihkan sesi lama terlebih dahulu
         Auth::logout();
+        unset(
+            $_SESSION['portal_guru_preview_id'],
+            $_SESSION['portal_guru_pegawai_id'],
+            $_SESSION['portal_guru_cache_uid'],
+            $_SESSION['active_guru_token'],
+            $_SESSION['guru_new_token']
+        );
+        require_once MODULES_PATH . '/portal-guru/controllers/PortalGuruController.php';
+        PortalGuruController::clearCachedTeacher();
 
         $result = Auth::login($username, $password);
 
@@ -462,6 +471,15 @@ class PortalGuruAuthController
 
         self::clearRememberCookie();
         Auth::logout();
+        unset(
+            $_SESSION['portal_guru_preview_id'],
+            $_SESSION['portal_guru_pegawai_id'],
+            $_SESSION['portal_guru_cache_uid'],
+            $_SESSION['active_guru_token'],
+            $_SESSION['guru_new_token']
+        );
+        require_once MODULES_PATH . '/portal-guru/controllers/PortalGuruController.php';
+        PortalGuruController::clearCachedTeacher();
 
         // Redirect dengan flag logged_out agar client-side localStorage juga dibersihkan
         header('Location: ' . BASE_URL . '/mobile/login?logged_out=1');

@@ -308,12 +308,12 @@ if ($hourNow < 11) {
                     <i data-lucide="users" class="w-5 h-5"></i>
                 </div>
                 <div>
-                    <span class="text-xl font-black text-slate-900 leading-none">6</span>
+                    <span class="text-xl font-black text-slate-900 leading-none"><?= (int)($totalClasses ?? 0) ?></span>
                     <p class="text-xs font-bold text-slate-800 mt-0.5 leading-tight">Kelas Diampu</p>
                 </div>
             </div>
             <div class="flex items-center justify-between text-[10px] text-slate-400 mt-2.5 pt-2 border-t border-slate-50">
-                <span>Lihat daftar kelas</span>
+                <span><?= (int)($totalClasses ?? 0) > 0 ? (int)$totalClasses . ' kelas aktif' : 'Belum ada kelas' ?></span>
                 <i data-lucide="chevron-right" class="w-3 h-3"></i>
             </div>
         </a>
@@ -321,16 +321,16 @@ if ($hourNow < 11) {
         <!-- Metric 2: Tugas Aktif -->
         <a href="<?= url('mobile/buat-tugas') ?>" class="bg-white rounded-2xl p-3.5 shadow-sm border border-slate-100 hover:border-primary-200 transition-all press-bounce block">
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-2xl bg-primary-50 text-primary-600 flex items-center justify-center shrink-0">
+                <div class="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
                     <i data-lucide="clipboard-list" class="w-5 h-5"></i>
                 </div>
                 <div>
-                    <span class="text-xl font-black text-slate-900 leading-none">12</span>
+                    <span class="text-xl font-black text-slate-900 leading-none"><?= (int)($activeTasks ?? 0) ?></span>
                     <p class="text-xs font-bold text-slate-800 mt-0.5 leading-tight">Tugas Aktif</p>
                 </div>
             </div>
             <div class="flex items-center justify-between text-[10px] text-slate-400 mt-2.5 pt-2 border-t border-slate-50">
-                <span>Kelola tugas kelas</span>
+                <span><?= (int)($activeTasks ?? 0) > 0 ? (int)$activeTasks . ' tugas kelas' : 'Buat tugas baru' ?></span>
                 <i data-lucide="chevron-right" class="w-3 h-3"></i>
             </div>
         </a>
@@ -342,12 +342,12 @@ if ($hourNow < 11) {
                     <i data-lucide="file-text" class="w-5 h-5"></i>
                 </div>
                 <div>
-                    <span class="text-xl font-black text-slate-900 leading-none">36</span>
+                    <span class="text-xl font-black text-slate-900 leading-none"><?= (int)($pendingGrades ?? 0) ?></span>
                     <p class="text-xs font-bold text-slate-800 mt-0.5 leading-tight">Belum Dinilai</p>
                 </div>
             </div>
             <div class="flex items-center justify-between text-[10px] text-slate-400 mt-2.5 pt-2 border-t border-slate-50">
-                <span>Periksa & nilai tugas</span>
+                <span><?= (int)($pendingGrades ?? 0) > 0 ? (int)$pendingGrades . ' siswa antre' : 'Semua dinilai' ?></span>
                 <i data-lucide="chevron-right" class="w-3 h-3"></i>
             </div>
         </a>
@@ -359,12 +359,12 @@ if ($hourNow < 11) {
                     <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
                 </div>
                 <div>
-                    <span class="text-xl font-black text-slate-900 leading-none">4</span>
+                    <span class="text-xl font-black text-slate-900 leading-none"><?= (int)($classReports ?? 0) ?></span>
                     <p class="text-xs font-bold text-slate-800 mt-0.5 leading-tight">Laporan Kelas</p>
                 </div>
             </div>
             <div class="flex items-center justify-between text-[10px] text-slate-400 mt-2.5 pt-2 border-t border-slate-50">
-                <span>Lihat perkembangan</span>
+                <span><?= (int)($classReports ?? 0) > 0 ? (int)$classReports . ' rekap terisi' : 'Belum ada rekap' ?></span>
                 <i data-lucide="chevron-right" class="w-3 h-3"></i>
             </div>
         </a>
