@@ -31,6 +31,10 @@ class PortalGuruController
      */
     private static function render(string $view, array $data = []): void
     {
+        $teacher = $data['teacher'] ?? self::getLoggedInTeacher();
+        $data['teacher'] = $teacher;
+        $data['isSupport'] = !empty($teacher['is_support']);
+
         extract($data);
         $currentRoute = $data['activeTab'] ?? 'beranda';
         
@@ -156,6 +160,8 @@ class PortalGuruController
             'name' => $fullName,
             'nip' => '-',
             'role' => $role,
+            'jenis_pegawai' => 'Guru',
+            'is_support' => false,
             'status' => 'Pegawai Aktif',
             'gender' => 'P',
             'email' => $user['email'] ?? '-',
@@ -168,12 +174,12 @@ class PortalGuruController
     }
 
     /**
-     * Helper format data array guru
+     * Helper format data array guru / pegawai
      */
     private static function formatTeacherArray(array $pegawai, ?array $user = null): array
     {
         $fullName = !empty($pegawai['nama']) ? $pegawai['nama'] : ($user['full_name'] ?? 'Guru');
-        $role = !empty($pegawai['jabatan']) ? $pegawai['jabatan'] : 'Wali Kelas & Guru Pengajar';
+        $role = !empty($pegawai['jabatan']) ? $pegawai['jabatan'] : 'Tenaga Pendidik';
         $nip = !empty($pegawai['niy']) ? $pegawai['niy'] : (!empty($pegawai['nik']) ? $pegawai['nik'] : '-');
         $phone = !empty($pegawai['no_wa']) ? $pegawai['no_wa'] : ($user['phone'] ?? '-');
         $status = !empty($pegawai['status_pegawai']) ? $pegawai['status_pegawai'] : 'Pegawai Aktif';
@@ -182,6 +188,31 @@ class PortalGuruController
         $rawJk = strtoupper(trim((string)($pegawai['jenis_kelamin'] ?? 'P')));
         $gender = ($rawJk === 'L' || str_starts_with($rawJk, 'LAKI')) ? 'L' : 'P';
 
+        $jenisPegawai = trim((string)($pegawai['jenis_pegawai'] ?? ''));
+
+        // Deteksi apakah jenis_pegawai adalah Support System
+        $isSupport = false;
+        if (strcasecmp($jenisPegawai, 'Support System') === 0 || stripos($jenisPegawai, 'support') !== false) {
+            $isSupport = true;
+        } elseif (strcasecmp($jenisPegawai, 'Guru') === 0 || stripos($jenisPegawai, 'guru') !== false) {
+            $isSupport = false;
+        } else {
+            // Jika kolom jenis_pegawai di database masih kosong, cek jabatan
+            $isSupport = (
+                stripos($role, 'IT') !== false ||
+                stripos($role, 'Media') !== false ||
+                stripos($role, 'Sarpras') !== false ||
+                stripos($role, 'Tata Usaha') !== false ||
+                stripos($role, 'Tendik') !== false ||
+                stripos($role, 'Staff') !== false ||
+                stripos($role, 'Staf') !== false ||
+                stripos($role, 'Keamanan') !== false ||
+                stripos($role, 'Satpam') !== false ||
+                stripos($role, 'Kebersihan') !== false ||
+                stripos($role, 'Cleaning') !== false
+            );
+        }
+
         return [
             'id' => $pegawaiId,
             'pegawai_id' => $pegawaiId,
@@ -189,12 +220,14 @@ class PortalGuruController
             'name' => $fullName,
             'nip' => $nip,
             'role' => $role,
+            'jenis_pegawai' => $isSupport ? 'Support System' : 'Guru',
+            'is_support' => $isSupport,
             'status' => $status,
             'gender' => $gender,
             'email' => $pegawai['email'] ?: ($user['email'] ?? '-'),
             'phone' => $phone,
             'avatar' => $foto ? Auth::resolvePhotoUrl($foto) : null,
-            'teachingHours' => '24 Jam / Minggu',
+            'teachingHours' => $isSupport ? 'Non-KBM (Staf)' : '24 Jam / Minggu',
             'academicYear' => defined('SYS_TAHUN_AKADEMIK_NAME') ? SYS_TAHUN_AKADEMIK_NAME : '2026/2027 Ganjil'
         ];
     }
@@ -617,15 +650,29 @@ class PortalGuruController
             'Saturday' => 'Sabtu'
         ];
         $todayName = $indonesianDays[date('l')] ?? 'Senin';
+        $isSupport = !empty($teacher['is_support']);
 
-        $allTeacherSchedules = self::getTeacherSchedules($teacher['pegawai_id'], $teacher['name']);
-        $todaySchedule = array_values(array_filter($allTeacherSchedules, static fn($s) => ($s['hari'] ?? '') === $todayName));
-        
-        $classesMap = self::getTeacherClasses($teacher['pegawai_id'], $teacher['name']);
-        $totalClasses = count($classesMap);
+        $allTeacherSchedules = [];
+        $todaySchedule = [];
+        $classesMap = [];
+        $totalClasses = 0;
+        $todayJp = 0;
+        $todayFilledJurnal = 0;
+        $activeTasks = 0;
+        $pendingGrades = 0;
+        $classReports = 0;
 
-        $todayJp = array_sum(array_column($todaySchedule, 'jumlah_jp'));
-        $todayFilledJurnal = count(array_filter($todaySchedule, fn($s) => $s['has_jurnal']));
+        if (!$isSupport) {
+            $allTeacherSchedules = self::getTeacherSchedules($teacher['pegawai_id'], $teacher['name']);
+            $todaySchedule = array_values(array_filter($allTeacherSchedules, static fn($s) => ($s['hari'] ?? '') === $todayName));
+            
+            $classesMap = self::getTeacherClasses($teacher['pegawai_id'], $teacher['name']);
+            $totalClasses = count($classesMap);
+
+            $todayJp = array_sum(array_column($todaySchedule, 'jumlah_jp'));
+            $todayFilledJurnal = count(array_filter($todaySchedule, fn($s) => $s['has_jurnal']));
+        }
+
         $guruIdForIbadah = (int)($teacher['pegawai_id'] ?: $teacher['user_id'] ?: 0);
         $teacherGender = $teacher['gender'] ?? 'P';
         $todayIbadahState = self::getTodayIbadahState($guruIdForIbadah, $teacherGender);
@@ -634,61 +681,62 @@ class PortalGuruController
         $todayAttendance = AbsenPegawaiModel::getTodayAttendance($guruIdForIbadah);
         $globalConfig = AbsenPegawaiModel::getPengaturanGlobal();
 
-        // ── Kalkulasi Metrik Dinamis Guru yang Login ──
-        $activeTasks = 0;
-        $pendingGrades = 0;
-        $classReports = 0;
+        // ── Kalkulasi Metrik Dinamis Guru yang Login (Khusus Guru / KBM) ──
         $db = Database::getInstance();
 
-        try {
-            $pegId = (int)($teacher['pegawai_id'] ?: 0);
-            $gName = trim($teacher['name'] ?? '');
+        if (!$isSupport) {
+            try {
+                $pegId = (int)($teacher['pegawai_id'] ?: 0);
+                $gName = trim($teacher['name'] ?? '');
 
-            // 1. Tugas Aktif: Wadah penilaian / tugas yang aktif milik guru atau kelas diampu
-            $taskRow = $db->find("
-                SELECT COUNT(*) as c
-                FROM nilai_group
-                WHERE deleted_at IS NULL AND is_active = 1
-                  AND (guru_id = ? OR (guru_id = 0 AND ? > 0))
-            ", [$pegId, $pegId]);
-            $activeTasks = (int)($taskRow['c'] ?? 0);
-
-            // 2. Belum Dinilai: Asesmen siswa dalam tugas aktif yang nilainya masih kosong
-            if ($pegId > 0) {
-                $pendingRow = $db->find("
-                    SELECT COUNT(nd.id) as c
-                    FROM nilai_detail nd
-                    JOIN nilai_group ng ON nd.group_id = ng.id
-                    WHERE ng.deleted_at IS NULL AND ng.is_active = 1
-                      AND (ng.guru_id = ? OR (ng.guru_id = 0 AND ? > 0))
-                      AND (nd.nilai IS NULL OR nd.nilai = 0)
+                // 1. Tugas Aktif: Wadah penilaian / tugas yang aktif milik guru atau kelas diampu
+                $taskRow = $db->find("
+                    SELECT COUNT(*) as c
+                    FROM nilai_group
+                    WHERE deleted_at IS NULL AND is_active = 1
+                      AND (guru_id = ? OR (guru_id = 0 AND ? > 0))
                 ", [$pegId, $pegId]);
-                $pendingGrades = (int)($pendingRow['c'] ?? 0);
+                $activeTasks = (int)($taskRow['c'] ?? 0);
+
+                // 2. Belum Dinilai: Asesmen siswa dalam tugas aktif yang nilainya masih kosong
+                if ($pegId > 0) {
+                    $pendingRow = $db->find("
+                        SELECT COUNT(nd.id) as c
+                        FROM nilai_detail nd
+                        JOIN nilai_group ng ON nd.group_id = ng.id
+                        WHERE ng.deleted_at IS NULL AND ng.is_active = 1
+                          AND (ng.guru_id = ? OR (ng.guru_id = 0 AND ? > 0))
+                          AND (nd.nilai IS NULL OR nd.nilai = 0)
+                    ", [$pegId, $pegId]);
+                    $pendingGrades = (int)($pendingRow['c'] ?? 0);
+                }
+
+                // 3. Laporan Kelas: Total Presensi Kelas + Total Jurnal Mengajar yang dibuat guru
+                $presensiRow = $db->find("
+                    SELECT COUNT(*) as c
+                    FROM presensi_kelas
+                    WHERE guru_id = ? OR created_by = ?
+                ", [$pegId, $pegId]);
+                $presensiCount = (int)($presensiRow['c'] ?? 0);
+
+                $jurnalRow = $db->find("
+                    SELECT COUNT(*) as c
+                    FROM jurnal_mengajar
+                    WHERE guru_id = ? OR nama_guru LIKE ?
+                ", [$pegId, '%' . $gName . '%']);
+                $jurnalCount = (int)($jurnalRow['c'] ?? 0);
+
+                $classReports = $presensiCount + $jurnalCount;
+            } catch (Throwable $e) {
+                error_log('PortalGuruController::beranda metrics calculation error: ' . $e->getMessage());
             }
-
-            // 3. Laporan Kelas: Total Presensi Kelas + Total Jurnal Mengajar yang dibuat guru
-            $presensiRow = $db->find("
-                SELECT COUNT(*) as c
-                FROM presensi_kelas
-                WHERE guru_id = ? OR created_by = ?
-            ", [$pegId, $pegId]);
-            $presensiCount = (int)($presensiRow['c'] ?? 0);
-
-            $jurnalRow = $db->find("
-                SELECT COUNT(*) as c
-                FROM jurnal_mengajar
-                WHERE guru_id = ? OR nama_guru LIKE ?
-            ", [$pegId, '%' . $gName . '%']);
-            $jurnalCount = (int)($jurnalRow['c'] ?? 0);
-
-            $classReports = $presensiCount + $jurnalCount;
-        } catch (Throwable $e) {
-            error_log('PortalGuruController::beranda metrics calculation error: ' . $e->getMessage());
         }
 
         self::render('beranda', [
-            'pageTitle' => 'Beranda Guru',
+            'pageTitle' => $isSupport ? 'Portal Support System' : 'Beranda Guru',
             'activeTab' => 'beranda',
+            'isSupport' => $isSupport,
+            'teacher' => $teacher,
             'teacherName' => $teacher['name'],
             'teacherRole' => $teacher['role'],
             'teacherAvatar' => $teacher['avatar'],
@@ -1276,6 +1324,12 @@ class PortalGuruController
     {
         $teacher = self::getLoggedInTeacher();
         self::releaseSessionLock();
+
+        if (!empty($teacher['is_support'])) {
+            header('Location: ' . url('mobile'));
+            exit;
+        }
+
         $classesMap = self::getTeacherClasses($teacher['pegawai_id'], $teacher['name']);
         $classList = array_values($classesMap);
 
@@ -1314,6 +1368,12 @@ class PortalGuruController
     {
         $teacher = self::getLoggedInTeacher();
         self::releaseSessionLock();
+
+        if (!empty($teacher['is_support'])) {
+            header('Location: ' . url('mobile'));
+            exit;
+        }
+
         $db = Database::getInstance();
         $classesMap = self::getTeacherClasses($teacher['pegawai_id'], $teacher['name']);
         
@@ -1540,6 +1600,12 @@ class PortalGuruController
     {
         $teacher = self::getLoggedInTeacher();
         self::releaseSessionLock();
+
+        if (!empty($teacher['is_support'])) {
+            header('Location: ' . url('mobile'));
+            exit;
+        }
+
         $classesMap = self::getTeacherClasses($teacher['pegawai_id'], $teacher['name']);
         
         $classesList = array_keys($classesMap);
@@ -1665,6 +1731,13 @@ class PortalGuruController
      */
     public static function materi(): void
     {
+        $teacher = self::getLoggedInTeacher();
+        self::releaseSessionLock();
+        if (!empty($teacher['is_support'])) {
+            header('Location: ' . url('mobile'));
+            exit;
+        }
+
         self::render('materi', [
             'pageTitle' => 'Materi Pembelajaran',
             'activeTab' => 'materi',
@@ -1683,6 +1756,11 @@ class PortalGuruController
     {
         $teacher = self::getLoggedInTeacher();
         self::releaseSessionLock();
+        if (!empty($teacher['is_support'])) {
+            header('Location: ' . url('mobile'));
+            exit;
+        }
+
         $classesMap = self::getTeacherClasses($teacher['pegawai_id'], $teacher['name']);
         $classes = !empty($classesMap) ? array_keys($classesMap) : [];
         if (empty($classes)) {
@@ -1709,6 +1787,11 @@ class PortalGuruController
     {
         $teacher = self::getLoggedInTeacher();
         self::releaseSessionLock();
+        if (!empty($teacher['is_support'])) {
+            header('Location: ' . url('mobile'));
+            exit;
+        }
+
         $classesMap = self::getTeacherClasses($teacher['pegawai_id'], $teacher['name']);
         $classes = !empty($classesMap) ? array_keys($classesMap) : [];
         if (empty($classes)) {
@@ -1733,6 +1816,13 @@ class PortalGuruController
      */
     public static function bankSoal(): void
     {
+        $teacher = self::getLoggedInTeacher();
+        self::releaseSessionLock();
+        if (!empty($teacher['is_support'])) {
+            header('Location: ' . url('mobile'));
+            exit;
+        }
+
         self::render('bank_soal', [
             'pageTitle' => 'Bank Soal Matematika',
             'activeTab' => 'bank_soal',
@@ -2118,6 +2208,11 @@ class PortalGuruController
     {
         $teacher = self::getLoggedInTeacher();
         self::releaseSessionLock();
+        if (!empty($teacher['is_support'])) {
+            header('Location: ' . url('mobile'));
+            exit;
+        }
+
         $classesMap = self::getTeacherClasses($teacher['pegawai_id'], $teacher['name']);
         $classes = !empty($classesMap) ? array_keys($classesMap) : [];
         if (empty($classes)) {

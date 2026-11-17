@@ -50,7 +50,7 @@
 
         <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 text-xs text-left">
             <div class="bg-slate-50 p-2.5 rounded-2xl">
-                <p class="text-[10px] text-slate-400">Beban Mengajar</p>
+                <p class="text-[10px] text-slate-400"><?= !empty($profile['is_support']) ? 'Status Penugasan' : 'Beban Mengajar' ?></p>
                 <p class="font-bold text-slate-800"><?= e($profile['teachingHours']) ?></p>
             </div>
             <div class="bg-slate-50 p-2.5 rounded-2xl">

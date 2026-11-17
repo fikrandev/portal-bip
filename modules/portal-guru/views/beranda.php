@@ -27,7 +27,7 @@ if ($hourNow < 11) {
             <span class="truncate"><?= e($teacherName ?? 'Guru') ?></span> <span class="inline-block origin-bottom shrink-0">👋</span>
         </h1>
         <p class="text-[11px] text-slate-400 font-medium leading-tight mt-0.5 truncate">
-            <?= e($teacherRole ?? 'Tenaga Pendidik') ?> &bull; Semangat menginspirasi!
+            <?= e($teacherRole ?? (!empty($isSupport) ? 'Support System' : 'Tenaga Pendidik')) ?> &bull; <?= !empty($isSupport) ? 'Semangat berkontribusi!' : 'Semangat menginspirasi!' ?>
         </p>
     </div>
     
@@ -234,7 +234,8 @@ if ($hourNow < 11) {
         </div>
     </div>
 
-    <!-- 3. Jadwal Hari Ini Card -->
+    <!-- 3. Jadwal Hari Ini Card (Khusus Guru Pengajar) -->
+    <?php if (empty($isSupport)): ?>
     <div class="bg-gradient-to-br from-primary-50/90 via-white to-sky-50/50 rounded-3xl p-4 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-primary-100/70 relative overflow-hidden">
         
         <!-- Header -->
@@ -297,8 +298,10 @@ if ($hourNow < 11) {
         </div>
         <?php endif; ?>
     </div>
+    <?php endif; ?>
 
-    <!-- 4. 4 Stat / Metric Cards (2x2 Grid) -->
+    <!-- 4. 4 Stat / Metric Cards (Khusus Guru Pengajar) -->
+    <?php if (empty($isSupport)): ?>
     <div class="grid grid-cols-2 gap-3">
         
         <!-- Metric 1: Kelas Diampu -->
@@ -370,6 +373,7 @@ if ($hourNow < 11) {
         </a>
 
     </div>
+    <?php endif; ?>
 
     <!-- 5. Akses Cepat (6 Action Items) -->
     <div class="pt-1">
@@ -377,61 +381,140 @@ if ($hourNow < 11) {
         
         <div class="bg-white rounded-3xl p-4 shadow-sm border border-slate-100 grid grid-cols-3 gap-3">
             
-            <!-- 1: Al-Qur'an Digital (Emerald) -->
-            <a href="<?= url('mobile/quran') ?>" class="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-primary-50/50 transition-all press-bounce">
-                <div class="w-12 h-12 rounded-2xl bg-primary-600 text-white flex items-center justify-center shadow-md shadow-primary-500/20 text-lg">
-                    📖
-                </div>
-                <span class="text-[11px] font-bold text-slate-800 text-center leading-tight">Al-Qur'an<br>Digital</span>
-            </a>
+            <?php if (!empty($isSupport)): ?>
+                <!-- Support System Akses Cepat (Non-KBM) -->
+                <!-- 1: Al-Qur'an Digital (Emerald) -->
+                <a href="<?= url('mobile/quran') ?>" class="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-primary-50/50 transition-all press-bounce">
+                    <div class="w-12 h-12 rounded-2xl bg-primary-600 text-white flex items-center justify-center shadow-md shadow-primary-500/20 text-lg">
+                        📖
+                    </div>
+                    <span class="text-[11px] font-bold text-slate-800 text-center leading-tight">Al-Qur'an<br>Digital</span>
+                </a>
 
-            <!-- 2: Dzikir Al-Ma'tsurat (Purple) -->
-            <a href="<?= url('mobile/dzikir') ?>" class="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-purple-50/50 transition-all press-bounce">
-                <div class="w-12 h-12 rounded-2xl bg-purple-600 text-white flex items-center justify-center shadow-md shadow-purple-500/20 text-lg">
-                    📿
-                </div>
-                <span class="text-[11px] font-bold text-slate-800 text-center leading-tight">Dzikir<br>Al-Ma'tsurat</span>
-            </a>
+                <!-- 2: Dzikir Al-Ma'tsurat (Purple) -->
+                <a href="<?= url('mobile/dzikir') ?>" class="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-purple-50/50 transition-all press-bounce">
+                    <div class="w-12 h-12 rounded-2xl bg-purple-600 text-white flex items-center justify-center shadow-md shadow-purple-500/20 text-lg">
+                        📿
+                    </div>
+                    <span class="text-[11px] font-bold text-slate-800 text-center leading-tight">Dzikir<br>Al-Ma'tsurat</span>
+                </a>
 
-            <!-- 3: Materi Pembelajaran (Blue) -->
-            <a href="<?= url('mobile/materi') ?>" class="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-primary-50/50 transition-all press-bounce">
-                <div class="w-12 h-12 rounded-2xl bg-[#3b82f6] text-white flex items-center justify-center shadow-md shadow-primary-500/20">
-                    <i data-lucide="book-open" class="w-5 h-5"></i>
-                </div>
-                <span class="text-[11px] font-bold text-slate-800 text-center leading-tight">Materi<br>Ajar</span>
-            </a>
+                <!-- 3: Presensi GPS (Green) -->
+                <a href="<?= url('mobile/absen') ?>" class="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-emerald-50/50 transition-all press-bounce">
+                    <div class="w-12 h-12 rounded-2xl bg-[#16a34a] text-white flex items-center justify-center shadow-md shadow-emerald-500/20 text-lg">
+                        📍
+                    </div>
+                    <span class="text-[11px] font-bold text-slate-800 text-center leading-tight">Presensi<br>GPS</span>
+                </a>
 
-            <!-- 4: Buat Tugas (Green) -->
-            <a href="<?= url('mobile/buat-tugas') ?>" class="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-primary-50/50 transition-all press-bounce">
-                <div class="w-12 h-12 rounded-2xl bg-[#10b981] text-white flex items-center justify-center shadow-md shadow-primary-500/20">
-                    <i data-lucide="clipboard-check" class="w-5 h-5"></i>
-                </div>
-                <span class="text-[11px] font-bold text-slate-800 text-center leading-tight">Buat<br>Tugas</span>
-            </a>
+                <!-- 4: Jurnal Harian (Blue) -->
+                <a href="<?= url('mobile/jurnal') ?>" class="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-blue-50/50 transition-all press-bounce">
+                    <div class="w-12 h-12 rounded-2xl bg-[#2563eb] text-white flex items-center justify-center shadow-md shadow-blue-500/20 text-lg">
+                        📝
+                    </div>
+                    <span class="text-[11px] font-bold text-slate-800 text-center leading-tight">Jurnal<br>Harian</span>
+                </a>
 
-            <!-- 5: Absensi Kelas (Orange) -->
-            <a href="<?= url('mobile/absensi-kelas') ?>" class="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-orange-50/50 transition-all press-bounce">
-                <div class="w-12 h-12 rounded-2xl bg-[#f97316] text-white flex items-center justify-center shadow-md shadow-orange-500/20">
-                    <i data-lucide="user-check" class="w-5 h-5"></i>
-                </div>
-                <span class="text-[11px] font-bold text-slate-800 text-center leading-tight">Absensi<br>Kelas</span>
-            </a>
+                <!-- 5: Pengajuan Izin (Amber) -->
+                <a href="<?= url('mobile/izin') ?>" class="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-amber-50/50 transition-all press-bounce">
+                    <div class="w-12 h-12 rounded-2xl bg-[#f59e0b] text-white flex items-center justify-center shadow-md shadow-amber-500/20 text-lg">
+                        📄
+                    </div>
+                    <span class="text-[11px] font-bold text-slate-800 text-center leading-tight">Pengajuan<br>Izin</span>
+                </a>
 
-            <!-- 6: Bank Soal (Cyan) -->
-            <a href="<?= url('mobile/bank-soal') ?>" class="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-cyan-50/50 transition-all press-bounce">
-                <div class="w-12 h-12 rounded-2xl bg-[#06b6d4] text-white flex items-center justify-center shadow-md shadow-cyan-500/20">
-                    <i data-lucide="folder" class="w-5 h-5"></i>
-                </div>
-                <span class="text-[11px] font-bold text-slate-800 text-center leading-tight">Bank<br>Soal</span>
-            </a>
+                <!-- 6: Pengajuan Cuti (Cyan) -->
+                <a href="<?= url('mobile/cuti') ?>" class="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-cyan-50/50 transition-all press-bounce">
+                    <div class="w-12 h-12 rounded-2xl bg-[#06b6d4] text-white flex items-center justify-center shadow-md shadow-cyan-500/20 text-lg">
+                        🏖️
+                    </div>
+                    <span class="text-[11px] font-bold text-slate-800 text-center leading-tight">Pengajuan<br>Cuti</span>
+                </a>
+            <?php else: ?>
+                <!-- Guru Pengajar Akses Cepat (KBM) -->
+                <!-- 1: Al-Qur'an Digital (Emerald) -->
+                <a href="<?= url('mobile/quran') ?>" class="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-primary-50/50 transition-all press-bounce">
+                    <div class="w-12 h-12 rounded-2xl bg-primary-600 text-white flex items-center justify-center shadow-md shadow-primary-500/20 text-lg">
+                        📖
+                    </div>
+                    <span class="text-[11px] font-bold text-slate-800 text-center leading-tight">Al-Qur'an<br>Digital</span>
+                </a>
+
+                <!-- 2: Dzikir Al-Ma'tsurat (Purple) -->
+                <a href="<?= url('mobile/dzikir') ?>" class="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-purple-50/50 transition-all press-bounce">
+                    <div class="w-12 h-12 rounded-2xl bg-purple-600 text-white flex items-center justify-center shadow-md shadow-purple-500/20 text-lg">
+                        📿
+                    </div>
+                    <span class="text-[11px] font-bold text-slate-800 text-center leading-tight">Dzikir<br>Al-Ma'tsurat</span>
+                </a>
+
+                <!-- 3: Materi Pembelajaran (Blue) -->
+                <a href="<?= url('mobile/materi') ?>" class="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-primary-50/50 transition-all press-bounce">
+                    <div class="w-12 h-12 rounded-2xl bg-[#3b82f6] text-white flex items-center justify-center shadow-md shadow-primary-500/20">
+                        <i data-lucide="book-open" class="w-5 h-5"></i>
+                    </div>
+                    <span class="text-[11px] font-bold text-slate-800 text-center leading-tight">Materi<br>Ajar</span>
+                </a>
+
+                <!-- 4: Buat Tugas (Green) -->
+                <a href="<?= url('mobile/buat-tugas') ?>" class="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-primary-50/50 transition-all press-bounce">
+                    <div class="w-12 h-12 rounded-2xl bg-[#10b981] text-white flex items-center justify-center shadow-md shadow-primary-500/20">
+                        <i data-lucide="clipboard-check" class="w-5 h-5"></i>
+                    </div>
+                    <span class="text-[11px] font-bold text-slate-800 text-center leading-tight">Buat<br>Tugas</span>
+                </a>
+
+                <!-- 5: Absensi Kelas (Orange) -->
+                <a href="<?= url('mobile/absensi-kelas') ?>" class="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-orange-50/50 transition-all press-bounce">
+                    <div class="w-12 h-12 rounded-2xl bg-[#f97316] text-white flex items-center justify-center shadow-md shadow-orange-500/20">
+                        <i data-lucide="user-check" class="w-5 h-5"></i>
+                    </div>
+                    <span class="text-[11px] font-bold text-slate-800 text-center leading-tight">Absensi<br>Kelas</span>
+                </a>
+
+                <!-- 6: Bank Soal (Cyan) -->
+                <a href="<?= url('mobile/bank-soal') ?>" class="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-cyan-50/50 transition-all press-bounce">
+                    <div class="w-12 h-12 rounded-2xl bg-[#06b6d4] text-white flex items-center justify-center shadow-md shadow-cyan-500/20">
+                        <i data-lucide="folder" class="w-5 h-5"></i>
+                    </div>
+                    <span class="text-[11px] font-bold text-slate-800 text-center leading-tight">Bank<br>Soal</span>
+                </a>
+            <?php endif; ?>
 
         </div>
     </div>
 
-    <!-- 5b. Layanan Izin & Kesiswaan (Keterlambatan, Izin, Cuti) -->
+    <!-- 5b. Layanan Izin & Kepegawaian -->
     <div class="pt-1">
-        <h3 class="font-bold text-slate-800 text-sm mb-3">Layanan Izin & Kesiswaan</h3>
+        <h3 class="font-bold text-slate-800 text-sm mb-3"><?= !empty($isSupport) ? 'Layanan Kepegawaian' : 'Layanan Izin & Kesiswaan' ?></h3>
         
+        <?php if (!empty($isSupport)): ?>
+        <!-- Support System (Hanya Izin Pegawai & Cuti) -->
+        <div class="grid grid-cols-2 gap-2.5">
+            <!-- Item 1: Pengajuan Izin (Amber) -->
+            <a href="<?= url('mobile/izin') ?>" class="bg-white rounded-3xl p-3.5 shadow-sm border border-slate-100 hover:border-amber-200 flex flex-col items-center text-center gap-1.5 press-bounce">
+                <div class="w-11 h-11 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center text-lg font-bold shadow-xs">
+                    📄
+                </div>
+                <div>
+                    <h4 class="font-black text-slate-900 text-xs leading-tight">Pengajuan Izin</h4>
+                    <span class="text-[9.5px] font-bold text-amber-600">Sakit / Dinas Luar</span>
+                </div>
+            </a>
+
+            <!-- Item 2: Pengajuan Cuti (Teal) -->
+            <a href="<?= url('mobile/cuti') ?>" class="bg-white rounded-3xl p-3.5 shadow-sm border border-slate-100 hover:border-primary-200 flex flex-col items-center text-center gap-1.5 press-bounce">
+                <div class="w-11 h-11 rounded-2xl bg-primary-50 text-primary-600 flex items-center justify-center text-lg font-bold shadow-xs">
+                    🏖️
+                </div>
+                <div>
+                    <h4 class="font-black text-slate-900 text-xs leading-tight">Pengajuan Cuti</h4>
+                    <span class="text-[9.5px] font-bold text-primary-600">Cuti Tahunan / Khusus</span>
+                </div>
+            </a>
+        </div>
+        <?php else: ?>
+        <!-- Guru Pengajar (Terlambat Siswa, Izin Guru, Cuti Guru) -->
         <div class="grid grid-cols-3 gap-2.5">
             
             <!-- Item 1: Keterlambatan Siswa (Rose) -->
@@ -468,15 +551,36 @@ if ($hourNow < 11) {
             </a>
 
         </div>
+        <?php endif; ?>
     </div>
 
-    <!-- 5c. Rekapitulasi Presensi & Jurnal PIC Guru -->
+    <!-- 5c. Rekapitulasi Presensi & Jurnal -->
     <div class="pt-1">
         <div class="flex items-center justify-between mb-3 px-1">
-            <h3 class="font-bold text-slate-800 text-sm">Rekapitulasi & Monitoring Guru</h3>
+            <h3 class="font-bold text-slate-800 text-sm"><?= !empty($isSupport) ? 'Rekapitulasi Kehadiran Pegawai' : 'Rekapitulasi & Monitoring Guru' ?></h3>
             <span class="text-[10px] font-bold text-primary-600 bg-primary-50 px-2 py-0.5 rounded-full">Periode Aktif</span>
         </div>
         
+        <?php if (!empty($isSupport)): ?>
+        <!-- Support System (Hanya Rekap Presensi & Keterlambatan) -->
+        <div class="grid grid-cols-1 gap-3">
+            <a href="<?= url('mobile/rekap-absen') ?>" class="bg-gradient-to-br from-indigo-50 to-white rounded-3xl p-4 shadow-sm border border-indigo-100 hover:border-indigo-300 transition-all press-bounce block relative overflow-hidden group">
+                <div class="flex items-center justify-between mb-2">
+                    <div class="w-11 h-11 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-xl shadow-md shadow-indigo-500/20">
+                        📊
+                    </div>
+                    <span class="text-[10px] font-bold text-indigo-700 bg-indigo-100/70 px-2.5 py-1 rounded-full">Presensi & Keterlambatan</span>
+                </div>
+                <h4 class="font-black text-slate-900 text-sm leading-tight">Rekap Presensi & Terlambat Pegawai</h4>
+                <p class="text-xs text-slate-500 mt-1">Cek riwayat kehadiran tepat waktu, jam keterlambatan harian, dan izin/cuti Anda</p>
+                <div class="flex items-center gap-1.5 text-xs font-bold text-indigo-600 mt-3 pt-2.5 border-t border-indigo-100/60">
+                    <span>Buka Rekapitulasi Lengkap</span>
+                    <i data-lucide="arrow-right" class="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform"></i>
+                </div>
+            </a>
+        </div>
+        <?php else: ?>
+        <!-- Guru Pengajar (Rekap Presensi + Rekap Jurnal PIC) -->
         <div class="grid grid-cols-2 gap-3">
             <!-- Rekap Presensi & Keterlambatan -->
             <a href="<?= url('mobile/rekap-absen') ?>" class="bg-gradient-to-br from-indigo-50 to-white rounded-3xl p-3.5 shadow-sm border border-indigo-100 hover:border-indigo-300 transition-all press-bounce block relative overflow-hidden group">
@@ -510,9 +614,10 @@ if ($hourNow < 11) {
                 </div>
             </a>
         </div>
+        <?php endif; ?>
     </div>
 
-    <!-- 6. Motivational Banner Card (Guru Hebat) -->
+    <!-- 6. Motivational Banner Card -->
     <div class="bg-gradient-to-r from-primary-50 via-sky-50 to-indigo-50 rounded-3xl p-4 border border-primary-100/70 shadow-sm relative overflow-hidden flex items-center justify-between gap-3">
         
         <!-- Left: Potted plant art -->
@@ -532,12 +637,21 @@ if ($hourNow < 11) {
 
         <!-- Center Text -->
         <div class="flex-1 min-w-0">
+            <?php if (!empty($isSupport)): ?>
+            <h4 class="font-bold text-xs text-primary-950 flex items-center gap-1 leading-snug">
+                Terima kasih, Rekan Hebat! 💙
+            </h4>
+            <p class="text-[10px] text-slate-500 font-normal leading-tight mt-0.5">
+                Dedikasi dan kerja keras Anda mendukung kelancaran seluruh operasional sekolah.
+            </p>
+            <?php else: ?>
             <h4 class="font-bold text-xs text-primary-950 flex items-center gap-1 leading-snug">
                 Terima kasih, Guru Hebat! 💙
             </h4>
             <p class="text-[10px] text-slate-500 font-normal leading-tight mt-0.5">
                 Dedikasi Anda adalah inspirasi bagi masa depan mereka.
             </p>
+            <?php endif; ?>
         </div>
 
         <!-- Right: Hand with blue pen & sparkle decoration -->

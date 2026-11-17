@@ -841,6 +841,8 @@ window.MobileRouter = (function() {
       const p = new URL(urlStr, window.location.origin).pathname.replace(/\/+$/, '');
       if (p.endsWith('/mobile/kelas')) return 'kelas';
       if (p.endsWith('/mobile/murid')) return 'murid';
+      if (p.endsWith('/mobile/absen')) return 'absen';
+      if (p.endsWith('/mobile/jurnal')) return 'jurnal';
       if (p.endsWith('/mobile/profil')) return 'profil';
       if (p.endsWith('/mobile')) return 'beranda';
     } catch (e) {}

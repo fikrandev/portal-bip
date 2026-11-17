@@ -210,7 +210,7 @@
             <?= $content ?? '' ?>
         </main>
 
-        <!-- Bottom Navigation Bar (5 Items with Center Elevated FAB & Pill Indicators) -->
+        <!-- Bottom Navigation Bar (Elevated FAB & Pill Indicators) -->
         <nav id="mobile-bottom-nav" class="fixed bottom-0 sm:bottom-4 left-0 right-0 max-w-md mx-auto z-40 bg-white/95 backdrop-blur-xl border-t border-slate-200/70 px-2 py-1.5 flex items-center justify-around sm:rounded-b-3xl safe-bottom shadow-[0_-6px_25px_rgba(15,23,42,0.05)]">
             
             <!-- Tab 1: Beranda -->
@@ -221,15 +221,25 @@
                 <span class="text-[10.5px] leading-none tracking-tight">Beranda</span>
             </a>
 
-            <!-- Tab 2: Kelas -->
-            <a href="<?= url('mobile/kelas') ?>" data-nav-tab="kelas" class="mobile-nav-item flex-1 flex flex-col items-center gap-0.5 py-1 rounded-2xl <?= ($activeTab ?? '') === 'kelas' ? 'is-active text-primary-600 font-bold' : 'text-slate-400 hover:text-slate-600 font-medium' ?>">
-                <div class="nav-pill w-12 h-7 rounded-full flex items-center justify-center">
-                    <i data-lucide="users" class="w-5 h-5 <?= ($activeTab ?? '') === 'kelas' ? 'stroke-[2.5]' : 'stroke-2' ?>"></i>
-                </div>
-                <span class="text-[10.5px] leading-none tracking-tight">Kelas</span>
-            </a>
+            <?php if (!empty($isSupport)): ?>
+                <!-- Tab 2 Support System: Presensi GPS -->
+                <a href="<?= url('mobile/absen') ?>" data-nav-tab="absen" class="mobile-nav-item flex-1 flex flex-col items-center gap-0.5 py-1 rounded-2xl <?= ($activeTab ?? '') === 'absen' ? 'is-active text-primary-600 font-bold' : 'text-slate-400 hover:text-slate-600 font-medium' ?>">
+                    <div class="nav-pill w-12 h-7 rounded-full flex items-center justify-center">
+                        <i data-lucide="map-pin" class="w-5 h-5 <?= ($activeTab ?? '') === 'absen' ? 'stroke-[2.5]' : 'stroke-2' ?>"></i>
+                    </div>
+                    <span class="text-[10.5px] leading-none tracking-tight">Presensi</span>
+                </a>
+            <?php else: ?>
+                <!-- Tab 2 Guru: Kelas -->
+                <a href="<?= url('mobile/kelas') ?>" data-nav-tab="kelas" class="mobile-nav-item flex-1 flex flex-col items-center gap-0.5 py-1 rounded-2xl <?= ($activeTab ?? '') === 'kelas' ? 'is-active text-primary-600 font-bold' : 'text-slate-400 hover:text-slate-600 font-medium' ?>">
+                    <div class="nav-pill w-12 h-7 rounded-full flex items-center justify-center">
+                        <i data-lucide="users" class="w-5 h-5 <?= ($activeTab ?? '') === 'kelas' ? 'stroke-[2.5]' : 'stroke-2' ?>"></i>
+                    </div>
+                    <span class="text-[10.5px] leading-none tracking-tight">Kelas</span>
+                </a>
+            <?php endif; ?>
 
-            <!-- Center Elevated FAB: Buat (+) -->
+            <!-- Center Elevated FAB: Aksi (+) -->
             <div class="-mt-6 px-1 flex flex-col items-center">
                 <button type="button" onclick="openAndroidActionSheet()" class="w-13 h-13 rounded-full bg-gradient-to-tr from-primary-600 via-primary-500 to-indigo-600 text-white flex items-center justify-center shadow-lg shadow-primary-600/35 hover:shadow-primary-600/50 press-bounce border-4 border-[#f6f8fb]">
                     <i data-lucide="plus" class="w-6 h-6 stroke-[3]"></i>
@@ -237,13 +247,23 @@
                 <span class="text-[10px] font-bold text-slate-500 mt-0.5 tracking-tight">Aksi</span>
             </div>
 
-            <!-- Tab 3: Murid -->
-            <a href="<?= url('mobile/murid') ?>" data-nav-tab="murid" class="mobile-nav-item flex-1 flex flex-col items-center gap-0.5 py-1 rounded-2xl <?= ($activeTab ?? '') === 'murid' ? 'is-active text-primary-600 font-bold' : 'text-slate-400 hover:text-slate-600 font-medium' ?>">
-                <div class="nav-pill w-12 h-7 rounded-full flex items-center justify-center">
-                    <i data-lucide="graduation-cap" class="w-5 h-5 <?= ($activeTab ?? '') === 'murid' ? 'stroke-[2.5]' : 'stroke-2' ?>"></i>
-                </div>
-                <span class="text-[10.5px] leading-none tracking-tight">Murid</span>
-            </a>
+            <?php if (!empty($isSupport)): ?>
+                <!-- Tab 3 Support System: Jurnal Pegawai -->
+                <a href="<?= url('mobile/jurnal') ?>" data-nav-tab="jurnal" class="mobile-nav-item flex-1 flex flex-col items-center gap-0.5 py-1 rounded-2xl <?= ($activeTab ?? '') === 'jurnal' ? 'is-active text-primary-600 font-bold' : 'text-slate-400 hover:text-slate-600 font-medium' ?>">
+                    <div class="nav-pill w-12 h-7 rounded-full flex items-center justify-center">
+                        <i data-lucide="book-open" class="w-5 h-5 <?= ($activeTab ?? '') === 'jurnal' ? 'stroke-[2.5]' : 'stroke-2' ?>"></i>
+                    </div>
+                    <span class="text-[10.5px] leading-none tracking-tight">Jurnal</span>
+                </a>
+            <?php else: ?>
+                <!-- Tab 3 Guru: Murid -->
+                <a href="<?= url('mobile/murid') ?>" data-nav-tab="murid" class="mobile-nav-item flex-1 flex flex-col items-center gap-0.5 py-1 rounded-2xl <?= ($activeTab ?? '') === 'murid' ? 'is-active text-primary-600 font-bold' : 'text-slate-400 hover:text-slate-600 font-medium' ?>">
+                    <div class="nav-pill w-12 h-7 rounded-full flex items-center justify-center">
+                        <i data-lucide="graduation-cap" class="w-5 h-5 <?= ($activeTab ?? '') === 'murid' ? 'stroke-[2.5]' : 'stroke-2' ?>"></i>
+                    </div>
+                    <span class="text-[10.5px] leading-none tracking-tight">Murid</span>
+                </a>
+            <?php endif; ?>
 
             <!-- Tab 4: Profil -->
             <a href="<?= url('mobile/profil') ?>" data-nav-tab="profil" class="mobile-nav-item flex-1 flex flex-col items-center gap-0.5 py-1 rounded-2xl <?= ($activeTab ?? '') === 'profil' ? 'is-active text-primary-600 font-bold' : 'text-slate-400 hover:text-slate-600 font-medium' ?>">
@@ -266,6 +286,48 @@
     <script>
         // Open Android-style Bottom Sheet for '+' FAB
         function openAndroidActionSheet() {
+            <?php if (!empty($isSupport)): ?>
+            AndroidUI.bottomSheet({
+                title: 'Aksi Cepat Pegawai',
+                subtitle: 'Pilih presensi, jurnal, perizinan & ibadah',
+                icon: '⚡',
+                iconBg: 'bg-primary-100 text-primary-600',
+                content: `
+                    <div class="grid grid-cols-3 gap-2.5 pt-1 pb-1">
+                        <a href="<?= url('mobile/absen') ?>" class="flex flex-col items-center gap-1.5 p-2.5 bg-emerald-50 rounded-2xl border border-emerald-100 press-bounce">
+                            <div class="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-md shadow-emerald-500/20 text-base font-bold">📍</div>
+                            <span class="text-[11px] font-bold text-slate-700 text-center leading-tight">Absen GPS</span>
+                        </a>
+                        <a href="<?= url('mobile/jurnal') ?>" class="flex flex-col items-center gap-1.5 p-2.5 bg-primary-50 rounded-2xl border border-primary-100 press-bounce">
+                            <div class="w-10 h-10 rounded-xl bg-primary-600 text-white flex items-center justify-center shadow-md shadow-primary-500/20 text-base font-bold">📝</div>
+                            <span class="text-[11px] font-bold text-slate-700 text-center leading-tight">Isi Jurnal</span>
+                        </a>
+                        <a href="<?= url('mobile/rekap-absen') ?>" class="flex flex-col items-center gap-1.5 p-2.5 bg-indigo-50 rounded-2xl border border-indigo-100 press-bounce">
+                            <div class="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-md shadow-indigo-500/20 text-base font-bold">📊</div>
+                            <span class="text-[11px] font-bold text-slate-700 text-center leading-tight">Rekap Absen</span>
+                        </a>
+
+                        <a href="<?= url('mobile/izin') ?>" class="flex flex-col items-center gap-1.5 p-2.5 bg-amber-50 rounded-2xl border border-amber-100 press-bounce">
+                            <div class="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-md shadow-amber-500/20 text-base font-bold">📄</div>
+                            <span class="text-[11px] font-bold text-slate-700 text-center leading-tight">Izin Pegawai</span>
+                        </a>
+                        <a href="<?= url('mobile/cuti') ?>" class="flex flex-col items-center gap-1.5 p-2.5 bg-cyan-50 rounded-2xl border border-cyan-100 press-bounce">
+                            <div class="w-10 h-10 rounded-xl bg-cyan-600 text-white flex items-center justify-center shadow-md shadow-cyan-500/20 text-base font-bold">🏖️</div>
+                            <span class="text-[11px] font-bold text-slate-700 text-center leading-tight">Cuti Pegawai</span>
+                        </a>
+                        <a href="<?= url('mobile/quran') ?>" class="flex flex-col items-center gap-1.5 p-2.5 bg-blue-50 rounded-2xl border border-blue-100 press-bounce">
+                            <div class="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-500/20 text-base font-bold">📖</div>
+                            <span class="text-[11px] font-bold text-slate-700 text-center leading-tight">Al-Qur'an</span>
+                        </a>
+
+                        <a href="<?= url('mobile/dzikir') ?>" class="flex flex-col items-center gap-1.5 p-2.5 bg-purple-50 rounded-2xl border border-purple-100 press-bounce">
+                            <div class="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center shadow-md shadow-purple-500/20 text-base font-bold">📿</div>
+                            <span class="text-[11px] font-bold text-slate-700 text-center leading-tight">Dzikir</span>
+                        </a>
+                    </div>
+                `
+            });
+            <?php else: ?>
             AndroidUI.bottomSheet({
                 title: 'Aksi Cepat Guru',
                 subtitle: 'Pilih aktivitas pembelajaran, presensi & perizinan',
@@ -315,6 +377,7 @@
                     </div>
                 `
             });
+            <?php endif; ?>
         }
 
         // Custom iOS Install Bottom Sheet
