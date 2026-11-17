@@ -148,7 +148,7 @@ if ($hourNow < 11) {
 
             <!-- Card 2: Tilawah Al-Qur'an (Direct Click Toggle) -->
             <div onclick="toggleDirectIbadah('tilawah')" id="card-ibadah-tilawah" class="bg-white rounded-2xl p-2.5 shadow-sm border border-slate-100 hover:border-primary-200 cursor-pointer press-bounce flex flex-col items-center text-center space-y-1.5 transition-all relative">
-                <span id="badge-ibadah-tilawah" class="absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center text-[8px] font-bold">
+                <span id="badge-ibadah-tilawah" onclick="event.stopPropagation(); openTilawahModal();" title="Buka Detail Tilawah" class="absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full bg-slate-100 text-slate-400 hover:bg-primary-100 hover:text-primary-700 flex items-center justify-center text-[8px] font-bold cursor-pointer">
                     ⋯
                 </span>
                 <div class="w-9 h-9 rounded-xl bg-primary-50 text-primary-700 flex items-center justify-center text-base shadow-xs">
@@ -162,7 +162,7 @@ if ($hourNow < 11) {
 
             <!-- Card 3: Istighfar & Sholawat (Direct Click Toggle) -->
             <div onclick="toggleDirectIbadah('dzikir')" id="card-ibadah-dzikir" class="bg-white rounded-2xl p-2.5 shadow-sm border border-slate-100 hover:border-purple-200 cursor-pointer press-bounce flex flex-col items-center text-center space-y-1.5 transition-all relative">
-                <span id="badge-ibadah-dzikir" class="absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center text-[8px] font-bold">
+                <span id="badge-ibadah-dzikir" onclick="event.stopPropagation(); openDzikirModal();" title="Buka Detail Dzikir" class="absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full bg-slate-100 text-slate-400 hover:bg-purple-100 hover:text-purple-700 flex items-center justify-center text-[8px] font-bold cursor-pointer">
                     ⋯
                 </span>
                 <div class="w-9 h-9 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center text-base shadow-xs">
@@ -176,7 +176,7 @@ if ($hourNow < 11) {
 
             <!-- Card 4: Tadabbur & Tadzkirah (Direct Click Toggle) -->
             <div onclick="toggleDirectIbadah('tadabbur')" id="card-ibadah-tadabbur" class="bg-white rounded-2xl p-2.5 shadow-sm border border-slate-100 hover:border-amber-200 cursor-pointer press-bounce flex flex-col items-center text-center space-y-1.5 transition-all relative">
-                <span id="badge-ibadah-tadabbur" class="absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center text-[8px] font-bold">
+                <span id="badge-ibadah-tadabbur" onclick="event.stopPropagation(); openTadabburModal();" title="Tulis Catatan Tadabbur" class="absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full bg-slate-100 text-slate-400 hover:bg-amber-100 hover:text-amber-700 flex items-center justify-center text-[8px] font-bold cursor-pointer">
                     ⋯
                 </span>
                 <div class="w-9 h-9 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center text-base shadow-xs">
@@ -473,7 +473,7 @@ if ($hourNow < 11) {
 
 <!-- Interactive Modal & Card Script for Ibadah Harian -->
 <script>
-    window.APP_IBADAH_BASE = '<?= url('') ?>';
+    window.APP_IBADAH_BASE = '<?= rtrim(url(''), '/') ?>';
     window.PORTAL_IBADAH_CTX = {
         date: '<?= date('Y-m-d') ?>',
         guru_id: <?= (int)($teacherPegawaiId ?? 0) ?>,
@@ -590,17 +590,23 @@ if ($hourNow < 11) {
                     autoClose: false,
                     onClick: async (e, btn) => {
                         AndroidUI.setButtonLoading(btn, 'Menyimpan...');
-                        ['subuh', 'dzuhur', 'ashar', 'maghrib', 'isya'].forEach(s => {
-                            const chk = document.getElementById(`modal-sholat-${s}`);
-                            if (!ibadahData.sholat[s]) ibadahData.sholat[s] = { checked: false, loc: 'rumah' };
-                            if (chk) ibadahData.sholat[s].checked = chk.checked;
-                            if (ibadahData.gender === 'P') {
-                                ibadahData.sholat[s].loc = 'rumah';
-                            }
-                        });
-                        await saveIbadahState();
-                        AndroidUI.closeBottomSheet();
-                        AndroidUI.toast('Data Sholat 5 Waktu tersimpan ke server!', 'success');
+                        try {
+                            ['subuh', 'dzuhur', 'ashar', 'maghrib', 'isya'].forEach(s => {
+                                const chk = document.getElementById(`modal-sholat-${s}`);
+                                if (!ibadahData.sholat[s]) ibadahData.sholat[s] = { checked: false, loc: 'rumah' };
+                                if (chk) ibadahData.sholat[s].checked = chk.checked;
+                                if (ibadahData.gender === 'P') {
+                                    ibadahData.sholat[s].loc = 'rumah';
+                                }
+                            });
+                            await saveIbadahState();
+                            AndroidUI.closeBottomSheet();
+                            AndroidUI.toast('Data Sholat 5 Waktu tersimpan!', 'success');
+                        } catch (err) {
+                            console.error('Error simpan sholat:', err);
+                            AndroidUI.resetButton(btn);
+                            AndroidUI.toast('Gagal menyimpan sholat, coba lagi.', 'error');
+                        }
                     }
                 }
             ]
@@ -699,17 +705,21 @@ if ($hourNow < 11) {
                     text: 'Simpan',
                     className: 'flex-1 py-3 bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs rounded-2xl shadow-md text-center press-bounce',
                     autoClose: false,
-                    onClick: (e, btn) => {
+                    onClick: async (e, btn) => {
                         AndroidUI.setButtonLoading(btn, 'Menyimpan...');
-                        setTimeout(() => {
+                        try {
                             const chk = document.getElementById('modal-check-tilawah');
                             const inp = document.getElementById('modal-input-tilawah');
                             ibadahData.tilawah.checked = chk ? chk.checked : false;
                             ibadahData.tilawah.text = inp ? inp.value.trim() : '';
-                            saveIbadahState();
+                            await saveIbadahState();
                             AndroidUI.closeBottomSheet();
                             AndroidUI.toast('Capaian Tilawah tersimpan!', 'success');
-                        }, 400);
+                        } catch (err) {
+                            console.error('Error simpan tilawah:', err);
+                            AndroidUI.resetButton(btn);
+                            AndroidUI.toast('Gagal menyimpan tilawah, coba lagi.', 'error');
+                        }
                     }
                 }
             ]
@@ -764,17 +774,21 @@ if ($hourNow < 11) {
                     text: 'Simpan',
                     className: 'flex-1 py-3 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-2xl shadow-md text-center press-bounce',
                     autoClose: false,
-                    onClick: (e, btn) => {
+                    onClick: async (e, btn) => {
                         AndroidUI.setButtonLoading(btn, 'Menyimpan...');
-                        setTimeout(() => {
+                        try {
                             const ci = document.getElementById('modal-check-istighfar');
                             const cs = document.getElementById('modal-check-sholawat');
                             ibadahData.dzikir.istighfar = ci ? ci.checked : false;
                             ibadahData.dzikir.sholawat = cs ? cs.checked : false;
-                            saveIbadahState();
+                            await saveIbadahState();
                             AndroidUI.closeBottomSheet();
                             AndroidUI.toast('Target Dzikir tersimpan!', 'success');
-                        }, 400);
+                        } catch (err) {
+                            console.error('Error simpan dzikir:', err);
+                            AndroidUI.resetButton(btn);
+                            AndroidUI.toast('Gagal menyimpan dzikir, coba lagi.', 'error');
+                        }
                     }
                 }
             ]
@@ -810,17 +824,21 @@ if ($hourNow < 11) {
                     text: 'Simpan',
                     className: 'flex-1 py-3 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-2xl shadow-md text-center press-bounce',
                     autoClose: false,
-                    onClick: (e, btn) => {
+                    onClick: async (e, btn) => {
                         AndroidUI.setButtonLoading(btn, 'Menyimpan...');
-                        setTimeout(() => {
+                        try {
                             const ct = document.getElementById('modal-check-tadabbur');
                             const it = document.getElementById('modal-input-tadabbur');
                             ibadahData.tadabbur.checked = ct ? ct.checked : false;
                             ibadahData.tadabbur.text = it ? it.value.trim() : '';
-                            saveIbadahState();
+                            await saveIbadahState();
                             AndroidUI.closeBottomSheet();
                             AndroidUI.toast('Catatan Tadabbur tersimpan!', 'success');
-                        }, 400);
+                        } catch (err) {
+                            console.error('Error simpan tadabbur:', err);
+                            AndroidUI.resetButton(btn);
+                            AndroidUI.toast('Gagal menyimpan tadabbur, coba lagi.', 'error');
+                        }
                     }
                 }
             ]
@@ -871,20 +889,29 @@ if ($hourNow < 11) {
         renderIbadahCards();
 
         try {
+            const endpoint = `${window.APP_IBADAH_BASE}/mobile/ibadah/simpan`;
+            let resJson = null;
+
             if (window.MobileAPI && MobileAPI.ibadah) {
-                await MobileAPI.ibadah.syncToServer(ibadahData, window.APP_IBADAH_BASE);
+                resJson = await MobileAPI.ibadah.syncToServer(ibadahData, window.APP_IBADAH_BASE);
             } else {
-                const res = await fetch(`${window.APP_IBADAH_BASE}/mobile/ibadah/simpan`, {
+                const res = await fetch(endpoint, {
                     method: 'POST',
                     credentials: 'same-origin',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(ibadahData)
                 });
-                const json = await res.json();
-                if (json && json.success && json.data) {
-                    ibadahData = json.data;
-                    renderIbadahCards();
+                resJson = await res.json();
+            }
+
+            if (resJson && resJson.success && resJson.data) {
+                ibadahData = resJson.data;
+                if (window.PORTAL_IBADAH_CTX) {
+                    window.PORTAL_IBADAH_CTX.serverState = resJson.data;
                 }
+                renderIbadahCards();
+            } else if (resJson && resJson.session_expired) {
+                window.location.href = resJson.redirect || `${window.APP_IBADAH_BASE}/mobile/login?restore=1`;
             }
         } catch (err) {
             console.warn('Gagal menyinkronkan ibadah ke server:', err);

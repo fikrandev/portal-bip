@@ -183,14 +183,20 @@ window.MobileAPI = (function() {
         },
 
         syncToServer(payload, baseUrl = null) {
-            const base = baseUrl !== null ? baseUrl : (window.APP_BASE_URL || '');
+            const base = (baseUrl !== null ? baseUrl : (window.APP_BASE_URL || '')).replace(/\/+$/, '');
             return fetch(`${base}/mobile/ibadah/simpan`, {
                 method: 'POST',
                 credentials: 'same-origin',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             })
-            .then(r => r.json())
+            .then(async r => {
+                const contentType = r.headers.get('content-type') || '';
+                if (!contentType.includes('application/json')) {
+                    throw new Error('Server returned non-JSON response');
+                }
+                return r.json();
+            })
             .then(res => {
                 if (res && res.success && res.data) {
                     const updated = this.setServerState(res.data);

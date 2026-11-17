@@ -105,7 +105,7 @@ function e(?string $value): string {
  * Generate full URL
  */
 function url(string $path = ''): string {
-    return BASE_URL . '/' . ltrim($path, '/');
+    return $path !== '' ? BASE_URL . '/' . ltrim($path, '/') : BASE_URL;
 }
 
 /**

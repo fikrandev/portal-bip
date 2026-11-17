@@ -209,6 +209,25 @@ class PortalGuruAuthController
                 return true;
             }
 
+            // Cek apakah request berupa AJAX / Fetch API JSON
+            $isApiOrAjax = (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest')
+                || (isset($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false)
+                || (isset($_SERVER['CONTENT_TYPE']) && strpos($_SERVER['CONTENT_TYPE'], 'application/json') !== false)
+                || (strpos($_SERVER['REQUEST_URI'] ?? '', '/api/') !== false)
+                || (strpos($_SERVER['REQUEST_URI'] ?? '', '/mobile/ibadah/simpan') !== false);
+
+            if ($isApiOrAjax) {
+                http_response_code(401);
+                header('Content-Type: application/json; charset=utf-8');
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Sesi berakhir, silakan login kembali.',
+                    'session_expired' => true,
+                    'redirect' => BASE_URL . '/mobile/login?restore=1'
+                ]);
+                exit;
+            }
+
             $_SESSION['intended_url'] = $_SERVER['REQUEST_URI'];
             header('Location: ' . BASE_URL . '/mobile/login?restore=1');
             exit;
