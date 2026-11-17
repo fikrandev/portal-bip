@@ -247,16 +247,30 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
             <!-- Bulk Action Buttons (Saat Checkbox Pegawai Dipilih) -->
             <div class="flex flex-wrap items-center gap-2 shrink-0">
                 <button type="button" onclick="openBulkCustomPegawai()"
-                    class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs cursor-pointer flex items-center gap-1.5">
-                    <span>📍 Atur Lokasi Pegawai Terpilih (<span id="selected_pegawai_count">0</span>)</span>
+                    class="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs cursor-pointer flex items-center gap-1.5" title="Atur lokasi kantor khusus untuk pegawai yang dicentang">
+                    <span>📍 Atur Lokasi (<span id="selected_pegawai_count">0</span>)</span>
+                </button>
+
+                <button type="button" onclick="openBulkCustomJamKerja()"
+                    class="px-3 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-xs cursor-pointer flex items-center gap-1.5" title="Atur jam kedatangan & pulang untuk pegawai yang dicentang">
+                    <span>⏰ Atur Jam Kerja (<span id="selected_pegawai_count_jam">0</span>)</span>
                 </button>
 
                 <form id="formBulkResetPegawai" method="POST" action="<?= url('kelola-absen-pegawai/pegawai/reset') ?>" onsubmit="return submitBulkResetPegawai();">
                     <?= CSRF::field() ?>
                     <input type="hidden" name="return_tab" value="pegawai">
                     <input type="hidden" name="pegawai_ids_csv" id="bulk_reset_ids_csv" value="">
-                    <button type="submit" class="px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 font-bold text-xs cursor-pointer">
-                        ↺ Reset Terpilih ke Semula
+                    <button type="submit" class="px-3 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 font-bold text-xs cursor-pointer" title="Kembalikan lokasi terpilih ke lokasi semula">
+                        ↺ Reset Lokasi
+                    </button>
+                </form>
+
+                <form id="formBulkResetJam" method="POST" action="<?= url('kelola-absen-pegawai/jam-kerja/reset') ?>" onsubmit="return submitBulkResetJam();">
+                    <?= CSRF::field() ?>
+                    <input type="hidden" name="return_tab" value="pegawai">
+                    <input type="hidden" name="pegawai_ids_csv" id="bulk_reset_jam_ids_csv" value="">
+                    <button type="submit" class="px-3 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 font-bold text-xs cursor-pointer" title="Kembalikan jam kerja terpilih mengikuti global">
+                        ↺ Reset Jam Global
                     </button>
                 </form>
             </div>
@@ -266,12 +280,17 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
         <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
             <div class="px-5 py-3.5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-slate-50/50">
                 <div>
-                    <h3 class="font-bold text-slate-800 text-sm">Daftar Lokasi Absen Seluruh Pegawai</h3>
-                    <p class="text-xs text-slate-500">Menampilkan <strong><?= count($pegawaiList) ?></strong> pegawai &bull; Klik <strong>Atur Lokasi</strong> untuk custom per pegawai atau <strong>Reset</strong> untuk kembali ke lokasi semula</p>
+                    <h3 class="font-bold text-slate-800 text-sm">Daftar Lokasi & Jam Kerja Seluruh Pegawai</h3>
+                    <p class="text-xs text-slate-500">Menampilkan <strong><?= count($pegawaiList) ?></strong> pegawai &bull; Bisa diatur per pegawai maupun untuk semua</p>
                 </div>
-                <span class="text-xs font-extrabold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-xl border border-emerald-200">
-                    Radius Berlaku Semua: <?= $radiusGlobal ?> Meter
-                </span>
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="text-xs font-bold text-amber-800 bg-amber-50 px-3 py-1 rounded-xl border border-amber-200">
+                        ⏰ Jam Global: <?= substr($jamMasukBatas, 0, 5) ?> - <?= substr($jamPulangMulai, 0, 5) ?> WITA
+                    </span>
+                    <span class="text-xs font-extrabold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-xl border border-emerald-200">
+                        Radius: <?= $radiusGlobal ?>m
+                    </span>
+                </div>
             </div>
 
             <div class="overflow-x-auto">
@@ -287,9 +306,9 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
                             <th class="py-3.5 px-4 text-center">Status Lokasi</th>
                             <th class="py-3.5 px-4">Nama Kantor Tempat Absen</th>
                             <th class="py-3.5 px-4">Latitude & Longitude</th>
-                            <th class="py-3.5 px-4 text-center">Radius Global</th>
+                            <th class="py-3.5 px-4 text-center">Jam Kerja (Batas & Pulang)</th>
                             <th class="py-3.5 px-4 text-center">Kedatangan Hari Ini</th>
-                            <th class="py-3.5 px-4 text-center">Aksi Lokasi</th>
+                            <th class="py-3.5 px-4 text-center">Aksi Pegawai</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
@@ -358,9 +377,23 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
                                         </a>
                                     </td>
                                     <td class="py-3.5 px-4 text-center">
-                                        <span class="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-800 font-extrabold text-xs">
-                                            <?= (int)$p['radius_meter'] ?> Meter
-                                        </span>
+                                        <?php if (!empty($p['is_custom_jam_kerja'])): ?>
+                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-800 border border-amber-200">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                                                Khusus
+                                            </span>
+                                            <div class="font-mono font-bold text-xs text-slate-800 mt-0.5">
+                                                <?= substr($p['jam_masuk_batas_efektif'] ?? $jamMasukBatas, 0, 5) ?> - <?= substr($p['jam_pulang_mulai_efektif'] ?? $jamPulangMulai, 0, 5) ?>
+                                            </div>
+                                            <div class="text-[10px] text-amber-700">Mulai: <?= substr($p['jam_masuk_mulai_efektif'] ?? $jamMasukMulai, 0, 5) ?></div>
+                                        <?php else: ?>
+                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200">
+                                                Global
+                                            </span>
+                                            <div class="font-mono text-xs text-slate-700 font-bold mt-0.5">
+                                                <?= substr($p['jam_masuk_batas_efektif'] ?? $jamMasukBatas, 0, 5) ?> - <?= substr($p['jam_pulang_mulai_efektif'] ?? $jamPulangMulai, 0, 5) ?>
+                                            </div>
+                                        <?php endif; ?>
                                     </td>
                                     <td class="py-3.5 px-4 text-center">
                                         <?php if (!empty($p['today_jam_masuk'])): ?>
@@ -393,11 +426,17 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
                                         <?php endif; ?>
                                     </td>
                                     <td class="py-3.5 px-4 text-center">
-                                        <div class="flex items-center justify-center gap-1.5">
+                                        <div class="flex items-center justify-center gap-1.5 flex-wrap">
                                             <button type="button"
-                                                onclick="openModalCustomPegawai(<?= (int)$p['id'] ?>, <?= htmlspecialchars(json_encode($namaLengkap), ENT_QUOTES, 'UTF-8') ?>, <?= htmlspecialchars(json_encode($p['peg_kantor'] ?: $p['nama_kantor_efektif']), ENT_QUOTES, 'UTF-8') ?>, '<?= $p['peg_lat'] ?: $latStr ?>', '<?= $p['peg_lng'] ?: $lngStr ?>', <?= htmlspecialchars(json_encode($p['peg_tgl_mulai'] ?? ''), ENT_QUOTES, 'UTF-8') ?>, <?= htmlspecialchars(json_encode($p['peg_tgl_selesai'] ?? ''), ENT_QUOTES, 'UTF-8') ?>, <?= htmlspecialchars(json_encode($p['peg_hari_aktif'] ?? ''), ENT_QUOTES, 'UTF-8') ?>, <?= htmlspecialchars(json_encode($p['peg_ket'] ?? ''), ENT_QUOTES, 'UTF-8') ?>)"
-                                                class="px-2.5 py-1.5 rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-bold text-[11px] transition-colors cursor-pointer">
-                                                Atur Lokasi
+                                                onclick="openModalCustomPegawai(<?= (int)$p['id'] ?>, <?= htmlspecialchars(json_encode($namaLengkap), ENT_QUOTES, 'UTF-8') ?>, <?= htmlspecialchars(json_encode($p['peg_kantor'] ?: $p['nama_kantor_efektif']), ENT_QUOTES, 'UTF-8') ?>, '<?= $p['peg_lat'] ?: $latStr ?>', '<?= $p['peg_lng'] ?: $lngStr ?>', <?= htmlspecialchars(json_encode($p['peg_tgl_mulai'] ?? ''), ENT_QUOTES, 'UTF-8') ?>, <?= htmlspecialchars(json_encode($p['peg_tgl_selesai'] ?? ''), ENT_QUOTES, 'UTF-8') ?>, <?= htmlspecialchars(json_encode($p['peg_hari_aktif'] ?? ''), ENT_QUOTES, 'UTF-8') ?>, <?= htmlspecialchars(json_encode($p['peg_ket'] ?? ''), ENT_QUOTES, 'UTF-8') ?>, '<?= !empty($p['is_custom_jam_kerja']) ? 'custom' : 'global' ?>', '<?= substr($p['peg_jam_masuk_mulai'] ?? '', 0, 5) ?>', '<?= substr($p['peg_jam_masuk_batas'] ?? '', 0, 5) ?>', '<?= substr($p['peg_jam_pulang_mulai'] ?? '', 0, 5) ?>')"
+                                                class="px-2.5 py-1.5 rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-bold text-[11px] transition-colors cursor-pointer" title="Atur Lokasi Absen">
+                                                📍 Lokasi
+                                            </button>
+
+                                            <button type="button"
+                                                onclick="openModalCustomJamKerja(<?= (int)$p['id'] ?>, <?= htmlspecialchars(json_encode($namaLengkap), ENT_QUOTES, 'UTF-8') ?>, '<?= !empty($p['is_custom_jam_kerja']) ? 'custom' : 'global' ?>', '<?= substr($p['jam_masuk_mulai_efektif'] ?? $jamMasukMulai, 0, 5) ?>', '<?= substr($p['jam_masuk_batas_efektif'] ?? $jamMasukBatas, 0, 5) ?>', '<?= substr($p['jam_pulang_mulai_efektif'] ?? $jamPulangMulai, 0, 5) ?>')"
+                                                class="px-2.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-bold text-[11px] transition-colors cursor-pointer" title="Atur Jam Kedatangan & Pulang">
+                                                ⏰ Jam
                                             </button>
 
                                             <?php if ($mode !== 'default' || ($p['peg_mode'] ?? '') === 'custom'): ?>
@@ -405,8 +444,19 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
                                                     <?= CSRF::field() ?>
                                                     <input type="hidden" name="pegawai_id" value="<?= (int)$p['id'] ?>">
                                                     <input type="hidden" name="return_tab" value="pegawai">
-                                                    <button type="submit" class="px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 font-bold text-[11px] transition-colors cursor-pointer" title="Reset kembali ke lokasi semula">
-                                                        Reset
+                                                    <button type="submit" class="px-2 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 font-bold text-[10px] transition-colors cursor-pointer" title="Reset lokasi ke semula">
+                                                        ↺ Lokasi
+                                                    </button>
+                                                </form>
+                                            <?php endif; ?>
+
+                                            <?php if (!empty($p['is_custom_jam_kerja'])): ?>
+                                                <form method="POST" action="<?= url('kelola-absen-pegawai/jam-kerja/reset') ?>" onsubmit="return confirm('Kembalikan jam kerja <?= e(addslashes($namaLengkap)) ?> mengikuti pengaturan global (semua pegawai)?');" class="inline">
+                                                    <?= CSRF::field() ?>
+                                                    <input type="hidden" name="pegawai_id" value="<?= (int)$p['id'] ?>">
+                                                    <input type="hidden" name="return_tab" value="pegawai">
+                                                    <button type="submit" class="px-2 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 font-bold text-[10px] transition-colors cursor-pointer" title="Kembalikan jam kerja ke global">
+                                                        ↺ Jam
                                                     </button>
                                                 </form>
                                             <?php endif; ?>
@@ -514,11 +564,13 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
             <div class="px-5 py-3.5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-slate-50/50">
                 <div>
                     <h3 class="font-bold text-slate-800 text-sm">Rekap Jam Kedatangan Pegawai (<?= date('d M Y', strtotime($targetDate)) ?>)</h3>
-                    <p class="text-xs text-slate-500">Mencatat jam check-in, status keterlambatan menit, jarak GPS ke kantor, dan jam check-out.</p>
+                    <p class="text-xs text-slate-500">Mencatat jam check-in, status keterlambatan, jarak GPS ke kantor, dan jam check-out.</p>
                 </div>
-                <span class="text-xs font-bold text-slate-600 bg-white px-3 py-1 rounded-xl border border-slate-200">
-                    Batas Jam Masuk: <strong class="text-rose-600 font-mono"><?= substr($rekapData['batasJamMasuk'], 0, 5) ?> WITA</strong>
-                </span>
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-semibold text-slate-600 bg-white px-3 py-1 rounded-xl border border-slate-200">
+                        Batas Jam Masuk Global: <strong class="text-rose-600 font-mono"><?= substr($rekapData['batasJamMasuk'], 0, 5) ?> WITA</strong>
+                    </span>
+                </div>
             </div>
 
             <div class="overflow-x-auto">
@@ -546,15 +598,23 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
                         <?php else: ?>
                             <?php foreach ($rekapData['logs'] as $idx => $r):
                                 $namaLengkap = $r['nama'] . (!empty($r['gelar']) ? ', ' . $r['gelar'] : '');
-                                $isTerlambat = ($r['status'] === 'Terlambat');
-                                $isHadir = ($r['status'] === 'Hadir');
+                                $statusKehadiran = $r['status'] ?? $r['log_status'] ?? '';
+                                $isTerlambat = ($statusKehadiran === 'Terlambat');
+                                $isHadir = ($statusKehadiran === 'Hadir');
                                 $hasCheckin = !empty($r['jam_masuk']);
+                                $isCustomJam = !empty($r['is_custom_jam_kerja']);
+                                $jamBatasEfektif = $r['jam_masuk_batas_efektif'] ?? $rekapData['batasJamMasuk'];
                             ?>
                                 <tr class="hover:bg-slate-50/80 transition-colors <?= $isTerlambat ? 'bg-amber-50/30' : '' ?>">
                                     <td class="py-3.5 px-3 text-center text-slate-400 font-semibold"><?= $idx + 1 ?></td>
                                     <td class="py-3.5 px-4">
                                         <div class="font-bold text-slate-800"><?= e($namaLengkap) ?></div>
                                         <div class="text-[11px] text-slate-400 font-mono">NIY: <?= e($r['niy'] ?: '-') ?></div>
+                                        <?php if ($isCustomJam): ?>
+                                            <span class="inline-flex items-center gap-1 mt-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                                                ⏰ Jam Khusus (Batas <?= substr($jamBatasEfektif, 0, 5) ?>)
+                                            </span>
+                                        <?php endif; ?>
                                     </td>
                                     <td class="py-3.5 px-4">
                                         <div class="font-semibold text-slate-700"><?= e($r['unit_tugas'] ?: 'Umum') ?></div>
@@ -565,8 +625,14 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
                                             <span class="font-extrabold font-mono text-xs <?= $isTerlambat ? 'text-amber-700' : 'text-slate-800' ?>">
                                                 <?= substr($r['jam_masuk'], 0, 5) ?> WITA
                                             </span>
+                                            <div class="text-[10px] text-slate-400 font-mono">
+                                                Batas: <?= substr($jamBatasEfektif, 0, 5) ?>
+                                            </div>
                                         <?php else: ?>
                                             <span class="text-slate-400">-</span>
+                                            <div class="text-[10px] text-slate-400 font-mono">
+                                                Batas: <?= substr($jamBatasEfektif, 0, 5) ?>
+                                            </div>
                                         <?php endif; ?>
                                     </td>
                                     <td class="py-3.5 px-4 text-center">
@@ -611,7 +677,7 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
                                         <?php endif; ?>
                                     </td>
                                     <td class="py-3.5 px-4">
-                                        <span class="text-xs text-slate-600"><?= e($r['keterangan'] ?: '-') ?></span>
+                                        <span class="text-xs text-slate-600"><?= e($r['keterangan'] ?? $r['log_keterangan'] ?? '-') ?></span>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
@@ -984,6 +1050,41 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
                        class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs text-slate-800 outline-none focus:border-primary-500">
             </div>
 
+            <!-- Pengaturan Jam Kedatangan & Pulang Khusus Pegawai Ini -->
+            <div class="p-3.5 rounded-2xl bg-amber-50/70 border border-amber-200 space-y-3">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <label class="text-xs font-extrabold text-amber-950">⏰ Jam Kerja (Kedatangan & Pulang):</label>
+                    <div class="flex items-center gap-3">
+                        <label class="inline-flex items-center gap-1.5 text-xs font-bold text-slate-700 cursor-pointer">
+                            <input type="radio" name="tipe_jam_kerja" id="jam_tipe_global" value="global" checked onchange="toggleJamCustomPegawai()" class="text-primary-600">
+                            <span>Ikuti Jam Global</span>
+                        </label>
+                        <label class="inline-flex items-center gap-1.5 text-xs font-bold text-amber-900 cursor-pointer">
+                            <input type="radio" name="tipe_jam_kerja" id="jam_tipe_custom" value="custom" onchange="toggleJamCustomPegawai()" class="text-amber-600">
+                            <span>Atur Jam Khusus</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div id="box_jam_custom_pegawai" class="hidden grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-amber-200/80">
+                    <div>
+                        <label class="block text-[11px] font-bold text-amber-900 mb-1">Mulai Masuk</label>
+                        <input type="time" name="jam_masuk_mulai" id="modal_peg_jam_masuk_mulai" value="<?= substr($jamMasukMulai, 0, 5) ?>"
+                               class="w-full px-3 py-1.5 rounded-xl border border-amber-300 bg-white text-xs font-bold text-slate-800 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-amber-900 mb-1">Batas Tepat Waktu <span class="text-rose-500">*</span></label>
+                        <input type="time" name="jam_masuk_batas" id="modal_peg_jam_masuk_batas" value="<?= substr($jamMasukBatas, 0, 5) ?>"
+                               class="w-full px-3 py-1.5 rounded-xl border border-rose-300 bg-white text-xs font-bold text-rose-700 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-amber-900 mb-1">Buka Check-out</label>
+                        <input type="time" name="jam_pulang_mulai" id="modal_peg_jam_pulang_mulai" value="<?= substr($jamPulangMulai, 0, 5) ?>"
+                               class="w-full px-3 py-1.5 rounded-xl border border-amber-300 bg-white text-xs font-bold text-slate-800 outline-none">
+                    </div>
+                </div>
+            </div>
+
             <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between text-xs">
                 <span class="text-slate-500">Radius Presensi Berlaku (Global):</span>
                 <strong class="text-emerald-700"><?= $radiusGlobal ?> Meter (Untuk Semua)</strong>
@@ -995,6 +1096,95 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
                 </button>
                 <button type="submit" class="px-5 py-2 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-sm cursor-pointer">
                     Simpan Lokasi Pegawai
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ═════════════════════════════════════════════════════════════════════════
+     MODAL KHUSUS: ATUR JAM KERJA (KEDATANGAN & PULANG) PER PEGAWAI / MASSAL
+     ═════════════════════════════════════════════════════════════════════════ -->
+<div id="modalCustomJamKerja" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 my-8">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div>
+                <h3 id="modal_jam_title" class="text-base font-extrabold text-slate-900">Atur Jam Kerja Pegawai</h3>
+                <p class="text-xs text-slate-500">Tentukan jam buka masuk, batas keterlambatan, dan jam pulang</p>
+            </div>
+            <button type="button" onclick="closeModal('modalCustomJamKerja')" class="p-1.5 rounded-full text-slate-400 hover:text-slate-600 cursor-pointer">✕</button>
+        </div>
+
+        <form method="POST" action="<?= url('kelola-absen-pegawai/jam-kerja/save') ?>" class="space-y-4 mt-4">
+            <?= CSRF::field() ?>
+            <input type="hidden" name="return_tab" value="pegawai">
+            <input type="hidden" name="pegawai_ids_csv" id="modal_jam_ids_csv" value="">
+
+            <div id="modal_jam_select_wrapper">
+                <label class="block text-xs font-bold text-slate-700 mb-1">Pilih Pegawai <span class="text-rose-500">*</span></label>
+                <select name="pegawai_id" id="modal_jam_select" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-bold text-slate-800 outline-none focus:border-amber-500">
+                    <?php foreach ($allPegawaiDropdown as $pg):
+                        $nm = $pg['nama'] . (!empty($pg['gelar']) ? ', ' . $pg['gelar'] : '');
+                    ?>
+                        <option value="<?= (int)$pg['id'] ?>">
+                            <?= e($nm) ?> (<?= e($pg['unit_tugas'] ?: 'Umum') ?>)
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+
+            <div id="modal_jam_bulk_banner" class="hidden p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs font-bold text-amber-900">
+                ⏰ Mengatur jam kerja untuk <span id="modal_jam_bulk_count">0</span> pegawai terpilih sekaligus.
+            </div>
+
+            <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                <label class="text-xs font-extrabold text-slate-800 block">Pilihan Pengaturan Jam Kerja:</label>
+                <div class="space-y-2">
+                    <label class="flex items-start gap-2.5 p-2 rounded-xl border border-slate-200 bg-white cursor-pointer hover:border-slate-300">
+                        <input type="radio" name="mode_jam_kerja" id="mode_jam_global" value="global" onchange="toggleModalJamMode()" class="mt-0.5 text-primary-600">
+                        <div>
+                            <div class="text-xs font-bold text-slate-800">Ikuti Jam Kerja Global (Semua Pegawai)</div>
+                            <div class="text-[11px] text-slate-500">Mulai <?= substr($jamMasukMulai, 0, 5) ?> &bull; Batas <?= substr($jamMasukBatas, 0, 5) ?> &bull; Pulang <?= substr($jamPulangMulai, 0, 5) ?> WITA</div>
+                        </div>
+                    </label>
+
+                    <label class="flex items-start gap-2.5 p-2 rounded-xl border border-amber-300 bg-amber-50/50 cursor-pointer hover:border-amber-400">
+                        <input type="radio" name="mode_jam_kerja" id="mode_jam_custom" value="custom" checked onchange="toggleModalJamMode()" class="mt-0.5 text-amber-600">
+                        <div>
+                            <div class="text-xs font-bold text-amber-900">Atur Jam Kerja Khusus (Custom Pegawai)</div>
+                            <div class="text-[11px] text-amber-700">Tentukan jam masuk, batas toleransi, dan jam pulang sendiri</div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <div id="box_inputs_jam_kerja" class="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3.5 rounded-2xl bg-amber-50/60 border border-amber-200">
+                <div>
+                    <label class="block text-[11px] font-bold text-amber-950 mb-1">Mulai Masuk</label>
+                    <input type="time" name="jam_masuk_mulai" id="modal_jam_masuk_mulai" value="<?= substr($jamMasukMulai, 0, 5) ?>"
+                           class="w-full px-3 py-2 rounded-xl border border-amber-300 bg-white text-xs font-bold text-slate-800 outline-none">
+                    <span class="text-[10px] text-amber-700">Awal check-in</span>
+                </div>
+                <div>
+                    <label class="block text-[11px] font-bold text-amber-950 mb-1">Batas Tepat Waktu <span class="text-rose-500">*</span></label>
+                    <input type="time" name="jam_masuk_batas" id="modal_jam_masuk_batas" value="<?= substr($jamMasukBatas, 0, 5) ?>" required
+                           class="w-full px-3 py-2 rounded-xl border border-rose-300 bg-white text-xs font-extrabold text-rose-700 outline-none">
+                    <span class="text-[10px] text-rose-600 font-semibold">&gt; jam ini = Terlambat</span>
+                </div>
+                <div>
+                    <label class="block text-[11px] font-bold text-amber-950 mb-1">Buka Check-out</label>
+                    <input type="time" name="jam_pulang_mulai" id="modal_jam_pulang_mulai" value="<?= substr($jamPulangMulai, 0, 5) ?>"
+                           class="w-full px-3 py-2 rounded-xl border border-amber-300 bg-white text-xs font-bold text-slate-800 outline-none">
+                    <span class="text-[10px] text-amber-700">Awal check-out</span>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                <button type="button" onclick="closeModal('modalCustomJamKerja')" class="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-bold text-xs cursor-pointer">
+                    Batal
+                </button>
+                <button type="submit" class="px-5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-sm cursor-pointer">
+                    Simpan Jam Kerja
                 </button>
             </div>
         </form>
@@ -1135,6 +1325,8 @@ function updateSelectedPegawaiCount() {
     const ids = getSelectedPegawaiIds();
     const el = document.getElementById('selected_pegawai_count');
     if (el) el.textContent = ids.length;
+    const elJam = document.getElementById('selected_pegawai_count_jam');
+    if (elJam) elJam.textContent = ids.length;
 }
 
 function toggleSelectAllPegawai(master) {
@@ -1157,12 +1349,33 @@ function submitBulkResetPegawai() {
     return true;
 }
 
+function submitBulkResetJam() {
+    const ids = getSelectedPegawaiIds();
+    if (ids.length === 0) {
+        alert('Silakan centang minimal 1 pegawai pada tabel terlebih dahulu.');
+        return false;
+    }
+    if (!confirm('Kembalikan jam kerja ' + ids.length + ' pegawai terpilih mengikuti jam kerja global (semua pegawai)?')) {
+        return false;
+    }
+    document.getElementById('bulk_reset_jam_ids_csv').value = ids.join(',');
+    return true;
+}
+
 // ── Modal Custom Pegawai ──
 function toggleJadwalCustomPegawai() {
     const isTerjadwal = document.getElementById('durasi_terjadwal').checked;
     const box = document.getElementById('box_jadwal_custom_pegawai');
     if (box) {
         box.classList.toggle('hidden', !isTerjadwal);
+    }
+}
+
+function toggleJamCustomPegawai() {
+    const isCustom = document.getElementById('jam_tipe_custom').checked;
+    const box = document.getElementById('box_jam_custom_pegawai');
+    if (box) {
+        box.classList.toggle('hidden', !isCustom);
     }
 }
 
@@ -1209,14 +1422,14 @@ function presetJadwalPegawai(mode) {
     }
 }
 
-function openModalCustomPegawai(pegawaiId = null, namaPegawai = '', namaKantor = '', lat = '', lng = '', tglMulai = '', tglSelesai = '', hariAktif = '', ket = '') {
+function openModalCustomPegawai(pegawaiId = null, namaPegawai = '', namaKantor = '', lat = '', lng = '', tglMulai = '', tglSelesai = '', hariAktif = '', ket = '', tipeJam = 'global', jmMulai = '', jmBatas = '', jmPulang = '') {
     document.getElementById('modal_peg_ids_csv').value = '';
     document.getElementById('modal_peg_select_wrapper').classList.remove('hidden');
     document.getElementById('modal_peg_bulk_banner').classList.add('hidden');
 
     if (pegawaiId) {
         document.getElementById('modal_peg_select').value = String(pegawaiId);
-        document.getElementById('modal_peg_title').textContent = 'Atur Lokasi Custom: ' + namaPegawai;
+        document.getElementById('modal_peg_title').textContent = 'Atur Lokasi & Jam: ' + namaPegawai;
     } else {
         document.getElementById('modal_peg_title').textContent = 'Atur Lokasi Absen Custom Pegawai';
     }
@@ -1225,6 +1438,17 @@ function openModalCustomPegawai(pegawaiId = null, namaPegawai = '', namaKantor =
     document.getElementById('modal_peg_lat').value = lat || DEFAULT_LAT;
     document.getElementById('modal_peg_lng').value = lng || DEFAULT_LNG;
     document.getElementById('modal_peg_ket').value = ket || '';
+
+    // Set jam kerja custom
+    if (tipeJam === 'custom') {
+        document.getElementById('jam_tipe_custom').checked = true;
+    } else {
+        document.getElementById('jam_tipe_global').checked = true;
+    }
+    toggleJamCustomPegawai();
+    if (jmMulai) document.getElementById('modal_peg_jam_masuk_mulai').value = jmMulai;
+    if (jmBatas) document.getElementById('modal_peg_jam_masuk_batas').value = jmBatas;
+    if (jmPulang) document.getElementById('modal_peg_jam_pulang_mulai').value = jmPulang;
 
     // Set jadwal / durasi
     const checks = document.querySelectorAll('.chk-hari-aktif');
@@ -1268,6 +1492,69 @@ function openBulkCustomPegawai() {
     document.getElementById('modal_peg_kantor').value = DEFAULT_KANTOR;
     document.getElementById('modal_peg_lat').value = DEFAULT_LAT;
     document.getElementById('modal_peg_lng').value = DEFAULT_LNG;
+
+    const modal = document.getElementById('modalCustomPegawai');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+
+    setTimeout(initModalPegMap, 150);
+}
+
+// ── Modal Custom Jam Kerja (Per Pegawai & Massal) ──
+function toggleModalJamMode() {
+    const isCustom = document.getElementById('mode_jam_custom').checked;
+    const box = document.getElementById('box_inputs_jam_kerja');
+    if (box) {
+        box.classList.toggle('hidden', !isCustom);
+    }
+}
+
+function openModalCustomJamKerja(pegawaiId = null, namaPegawai = '', mode = 'custom', masukMulai = '', masukBatas = '', pulangMulai = '') {
+    document.getElementById('modal_jam_ids_csv').value = '';
+    document.getElementById('modal_jam_select_wrapper').classList.remove('hidden');
+    document.getElementById('modal_jam_bulk_banner').classList.add('hidden');
+
+    if (pegawaiId) {
+        document.getElementById('modal_jam_select').value = String(pegawaiId);
+        document.getElementById('modal_jam_title').textContent = 'Atur Jam Kerja: ' + namaPegawai;
+    } else {
+        document.getElementById('modal_jam_title').textContent = 'Atur Jam Kerja Pegawai';
+    }
+
+    if (mode === 'custom') {
+        document.getElementById('mode_jam_custom').checked = true;
+    } else {
+        document.getElementById('mode_jam_global').checked = true;
+    }
+    toggleModalJamMode();
+
+    if (masukMulai) document.getElementById('modal_jam_masuk_mulai').value = masukMulai;
+    if (masukBatas) document.getElementById('modal_jam_masuk_batas').value = masukBatas;
+    if (pulangMulai) document.getElementById('modal_jam_pulang_mulai').value = pulangMulai;
+
+    const modal = document.getElementById('modalCustomJamKerja');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
+
+function openBulkCustomJamKerja() {
+    const ids = getSelectedPegawaiIds();
+    if (ids.length === 0) {
+        openModalCustomJamKerja();
+        return;
+    }
+    document.getElementById('modal_jam_ids_csv').value = ids.join(',');
+    document.getElementById('modal_jam_select_wrapper').classList.add('hidden');
+    document.getElementById('modal_jam_bulk_banner').classList.remove('hidden');
+    document.getElementById('modal_jam_bulk_count').textContent = ids.length;
+    document.getElementById('modal_jam_title').textContent = 'Atur Jam Kerja (' + ids.length + ' Pegawai Terpilih)';
+    document.getElementById('mode_jam_custom').checked = true;
+    toggleModalJamMode();
+
+    const modal = document.getElementById('modalCustomJamKerja');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
 
     const modal = document.getElementById('modalCustomPegawai');
     modal.classList.remove('hidden');

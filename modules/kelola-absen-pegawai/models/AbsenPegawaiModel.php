@@ -32,7 +32,7 @@ class AbsenPegawaiModel
         }
         self::$initialized = true;
 
-        $stampFile = BASE_PATH . '/storage/logs/.schema_absen_pegawai_v2.stamp';
+        $stampFile = BASE_PATH . '/storage/logs/.schema_absen_pegawai_v3.stamp';
         if (file_exists($stampFile)) {
             return;
         }
@@ -110,6 +110,18 @@ class AbsenPegawaiModel
             $cols3 = $pdo->query("SHOW COLUMNS FROM `absen_pegawai_lokasi` LIKE 'hari_aktif'")->fetchAll();
             if (empty($cols3)) {
                 $pdo->exec("ALTER TABLE `absen_pegawai_lokasi` ADD COLUMN `hari_aktif` VARCHAR(100) NULL DEFAULT NULL AFTER `tanggal_selesai`");
+            }
+            $cols4 = $pdo->query("SHOW COLUMNS FROM `absen_pegawai_lokasi` LIKE 'jam_masuk_batas'")->fetchAll();
+            if (empty($cols4)) {
+                $pdo->exec("ALTER TABLE `absen_pegawai_lokasi` ADD COLUMN `jam_masuk_mulai` TIME NULL DEFAULT NULL AFTER `hari_aktif`");
+                $pdo->exec("ALTER TABLE `absen_pegawai_lokasi` ADD COLUMN `jam_masuk_batas` TIME NULL DEFAULT NULL AFTER `jam_masuk_mulai`");
+                $pdo->exec("ALTER TABLE `absen_pegawai_lokasi` ADD COLUMN `jam_pulang_mulai` TIME NULL DEFAULT NULL AFTER `jam_masuk_batas`");
+            }
+            $cols5 = $pdo->query("SHOW COLUMNS FROM `absen_pegawai_lokasi_unit` LIKE 'jam_masuk_batas'")->fetchAll();
+            if (empty($cols5)) {
+                $pdo->exec("ALTER TABLE `absen_pegawai_lokasi_unit` ADD COLUMN `jam_masuk_mulai` TIME NULL DEFAULT NULL AFTER `is_custom`");
+                $pdo->exec("ALTER TABLE `absen_pegawai_lokasi_unit` ADD COLUMN `jam_masuk_batas` TIME NULL DEFAULT NULL AFTER `jam_masuk_mulai`");
+                $pdo->exec("ALTER TABLE `absen_pegawai_lokasi_unit` ADD COLUMN `jam_pulang_mulai` TIME NULL DEFAULT NULL AFTER `jam_masuk_batas`");
             }
         } catch (Throwable $e) {}
 
@@ -394,7 +406,11 @@ class AbsenPegawaiModel
         ?int $userId = null,
         ?string $tanggalMulai = null,
         ?string $tanggalSelesai = null,
-        ?string $hariAktif = null
+        ?string $hariAktif = null,
+        ?string $jamMasukMulai = null,
+        ?string $jamMasukBatas = null,
+        ?string $jamPulangMulai = null,
+        bool $customJamKerja = false
     ): int {
         self::init();
         $namaKantor = trim($namaKantor);
@@ -411,6 +427,13 @@ class AbsenPegawaiModel
         }
         $hariAktifVal = !empty($hariAktif) ? trim($hariAktif) : null;
 
+        $jMulaiVal = ($customJamKerja && !empty($jamMasukMulai)) ? trim($jamMasukMulai) : null;
+        $jBatasVal = ($customJamKerja && !empty($jamMasukBatas)) ? trim($jamMasukBatas) : null;
+        $jPulangVal = ($customJamKerja && !empty($jamPulangMulai)) ? trim($jamPulangMulai) : null;
+        if ($jMulaiVal && strlen($jMulaiVal) === 5) $jMulaiVal .= ':00';
+        if ($jBatasVal && strlen($jBatasVal) === 5) $jBatasVal .= ':00';
+        if ($jPulangVal && strlen($jPulangVal) === 5) $jPulangVal .= ':00';
+
         $cnt = 0;
         foreach ($pegawaiIds as $pid) {
             $pid = (int)$pid;
@@ -418,8 +441,8 @@ class AbsenPegawaiModel
 
             self::db()->query("
                 INSERT INTO `absen_pegawai_lokasi`
-                (`pegawai_id`, `mode_lokasi`, `nama_kantor`, `latitude`, `longitude`, `tanggal_mulai`, `tanggal_selesai`, `hari_aktif`, `keterangan`, `updated_by`)
-                VALUES (?, 'custom', ?, ?, ?, ?, ?, ?, ?, ?)
+                (`pegawai_id`, `mode_lokasi`, `nama_kantor`, `latitude`, `longitude`, `tanggal_mulai`, `tanggal_selesai`, `hari_aktif`, `jam_masuk_mulai`, `jam_masuk_batas`, `jam_pulang_mulai`, `keterangan`, `updated_by`)
+                VALUES (?, 'custom', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON DUPLICATE KEY UPDATE
                     `mode_lokasi` = 'custom',
                     `nama_kantor` = VALUES(`nama_kantor`),
@@ -428,6 +451,9 @@ class AbsenPegawaiModel
                     `tanggal_mulai` = VALUES(`tanggal_mulai`),
                     `tanggal_selesai` = VALUES(`tanggal_selesai`),
                     `hari_aktif` = VALUES(`hari_aktif`),
+                    `jam_masuk_mulai` = VALUES(`jam_masuk_mulai`),
+                    `jam_masuk_batas` = VALUES(`jam_masuk_batas`),
+                    `jam_pulang_mulai` = VALUES(`jam_pulang_mulai`),
                     `keterangan` = VALUES(`keterangan`),
                     `updated_by` = VALUES(`updated_by`)
             ", [
@@ -438,11 +464,94 @@ class AbsenPegawaiModel
                 $tglMulaiVal,
                 $tglSelesaiVal,
                 $hariAktifVal,
+                $jMulaiVal,
+                $jBatasVal,
+                $jPulangVal,
                 $keterangan ?: 'Lokasi Custom Pegawai',
                 $userId
             ]);
             $cnt++;
         }
+        return $cnt;
+    }
+
+    /**
+     * Simpan jam kerja khusus (jam kedatangan & batas pulang) untuk 1 atau banyak pegawai terpilih
+     * Jika $resetToGlobal = true, jam kerja khusus dihapus (NULL) sehingga pegawai kembali mengikuti jam global
+     */
+    public static function saveJamKerjaPegawai(
+        array $pegawaiIds,
+        ?string $jamMasukMulai = null,
+        ?string $jamMasukBatas = null,
+        ?string $jamPulangMulai = null,
+        bool $resetToGlobal = false,
+        ?int $userId = null
+    ): int {
+        self::init();
+        if (empty($pegawaiIds)) {
+            throw new Exception('Pilih minimal 1 pegawai terlebih dahulu.');
+        }
+
+        $global = self::getPengaturanGlobal();
+        $cnt = 0;
+
+        foreach ($pegawaiIds as $pid) {
+            $pid = (int)$pid;
+            if ($pid <= 0) continue;
+
+            $existing = self::db()->find("SELECT * FROM `absen_pegawai_lokasi` WHERE `pegawai_id` = ? LIMIT 1", [$pid]);
+
+            if ($resetToGlobal) {
+                if ($existing) {
+                    self::db()->query("
+                        UPDATE `absen_pegawai_lokasi`
+                        SET `jam_masuk_mulai` = NULL,
+                            `jam_masuk_batas` = NULL,
+                            `jam_pulang_mulai` = NULL,
+                            `updated_by` = ?,
+                            `updated_at` = NOW()
+                        WHERE `pegawai_id` = ?
+                    ", [$userId, $pid]);
+                }
+            } else {
+                $jMulai = !empty($jamMasukMulai) ? trim($jamMasukMulai) : ($global['jam_masuk_mulai'] ?: '06:00:00');
+                $jBatas = !empty($jamMasukBatas) ? trim($jamMasukBatas) : ($global['jam_masuk_batas'] ?: '07:30:00');
+                $jPulang = !empty($jamPulangMulai) ? trim($jamPulangMulai) : ($global['jam_pulang_mulai'] ?: '15:00:00');
+
+                if (strlen($jMulai) === 5) $jMulai .= ':00';
+                if (strlen($jBatas) === 5) $jBatas .= ':00';
+                if (strlen($jPulang) === 5) $jPulang .= ':00';
+
+                if ($existing) {
+                    self::db()->query("
+                        UPDATE `absen_pegawai_lokasi`
+                        SET `jam_masuk_mulai` = ?,
+                            `jam_masuk_batas` = ?,
+                            `jam_pulang_mulai` = ?,
+                            `updated_by` = ?,
+                            `updated_at` = NOW()
+                        WHERE `pegawai_id` = ?
+                    ", [$jMulai, $jBatas, $jPulang, $userId, $pid]);
+                } else {
+                    self::db()->query("
+                        INSERT INTO `absen_pegawai_lokasi`
+                        (`pegawai_id`, `mode_lokasi`, `nama_kantor`, `latitude`, `longitude`, `jam_masuk_mulai`, `jam_masuk_batas`, `jam_pulang_mulai`, `keterangan`, `updated_by`)
+                        VALUES (?, 'default', ?, ?, ?, ?, ?, ?, 'Custom Jam Kerja Pegawai', ?)
+                    ", [
+                        $pid,
+                        $global['nama_kantor_default'],
+                        (float)$global['latitude_default'],
+                        (float)$global['longitude_default'],
+                        $jMulai,
+                        $jBatas,
+                        $jPulang,
+                        $userId
+                    ]);
+                }
+            }
+            $cnt++;
+        }
+
         return $cnt;
     }
 
@@ -600,12 +709,18 @@ class AbsenPegawaiModel
                 l.tanggal_mulai as peg_tgl_mulai,
                 l.tanggal_selesai as peg_tgl_selesai,
                 l.hari_aktif as peg_hari_aktif,
+                l.jam_masuk_mulai as peg_jam_masuk_mulai,
+                l.jam_masuk_batas as peg_jam_masuk_batas,
+                l.jam_pulang_mulai as peg_jam_pulang_mulai,
                 l.keterangan as peg_ket,
                 l.updated_at as peg_updated_at,
                 u.is_custom as unit_is_custom,
                 u.nama_kantor as unit_kantor,
                 u.latitude as unit_lat,
                 u.longitude as unit_lng,
+                u.jam_masuk_mulai as unit_jam_masuk_mulai,
+                u.jam_masuk_batas as unit_jam_masuk_batas,
+                u.jam_pulang_mulai as unit_jam_pulang_mulai,
                 apl.jam_masuk as today_jam_masuk,
                 apl.jam_pulang as today_jam_pulang,
                 apl.status as today_status,
@@ -674,6 +789,36 @@ class AbsenPegawaiModel
                 continue;
             }
 
+            // Hitung Jam Kerja Efektif Pegawai (Prioritas: Custom Pegawai -> Custom Unit -> Global Semua)
+            $hasCustomPegJam = !empty($r['peg_jam_masuk_batas']);
+            $hasCustomUnitJam = !empty($r['unit_jam_masuk_batas']);
+
+            if ($hasCustomPegJam) {
+                $jMasukMulai = $r['peg_jam_masuk_mulai'] ?: ($global['jam_masuk_mulai'] ?: '06:00:00');
+                $jMasukBatas = $r['peg_jam_masuk_batas'];
+                $jPulangMulai = $r['peg_jam_pulang_mulai'] ?: ($global['jam_pulang_mulai'] ?: '15:00:00');
+                $isCustomJam = true;
+                $jamKerjaLabel = 'Khusus Pegawai';
+            } elseif ($hasCustomUnitJam && (int)($r['unit_is_custom'] ?? 0) === 1) {
+                $jMasukMulai = $r['unit_jam_masuk_mulai'] ?: ($global['jam_masuk_mulai'] ?: '06:00:00');
+                $jMasukBatas = $r['unit_jam_masuk_batas'];
+                $jPulangMulai = $r['unit_jam_pulang_mulai'] ?: ($global['jam_pulang_mulai'] ?: '15:00:00');
+                $isCustomJam = true;
+                $jamKerjaLabel = 'Khusus Unit';
+            } else {
+                $jMasukMulai = $global['jam_masuk_mulai'] ?: '06:00:00';
+                $jMasukBatas = $global['jam_masuk_batas'] ?: '07:30:00';
+                $jPulangMulai = $global['jam_pulang_mulai'] ?: '15:00:00';
+                $isCustomJam = false;
+                $jamKerjaLabel = 'Global (Semua)';
+            }
+
+            $r['is_custom_jam_kerja'] = $isCustomJam;
+            $r['jam_kerja_label'] = $jamKerjaLabel;
+            $r['jam_masuk_mulai_efektif'] = $jMasukMulai;
+            $r['jam_masuk_batas_efektif'] = $jMasukBatas;
+            $r['jam_pulang_mulai_efektif'] = $jPulangMulai;
+
             $r['mode_efektif'] = $modeKey;
             $r['status_lokasi_label'] = $statusLokasi;
             $r['nama_kantor_efektif'] = $namaKantor;
@@ -690,7 +835,7 @@ class AbsenPegawaiModel
     }
 
     /**
-     * Ambil lokasi efektif untuk 1 pegawai tertentu (digunakan juga oleh Portal Guru saat absen)
+     * Ambil lokasi dan jam kerja efektif untuk 1 pegawai tertentu (digunakan oleh Portal Guru saat absen & validasi)
      */
     public static function getLokasiEfektifPegawai(?int $pegawaiId = null): array
     {
@@ -703,7 +848,13 @@ class AbsenPegawaiModel
                 'latitude' => (float)$global['latitude_default'],
                 'longitude' => (float)$global['longitude_default'],
                 'radius_meter' => (int)$global['radius_meter'],
-                'mode' => 'default'
+                'mode' => 'default',
+                'source_label' => 'Lokasi Semula (Default)',
+                'is_custom_jam_kerja' => false,
+                'jam_kerja_label' => 'Global (Semua)',
+                'jam_masuk_mulai' => $global['jam_masuk_mulai'] ?: '06:00:00',
+                'jam_masuk_batas' => $global['jam_masuk_batas'] ?: '07:30:00',
+                'jam_pulang_mulai' => $global['jam_pulang_mulai'] ?: '15:00:00',
             ];
         }
 
@@ -715,7 +866,13 @@ class AbsenPegawaiModel
                     'latitude' => (float)$item['latitude_efektif'],
                     'longitude' => (float)$item['longitude_efektif'],
                     'radius_meter' => (int)$item['radius_meter'],
-                    'mode' => $item['mode_efektif']
+                    'mode' => $item['mode_efektif'],
+                    'source_label' => $item['status_lokasi_label'],
+                    'is_custom_jam_kerja' => (bool)($item['is_custom_jam_kerja'] ?? false),
+                    'jam_kerja_label' => $item['jam_kerja_label'] ?? 'Global (Semua)',
+                    'jam_masuk_mulai' => $item['jam_masuk_mulai_efektif'] ?? $global['jam_masuk_mulai'],
+                    'jam_masuk_batas' => $item['jam_masuk_batas_efektif'] ?? $global['jam_masuk_batas'],
+                    'jam_pulang_mulai' => $item['jam_pulang_mulai_efektif'] ?? $global['jam_pulang_mulai'],
                 ];
             }
         }
@@ -725,7 +882,13 @@ class AbsenPegawaiModel
             'latitude' => (float)$global['latitude_default'],
             'longitude' => (float)$global['longitude_default'],
             'radius_meter' => (int)$global['radius_meter'],
-            'mode' => 'default'
+            'mode' => 'default',
+            'source_label' => 'Lokasi Semula (Default)',
+            'is_custom_jam_kerja' => false,
+            'jam_kerja_label' => 'Global (Semua)',
+            'jam_masuk_mulai' => $global['jam_masuk_mulai'] ?: '06:00:00',
+            'jam_masuk_batas' => $global['jam_masuk_batas'] ?: '07:30:00',
+            'jam_pulang_mulai' => $global['jam_pulang_mulai'] ?: '15:00:00',
         ];
     }
 
@@ -845,9 +1008,9 @@ class AbsenPegawaiModel
             ];
         }
 
-        // Tentukan apakah Hadir Tepat Waktu atau Terlambat berdasarkan batas jam kedatangan
+        // Tentukan apakah Hadir Tepat Waktu atau Terlambat berdasarkan batas jam kedatangan efektif pegawai
         $currentTime = date('H:i:s');
-        $jamMasukBatas = $global['jam_masuk_batas'] ?: '07:30:00';
+        $jamMasukBatas = $efektif['jam_masuk_batas'] ?? ($global['jam_masuk_batas'] ?: '07:30:00');
 
         if (strtotime($currentTime) <= strtotime($jamMasukBatas)) {
             $status = 'Hadir';
@@ -969,10 +1132,11 @@ class AbsenPegawaiModel
         }
 
         $global = self::getPengaturanGlobal();
-        $jamPulangMulai = $global['jam_pulang_mulai'] ?: '15:00:00';
+        $efektif = self::getLokasiEfektifPegawai($pegawaiId);
+        $jamPulangMulai = $efektif['jam_pulang_mulai'] ?? ($global['jam_pulang_mulai'] ?: '15:00:00');
         $currentTime = date('H:i:s');
 
-        // Periksa apakah waktu saat ini sudah memenuhi jam pulang
+        // Periksa apakah waktu saat ini sudah memenuhi jam pulang pegawai
         if (strtotime($currentTime) < strtotime($jamPulangMulai)) {
             $jamBukaFmt = date('H:i', strtotime($jamPulangMulai)) . ' WITA';
             return [
@@ -981,7 +1145,6 @@ class AbsenPegawaiModel
             ];
         }
 
-        $efektif = self::getLokasiEfektifPegawai($pegawaiId);
         $targetLat = (float)$efektif['latitude'];
         $targetLng = (float)$efektif['longitude'];
         $radiusBatas = (int)$efektif['radius_meter'];
@@ -1194,13 +1357,18 @@ class AbsenPegawaiModel
                 apl.tanggal,
                 apl.jam_masuk,
                 apl.jam_pulang,
+                apl.status,
                 apl.status as log_status,
+                apl.keterangan,
                 apl.keterangan as log_keterangan,
                 apl.nama_kantor_absen,
                 apl.jarak_masuk_meter,
                 apl.lat_masuk,
-                apl.lng_masuk
+                apl.lng_masuk,
+                l.jam_masuk_batas as peg_jam_masuk_batas,
+                l.jam_pulang_mulai as peg_jam_pulang_mulai
             FROM `pegawai` p
+            LEFT JOIN `absen_pegawai_lokasi` l ON l.pegawai_id = p.id
             LEFT JOIN `absen_pegawai_log` apl ON apl.pegawai_id = p.id AND apl.tanggal = ?
             WHERE {$whereSql}
             ORDER BY 
@@ -1212,6 +1380,15 @@ class AbsenPegawaiModel
                 apl.jam_masuk ASC,
                 p.nama ASC
         ", $params);
+
+        foreach ($rows as &$r) {
+            $r['status'] = $r['status'] ?? $r['log_status'] ?? null;
+            $r['keterangan'] = $r['keterangan'] ?? $r['log_keterangan'] ?? null;
+            $r['is_custom_jam_kerja'] = !empty($r['peg_jam_masuk_batas']);
+            $r['jam_masuk_batas_efektif'] = !empty($r['peg_jam_masuk_batas']) ? $r['peg_jam_masuk_batas'] : $jamBatas;
+            $r['jam_pulang_mulai_efektif'] = !empty($r['peg_jam_pulang_mulai']) ? $r['peg_jam_pulang_mulai'] : ($global['jam_pulang_mulai'] ?: '15:00:00');
+        }
+        unset($r);
 
         // Hitung statistik untuk tanggal terpilih
         $allStatsRows = self::db()->findAll("

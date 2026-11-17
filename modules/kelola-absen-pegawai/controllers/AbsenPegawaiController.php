@@ -137,6 +137,12 @@ class AbsenPegawaiController
                 }
             }
 
+            $tipeJamKerja = $_POST['tipe_jam_kerja'] ?? 'global';
+            $customJamKerja = ($tipeJamKerja === 'custom');
+            $jamMasukMulai = $customJamKerja ? trim($_POST['jam_masuk_mulai'] ?? '') : null;
+            $jamMasukBatas = $customJamKerja ? trim($_POST['jam_masuk_batas'] ?? '') : null;
+            $jamPulangMulai = $customJamKerja ? trim($_POST['jam_pulang_mulai'] ?? '') : null;
+
             $cnt = AbsenPegawaiModel::saveLokasiPegawai(
                 $pegawaiIds,
                 $namaKantor,
@@ -146,16 +152,101 @@ class AbsenPegawaiController
                 Auth::id(),
                 $tglMulai,
                 $tglSelesai,
-                $hariAktif
+                $hariAktif,
+                $jamMasukMulai,
+                $jamMasukBatas,
+                $jamPulangMulai,
+                $customJamKerja
             );
 
             $infoJadwal = ($tipeDurasi === 'terjadwal')
                 ? ' [Terjadwal: ' . ($hariAktif ?: 'Semua Hari') . ($tglMulai ? " ({$tglMulai} s/d {$tglSelesai})" : '') . ']'
                 : ' [Permanen]';
+            $infoJam = $customJamKerja
+                ? ' [Jam Khusus: ' . substr($jamMasukBatas, 0, 5) . ' - ' . substr($jamPulangMulai, 0, 5) . ']'
+                : '';
 
             Response::redirect(
                 url('kelola-absen-pegawai?tab=' . urlencode($returnTab)),
-                "Lokasi absen custom ({$namaKantor}: {$lat}, {$lng}){$infoJadwal} berhasil disimpan untuk {$cnt} pegawai.",
+                "Lokasi absen custom ({$namaKantor}: {$lat}, {$lng}){$infoJadwal}{$infoJam} berhasil disimpan untuk {$cnt} pegawai.",
+                'success'
+            );
+        } catch (Throwable $e) {
+            Response::redirect(url('kelola-absen-pegawai?tab=' . urlencode($returnTab)), $e->getMessage(), 'error');
+        }
+    }
+
+    /**
+     * Simpan Jam Kerja Khusus (Kedatangan & Pulang) Per Pegawai / Massal Terpilih
+     */
+    public static function saveJamKerjaPegawai(): void
+    {
+        CSRF::validate();
+        $returnTab = $_POST['return_tab'] ?? 'pegawai';
+
+        try {
+            $pegawaiIds = [];
+            if (!empty($_POST['pegawai_ids']) && is_array($_POST['pegawai_ids'])) {
+                $pegawaiIds = array_map('intval', $_POST['pegawai_ids']);
+            } elseif (!empty($_POST['pegawai_ids_csv'])) {
+                $pegawaiIds = array_filter(array_map('intval', explode(',', (string)$_POST['pegawai_ids_csv'])));
+            } elseif (!empty($_POST['pegawai_id'])) {
+                $pegawaiIds = [(int)$_POST['pegawai_id']];
+            }
+
+            if (empty($pegawaiIds)) {
+                throw new Exception('Silakan pilih minimal 1 pegawai.');
+            }
+
+            $modeJam = $_POST['mode_jam_kerja'] ?? 'custom';
+            $resetToGlobal = ($modeJam === 'global');
+            $jamMasukMulai = trim($_POST['jam_masuk_mulai'] ?? '');
+            $jamMasukBatas = trim($_POST['jam_masuk_batas'] ?? '');
+            $jamPulangMulai = trim($_POST['jam_pulang_mulai'] ?? '');
+
+            $cnt = AbsenPegawaiModel::saveJamKerjaPegawai(
+                $pegawaiIds,
+                $jamMasukMulai,
+                $jamMasukBatas,
+                $jamPulangMulai,
+                $resetToGlobal,
+                Auth::id()
+            );
+
+            $msg = $resetToGlobal
+                ? "Jam kerja {$cnt} pegawai berhasil di-reset kembali mengikuti Jam Kerja Global (Semua)."
+                : "Jam kerja khusus (Batas Masuk: " . substr($jamMasukBatas, 0, 5) . ", Pulang: " . substr($jamPulangMulai, 0, 5) . ") berhasil disimpan untuk {$cnt} pegawai.";
+
+            Response::redirect(url('kelola-absen-pegawai?tab=' . urlencode($returnTab)), $msg, 'success');
+        } catch (Throwable $e) {
+            Response::redirect(url('kelola-absen-pegawai?tab=' . urlencode($returnTab)), $e->getMessage(), 'error');
+        }
+    }
+
+    /**
+     * Reset Jam Kerja Pegawai Kembali ke Jam Global
+     */
+    public static function resetJamKerjaPegawai(): void
+    {
+        CSRF::validate();
+        $returnTab = $_POST['return_tab'] ?? 'pegawai';
+
+        try {
+            $pegawaiIds = [];
+            if (!empty($_POST['pegawai_ids_csv'])) {
+                $pegawaiIds = array_filter(array_map('intval', explode(',', (string)$_POST['pegawai_ids_csv'])));
+            } elseif (!empty($_POST['pegawai_id'])) {
+                $pegawaiIds = [(int)$_POST['pegawai_id']];
+            }
+
+            if (empty($pegawaiIds)) {
+                throw new Exception('Pilih pegawai yang akan di-reset jam kerjanya.');
+            }
+
+            $cnt = AbsenPegawaiModel::saveJamKerjaPegawai($pegawaiIds, null, null, null, true, Auth::id());
+            Response::redirect(
+                url('kelola-absen-pegawai?tab=' . urlencode($returnTab)),
+                "Jam kerja {$cnt} pegawai berhasil dikembalikan ke Jam Global (Semua).",
                 'success'
             );
         } catch (Throwable $e) {

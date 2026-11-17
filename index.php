@@ -623,6 +623,8 @@ $router->post('/kelola-absen-pegawai/pengaturan/save', [AbsenPegawaiController::
 $router->post('/kelola-absen-pegawai/radius/update', [AbsenPegawaiController::class, 'updateRadiusQuick'], [Middleware::permissionRequired('absen_pegawai.view')]);
 $router->post('/kelola-absen-pegawai/pegawai/save', [AbsenPegawaiController::class, 'saveLokasiPegawai'], [Middleware::permissionRequired('absen_pegawai.view')]);
 $router->post('/kelola-absen-pegawai/pegawai/reset', [AbsenPegawaiController::class, 'resetLokasiPegawai'], [Middleware::permissionRequired('absen_pegawai.view')]);
+$router->post('/kelola-absen-pegawai/jam-kerja/save', [AbsenPegawaiController::class, 'saveJamKerjaPegawai'], [Middleware::permissionRequired('absen_pegawai.view')]);
+$router->post('/kelola-absen-pegawai/jam-kerja/reset', [AbsenPegawaiController::class, 'resetJamKerjaPegawai'], [Middleware::permissionRequired('absen_pegawai.view')]);
 $router->post('/kelola-absen-pegawai/unit/save', [AbsenPegawaiController::class, 'saveLokasiUnit'], [Middleware::permissionRequired('absen_pegawai.view')]);
 $router->post('/kelola-absen-pegawai/unit/reset', [AbsenPegawaiController::class, 'resetLokasiUnit'], [Middleware::permissionRequired('absen_pegawai.view')]);
 $router->post('/kelola-absen-pegawai/reset-semua', [AbsenPegawaiController::class, 'resetSemuaLokasi'], [Middleware::permissionRequired('absen_pegawai.view')]);
