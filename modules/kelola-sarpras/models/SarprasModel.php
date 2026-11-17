@@ -353,6 +353,11 @@ class SarprasModel
         ");
     }
 
+    public static function getKategoriList(): array
+    {
+        return self::getAllKategori();
+    }
+
     public static function getKategoriById(int $id): ?array
     {
         return self::db()->find("SELECT * FROM sarpras_kategori WHERE id = ?", [$id]);

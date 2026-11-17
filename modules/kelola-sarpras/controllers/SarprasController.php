@@ -736,7 +736,7 @@ class SarprasController
         $totalPages = (int)ceil($totalItems / $limit);
         $items = SarprasModel::getPengajuanList($filters, $limit, $offset);
         $stats = SarprasModel::getPengajuanStats();
-        $kategoriList = SarprasModel::getKategoriList();
+        $kategoriList = SarprasModel::getAllKategori();
         $ruanganList = SarprasModel::getAllRuangan();
 
         $canVerify = RBAC::can('sarpras.pengajuan.verify') || RBAC::can('sarpras.approve') || Auth::isSuperAdmin();
