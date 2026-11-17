@@ -785,6 +785,8 @@ class Auth
         $norm = strtoupper(trim($jenjang));
         if ($norm === 'TK' || str_contains($norm, 'PAUD')) {
             $norm = 'PAUD';
+        } elseif (preg_match('/^(SD|SMP|SMA)\s*IT$/', $norm, $m)) {
+            $norm = $m[1];
         }
         return in_array($norm, self::getAllowedJenjang(), true);
     }
@@ -976,5 +978,138 @@ class Auth
             }
         }
         return array_values($filtered);
+    }
+
+    /**
+     * Ensure penugasan_grup has nullable unit column for unit-scoped SK groups
+     */
+    public static function ensurePenugasanGrupUnitColumn(): void
+    {
+        static $checked = false;
+        if ($checked) {
+            return;
+        }
+        $checked = true;
+        try {
+            $db = Database::getInstance();
+            $col = $db->findAll("SHOW COLUMNS FROM `penugasan_grup` LIKE 'unit'");
+            if (empty($col)) {
+                $db->getConnection()->exec("ALTER TABLE `penugasan_grup` ADD COLUMN `unit` VARCHAR(50) NULL DEFAULT NULL AFTER `nama_grup`");
+            }
+        } catch (Throwable $e) {
+            // Silently ignore if table missing or migration not possible
+        }
+    }
+
+    /**
+     * Detect unit/jenjang keyword from a penugasan group title
+     */
+    public static function detectUnitFromGrupName(string $namaGrup): string
+    {
+        $upper = strtoupper(trim($namaGrup));
+        if ($upper === '') {
+            return '';
+        }
+        if (preg_match('/\b(PAUD|TK)\b/', $upper)) {
+            return 'PAUD';
+        }
+        if (preg_match('/\b(SD|SMP|SMA|YAYASAN|STAFF)\b/', $upper, $m)) {
+            return $m[1];
+        }
+        return '';
+    }
+
+    /**
+     * Build a SQL condition filtering penugasan_grup rows by user's allowed jenjang
+     */
+    public static function penugasanGrupUnitSqlCondition(string $alias, array &$params): string
+    {
+        self::ensurePenugasanGrupUnitColumn();
+        if (!self::isJenjangRestricted()) {
+            return '1=1';
+        }
+        $allowed = self::getAllowedJenjang();
+        if (empty($allowed)) {
+            return '1=0';
+        }
+
+        $explicitCond = self::unitSqlCondition("{$alias}.unit", $params);
+        $memberCond   = self::unitSqlCondition('mut_pg_f.nama', $params);
+
+        $kwParts = [];
+        foreach ($allowed as $aj) {
+            $u = strtoupper(trim($aj));
+            if ($u === 'PAUD') {
+                $kwParts[] = 'PAUD';
+                $kwParts[] = 'TK';
+            } elseif ($u !== '') {
+                $kwParts[] = preg_quote($u, '/');
+            }
+        }
+        $allowedKwRegex = '(^|[^A-Z0-9])(' . implode('|', array_unique($kwParts)) . ')([^A-Z0-9]|$)';
+        $anyUnitKwRegex = '(^|[^A-Z0-9])(PAUD|TK|SD|SMP|SMA|YAYASAN|STAFF)([^A-Z0-9]|$)';
+        $params[] = $allowedKwRegex;
+        $params[] = $anyUnitKwRegex;
+
+        return "(
+            ({$alias}.unit IS NOT NULL AND TRIM({$alias}.unit) != '' AND ({$explicitCond}))
+            OR (
+                ({$alias}.unit IS NULL OR TRIM({$alias}.unit) = '')
+                AND (
+                    EXISTS (
+                        SELECT 1 FROM pegawai_penugasan pp_pg_f
+                        JOIN master_unit_tugas mut_pg_f ON pp_pg_f.unit_tugas_id = mut_pg_f.id
+                        WHERE pp_pg_f.grup_id = {$alias}.id AND ({$memberCond})
+                    )
+                    OR (
+                        NOT EXISTS (SELECT 1 FROM pegawai_penugasan pp_pg_e WHERE pp_pg_e.grup_id = {$alias}.id)
+                        AND (
+                            UPPER(TRIM({$alias}.nama_grup)) REGEXP ?
+                            OR UPPER(TRIM({$alias}.nama_grup)) NOT REGEXP ?
+                        )
+                    )
+                )
+            )
+        )";
+    }
+
+    /**
+     * Check whether current user can access a given penugasan_grup row
+     */
+    public static function canAccessPenugasanGrup(array $grup): bool
+    {
+        if (!self::isJenjangRestricted()) {
+            return true;
+        }
+        $explicitUnit = trim((string)($grup['unit'] ?? ''));
+        if ($explicitUnit !== '') {
+            return self::canAccessJenjang($explicitUnit);
+        }
+
+        $grupId = (int)($grup['id'] ?? 0);
+        if ($grupId > 0) {
+            $db = Database::getInstance();
+            $memberUnits = $db->findAll(
+                "SELECT DISTINCT mut.nama
+                 FROM pegawai_penugasan pp
+                 JOIN master_unit_tugas mut ON pp.unit_tugas_id = mut.id
+                 WHERE pp.grup_id = ?",
+                [$grupId]
+            );
+            if (!empty($memberUnits)) {
+                foreach ($memberUnits as $mu) {
+                    if (self::canAccessJenjang((string)($mu['nama'] ?? ''))) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+        }
+
+        $detected = self::detectUnitFromGrupName((string)($grup['nama_grup'] ?? ''));
+        if ($detected !== '') {
+            return self::canAccessJenjang($detected);
+        }
+        return true;
     }
 }

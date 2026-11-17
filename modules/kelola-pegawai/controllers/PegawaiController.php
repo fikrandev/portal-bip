@@ -8,6 +8,77 @@ class PegawaiController
     private static bool $penugasanTableChecked = false;
 
     /**
+     * Return master_unit_tugas rows allowed for the current user
+     */
+    private static function filteredUnitTugasRows(Database $db): array
+    {
+        $params = [];
+        $cond = Auth::unitSqlCondition('nama', $params);
+        return $db->findAll("SELECT * FROM master_unit_tugas WHERE {$cond} ORDER BY nama ASC", $params);
+    }
+
+    /**
+     * Return active pegawai list scoped to user's unit (preserving unassigned staff)
+     */
+    private static function filteredActivePegawai(Database $db, string $cols = 'id, nama, niy, gelar, foto'): array
+    {
+        if (!Auth::isJenjangRestricted()) {
+            return $db->findAll("SELECT {$cols} FROM pegawai WHERE is_active = 1 ORDER BY nama ASC");
+        }
+        $params = [];
+        $cond = Auth::unitSqlCondition('unit_tugas', $params);
+        return $db->findAll(
+            "SELECT {$cols} FROM pegawai WHERE is_active = 1 AND (unit_tugas IS NULL OR TRIM(unit_tugas) = '' OR ({$cond})) ORDER BY nama ASC",
+            $params
+        );
+    }
+
+    /**
+     * Validate and normalize submitted penugasan_grup unit value against user's allowed jenjang
+     */
+    private static function resolveSubmittedGrupUnit(?string $rawUnit): ?string
+    {
+        $unit = trim((string)($rawUnit ?? ''));
+        if (Auth::isJenjangRestricted()) {
+            if ($unit === '' || !Auth::canAccessJenjang($unit)) {
+                return Auth::getActiveJenjang();
+            }
+            return $unit;
+        }
+        return $unit !== '' ? $unit : null;
+    }
+
+    /**
+     * Load penugasan_grup and enforce jenjang access, redirecting on failure
+     */
+    private static function findAccessiblePenugasanGrupOrRedirect(Database $db, string $id, ?string $redirectUrl = null): ?array
+    {
+        Auth::ensurePenugasanGrupUnitColumn();
+        $grup = $db->find("SELECT * FROM penugasan_grup WHERE id = ?", [$id]);
+        if (!$grup) {
+            Response::withError($redirectUrl ?? url('kelola-pegawai/penugasan'), 'Grup penugasan tidak ditemukan.');
+            return null;
+        }
+        if (!Auth::canAccessPenugasanGrup($grup)) {
+            Response::withError($redirectUrl ?? url('kelola-pegawai/penugasan'), 'Anda tidak memiliki akses ke grup penugasan unit lain.');
+            return null;
+        }
+        return $grup;
+    }
+
+    /**
+     * Check whether a master_unit_tugas ID is permitted for the current user
+     */
+    private static function canAccessUnitTugasId(Database $db, int $unitTugasId): bool
+    {
+        if (!Auth::isJenjangRestricted()) {
+            return true;
+        }
+        $row = $db->find("SELECT nama FROM master_unit_tugas WHERE id = ?", [$unitTugasId]);
+        return $row ? Auth::canAccessJenjang((string)$row['nama']) : false;
+    }
+
+    /**
      * Dashboard & Monitoring Kepegawaian
      */
     public static function statistik(): void
@@ -410,6 +481,10 @@ class PegawaiController
         
         $where = 'is_active = 0';
         $params = [];
+        $kUnitCond = Auth::unitSqlCondition('unit_tugas', $params);
+        if ($kUnitCond !== '1=1') {
+            $where .= " AND ({$kUnitCond})";
+        }
         
         if ($search) {
             $where .= " AND nama LIKE ?";
@@ -433,8 +508,12 @@ class PegawaiController
         $pegawai = $db->findAll("SELECT * FROM pegawai WHERE {$where} ORDER BY nama ASC LIMIT {$limit} OFFSET {$offset}", $params);
         $totalPages = max(1, ceil($total / $limit));
         
-        $unitTugasList = $db->findAll("SELECT DISTINCT unit_tugas FROM pegawai WHERE unit_tugas IS NOT NULL AND unit_tugas != '' ORDER BY unit_tugas ASC");
-        $jabatanList = $db->findAll("SELECT DISTINCT jabatan FROM pegawai WHERE jabatan IS NOT NULL AND jabatan != '' ORDER BY jabatan ASC");
+        $utParams = [];
+        $utCond = Auth::unitSqlCondition('unit_tugas', $utParams);
+        $unitTugasList = $db->findAll("SELECT DISTINCT unit_tugas FROM pegawai WHERE unit_tugas IS NOT NULL AND unit_tugas != '' AND ({$utCond}) ORDER BY unit_tugas ASC", $utParams);
+        $jbParams = [];
+        $jbCond = Auth::unitSqlCondition('unit_tugas', $jbParams);
+        $jabatanList = $db->findAll("SELECT DISTINCT jabatan FROM pegawai WHERE jabatan IS NOT NULL AND jabatan != '' AND ({$jbCond}) ORDER BY jabatan ASC", $jbParams);
 
         $isPegawaiKeluarView = true;
         
@@ -448,7 +527,9 @@ class PegawaiController
     public static function create(): void
     {
         $db = Database::getInstance();
-        $unitList = $db->findAll("SELECT DISTINCT nama FROM master_unit_tugas ORDER BY nama ASC");
+        $uParams = [];
+        $uCond = Auth::unitSqlCondition('nama', $uParams);
+        $unitList = $db->findAll("SELECT DISTINCT nama FROM master_unit_tugas WHERE {$uCond} ORDER BY nama ASC", $uParams);
         $jabatanList = $db->findAll("SELECT DISTINCT nama FROM master_jabatan ORDER BY nama ASC");
         $statusKerjaList = $db->findAll("SELECT DISTINCT nama FROM master_status_kerja ORDER BY nama ASC");
         $jenisPegawaiList = $db->findAll("SELECT DISTINCT nama FROM master_jenis_pegawai ORDER BY nama ASC");
@@ -613,7 +694,9 @@ class PegawaiController
             LIMIT 1
         ", [$id]);
 
-        $unitList = $db->findAll("SELECT DISTINCT nama FROM master_unit_tugas ORDER BY nama ASC");
+        $uParams = [];
+        $uCond = Auth::unitSqlCondition('nama', $uParams);
+        $unitList = $db->findAll("SELECT DISTINCT nama FROM master_unit_tugas WHERE {$uCond} ORDER BY nama ASC", $uParams);
         $jabatanList = $db->findAll("SELECT DISTINCT nama FROM master_jabatan ORDER BY nama ASC");
         $statusKerjaList = $db->findAll("SELECT DISTINCT nama FROM master_status_kerja ORDER BY nama ASC");
         $jenisPegawaiList = $db->findAll("SELECT DISTINCT nama FROM master_jenis_pegawai ORDER BY nama ASC");
@@ -886,6 +969,7 @@ class PegawaiController
      */
     public static function penugasan(): void
     {
+        Auth::ensurePenugasanGrupUnitColumn();
         $db = Database::getInstance();
         $pageTitle = 'Grup Penugasan Pegawai';
         $breadcrumbs = [
@@ -894,33 +978,45 @@ class PegawaiController
         ];
         
         $search = trim($_GET['search'] ?? '');
-        $where = "1=1";
-        $params = [];
+        $memberParams = [];
+        $memberCond = Auth::unitSqlCondition('mut.nama', $memberParams);
+        $grupParams = [];
+        $grupCond = Auth::penugasanGrupUnitSqlCondition('pg', $grupParams);
+
+        $where = "({$grupCond})";
+        $searchParams = [];
         if ($search) {
             $where .= " AND (pg.nama_grup LIKE ? OR pg.no_sk LIKE ?)";
-            $params[] = "%{$search}%";
-            $params[] = "%{$search}%";
+            $searchParams[] = "%{$search}%";
+            $searchParams[] = "%{$search}%";
         }
 
         $sql = "
             SELECT pg.*, 
-                   COUNT(pp.id) as total_pegawai,
-                   SUM(CASE WHEN pp.status = 'Aktif' THEN 1 ELSE 0 END) as total_aktif
+                   SUM(CASE WHEN pp.id IS NOT NULL AND ({$memberCond}) THEN 1 ELSE 0 END) as total_pegawai,
+                   SUM(CASE WHEN pp.id IS NOT NULL AND pp.status = 'Aktif' AND ({$memberCond}) THEN 1 ELSE 0 END) as total_aktif
             FROM penugasan_grup pg
             LEFT JOIN pegawai_penugasan pp ON pp.grup_id = pg.id
+            LEFT JOIN master_unit_tugas mut ON pp.unit_tugas_id = mut.id
             WHERE {$where}
             GROUP BY pg.id
             ORDER BY pg.is_active DESC, pg.created_at DESC
         ";
+        $params = array_merge($memberParams, $memberParams, $grupParams, $searchParams);
         $grupList = $db->findAll($sql, $params);
+
+        $agGrupParams = [];
+        $agGrupCond = Auth::penugasanGrupUnitSqlCondition('pg', $agGrupParams);
         $activeGrups = $db->findAll("
-            SELECT pg.*, COUNT(pp.id) as total_pegawai
+            SELECT pg.*,
+                   SUM(CASE WHEN pp.id IS NOT NULL AND ({$memberCond}) THEN 1 ELSE 0 END) as total_pegawai
             FROM penugasan_grup pg
             LEFT JOIN pegawai_penugasan pp ON pp.grup_id = pg.id
-            WHERE pg.is_active = 1
+            LEFT JOIN master_unit_tugas mut ON pp.unit_tugas_id = mut.id
+            WHERE pg.is_active = 1 AND ({$agGrupCond})
             GROUP BY pg.id
             ORDER BY pg.nama_grup ASC
-        ");
+        ", array_merge($memberParams, $agGrupParams));
 
         ob_start();
         include MODULES_PATH . '/kelola-pegawai/views/penugasan/index.php';
@@ -931,6 +1027,9 @@ class PegawaiController
 
     public static function createGrup(): void
     {
+        Auth::ensurePenugasanGrupUnitColumn();
+        $db = Database::getInstance();
+        $unitTugasList = self::filteredUnitTugasRows($db);
         $pageTitle = 'Tambah Grup Penugasan';
         $breadcrumbs = [
             ['label' => 'Kelola Pegawai', 'url' => url('kelola-pegawai')],
@@ -990,8 +1089,10 @@ class PegawaiController
             }
         }
 
+        Auth::ensurePenugasanGrupUnitColumn();
         $grupId = $db->insert('penugasan_grup', [
             'nama_grup' => trim($_POST['nama_grup']),
+            'unit' => self::resolveSubmittedGrupUnit($_POST['unit'] ?? null),
             'semester' => $_POST['semester'] ?? 'Ganjil',
             'no_sk' => trim($_POST['no_sk'] ?? ''),
             'tanggal_sk' => !empty($_POST['tanggal_sk']) ? $_POST['tanggal_sk'] : null,
@@ -1019,12 +1120,10 @@ class PegawaiController
     public static function editGrup(string $id): void
     {
         $db = Database::getInstance();
-        $grup = $db->find("SELECT * FROM penugasan_grup WHERE id = ?", [$id]);
-        if (!$grup) {
-            Response::withError(url('kelola-pegawai/penugasan'), 'Grup penugasan tidak ditemukan.');
-            return;
-        }
+        $grup = self::findAccessiblePenugasanGrupOrRedirect($db, $id);
+        if (!$grup) return;
 
+        $unitTugasList = self::filteredUnitTugasRows($db);
         $pageTitle = 'Edit Grup Penugasan';
         $breadcrumbs = [
             ['label' => 'Kelola Pegawai', 'url' => url('kelola-pegawai')],
@@ -1052,11 +1151,8 @@ class PegawaiController
         }
 
         $db = Database::getInstance();
-        $grup = $db->find("SELECT * FROM penugasan_grup WHERE id = ?", [$id]);
-        if (!$grup) {
-            Response::withError(url('kelola-pegawai/penugasan'), 'Grup penugasan tidak ditemukan.');
-            return;
-        }
+        $grup = self::findAccessiblePenugasanGrupOrRedirect($db, $id);
+        if (!$grup) return;
 
         $isActive = !empty($_POST['is_active']) ? 1 : 0;
 
@@ -1102,6 +1198,7 @@ class PegawaiController
 
         $db->update('penugasan_grup', [
             'nama_grup' => trim($_POST['nama_grup']),
+            'unit' => self::resolveSubmittedGrupUnit($_POST['unit'] ?? ($grup['unit'] ?? null)),
             'semester' => $_POST['semester'] ?? 'Ganjil',
             'no_sk' => trim($_POST['no_sk'] ?? ''),
             'tanggal_sk' => !empty($_POST['tanggal_sk']) ? $_POST['tanggal_sk'] : null,
@@ -1131,13 +1228,12 @@ class PegawaiController
     {
         self::ensurePenugasanMengajarTable();
         $db = Database::getInstance();
-        $grup = $db->find("SELECT * FROM penugasan_grup WHERE id = ?", [$id]);
-        if (!$grup) {
-            Response::withError(url('kelola-pegawai/penugasan'), 'Grup penugasan tidak ditemukan.');
-            return;
-        }
+        $grup = self::findAccessiblePenugasanGrupOrRedirect($db, $id);
+        if (!$grup) return;
 
-        // Ambil seluruh anggota pegawai yang ditugaskan dalam grup ini
+        // Ambil seluruh anggota pegawai yang ditugaskan dalam grup ini (respects jenjang restriction)
+        $skParams = [$id];
+        $skUnitCond = Auth::unitSqlCondition('mut.nama', $skParams);
         $penugasan = $db->findAll("
             SELECT pp.*, 
                    p.nama AS nama_pegawai, p.niy, p.nik, p.gelar, p.foto,
@@ -1147,9 +1243,9 @@ class PegawaiController
             JOIN pegawai p ON pp.pegawai_id = p.id
             LEFT JOIN master_unit_tugas mut ON pp.unit_tugas_id = mut.id
             LEFT JOIN master_jabatan mj ON pp.jabatan_id = mj.id
-            WHERE pp.grup_id = ?
+            WHERE pp.grup_id = ? AND ({$skUnitCond})
             ORDER BY mut.nama ASC, mj.nama ASC, p.nama ASC
-        ", [$id]);
+        ", $skParams);
 
         // Ambil data rincian tugas mengajar guru (mapel, kelas, JP)
         $teachingRows = $db->findAll("
@@ -1266,11 +1362,8 @@ class PegawaiController
         if (!CSRF::validate()) { Response::withError(url('kelola-pegawai/penugasan'), 'Token tidak valid.'); return; }
 
         $db = Database::getInstance();
-        $grup = $db->find("SELECT * FROM penugasan_grup WHERE id = ?", [$id]);
-        if (!$grup) {
-            Response::withError(url('kelola-pegawai/penugasan'), 'Grup penugasan tidak ditemukan.');
-            return;
-        }
+        $grup = self::findAccessiblePenugasanGrupOrRedirect($db, $id);
+        if (!$grup) return;
 
         $newStatus = $grup['is_active'] ? 0 : 1;
         $db->update('penugasan_grup', ['is_active' => $newStatus], 'id = ?', [$id]);
@@ -1363,6 +1456,9 @@ class PegawaiController
             if ($unit && $unit !== 'Semua Unit' && $unit !== 'semua' && $unit !== 'Yayasan') {
                 $where .= " AND (unit = ? OR unit = 'Semua Unit')";
                 $params[] = $unit;
+            } elseif (Auth::isJenjangRestricted()) {
+                $mpCond = Auth::unitSqlCondition('unit', $params);
+                $where .= " AND (({$mpCond}) OR UPPER(TRIM(unit)) IN ('SEMUA UNIT', 'SEMUA', ''))";
             }
             $rows = $db->findAll("SELECT * FROM master_mata_pelajaran WHERE {$where} ORDER BY urutan ASC, nama_mapel ASC", $params);
             if (!empty($rows)) {
@@ -1476,6 +1572,13 @@ class PegawaiController
             return strnatcasecmp($a['nama_kelas'], $b['nama_kelas']);
         });
 
+        if (Auth::isJenjangRestricted()) {
+            $list = array_values(array_filter($list, static function ($item) {
+                $u = strtoupper(trim((string)($item['unit'] ?? '')));
+                return $u === '' || $u === 'SEMUA UNIT' || Auth::canAccessJenjang($u);
+            }));
+        }
+
         return $list;
     }
 
@@ -1533,17 +1636,15 @@ class PegawaiController
         if (!CSRF::validate()) { Response::withError(url('kelola-pegawai/penugasan'), 'Token tidak valid.'); return; }
 
         $db = Database::getInstance();
-        $sourceGrup = $db->find("SELECT * FROM penugasan_grup WHERE id = ?", [$id]);
-        if (!$sourceGrup) {
-            Response::withError(url('kelola-pegawai/penugasan'), 'Grup sumber tidak ditemukan.');
-            return;
-        }
+        $sourceGrup = self::findAccessiblePenugasanGrupOrRedirect($db, $id);
+        if (!$sourceGrup) return;
 
         $namaBaru = trim($_POST['nama_grup_baru'] ?? ('Salinan ' . $sourceGrup['nama_grup']));
 
         // Buat grup baru (default tidak aktif)
         $newGrupId = $db->insert('penugasan_grup', [
             'nama_grup' => $namaBaru,
+            'unit' => self::resolveSubmittedGrupUnit($sourceGrup['unit'] ?? null),
             'semester' => $sourceGrup['semester'],
             'no_sk' => $sourceGrup['no_sk'],
             'tanggal_sk' => $sourceGrup['tanggal_sk'],
@@ -1561,8 +1662,15 @@ class PegawaiController
             'keterangan' => 'Disalin dari ' . $sourceGrup['nama_grup']
         ]);
 
-        // Salin seluruh data pegawai_penugasan
-        $oldItems = $db->findAll("SELECT * FROM pegawai_penugasan WHERE grup_id = ?", [$id]);
+        // Salin data pegawai_penugasan (sesuai jenjang user bila dibatasi)
+        $sgParams = [$id];
+        $sgUnitCond = Auth::unitSqlCondition('mut.nama', $sgParams);
+        $oldItems = $db->findAll(
+            "SELECT pp.* FROM pegawai_penugasan pp
+             LEFT JOIN master_unit_tugas mut ON pp.unit_tugas_id = mut.id
+             WHERE pp.grup_id = ? AND ({$sgUnitCond})",
+            $sgParams
+        );
         foreach ($oldItems as $item) {
             $insertedPenugasanId = $db->insert('pegawai_penugasan', [
                 'grup_id' => $newGrupId,
@@ -1609,7 +1717,8 @@ class PegawaiController
         if (!CSRF::validate()) { Response::withError(url('kelola-pegawai/penugasan'), 'Token tidak valid.'); return; }
 
         $db = Database::getInstance();
-        $grup = $db->find("SELECT * FROM penugasan_grup WHERE id = ?", [$id]);
+        $grup = self::findAccessiblePenugasanGrupOrRedirect($db, $id);
+        if (!$grup) return;
         if ($grup) {
             // Hapus file SK penugasan di grup ini
             $items = $db->findAll("SELECT file_sk FROM pegawai_penugasan WHERE grup_id = ?", [$id]);
@@ -1644,17 +1753,18 @@ class PegawaiController
     {
         self::ensurePenugasanMengajarTable();
         $db = Database::getInstance();
-        $grup = $db->find("SELECT * FROM penugasan_grup WHERE id = ?", [$id]);
-        if (!$grup) {
-            Response::withError(url('kelola-pegawai/penugasan'), 'Grup penugasan tidak ditemukan.');
-            return;
-        }
+        $grup = self::findAccessiblePenugasanGrupOrRedirect($db, $id);
+        if (!$grup) return;
 
         $search = trim($_GET['search'] ?? '');
         $filterUnit = trim($_GET['unit_tugas'] ?? '');
 
         $where = "pp.grup_id = ?";
         $params = [$id];
+        $dgUnitCond = Auth::unitSqlCondition('mut.nama', $params);
+        if ($dgUnitCond !== '1=1') {
+            $where .= " AND ({$dgUnitCond})";
+        }
 
         if ($search) {
             $where .= " AND (p.nama LIKE ? OR p.niy LIKE ? OR pp.no_sk LIKE ?)";
@@ -1678,8 +1788,10 @@ class PegawaiController
             ORDER BY mut.nama ASC, mj.nama ASC, p.nama ASC
         ";
         $penugasan = $db->findAll($sql, $params);
-        $unitTugasList = $db->findAll("SELECT * FROM master_unit_tugas ORDER BY nama ASC");
-        $allGroups = $db->findAll("SELECT id, nama_grup FROM penugasan_grup WHERE id != ? ORDER BY created_at DESC", [$id]);
+        $unitTugasList = self::filteredUnitTugasRows($db);
+        $agParams = [$id];
+        $agCond = Auth::penugasanGrupUnitSqlCondition('pg', $agParams);
+        $allGroups = $db->findAll("SELECT pg.id, pg.nama_grup FROM penugasan_grup pg WHERE pg.id != ? AND ({$agCond}) ORDER BY pg.created_at DESC", $agParams);
 
         // Ambil data rincian tugas mengajar guru (mapel, kelas, JP)
         $teachingRows = $db->findAll("
@@ -1711,11 +1823,8 @@ class PegawaiController
     {
         self::ensurePenugasanMengajarTable();
         $db = Database::getInstance();
-        $grup = $db->find("SELECT * FROM penugasan_grup WHERE id = ?", [$id]);
-        if (!$grup) {
-            Response::withError(url('kelola-pegawai/penugasan'), 'Grup tidak ditemukan.');
-            return;
-        }
+        $grup = self::findAccessiblePenugasanGrupOrRedirect($db, $id);
+        if (!$grup) return;
 
         $pageTitle = 'Tambah Anggota Penugasan';
         $breadcrumbs = [
@@ -1725,8 +1834,8 @@ class PegawaiController
             ['label' => 'Tambah Anggota']
         ];
 
-        $pegawaiList = $db->findAll("SELECT id, nama, niy, gelar, foto FROM pegawai WHERE is_active = 1 ORDER BY nama ASC");
-        $unitTugasList = $db->findAll("SELECT * FROM master_unit_tugas ORDER BY nama ASC");
+        $pegawaiList = self::filteredActivePegawai($db);
+        $unitTugasList = self::filteredUnitTugasRows($db);
         $jabatanList = $db->findAll("SELECT * FROM master_jabatan ORDER BY nama ASC");
 
         $kelasListWithUnit = self::getKelasListWithUnit();
@@ -1755,9 +1864,10 @@ class PegawaiController
         }
 
         $db = Database::getInstance();
-        $grup = $db->find("SELECT * FROM penugasan_grup WHERE id = ?", [$id]);
-        if (!$grup) {
-            Response::withError(url('kelola-pegawai/penugasan'), 'Grup tidak ditemukan.');
+        $grup = self::findAccessiblePenugasanGrupOrRedirect($db, $id);
+        if (!$grup) return;
+        if (!self::canAccessUnitTugasId($db, (int)$_POST['unit_tugas_id'])) {
+            Response::withError(url('kelola-pegawai/penugasan/grup/' . $id), 'Anda tidak memiliki akses menambahkan penugasan untuk unit lain.');
             return;
         }
 
@@ -1879,8 +1989,13 @@ class PegawaiController
             return;
         }
 
-        $grup = $db->find("SELECT * FROM penugasan_grup WHERE id = ?", [$penugasan['grup_id']]);
         $grupId = $penugasan['grup_id'];
+        $grup = self::findAccessiblePenugasanGrupOrRedirect($db, (string)$grupId);
+        if (!$grup) return;
+        if (!self::canAccessUnitTugasId($db, (int)$penugasan['unit_tugas_id'])) {
+            Response::withError(url('kelola-pegawai/penugasan/grup/' . $grupId), 'Anda tidak memiliki akses mengedit penugasan unit lain.');
+            return;
+        }
 
         $pageTitle = 'Edit Penugasan Pegawai';
         $breadcrumbs = [
@@ -1890,8 +2005,8 @@ class PegawaiController
             ['label' => 'Edit']
         ];
 
-        $pegawaiList = $db->findAll("SELECT id, nama, niy, gelar, foto FROM pegawai WHERE is_active = 1 ORDER BY nama ASC");
-        $unitTugasList = $db->findAll("SELECT * FROM master_unit_tugas ORDER BY nama ASC");
+        $pegawaiList = self::filteredActivePegawai($db);
+        $unitTugasList = self::filteredUnitTugasRows($db);
         $jabatanList = $db->findAll("SELECT * FROM master_jabatan ORDER BY nama ASC");
 
         $kelasListWithUnit = self::getKelasListWithUnit();
@@ -1933,6 +2048,10 @@ class PegawaiController
 
         $grupId = $penugasan['grup_id'];
         if (!CSRF::validate()) { Response::withError(url('kelola-pegawai/penugasan/grup/' . $grupId), 'Token tidak valid.'); return; }
+        if (!self::canAccessUnitTugasId($db, (int)$penugasan['unit_tugas_id'])) {
+            Response::withError(url('kelola-pegawai/penugasan/grup/' . $grupId), 'Anda tidak memiliki akses mengubah penugasan unit lain.');
+            return;
+        }
 
         $validator = Validator::make($_POST)
             ->required('pegawai_id', 'Pegawai')
@@ -1941,6 +2060,10 @@ class PegawaiController
 
         if ($validator->fails()) {
             Response::backWithErrors($validator->errors(), $_POST);
+            return;
+        }
+        if (!self::canAccessUnitTugasId($db, (int)$_POST['unit_tugas_id'])) {
+            Response::withError(url('kelola-pegawai/penugasan/grup/' . $grupId), 'Unit tugas yang dipilih di luar kewenangan jenjang Anda.');
             return;
         }
 
@@ -2062,6 +2185,10 @@ class PegawaiController
 
         $grupId = $penugasan['grup_id'];
         if (!CSRF::validate()) { Response::withError(url('kelola-pegawai/penugasan/grup/' . $grupId), 'Token tidak valid.'); return; }
+        if (!self::canAccessUnitTugasId($db, (int)$penugasan['unit_tugas_id'])) {
+            Response::withError(url('kelola-pegawai/penugasan/grup/' . $grupId), 'Anda tidak memiliki akses menghapus penugasan unit lain.');
+            return;
+        }
 
         if ($penugasan['file_sk'] && file_exists(BASE_PATH . $penugasan['file_sk'])) {
             @unlink(BASE_PATH . $penugasan['file_sk']);
@@ -2537,6 +2664,10 @@ class PegawaiController
 
         $where = "1=1";
         $params = [];
+        $krCond = Auth::unitSqlCondition('pk.unit_tugas', $params);
+        if ($krCond !== '1=1') {
+            $where .= " AND ({$krCond})";
+        }
 
         if (!empty($search)) {
             $where .= " AND (p.nama LIKE ? OR p.niy LIKE ? OR p.nik LIKE ? OR pk.jabatan LIKE ? OR pk.unit_tugas LIKE ? OR pk.no_sk LIKE ?)";
@@ -2560,12 +2691,14 @@ class PegawaiController
             $where .= " AND (pk.is_otomatis = 0 OR pk.is_otomatis IS NULL)";
         }
 
-        // Statistik Ringkas
+        // Statistik Ringkas (respects jenjang restriction)
+        $ksParams = [];
+        $ksCond = Auth::unitSqlCondition('unit_tugas', $ksParams);
         $stats = [
-            'total' => $db->find("SELECT COUNT(*) as c FROM pegawai_karir")['c'] ?? 0,
-            'aktif' => $db->find("SELECT COUNT(*) as c FROM pegawai_karir WHERE status = 'Aktif'")['c'] ?? 0,
-            'otomatis' => $db->find("SELECT COUNT(*) as c FROM pegawai_karir WHERE is_otomatis = 1")['c'] ?? 0,
-            'manual' => $db->find("SELECT COUNT(*) as c FROM pegawai_karir WHERE is_otomatis = 0 OR is_otomatis IS NULL")['c'] ?? 0,
+            'total' => $db->find("SELECT COUNT(*) as c FROM pegawai_karir WHERE ({$ksCond})", $ksParams)['c'] ?? 0,
+            'aktif' => $db->find("SELECT COUNT(*) as c FROM pegawai_karir WHERE status = 'Aktif' AND ({$ksCond})", $ksParams)['c'] ?? 0,
+            'otomatis' => $db->find("SELECT COUNT(*) as c FROM pegawai_karir WHERE is_otomatis = 1 AND ({$ksCond})", $ksParams)['c'] ?? 0,
+            'manual' => $db->find("SELECT COUNT(*) as c FROM pegawai_karir WHERE (is_otomatis = 0 OR is_otomatis IS NULL) AND ({$ksCond})", $ksParams)['c'] ?? 0,
         ];
 
         $total = $db->find("
@@ -2585,8 +2718,8 @@ class PegawaiController
             LIMIT {$limit} OFFSET {$offset}
         ", $params);
 
-        $pegawaiList = $db->findAll("SELECT id, nama, gelar, niy, nik FROM pegawai WHERE is_active = 1 ORDER BY nama ASC");
-        $unitTugasList = $db->findAll("SELECT * FROM master_unit_tugas ORDER BY nama ASC");
+        $pegawaiList = self::filteredActivePegawai($db, 'id, nama, gelar, niy, nik');
+        $unitTugasList = self::filteredUnitTugasRows($db);
 
         ob_start();
         include MODULES_PATH . '/kelola-pegawai/views/karir/index.php';
@@ -2609,8 +2742,8 @@ class PegawaiController
         ];
 
         $selectedPegawaiId = $_GET['pegawai_id'] ?? null;
-        $pegawaiList = $db->findAll("SELECT id, nama, gelar, niy, nik, foto FROM pegawai WHERE is_active = 1 ORDER BY nama ASC");
-        $unitTugasList = $db->findAll("SELECT * FROM master_unit_tugas ORDER BY nama ASC");
+        $pegawaiList = self::filteredActivePegawai($db, 'id, nama, gelar, niy, nik, foto');
+        $unitTugasList = self::filteredUnitTugasRows($db);
         $jabatanList = $db->findAll("SELECT * FROM master_jabatan ORDER BY nama ASC");
 
         ob_start();
@@ -2731,8 +2864,8 @@ class PegawaiController
             ['label' => 'Edit']
         ];
 
-        $pegawaiList = $db->findAll("SELECT id, nama, gelar, niy, nik, foto FROM pegawai WHERE is_active = 1 ORDER BY nama ASC");
-        $unitTugasList = $db->findAll("SELECT * FROM master_unit_tugas ORDER BY nama ASC");
+        $pegawaiList = self::filteredActivePegawai($db, 'id, nama, gelar, niy, nik, foto');
+        $unitTugasList = self::filteredUnitTugasRows($db);
         $jabatanList = $db->findAll("SELECT * FROM master_jabatan ORDER BY nama ASC");
 
         ob_start();
@@ -2910,6 +3043,10 @@ class PegawaiController
 
         $where = "1=1";
         $params = [];
+        $prCond = Auth::unitSqlCondition('p.unit_tugas', $params);
+        if ($prCond !== '1=1') {
+            $where .= " AND ({$prCond})";
+        }
 
         if (!empty($search)) {
             $where .= " AND (p.nama LIKE ? OR p.niy LIKE ? OR pp.nama_prestasi LIKE ? OR pp.penyelenggara LIKE ? OR pp.peringkat LIKE ?)";
@@ -2932,12 +3069,14 @@ class PegawaiController
             $params[] = $filterTahun;
         }
 
-        // Statistik
+        // Statistik (respects jenjang restriction)
+        $psParams = [];
+        $psCond = Auth::unitSqlCondition('p.unit_tugas', $psParams);
         $stats = [
-            'total' => $db->find("SELECT COUNT(*) as c FROM pegawai_prestasi")['c'] ?? 0,
-            'nasional_intl' => $db->find("SELECT COUNT(*) as c FROM pegawai_prestasi WHERE tingkat IN ('Nasional', 'Internasional')")['c'] ?? 0,
-            'provinsi' => $db->find("SELECT COUNT(*) as c FROM pegawai_prestasi WHERE tingkat = 'Provinsi'")['c'] ?? 0,
-            'kota_kab' => $db->find("SELECT COUNT(*) as c FROM pegawai_prestasi WHERE tingkat IN ('Kota/Kabupaten', 'Kecamatan', 'Sekolah/Internal')")['c'] ?? 0,
+            'total' => $db->find("SELECT COUNT(*) as c FROM pegawai_prestasi pp JOIN pegawai p ON pp.pegawai_id = p.id WHERE ({$psCond})", $psParams)['c'] ?? 0,
+            'nasional_intl' => $db->find("SELECT COUNT(*) as c FROM pegawai_prestasi pp JOIN pegawai p ON pp.pegawai_id = p.id WHERE pp.tingkat IN ('Nasional', 'Internasional') AND ({$psCond})", $psParams)['c'] ?? 0,
+            'provinsi' => $db->find("SELECT COUNT(*) as c FROM pegawai_prestasi pp JOIN pegawai p ON pp.pegawai_id = p.id WHERE pp.tingkat = 'Provinsi' AND ({$psCond})", $psParams)['c'] ?? 0,
+            'kota_kab' => $db->find("SELECT COUNT(*) as c FROM pegawai_prestasi pp JOIN pegawai p ON pp.pegawai_id = p.id WHERE pp.tingkat IN ('Kota/Kabupaten', 'Kecamatan', 'Sekolah/Internal') AND ({$psCond})", $psParams)['c'] ?? 0,
         ];
 
         $total = $db->find("
@@ -3262,6 +3401,10 @@ class PegawaiController
 
         $where = "1=1";
         $params = [];
+        $plCond = Auth::unitSqlCondition('p.unit_tugas', $params);
+        if ($plCond !== '1=1') {
+            $where .= " AND ({$plCond})";
+        }
 
         if (!empty($search)) {
             $where .= " AND (p.nama LIKE ? OR p.niy LIKE ? OR pp.nama_pelatihan LIKE ? OR pp.penyelenggara LIKE ? OR pp.tempat LIKE ?)";
@@ -3284,12 +3427,14 @@ class PegawaiController
             $params[] = $filterTahun;
         }
 
-        // Statistik
+        // Statistik (respects jenjang restriction)
+        $plsParams = [];
+        $plsCond = Auth::unitSqlCondition('p.unit_tugas', $plsParams);
         $stats = [
-            'total' => $db->find("SELECT COUNT(*) as c FROM pegawai_pelatihan")['c'] ?? 0,
-            'total_jp' => $db->find("SELECT COALESCE(SUM(jumlah_jam), 0) as s FROM pegawai_pelatihan")['s'] ?? 0,
-            'sertifikasi' => $db->find("SELECT COUNT(*) as c FROM pegawai_pelatihan WHERE jenis_pelatihan = 'Sertifikasi Keahlian / Profesi'")['c'] ?? 0,
-            'diklat_workshop' => $db->find("SELECT COUNT(*) as c FROM pegawai_pelatihan WHERE jenis_pelatihan IN ('Diklat Fungsional', 'Bimtek & Workshop')")['c'] ?? 0,
+            'total' => $db->find("SELECT COUNT(*) as c FROM pegawai_pelatihan pp JOIN pegawai p ON pp.pegawai_id = p.id WHERE ({$plsCond})", $plsParams)['c'] ?? 0,
+            'total_jp' => $db->find("SELECT COALESCE(SUM(pp.jumlah_jam), 0) as s FROM pegawai_pelatihan pp JOIN pegawai p ON pp.pegawai_id = p.id WHERE ({$plsCond})", $plsParams)['s'] ?? 0,
+            'sertifikasi' => $db->find("SELECT COUNT(*) as c FROM pegawai_pelatihan pp JOIN pegawai p ON pp.pegawai_id = p.id WHERE pp.jenis_pelatihan = 'Sertifikasi Keahlian / Profesi' AND ({$plsCond})", $plsParams)['c'] ?? 0,
+            'diklat_workshop' => $db->find("SELECT COUNT(*) as c FROM pegawai_pelatihan pp JOIN pegawai p ON pp.pegawai_id = p.id WHERE pp.jenis_pelatihan IN ('Diklat Fungsional', 'Bimtek & Workshop') AND ({$plsCond})", $plsParams)['c'] ?? 0,
         ];
 
         $total = $db->find("

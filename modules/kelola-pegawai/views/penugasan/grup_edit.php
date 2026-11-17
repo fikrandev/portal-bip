@@ -28,6 +28,24 @@
             </div>
 
             <div>
+                <label class="block text-sm font-semibold text-primary-900 mb-1.5">Unit / Jenjang Penugasan</label>
+                <?php
+                $selectedEditUnit = old('unit', $grup['unit'] ?? '');
+                if ($selectedEditUnit === '' && Auth::isJenjangRestricted()) {
+                    $selectedEditUnit = Auth::getActiveJenjang();
+                }
+                ?>
+                <select name="unit" class="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-slate-900 focus:border-primary-500 transition-colors text-sm">
+                    <?php if (!Auth::isJenjangRestricted()): ?>
+                        <option value="" <?= $selectedEditUnit === '' ? 'selected' : '' ?>>Semua Unit / Campuran</option>
+                    <?php endif; ?>
+                    <?php foreach (($unitTugasList ?? []) as $ut): ?>
+                        <option value="<?= e($ut['nama']) ?>" <?= strcasecmp((string)$selectedEditUnit, (string)$ut['nama']) === 0 ? 'selected' : '' ?>><?= e($ut['nama']) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+
+            <div>
                 <label class="block text-sm font-semibold text-primary-900 mb-1.5">Semester</label>
                 <select name="semester" class="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-slate-900 focus:border-primary-500 transition-colors text-sm">
                     <option value="Ganjil" <?= old('semester', $grup['semester']) === 'Ganjil' ? 'selected' : '' ?>>Semester Ganjil</option>

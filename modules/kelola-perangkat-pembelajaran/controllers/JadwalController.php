@@ -17,6 +17,8 @@ class JadwalController
         ];
 
         $db = Database::getInstance();
+        $jgParams = [];
+        $jgCond = Auth::jenjangSqlCondition('g.jenjang', $jgParams);
         $grupList = $db->findAll("
             SELECT g.*, 
                    COUNT(DISTINCT j.nama_kelas) as real_kelas_count,
@@ -24,12 +26,15 @@ class JadwalController
                    COUNT(DISTINCT j.pegawai_id) as real_guru_count
             FROM jadwal_grup g
             LEFT JOIN jadwal_pelajaran j ON g.id = j.grup_id
+            WHERE ({$jgCond})
             GROUP BY g.id
             ORDER BY g.is_active DESC, g.id DESC
-        ");
+        ", $jgParams);
 
-        // KPI aggregates
-        $activeGrup = $db->find("SELECT * FROM jadwal_grup WHERE is_active = 1 LIMIT 1");
+        // KPI aggregates (respects jenjang restriction)
+        $agParams = [];
+        $agCond = Auth::jenjangSqlCondition('jenjang', $agParams);
+        $activeGrup = $db->find("SELECT * FROM jadwal_grup WHERE is_active = 1 AND ({$agCond}) LIMIT 1", $agParams);
         $totalGrup = count($grupList);
         $totalSlotAktif = 0;
         $totalKelasAktif = 0;
@@ -55,7 +60,9 @@ class JadwalController
         ];
 
         $db = Database::getInstance();
-        $penugasanGrupList = $db->findAll("SELECT id, nama_grup, no_sk, semester FROM penugasan_grup ORDER BY id DESC");
+        $pgParams = [];
+        $pgCond = Auth::penugasanGrupUnitSqlCondition('pg', $pgParams);
+        $penugasanGrupList = $db->findAll("SELECT pg.id, pg.nama_grup, pg.no_sk, pg.semester FROM penugasan_grup pg WHERE ({$pgCond}) ORDER BY pg.id DESC", $pgParams);
 
         ob_start();
         include MODULES_PATH . '/kelola-perangkat-pembelajaran/views/jadwal/create.php';
@@ -133,7 +140,9 @@ class JadwalController
             ['label' => 'Edit Grup']
         ];
 
-        $penugasanGrupList = $db->findAll("SELECT id, nama_grup, no_sk, semester FROM penugasan_grup ORDER BY id DESC");
+        $pgParams = [];
+        $pgCond = Auth::penugasanGrupUnitSqlCondition('pg', $pgParams);
+        $penugasanGrupList = $db->findAll("SELECT pg.id, pg.nama_grup, pg.no_sk, pg.semester FROM penugasan_grup pg WHERE ({$pgCond}) ORDER BY pg.id DESC", $pgParams);
 
         ob_start();
         include MODULES_PATH . '/kelola-perangkat-pembelajaran/views/jadwal/edit.php';
