@@ -939,6 +939,9 @@ $router->get('/guru', function() {
     exit;
 });
 $router->get('/mobile/absen', [PortalGuruController::class, 'absen'], [[PortalGuruAuthController::class, 'authRequired']]);
+$router->get('/mobile/api/absen/today', [PortalGuruController::class, 'apiAbsenToday'], [[PortalGuruAuthController::class, 'authRequired']]);
+$router->post('/mobile/api/absen/checkin', [PortalGuruController::class, 'apiCheckin'], [[PortalGuruAuthController::class, 'authRequired']]);
+$router->post('/mobile/api/absen/checkout', [PortalGuruController::class, 'apiCheckout'], [[PortalGuruAuthController::class, 'authRequired']]);
 $router->get('/mobile/jurnal', [PortalGuruController::class, 'jurnal'], [[PortalGuruAuthController::class, 'authRequired']]);
 $router->post('/mobile/jurnal/simpan', [PortalGuruController::class, 'simpanJurnal'], [[PortalGuruAuthController::class, 'authRequired']]);
 $router->get('/mobile/api/jurnal/detail/{id}', [PortalGuruController::class, 'apiJurnalDetail'], [[PortalGuruAuthController::class, 'authRequired']]);

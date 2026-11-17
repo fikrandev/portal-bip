@@ -16,7 +16,7 @@ class AbsenPegawaiController
         AbsenPegawaiModel::init();
 
         $activeTab = $_GET['tab'] ?? 'pegawai';
-        $allowedTabs = ['pegawai', 'unit', 'pengaturan'];
+        $allowedTabs = ['pegawai', 'rekap', 'unit', 'pengaturan'];
         if (!in_array($activeTab, $allowedTabs, true)) {
             $activeTab = 'pegawai';
         }
@@ -27,19 +27,24 @@ class AbsenPegawaiController
         $filters = [
             'search' => trim($_GET['search'] ?? ''),
             'unit_tugas' => trim($_GET['unit_tugas'] ?? ''),
-            'mode_lokasi' => trim($_GET['mode_lokasi'] ?? '')
+            'mode_lokasi' => trim($_GET['mode_lokasi'] ?? ''),
+            'status' => trim($_GET['status'] ?? '')
         ];
 
         $pegawaiList = AbsenPegawaiModel::getAllPegawaiLokasi($filters);
         $allPegawaiDropdown = AbsenPegawaiModel::getAllPegawaiLokasi([]);
         $unitLokasiList = AbsenPegawaiModel::getAllUnitLokasi();
 
+        $targetDate = trim($_GET['tanggal'] ?? date('Y-m-d'));
+        $rekapData = AbsenPegawaiModel::getRekapHarian($targetDate, $filters);
+
         $pageTitle = 'Kelola Absen Pegawai';
         $breadcrumbs = [
             ['label' => 'Kelola Absen Pegawai', 'url' => url('kelola-absen-pegawai')],
             ['label' => match($activeTab) {
+                'rekap'      => 'Rekap & Jam Kedatangan',
                 'unit'       => 'Lokasi Custom Per Unit',
-                'pengaturan' => 'Radius Global & Lokasi Semula',
+                'pengaturan' => 'Radius Global & Jam Kedatangan',
                 default      => 'Lokasi Absen Per Pegawai'
             }]
         ];
@@ -64,9 +69,10 @@ class AbsenPegawaiController
             AbsenPegawaiModel::savePengaturanGlobal($_POST, Auth::id());
             $radius = max(1, (int)($_POST['radius_meter'] ?? 10));
             $kantor = trim($_POST['nama_kantor_default'] ?? '');
+            $jamBatas = trim($_POST['jam_masuk_batas'] ?? '07:30:00');
             Response::redirect(
                 url('kelola-absen-pegawai?tab=' . urlencode($returnTab)),
-                "Pengaturan berhasil disimpan! Radius Global: {$radius} Meter untuk seluruh pegawai, Lokasi Semula: {$kantor}.",
+                "Pengaturan berhasil disimpan! Radius: {$radius}m, Lokasi: {$kantor}, Batas Jam Masuk: " . substr($jamBatas, 0, 5) . " WITA.",
                 'success'
             );
         } catch (Throwable $e) {

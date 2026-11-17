@@ -617,6 +617,10 @@ class PortalGuruController
         $teacherGender = $teacher['gender'] ?? 'P';
         $todayIbadahState = self::getTodayIbadahState($guruIdForIbadah, $teacherGender);
 
+        require_once MODULES_PATH . '/kelola-absen-pegawai/models/AbsenPegawaiModel.php';
+        $todayAttendance = AbsenPegawaiModel::getTodayAttendance($guruIdForIbadah);
+        $globalConfig = AbsenPegawaiModel::getPengaturanGlobal();
+
         self::render('beranda', [
             'pageTitle' => 'Beranda Guru',
             'activeTab' => 'beranda',
@@ -627,6 +631,8 @@ class PortalGuruController
             'teacherGender' => $teacherGender,
             'teacherPegawaiId' => $guruIdForIbadah,
             'todayIbadahState' => $todayIbadahState,
+            'todayAttendance' => $todayAttendance,
+            'globalConfig' => $globalConfig,
             'totalClasses' => $totalClasses,
             'todayName' => $todayName,
             'todayDate' => date('d F Y'),
@@ -644,49 +650,158 @@ class PortalGuruController
      */
     public static function absen(): void
     {
-        $schoolName = 'Kampus Utama BIP';
-        $schoolRadius = 150;
-        $schoolCoords = ['lat' => -5.147665, 'lng' => 119.432732];
-        $lokasiSourceLabel = 'Lokasi Semula (Default)';
-
-        $pegawaiId = (int)($_SESSION['user']['pegawai_id'] ?? $_GET['pegawai_id'] ?? 0);
-        $namaLengkapSession = $_SESSION['user']['nama_lengkap'] ?? '';
+        $teacher = self::getLoggedInTeacher();
+        $pegawaiId = (int)($teacher['pegawai_id'] ?: $teacher['user_id'] ?: 0);
         self::releaseSessionLock();
 
-        if (file_exists(MODULES_PATH . '/kelola-absen-pegawai/models/AbsenPegawaiModel.php')) {
-            require_once MODULES_PATH . '/kelola-absen-pegawai/models/AbsenPegawaiModel.php';
-            if ($pegawaiId <= 0 && !empty($namaLengkapSession)) {
-                try {
-                    $db = Database::getInstance()->getConnection();
-                    $st = $db->prepare("SELECT id FROM pegawai WHERE nama_lengkap = ? LIMIT 1");
-                    $st->execute([$namaLengkapSession]);
-                    $pegawaiId = (int)$st->fetchColumn();
-                } catch (Throwable $e) {}
-            }
-            $efektif = AbsenPegawaiModel::getLokasiEfektifPegawai($pegawaiId);
-            $schoolName = $efektif['nama_kantor'] ?? $schoolName;
-            $schoolRadius = (int)($efektif['radius_meter'] ?? $schoolRadius);
-            $schoolCoords = [
-                'lat' => (float)($efektif['latitude'] ?? -5.147665),
-                'lng' => (float)($efektif['longitude'] ?? 119.432732),
-            ];
-            $lokasiSourceLabel = $efektif['source_label'] ?? $lokasiSourceLabel;
-        }
+        require_once MODULES_PATH . '/kelola-absen-pegawai/models/AbsenPegawaiModel.php';
+        $efektif = AbsenPegawaiModel::getLokasiEfektifPegawai($pegawaiId);
+        $todayAttendance = AbsenPegawaiModel::getTodayAttendance($pegawaiId);
+        $recentLogs = AbsenPegawaiModel::getRecentLogs($pegawaiId, 7);
+        $globalConfig = AbsenPegawaiModel::getPengaturanGlobal();
+
+        $lokasiSourceLabel = match($efektif['mode'] ?? 'default') {
+            'custom' => 'Custom Pegawai',
+            'unit'   => 'Custom Unit',
+            default  => 'Lokasi Semula (Default)'
+        };
 
         self::render('absen', [
             'pageTitle' => 'Presensi Kehadiran & Geolokasi',
             'activeTab' => 'absen',
-            'schoolName' => $schoolName,
-            'schoolRadius' => $schoolRadius,
-            'schoolCoords' => $schoolCoords,
+            'teacher' => $teacher,
+            'todayAttendance' => $todayAttendance,
+            'recentLogs' => $recentLogs,
+            'schoolName' => $efektif['nama_kantor'],
+            'schoolRadius' => (int)$efektif['radius_meter'],
+            'schoolCoords' => [
+                'lat' => (float)$efektif['latitude'],
+                'lng' => (float)$efektif['longitude'],
+            ],
             'lokasiSourceLabel' => $lokasiSourceLabel,
-            'recentLogs' => [
-                ['date' => 'Hari ini', 'checkin' => '07:12 WITA', 'checkout' => '-', 'status' => 'Hadir Tepat Waktu', 'badge' => 'emerald'],
-                ['date' => 'Kemarin', 'checkin' => '07:05 WITA', 'checkout' => '15:35 WITA', 'status' => 'Hadir Tepat Waktu', 'badge' => 'emerald'],
-                ['date' => '2 Hari Lalu', 'checkin' => '07:18 WITA', 'checkout' => '15:30 WITA', 'status' => 'Hadir Tepat Waktu', 'badge' => 'emerald'],
-                ['date' => '3 Hari Lalu', 'checkin' => '07:45 WITA', 'checkout' => '15:30 WITA', 'status' => 'Terlambat 15m', 'badge' => 'amber'],
+            'jamMasukMulai' => $globalConfig['jam_masuk_mulai'] ?? '06:00:00',
+            'jamMasukBatas' => $globalConfig['jam_masuk_batas'] ?? '07:30:00',
+            'jamPulangMulai' => $globalConfig['jam_pulang_mulai'] ?? '15:00:00',
+        ]);
+    }
+
+    /**
+     * API: Cek status presensi hari ini guru & titik lokasi efektif
+     */
+    public static function apiAbsenToday(): void
+    {
+        $teacher = self::getLoggedInTeacher();
+        self::releaseSessionLock();
+        header('Content-Type: application/json; charset=utf-8');
+
+        $pegawaiId = (int)($teacher['pegawai_id'] ?: $teacher['user_id'] ?: 0);
+        require_once MODULES_PATH . '/kelola-absen-pegawai/models/AbsenPegawaiModel.php';
+        $attendance = AbsenPegawaiModel::getTodayAttendance($pegawaiId);
+        $efektif = AbsenPegawaiModel::getLokasiEfektifPegawai($pegawaiId);
+        $globalConfig = AbsenPegawaiModel::getPengaturanGlobal();
+
+        echo json_encode([
+            'success' => true,
+            'data' => [
+                'attendance' => $attendance,
+                'location' => [
+                    'name' => $efektif['nama_kantor'],
+                    'lat' => (float)$efektif['latitude'],
+                    'lng' => (float)$efektif['longitude'],
+                    'radius' => (int)$efektif['radius_meter'],
+                    'source_label' => match($efektif['mode'] ?? 'default') {
+                        'custom' => 'Custom Pegawai',
+                        'unit'   => 'Custom Unit',
+                        default  => 'Lokasi Semula (Default)'
+                    }
+                ],
+                'jam_masuk_mulai' => $globalConfig['jam_masuk_mulai'] ?? '06:00:00',
+                'jam_masuk_batas' => $globalConfig['jam_masuk_batas'] ?? '07:30:00',
+                'jam_pulang_mulai' => $globalConfig['jam_pulang_mulai'] ?? '15:00:00',
             ]
         ]);
+        exit;
+    }
+
+    /**
+     * API: Lakukan check-in masuk guru dengan validasi koordinat GPS
+     */
+    public static function apiCheckin(): void
+    {
+        $teacher = self::getLoggedInTeacher();
+        self::releaseSessionLock();
+        header('Content-Type: application/json; charset=utf-8');
+
+        $pegawaiId = (int)($teacher['pegawai_id'] ?: $teacher['user_id'] ?: 0);
+        if ($pegawaiId <= 0) {
+            echo json_encode(['success' => false, 'message' => 'Identitas guru/pegawai tidak ditemukan.']);
+            exit;
+        }
+
+        require_once MODULES_PATH . '/kelola-absen-pegawai/models/AbsenPegawaiModel.php';
+
+        $rawInput = file_get_contents('php://input');
+        $payload = [];
+        if ($rawInput) {
+            $decoded = json_decode($rawInput, true);
+            if (is_array($decoded)) {
+                $payload = $decoded;
+            }
+        }
+        if (empty($payload) && !empty($_POST)) {
+            $payload = $_POST;
+        }
+
+        $lat = isset($payload['latitude']) ? (float)$payload['latitude'] : (isset($payload['lat']) ? (float)$payload['lat'] : 0.0);
+        $lng = isset($payload['longitude']) ? (float)$payload['longitude'] : (isset($payload['lng']) ? (float)$payload['lng'] : 0.0);
+        $accuracy = isset($payload['accuracy']) ? (float)$payload['accuracy'] : null;
+
+        if ($lat == 0.0 && $lng == 0.0) {
+            echo json_encode(['success' => false, 'message' => 'Titik koordinat GPS tidak valid.']);
+            exit;
+        }
+
+        $result = AbsenPegawaiModel::recordCheckin($pegawaiId, $lat, $lng, $accuracy);
+        echo json_encode($result);
+        exit;
+    }
+
+    /**
+     * API: Lakukan check-out / absen pulang guru dengan validasi waktu & koordinat GPS
+     */
+    public static function apiCheckout(): void
+    {
+        $teacher = self::getLoggedInTeacher();
+        self::releaseSessionLock();
+        header('Content-Type: application/json; charset=utf-8');
+
+        $pegawaiId = (int)($teacher['pegawai_id'] ?: $teacher['user_id'] ?: 0);
+        if ($pegawaiId <= 0) {
+            echo json_encode(['success' => false, 'message' => 'Identitas guru/pegawai tidak ditemukan.']);
+            exit;
+        }
+
+        require_once MODULES_PATH . '/kelola-absen-pegawai/models/AbsenPegawaiModel.php';
+
+        $rawInput = file_get_contents('php://input');
+        $payload = [];
+        if ($rawInput) {
+            $decoded = json_decode($rawInput, true);
+            if (is_array($decoded)) {
+                $payload = $decoded;
+            }
+        }
+        if (empty($payload) && !empty($_POST)) {
+            $payload = $_POST;
+        }
+
+        $lat = isset($payload['latitude']) ? (float)$payload['latitude'] : (isset($payload['lat']) ? (float)$payload['lat'] : 0.0);
+        $lng = isset($payload['longitude']) ? (float)$payload['longitude'] : (isset($payload['lng']) ? (float)$payload['lng'] : 0.0);
+        $accuracy = isset($payload['accuracy']) ? (float)$payload['accuracy'] : null;
+
+        $result = AbsenPegawaiModel::recordCheckout($pegawaiId, $lat, $lng, $accuracy);
+        echo json_encode($result);
+        exit;
     }
 
     /**

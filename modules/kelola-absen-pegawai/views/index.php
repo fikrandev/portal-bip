@@ -16,6 +16,10 @@ $radiusGlobal = (int)($globalConfig['radius_meter'] ?? 10);
 $defaultKantor = $globalConfig['nama_kantor_default'] ?? 'Kampus Utama SIT Bina Insan Palu';
 $defaultLat = (float)($globalConfig['latitude_default'] ?? -0.8917000);
 $defaultLng = (float)($globalConfig['longitude_default'] ?? 119.8707000);
+$jamMasukMulai = substr($globalConfig['jam_masuk_mulai'] ?? '06:00:00', 0, 5);
+$jamMasukBatas = substr($globalConfig['jam_masuk_batas'] ?? '07:30:00', 0, 5);
+$jamPulangMulai = substr($globalConfig['jam_pulang_mulai'] ?? '15:00:00', 0, 5);
+$targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
 ?>
 
 <!-- Leaflet CSS & JS untuk Map Picker Interaktif -->
@@ -162,15 +166,25 @@ $defaultLng = (float)($globalConfig['longitude_default'] ?? 119.8707000);
         <div class="flex items-center gap-1.5 overflow-x-auto">
             <button type="button" onclick="switchAbsenTab('pegawai')" data-tab-btn="pegawai"
                 class="absen-tab-btn px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer <?= $activeTab === 'pegawai' ? 'bg-primary-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100' ?>">
-                <span>1. Lokasi Absen Masing-Masing Pegawai</span>
+                <span>1. Lokasi Absen Pegawai</span>
                 <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold <?= $activeTab === 'pegawai' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700' ?>">
                     <?= count($pegawaiList) ?>
                 </span>
             </button>
 
+            <button type="button" onclick="switchAbsenTab('rekap')" data-tab-btn="rekap"
+                class="absen-tab-btn px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer <?= $activeTab === 'rekap' ? 'bg-primary-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100' ?>">
+                <span>2. Rekap & Jam Kedatangan</span>
+                <?php if (($rekapData['stats']['totalTerlambat'] ?? 0) > 0): ?>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500 text-white animate-pulse">
+                        <?= $rekapData['stats']['totalTerlambat'] ?> Terlambat
+                    </span>
+                <?php endif; ?>
+            </button>
+
             <button type="button" onclick="switchAbsenTab('unit')" data-tab-btn="unit"
                 class="absen-tab-btn px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer <?= $activeTab === 'unit' ? 'bg-primary-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100' ?>">
-                <span>2. Lokasi Absen Custom Per Unit</span>
+                <span>3. Lokasi Custom Per Unit</span>
                 <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold <?= $activeTab === 'unit' ? 'bg-white/20 text-white' : 'bg-purple-100 text-purple-700' ?>">
                     <?= count($unitLokasiList) ?> Unit
                 </span>
@@ -178,7 +192,7 @@ $defaultLng = (float)($globalConfig['longitude_default'] ?? 119.8707000);
 
             <button type="button" onclick="switchAbsenTab('pengaturan')" data-tab-btn="pengaturan"
                 class="absen-tab-btn px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer <?= $activeTab === 'pengaturan' ? 'bg-primary-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100' ?>">
-                <span>3. Lokasi Semula (Default) & Radius Global</span>
+                <span>4. Radius Global & Jam Masuk</span>
             </button>
         </div>
 
@@ -274,13 +288,14 @@ $defaultLng = (float)($globalConfig['longitude_default'] ?? 119.8707000);
                             <th class="py-3.5 px-4">Nama Kantor Tempat Absen</th>
                             <th class="py-3.5 px-4">Latitude & Longitude</th>
                             <th class="py-3.5 px-4 text-center">Radius Global</th>
+                            <th class="py-3.5 px-4 text-center">Kedatangan Hari Ini</th>
                             <th class="py-3.5 px-4 text-center">Aksi Lokasi</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
                         <?php if (empty($pegawaiList)): ?>
                             <tr>
-                                <td colspan="9" class="py-12 text-center text-slate-400">
+                                <td colspan="10" class="py-12 text-center text-slate-400">
                                     Tidak ada data pegawai yang ditemukan.
                                 </td>
                             </tr>
@@ -348,6 +363,36 @@ $defaultLng = (float)($globalConfig['longitude_default'] ?? 119.8707000);
                                         </span>
                                     </td>
                                     <td class="py-3.5 px-4 text-center">
+                                        <?php if (!empty($p['today_jam_masuk'])): ?>
+                                            <div class="inline-flex flex-col items-center">
+                                                <span class="font-extrabold text-slate-800 font-mono text-xs">
+                                                    <?= substr($p['today_jam_masuk'], 0, 5) ?> WITA
+                                                </span>
+                                                <?php if ($p['today_status'] === 'Terlambat'): ?>
+                                                    <span class="mt-0.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200" title="<?= e($p['today_keterangan']) ?>">
+                                                        <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                                                        <?= e($p['today_keterangan'] ?: 'Terlambat') ?>
+                                                    </span>
+                                                <?php else: ?>
+                                                    <span class="mt-0.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                                        Tepat Waktu
+                                                    </span>
+                                                <?php endif; ?>
+                                                <?php if (!empty($p['today_jam_pulang'])): ?>
+                                                    <span class="text-[10px] text-slate-500 font-mono mt-0.5">
+                                                        Pulang: <?= substr($p['today_jam_pulang'], 0, 5) ?>
+                                                    </span>
+                                                <?php endif; ?>
+                                            </div>
+                                        <?php else: ?>
+                                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-medium bg-slate-100 text-slate-400">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
+                                                Belum Check-in
+                                            </span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td class="py-3.5 px-4 text-center">
                                         <div class="flex items-center justify-center gap-1.5">
                                             <button type="button"
                                                 onclick="openModalCustomPegawai(<?= (int)$p['id'] ?>, <?= htmlspecialchars(json_encode($namaLengkap), ENT_QUOTES, 'UTF-8') ?>, <?= htmlspecialchars(json_encode($p['peg_kantor'] ?: $p['nama_kantor_efektif']), ENT_QUOTES, 'UTF-8') ?>, '<?= $p['peg_lat'] ?: $latStr ?>', '<?= $p['peg_lng'] ?: $lngStr ?>', <?= htmlspecialchars(json_encode($p['peg_tgl_mulai'] ?? ''), ENT_QUOTES, 'UTF-8') ?>, <?= htmlspecialchars(json_encode($p['peg_tgl_selesai'] ?? ''), ENT_QUOTES, 'UTF-8') ?>, <?= htmlspecialchars(json_encode($p['peg_hari_aktif'] ?? ''), ENT_QUOTES, 'UTF-8') ?>, <?= htmlspecialchars(json_encode($p['peg_ket'] ?? ''), ENT_QUOTES, 'UTF-8') ?>)"
@@ -377,7 +422,208 @@ $defaultLng = (float)($globalConfig['longitude_default'] ?? 119.8707000);
     </div>
 
     <!-- ═════════════════════════════════════════════════════════════════════
-         TAB 2: LOKASI ABSEN CUSTOM PER UNIT
+         TAB 2: REKAP & JAM KEDATANGAN PEGAWAI (DETEKSI TERLAMBAT)
+         ═════════════════════════════════════════════════════════════════════ -->
+    <div id="absen-panel-rekap" class="absen-tab-panel space-y-4 <?= $activeTab === 'rekap' ? '' : 'hidden' ?>">
+
+        <!-- Toolbar Filter Tanggal & Unit -->
+        <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <form method="GET" action="<?= url('kelola-absen-pegawai') ?>" class="flex flex-wrap items-center gap-2.5 flex-1">
+                <input type="hidden" name="tab" value="rekap">
+
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold text-slate-700">Tanggal:</span>
+                    <input type="date" name="tanggal" value="<?= e($targetDate) ?>" onchange="this.form.submit()"
+                           class="px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:bg-white focus:border-primary-500">
+                </div>
+
+                <div class="flex items-center gap-1.5">
+                    <button type="button" onclick="document.querySelector('input[name=tanggal]').value='<?= date('Y-m-d') ?>'; this.closest('form').submit();"
+                            class="px-2.5 py-1.5 rounded-xl text-xs font-bold <?= $targetDate === date('Y-m-d') ? 'bg-primary-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' ?>">
+                        Hari Ini
+                    </button>
+                    <button type="button" onclick="document.querySelector('input[name=tanggal]').value='<?= date('Y-m-d', strtotime('-1 day')) ?>'; this.closest('form').submit();"
+                            class="px-2.5 py-1.5 rounded-xl text-xs font-bold <?= $targetDate === date('Y-m-d', strtotime('-1 day')) ? 'bg-primary-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' ?>">
+                        Kemarin
+                    </button>
+                </div>
+
+                <div class="relative min-w-[200px]">
+                    <input type="text" name="search" value="<?= e($filters['search']) ?>" placeholder="Cari nama pegawai / NIY..."
+                           class="w-full pl-9 pr-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 outline-none focus:bg-white focus:border-primary-500">
+                    <svg class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"/></svg>
+                </div>
+
+                <select name="unit_tugas" onchange="this.form.submit()" class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 outline-none">
+                    <option value="">Semua Unit Tugas</option>
+                    <?php foreach ($unitLokasiList as $ul): ?>
+                        <option value="<?= e($ul['unit_tugas']) ?>" <?= $filters['unit_tugas'] === $ul['unit_tugas'] ? 'selected' : '' ?>>
+                            <?= e($ul['unit_tugas']) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+
+                <select name="status" onchange="this.form.submit()" class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 outline-none">
+                    <option value="">Semua Status Kehadiran</option>
+                    <option value="Hadir" <?= $filters['status'] === 'Hadir' ? 'selected' : '' ?>>Tepat Waktu (Hadir)</option>
+                    <option value="Terlambat" <?= $filters['status'] === 'Terlambat' ? 'selected' : '' ?>>Terlambat</option>
+                    <option value="Belum" <?= $filters['status'] === 'Belum' ? 'selected' : '' ?>>Belum Check-in</option>
+                </select>
+
+                <button type="submit" class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-xl text-xs cursor-pointer">
+                    Filter
+                </button>
+            </form>
+
+            <div class="flex items-center gap-2 shrink-0">
+                <span class="text-xs font-semibold text-slate-500">
+                    Batas Jam Masuk: <strong class="text-rose-600 font-mono"><?= substr($rekapData['batasJamMasuk'], 0, 5) ?> WITA</strong>
+                </span>
+            </div>
+        </div>
+
+        <!-- 4 KPI Cards Rekap Kehadiran -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+            <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs">
+                <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Pegawai</span>
+                <div class="text-2xl font-extrabold text-slate-900 mt-1"><?= number_format($rekapData['stats']['totalPegawai']) ?></div>
+                <p class="text-[11px] text-slate-500 mt-0.5">Pegawai aktif terdaftar</p>
+            </div>
+
+            <div class="bg-white rounded-2xl p-4 border border-emerald-200/80 shadow-xs">
+                <span class="text-[11px] font-bold text-emerald-600 uppercase tracking-wider">Hadir Tepat Waktu</span>
+                <div class="text-2xl font-extrabold text-emerald-600 mt-1"><?= number_format($rekapData['stats']['totalHadir']) ?></div>
+                <p class="text-[11px] text-emerald-700 mt-0.5">&le; <?= substr($rekapData['batasJamMasuk'], 0, 5) ?> WITA</p>
+            </div>
+
+            <div class="bg-white rounded-2xl p-4 border border-amber-200/80 shadow-xs">
+                <span class="text-[11px] font-bold text-amber-600 uppercase tracking-wider">Terlambat</span>
+                <div class="text-2xl font-extrabold text-amber-600 mt-1"><?= number_format($rekapData['stats']['totalTerlambat']) ?></div>
+                <p class="text-[11px] text-amber-700 mt-0.5">&gt; <?= substr($rekapData['batasJamMasuk'], 0, 5) ?> WITA</p>
+            </div>
+
+            <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs">
+                <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Belum Check-in</span>
+                <div class="text-2xl font-extrabold text-slate-500 mt-1"><?= number_format($rekapData['stats']['totalBelum']) ?></div>
+                <p class="text-[11px] text-slate-400 mt-0.5">Belum absen hari ini</p>
+            </div>
+        </div>
+
+        <!-- Tabel Log Jam Kedatangan & Pulang -->
+        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+            <div class="px-5 py-3.5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-slate-50/50">
+                <div>
+                    <h3 class="font-bold text-slate-800 text-sm">Rekap Jam Kedatangan Pegawai (<?= date('d M Y', strtotime($targetDate)) ?>)</h3>
+                    <p class="text-xs text-slate-500">Mencatat jam check-in, status keterlambatan menit, jarak GPS ke kantor, dan jam check-out.</p>
+                </div>
+                <span class="text-xs font-bold text-slate-600 bg-white px-3 py-1 rounded-xl border border-slate-200">
+                    Batas Jam Masuk: <strong class="text-rose-600 font-mono"><?= substr($rekapData['batasJamMasuk'], 0, 5) ?> WITA</strong>
+                </span>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-xs text-left">
+                    <thead class="bg-slate-50 text-slate-500 uppercase tracking-wider font-bold border-b border-slate-200/80">
+                        <tr>
+                            <th class="py-3.5 px-3 text-center w-10">No</th>
+                            <th class="py-3.5 px-4">Nama Pegawai & NIY</th>
+                            <th class="py-3.5 px-4">Unit Tugas</th>
+                            <th class="py-3.5 px-4 text-center">Jam Kedatangan (Check-in)</th>
+                            <th class="py-3.5 px-4 text-center">Status Kehadiran</th>
+                            <th class="py-3.5 px-4 text-center">Jam Pulang (Check-out)</th>
+                            <th class="py-3.5 px-4">Lokasi Absen Efektif</th>
+                            <th class="py-3.5 px-4 text-center">Jarak Meter</th>
+                            <th class="py-3.5 px-4">Keterangan</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        <?php if (empty($rekapData['logs'])): ?>
+                            <tr>
+                                <td colspan="9" class="py-12 text-center text-slate-400">
+                                    Tidak ada data kehadiran pada tanggal <?= date('d F Y', strtotime($targetDate)) ?>.
+                                </td>
+                            </tr>
+                        <?php else: ?>
+                            <?php foreach ($rekapData['logs'] as $idx => $r):
+                                $namaLengkap = $r['nama'] . (!empty($r['gelar']) ? ', ' . $r['gelar'] : '');
+                                $isTerlambat = ($r['status'] === 'Terlambat');
+                                $isHadir = ($r['status'] === 'Hadir');
+                                $hasCheckin = !empty($r['jam_masuk']);
+                            ?>
+                                <tr class="hover:bg-slate-50/80 transition-colors <?= $isTerlambat ? 'bg-amber-50/30' : '' ?>">
+                                    <td class="py-3.5 px-3 text-center text-slate-400 font-semibold"><?= $idx + 1 ?></td>
+                                    <td class="py-3.5 px-4">
+                                        <div class="font-bold text-slate-800"><?= e($namaLengkap) ?></div>
+                                        <div class="text-[11px] text-slate-400 font-mono">NIY: <?= e($r['niy'] ?: '-') ?></div>
+                                    </td>
+                                    <td class="py-3.5 px-4">
+                                        <div class="font-semibold text-slate-700"><?= e($r['unit_tugas'] ?: 'Umum') ?></div>
+                                        <div class="text-[11px] text-slate-400"><?= e($r['jabatan'] ?: '-') ?></div>
+                                    </td>
+                                    <td class="py-3.5 px-4 text-center">
+                                        <?php if ($hasCheckin): ?>
+                                            <span class="font-extrabold font-mono text-xs <?= $isTerlambat ? 'text-amber-700' : 'text-slate-800' ?>">
+                                                <?= substr($r['jam_masuk'], 0, 5) ?> WITA
+                                            </span>
+                                        <?php else: ?>
+                                            <span class="text-slate-400">-</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td class="py-3.5 px-4 text-center">
+                                        <?php if ($isTerlambat): ?>
+                                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-800 border border-amber-200">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                                                Terlambat
+                                            </span>
+                                        <?php elseif ($isHadir): ?>
+                                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                                Tepat Waktu
+                                            </span>
+                                        <?php else: ?>
+                                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-medium bg-slate-100 text-slate-400">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
+                                                Belum Check-in
+                                            </span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td class="py-3.5 px-4 text-center">
+                                        <?php if (!empty($r['jam_pulang'])): ?>
+                                            <span class="font-mono font-bold text-xs text-sky-700">
+                                                <?= substr($r['jam_pulang'], 0, 5) ?> WITA
+                                            </span>
+                                        <?php else: ?>
+                                            <span class="text-slate-400">-</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td class="py-3.5 px-4">
+                                        <div class="font-medium text-slate-800 truncate max-w-[200px]" title="<?= e($r['nama_kantor_absen'] ?: $r['nama_kantor_efektif']) ?>">
+                                            🏢 <?= e($r['nama_kantor_absen'] ?: $r['nama_kantor_efektif']) ?>
+                                        </div>
+                                    </td>
+                                    <td class="py-3.5 px-4 text-center font-mono">
+                                        <?php if ($r['jarak_masuk_meter'] !== null): ?>
+                                            <span class="px-2 py-0.5 rounded-md font-bold text-[11px] <?= (float)$r['jarak_masuk_meter'] <= (int)$radiusGlobal ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700' ?>">
+                                                <?= round((float)$r['jarak_masuk_meter']) ?> m
+                                            </span>
+                                        <?php else: ?>
+                                            <span class="text-slate-400">-</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td class="py-3.5 px-4">
+                                        <span class="text-xs text-slate-600"><?= e($r['keterangan'] ?: '-') ?></span>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═════════════════════════════════════════════════════════════════════
+         TAB 3: LOKASI ABSEN CUSTOM PER UNIT
          ═════════════════════════════════════════════════════════════════════ -->
     <div id="absen-panel-unit" class="absen-tab-panel space-y-4 <?= $activeTab === 'unit' ? '' : 'hidden' ?>">
         <div class="bg-purple-50/80 border border-purple-200 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -523,6 +769,38 @@ $defaultLng = (float)($globalConfig['longitude_default'] ?? 119.8707000);
                         <p class="text-[11px] text-emerald-800">
                             Radius ini berlaku untuk seluruh pegawai tanpa terkecuali (baik lokasi semula, custom unit, maupun custom individu).
                         </p>
+                    </div>
+
+                    <!-- Jam Kerja & Batas Keterlambatan -->
+                    <div class="p-4 rounded-2xl bg-amber-50/70 border border-amber-200 space-y-3">
+                        <div class="flex items-center gap-2">
+                            <span class="text-base">⏰</span>
+                            <div>
+                                <h4 class="text-xs font-extrabold text-amber-950">Jam Kedatangan & Toleransi Absen</h4>
+                                <p class="text-[11px] text-amber-800">Menentukan jam buka presensi, jam batas toleransi keterlambatan, dan jam pulang.</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                            <div>
+                                <label class="block text-[11px] font-bold text-amber-950 mb-1">Mulai Check-in</label>
+                                <input type="time" name="jam_masuk_mulai" value="<?= e($jamMasukMulai) ?>" required
+                                       class="w-full px-3 py-2 rounded-xl border border-amber-300 bg-white text-xs font-bold text-slate-800 outline-none">
+                                <span class="text-[10px] text-amber-700">Awal buka absen masuk</span>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-amber-950 mb-1">Batas Tepat Waktu <span class="text-rose-500">*</span></label>
+                                <input type="time" name="jam_masuk_batas" value="<?= e($jamMasukBatas) ?>" required
+                                       class="w-full px-3 py-2 rounded-xl border border-rose-300 bg-white text-xs font-extrabold text-rose-700 outline-none">
+                                <span class="text-[10px] text-rose-600 font-semibold">&gt; jam ini = Terlambat</span>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-amber-950 mb-1">Buka Check-out</label>
+                                <input type="time" name="jam_pulang_mulai" value="<?= e($jamPulangMulai) ?>" required
+                                       class="w-full px-3 py-2 rounded-xl border border-amber-300 bg-white text-xs font-bold text-slate-800 outline-none">
+                                <span class="text-[10px] text-amber-700">Awal buka absen pulang</span>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="flex items-center justify-between pt-3 border-t border-slate-100">

@@ -182,7 +182,35 @@ function initOrUpdateMap(coords, isWithinRadius) {
 }
 
 // ── Check-in Masuk & Check-out Pulang State Management ──────────────────────
+window.syncAttendanceFromTodayData = function(todayData) {
+  if (!todayData) return;
+  const state = { checkin: null, checkout: null };
+  if (todayData.has_checkin && todayData.jam_masuk) {
+    state.checkin = {
+      time: todayData.jam_masuk,
+      timestamp: Date.now(),
+      location: todayData.nama_kantor || (SCHOOL_COORDS ? SCHOOL_COORDS.name : 'Kampus BIP'),
+      status: todayData.keterangan || (todayData.status === 'Terlambat' ? 'Terlambat' : 'Tepat Waktu')
+    };
+  }
+  if (todayData.has_checkout && todayData.jam_pulang) {
+    state.checkout = {
+      time: todayData.jam_pulang,
+      timestamp: Date.now(),
+      location: todayData.nama_kantor || (SCHOOL_COORDS ? SCHOOL_COORDS.name : 'Kampus BIP'),
+      status: 'Selesai Tugas'
+    };
+  }
+  localStorage.setItem('portal_guru_attendance_today', JSON.stringify(state));
+  if (typeof syncBerandaAttendanceUI === 'function') syncBerandaAttendanceUI();
+  return state;
+};
+
 window.getAttendanceState = function() {
+  if (window.SERVER_ATTENDANCE_TODAY && !window._serverAttendanceSynced) {
+    window._serverAttendanceSynced = true;
+    return window.syncAttendanceFromTodayData(window.SERVER_ATTENDANCE_TODAY);
+  }
   const data = localStorage.getItem('portal_guru_attendance_today');
   if (!data) return { checkin: null, checkout: null };
   try {
@@ -207,33 +235,74 @@ window.handleDoCheckin = function(btn) {
     confirmText: 'Ya, Check-in',
     cancelText: 'Batal',
     onConfirm: () => {
-      // Button loading state
       const targetBtn = btn || document.querySelector('#absen-action-container button');
       AndroidUI.setButtonLoading(targetBtn, 'Merekam GPS & Presensi...');
 
-      setTimeout(() => {
-        const now = new Date();
-        const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WITA';
-        const state = getAttendanceState();
+      // Pastikan ada koordinat GPS
+      const coords = userCoords || { lat: SCHOOL_COORDS.lat, lng: SCHOOL_COORDS.lng, accuracy: 10 };
+      const baseUrl = window.APP_BASE_URL || '';
 
-        state.checkin = {
-          time: timeStr,
-          timestamp: now.getTime(),
-          location: userCoords ? `${userCoords.lat.toFixed(5)}, ${userCoords.lng.toFixed(5)}` : 'Kampus BIP',
-          status: 'Tepat Waktu'
-        };
+      fetch(baseUrl + '/mobile/api/absen/checkin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          latitude: coords.lat,
+          longitude: coords.lng,
+          accuracy: coords.accuracy || null
+        })
+      })
+      .then(res => res.json())
+      .then(json => {
+        AndroidUI.restoreButton(targetBtn);
+        if (json.success) {
+          const resData = json.data || {};
+          const timeStr = resData.jam_masuk || (new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WITA');
+          const isLate = (resData.status === 'Terlambat');
+          const ketStr = resData.keterangan || (isLate ? 'Terlambat' : 'Tepat Waktu');
 
-        saveAttendanceState(state);
-        renderAttendancePageUI();
+          const state = getAttendanceState();
+          state.checkin = {
+            time: timeStr,
+            timestamp: Date.now(),
+            location: resData.nama_kantor || SCHOOL_COORDS.name,
+            status: ketStr
+          };
+          saveAttendanceState(state);
+          renderAttendancePageUI();
 
-        // Smooth Animated Checkmark Modal
-        AndroidUI.success({
-          title: 'Check-in Berhasil!',
-          subtitle: 'Presensi masuk telah dicatat di server',
-          message: `Absen masuk Anda tercatat pada pukul <strong class="text-emerald-700 font-bold">${timeStr}</strong>.<br><span class="text-slate-400 text-xs">Tombol Absen Pulang akan terbuka pada pukul 15.00 WITA.</span>`,
-          buttonText: 'Selesai'
+          const subMsg = isLate
+            ? `<span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800">⚠️ ${ketStr}</span>`
+            : `<span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">✓ Hadir Tepat Waktu</span>`;
+
+          AndroidUI.success({
+            title: isLate ? 'Check-in Tercatat (Terlambat)' : 'Check-in Berhasil!',
+            subtitle: isLate ? 'Presensi masuk dicatat sebagai terlambat' : 'Presensi masuk tepat waktu dicatat di server',
+            message: `Absen masuk Anda tercatat pada pukul <strong class="text-slate-900 font-extrabold">${timeStr}</strong>.<br><div class="my-2">${subMsg}</div><span class="text-slate-400 text-xs">Jarak ke kantor: ${Math.round(resData.jarak_meter || 0)}m &bull; Absen Pulang buka jam 15.00 WITA.</span>`,
+            buttonText: 'Selesai'
+          });
+        } else {
+          AndroidUI.alert({
+            title: 'Presensi Gagal',
+            subtitle: 'Check-in Belum Berhasil',
+            message: json.message || 'Gagal merekam presensi masuk. Pastikan Anda berada dalam radius kantor.',
+            icon: '⚠️',
+            iconBg: 'bg-rose-100 text-rose-700'
+          });
+        }
+      })
+      .catch(err => {
+        AndroidUI.restoreButton(targetBtn);
+        AndroidUI.alert({
+          title: 'Kesalahan Jaringan',
+          subtitle: 'Koneksi Gagal',
+          message: 'Terjadi gangguan saat menghubungi server: ' + err.message,
+          icon: '⚠️',
+          iconBg: 'bg-rose-100 text-rose-700'
         });
-      }, 700);
+      });
     }
   });
 };
@@ -248,52 +317,92 @@ window.handleDoCheckout = function(btn) {
     confirmText: 'Ya, Absen Pulang',
     cancelText: 'Batal',
     onConfirm: () => {
-      // Button loading state
       const targetBtn = btn || document.querySelector('#absen-action-container button');
       AndroidUI.setButtonLoading(targetBtn, 'Menyimpan Absen Pulang...');
 
-      setTimeout(() => {
-        const now = new Date();
-        const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WITA';
-        const state = getAttendanceState();
+      const coords = userCoords || { lat: SCHOOL_COORDS.lat, lng: SCHOOL_COORDS.lng, accuracy: 10 };
+      const baseUrl = window.APP_BASE_URL || '';
 
-        state.checkout = {
-          time: timeStr,
-          timestamp: now.getTime(),
-          location: userCoords ? `${userCoords.lat.toFixed(5)}, ${userCoords.lng.toFixed(5)}` : 'Kampus BIP',
-          status: 'Selesai Tugas'
-        };
+      fetch(baseUrl + '/mobile/api/absen/checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          latitude: coords.lat,
+          longitude: coords.lng,
+          accuracy: coords.accuracy || null
+        })
+      })
+      .then(res => res.json())
+      .then(json => {
+        AndroidUI.restoreButton(targetBtn);
+        if (json.success) {
+          const resData = json.data || {};
+          const timeStr = resData.jam_pulang || (new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WITA');
+          const state = getAttendanceState();
+          state.checkout = {
+            time: timeStr,
+            timestamp: Date.now(),
+            location: SCHOOL_COORDS.name,
+            status: 'Selesai Tugas'
+          };
+          saveAttendanceState(state);
+          renderAttendancePageUI();
 
-        saveAttendanceState(state);
-        renderAttendancePageUI();
-
-        // Smooth Animated Checkmark Modal
-        AndroidUI.success({
-          title: 'Absen Pulang Berhasil!',
-          subtitle: 'Presensi hari ini telah selesai',
-          message: `Absen pulang Anda tercatat pada pukul <strong class="text-emerald-700 font-bold">${timeStr}</strong>.<br>Terima kasih atas dedikasi Anda hari ini! 💙`,
-          actions: [
-            {
-              text: 'Ke Beranda',
-              className: 'w-full py-3 bg-blue-600 text-white font-bold text-xs rounded-2xl shadow-md text-center',
-              onClick: () => {
-                const target = (window.APP_BASE_URL || '') + '/mobile';
-                if (window.MobileRouter) window.MobileRouter.navigate(target);
-                else window.location.href = target;
+          AndroidUI.success({
+            title: 'Absen Pulang Berhasil!',
+            subtitle: 'Presensi hari ini telah selesai',
+            message: `Absen pulang Anda tercatat pada pukul <strong class="text-emerald-700 font-bold">${timeStr}</strong>.<br>Terima kasih atas dedikasi dan kerja keras Anda hari ini! 💙`,
+            actions: [
+              {
+                text: 'Ke Beranda',
+                className: 'w-full py-3 bg-primary-600 text-white font-bold text-xs rounded-2xl shadow-md text-center press-bounce',
+                onClick: () => {
+                  const target = (window.APP_BASE_URL || '') + '/mobile';
+                  if (window.MobileRouter) window.MobileRouter.navigate(target);
+                  else window.location.href = target;
+                }
               }
-            }
-          ]
+            ]
+          });
+        } else {
+          AndroidUI.alert({
+            title: 'Absen Pulang Gagal',
+            subtitle: 'Belum Memenuhi Syarat',
+            message: json.message || 'Gagal menyimpan absen pulang.',
+            icon: '⚠️',
+            iconBg: 'bg-rose-100 text-rose-700'
+          });
+        }
+      })
+      .catch(err => {
+        AndroidUI.restoreButton(targetBtn);
+        AndroidUI.alert({
+          title: 'Kesalahan Jaringan',
+          subtitle: 'Koneksi Gagal',
+          message: 'Terjadi gangguan saat menghubungi server: ' + err.message,
+          icon: '⚠️',
+          iconBg: 'bg-rose-100 text-rose-700'
         });
-      }, 700);
+      });
     }
   });
 };
 
-// Check if device hour is >= 15:00
+// Check if device hour is >= jam_pulang_mulai (default 15:00)
 window.isCheckoutTimeAllowed = function() {
   if (window._simulateAfternoonTime) return true;
-  const currentHour = new Date().getHours();
-  return currentHour >= 15;
+  const pulangStr = window.SERVER_JAM_PULANG_MULAI || '15:00:00';
+  const parts = pulangStr.split(':').map(Number);
+  const targetHour = parts[0] || 15;
+  const targetMin = parts[1] || 0;
+
+  const now = new Date();
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  const targetMinutes = targetHour * 60 + targetMin;
+  return nowMinutes >= targetMinutes;
 };
 
 // Toggle simulation for 15:00 for testing
@@ -442,22 +551,26 @@ function syncBerandaAttendanceUI() {
       berandaCheckinBadge.innerHTML = `<div class="w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-sm"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg></div><span class="text-[9px] font-bold text-emerald-700 mt-0.5">Check-in</span>`;
     }
   } else if (state.checkin && !state.checkout) {
+    const isLate = (state.checkin.status || '').toLowerCase().includes('terlambat');
+    const badgeColor = isLate ? 'amber' : 'emerald';
     if (isAllowed) {
       berandaCheckinText.textContent = `Sudah Masuk (${state.checkin.time})`;
-      berandaCheckinSub.textContent = 'Waktunya Absen Pulang (Pukul 15.00+)';
+      berandaCheckinSub.textContent = isLate ? `${state.checkin.status} • Waktunya Pulang (15.00+)` : 'Waktunya Absen Pulang (Pukul 15.00+)';
       berandaCheckinBtn.className = 'shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white shadow-md shadow-amber-500/30 press-bounce animate-pulse';
       berandaCheckinBtn.innerHTML = '<span>🏠</span><span>Absen Pulang</span>';
       berandaCheckinBtn.href = (window.APP_BASE_URL || '') + '/mobile/absen';
     } else {
       berandaCheckinText.textContent = `Sudah Masuk (${state.checkin.time})`;
-      berandaCheckinSub.textContent = 'Absen Pulang buka pukul 15.00';
-      berandaCheckinBtn.className = 'shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200';
+      berandaCheckinSub.textContent = isLate ? `${state.checkin.status} • Pulang jam 15.00` : 'Absen Pulang buka pukul 15.00';
+      berandaCheckinBtn.className = isLate 
+        ? 'shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200'
+        : 'shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200';
       berandaCheckinBtn.innerHTML = '<span>✓</span><span>Masuk</span>';
       berandaCheckinBtn.href = (window.APP_BASE_URL || '') + '/mobile/absen';
     }
     if (berandaCheckinBadge) {
-      berandaCheckinBadge.className = 'w-13 h-13 rounded-2xl bg-emerald-500 text-white flex flex-col items-center justify-center shrink-0 shadow-md shadow-emerald-500/20';
-      berandaCheckinBadge.innerHTML = `<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg><span class="text-[9px] font-bold mt-0.5">Masuk</span>`;
+      berandaCheckinBadge.className = `w-13 h-13 rounded-2xl ${isLate ? 'bg-amber-500' : 'bg-emerald-500'} text-white flex flex-col items-center justify-center shrink-0 shadow-md ${isLate ? 'shadow-amber-500/20' : 'shadow-emerald-500/20'}`;
+      berandaCheckinBadge.innerHTML = `<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg><span class="text-[9px] font-bold mt-0.5">${isLate ? 'Terlambat' : 'Masuk'}</span>`;
     }
   } else {
     berandaCheckinText.textContent = `Presensi Selesai (Pulang ${state.checkout.time})`;

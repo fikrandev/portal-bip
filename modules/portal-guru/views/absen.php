@@ -43,7 +43,7 @@
                 </div>
                 <div>
                     <h3 class="font-bold text-slate-800 text-xs">Titik Lokasi Presensi</h3>
-                    <p class="text-[10px] text-slate-400"><?= e($schoolName ?? 'Kampus Utama BIP') ?> • Radius <?= (int)($schoolRadius ?? 150) ?>m</p>
+                    <p class="text-[10px] text-slate-400"><?= e($schoolName ?? 'Kampus Utama BIP') ?> • Radius <?= (int)($schoolRadius ?? 10) ?>m (<?= e($lokasiSourceLabel ?? 'Default') ?>)</p>
                 </div>
             </div>
             <button type="button" onclick="window.initGeolocation()" class="px-2.5 py-1 text-[11px] font-semibold text-primary-600 bg-primary-50 rounded-xl hover:bg-primary-100 flex items-center gap-1 press-bounce">
@@ -117,11 +117,14 @@
 
 <script>
     window.CUSTOM_SCHOOL_COORDS = {
-        lat: <?= json_encode((float)($schoolCoords['lat'] ?? -5.147665)) ?>,
-        lng: <?= json_encode((float)($schoolCoords['lng'] ?? 119.432732)) ?>,
+        lat: <?= json_encode((float)($schoolCoords['lat'] ?? -0.8917)) ?>,
+        lng: <?= json_encode((float)($schoolCoords['lng'] ?? 119.8707)) ?>,
         name: <?= json_encode((string)($schoolName ?? 'Kampus Utama BIP')) ?>,
-        radius: <?= json_encode((int)($schoolRadius ?? 150)) ?>
+        radius: <?= json_encode((int)($schoolRadius ?? 10)) ?>
     };
+    window.SERVER_ATTENDANCE_TODAY = <?= json_encode($todayAttendance ?? null) ?>;
+    window.SERVER_JAM_PULANG_MULAI = <?= json_encode($jamPulangMulai ?? '15:00:00') ?>;
+    window.SERVER_JAM_MASUK_BATAS = <?= json_encode($jamMasukBatas ?? '07:30:00') ?>;
 
     // Realtime digital seconds clock & live check for 15.00 threshold
     if (window._absenClockTimer) {

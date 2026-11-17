@@ -605,10 +605,16 @@ class AbsenPegawaiModel
                 u.is_custom as unit_is_custom,
                 u.nama_kantor as unit_kantor,
                 u.latitude as unit_lat,
-                u.longitude as unit_lng
+                u.longitude as unit_lng,
+                apl.jam_masuk as today_jam_masuk,
+                apl.jam_pulang as today_jam_pulang,
+                apl.status as today_status,
+                apl.keterangan as today_keterangan,
+                apl.jarak_masuk_meter as today_jarak
             FROM `pegawai` p
             LEFT JOIN `absen_pegawai_lokasi` l ON l.pegawai_id = p.id
             LEFT JOIN `absen_pegawai_lokasi_unit` u ON u.unit_tugas = COALESCE(NULLIF(TRIM(p.unit_tugas), ''), 'Umum / Yayasan')
+            LEFT JOIN `absen_pegawai_log` apl ON apl.pegawai_id = p.id AND apl.tanggal = CURDATE()
             WHERE {$whereSql}
             ORDER BY p.nama ASC
         ", $params);
@@ -762,6 +768,497 @@ class AbsenPegawaiModel
             'unitCustomCount' => $cntCustomUnit,
             'radiusGlobal' => (int)$global['radius_meter'],
             'globalConfig' => $global
+        ];
+    }
+
+    /**
+     * Hitung jarak Haversine antara dua koordinat GPS (dalam meter)
+     */
+    public static function calculateDistance(float $lat1, float $lon1, float $lat2, float $lon2): float
+    {
+        $earthRadius = 6371000; // Radius bumi dalam meter
+        $dLat = deg2rad($lat2 - $lat1);
+        $dLon = deg2rad($lon2 - $lon1);
+        $a = sin($dLat / 2) * sin($dLat / 2) +
+             cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
+             sin($dLon / 2) * sin($dLon / 2);
+        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+        return (float)round($earthRadius * $c, 2);
+    }
+
+    /**
+     * Catat Check-in Masuk Pegawai / Guru
+     * Memvalidasi radius lokasi kantor efektif dan mendeteksi keterlambatan berdasarkan jam_masuk_batas
+     */
+    public static function recordCheckin(int $pegawaiId, float $lat, float $lng, ?float $accuracy = null): array
+    {
+        self::init();
+        if ($pegawaiId <= 0) {
+            return ['success' => false, 'message' => 'Identitas pegawai tidak valid.'];
+        }
+
+        $efektif = self::getLokasiEfektifPegawai($pegawaiId);
+        $global = self::getPengaturanGlobal();
+        $targetLat = (float)$efektif['latitude'];
+        $targetLng = (float)$efektif['longitude'];
+        $radiusBatas = (int)$efektif['radius_meter'];
+        $namaKantor = $efektif['nama_kantor'];
+
+        $jarak = self::calculateDistance($lat, $lng, $targetLat, $targetLng);
+
+        // Validasi radius (dengan toleransi akurasi GPS jika akurasi agak longgar, maksimal toleransi +20m)
+        $toleransiAkurasi = ($accuracy !== null && $accuracy > 0) ? min(20.0, (float)$accuracy) : 0.0;
+        $maxAllowedDistance = $radiusBatas + $toleransiAkurasi;
+
+        if ($jarak > $maxAllowedDistance) {
+            return [
+                'success' => false,
+                'message' => "Anda berada di luar radius presensi ({$jarak}m dari {$namaKantor}). Batas radius maksimal adalah {$radiusBatas}m.",
+                'data' => [
+                    'distance' => $jarak,
+                    'max_radius' => $radiusBatas,
+                    'target_office' => $namaKantor
+                ]
+            ];
+        }
+
+        // Cek apakah sudah pernah check-in hari ini
+        $existing = self::db()->find(
+            "SELECT * FROM `absen_pegawai_log` WHERE `pegawai_id` = ? AND `tanggal` = CURDATE() LIMIT 1",
+            [$pegawaiId]
+        );
+
+        if ($existing && !empty($existing['jam_masuk'])) {
+            $formattedJam = date('H:i', strtotime($existing['jam_masuk'])) . ' WITA';
+            return [
+                'success' => true,
+                'already_checked_in' => true,
+                'message' => "Anda sudah melakukan check-in hari ini pada pukul {$formattedJam}.",
+                'data' => [
+                    'jam_masuk' => $formattedJam,
+                    'jam_masuk_raw' => $existing['jam_masuk'],
+                    'status' => $existing['status'],
+                    'keterangan' => $existing['keterangan'] ?: ($existing['status'] === 'Terlambat' ? 'Terlambat' : 'Hadir Tepat Waktu'),
+                    'jarak_meter' => (float)($existing['jarak_masuk_meter'] ?? $jarak),
+                    'nama_kantor' => $existing['nama_kantor_absen'] ?: $namaKantor
+                ]
+            ];
+        }
+
+        // Tentukan apakah Hadir Tepat Waktu atau Terlambat berdasarkan batas jam kedatangan
+        $currentTime = date('H:i:s');
+        $jamMasukBatas = $global['jam_masuk_batas'] ?: '07:30:00';
+
+        if (strtotime($currentTime) <= strtotime($jamMasukBatas)) {
+            $status = 'Hadir';
+            $keterangan = 'Hadir Tepat Waktu';
+        } else {
+            $selisihMenit = max(1, (int)round((strtotime($currentTime) - strtotime($jamMasukBatas)) / 60));
+            $status = 'Terlambat';
+            $keterangan = "Terlambat {$selisihMenit} Menit";
+        }
+
+        try {
+            self::db()->query("
+                INSERT INTO `absen_pegawai_log` (
+                    `pegawai_id`, `tanggal`, `jam_masuk`, `status`, `nama_kantor_absen`,
+                    `lat_masuk`, `lng_masuk`, `jarak_masuk_meter`, `radius_saat_absen`, `keterangan`
+                ) VALUES (
+                    ?, CURDATE(), ?, ?, ?,
+                    ?, ?, ?, ?, ?
+                ) ON DUPLICATE KEY UPDATE
+                    `jam_masuk` = VALUES(`jam_masuk`),
+                    `status` = VALUES(`status`),
+                    `nama_kantor_absen` = VALUES(`nama_kantor_absen`),
+                    `lat_masuk` = VALUES(`lat_masuk`),
+                    `lng_masuk` = VALUES(`lng_masuk`),
+                    `jarak_masuk_meter` = VALUES(`jarak_masuk_meter`),
+                    `keterangan` = VALUES(`keterangan`),
+                    `updated_at` = NOW()
+            ", [
+                $pegawaiId,
+                $currentTime,
+                $status,
+                $namaKantor,
+                $lat,
+                $lng,
+                $jarak,
+                $radiusBatas,
+                $keterangan
+            ]);
+
+            // Sinkronkan ke tabel absensi_pegawai jika ada
+            try {
+                $uid = (int)self::db()->findColumn("SELECT user_id FROM `pegawai` WHERE `id` = ? LIMIT 1", [$pegawaiId]);
+                if ($uid > 0) {
+                    self::db()->query("
+                        INSERT INTO `absensi_pegawai` (
+                            `user_id`, `tanggal`, `jam_masuk`, `status_kehadiran`,
+                            `latitude_masuk`, `longitude_masuk`, `jarak_masuk_meter`, `keterangan`
+                        ) VALUES (
+                            ?, CURDATE(), ?, ?,
+                            ?, ?, ?, ?
+                        ) ON DUPLICATE KEY UPDATE
+                            `jam_masuk` = VALUES(`jam_masuk`),
+                            `status_kehadiran` = VALUES(`status_kehadiran`),
+                            `latitude_masuk` = VALUES(`latitude_masuk`),
+                            `longitude_masuk` = VALUES(`longitude_masuk`),
+                            `jarak_masuk_meter` = VALUES(`jarak_masuk_meter`),
+                            `keterangan` = VALUES(`keterangan`)
+                    ", [
+                        $uid,
+                        $currentTime,
+                        strtolower($status),
+                        $lat,
+                        $lng,
+                        (int)round($jarak),
+                        $keterangan
+                    ]);
+                }
+            } catch (Throwable $e) {}
+
+            $jamMasukFmt = date('H:i', strtotime($currentTime)) . ' WITA';
+            return [
+                'success' => true,
+                'message' => 'Check-in masuk berhasil dicatat!',
+                'data' => [
+                    'jam_masuk' => $jamMasukFmt,
+                    'jam_masuk_raw' => $currentTime,
+                    'status' => $status,
+                    'keterangan' => $keterangan,
+                    'jarak_meter' => $jarak,
+                    'nama_kantor' => $namaKantor
+                ]
+            ];
+        } catch (Throwable $e) {
+            return ['success' => false, 'message' => 'Gagal mencatat check-in: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * Catat Absen Pulang Pegawai / Guru
+     * Memvalidasi jam pulang (default 15.00) dan radius kantor
+     */
+    public static function recordCheckout(int $pegawaiId, float $lat, float $lng, ?float $accuracy = null): array
+    {
+        self::init();
+        if ($pegawaiId <= 0) {
+            return ['success' => false, 'message' => 'Identitas pegawai tidak valid.'];
+        }
+
+        $log = self::db()->find(
+            "SELECT * FROM `absen_pegawai_log` WHERE `pegawai_id` = ? AND `tanggal` = CURDATE() LIMIT 1",
+            [$pegawaiId]
+        );
+
+        if (!$log || empty($log['jam_masuk'])) {
+            return ['success' => false, 'message' => 'Anda belum melakukan check-in masuk hari ini.'];
+        }
+
+        if (!empty($log['jam_pulang'])) {
+            $pulangFmt = date('H:i', strtotime($log['jam_pulang'])) . ' WITA';
+            return [
+                'success' => true,
+                'already_checked_out' => true,
+                'message' => "Anda sudah melakukan absen pulang hari ini pada pukul {$pulangFmt}.",
+                'data' => [
+                    'jam_pulang' => $pulangFmt,
+                    'jam_pulang_raw' => $log['jam_pulang']
+                ]
+            ];
+        }
+
+        $global = self::getPengaturanGlobal();
+        $jamPulangMulai = $global['jam_pulang_mulai'] ?: '15:00:00';
+        $currentTime = date('H:i:s');
+
+        // Periksa apakah waktu saat ini sudah memenuhi jam pulang
+        if (strtotime($currentTime) < strtotime($jamPulangMulai)) {
+            $jamBukaFmt = date('H:i', strtotime($jamPulangMulai)) . ' WITA';
+            return [
+                'success' => false,
+                'message' => "Absen pulang baru dibuka pada pukul {$jamBukaFmt}."
+            ];
+        }
+
+        $efektif = self::getLokasiEfektifPegawai($pegawaiId);
+        $targetLat = (float)$efektif['latitude'];
+        $targetLng = (float)$efektif['longitude'];
+        $radiusBatas = (int)$efektif['radius_meter'];
+        $namaKantor = $efektif['nama_kantor'];
+
+        $jarak = self::calculateDistance($lat, $lng, $targetLat, $targetLng);
+        $toleransiAkurasi = ($accuracy !== null && $accuracy > 0) ? min(20.0, (float)$accuracy) : 0.0;
+        $maxAllowedDistance = $radiusBatas + $toleransiAkurasi;
+
+        if ($jarak > $maxAllowedDistance) {
+            return [
+                'success' => false,
+                'message' => "Anda berada di luar radius presensi ({$jarak}m dari {$namaKantor}). Batas radius maksimal adalah {$radiusBatas}m.",
+                'data' => [
+                    'distance' => $jarak,
+                    'max_radius' => $radiusBatas,
+                    'target_office' => $namaKantor
+                ]
+            ];
+        }
+
+        try {
+            self::db()->query("
+                UPDATE `absen_pegawai_log`
+                SET `jam_pulang` = ?,
+                    `lat_pulang` = ?,
+                    `lng_pulang` = ?,
+                    `jarak_pulang_meter` = ?,
+                    `updated_at` = NOW()
+                WHERE `pegawai_id` = ? AND `tanggal` = CURDATE()
+            ", [
+                $currentTime,
+                $lat,
+                $lng,
+                $jarak,
+                $pegawaiId
+            ]);
+
+            // Sinkronkan ke tabel absensi_pegawai jika ada
+            try {
+                $uid = (int)self::db()->findColumn("SELECT user_id FROM `pegawai` WHERE `id` = ? LIMIT 1", [$pegawaiId]);
+                if ($uid > 0) {
+                    self::db()->query("
+                        UPDATE `absensi_pegawai`
+                        SET `jam_pulang` = ?,
+                            `latitude_pulang` = ?,
+                            `longitude_pulang` = ?,
+                            `jarak_pulang_meter` = ?,
+                            `updated_at` = NOW()
+                        WHERE `user_id` = ? AND `tanggal` = CURDATE()
+                    ", [$currentTime, $lat, $lng, (int)round($jarak), $uid]);
+                }
+            } catch (Throwable $e) {}
+
+            $pulangFmt = date('H:i', strtotime($currentTime)) . ' WITA';
+            return [
+                'success' => true,
+                'message' => 'Absen pulang berhasil dicatat!',
+                'data' => [
+                    'jam_pulang' => $pulangFmt,
+                    'jam_pulang_raw' => $currentTime
+                ]
+            ];
+        } catch (Throwable $e) {
+            return ['success' => false, 'message' => 'Gagal mencatat absen pulang: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * Ambil status presensi hari ini untuk 1 pegawai
+     */
+    public static function getTodayAttendance(int $pegawaiId): array
+    {
+        self::init();
+        if ($pegawaiId <= 0) {
+            return [
+                'has_checkin' => false,
+                'has_checkout' => false,
+                'jam_masuk' => null,
+                'jam_pulang' => null,
+                'status' => null,
+                'keterangan' => null
+            ];
+        }
+
+        $log = self::db()->find(
+            "SELECT * FROM `absen_pegawai_log` WHERE `pegawai_id` = ? AND `tanggal` = CURDATE() LIMIT 1",
+            [$pegawaiId]
+        );
+
+        if (!$log || empty($log['jam_masuk'])) {
+            return [
+                'has_checkin' => false,
+                'has_checkout' => false,
+                'jam_masuk' => null,
+                'jam_pulang' => null,
+                'status' => null,
+                'keterangan' => null
+            ];
+        }
+
+        $hasPulang = !empty($log['jam_pulang']);
+        return [
+            'has_checkin' => true,
+            'has_checkout' => $hasPulang,
+            'jam_masuk' => date('H:i', strtotime($log['jam_masuk'])) . ' WITA',
+            'jam_masuk_raw' => $log['jam_masuk'],
+            'jam_pulang' => $hasPulang ? (date('H:i', strtotime($log['jam_pulang'])) . ' WITA') : null,
+            'jam_pulang_raw' => $log['jam_pulang'],
+            'status' => $log['status'],
+            'keterangan' => $log['keterangan'] ?: ($log['status'] === 'Terlambat' ? 'Terlambat' : 'Hadir Tepat Waktu'),
+            'nama_kantor' => $log['nama_kantor_absen'] ?? '',
+            'jarak_meter' => (float)($log['jarak_masuk_meter'] ?? 0)
+        ];
+    }
+
+    /**
+     * Ambil riwayat log presensi terbaru untuk 1 pegawai
+     */
+    public static function getRecentLogs(int $pegawaiId, int $limit = 7): array
+    {
+        self::init();
+        if ($pegawaiId <= 0) return [];
+
+        $rows = self::db()->findAll(
+            "SELECT * FROM `absen_pegawai_log` WHERE `pegawai_id` = ? ORDER BY `tanggal` DESC LIMIT " . (int)$limit,
+            [$pegawaiId]
+        );
+
+        $todayStr = date('Y-m-d');
+        $kemarinStr = date('Y-m-d', strtotime('-1 day'));
+        $duaHariLaluStr = date('Y-m-d', strtotime('-2 days'));
+
+        $result = [];
+        foreach ($rows as $r) {
+            $tgl = $r['tanggal'];
+            if ($tgl === $todayStr) {
+                $dateLabel = 'Hari ini';
+            } elseif ($tgl === $kemarinStr) {
+                $dateLabel = 'Kemarin';
+            } elseif ($tgl === $duaHariLaluStr) {
+                $dateLabel = '2 Hari Lalu';
+            } else {
+                $dateLabel = date('d M Y', strtotime($tgl));
+            }
+
+            $checkinFmt = !empty($r['jam_masuk']) ? (date('H:i', strtotime($r['jam_masuk'])) . ' WITA') : '-';
+            $checkoutFmt = !empty($r['jam_pulang']) ? (date('H:i', strtotime($r['jam_pulang'])) . ' WITA') : '-';
+            $isTerlambat = ($r['status'] === 'Terlambat');
+            $badge = $isTerlambat ? 'amber' : 'emerald';
+            $statusLabel = $r['keterangan'] ?: ($isTerlambat ? 'Terlambat' : 'Hadir Tepat Waktu');
+
+            $result[] = [
+                'date' => $dateLabel,
+                'checkin' => $checkinFmt,
+                'checkout' => $checkoutFmt,
+                'status' => $statusLabel,
+                'badge' => $badge
+            ];
+        }
+
+        return $result;
+    }
+
+    /**
+     * Ambil data Rekap & Log Presensi Harian Seluruh Pegawai untuk halaman Web
+     */
+    public static function getRekapHarian(?string $tanggal = null, array $filters = []): array
+    {
+        self::init();
+        $targetDate = $tanggal ?: date('Y-m-d');
+        $global = self::getPengaturanGlobal();
+        $jamBatas = $global['jam_masuk_batas'] ?: '07:30:00';
+
+        $where = ["p.is_active = 1"];
+        $params = [$targetDate];
+
+        if (!empty($filters['search'])) {
+            $where[] = "(p.nama LIKE ? OR p.niy LIKE ? OR p.jabatan LIKE ?)";
+            $term = '%' . trim($filters['search']) . '%';
+            $params[] = $term;
+            $params[] = $term;
+            $params[] = $term;
+        }
+
+        if (!empty($filters['unit_tugas'])) {
+            if ($filters['unit_tugas'] === 'Umum / Yayasan') {
+                $where[] = "(p.unit_tugas IS NULL OR TRIM(p.unit_tugas) = '' OR TRIM(p.unit_tugas) = 'Umum / Yayasan')";
+            } else {
+                $where[] = "TRIM(p.unit_tugas) = ?";
+                $params[] = trim($filters['unit_tugas']);
+            }
+        }
+
+        if (!empty($filters['status'])) {
+            if ($filters['status'] === 'Belum Absen') {
+                $where[] = "apl.jam_masuk IS NULL";
+            } else {
+                $where[] = "apl.status = ?";
+                $params[] = $filters['status'];
+            }
+        }
+
+        $whereSql = implode(' AND ', $where);
+
+        $rows = self::db()->findAll("
+            SELECT 
+                p.id, p.niy, p.nama, p.gelar, p.foto, p.unit_tugas, p.jabatan,
+                apl.id as log_id,
+                apl.tanggal,
+                apl.jam_masuk,
+                apl.jam_pulang,
+                apl.status as log_status,
+                apl.keterangan as log_keterangan,
+                apl.nama_kantor_absen,
+                apl.jarak_masuk_meter,
+                apl.lat_masuk,
+                apl.lng_masuk
+            FROM `pegawai` p
+            LEFT JOIN `absen_pegawai_log` apl ON apl.pegawai_id = p.id AND apl.tanggal = ?
+            WHERE {$whereSql}
+            ORDER BY 
+                CASE 
+                    WHEN apl.status = 'Terlambat' THEN 1 
+                    WHEN apl.status = 'Hadir' THEN 2 
+                    ELSE 3 
+                END,
+                apl.jam_masuk ASC,
+                p.nama ASC
+        ", $params);
+
+        // Hitung statistik untuk tanggal terpilih
+        $allStatsRows = self::db()->findAll("
+            SELECT p.id, apl.status, apl.jam_masuk, apl.jam_pulang
+            FROM `pegawai` p
+            LEFT JOIN `absen_pegawai_log` apl ON apl.pegawai_id = p.id AND apl.tanggal = ?
+            WHERE p.is_active = 1
+        ", [$targetDate]);
+
+        $totalPegawai = count($allStatsRows);
+        $totalHadir = 0;
+        $totalTerlambat = 0;
+        $totalPulang = 0;
+        $totalBelumAbsen = 0;
+
+        foreach ($allStatsRows as $sr) {
+            if (!empty($sr['jam_masuk'])) {
+                if ($sr['status'] === 'Terlambat') {
+                    $totalTerlambat++;
+                } else {
+                    $totalHadir++;
+                }
+                if (!empty($sr['jam_pulang'])) {
+                    $totalPulang++;
+                }
+            } else {
+                $totalBelumAbsen++;
+            }
+        }
+
+        return [
+            'date' => $targetDate,
+            'tanggal' => $targetDate,
+            'rows' => $rows,
+            'logs' => $rows,
+            'batasJamMasuk' => $jamBatas,
+            'jamPulangMulai' => $global['jam_pulang_mulai'] ?: '15:00:00',
+            'stats' => [
+                'totalPegawai' => $totalPegawai,
+                'totalHadir' => $totalHadir,
+                'totalTerlambat' => $totalTerlambat,
+                'totalPulang' => $totalPulang,
+                'totalBelum' => $totalBelumAbsen,
+                'totalBelumAbsen' => $totalBelumAbsen,
+                'jamMasukBatas' => date('H:i', strtotime($jamBatas)) . ' WITA',
+                'jamPulangMulai' => date('H:i', strtotime($global['jam_pulang_mulai'] ?: '15:00:00')) . ' WITA'
+            ]
         ];
     }
 }

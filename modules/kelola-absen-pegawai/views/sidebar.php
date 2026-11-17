@@ -109,7 +109,15 @@ $namaKantorDefault = $sidebarStats['globalConfig']['nama_kantor_default'] ?? 'Ka
                     'bg-primary-700 text-primary-100'
                 );
 
-                // 2. Lokasi Custom Per Unit
+                // 2. Rekap & Jam Kedatangan Hari Ini
+                renderAbsenPegawaiSidebarMenu(
+                    'Rekap & Jam Kedatangan',
+                    'rekap',
+                    '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>',
+                    $currentTab
+                );
+
+                // 3. Lokasi Custom Per Unit
                 renderAbsenPegawaiSidebarMenu(
                     'Lokasi Custom Per Unit',
                     'unit',
@@ -119,9 +127,9 @@ $namaKantorDefault = $sidebarStats['globalConfig']['nama_kantor_default'] ?? 'Ka
                     'bg-purple-500/30 text-purple-200'
                 );
 
-                // 3. Pengaturan Radius Global & Lokasi Semula
+                // 4. Pengaturan Radius Global & Jam Masuk
                 renderAbsenPegawaiSidebarMenu(
-                    'Radius Global & Lokasi Semula',
+                    'Radius Global & Jam Masuk',
                     'pengaturan',
                     '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" /></svg>',
                     $currentTab

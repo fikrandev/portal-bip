@@ -69,42 +69,84 @@ if ($hourNow < 11) {
 <div class="px-4 space-y-4">
 
     <!-- 1. Absen Kehadiran Card -->
+    <?php
+        $hasCheckin = !empty($todayAttendance['has_checkin']);
+        $hasCheckout = !empty($todayAttendance['has_checkout']);
+        $attStatus = $todayAttendance['status'] ?? '';
+        $attJamMasuk = $todayAttendance['jam_masuk'] ?? '';
+        $attJamPulang = $todayAttendance['jam_pulang'] ?? '';
+        $attKet = $todayAttendance['keterangan'] ?? '';
+        $isTerlambat = ($attStatus === 'Terlambat');
+    ?>
     <div class="bg-white rounded-3xl p-4 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-slate-100">
         <div class="flex items-center justify-between gap-3">
             
-            <!-- Left Green Badge Icon -->
-            <div id="beranda-checkin-badge" class="w-13 h-13 rounded-2xl bg-primary-50 border border-primary-100 flex flex-col items-center justify-center shrink-0">
-                <div class="w-7 h-7 rounded-full bg-primary-500 text-white flex items-center justify-center shadow-sm">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
-                    </svg>
-                </div>
-                <span class="text-[9px] font-bold text-primary-700 mt-0.5">Check-in</span>
+            <!-- Left Badge Icon -->
+            <div id="beranda-checkin-badge" class="w-13 h-13 rounded-2xl <?= $hasCheckout ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20' : ($hasCheckin ? ($isTerlambat ? 'bg-amber-500 text-white shadow-md shadow-amber-500/20' : 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20') : 'bg-primary-50 border border-primary-100') ?> flex flex-col items-center justify-center shrink-0">
+                <?php if ($hasCheckout): ?>
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>
+                    <span class="text-[9px] font-bold mt-0.5">Selesai</span>
+                <?php elseif ($hasCheckin): ?>
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>
+                    <span class="text-[9px] font-bold mt-0.5"><?= $isTerlambat ? 'Terlambat' : 'Masuk' ?></span>
+                <?php else: ?>
+                    <div class="w-7 h-7 rounded-full bg-primary-500 text-white flex items-center justify-center shadow-sm">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                        </svg>
+                    </div>
+                    <span class="text-[9px] font-bold text-primary-700 mt-0.5">Check-in</span>
+                <?php endif; ?>
             </div>
 
             <!-- Middle Text -->
             <div class="flex-1 min-w-0">
                 <h3 class="font-bold text-slate-800 text-sm leading-snug">Absen Kehadiran</h3>
                 <p class="text-[11px] text-slate-400 leading-tight line-clamp-2 mt-0.5">
-                    Mulai aktivitas hari ini dengan melakukan check-in terlebih dahulu.
+                    <?php if ($hasCheckout): ?>
+                        Presensi lengkap hari ini. Terima kasih atas dedikasi Anda! 💙
+                    <?php elseif ($hasCheckin): ?>
+                        Anda telah melakukan check-in masuk hari ini.
+                    <?php else: ?>
+                        Mulai aktivitas hari ini dengan melakukan check-in terlebih dahulu.
+                    <?php endif; ?>
                 </p>
             </div>
 
-            <!-- Right Green Pill Action Button -->
-            <a href="<?= url('mobile/absen') ?>" id="beranda-checkin-btn" class="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold bg-[#16a34a] hover:bg-primary-700 text-white shadow-md shadow-primary-600/20 press-bounce">
-                <span>📍</span>
-                <span>Check-in</span>
-            </a>
+            <!-- Right Action Button -->
+            <?php if ($hasCheckout): ?>
+                <a href="<?= url('mobile/absen') ?>" id="beranda-checkin-btn" class="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 press-bounce">
+                    <span>Lihat Absen</span>
+                </a>
+            <?php elseif ($hasCheckin): ?>
+                <a href="<?= url('mobile/absen') ?>" id="beranda-checkin-btn" class="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white shadow-md shadow-amber-500/20 press-bounce">
+                    <span>🏠</span>
+                    <span>Absen Pulang</span>
+                </a>
+            <?php else: ?>
+                <a href="<?= url('mobile/absen') ?>" id="beranda-checkin-btn" class="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold bg-[#16a34a] hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20 press-bounce">
+                    <span>📍</span>
+                    <span>Check-in</span>
+                </a>
+            <?php endif; ?>
         </div>
 
-        <!-- Sub-bar: Belum check-in / Status -->
-        <div class="bg-[#f0fdf4] rounded-2xl p-2.5 flex items-center gap-2.5 mt-3 border border-primary-100/70">
-            <div class="w-6 h-6 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center shrink-0 text-xs">
+        <!-- Sub-bar: Status Kehadiran -->
+        <div class="rounded-2xl p-2.5 flex items-center gap-2.5 mt-3 border <?= $hasCheckout ? 'bg-emerald-50 border-emerald-100' : ($hasCheckin ? ($isTerlambat ? 'bg-amber-50 border-amber-200' : 'bg-emerald-50 border-emerald-100') : 'bg-[#f0fdf4] border-primary-100/70') ?>">
+            <div class="w-6 h-6 rounded-full <?= $hasCheckout ? 'bg-emerald-100 text-emerald-700' : ($hasCheckin ? ($isTerlambat ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700') : 'bg-primary-100 text-primary-700') ?> flex items-center justify-center shrink-0 text-xs">
                 <i data-lucide="clock" class="w-3.5 h-3.5"></i>
             </div>
             <div>
-                <p id="beranda-checkin-status" class="text-xs font-bold text-slate-800 leading-tight">Belum check-in hari ini</p>
-                <p id="beranda-checkin-sub" class="text-[10px] text-slate-400">Waktu akan tercatat saat Anda check-in.</p>
+                <?php if ($hasCheckout): ?>
+                    <p id="beranda-checkin-status" class="text-xs font-bold text-slate-800 leading-tight">Presensi Hari Ini Selesai</p>
+                    <p id="beranda-checkin-sub" class="text-[10px] text-slate-500">Masuk: <?= e($attJamMasuk) ?> &bull; Pulang: <?= e($attJamPulang) ?></p>
+                <?php elseif ($hasCheckin): ?>
+                    <p id="beranda-checkin-status" class="text-xs font-bold text-slate-800 leading-tight">Sudah Masuk (<?= e($attJamMasuk) ?>)</p>
+                    <p id="beranda-checkin-sub" class="text-[10px] <?= $isTerlambat ? 'text-amber-700 font-semibold' : 'text-slate-500' ?>"><?= e($attKet ?: ($isTerlambat ? 'Terlambat' : 'Tepat Waktu')) ?> &bull; Pulang jam 15.00+</p>
+                <?php else: ?>
+                    <p id="beranda-checkin-status" class="text-xs font-bold text-slate-800 leading-tight">Belum check-in hari ini</p>
+                    <p id="beranda-checkin-sub" class="text-[10px] text-slate-400">Waktu akan tercatat saat Anda check-in.</p>
+                <?php endif; ?>
             </div>
         </div>
     </div>
@@ -1067,5 +1109,11 @@ if ($hourNow < 11) {
                 renderIbadahCards();
             });
         }
+    }
+
+    // Sync Server Attendance State
+    window.SERVER_ATTENDANCE_TODAY = <?= json_encode($todayAttendance ?? null) ?>;
+    if (window.SERVER_ATTENDANCE_TODAY && typeof syncAttendanceFromTodayData === 'function') {
+        syncAttendanceFromTodayData(window.SERVER_ATTENDANCE_TODAY);
     }
 </script>
