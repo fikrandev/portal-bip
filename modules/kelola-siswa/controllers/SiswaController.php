@@ -92,7 +92,13 @@ class SiswaController
         $siswa = $db->findAll("SELECT * FROM siswa WHERE {$where} ORDER BY jenjang ASC, kelas ASC, nama_lengkap ASC LIMIT {$limit} OFFSET {$offset}", $params);
         $totalPages = max(1, ceil($total / $limit));
 
-        // Aggregate Statistics in Single Query
+        // Aggregate Statistics in Single Query (respects jenjang restriction)
+        $statWhere = 'tahun_akademik_id = ?';
+        $statParams = [$filterTa];
+        $jStatCond = Auth::jenjangSqlCondition('jenjang', $statParams);
+        if ($jStatCond !== '1=1') {
+            $statWhere .= " AND ({$jStatCond})";
+        }
         $stats = $db->find("
             SELECT 
                 COUNT(1) as total_siswa,
@@ -105,8 +111,8 @@ class SiswaController
                 SUM(CASE WHEN dapodik = 'Sudah' THEN 1 ELSE 0 END) as total_dapodik,
                 SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) as total_aktif
             FROM siswa
-            WHERE tahun_akademik_id = ?
-        ", [$filterTa]);
+            WHERE {$statWhere}
+        ", $statParams);
 
         $totalSiswa = intval($stats['total_siswa'] ?? 0);
         $totalPaud = intval($stats['total_paud'] ?? 0);
@@ -118,8 +124,11 @@ class SiswaController
         $totalDapodik = intval($stats['total_dapodik'] ?? 0);
         $totalAktif = intval($stats['total_aktif'] ?? 0);
 
-        // Get distinct kelas list for filter dropdown
-        $kelasList = $db->findAll("SELECT DISTINCT kelas FROM siswa WHERE kelas IS NOT NULL AND kelas != '' AND tahun_akademik_id = ? ORDER BY kelas ASC", [$filterTa]);
+        // Get distinct kelas list for filter dropdown (restricted to allowed jenjang / active filter jenjang)
+        $kelasWhere = "kelas IS NOT NULL AND kelas != '' AND tahun_akademik_id = ?";
+        $kelasParams = [$filterTa];
+        Auth::applyJenjangFilter($kelasWhere, $kelasParams, 'jenjang', $filterJenjang);
+        $kelasList = $db->findAll("SELECT DISTINCT kelas FROM siswa WHERE {$kelasWhere} ORDER BY kelas ASC", $kelasParams);
 
         // Get public IP for Dapodik Web Service guidance
         $publicIp = $_SESSION['dapodik_client_ip'] ?? null;
@@ -162,10 +171,7 @@ class SiswaController
         $where = "is_active = 1 AND tahun_akademik_id = ?";
         $params = [$filterTa];
 
-        if ($filterJenjang !== '') {
-            $where .= " AND UPPER(jenjang) = ?";
-            $params[] = strtoupper($filterJenjang);
-        }
+        Auth::applyJenjangFilter($where, $params, 'jenjang', $filterJenjang);
 
         if ($filterKelas !== '') {
             $where .= " AND kelas = ?";
@@ -182,7 +188,10 @@ class SiswaController
         $siswa = $db->findAll("SELECT id, nisn, id_siswa, nama_lengkap as nama, kelas, jenjang FROM siswa WHERE {$where} ORDER BY jenjang ASC, kelas ASC, nama ASC LIMIT {$limit} OFFSET {$offset}", $params);
         $totalPages = max(1, ceil($total / $limit));
 
-        $kelasList = $db->findAll("SELECT DISTINCT kelas FROM siswa WHERE kelas IS NOT NULL AND kelas != '' AND tahun_akademik_id = ? ORDER BY kelas ASC", [$filterTa]);
+        $kelasWhere = "kelas IS NOT NULL AND kelas != '' AND tahun_akademik_id = ?";
+        $kelasParams = [$filterTa];
+        Auth::applyJenjangFilter($kelasWhere, $kelasParams, 'jenjang', $filterJenjang);
+        $kelasList = $db->findAll("SELECT DISTINCT kelas FROM siswa WHERE {$kelasWhere} ORDER BY kelas ASC", $kelasParams);
 
         ob_start();
         include MODULES_PATH . '/kelola-siswa/views/foto/index.php';
@@ -200,8 +209,11 @@ class SiswaController
         ];
         
         $db = Database::getInstance();
-        $kelasList = $db->findAll("SELECT DISTINCT kelas FROM siswa WHERE kelas IS NOT NULL AND kelas != '' ORDER BY kelas ASC");
-        $classesByJenjang = self::getClassesByJenjang('', 'SD');
+        $kWhere = "kelas IS NOT NULL AND kelas != ''";
+        $kParams = [];
+        Auth::applyJenjangFilter($kWhere, $kParams, 'jenjang');
+        $kelasList = $db->findAll("SELECT DISTINCT kelas FROM siswa WHERE {$kWhere} ORDER BY kelas ASC", $kParams);
+        $classesByJenjang = self::getClassesByJenjang('', Auth::getActiveJenjang());
 
         ob_start();
         include MODULES_PATH . '/kelola-siswa/views/create.php';
@@ -435,12 +447,16 @@ class SiswaController
             }
         }
 
-        // Natural sort classes within each jenjang
+        // Natural sort classes within each jenjang & respect allowed jenjang
         foreach ($classesByJenjang as $j => &$list) {
             natsort($list);
             $list = array_values($list);
         }
         unset($list);
+
+        if (Auth::isJenjangRestricted()) {
+            $classesByJenjang = array_filter($classesByJenjang, fn($k) => Auth::canAccessJenjang((string)$k), ARRAY_FILTER_USE_KEY);
+        }
 
         return $classesByJenjang;
     }
@@ -460,7 +476,10 @@ class SiswaController
             ['label' => 'Edit Siswa']
         ];
         
-        $kelasList = $db->findAll("SELECT DISTINCT kelas FROM siswa WHERE kelas IS NOT NULL AND kelas != '' ORDER BY kelas ASC");
+        $kWhere = "kelas IS NOT NULL AND kelas != ''";
+        $kParams = [];
+        Auth::applyJenjangFilter($kWhere, $kParams, 'jenjang');
+        $kelasList = $db->findAll("SELECT DISTINCT kelas FROM siswa WHERE {$kWhere} ORDER BY kelas ASC", $kParams);
         $classesByJenjang = self::getClassesByJenjang($siswa['kelas'] ?? '', $siswa['jenjang'] ?? 'SD');
 
         ob_start();
@@ -1124,7 +1143,9 @@ class SiswaController
 
         $db = Database::getInstance();
 
-        // General stats
+        // General stats (respects jenjang restriction)
+        $statParams = [];
+        $jCond = Auth::jenjangSqlCondition('jenjang', $statParams);
         $stats = $db->find("
             SELECT 
                 COUNT(1) as total_siswa,
@@ -1137,7 +1158,8 @@ class SiswaController
                 SUM(CASE WHEN dapodik = 'Sudah' THEN 1 ELSE 0 END) as total_dapodik,
                 SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) as total_aktif
             FROM siswa
-        ");
+            WHERE {$jCond}
+        ", $statParams);
 
         $totalSiswa = intval($stats['total_siswa'] ?? 0);
         $totalPaud = intval($stats['total_paud'] ?? 0);
@@ -1150,12 +1172,18 @@ class SiswaController
         $totalAktif = intval($stats['total_aktif'] ?? 0);
 
         // Prestasi Stats
-        $totalPrestasi = $db->find("SELECT COUNT(*) as total FROM siswa_prestasi")['total'] ?? 0;
+        $pStatParams = [];
+        $jpCond = Auth::jenjangSqlCondition('s.jenjang', $pStatParams);
+        $totalPrestasi = $db->find("SELECT COUNT(*) as total FROM siswa_prestasi p JOIN siswa s ON p.siswa_id = s.id WHERE {$jpCond}", $pStatParams)['total'] ?? 0;
         
         // Siswa Keluar Stats
-        $totalKeluar = $db->find("SELECT COUNT(*) as total FROM siswa_keluar")['total'] ?? 0;
+        $kStatParams = [];
+        $jkCond = Auth::jenjangSqlCondition('s.jenjang', $kStatParams);
+        $totalKeluar = $db->find("SELECT COUNT(*) as total FROM siswa_keluar k JOIN siswa s ON k.siswa_id = s.id WHERE {$jkCond}", $kStatParams)['total'] ?? 0;
 
         // Rekap per Kelas
+        $rkParams = [];
+        $rkCond = Auth::jenjangSqlCondition('jenjang', $rkParams);
         $rekapKelas = $db->findAll("
             SELECT 
                 kelas,
@@ -1164,10 +1192,10 @@ class SiswaController
                 SUM(CASE WHEN jenis_kelamin = 'L' OR jenis_kelamin = 'Laki-Laki' THEN 1 ELSE 0 END) as laki,
                 SUM(CASE WHEN jenis_kelamin = 'P' OR jenis_kelamin = 'Perempuan' THEN 1 ELSE 0 END) as perempuan
             FROM siswa
-            WHERE is_active = 1 AND kelas IS NOT NULL AND kelas != ''
+            WHERE is_active = 1 AND kelas IS NOT NULL AND kelas != '' AND ({$rkCond})
             GROUP BY kelas, jenjang
             ORDER BY jenjang ASC, kelas ASC
-        ");
+        ", $rkParams);
 
         ob_start();
         include MODULES_PATH . '/kelola-siswa/views/statistik.php';
@@ -1205,10 +1233,7 @@ class SiswaController
             $params = [$s, $s, $s, $s, $s, $s, $s, $s];
         }
 
-        if ($filterJenjang !== '') {
-            $where .= " AND UPPER(jenjang) = ?";
-            $params[] = strtoupper($filterJenjang);
-        }
+        Auth::applyJenjangFilter($where, $params, 'jenjang', $filterJenjang);
 
         if ($filterKelas !== '') {
             $where .= " AND kelas = ?";
@@ -1219,7 +1244,10 @@ class SiswaController
         $siswaList = $db->findAll("SELECT * FROM siswa WHERE {$where} ORDER BY jenjang ASC, kelas ASC, nis ASC, nama_lengkap ASC LIMIT {$limit} OFFSET {$offset}", $params);
         $totalPages = max(1, ceil($total / $limit));
 
-        $kelasList = $db->findAll("SELECT DISTINCT kelas FROM siswa WHERE kelas IS NOT NULL AND kelas != '' ORDER BY kelas ASC");
+        $kelasWhere = "kelas IS NOT NULL AND kelas != ''";
+        $kelasParams = [];
+        Auth::applyJenjangFilter($kelasWhere, $kelasParams, 'jenjang', $filterJenjang);
+        $kelasList = $db->findAll("SELECT DISTINCT kelas FROM siswa WHERE {$kelasWhere} ORDER BY kelas ASC", $kelasParams);
 
         ob_start();
         include MODULES_PATH . '/kelola-siswa/views/buku_induk/index.php';
@@ -1292,10 +1320,12 @@ class SiswaController
         $where = '1=1';
         $params = [];
 
+        Auth::applyJenjangFilter($where, $params, 's.jenjang');
+
         if ($search !== '') {
             $where .= " AND (p.nama_prestasi LIKE ? OR s.nama_lengkap LIKE ? OR s.nama LIKE ? OR p.penyelenggara LIKE ? OR p.guru_pendamping LIKE ?)";
             $s = "%{$search}%";
-            $params = [$s, $s, $s, $s, $s];
+            $params = array_merge($params, [$s, $s, $s, $s, $s]);
         }
 
         if ($filterTingkat !== '') {
@@ -1326,11 +1356,23 @@ class SiswaController
 
         $totalPages = max(1, ceil($total / $limit));
 
-        // Quick KPI stats
-        $totalPrestasi = $db->find("SELECT COUNT(*) as total FROM siswa_prestasi")['total'] ?? 0;
-        $totalNasional = $db->find("SELECT COUNT(*) as total FROM siswa_prestasi WHERE tingkat = 'Nasional' OR tingkat = 'Internasional'")['total'] ?? 0;
-        $totalProvinsi = $db->find("SELECT COUNT(*) as total FROM siswa_prestasi WHERE tingkat = 'Provinsi' OR tingkat = 'Kota/Kabupaten'")['total'] ?? 0;
-        $totalSiswaBerprestasi = $db->find("SELECT COUNT(DISTINCT siswa_id) as total FROM siswa_prestasi")['total'] ?? 0;
+        // Quick KPI stats (respects jenjang restriction)
+        $kpiParams = [];
+        $kpiJenjangCond = Auth::jenjangSqlCondition('s.jenjang', $kpiParams);
+        $kpiPrestasi = $db->find("
+            SELECT
+                COUNT(1) AS total_prestasi,
+                SUM(CASE WHEN p.tingkat IN ('Nasional', 'Internasional') THEN 1 ELSE 0 END) AS total_nasional,
+                SUM(CASE WHEN p.tingkat IN ('Provinsi', 'Kota/Kabupaten') THEN 1 ELSE 0 END) AS total_provinsi,
+                COUNT(DISTINCT p.siswa_id) AS total_siswa_berprestasi
+            FROM siswa_prestasi p
+            JOIN siswa s ON p.siswa_id = s.id
+            WHERE {$kpiJenjangCond}
+        ", $kpiParams);
+        $totalPrestasi = intval($kpiPrestasi['total_prestasi'] ?? 0);
+        $totalNasional = intval($kpiPrestasi['total_nasional'] ?? 0);
+        $totalProvinsi = intval($kpiPrestasi['total_provinsi'] ?? 0);
+        $totalSiswaBerprestasi = intval($kpiPrestasi['total_siswa_berprestasi'] ?? 0);
 
         ob_start();
         include MODULES_PATH . '/kelola-siswa/views/prestasi/index.php';
@@ -1574,10 +1616,12 @@ class SiswaController
         $where = '1=1';
         $params = [];
 
+        Auth::applyJenjangFilter($where, $params, 's.jenjang');
+
         if ($search !== '') {
             $where .= " AND (s.nama_lengkap LIKE ? OR s.nama LIKE ? OR s.nis LIKE ? OR s.nisn LIKE ? OR k.sekolah_tujuan LIKE ? OR k.alasan_keluar LIKE ?)";
             $s = "%{$search}%";
-            $params = [$s, $s, $s, $s, $s, $s];
+            $params = array_merge($params, [$s, $s, $s, $s, $s, $s]);
         }
 
         if ($filterJenis !== '') {

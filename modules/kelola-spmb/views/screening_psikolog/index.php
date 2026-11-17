@@ -182,9 +182,13 @@
                 <!-- Filter Unit / Jenjang -->
                 <div>
                     <select name="unit" onchange="this.form.submit()" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 font-semibold focus:bg-white focus:border-primary-500 outline-none">
-                        <option value="">Semua Unit (PAUD, SD, SMP, SMA)</option>
+                        <?php if (!Auth::isJenjangRestricted() || count(Auth::getAllowedJenjang()) > 1): ?>
+                        <option value="">Semua Unit</option>
+                        <?php endif; ?>
                         <?php foreach (['PAUD', 'SD', 'SMP', 'SMA'] as $u): ?>
+                            <?php if (Auth::canAccessJenjang($u)): ?>
                             <option value="<?= $u ?>" <?= ($filters['jenjang'] === $u) ? 'selected' : '' ?>>Unit <?= $u ?></option>
+                            <?php endif; ?>
                         <?php endforeach; ?>
                     </select>
                 </div>

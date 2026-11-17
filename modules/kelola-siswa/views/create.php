@@ -153,13 +153,21 @@
                         'SMA' => [],
                         'PAUD' => [],
                     ];
-                    $initialClasses = $classesByJenjang['SD'] ?? [];
+                    $jenjangCreateOptions = [
+                        'PAUD' => '🌱 PAUD / TK',
+                        'SD'   => '🎒 SD (Sekolah Dasar)',
+                        'SMP'  => '📚 SMP',
+                        'SMA'  => '🏛️ SMA',
+                    ];
+                    $allowedCreateJenjangs = array_filter(array_keys($jenjangCreateOptions), static fn($k) => Auth::canAccessJenjang($k));
+                    $defaultCreateJenjang = in_array('SD', $allowedCreateJenjangs, true) ? 'SD' : (reset($allowedCreateJenjangs) ?: 'SD');
+                    $initialClasses = $classesByJenjang[$defaultCreateJenjang] ?? [];
                     ?>
                     <select name="jenjang" id="jenjang-select" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs bg-slate-50 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none transition-all font-semibold">
-                        <option value="PAUD">🌱 PAUD / TK</option>
-                        <option value="SD" selected>🎒 SD (Sekolah Dasar)</option>
-                        <option value="SMP">📚 SMP</option>
-                        <option value="SMA">🏛️ SMA</option>
+                        <?php foreach ($jenjangCreateOptions as $jOpt => $jLbl): ?>
+                            <?php if (!Auth::canAccessJenjang($jOpt)) continue; ?>
+                            <option value="<?= $jOpt ?>" <?= $jOpt === $defaultCreateJenjang ? 'selected' : '' ?>><?= $jLbl ?></option>
+                        <?php endforeach; ?>
                     </select>
                 </div>
 

@@ -20,11 +20,14 @@
                 </div>
             <?php endif; ?>
             <div>
+                <p class="text-primary-100 text-xs sm:text-sm font-semibold tracking-wide mb-0.5">
+                    Assalamu'alaikum,
+                </p>
                 <h2 class="text-xl sm:text-2xl font-bold text-white mb-0.5">
-                    Selamat Datang, <?= e(Auth::name()) ?>! 👋
+                    Selamat datang, <?= e(Auth::jabatan()) ?>! 👋
                 </h2>
                 <p class="text-primary-100 text-xs sm:text-sm">
-                    Kelola semua modul dan fitur portal dari satu tempat.
+                    <span class="font-semibold text-white/95"><?= e(Auth::name()) ?></span> &bull; Kelola semua modul dan fitur portal dari satu tempat.
                 </p>
             </div>
         </div>

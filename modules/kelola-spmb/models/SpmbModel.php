@@ -1563,13 +1563,34 @@ class SpmbModel
         $activeGroup = $groupId ? self::getGroupById($groupId) : self::getActiveGroup();
         $targetGroupId = $activeGroup['id'] ?? null;
 
-        $whereGroup = $targetGroupId ? "WHERE group_id = $targetGroupId" : "";
-        $whereNonDaftarTunggu = $targetGroupId
-            ? "WHERE group_id = $targetGroupId AND jenis_pendaftaran != 'Daftar Tunggu'"
-            : "WHERE jenis_pendaftaran != 'Daftar Tunggu'";
-        $whereNonDaftarTungguP = $targetGroupId
-            ? "WHERE p.group_id = $targetGroupId AND p.jenis_pendaftaran != 'Daftar Tunggu'"
-            : "WHERE p.jenis_pendaftaran != 'Daftar Tunggu'";
+        $baseConds = [];
+        $baseParams = [];
+        if ($targetGroupId) {
+            $baseConds[] = "group_id = ?";
+            $baseParams[] = (int)$targetGroupId;
+        }
+        $jCond = Auth::jenjangSqlCondition('jenjang', $baseParams);
+        if ($jCond !== '1=1') {
+            $baseConds[] = $jCond;
+        }
+        $whereGroup = !empty($baseConds) ? "WHERE " . implode(" AND ", $baseConds) : "";
+
+        $nonDtConds = $baseConds;
+        $nonDtConds[] = "jenis_pendaftaran != 'Daftar Tunggu'";
+        $whereNonDaftarTunggu = "WHERE " . implode(" AND ", $nonDtConds);
+
+        $pConds = [];
+        $pParams = [];
+        if ($targetGroupId) {
+            $pConds[] = "p.group_id = ?";
+            $pParams[] = (int)$targetGroupId;
+        }
+        $jCondP = Auth::jenjangSqlCondition('p.jenjang', $pParams);
+        if ($jCondP !== '1=1') {
+            $pConds[] = $jCondP;
+        }
+        $pConds[] = "p.jenis_pendaftaran != 'Daftar Tunggu'";
+        $whereNonDaftarTungguP = "WHERE " . implode(" AND ", $pConds);
 
         // Total Counts (Daftar Tunggu dipisahkan dari perhitungan Total Pendaftar & Progress Kuota)
         $counts = self::db()->find("
@@ -1589,7 +1610,7 @@ class SpmbModel
                 SUM(CASE WHEN jenis_pendaftaran != 'Daftar Tunggu' AND status_pembayaran = 'Belum Lunas' THEN 1 ELSE 0 END) as total_belum_lunas
             FROM `spmb_pendaftar`
             $whereGroup
-        ") ?: [];
+        ", $baseParams) ?: [];
 
         // Breakdown per Jenjang (Hanya Siswa Baru & Pindahan, Daftar Tunggu tidak masuk kuota/progres)
         $jenjangRaw = self::db()->findAll("
@@ -1597,7 +1618,7 @@ class SpmbModel
             FROM `spmb_pendaftar`
             $whereNonDaftarTunggu
             GROUP BY jenjang
-        ");
+        ", $baseParams);
         $jenjangStats = ['PAUD' => 0, 'SD' => 0, 'SMP' => 0, 'SMA' => 0];
         foreach ($jenjangRaw as $r) {
             $jenjangStats[$r['jenjang']] = (int)$r['jumlah'];
@@ -1610,7 +1631,7 @@ class SpmbModel
             $whereNonDaftarTunggu
             GROUP BY COALESCE(NULLIF(kategori_pendaftar, ''), jalur_pendaftaran, 'Umum')
             ORDER BY jumlah DESC
-        ");
+        ", $baseParams);
 
         // Pendaftar Terbaru (Recent 7 - Hanya Siswa Baru & Pindahan)
         $recentPendaftar = self::db()->findAll("
@@ -1620,7 +1641,7 @@ class SpmbModel
             $whereNonDaftarTungguP
             ORDER BY p.id DESC
             LIMIT 7
-        ");
+        ", $pParams);
 
         return [
             'activeGroup'       => $activeGroup,
@@ -2191,9 +2212,10 @@ class SpmbModel
             $params[] = (int)$filters['group_id'];
         }
 
-        if (!empty($filters['jenjang'])) {
-            $conditions[] = "p.jenjang = ?";
-            $params[] = strtoupper(trim($filters['jenjang']));
+        $jWhere = '1=1';
+        Auth::applyJenjangFilter($jWhere, $params, 'p.jenjang', (string)($filters['jenjang'] ?? ''));
+        if ($jWhere !== '1=1') {
+            $conditions[] = substr($jWhere, 8); // strip leading "1=1 AND "
         }
 
         if (!empty($filters['jenis_pendaftaran'])) {
@@ -2277,9 +2299,10 @@ class SpmbModel
             $params[] = (int)$filters['group_id'];
         }
 
-        if (!empty($filters['jenjang'])) {
-            $conditions[] = "p.jenjang = ?";
-            $params[] = strtoupper(trim($filters['jenjang']));
+        $jWhere = '1=1';
+        Auth::applyJenjangFilter($jWhere, $params, 'p.jenjang', (string)($filters['jenjang'] ?? ''));
+        if ($jWhere !== '1=1') {
+            $conditions[] = substr($jWhere, 8); // strip leading "1=1 AND "
         }
 
         if (!empty($filters['jenis_pendaftaran'])) {
@@ -2338,6 +2361,10 @@ class SpmbModel
         if (!empty($groupId)) {
             $conditions[] = "p.group_id = ?";
             $params[] = $groupId;
+        }
+        $jPsikolog = Auth::jenjangSqlCondition('p.jenjang', $params);
+        if ($jPsikolog !== '1=1') {
+            $conditions[] = $jPsikolog;
         }
         $where = "WHERE " . implode(" AND ", $conditions);
 
@@ -2523,9 +2550,11 @@ class SpmbModel
             $params[] = (int)$filters['group_id'];
         }
 
-        if (!empty($filters['jenjang']) && strtoupper(trim($filters['jenjang'])) !== 'ALL') {
-            $conditions[] = "p.jenjang = ?";
-            $params[] = strtoupper(trim($filters['jenjang']));
+        $reqJen = (!empty($filters['jenjang']) && strtoupper(trim($filters['jenjang'])) !== 'ALL') ? (string)$filters['jenjang'] : '';
+        $jObs = '1=1';
+        Auth::applyJenjangFilter($jObs, $params, 'p.jenjang', $reqJen);
+        if ($jObs !== '1=1') {
+            $conditions[] = substr($jObs, 8);
         }
 
         if (!empty($filters['status_rekomendasi']) && strtoupper(trim($filters['status_rekomendasi'])) !== 'ALL') {
@@ -3136,9 +3165,11 @@ class SpmbModel
             $params[] = (int)$filters['group_id'];
         }
 
-        if (!empty($filters['jenjang']) && strtoupper(trim($filters['jenjang'])) !== 'ALL') {
-            $conditions[] = "p.jenjang = ?";
-            $params[] = strtoupper(trim($filters['jenjang']));
+        $reqJen = (!empty($filters['jenjang']) && strtoupper(trim($filters['jenjang'])) !== 'ALL') ? (string)$filters['jenjang'] : '';
+        $jObs = '1=1';
+        Auth::applyJenjangFilter($jObs, $params, 'p.jenjang', $reqJen);
+        if ($jObs !== '1=1') {
+            $conditions[] = substr($jObs, 8);
         }
 
         if (!empty($filters['status_observasi'])) {
@@ -3216,9 +3247,11 @@ class SpmbModel
             $params[] = (int)$filters['group_id'];
         }
 
-        if (!empty($filters['jenjang']) && strtoupper(trim($filters['jenjang'])) !== 'ALL') {
-            $conditions[] = "p.jenjang = ?";
-            $params[] = strtoupper(trim($filters['jenjang']));
+        $reqJen = (!empty($filters['jenjang']) && strtoupper(trim($filters['jenjang'])) !== 'ALL') ? (string)$filters['jenjang'] : '';
+        $jObs = '1=1';
+        Auth::applyJenjangFilter($jObs, $params, 'p.jenjang', $reqJen);
+        if ($jObs !== '1=1') {
+            $conditions[] = substr($jObs, 8);
         }
 
         if (!empty($filters['status_observasi'])) {
@@ -3268,6 +3301,10 @@ class SpmbModel
         if (!empty($groupId)) {
             $conditions[] = "p.group_id = ?";
             $params[] = $groupId;
+        }
+        $jObsStat = Auth::jenjangSqlCondition('p.jenjang', $params);
+        if ($jObsStat !== '1=1') {
+            $conditions[] = $jObsStat;
         }
         $where = !empty($conditions) ? "WHERE " . implode(" AND ", $conditions) : "";
 
@@ -3613,9 +3650,11 @@ class SpmbModel
             $params[] = (int)$filters['group_id'];
         }
 
-        if (!empty($filters['jenjang']) && strtoupper(trim($filters['jenjang'])) !== 'ALL') {
-            $conditions[] = "p.jenjang = ?";
-            $params[] = strtoupper(trim($filters['jenjang']));
+        $reqJen = (!empty($filters['jenjang']) && strtoupper(trim($filters['jenjang'])) !== 'ALL') ? (string)$filters['jenjang'] : '';
+        $jObs = '1=1';
+        Auth::applyJenjangFilter($jObs, $params, 'p.jenjang', $reqJen);
+        if ($jObs !== '1=1') {
+            $conditions[] = substr($jObs, 8);
         }
 
         if (!empty($filters['status_observasi'])) {

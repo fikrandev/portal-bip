@@ -42,6 +42,7 @@ include MODULES_PATH . '/kelola-quran-siswa/views/partials/top_tabs.php';
     <!-- 3 Portals Grid -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
         
+        <?php if (Auth::canAccessJenjang('PAUD')): ?>
         <!-- Portal 1: PAUD / TK -->
         <div class="group bg-white rounded-3xl border border-amber-200/80 p-6 shadow-sm hover:shadow-xl hover:border-amber-400 transition-all duration-300 flex flex-col justify-between relative overflow-hidden">
             <div class="absolute -right-6 -bottom-6 w-28 h-28 bg-amber-500/5 rounded-full group-hover:scale-125 transition-transform"></div>
@@ -84,7 +85,9 @@ include MODULES_PATH . '/kelola-quran-siswa/views/partials/top_tabs.php';
                 </a>
             </div>
         </div>
+        <?php endif; ?>
 
+        <?php if (Auth::canAccessJenjang('SD')): ?>
         <!-- Portal 2: SD IT -->
         <div class="group bg-white rounded-3xl border border-primary-200/80 p-6 shadow-sm hover:shadow-xl hover:border-primary-400 transition-all duration-300 flex flex-col justify-between relative overflow-hidden ring-2 ring-emerald-500/20">
             <div class="absolute -right-6 -bottom-6 w-28 h-28 bg-primary-500/5 rounded-full group-hover:scale-125 transition-transform"></div>
@@ -127,7 +130,9 @@ include MODULES_PATH . '/kelola-quran-siswa/views/partials/top_tabs.php';
                 </a>
             </div>
         </div>
+        <?php endif; ?>
 
+        <?php if (Auth::canAccessJenjang('SMP') || Auth::canAccessJenjang('SMA')): ?>
         <!-- Portal 3: SMP & SMA IT -->
         <div class="group bg-white rounded-3xl border border-indigo-200/80 p-6 shadow-sm hover:shadow-xl hover:border-indigo-400 transition-all duration-300 flex flex-col justify-between relative overflow-hidden">
             <div class="absolute -right-6 -bottom-6 w-28 h-28 bg-indigo-500/5 rounded-full group-hover:scale-125 transition-transform"></div>
@@ -170,6 +175,7 @@ include MODULES_PATH . '/kelola-quran-siswa/views/partials/top_tabs.php';
                 </a>
             </div>
         </div>
+        <?php endif; ?>
 
     </div>
 

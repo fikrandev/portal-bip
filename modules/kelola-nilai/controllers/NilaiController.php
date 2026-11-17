@@ -17,26 +17,37 @@ class NilaiController
         $db = \Database::getInstance();
         
         // ── KPI Summary Cards ──
-        $totalGroups = (int)$db->query("SELECT COUNT(*) FROM nilai_group WHERE deleted_at IS NULL")->fetchColumn();
-        $totalActiveGroups = (int)$db->query("SELECT COUNT(*) FROM nilai_group WHERE deleted_at IS NULL AND is_active = 1")->fetchColumn();
-        $totalInactiveGroups = (int)$db->query("SELECT COUNT(*) FROM nilai_group WHERE deleted_at IS NULL AND is_active = 0")->fetchColumn();
-        $totalNilai = (int)$db->query("SELECT COUNT(*) FROM nilai_detail")->fetchColumn();
-        $totalSiswaDinilai = (int)$db->query("SELECT COUNT(DISTINCT siswa_id) FROM nilai_detail WHERE nilai > 0")->fetchColumn();
-        $avgNilai = (float)$db->query("SELECT COALESCE(ROUND(AVG(nilai), 1), 0) FROM nilai_detail WHERE nilai > 0")->fetchColumn();
-        $totalCpatpDocs = (int)$db->query("SELECT COUNT(*) FROM perangkat_pembelajaran WHERE tipe = 'cpatp' AND is_active = 1")->fetchColumn();
+        $gParams = [];
+        $gUCond = Auth::unitSqlCondition('unit', $gParams);
+        $totalGroups = (int)($db->find("SELECT COUNT(*) as c FROM nilai_group WHERE deleted_at IS NULL AND ({$gUCond})", $gParams)['c'] ?? 0);
+        $totalActiveGroups = (int)($db->find("SELECT COUNT(*) as c FROM nilai_group WHERE deleted_at IS NULL AND is_active = 1 AND ({$gUCond})", $gParams)['c'] ?? 0);
+        $totalInactiveGroups = (int)($db->find("SELECT COUNT(*) as c FROM nilai_group WHERE deleted_at IS NULL AND is_active = 0 AND ({$gUCond})", $gParams)['c'] ?? 0);
+
+        $ndParams = [];
+        $ndCond = Auth::jenjangSqlCondition('s.jenjang', $ndParams);
+        $totalNilai = (int)($db->find("SELECT COUNT(*) as c FROM nilai_detail nd JOIN siswa s ON nd.siswa_id = s.id WHERE {$ndCond}", $ndParams)['c'] ?? 0);
+        $ndStats = $db->find("SELECT COUNT(DISTINCT nd.siswa_id) as cnt_siswa, COALESCE(ROUND(AVG(nd.nilai), 1), 0) as avg_nilai FROM nilai_detail nd JOIN siswa s ON nd.siswa_id = s.id WHERE nd.nilai > 0 AND ({$ndCond})", $ndParams);
+        $totalSiswaDinilai = (int)($ndStats['cnt_siswa'] ?? 0);
+        $avgNilai = (float)($ndStats['avg_nilai'] ?? 0);
+
+        $cpParams = [];
+        $cpUCond = Auth::unitSqlCondition('unit', $cpParams);
+        $totalCpatpDocs = (int)($db->find("SELECT COUNT(*) as c FROM perangkat_pembelajaran WHERE tipe = 'cpatp' AND is_active = 1 AND ({$cpUCond})", $cpParams)['c'] ?? 0);
 
         // ── Chart 1: Rata-rata Nilai per Mata Pelajaran ──
-        $mapelChartRaw = $db->query("
+        $mParams = [];
+        $mUCond = Auth::unitSqlCondition('pp.unit', $mParams);
+        $mapelChartRaw = $db->findAll("
             SELECT pp.mata_pelajaran, 
                    ROUND(AVG(nd.nilai), 1) as avg_score, 
                    COUNT(nd.id) as total_entries
             FROM nilai_detail nd
             JOIN perangkat_pembelajaran pp ON FLOOR(nd.cpatp_row_index / 100000) = pp.id
-            WHERE nd.nilai > 0 AND pp.mata_pelajaran IS NOT NULL AND pp.mata_pelajaran != ''
+            WHERE nd.nilai > 0 AND pp.mata_pelajaran IS NOT NULL AND pp.mata_pelajaran != '' AND ({$mUCond})
             GROUP BY pp.mata_pelajaran
             ORDER BY avg_score DESC
             LIMIT 8
-        ")->fetchAll();
+        ", $mParams);
 
         $mapelLabels = [];
         $mapelScores = [];
@@ -52,7 +63,7 @@ class NilaiController
             'C' => 0, // 65 - 74 (Cukup)
             'D' => 0  // < 65 (Perlu Bimbingan)
         ];
-        $allScores = $db->query("SELECT nilai FROM nilai_detail WHERE nilai > 0")->fetchAll(PDO::FETCH_COLUMN);
+        $allScores = $db->query("SELECT nd.nilai FROM nilai_detail nd JOIN siswa s ON nd.siswa_id = s.id WHERE nd.nilai > 0 AND ({$ndCond})", $ndParams)->fetchAll(PDO::FETCH_COLUMN);
         foreach ($allScores as $sc) {
             $sc = (float)$sc;
             if ($sc >= 85) $predikatCounts['A']++;
@@ -62,40 +73,46 @@ class NilaiController
         }
 
         // ── Chart 3: Progress Penginputan per Unit ──
-        $unitProgress = $db->query("
+        $upParams = [];
+        $upCond = Auth::unitSqlCondition('g.unit', $upParams);
+        $unitProgress = $db->findAll("
             SELECT g.unit, 
                    COUNT(DISTINCT g.id) as total_group,
                    COUNT(nd.id) as total_nilai
             FROM nilai_group g
             LEFT JOIN nilai_detail nd ON g.id = nd.group_id
-            WHERE g.deleted_at IS NULL
+            WHERE g.deleted_at IS NULL AND ({$upCond})
             GROUP BY g.unit
-        ")->fetchAll();
+        ", $upParams);
 
         // ── Top 5 Siswa dengan Nilai Rerata Tertinggi ──
-        $topSiswa = $db->query("
+        $tsParams = [];
+        $tsCond = Auth::jenjangSqlCondition('s.jenjang', $tsParams);
+        $topSiswa = $db->findAll("
             SELECT s.id, s.nis, s.nama, s.kelas, s.jenjang,
                    ROUND(AVG(nd.nilai), 1) as rerata_nilai,
                    COUNT(nd.id) as total_asesmen
             FROM nilai_detail nd
             JOIN siswa s ON nd.siswa_id = s.id
-            WHERE nd.nilai > 0
+            WHERE nd.nilai > 0 AND ({$tsCond})
             GROUP BY s.id
             ORDER BY rerata_nilai DESC, total_asesmen DESC
             LIMIT 5
-        ")->fetchAll();
+        ", $tsParams);
 
         // ── Wadah Nilai Aktif Terbaru ──
-        $recentGroups = $db->query("
+        $rgParams = [];
+        $rgCond = Auth::unitSqlCondition('g.unit', $rgParams);
+        $recentGroups = $db->findAll("
             SELECT g.*, ta.nama_tahun,
                    (SELECT COUNT(*) FROM nilai_detail nd WHERE nd.group_id = g.id) as total_input,
                    (SELECT COUNT(DISTINCT siswa_id) FROM nilai_detail nd WHERE nd.group_id = g.id) as total_siswa
             FROM nilai_group g
             LEFT JOIN tahun_akademik ta ON g.tahun_akademik_id = ta.id
-            WHERE g.deleted_at IS NULL
+            WHERE g.deleted_at IS NULL AND ({$rgCond})
             ORDER BY g.id DESC
             LIMIT 5
-        ")->fetchAll();
+        ", $rgParams);
         
         $customSidebar = MODULES_PATH . '/kelola-nilai/views/sidebar.php';
         ob_start();
@@ -129,6 +146,10 @@ class NilaiController
             WHERE g.deleted_at IS NULL
         ";
         $params = [];
+        $gUCond = Auth::unitSqlCondition('g.unit', $params);
+        if ($gUCond !== '1=1') {
+            $sql .= " AND ({$gUCond})";
+        }
 
         if ($filter_status === 'aktif') {
             $sql .= " AND g.is_active = 1";
@@ -145,10 +166,12 @@ class NilaiController
 
         $groups = $db->query($sql, $params)->fetchAll();
 
-        // Counts for tab filters
-        $totalAll = (int)$db->query("SELECT COUNT(*) FROM nilai_group WHERE deleted_at IS NULL")->fetchColumn();
-        $totalActive = (int)$db->query("SELECT COUNT(*) FROM nilai_group WHERE deleted_at IS NULL AND is_active = 1")->fetchColumn();
-        $totalInactive = (int)$db->query("SELECT COUNT(*) FROM nilai_group WHERE deleted_at IS NULL AND is_active = 0")->fetchColumn();
+        // Counts for tab filters (respects jenjang restriction)
+        $tabParams = [];
+        $tabCond = Auth::unitSqlCondition('unit', $tabParams);
+        $totalAll = (int)($db->find("SELECT COUNT(*) as c FROM nilai_group WHERE deleted_at IS NULL AND ({$tabCond})", $tabParams)['c'] ?? 0);
+        $totalActive = (int)($db->find("SELECT COUNT(*) as c FROM nilai_group WHERE deleted_at IS NULL AND is_active = 1 AND ({$tabCond})", $tabParams)['c'] ?? 0);
+        $totalInactive = (int)($db->find("SELECT COUNT(*) as c FROM nilai_group WHERE deleted_at IS NULL AND is_active = 0 AND ({$tabCond})", $tabParams)['c'] ?? 0);
         
         $customSidebar = MODULES_PATH . '/kelola-nilai/views/sidebar.php';
         ob_start();
@@ -168,7 +191,7 @@ class NilaiController
         
         $db = \Database::getInstance();
         
-        $unit_list = [
+        $allUnits = [
             'PAUD' => [
                 'name' => 'PAUD / TK',
                 'bg_soft' => 'bg-pink-100 text-pink-700',
@@ -190,17 +213,20 @@ class NilaiController
                 'icon' => '🎓'
             ]
         ];
+        $unit_list = array_filter($allUnits, static fn($k) => Auth::canAccessJenjang($k), ARRAY_FILTER_USE_KEY);
         
         // Ambil semua CP ATP group yang aktif beserta info tahun ajaran
+        $cgParams = [];
+        $cgCond = Auth::unitSqlCondition('p.unit', $cgParams);
         $cpatp_groups = $db->query("
             SELECT p.id, p.judul, p.unit, p.tahun_akademik_id, p.semester, 
                    p.mata_pelajaran, p.tingkat_kelas, p.guru_id, p.guru_nama,
                    ta.nama_tahun
             FROM perangkat_pembelajaran p
             LEFT JOIN tahun_akademik ta ON p.tahun_akademik_id = ta.id
-            WHERE p.tipe = 'cpatp_group' AND p.is_active = 1 
+            WHERE p.tipe = 'cpatp_group' AND p.is_active = 1 AND ({$cgCond})
             ORDER BY p.id DESC
-        ")->fetchAll();
+        ", $cgParams)->fetchAll();
         
         $customSidebar = MODULES_PATH . '/kelola-nilai/views/sidebar.php';
         ob_start();
@@ -284,7 +310,7 @@ class NilaiController
             return;
         }
         
-        $unit_list = [
+        $allUnits = [
             'PAUD' => [
                 'name' => 'PAUD / TK',
                 'bg_soft' => 'bg-pink-100 text-pink-700',
@@ -306,17 +332,20 @@ class NilaiController
                 'icon' => '🎓'
             ]
         ];
+        $unit_list = array_filter($allUnits, static fn($k) => Auth::canAccessJenjang($k), ARRAY_FILTER_USE_KEY);
         
         // Ambil semua CP ATP group yang aktif beserta info tahun ajaran
+        $cgParams = [];
+        $cgCond = Auth::unitSqlCondition('p.unit', $cgParams);
         $cpatp_groups = $db->query("
             SELECT p.id, p.judul, p.unit, p.tahun_akademik_id, p.semester, 
                    p.mata_pelajaran, p.tingkat_kelas, p.guru_id, p.guru_nama,
                    ta.nama_tahun
             FROM perangkat_pembelajaran p
             LEFT JOIN tahun_akademik ta ON p.tahun_akademik_id = ta.id
-            WHERE p.tipe = 'cpatp_group' AND p.is_active = 1 
+            WHERE p.tipe = 'cpatp_group' AND p.is_active = 1 AND ({$cgCond})
             ORDER BY p.id DESC
-        ")->fetchAll();
+        ", $cgParams)->fetchAll();
         
         $customSidebar = MODULES_PATH . '/kelola-nilai/views/sidebar.php';
         ob_start();

@@ -113,7 +113,7 @@ class PerangkatModel
      */
     public static function getUnitList(): array
     {
-        return [
+        $units = [
             'PAUD' => [
                 'name' => 'PAUD / TK',
                 'alias' => 'PAUD',
@@ -159,6 +159,10 @@ class PerangkatModel
                 'border' => 'border-purple-200'
             ]
         ];
+        if (class_exists('Auth') && Auth::isJenjangRestricted()) {
+            return array_filter($units, fn($k) => Auth::canAccessJenjang($k), ARRAY_FILTER_USE_KEY);
+        }
+        return $units;
     }
 
     /**
@@ -174,6 +178,11 @@ class PerangkatModel
         if (!empty($unit)) {
             $where[] = "unit = ?";
             $params[] = $unit;
+        } elseif (class_exists('Auth')) {
+            $uCond = Auth::unitSqlCondition('unit', $params);
+            if ($uCond !== '1=1') {
+                $where[] = "({$uCond})";
+            }
         }
         if (!empty($taId)) {
             $where[] = "tahun_akademik_id = ?";
@@ -291,6 +300,11 @@ class PerangkatModel
         if (!empty($filters['unit'])) {
             $where[] = 'p.unit = ?';
             $params[] = $filters['unit'];
+        } elseif (class_exists('Auth')) {
+            $uCond = Auth::unitSqlCondition('p.unit', $params);
+            if ($uCond !== '1=1') {
+                $where[] = "({$uCond})";
+            }
         }
 
         if (isset($filters['is_active']) && $filters['is_active'] !== '' && $filters['is_active'] !== null) {
@@ -390,6 +404,11 @@ class PerangkatModel
         if (!empty($filters['unit'])) {
             $where[] = 'p.unit = ?';
             $params[] = $filters['unit'];
+        } elseif (class_exists('Auth')) {
+            $uCond = Auth::unitSqlCondition('p.unit', $params);
+            if ($uCond !== '1=1') {
+                $where[] = "({$uCond})";
+            }
         }
 
         if (isset($filters['is_active']) && $filters['is_active'] !== '' && $filters['is_active'] !== null) {
@@ -625,6 +644,11 @@ class PerangkatModel
         if ($unit) {
             $where[] = 'unit = ?';
             $params[] = $unit;
+        } elseif (class_exists('Auth')) {
+            $uCond = Auth::unitSqlCondition('unit', $params);
+            if ($uCond !== '1=1') {
+                $where[] = "({$uCond})";
+            }
         }
 
         $whereClause = implode(' AND ', $where);
@@ -687,12 +711,14 @@ class PerangkatModel
     {
         $db = Database::getInstance();
         try {
+            $params = [];
+            $uCond = class_exists('Auth') ? Auth::unitSqlCondition('unit_tugas', $params) : '1=1';
             return $db->findAll("
                 SELECT id, nama, niy AS nip, jabatan, unit_tugas, email, no_wa
                 FROM pegawai
-                WHERE is_active = 1
+                WHERE is_active = 1 AND ({$uCond})
                 ORDER BY nama ASC
-            ");
+            ", $params);
         } catch (Exception $e) {
             return $db->findAll("
                 SELECT id, full_name AS nama, '' AS nip, 'Guru' AS jabatan, 'Sekolah' AS unit_tugas, email, phone AS no_wa
@@ -796,6 +822,12 @@ class PerangkatModel
             if ($tahunAkademikId) {
                 $sql .= " AND tahun_akademik_id = ?";
                 $params[] = $tahunAkademikId;
+            }
+            if (class_exists('Auth')) {
+                $kCond = Auth::kelasSqlCondition('nama_kelas', $params);
+                if ($kCond !== '1=1') {
+                    $sql .= " AND ({$kCond})";
+                }
             }
             $sql .= " ORDER BY nama_kelas ASC";
             return $db->findAll($sql, $params);

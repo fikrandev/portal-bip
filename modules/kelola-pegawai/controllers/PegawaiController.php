@@ -28,6 +28,11 @@ class PegawaiController
         $where = "is_active = 1";
         $params = [];
 
+        $uCond = Auth::unitSqlCondition('unit_tugas', $params);
+        if ($uCond !== '1=1') {
+            $where .= " AND ({$uCond})";
+        }
+
         if (!empty($filterUnit)) {
             $where .= " AND unit_tugas = ?";
             $params[] = $filterUnit;
@@ -94,19 +99,27 @@ class PegawaiController
         $dapodikBelum = max(0, $totalAktif - $dapodikSudah);
 
         // Penugasan Aktif
+        $ditParams = [];
+        $ditUCond = Auth::unitSqlCondition('p.unit_tugas', $ditParams);
         $totalDitugaskan = $db->find("
             SELECT COUNT(DISTINCT pp.pegawai_id) as total
             FROM pegawai_penugasan pp
             JOIN penugasan_grup pg ON pp.grup_id = pg.id
             JOIN pegawai p ON pp.pegawai_id = p.id
-            WHERE pg.is_active = 1 AND pp.status = 'Aktif' AND p.is_active = 1
-        ")['total'] ?? 0;
+            WHERE pg.is_active = 1 AND pp.status = 'Aktif' AND p.is_active = 1 AND ({$ditUCond})
+        ", $ditParams)['total'] ?? 0;
         $totalDitugaskan = intval($totalDitugaskan);
         $totalBelumDitugaskan = max(0, $totalAktif - $totalDitugaskan);
 
-        $totalPrestasi = $db->find("SELECT COUNT(1) as c FROM pegawai_prestasi")['c'] ?? 0;
-        $totalPelatihan = $db->find("SELECT COUNT(1) as c FROM pegawai_pelatihan")['c'] ?? 0;
-        $totalJP = $db->find("SELECT COALESCE(SUM(jumlah_jam), 0) as s FROM pegawai_pelatihan")['s'] ?? 0;
+        $presParams = [];
+        $presUCond = Auth::unitSqlCondition('p.unit_tugas', $presParams);
+        $totalPrestasi = $db->find("SELECT COUNT(1) as c FROM pegawai_prestasi pp JOIN pegawai p ON pp.pegawai_id = p.id WHERE {$presUCond}", $presParams)['c'] ?? 0;
+
+        $pelParams = [];
+        $pelUCond = Auth::unitSqlCondition('p.unit_tugas', $pelParams);
+        $pelRow = $db->find("SELECT COUNT(1) as c, COALESCE(SUM(pp.jumlah_jam), 0) as s FROM pegawai_pelatihan pp JOIN pegawai p ON pp.pegawai_id = p.id WHERE {$pelUCond}", $pelParams);
+        $totalPelatihan = $pelRow['c'] ?? 0;
+        $totalJP = $pelRow['s'] ?? 0;
 
         $kpi = [
             'total_aktif' => $totalAktif,
@@ -224,8 +237,10 @@ class PegawaiController
             LIMIT 5
         ");
 
-        // Filter Options List
-        $unitList = $db->findAll("SELECT DISTINCT nama FROM master_unit_tugas ORDER BY nama ASC");
+        // Filter Options List (respects jenjang restriction)
+        $ulParams = [];
+        $ulCond = Auth::unitSqlCondition('nama', $ulParams);
+        $unitList = $db->findAll("SELECT DISTINCT nama FROM master_unit_tugas WHERE {$ulCond} ORDER BY nama ASC", $ulParams);
         $statusKerjaList = $db->findAll("SELECT DISTINCT nama FROM master_status_kerja ORDER BY nama ASC");
         $jenisPegawaiList = $db->findAll("SELECT DISTINCT nama FROM master_jenis_pegawai ORDER BY nama ASC");
 
@@ -265,6 +280,11 @@ class PegawaiController
         try {
             $where = '1=1';
             $params = [];
+
+            $uCond = Auth::unitSqlCondition('unit_tugas', $params);
+            if ($uCond !== '1=1') {
+                $where .= " AND ({$uCond})";
+            }
             
             if ($search) {
                 $where .= " AND nama LIKE ?";
@@ -287,10 +307,14 @@ class PegawaiController
             $total = $db->find("SELECT COUNT(1) as total FROM pegawai WHERE {$where}", $params)['total'] ?? 0;
             $pegawai = $db->findAll("SELECT id, foto, niy, nik, npwp, email, no_wa, nama, gelar, jenis_kelamin, status_nikah, tempat_lahir, tanggal_lahir, nama_ibu, unit_tugas, jabatan, status_kerja, status_pegawai, jenis_pegawai, status_dapodik, tanggal_masuk, tmt, is_active FROM pegawai WHERE {$where} ORDER BY nama ASC LIMIT {$limit} OFFSET {$offset}", $params);
             
-            // Fast lookup from master tables with fallback to distinct scan
-            $unitTugasList = $db->findAll("SELECT nama AS unit_tugas FROM master_unit_tugas ORDER BY nama ASC");
+            // Fast lookup from master tables with fallback to distinct scan (restricted by allowed jenjang)
+            $utParams = [];
+            $utCond = Auth::unitSqlCondition('nama', $utParams);
+            $unitTugasList = $db->findAll("SELECT nama AS unit_tugas FROM master_unit_tugas WHERE {$utCond} ORDER BY nama ASC", $utParams);
             if (empty($unitTugasList)) {
-                $unitTugasList = $db->findAll("SELECT DISTINCT unit_tugas FROM pegawai WHERE unit_tugas IS NOT NULL AND unit_tugas != '' ORDER BY unit_tugas ASC");
+                $utParams2 = [];
+                $utCond2 = Auth::unitSqlCondition('unit_tugas', $utParams2);
+                $unitTugasList = $db->findAll("SELECT DISTINCT unit_tugas FROM pegawai WHERE unit_tugas IS NOT NULL AND unit_tugas != '' AND ({$utCond2}) ORDER BY unit_tugas ASC", $utParams2);
             }
             $jabatanList = $db->findAll("SELECT nama AS jabatan FROM master_jabatan ORDER BY nama ASC");
             if (empty($jabatanList)) {

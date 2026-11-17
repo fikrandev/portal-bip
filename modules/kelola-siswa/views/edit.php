@@ -164,11 +164,19 @@ $namaSiswa = $siswa['nama_lengkap'] ?: $siswa['nama'];
                         array_unshift($initialClasses, $currentKelas);
                     }
                     ?>
+                    <?php
+                    $jenjangEditOptions = [
+                        'PAUD' => '🌱 PAUD / TK',
+                        'SD'   => '🎒 SD (Sekolah Dasar)',
+                        'SMP'  => '📚 SMP',
+                        'SMA'  => '🏛️ SMA',
+                    ];
+                    ?>
                     <select name="jenjang" id="jenjang-select" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs bg-slate-50 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none transition-all font-semibold">
-                        <option value="PAUD" <?= $jVal === 'PAUD' ? 'selected' : '' ?>>🌱 PAUD / TK</option>
-                        <option value="SD" <?= $jVal === 'SD' ? 'selected' : '' ?>>🎒 SD (Sekolah Dasar)</option>
-                        <option value="SMP" <?= $jVal === 'SMP' ? 'selected' : '' ?>>📚 SMP</option>
-                        <option value="SMA" <?= $jVal === 'SMA' ? 'selected' : '' ?>>🏛️ SMA</option>
+                        <?php foreach ($jenjangEditOptions as $jOpt => $jLbl): ?>
+                            <?php if (!Auth::canAccessJenjang($jOpt) && $jVal !== $jOpt) continue; ?>
+                            <option value="<?= $jOpt ?>" <?= $jVal === $jOpt ? 'selected' : '' ?>><?= $jLbl ?></option>
+                        <?php endforeach; ?>
                     </select>
                 </div>
 

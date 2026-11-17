@@ -65,10 +65,14 @@ class CutiController
         ];
         $logList = CutiModel::getLogList($logFilters);
 
-        // Dropdown Filter Unit & Jabatan
+        // Dropdown Filter Unit & Jabatan (respects jenjang restriction)
         $db = Database::getInstance();
-        $unitTugasList = $db->findAll("SELECT DISTINCT unit_tugas FROM `pegawai` WHERE is_active = 1 AND unit_tugas IS NOT NULL AND unit_tugas != '' ORDER BY unit_tugas ASC");
-        $jabatanList = $db->findAll("SELECT DISTINCT jabatan FROM `pegawai` WHERE is_active = 1 AND jabatan IS NOT NULL AND jabatan != '' ORDER BY jabatan ASC");
+        $utParams = [];
+        $utCond = Auth::unitSqlCondition('unit_tugas', $utParams);
+        $unitTugasList = $db->findAll("SELECT DISTINCT unit_tugas FROM `pegawai` WHERE is_active = 1 AND unit_tugas IS NOT NULL AND unit_tugas != '' AND ({$utCond}) ORDER BY unit_tugas ASC", $utParams);
+        $jbParams = [];
+        $jbCond = Auth::unitSqlCondition('unit_tugas', $jbParams);
+        $jabatanList = $db->findAll("SELECT DISTINCT jabatan FROM `pegawai` WHERE is_active = 1 AND jabatan IS NOT NULL AND jabatan != '' AND ({$jbCond}) ORDER BY jabatan ASC", $jbParams);
 
         $pageTitle = 'Kelola Cuti Pegawai';
         $breadcrumbs = [

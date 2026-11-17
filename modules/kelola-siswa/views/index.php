@@ -50,59 +50,45 @@
     </div>
 
     <!-- Stats Cards (Summary) -->
-    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
+    <?php
+    $unitCardDefs = [
+        'PAUD' => ['label' => 'PAUD / TK', 'icon' => '🌱', 'count' => $totalPaud, 'border' => 'border-primary-200/70', 'text' => 'text-primary-700'],
+        'SD'   => ['label' => 'Sekolah Dasar (SD)', 'icon' => '🎒', 'count' => $totalSd, 'border' => 'border-sky-200/70', 'text' => 'text-sky-700'],
+        'SMP'  => ['label' => 'SMP', 'icon' => '📚', 'count' => $totalSmp, 'border' => 'border-indigo-200/70', 'text' => 'text-indigo-700'],
+        'SMA'  => ['label' => 'SMA', 'icon' => '🏛️', 'count' => $totalSma, 'border' => 'border-purple-200/70', 'text' => 'text-purple-700'],
+    ];
+    $visibleUnitCards = array_filter($unitCardDefs, fn($k) => Auth::canAccessJenjang($k), ARRAY_FILTER_USE_KEY);
+    $totalStatsCards = 2 + count($visibleUnitCards);
+    $gridColsClass = match(true) {
+        $totalStatsCards <= 3 => 'grid-cols-1 sm:grid-cols-3',
+        $totalStatsCards === 4 => 'grid-cols-2 lg:grid-cols-4',
+        $totalStatsCards === 5 => 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-5',
+        default => 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-6',
+    };
+    ?>
+    <div class="grid <?= $gridColsClass ?> gap-3.5">
         <!-- Total Siswa -->
         <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs flex flex-col justify-between">
-            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Semua Siswa</span>
+            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                <?= Auth::isJenjangRestricted() ? 'Total Siswa (' . e(implode(', ', Auth::getAllowedJenjang())) . ')' : 'Total Semua Siswa' ?>
+            </span>
             <div class="flex items-baseline justify-between mt-2">
                 <span class="text-2xl font-black text-slate-800"><?= number_format($totalSiswa) ?></span>
                 <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">Aktif: <?= number_format($totalAktif) ?></span>
             </div>
         </div>
 
-        <!-- PAUD / TK -->
-        <div class="bg-white rounded-2xl p-4 border border-primary-200/70 shadow-xs flex flex-col justify-between">
-            <span class="text-[10px] font-bold uppercase tracking-wider text-primary-700 flex items-center gap-1">
-                <span>🌱</span> PAUD / TK
+        <?php foreach ($visibleUnitCards as $uc): ?>
+        <div class="bg-white rounded-2xl p-4 <?= $uc['border'] ?> border shadow-xs flex flex-col justify-between">
+            <span class="text-[10px] font-bold uppercase tracking-wider <?= $uc['text'] ?> flex items-center gap-1">
+                <span><?= $uc['icon'] ?></span> <?= $uc['label'] ?>
             </span>
             <div class="flex items-baseline justify-between mt-2">
-                <span class="text-2xl font-black text-primary-700"><?= number_format($totalPaud) ?></span>
+                <span class="text-2xl font-black <?= $uc['text'] ?>"><?= number_format($uc['count']) ?></span>
                 <span class="text-[10px] font-bold text-slate-400">Siswa</span>
             </div>
         </div>
-
-        <!-- SD -->
-        <div class="bg-white rounded-2xl p-4 border border-sky-200/70 shadow-xs flex flex-col justify-between">
-            <span class="text-[10px] font-bold uppercase tracking-wider text-sky-700 flex items-center gap-1">
-                <span>🎒</span> Sekolah Dasar (SD)
-            </span>
-            <div class="flex items-baseline justify-between mt-2">
-                <span class="text-2xl font-black text-sky-700"><?= number_format($totalSd) ?></span>
-                <span class="text-[10px] font-bold text-slate-400">Siswa</span>
-            </div>
-        </div>
-
-        <!-- SMP -->
-        <div class="bg-white rounded-2xl p-4 border border-indigo-200/70 shadow-xs flex flex-col justify-between">
-            <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-700 flex items-center gap-1">
-                <span>📚</span> SMP
-            </span>
-            <div class="flex items-baseline justify-between mt-2">
-                <span class="text-2xl font-black text-indigo-700"><?= number_format($totalSmp) ?></span>
-                <span class="text-[10px] font-bold text-slate-400">Siswa</span>
-            </div>
-        </div>
-
-        <!-- SMA -->
-        <div class="bg-white rounded-2xl p-4 border border-purple-200/70 shadow-xs flex flex-col justify-between">
-            <span class="text-[10px] font-bold uppercase tracking-wider text-purple-700 flex items-center gap-1">
-                <span>🏛️</span> SMA
-            </span>
-            <div class="flex items-baseline justify-between mt-2">
-                <span class="text-2xl font-black text-purple-700"><?= number_format($totalSma) ?></span>
-                <span class="text-[10px] font-bold text-slate-400">Siswa</span>
-            </div>
-        </div>
+        <?php endforeach; ?>
 
         <!-- Status Dapodik -->
         <div class="bg-white rounded-2xl p-4 border border-amber-200/70 shadow-xs flex flex-col justify-between">

@@ -52,11 +52,14 @@
             <div>
                 <label class="block text-[11px] font-bold text-slate-600 mb-1">Satuan Jenjang</label>
                 <select name="jenjang" onchange="this.form.submit()" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:border-indigo-500 transition-colors">
+                    <?php if (!Auth::isJenjangRestricted() || count(Auth::getAllowedJenjang()) > 1): ?>
                     <option value="">Semua Satuan</option>
-                    <option value="PAUD" <?= strtoupper($filterJenjang) === 'PAUD' ? 'selected' : '' ?>>PAUD / TK</option>
-                    <option value="SD" <?= strtoupper($filterJenjang) === 'SD' ? 'selected' : '' ?>>SD IT</option>
-                    <option value="SMP" <?= strtoupper($filterJenjang) === 'SMP' ? 'selected' : '' ?>>SMP IT</option>
-                    <option value="SMA" <?= strtoupper($filterJenjang) === 'SMA' ? 'selected' : '' ?>>SMA IT</option>
+                    <?php endif; ?>
+                    <?php foreach (['PAUD' => 'PAUD / TK', 'SD' => 'SD IT', 'SMP' => 'SMP IT', 'SMA' => 'SMA IT'] as $jKey => $jLabel): ?>
+                        <?php if (Auth::canAccessJenjang($jKey)): ?>
+                        <option value="<?= $jKey ?>" <?= strtoupper($filterJenjang) === $jKey ? 'selected' : '' ?>><?= $jLabel ?></option>
+                        <?php endif; ?>
+                    <?php endforeach; ?>
                 </select>
             </div>
 

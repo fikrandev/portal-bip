@@ -99,7 +99,9 @@ $group = $stats['activeGroup'] ?? null;
             </div>
             <div class="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
                 <span>Group: <strong class="text-slate-700"><?= e($group['nama_group'] ?? 'Aktif') ?></strong></span>
-                <span class="text-sky-600 font-semibold">Semua Jenjang</span>
+                <span class="text-sky-600 font-semibold">
+                    <?= Auth::isJenjangRestricted() ? 'Jenjang: ' . e(implode(', ', Auth::getAllowedJenjang())) : 'Semua Jenjang' ?>
+                </span>
             </div>
         </div>
 
@@ -331,12 +333,13 @@ $group = $stats['activeGroup'] ?? null;
             <div class="space-y-4">
                 <?php
                 $jenjangConfigs = [
-                    'PAUD' => ['label' => 'PAUD', 'kuota' => (int)($group['kuota_paud'] ?? 50), 'color' => 'bg-emerald-500'],
-                    'SD'   => ['label' => 'SD',   'kuota' => (int)($group['kuota_sd'] ?? 100),   'color' => 'bg-blue-500'],
-                    'SMP'  => ['label' => 'SMP',  'kuota' => (int)($group['kuota_smp'] ?? 100),  'color' => 'bg-indigo-500'],
-                    'SMA'  => ['label' => 'SMA',  'kuota' => (int)($group['kuota_sma'] ?? 100),  'color' => 'bg-purple-500'],
+                    'PAUD' => ['label' => 'PAUD', 'kuota' => (int)($group['kuota_paud'] ?? 50), 'color' => 'bg-emerald-500', 'hex' => '#10b981'],
+                    'SD'   => ['label' => 'SD',   'kuota' => (int)($group['kuota_sd'] ?? 100),   'color' => 'bg-blue-500',    'hex' => '#3b82f6'],
+                    'SMP'  => ['label' => 'SMP',  'kuota' => (int)($group['kuota_smp'] ?? 100),  'color' => 'bg-indigo-500',  'hex' => '#6366f1'],
+                    'SMA'  => ['label' => 'SMA',  'kuota' => (int)($group['kuota_sma'] ?? 100),  'color' => 'bg-purple-500',  'hex' => '#a855f7'],
                 ];
-                foreach ($jenjangConfigs as $k => $cfg):
+                $visibleJenjangConfigs = array_filter($jenjangConfigs, fn($k) => Auth::canAccessJenjang($k), ARRAY_FILTER_USE_KEY);
+                foreach ($visibleJenjangConfigs as $k => $cfg):
                     $terisi = $stats['jenjangStats'][$k] ?? 0;
                     $pct = $cfg['kuota'] > 0 ? min(100, round(($terisi / $cfg['kuota']) * 100)) : 0;
                 ?>
@@ -526,15 +529,10 @@ document.addEventListener('DOMContentLoaded', function() {
         new Chart(ctx, {
             type: 'doughnut',
             data: {
-                labels: ['PAUD', 'SD', 'SMP', 'SMA'],
+                labels: <?= json_encode(array_values(array_map(fn($c) => $c['label'], $visibleJenjangConfigs))) ?>,
                 datasets: [{
-                    data: [
-                        <?= (int)($stats['jenjangStats']['PAUD'] ?? 0) ?>,
-                        <?= (int)($stats['jenjangStats']['SD'] ?? 0) ?>,
-                        <?= (int)($stats['jenjangStats']['SMP'] ?? 0) ?>,
-                        <?= (int)($stats['jenjangStats']['SMA'] ?? 0) ?>
-                    ],
-                    backgroundColor: ['#10b981', '#3b82f6', '#6366f1', '#a855f7'],
+                    data: <?= json_encode(array_values(array_map(fn($k) => (int)($stats['jenjangStats'][$k] ?? 0), array_keys($visibleJenjangConfigs)))) ?>,
+                    backgroundColor: <?= json_encode(array_values(array_map(fn($c) => $c['hex'], $visibleJenjangConfigs))) ?>,
                     borderWidth: 2,
                     borderColor: '#ffffff'
                 }]

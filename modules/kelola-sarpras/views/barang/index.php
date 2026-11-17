@@ -58,6 +58,7 @@
                 <select name="unit" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:border-primary-500 outline-none">
                     <option value="">Semua Unit</option>
                     <?php foreach (['PAUD', 'SD', 'SMP', 'SMA', 'Yayasan', 'Semua'] as $u): ?>
+                        <?php if (Auth::isJenjangRestricted() && !Auth::canAccessJenjang($u)) continue; ?>
                         <option value="<?= $u ?>" <?= $filters['unit'] === $u ? 'selected' : '' ?>><?= $u ?></option>
                     <?php endforeach; ?>
                 </select>

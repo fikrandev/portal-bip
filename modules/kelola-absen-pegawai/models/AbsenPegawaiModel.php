@@ -473,20 +473,24 @@ class AbsenPegawaiModel
         self::init();
         $global = self::getPengaturanGlobal();
 
-        // Gabungkan nama unit dari master_unit_tugas dan pegawai aktif
+        // Gabungkan nama unit dari master_unit_tugas dan pegawai aktif (respects jenjang restriction)
+        $uParams = [];
+        $uCond = Auth::unitSqlCondition('unit_tugas', $uParams);
         $unitsRaw = self::db()->findAll("
             SELECT unit_name, COUNT(*) as total_pegawai
             FROM (
                 SELECT COALESCE(NULLIF(TRIM(unit_tugas), ''), 'Umum / Yayasan') as unit_name
                 FROM `pegawai`
-                WHERE is_active = 1
+                WHERE is_active = 1 AND ({$uCond})
             ) t
             GROUP BY unit_name
             ORDER BY unit_name ASC
-        ");
+        ", $uParams);
 
         try {
-            $masterUnits = self::db()->findAll("SELECT nama FROM `master_unit_tugas` ORDER BY nama ASC");
+            $muParams = [];
+            $muCond = Auth::unitSqlCondition('nama', $muParams);
+            $masterUnits = self::db()->findAll("SELECT nama FROM `master_unit_tugas` WHERE {$muCond} ORDER BY nama ASC", $muParams);
             $existingMap = array_column($unitsRaw, 'total_pegawai', 'unit_name');
             foreach ($masterUnits as $mu) {
                 $uName = trim($mu['nama'] ?? '');
@@ -913,6 +917,11 @@ class AbsenPegawaiModel
 
         $where = ["p.is_active = 1"];
         $params = [];
+
+        $uCondPeg = Auth::unitSqlCondition('p.unit_tugas', $params);
+        if ($uCondPeg !== '1=1') {
+            $where[] = "({$uCondPeg})";
+        }
 
         if (!empty($filters['search'])) {
             $term = '%' . trim($filters['search']) . '%';
@@ -1556,6 +1565,11 @@ class AbsenPegawaiModel
 
         $where = ["p.is_active = 1"];
         $params = [$targetDate];
+
+        $uCondRekap = Auth::unitSqlCondition('p.unit_tugas', $params);
+        if ($uCondRekap !== '1=1') {
+            $where[] = "({$uCondRekap})";
+        }
 
         if (!empty($filters['search'])) {
             $where[] = "(p.nama LIKE ? OR p.niy LIKE ? OR p.jabatan LIKE ?)";

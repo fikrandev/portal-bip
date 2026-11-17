@@ -29,6 +29,10 @@ class KelasController
         try {
             $where = 'tahun_akademik_id = ?';
             $params = [$filterTa];
+            $kCond = Auth::kelasSqlCondition('nama_kelas', $params);
+            if ($kCond !== '1=1') {
+                $where .= " AND ({$kCond})";
+            }
             if ($search) {
                 $where .= " AND (nama_kelas LIKE ? OR wali_kelas LIKE ?)";
                 $s = "%{$search}%";
@@ -55,9 +59,15 @@ class KelasController
         
         $totalPages = max(1, ceil($total / $limit));
 
-        // Stats
-        $totalKelas = $db->count('kelas', 'tahun_akademik_id = ?', [$filterTa]) ?? 0;
-        $totalAktif = $db->count('kelas', 'is_active = 1 AND tahun_akademik_id = ?', [$filterTa]) ?? 0;
+        // Stats (respects jenjang restriction)
+        $statParams = [$filterTa];
+        $statKCond = Auth::kelasSqlCondition('nama_kelas', $statParams);
+        $statWhere = "tahun_akademik_id = ?" . ($statKCond !== '1=1' ? " AND ({$statKCond})" : '');
+        $totalKelas = $db->count('kelas', $statWhere, $statParams) ?? 0;
+        $statActiveParams = [$filterTa];
+        $statActiveKCond = Auth::kelasSqlCondition('nama_kelas', $statActiveParams);
+        $statActiveWhere = "is_active = 1 AND tahun_akademik_id = ?" . ($statActiveKCond !== '1=1' ? " AND ({$statActiveKCond})" : '');
+        $totalAktif = $db->count('kelas', $statActiveWhere, $statActiveParams) ?? 0;
         
         ob_start();
         include MODULES_PATH . '/kelola-kelas/views/index.php';

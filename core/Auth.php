@@ -10,6 +10,10 @@ class Auth
     private static ?array $currentUser = null;
     private static ?string $cachedAvatar = null;
     private static bool $avatarResolved = false;
+    private static ?string $cachedJabatan = null;
+    private static bool $jabatanResolved = false;
+    private static ?array $cachedPegawai = null;
+    private static bool $pegawaiResolved = false;
 
     /**
      * Attempt to log in a user
@@ -65,11 +69,16 @@ class Auth
         // Resolve and store effective allowed jenjang
         self::resolveAndStoreJenjang($user);
 
-        // Reset static cache & avatar cache
+        // Reset static cache & avatar/jabatan cache
         self::$currentUser = null;
         self::$cachedAvatar = null;
         self::$avatarResolved = false;
+        self::$cachedJabatan = null;
+        self::$jabatanResolved = false;
+        self::$cachedPegawai = null;
+        self::$pegawaiResolved = false;
         unset($_SESSION['user_avatar_resolved'], $_SESSION['user_avatar_resolved_ts'], $_SESSION['user_avatar_resolved_uid']);
+        unset($_SESSION['user_jabatan_resolved'], $_SESSION['user_jabatan_resolved_ts'], $_SESSION['user_jabatan_resolved_uid']);
 
         // Update last login
         $db->update('users', ['last_login' => date('Y-m-d H:i:s')], 'id = ?', [$user['id']]);
@@ -128,11 +137,16 @@ class Auth
         // Resolve and store effective allowed jenjang
         self::resolveAndStoreJenjang($user);
 
-        // Reset static cache & avatar cache
+        // Reset static cache & avatar/jabatan cache
         self::$currentUser = null;
         self::$cachedAvatar = null;
         self::$avatarResolved = false;
+        self::$cachedJabatan = null;
+        self::$jabatanResolved = false;
+        self::$cachedPegawai = null;
+        self::$pegawaiResolved = false;
         unset($_SESSION['user_avatar_resolved'], $_SESSION['user_avatar_resolved_ts'], $_SESSION['user_avatar_resolved_uid']);
+        unset($_SESSION['user_jabatan_resolved'], $_SESSION['user_jabatan_resolved_ts'], $_SESSION['user_jabatan_resolved_uid']);
 
         // Update last login
         $db->update('users', ['last_login' => date('Y-m-d H:i:s')], 'id = ?', [$user['id']]);
@@ -314,6 +328,140 @@ class Auth
             $_SESSION['user_avatar_resolved'] = $resolved ?? '';
             $_SESSION['user_avatar_resolved_ts'] = time();
             $_SESSION['user_avatar_resolved_uid'] = $uid;
+        }
+
+        return $resolved;
+    }
+
+    /**
+     * Find linked pegawai row for the current authenticated user
+     */
+    public static function findLinkedPegawai(?array $user = null): ?array
+    {
+        $user = $user ?? self::user();
+        if (!$user) {
+            return null;
+        }
+        if (self::$pegawaiResolved && self::$cachedPegawai !== null) {
+            return self::$cachedPegawai;
+        }
+
+        $db = Database::getInstance();
+        $pegawai = null;
+        if (!empty($user['email'])) {
+            $pegawai = $db->find("SELECT * FROM pegawai WHERE email = ? ORDER BY is_active DESC, id ASC LIMIT 1", [$user['email']]);
+        }
+        if (!$pegawai && !empty($user['full_name'])) {
+            $pegawai = $db->find(
+                "SELECT * FROM pegawai WHERE (nama = ? OR nama LIKE ?) ORDER BY is_active DESC, id ASC LIMIT 1",
+                [$user['full_name'], '%' . $user['full_name'] . '%']
+            );
+        }
+        if (!$pegawai && !empty($user['phone'])) {
+            $pegawai = $db->find("SELECT * FROM pegawai WHERE no_wa = ? ORDER BY is_active DESC, id ASC LIMIT 1", [$user['phone']]);
+        }
+        if (!$pegawai && !empty($user['username'])) {
+            $cleanName = str_replace(['.', '_', '-'], ' ', $user['username']);
+            if (strlen(trim($cleanName)) >= 3) {
+                $pegawai = $db->find(
+                    "SELECT * FROM pegawai WHERE nama LIKE ? ORDER BY is_active DESC, id ASC LIMIT 1",
+                    ['%' . trim($cleanName) . '%']
+                );
+            }
+        }
+
+        self::$cachedPegawai = $pegawai ?: null;
+        self::$pegawaiResolved = true;
+        return self::$cachedPegawai;
+    }
+
+    /**
+     * Get active jabatan from penugasan pegawai (fallback: pegawai.jabatan -> role name -> user name)
+     */
+    public static function jabatan(): string
+    {
+        if (self::$jabatanResolved && self::$cachedJabatan !== null) {
+            return self::$cachedJabatan;
+        }
+
+        $user = self::user();
+        if (!$user) {
+            self::$jabatanResolved = true;
+            self::$cachedJabatan = 'Pengguna';
+            return 'Pengguna';
+        }
+
+        $uid = (int)($user['id'] ?? 0);
+        if (
+            isset($_SESSION['user_jabatan_resolved'], $_SESSION['user_jabatan_resolved_ts'], $_SESSION['user_jabatan_resolved_uid']) &&
+            (int)$_SESSION['user_jabatan_resolved_uid'] === $uid &&
+            (time() - (int)$_SESSION['user_jabatan_resolved_ts']) < 300 &&
+            $_SESSION['user_jabatan_resolved'] !== ''
+        ) {
+            self::$cachedJabatan = (string)$_SESSION['user_jabatan_resolved'];
+            self::$jabatanResolved = true;
+            return self::$cachedJabatan;
+        }
+
+        $resolved = '';
+        try {
+            $db = Database::getInstance();
+            $pegawai = self::findLinkedPegawai($user);
+            if ($pegawai && !empty($pegawai['id'])) {
+                $assign = $db->find(
+                    "SELECT mj.nama AS jabatan_nama, mu.nama AS unit_nama
+                     FROM pegawai_penugasan pp
+                     JOIN penugasan_grup pg ON pp.grup_id = pg.id
+                     LEFT JOIN master_jabatan mj ON mj.id = pp.jabatan_id
+                     LEFT JOIN master_unit_tugas mu ON mu.id = pp.unit_tugas_id
+                     WHERE pp.pegawai_id = ?
+                     ORDER BY pg.is_active DESC, (pp.status = 'Aktif') DESC, pp.id DESC
+                     LIMIT 1",
+                    [(int)$pegawai['id']]
+                );
+                if ($assign && !empty($assign['jabatan_nama'])) {
+                    $jab = trim((string)$assign['jabatan_nama']);
+                    $unit = trim((string)($assign['unit_nama'] ?? ''));
+                    if (
+                        $unit !== '' &&
+                        in_array(strtoupper($unit), ['PAUD', 'TK', 'SD', 'SMP', 'SMA'], true) &&
+                        stripos($jab, $unit) === false
+                    ) {
+                        $resolved = $jab . ' ' . $unit;
+                    } else {
+                        $resolved = $jab;
+                    }
+                } elseif (!empty($pegawai['jabatan'])) {
+                    $resolved = trim((string)$pegawai['jabatan']);
+                }
+            }
+
+            if ($resolved === '') {
+                $roleRow = $db->find(
+                    "SELECT GROUP_CONCAT(r.name ORDER BY r.id ASC SEPARATOR ', ') AS role_names
+                     FROM user_roles ur
+                     JOIN roles r ON r.id = ur.role_id
+                     WHERE ur.user_id = ?",
+                    [$uid]
+                );
+                if ($roleRow && !empty($roleRow['role_names'])) {
+                    $resolved = trim((string)$roleRow['role_names']);
+                }
+            }
+        } catch (Throwable $e) {
+            // Silent fallback
+        }
+
+        if ($resolved === '') {
+            $resolved = self::name();
+        }
+
+        self::$cachedJabatan = $resolved;
+        self::$jabatanResolved = true;
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            $_SESSION['user_jabatan_resolved'] = $resolved;
+            $_SESSION['user_jabatan_resolved_ts'] = time();
+            $_SESSION['user_jabatan_resolved_uid'] = $uid;
         }
 
         return $resolved;
@@ -634,6 +782,199 @@ class Auth
         if (!self::isJenjangRestricted()) {
             return true;
         }
-        return in_array(strtoupper(trim($jenjang)), self::getAllowedJenjang(), true);
+        $norm = strtoupper(trim($jenjang));
+        if ($norm === 'TK' || str_contains($norm, 'PAUD')) {
+            $norm = 'PAUD';
+        }
+        return in_array($norm, self::getAllowedJenjang(), true);
+    }
+
+    /**
+     * Expanded allowed jenjang list (includes 'TK' alias when 'PAUD' is allowed)
+     */
+    public static function expandedAllowedJenjang(): array
+    {
+        $allowed = array_map('strtoupper', self::getAllowedJenjang());
+        if (in_array('PAUD', $allowed, true) && !in_array('TK', $allowed, true)) {
+            $allowed[] = 'TK';
+        }
+        return array_values(array_unique($allowed));
+    }
+
+    /**
+     * Build a SQL condition filtering a jenjang column by the current user's allowed jenjang
+     */
+    public static function jenjangSqlCondition(string $column, array &$params): string
+    {
+        if (!self::isJenjangRestricted()) {
+            return '1=1';
+        }
+        $allowed = self::expandedAllowedJenjang();
+        if (empty($allowed)) {
+            return '1=0';
+        }
+        $placeholders = implode(',', array_fill(0, count($allowed), '?'));
+        foreach ($allowed as $aj) {
+            $params[] = $aj;
+        }
+        return "UPPER(TRIM({$column})) IN ({$placeholders})";
+    }
+
+    /**
+     * Append RBAC jenjang filter + optional user-selected jenjang onto a WHERE clause
+     */
+    public static function applyJenjangFilter(string &$where, array &$params, string $column = 'jenjang', string $requestedJenjang = ''): void
+    {
+        $req = strtoupper(trim($requestedJenjang));
+        if (self::isJenjangRestricted()) {
+            if ($req !== '' && self::canAccessJenjang($req)) {
+                if ($req === 'PAUD') {
+                    $where .= " AND UPPER(TRIM({$column})) IN ('PAUD', 'TK')";
+                } else {
+                    $where .= " AND UPPER(TRIM({$column})) = ?";
+                    $params[] = $req;
+                }
+            } else {
+                $cond = self::jenjangSqlCondition($column, $params);
+                $where .= " AND ({$cond})";
+            }
+        } elseif ($req !== '') {
+            if ($req === 'PAUD') {
+                $where .= " AND UPPER(TRIM({$column})) IN ('PAUD', 'TK')";
+            } else {
+                $where .= " AND UPPER(TRIM({$column})) = ?";
+                $params[] = $req;
+            }
+        }
+    }
+
+    /**
+     * Build a SQL condition filtering a unit / unit_tugas column (PAUD/SD/SMP/SMA + optional IT/Yayasan variants)
+     */
+    public static function unitSqlCondition(string $column, array &$params, bool $allowGlobalValues = false): string
+    {
+        if (!self::isJenjangRestricted()) {
+            return '1=1';
+        }
+        $allowed = self::getAllowedJenjang();
+        if (empty($allowed)) {
+            return '1=0';
+        }
+
+        $variants = [];
+        foreach ($allowed as $aj) {
+            $u = strtoupper(trim($aj));
+            if ($u === 'PAUD') {
+                array_push($variants, 'PAUD', 'TK', 'PAUD IT', 'TK IT', 'PAUD / TK', 'PAUD/TK');
+            } else {
+                array_push($variants, $u, $u . ' IT', $u . 'IT');
+            }
+        }
+        if ($allowGlobalValues) {
+            array_push($variants, 'SEMUA UNIT', 'SEMUA', 'UMUM', 'YAYASAN');
+        }
+        $variants = array_values(array_unique($variants));
+        $placeholders = implode(',', array_fill(0, count($variants), '?'));
+        foreach ($variants as $v) {
+            $params[] = $v;
+        }
+        $expr = "UPPER(TRIM({$column})) IN ({$placeholders})";
+        if ($allowGlobalValues) {
+            return "({$expr} OR {$column} IS NULL OR TRIM({$column}) = '')";
+        }
+        return $expr;
+    }
+
+    /**
+     * Infer jenjang (PAUD/SD/SMP/SMA) from a class name string
+     */
+    public static function inferJenjangFromClassName(string $kelasName): string
+    {
+        $clean = strtoupper(trim($kelasName));
+        if ($clean === '') {
+            return '';
+        }
+        if (preg_match('/^(TK|KB|PAUD|PG|TPA|KELOMPOK)/i', $clean)) {
+            return 'PAUD';
+        }
+        if (preg_match('/^(?:KELAS\s*)?(10|11|12|X|XI|XII)(?:\b|[^0-9])/i', $clean)) {
+            return 'SMA';
+        }
+        if (preg_match('/^(?:KELAS\s*)?(7|8|9|VII|VIII|IX)(?:\b|[^0-9])/i', $clean)) {
+            return 'SMP';
+        }
+        if (preg_match('/^(?:KELAS\s*)?(1|2|3|4|5|6|I|II|III|IV|V|VI)(?:\b|[^0-9])/i', $clean)) {
+            return 'SD';
+        }
+        return '';
+    }
+
+    /**
+     * Build a SQL condition filtering a class-name column by the user's allowed jenjang
+     */
+    public static function kelasSqlCondition(string $kelasCol, array &$params): string
+    {
+        if (!self::isJenjangRestricted()) {
+            return '1=1';
+        }
+        $allowed = self::getAllowedJenjang();
+        if (empty($allowed)) {
+            return '1=0';
+        }
+
+        $orParts = [];
+        // 1. Subquery match against siswa.jenjang when students exist in that class
+        $expanded = self::expandedAllowedJenjang();
+        $inPh = implode(',', array_fill(0, count($expanded), '?'));
+        foreach ($expanded as $aj) {
+            $params[] = $aj;
+        }
+        $orParts[] = "EXISTS (SELECT 1 FROM siswa _sj WHERE TRIM(_sj.kelas) = TRIM({$kelasCol}) AND UPPER(TRIM(_sj.jenjang)) IN ({$inPh}))";
+
+        // 2. Pattern fallback for classes without students yet
+        foreach ($allowed as $aj) {
+            $u = strtoupper(trim($aj));
+            if ($u === 'PAUD') {
+                $orParts[] = "UPPER(TRIM({$kelasCol})) REGEXP '^(TK|KB|PAUD|PG|TPA|KELOMPOK)'";
+            } elseif ($u === 'SD') {
+                $orParts[] = "UPPER(TRIM({$kelasCol})) REGEXP '^(KELAS[[:space:]]*)?[1-6]([^0-9]|$)'";
+            } elseif ($u === 'SMP') {
+                $orParts[] = "UPPER(TRIM({$kelasCol})) REGEXP '^(KELAS[[:space:]]*)?[7-9]([^0-9]|$)'";
+            } elseif ($u === 'SMA') {
+                $orParts[] = "UPPER(TRIM({$kelasCol})) REGEXP '^(KELAS[[:space:]]*)?(10|11|12)([^0-9]|$)'";
+            }
+        }
+
+        return '(' . implode(' OR ', $orParts) . ')';
+    }
+
+    /**
+     * Filter a list of class strings or associative rows by user's allowed jenjang
+     */
+    public static function filterKelasList(array $rows, ?string $kelasKey = 'kelas', ?string $jenjangKey = 'jenjang'): array
+    {
+        if (!self::isJenjangRestricted()) {
+            return $rows;
+        }
+        $filtered = [];
+        foreach ($rows as $row) {
+            if (is_string($row)) {
+                $inf = self::inferJenjangFromClassName($row);
+                if ($inf === '' || self::canAccessJenjang($inf)) {
+                    $filtered[] = $row;
+                }
+                continue;
+            }
+            if (is_array($row)) {
+                $rowJenjang = $jenjangKey && !empty($row[$jenjangKey]) ? (string)$row[$jenjangKey] : '';
+                if ($rowJenjang === '' && $kelasKey && !empty($row[$kelasKey])) {
+                    $rowJenjang = self::inferJenjangFromClassName((string)$row[$kelasKey]);
+                }
+                if ($rowJenjang === '' || self::canAccessJenjang($rowJenjang)) {
+                    $filtered[] = $row;
+                }
+            }
+        }
+        return array_values($filtered);
     }
 }

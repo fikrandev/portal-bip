@@ -114,46 +114,32 @@
     </div>
 
     <!-- Distribution by Education Level (Jenjang) -->
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <!-- PAUD / TK -->
-        <a href="<?= url('kelola-siswa?jenjang=PAUD') ?>" class="bg-primary-600 p-5 rounded-2xl text-white shadow-md shadow-primary-500/20 hover:scale-[1.02] transition-transform">
+    <?php
+    $statUnitCards = [
+        'PAUD' => ['title' => 'PAUD / TK', 'badge' => 'Tingkat Awal', 'count' => $totalPaud, 'bg' => 'bg-primary-600 shadow-primary-500/20', 'color' => '#10B981'],
+        'SD'   => ['title' => 'SD IT', 'badge' => 'Sekolah Dasar', 'count' => $totalSd, 'bg' => 'bg-gradient-to-br from-blue-600 to-indigo-700 shadow-blue-600/20', 'color' => '#3B82F6'],
+        'SMP'  => ['title' => 'SMP IT', 'badge' => 'Menengah Pertama', 'count' => $totalSmp, 'bg' => 'bg-gradient-to-br from-indigo-600 to-purple-700 shadow-indigo-600/20', 'color' => '#6366F1'],
+        'SMA'  => ['title' => 'SMA IT', 'badge' => 'Menengah Atas', 'count' => $totalSma, 'bg' => 'bg-gradient-to-br from-purple-600 to-rose-700 shadow-purple-600/20', 'color' => '#A855F7'],
+    ];
+    $visibleStatUnits = array_filter($statUnitCards, fn($k) => Auth::canAccessJenjang($k), ARRAY_FILTER_USE_KEY);
+    $unitGridClass = match(count($visibleStatUnits)) {
+        1 => 'grid-cols-1',
+        2 => 'grid-cols-1 sm:grid-cols-2',
+        3 => 'grid-cols-1 sm:grid-cols-3',
+        default => 'grid-cols-2 sm:grid-cols-4',
+    };
+    ?>
+    <div class="grid <?= $unitGridClass ?> gap-4">
+        <?php foreach ($visibleStatUnits as $jKey => $uCard): ?>
+        <a href="<?= url('kelola-siswa?jenjang=' . $jKey) ?>" class="<?= $uCard['bg'] ?> p-5 rounded-2xl text-white shadow-md hover:scale-[1.02] transition-transform">
             <div class="flex items-center justify-between">
-                <span class="text-xs font-bold uppercase tracking-wider opacity-80">PAUD / TK</span>
-                <span class="px-2 py-0.5 rounded-full bg-white/20 text-[10px] font-semibold">Tingkat Awal</span>
+                <span class="text-xs font-bold uppercase tracking-wider opacity-80"><?= $uCard['title'] ?></span>
+                <span class="px-2 py-0.5 rounded-full bg-white/20 text-[10px] font-semibold"><?= $uCard['badge'] ?></span>
             </div>
-            <h4 class="text-2xl font-extrabold mt-3"><?= number_format($totalPaud) ?> <span class="text-xs font-normal opacity-80">Siswa</span></h4>
+            <h4 class="text-2xl font-extrabold mt-3"><?= number_format($uCard['count']) ?> <span class="text-xs font-normal opacity-80">Siswa</span></h4>
             <p class="text-[11px] opacity-80 mt-1">Bina Insan Palu</p>
         </a>
-
-        <!-- SD -->
-        <a href="<?= url('kelola-siswa?jenjang=SD') ?>" class="bg-gradient-to-br from-blue-600 to-indigo-700 p-5 rounded-2xl text-white shadow-md shadow-blue-600/20 hover:scale-[1.02] transition-transform">
-            <div class="flex items-center justify-between">
-                <span class="text-xs font-bold uppercase tracking-wider opacity-80">SD IT</span>
-                <span class="px-2 py-0.5 rounded-full bg-white/20 text-[10px] font-semibold">Sekolah Dasar</span>
-            </div>
-            <h4 class="text-2xl font-extrabold mt-3"><?= number_format($totalSd) ?> <span class="text-xs font-normal opacity-80">Siswa</span></h4>
-            <p class="text-[11px] opacity-80 mt-1">Bina Insan Palu</p>
-        </a>
-
-        <!-- SMP -->
-        <a href="<?= url('kelola-siswa?jenjang=SMP') ?>" class="bg-gradient-to-br from-indigo-600 to-purple-700 p-5 rounded-2xl text-white shadow-md shadow-indigo-600/20 hover:scale-[1.02] transition-transform">
-            <div class="flex items-center justify-between">
-                <span class="text-xs font-bold uppercase tracking-wider opacity-80">SMP IT</span>
-                <span class="px-2 py-0.5 rounded-full bg-white/20 text-[10px] font-semibold">Menengah Pertama</span>
-            </div>
-            <h4 class="text-2xl font-extrabold mt-3"><?= number_format($totalSmp) ?> <span class="text-xs font-normal opacity-80">Siswa</span></h4>
-            <p class="text-[11px] opacity-80 mt-1">Bina Insan Palu</p>
-        </a>
-
-        <!-- SMA -->
-        <a href="<?= url('kelola-siswa?jenjang=SMA') ?>" class="bg-gradient-to-br from-purple-600 to-rose-700 p-5 rounded-2xl text-white shadow-md shadow-purple-600/20 hover:scale-[1.02] transition-transform">
-            <div class="flex items-center justify-between">
-                <span class="text-xs font-bold uppercase tracking-wider opacity-80">SMA IT</span>
-                <span class="px-2 py-0.5 rounded-full bg-white/20 text-[10px] font-semibold">Menengah Atas</span>
-            </div>
-            <h4 class="text-2xl font-extrabold mt-3"><?= number_format($totalSma) ?> <span class="text-xs font-normal opacity-80">Siswa</span></h4>
-            <p class="text-[11px] opacity-80 mt-1">Bina Insan Palu</p>
-        </a>
+        <?php endforeach; ?>
     </div>
 
     <!-- Charts Row -->
@@ -248,11 +234,11 @@ document.addEventListener('DOMContentLoaded', function() {
     new Chart(ctxJenjang, {
         type: 'bar',
         data: {
-            labels: ['PAUD / TK', 'SD IT', 'SMP IT', 'SMA IT'],
+            labels: <?= json_encode(array_values(array_map(fn($u) => $u['title'], $visibleStatUnits))) ?>,
             datasets: [{
                 label: 'Jumlah Siswa',
-                data: [<?= $totalPaud ?>, <?= $totalSd ?>, <?= $totalSmp ?>, <?= $totalSma ?>],
-                backgroundColor: ['#10B981', '#3B82F6', '#6366F1', '#A855F7'],
+                data: <?= json_encode(array_values(array_map(fn($u) => $u['count'], $visibleStatUnits))) ?>,
+                backgroundColor: <?= json_encode(array_values(array_map(fn($u) => $u['color'], $visibleStatUnits))) ?>,
                 borderRadius: 8
             }]
         },

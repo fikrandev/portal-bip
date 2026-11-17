@@ -82,6 +82,7 @@ $curUnit = $_GET['unit'] ?? '';
             <select name="unit" onchange="this.form.submit()" class="px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-slate-50 font-semibold text-slate-700 focus:ring-2 focus:ring-primary-500 focus:outline-none">
                 <option value="">Semua Unit Sekolah</option>
                 <?php foreach ($unit_list as $uk => $uv): ?>
+                    <?php if (!Auth::canAccessJenjang($uk)) continue; ?>
                     <option value="<?= $uk ?>" <?= $curUnit === $uk ? 'selected' : '' ?>>Unit <?= $uk ?></option>
                 <?php endforeach; ?>
             </select>

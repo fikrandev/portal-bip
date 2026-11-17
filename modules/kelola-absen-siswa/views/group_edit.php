@@ -43,6 +43,7 @@ $selectedUnit = $group['unit'] ?? 'SD';
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-3xl">
                     <?php foreach ($unit_list as $uKey => $uInfo): 
                         $isSelected = ($selectedUnit === $uKey);
+                        if (!Auth::canAccessJenjang($uKey) && !$isSelected) continue;
                     ?>
                         <label class="relative flex flex-col items-center justify-center p-4 rounded-2xl border-2 cursor-pointer transition-all hover:border-primary-400 hover:bg-slate-50/80 unit-card <?= $isSelected ? 'border-primary-500 bg-primary-50/30' : 'border-slate-200 bg-white' ?>">
                             <input type="radio" name="unit" value="<?= $uKey ?>" class="sr-only" <?= $isSelected ? 'checked' : '' ?> required onchange="updateUnitSelection(this)">

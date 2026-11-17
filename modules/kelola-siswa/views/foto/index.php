@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * View Galeri Foto Siswa
  */
@@ -60,12 +60,15 @@
             
             <div class="w-full sm:w-1/4">
                 <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Jenjang</label>
-                <select name="jenjang" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs bg-slate-50 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                <select name="jenjang" onchange="this.form.submit()" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs bg-slate-50 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                    <?php if (!Auth::isJenjangRestricted() || count(Auth::getAllowedJenjang()) > 1): ?>
                     <option value="">Semua Jenjang</option>
-                    <option value="PAUD" <?= $filterJenjang === 'PAUD' ? 'selected' : '' ?>>PAUD</option>
-                    <option value="SD" <?= $filterJenjang === 'SD' ? 'selected' : '' ?>>SD</option>
-                    <option value="SMP" <?= $filterJenjang === 'SMP' ? 'selected' : '' ?>>SMP</option>
-                    <option value="SMA" <?= $filterJenjang === 'SMA' ? 'selected' : '' ?>>SMA</option>
+                    <?php endif; ?>
+                    <?php foreach (['PAUD', 'SD', 'SMP', 'SMA'] as $jOpt): ?>
+                        <?php if (Auth::canAccessJenjang($jOpt)): ?>
+                        <option value="<?= $jOpt ?>" <?= strtoupper($filterJenjang) === $jOpt ? 'selected' : '' ?>><?= $jOpt ?></option>
+                        <?php endif; ?>
+                    <?php endforeach; ?>
                 </select>
             </div>
 

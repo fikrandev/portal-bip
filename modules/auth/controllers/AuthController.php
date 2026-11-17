@@ -49,6 +49,7 @@ class AuthController
         $result = Auth::login($username, $password);
 
         if ($result['success']) {
+            $_SESSION['flash_success'] = "Assalamu'alaikum, Selamat datang, " . Auth::jabatan() . "!";
             $intended = $_SESSION['intended_url'] ?? url('dashboard');
             unset($_SESSION['intended_url']);
             Response::redirect($intended);

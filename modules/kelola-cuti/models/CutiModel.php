@@ -488,18 +488,27 @@ class CutiModel
         self::init();
         $today = date('Y-m-d');
 
-        $totalPegawai = (int)(self::db()->find("SELECT COUNT(*) as c FROM `pegawai` WHERE `is_active` = 1")['c'] ?? 0);
-        $totalPending = (int)(self::db()->find("SELECT COUNT(*) as c FROM `cuti_pengajuan` WHERE `status` = 'Pending'")['c'] ?? 0);
-        $totalApproved = (int)(self::db()->find("SELECT COUNT(*) as c FROM `cuti_pengajuan` WHERE `status` = 'Disetujui'")['c'] ?? 0);
-        $totalRejected = (int)(self::db()->find("SELECT COUNT(*) as c FROM `cuti_pengajuan` WHERE `status` = 'Ditolak'")['c'] ?? 0);
+        $pParams = [];
+        $uCond = Auth::unitSqlCondition('unit_tugas', $pParams);
+        $totalPegawai = (int)(self::db()->find("SELECT COUNT(*) as c FROM `pegawai` WHERE `is_active` = 1 AND ({$uCond})", $pParams)['c'] ?? 0);
+
+        $cpParams = [];
+        $cpUCond = Auth::unitSqlCondition('p.unit_tugas', $cpParams);
+        $totalPending = (int)(self::db()->find("SELECT COUNT(*) as c FROM `cuti_pengajuan` cp JOIN `pegawai` p ON cp.pegawai_id = p.id WHERE cp.`status` = 'Pending' AND ({$cpUCond})", $cpParams)['c'] ?? 0);
+        $totalApproved = (int)(self::db()->find("SELECT COUNT(*) as c FROM `cuti_pengajuan` cp JOIN `pegawai` p ON cp.pegawai_id = p.id WHERE cp.`status` = 'Disetujui' AND ({$cpUCond})", $cpParams)['c'] ?? 0);
+        $totalRejected = (int)(self::db()->find("SELECT COUNT(*) as c FROM `cuti_pengajuan` cp JOIN `pegawai` p ON cp.pegawai_id = p.id WHERE cp.`status` = 'Ditolak' AND ({$cpUCond})", $cpParams)['c'] ?? 0);
+
+        $scParams = array_merge([$today], $cpParams);
         $sedangCutiHariIni = (int)(self::db()->find("
-            SELECT COUNT(DISTINCT pegawai_id) as c
-            FROM `cuti_pengajuan`
-            WHERE `status` = 'Disetujui'
-              AND ? BETWEEN `tanggal_mulai` AND `tanggal_selesai`
-        ", [$today])['c'] ?? 0);
+            SELECT COUNT(DISTINCT cp.pegawai_id) as c
+            FROM `cuti_pengajuan` cp
+            JOIN `pegawai` p ON cp.pegawai_id = p.id
+            WHERE cp.`status` = 'Disetujui'
+              AND ? BETWEEN cp.`tanggal_mulai` AND cp.`tanggal_selesai`
+              AND ({$cpUCond})
+        ", $scParams)['c'] ?? 0);
         $totalJenisKhusus = (int)(self::db()->find("SELECT COUNT(*) as c FROM `cuti_jenis` WHERE `kategori` = 'Khusus' AND `is_active` = 1")['c'] ?? 0);
-        $totalLogPengurangan = (int)(self::db()->find("SELECT COUNT(*) as c FROM `cuti_log` WHERE `perubahan` < 0")['c'] ?? 0);
+        $totalLogPengurangan = (int)(self::db()->find("SELECT COUNT(*) as c FROM `cuti_log` l JOIN `pegawai` p ON l.pegawai_id = p.id WHERE l.`perubahan` < 0 AND ({$cpUCond})", $cpParams)['c'] ?? 0);
 
         return [
             'totalPegawai' => $totalPegawai,
@@ -522,6 +531,11 @@ class CutiModel
         $today = date('Y-m-d');
         $where = ["p.is_active = 1"];
         $params = [$today];
+
+        $uCond = Auth::unitSqlCondition('p.unit_tugas', $params);
+        if ($uCond !== '1=1') {
+            $where[] = "({$uCond})";
+        }
 
         if (!empty($filters['search'])) {
             $term = '%' . trim($filters['search']) . '%';
@@ -961,6 +975,11 @@ class CutiModel
         self::init();
         $where = ["1=1"];
         $params = [];
+
+        $uCondList = Auth::unitSqlCondition('p.unit_tugas', $params);
+        if ($uCondList !== '1=1') {
+            $where[] = "({$uCondList})";
+        }
 
         if (!empty($filters['status'])) {
             if (is_array($filters['status'])) {

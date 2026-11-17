@@ -114,11 +114,10 @@
                 <label class="block font-bold text-slate-700 mb-1">Unit Sekolah</label>
                 <select name="unit" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-primary-500 font-medium">
                     <option value="">Semua Unit</option>
-                    <option value="PAUD" <?= ($filters['unit'] ?? '') === 'PAUD' ? 'selected' : '' ?>>PAUD</option>
-                    <option value="SD" <?= ($filters['unit'] ?? '') === 'SD' ? 'selected' : '' ?>>SD</option>
-                    <option value="SMP" <?= ($filters['unit'] ?? '') === 'SMP' ? 'selected' : '' ?>>SMP</option>
-                    <option value="SMA" <?= ($filters['unit'] ?? '') === 'SMA' ? 'selected' : '' ?>>SMA</option>
-                    <option value="Umum" <?= ($filters['unit'] ?? '') === 'Umum' ? 'selected' : '' ?>>Umum / Yayasan</option>
+                    <?php foreach (['PAUD' => 'PAUD', 'SD' => 'SD', 'SMP' => 'SMP', 'SMA' => 'SMA', 'Umum' => 'Umum / Yayasan'] as $uVal => $uLabel): ?>
+                        <?php if (Auth::isJenjangRestricted() && !Auth::canAccessJenjang($uVal)) continue; ?>
+                        <option value="<?= $uVal ?>" <?= ($filters['unit'] ?? '') === $uVal ? 'selected' : '' ?>><?= $uLabel ?></option>
+                    <?php endforeach; ?>
                 </select>
             </div>
 

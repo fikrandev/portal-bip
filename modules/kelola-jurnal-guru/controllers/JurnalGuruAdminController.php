@@ -85,6 +85,11 @@ class JurnalGuruAdminController
         $whereClauses = ['1=1'];
         $params = [];
 
+        $jKelasCond = Auth::kelasSqlCondition('jm.kelas', $params);
+        if ($jKelasCond !== '1=1') {
+            $whereClauses[] = "({$jKelasCond})";
+        }
+
         if ($search !== '') {
             $whereClauses[] = '(jm.kode_jurnal LIKE ? OR jm.nama_guru LIKE ? OR p.nama LIKE ? OR jm.materi_pokok LIKE ? OR jm.uraian_kegiatan LIKE ? OR jm.mata_pelajaran LIKE ? OR jm.kelas LIKE ?)';
             $searchParam = "%{$search}%";
@@ -131,26 +136,31 @@ class JurnalGuruAdminController
         $stmtKpi->execute($params);
         $kpiFiltered = $stmtKpi->fetch(PDO::FETCH_ASSOC);
 
-        // KPI Hari Ini
-        $stmtToday = $pdo->query("
+        // KPI Hari Ini (respects jenjang restriction)
+        $todayParams = [];
+        $todayKelasCond = Auth::kelasSqlCondition('kelas', $todayParams);
+        $stmtToday = $pdo->prepare("
             SELECT 
                 COUNT(*) as count_today,
                 COALESCE(SUM(jumlah_jp), 0) as jp_today,
                 COUNT(DISTINCT guru_id) as guru_today
             FROM jurnal_mengajar 
-            WHERE tanggal = CURDATE()
+            WHERE tanggal = CURDATE() AND ({$todayKelasCond})
         ");
+        $stmtToday->execute($todayParams);
         $kpiToday = $stmtToday->fetch(PDO::FETCH_ASSOC);
 
         // KPI Bulan Ini (sargable date range agar indeks tanggal terpakai)
+        $monthParams = [date('Y-m-01'), date('Y-m-t')];
+        $monthKelasCond = Auth::kelasSqlCondition('kelas', $monthParams);
         $stmtMonth = $pdo->prepare("
             SELECT 
                 COUNT(*) as count_month,
                 COALESCE(SUM(jumlah_jp), 0) as jp_month
             FROM jurnal_mengajar 
-            WHERE tanggal >= ? AND tanggal <= ?
+            WHERE tanggal >= ? AND tanggal <= ? AND ({$monthKelasCond})
         ");
-        $stmtMonth->execute([date('Y-m-01'), date('Y-m-t')]);
+        $stmtMonth->execute($monthParams);
         $kpiMonth = $stmtMonth->fetch(PDO::FETCH_ASSOC);
 
         // 4. Pagination & Query untuk Tab 2 (Data Jurnal)
@@ -183,13 +193,17 @@ class JurnalGuruAdminController
         $stmtList->execute($params);
         $jurnalList = $stmtList->fetchAll(PDO::FETCH_ASSOC);
 
-        // 5. Data Dropdown Guru & Kelas
-        $guruOptions = $pdo->query("
+        // 5. Data Dropdown Guru & Kelas (respects jenjang restriction)
+        $gOptParams = [];
+        $gOptUCond = Auth::unitSqlCondition('unit_tugas', $gOptParams);
+        $stmtGOpt = $pdo->prepare("
             SELECT id, nama, niy, nik, no_wa, jabatan 
             FROM pegawai 
-            WHERE status_pegawai != 'Keluar' OR status_pegawai IS NULL
+            WHERE (status_pegawai != 'Keluar' OR status_pegawai IS NULL) AND ({$gOptUCond})
             ORDER BY nama ASC
-        ")->fetchAll(PDO::FETCH_ASSOC);
+        ");
+        $stmtGOpt->execute($gOptParams);
+        $guruOptions = $stmtGOpt->fetchAll(PDO::FETCH_ASSOC);
 
         $guruById = [];
         $guruByName = [];
@@ -211,13 +225,20 @@ class JurnalGuruAdminController
         if (empty($kelasOptions)) {
             $kelasOptions = $pdo->query("SELECT DISTINCT kelas FROM jurnal_mengajar WHERE kelas IS NOT NULL AND kelas != '' ORDER BY kelas ASC")->fetchAll(PDO::FETCH_COLUMN);
         }
+        $kelasOptions = Auth::filterKelasList($kelasOptions, null, null);
 
         // 6. Ambil Jadwal Pelajaran Aktif (Grup Jadwal Aktif) & Penugasan Mengajar (PIC)
         $activeSchedules = [];
         try {
-            $activeGrupIds = $pdo->query("SELECT id FROM jadwal_grup WHERE is_active = 1")->fetchAll(PDO::FETCH_COLUMN);
+            $jgParams = [];
+            $jgCond = Auth::jenjangSqlCondition('jenjang', $jgParams);
+            $stmtAg = $pdo->prepare("SELECT id FROM jadwal_grup WHERE is_active = 1 AND ({$jgCond})");
+            $stmtAg->execute($jgParams);
+            $activeGrupIds = $stmtAg->fetchAll(PDO::FETCH_COLUMN);
             if (empty($activeGrupIds)) {
-                $fallbackId = $pdo->query("SELECT id FROM jadwal_grup ORDER BY id DESC LIMIT 1")->fetchColumn();
+                $stmtFb = $pdo->prepare("SELECT id FROM jadwal_grup WHERE {$jgCond} ORDER BY id DESC LIMIT 1");
+                $stmtFb->execute($jgParams);
+                $fallbackId = $stmtFb->fetchColumn();
                 if ($fallbackId) {
                     $activeGrupIds = [(int)$fallbackId];
                 }

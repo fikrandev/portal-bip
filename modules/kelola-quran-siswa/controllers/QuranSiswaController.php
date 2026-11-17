@@ -25,7 +25,7 @@ class QuranSiswaController
             ]);
         }
 
-        // Jika user memiliki filter jenjang tunggal, arahkan langsung ke halaman jenjang tersebut
+        // Jika user memiliki filter jenjang tunggal (atau khusus SMP/SMA), arahkan langsung ke portal jenjang tersebut
         if (Auth::isJenjangRestricted()) {
             $allowed = Auth::getAllowedJenjang();
             if (count($allowed) === 1) {
@@ -35,7 +35,13 @@ class QuranSiswaController
                 } elseif ($allowed[0] === 'SD') {
                     Response::redirect(url('kelola-quran-siswa-sd'));
                     return;
+                } elseif (in_array($allowed[0], ['SMP', 'SMA'], true)) {
+                    Response::redirect(url('kelola-quran-siswa-smp-sma'));
+                    return;
                 }
+            } elseif (empty(array_diff($allowed, ['SMP', 'SMA']))) {
+                Response::redirect(url('kelola-quran-siswa-smp-sma'));
+                return;
             }
         }
 
@@ -45,30 +51,31 @@ class QuranSiswaController
 
         $db = Database::getInstance();
 
-        // 1. Hitung jumlah siswa per jenjang
-        $counts = [
-            'PAUD' => (int)$db->query("SELECT COUNT(*) FROM siswa WHERE UPPER(jenjang) IN ('PAUD','TK') AND is_active = 1")->fetchColumn(),
-            'SD' => (int)$db->query("SELECT COUNT(*) FROM siswa WHERE (UPPER(jenjang) = 'SD' OR jenjang IS NULL OR jenjang = '') AND is_active = 1")->fetchColumn(),
-            'SMP_SMA' => (int)$db->query("SELECT COUNT(*) FROM siswa WHERE UPPER(jenjang) IN ('SMP','SMA') AND is_active = 1")->fetchColumn(),
-        ];
+        // 1. Hitung jumlah siswa per jenjang (respects jenjang restriction)
+        $counts = self::getJenjangStudentCounts();
 
-        // 2. Hitung jumlah setoran per jenjang
+        // 2. Hitung jumlah setoran per jenjang (respects jenjang restriction)
         $stats = [
-            'paud_setoran' => (int)$db->query("SELECT COUNT(*) FROM quran_siswa_setoran WHERE jenjang = 'PAUD'")->fetchColumn(),
-            'sd_setoran' => (int)$db->query("SELECT COUNT(*) FROM quran_siswa_setoran WHERE jenjang = 'SD'")->fetchColumn(),
-            'smp_sma_setoran' => (int)$db->query("SELECT COUNT(*) FROM quran_siswa_setoran WHERE jenjang = 'SMP_SMA'")->fetchColumn(),
+            'paud_setoran'    => Auth::canAccessJenjang('PAUD') ? (int)$db->query("SELECT COUNT(*) FROM quran_siswa_setoran WHERE jenjang = 'PAUD'")->fetchColumn() : 0,
+            'sd_setoran'      => Auth::canAccessJenjang('SD') ? (int)$db->query("SELECT COUNT(*) FROM quran_siswa_setoran WHERE jenjang = 'SD'")->fetchColumn() : 0,
+            'smp_sma_setoran' => (Auth::canAccessJenjang('SMP') || Auth::canAccessJenjang('SMA')) ? (int)$db->query("SELECT COUNT(*) FROM quran_siswa_setoran WHERE jenjang = 'SMP_SMA'")->fetchColumn() : 0,
         ];
 
-        // 3. Riwayat setoran terkini seluruh unit (15 data terakhir)
+        // 3. Riwayat setoran terkini unit yang diizinkan (15 data terakhir)
+        $rsParams = [];
+        $rsCond = Auth::jenjangSqlCondition('s.jenjang', $rsParams);
         $recentSetoran = $db->findAll("
             SELECT qs.*, s.nama_lengkap, s.kelas
             FROM quran_siswa_setoran qs
             JOIN siswa s ON qs.siswa_id = s.id
+            WHERE ({$rsCond})
             ORDER BY qs.tanggal DESC, qs.id DESC
             LIMIT 15
-        ");
+        ", $rsParams);
 
-        // 4. Seluruh siswa aktif untuk modal dropdown
+        // 4. Siswa aktif sesuai hak akses jenjang untuk modal dropdown
+        $asParams = [];
+        $asCond = Auth::jenjangSqlCondition('jenjang', $asParams);
         $allStudents = $db->findAll("
             SELECT id, nama_lengkap, kelas, 
                    CASE 
@@ -77,9 +84,9 @@ class QuranSiswaController
                        ELSE 'SD'
                    END as jenjang
             FROM siswa 
-            WHERE is_active = 1 
+            WHERE is_active = 1 AND ({$asCond})
             ORDER BY nama_lengkap ASC
-        ");
+        ", $asParams);
 
         ob_start();
         include MODULES_PATH . '/kelola-quran-siswa/views/hub.php';
@@ -1179,15 +1186,26 @@ class QuranSiswaController
     }
 
     /**
-     * Helper: Hitung jumlah siswa per jenjang
+     * Helper: Hitung jumlah siswa per jenjang (respects jenjang restriction)
      */
     private static function getJenjangStudentCounts(): array
     {
         $db = Database::getInstance();
+        $smpSmaAllowed = Auth::canAccessJenjang('SMP') || Auth::canAccessJenjang('SMA');
+        $smpSmaCond = '';
+        if ($smpSmaAllowed && Auth::isJenjangRestricted()) {
+            $smpSmaParts = [];
+            if (Auth::canAccessJenjang('SMP')) $smpSmaParts[] = "'SMP'";
+            if (Auth::canAccessJenjang('SMA')) $smpSmaParts[] = "'SMA'";
+            $smpSmaSql = "UPPER(jenjang) IN (" . implode(',', $smpSmaParts) . ")";
+        } else {
+            $smpSmaSql = "UPPER(jenjang) IN ('SMP','SMA')";
+        }
+
         return [
-            'PAUD' => (int)$db->query("SELECT COUNT(*) FROM siswa WHERE UPPER(jenjang) IN ('PAUD','TK') AND is_active = 1")->fetchColumn(),
-            'SD' => (int)$db->query("SELECT COUNT(*) FROM siswa WHERE (UPPER(jenjang) = 'SD' OR jenjang IS NULL OR jenjang = '') AND is_active = 1")->fetchColumn(),
-            'SMP_SMA' => (int)$db->query("SELECT COUNT(*) FROM siswa WHERE UPPER(jenjang) IN ('SMP','SMA') AND is_active = 1")->fetchColumn(),
+            'PAUD'    => Auth::canAccessJenjang('PAUD') ? (int)$db->query("SELECT COUNT(*) FROM siswa WHERE UPPER(jenjang) IN ('PAUD','TK') AND is_active = 1")->fetchColumn() : 0,
+            'SD'      => Auth::canAccessJenjang('SD') ? (int)$db->query("SELECT COUNT(*) FROM siswa WHERE (UPPER(jenjang) = 'SD' OR jenjang IS NULL OR jenjang = '') AND is_active = 1")->fetchColumn() : 0,
+            'SMP_SMA' => $smpSmaAllowed ? (int)$db->query("SELECT COUNT(*) FROM siswa WHERE {$smpSmaSql} AND is_active = 1")->fetchColumn() : 0,
         ];
     }
 }

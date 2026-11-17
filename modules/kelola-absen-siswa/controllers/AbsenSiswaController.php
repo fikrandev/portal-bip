@@ -35,12 +35,19 @@ class AbsenSiswaController
         $db = \Database::getInstance();
         $today = date('Y-m-d');
 
-        // Statistik Utama
-        $totalSiswa = (int)$db->query("SELECT COUNT(*) FROM siswa WHERE is_active = 1")->fetchColumn();
-        $totalGroups = (int)$db->query("SELECT COUNT(*) FROM absen_group WHERE deleted_at IS NULL AND is_active = 1")->fetchColumn();
+        // Statistik Utama (respects jenjang restriction)
+        $sParams = [];
+        $sCond = Auth::jenjangSqlCondition('jenjang', $sParams);
+        $totalSiswa = (int)($db->find("SELECT COUNT(*) as c FROM siswa WHERE is_active = 1 AND ({$sCond})", $sParams)['c'] ?? 0);
+
+        $gParams = [];
+        $gCond = Auth::unitSqlCondition('unit', $gParams);
+        $totalGroups = (int)($db->find("SELECT COUNT(*) as c FROM absen_group WHERE deleted_at IS NULL AND is_active = 1 AND ({$gCond})", $gParams)['c'] ?? 0);
         
         // Presensi Hari Ini
-        $todayStats = $db->query("
+        $pkTodayParams = [$today];
+        $pkTodayCond = Auth::kelasSqlCondition('p.kelas', $pkTodayParams);
+        $todayStats = $db->find("
             SELECT 
                 COUNT(d.id) as total_presensi,
                 SUM(CASE WHEN d.status = 'H' THEN 1 ELSE 0 END) as total_h,
@@ -50,8 +57,8 @@ class AbsenSiswaController
                 SUM(CASE WHEN d.status = 'T' THEN 1 ELSE 0 END) as total_t
             FROM presensi_kelas p
             JOIN presensi_kelas_detail d ON d.presensi_kelas_id = p.id
-            WHERE p.tanggal = '$today'
-        ")->fetch() ?: ['total_presensi' => 0, 'total_h' => 0, 'total_s' => 0, 'total_i' => 0, 'total_a' => 0, 'total_t' => 0];
+            WHERE p.tanggal = ? AND ({$pkTodayCond})
+        ", $pkTodayParams) ?: ['total_presensi' => 0, 'total_h' => 0, 'total_s' => 0, 'total_i' => 0, 'total_a' => 0, 'total_t' => 0];
 
         $todayTotal = (int)($todayStats['total_presensi'] ?? 0);
         $todayHadir = (int)($todayStats['total_h'] ?? 0);
@@ -64,7 +71,9 @@ class AbsenSiswaController
         // Overall Monthly Stats (Bulan ini)
         $monthStart = date('Y-m-01');
         $monthEnd = date('Y-m-t');
-        $monthStats = $db->query("
+        $pkMonthParams = [$monthStart, $monthEnd];
+        $pkMonthCond = Auth::kelasSqlCondition('p.kelas', $pkMonthParams);
+        $monthStats = $db->find("
             SELECT 
                 COUNT(d.id) as total_presensi,
                 SUM(CASE WHEN d.status = 'H' THEN 1 ELSE 0 END) as total_h,
@@ -74,8 +83,8 @@ class AbsenSiswaController
                 SUM(CASE WHEN d.status = 'T' THEN 1 ELSE 0 END) as total_t
             FROM presensi_kelas p
             JOIN presensi_kelas_detail d ON d.presensi_kelas_id = p.id
-            WHERE p.tanggal BETWEEN '$monthStart' AND '$monthEnd'
-        ")->fetch() ?: ['total_presensi' => 0, 'total_h' => 0, 'total_s' => 0, 'total_i' => 0, 'total_a' => 0, 'total_t' => 0];
+            WHERE (p.tanggal BETWEEN ? AND ?) AND ({$pkMonthCond})
+        ", $pkMonthParams) ?: ['total_presensi' => 0, 'total_h' => 0, 'total_s' => 0, 'total_i' => 0, 'total_a' => 0, 'total_t' => 0];
 
         // Chart 1: Tren Kehadiran 7 Hari Terakhir
         $chartDates = [];
@@ -85,30 +94,34 @@ class AbsenSiswaController
             $d = date('Y-m-d', strtotime("-$i days"));
             $chartDates[] = date('d M', strtotime($d));
 
-            $st = $db->query("
+            $dParams = [$d];
+            $dCond = Auth::kelasSqlCondition('p.kelas', $dParams);
+            $st = $db->find("
                 SELECT 
                     SUM(CASE WHEN d.status = 'H' THEN 1 ELSE 0 END) as h,
                     SUM(CASE WHEN d.status IN ('S','I','A','T') THEN 1 ELSE 0 END) as non_h
                 FROM presensi_kelas p
                 JOIN presensi_kelas_detail d ON d.presensi_kelas_id = p.id
-                WHERE p.tanggal = '$d'
-            ")->fetch();
+                WHERE p.tanggal = ? AND ({$dCond})
+            ", $dParams);
             $chartHadir[] = (int)($st['h'] ?? 0);
             $chartTidakHadir[] = (int)($st['non_h'] ?? 0);
         }
 
         // Chart 2: Komparasi Kehadiran per Kelas (Top 8 Kelas)
-        $kelasChartRaw = $db->query("
+        $kcParams = [];
+        $kcCond = Auth::kelasSqlCondition('p.kelas', $kcParams);
+        $kelasChartRaw = $db->findAll("
             SELECT p.kelas,
                    SUM(CASE WHEN d.status = 'H' THEN 1 ELSE 0 END) as hadir,
                    COUNT(d.id) as total
             FROM presensi_kelas p
             JOIN presensi_kelas_detail d ON d.presensi_kelas_id = p.id
-            WHERE p.kelas IS NOT NULL AND p.kelas != ''
+            WHERE p.kelas IS NOT NULL AND p.kelas != '' AND ({$kcCond})
             GROUP BY p.kelas
             ORDER BY total DESC
             LIMIT 8
-        ")->fetchAll();
+        ", $kcParams);
 
         $kelasChartLabels = [];
         $kelasChartRates = [];
@@ -119,16 +132,19 @@ class AbsenSiswaController
         }
 
         // Presensi Sesi Terbaru (Recent Activities)
-        $recentSessions = $db->query("
+        $rsParams = [];
+        $rsCond = Auth::kelasSqlCondition('p.kelas', $rsParams);
+        $recentSessions = $db->findAll("
             SELECT p.*, 
                    pg.nama as nama_guru,
                    (SELECT COUNT(*) FROM presensi_kelas_detail d WHERE d.presensi_kelas_id = p.id) as total_siswa,
                    (SELECT COUNT(*) FROM presensi_kelas_detail d WHERE d.presensi_kelas_id = p.id AND d.status = 'H') as total_hadir
             FROM presensi_kelas p
             LEFT JOIN pegawai pg ON p.guru_id = pg.id
+            WHERE {$rsCond}
             ORDER BY p.id DESC
             LIMIT 8
-        ")->fetchAll();
+        ", $rsParams);
 
         self::renderView('index', [
             'pageTitle' => 'Dashboard Kelola Absen Siswa',
@@ -180,6 +196,11 @@ class AbsenSiswaController
             $sql .= " AND g.is_active = 0";
         }
 
+        $uCond = Auth::unitSqlCondition('g.unit', $params);
+        if ($uCond !== '1=1') {
+            $sql .= " AND ({$uCond})";
+        }
+
         if (!empty($filter_unit)) {
             $sql .= " AND g.unit = ?";
             $params[] = $filter_unit;
@@ -189,9 +210,19 @@ class AbsenSiswaController
         $groups = $db->findAll($sql, $params);
 
         // Counts for tabs
-        $totalAll = (int)$db->query("SELECT COUNT(*) FROM absen_group WHERE deleted_at IS NULL" . (!empty($filter_unit) ? " AND unit = '$filter_unit'" : ""))->fetchColumn();
-        $totalActive = (int)$db->query("SELECT COUNT(*) FROM absen_group WHERE deleted_at IS NULL AND is_active = 1" . (!empty($filter_unit) ? " AND unit = '$filter_unit'" : ""))->fetchColumn();
-        $totalInactive = (int)$db->query("SELECT COUNT(*) FROM absen_group WHERE deleted_at IS NULL AND is_active = 0" . (!empty($filter_unit) ? " AND unit = '$filter_unit'" : ""))->fetchColumn();
+        $cntParams = [];
+        $cntWhere = "deleted_at IS NULL";
+        $cntUCond = Auth::unitSqlCondition('unit', $cntParams);
+        if ($cntUCond !== '1=1') {
+            $cntWhere .= " AND ({$cntUCond})";
+        }
+        if (!empty($filter_unit)) {
+            $cntWhere .= " AND unit = ?";
+            $cntParams[] = $filter_unit;
+        }
+        $totalAll = (int)($db->find("SELECT COUNT(*) as c FROM absen_group WHERE {$cntWhere}", $cntParams)['c'] ?? 0);
+        $totalActive = (int)($db->find("SELECT COUNT(*) as c FROM absen_group WHERE {$cntWhere} AND is_active = 1", $cntParams)['c'] ?? 0);
+        $totalInactive = (int)($db->find("SELECT COUNT(*) as c FROM absen_group WHERE {$cntWhere} AND is_active = 0", $cntParams)['c'] ?? 0);
 
         self::renderView('group_list', [
             'pageTitle' => 'Daftar Wadah Grup Absen',
@@ -210,8 +241,12 @@ class AbsenSiswaController
     {
         $db = \Database::getInstance();
         $tahunList = $db->findAll("SELECT * FROM tahun_akademik ORDER BY id DESC");
-        $kelasList = $db->findAll("SELECT DISTINCT kelas, jenjang FROM siswa WHERE is_active = 1 AND kelas IS NOT NULL ORDER BY jenjang, kelas");
-        $guruList = $db->findAll("SELECT id, nama, gelar FROM pegawai WHERE is_active = 1 ORDER BY nama ASC");
+        $kParams = [];
+        $kCond = Auth::jenjangSqlCondition('jenjang', $kParams);
+        $kelasList = $db->findAll("SELECT DISTINCT kelas, jenjang FROM siswa WHERE is_active = 1 AND kelas IS NOT NULL AND ({$kCond}) ORDER BY jenjang, kelas", $kParams);
+        $gParams = [];
+        $gCond = Auth::unitSqlCondition('unit_tugas', $gParams);
+        $guruList = $db->findAll("SELECT id, nama, gelar FROM pegawai WHERE is_active = 1 AND ({$gCond}) ORDER BY nama ASC", $gParams);
         
         self::renderView('group_create', [
             'pageTitle' => 'Buat Wadah Grup Absen Baru',
@@ -279,8 +314,12 @@ class AbsenSiswaController
         }
 
         $tahunList = $db->findAll("SELECT * FROM tahun_akademik ORDER BY id DESC");
-        $kelasList = $db->findAll("SELECT DISTINCT kelas, jenjang FROM siswa WHERE is_active = 1 AND kelas IS NOT NULL ORDER BY jenjang, kelas");
-        $guruList = $db->findAll("SELECT id, nama, gelar FROM pegawai WHERE is_active = 1 ORDER BY nama ASC");
+        $kParams = [];
+        $kCond = Auth::jenjangSqlCondition('jenjang', $kParams);
+        $kelasList = $db->findAll("SELECT DISTINCT kelas, jenjang FROM siswa WHERE is_active = 1 AND kelas IS NOT NULL AND ({$kCond}) ORDER BY jenjang, kelas", $kParams);
+        $gParams = [];
+        $gCond = Auth::unitSqlCondition('unit_tugas', $gParams);
+        $guruList = $db->findAll("SELECT id, nama, gelar FROM pegawai WHERE is_active = 1 AND ({$gCond}) ORDER BY nama ASC", $gParams);
 
         self::renderView('group_edit', [
             'pageTitle' => 'Edit Wadah Grup Absen',
@@ -451,6 +490,11 @@ class AbsenSiswaController
             $sqlGroups .= " AND g.is_active = 0";
         }
 
+        $uCondMapel = Auth::unitSqlCondition('g.unit', $paramsGroups);
+        if ($uCondMapel !== '1=1') {
+            $sqlGroups .= " AND ({$uCondMapel})";
+        }
+
         if (!empty($filter_unit)) {
             $sqlGroups .= " AND g.unit = ?";
             $paramsGroups[] = $filter_unit;
@@ -459,19 +503,27 @@ class AbsenSiswaController
         $sqlGroups .= " ORDER BY g.id DESC";
         $groups = $db->findAll($sqlGroups, $paramsGroups);
 
+        $cParams = [];
         $countWhere = " WHERE deleted_at IS NULL AND tipe = 'mapel'";
+        $cUCond = Auth::unitSqlCondition('unit', $cParams);
+        if ($cUCond !== '1=1') {
+            $countWhere .= " AND ({$cUCond})";
+        }
         if (!empty($filter_unit)) {
-            $countWhere .= " AND unit = " . $db->getConnection()->quote($filter_unit);
+            $countWhere .= " AND unit = ?";
+            $cParams[] = $filter_unit;
         }
         if (!$isAdmin && $selectedGuruId) {
-            $countWhere .= " AND (guru_id = $selectedGuruId OR guru_id IS NULL)";
+            $countWhere .= " AND (guru_id = ? OR guru_id IS NULL)";
+            $cParams[] = (int)$selectedGuruId;
         } elseif ($isAdmin && $selectedGuruId) {
-            $countWhere .= " AND guru_id = $selectedGuruId";
+            $countWhere .= " AND guru_id = ?";
+            $cParams[] = (int)$selectedGuruId;
         }
 
-        $totalAll = (int)$db->query("SELECT COUNT(*) FROM absen_group $countWhere")->fetchColumn();
-        $totalActive = (int)$db->query("SELECT COUNT(*) FROM absen_group $countWhere AND is_active = 1")->fetchColumn();
-        $totalInactive = (int)$db->query("SELECT COUNT(*) FROM absen_group $countWhere AND is_active = 0")->fetchColumn();
+        $totalAll = (int)($db->find("SELECT COUNT(*) as c FROM absen_group $countWhere", $cParams)['c'] ?? 0);
+        $totalActive = (int)($db->find("SELECT COUNT(*) as c FROM absen_group $countWhere AND is_active = 1", $cParams)['c'] ?? 0);
+        $totalInactive = (int)($db->find("SELECT COUNT(*) as c FROM absen_group $countWhere AND is_active = 0", $cParams)['c'] ?? 0);
 
         self::renderView('absen_mapel', [
             'pageTitle' => 'Input Absen Mapel Siswa',
@@ -878,13 +930,15 @@ class AbsenSiswaController
         $db = \Database::getInstance();
         $isAdmin = class_exists('Auth') && Auth::isSuperAdmin();
 
-        // Daftar Kelas Aktif
+        // Daftar Kelas Aktif (respects jenjang restriction)
+        $akParams = [];
+        $akCond = Auth::jenjangSqlCondition('jenjang', $akParams);
         $kelasList = $db->findAll("
             SELECT DISTINCT kelas, jenjang 
             FROM siswa 
-            WHERE is_active = 1 AND kelas IS NOT NULL AND kelas != ''
+            WHERE is_active = 1 AND kelas IS NOT NULL AND kelas != '' AND ({$akCond})
             ORDER BY jenjang, kelas
-        ");
+        ", $akParams);
 
         $selectedKelas = trim($_GET['kelas'] ?? '');
         if (empty($selectedKelas) && !empty($kelasList)) {
@@ -1145,13 +1199,15 @@ class AbsenSiswaController
         $selectedMapel = trim($_GET['mapel'] ?? '');
         $selectedBulan = $_GET['bulan'] ?? date('Y-m');
 
-        // Daftar Kelas & Mapel untuk Dropdown
+        // Daftar Kelas & Mapel untuk Dropdown (respects jenjang restriction)
+        $rkParams = [];
+        $rkCond = Auth::jenjangSqlCondition('jenjang', $rkParams);
         $kelasList = $db->findAll("
             SELECT DISTINCT kelas, jenjang 
             FROM siswa 
-            WHERE is_active = 1 AND kelas IS NOT NULL AND kelas != ''
+            WHERE is_active = 1 AND kelas IS NOT NULL AND kelas != '' AND ({$rkCond})
             ORDER BY jenjang, kelas
-        ");
+        ", $rkParams);
         if (empty($selectedKelas) && !empty($kelasList)) {
             $selectedKelas = $kelasList[0]['kelas'];
         }

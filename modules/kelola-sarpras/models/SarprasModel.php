@@ -81,8 +81,13 @@ class SarprasModel
     {
         $db = self::db();
 
-        $totalItem = $db->find("SELECT COUNT(*) as cnt, COALESCE(SUM(jumlah), 0) as total_qty, COALESCE(SUM(jumlah * harga_perolehan), 0) as total_nilai FROM sarpras_barang");
-        $kondisi = $db->findAll("SELECT kondisi, COUNT(*) as cnt, COALESCE(SUM(jumlah), 0) as qty FROM sarpras_barang GROUP BY kondisi");
+        $bParams = [];
+        $bCond = Auth::unitSqlCondition('unit', $bParams);
+        $totalItem = $db->find("SELECT COUNT(*) as cnt, COALESCE(SUM(jumlah), 0) as total_qty, COALESCE(SUM(jumlah * harga_perolehan), 0) as total_nilai FROM sarpras_barang WHERE {$bCond}", $bParams);
+
+        $kParams = [];
+        $kCond = Auth::unitSqlCondition('unit', $kParams);
+        $kondisi = $db->findAll("SELECT kondisi, COUNT(*) as cnt, COALESCE(SUM(jumlah), 0) as qty FROM sarpras_barang WHERE {$kCond} GROUP BY kondisi", $kParams);
         
         $baik = 0; $rusakRingan = 0; $rusakBerat = 0;
         foreach ($kondisi as $k) {
@@ -91,31 +96,44 @@ class SarprasModel
             if ($k['kondisi'] === 'Rusak Berat') $rusakBerat = (int)$k['qty'];
         }
 
-        $totalDipinjam = (int)($db->find("SELECT COUNT(*) as cnt FROM sarpras_peminjaman WHERE status = 'Dipinjam'")['cnt'] ?? 0);
-        // total pemeliharaan (sarpras_pemeliharaan)
+        $pParams = [];
+        $pCond = Auth::unitSqlCondition('b.unit', $pParams);
+        $totalDipinjam = (int)($db->find("SELECT COUNT(*) as cnt FROM sarpras_peminjaman p JOIN sarpras_barang b ON p.barang_id = b.id WHERE p.status = 'Dipinjam' AND ({$pCond})", $pParams)['cnt'] ?? 0);
+
         $totalPemeliharaan = 0;
         try {
-            $totalPemeliharaan = (int)($db->find("SELECT COUNT(*) as cnt FROM sarpras_pemeliharaan WHERE status IN ('Menunggu', 'Diproses')")['cnt'] ?? 0);
+            $mParams = [];
+            $mCond = Auth::unitSqlCondition('COALESCE(r.unit, b.unit)', $mParams);
+            $totalPemeliharaan = (int)($db->find("SELECT COUNT(*) as cnt FROM sarpras_pemeliharaan m LEFT JOIN sarpras_barang b ON m.barang_id = b.id LEFT JOIN sarpras_ruangan r ON m.ruangan_id = r.id WHERE m.status IN ('Menunggu', 'Diproses') AND ({$mCond})", $mParams)['cnt'] ?? 0);
         } catch (Throwable $e) {}
-        $totalRuangan = (int)($db->find("SELECT COUNT(*) as cnt FROM sarpras_ruangan WHERE is_active = 1")['cnt'] ?? 0);
+
+        $rParams = [];
+        $rCond = Auth::unitSqlCondition('unit', $rParams);
+        $totalRuangan = (int)($db->find("SELECT COUNT(*) as cnt FROM sarpras_ruangan WHERE is_active = 1 AND ({$rCond})", $rParams)['cnt'] ?? 0);
         $totalKategori = (int)($db->find("SELECT COUNT(*) as cnt FROM sarpras_kategori")['cnt'] ?? 0);
 
         // Per Kategori
+        $pkParams = [];
+        $pkCond = Auth::unitSqlCondition('b.unit', $pkParams);
         $perKategori = $db->findAll("
             SELECT k.nama_kategori, COUNT(b.id) as item_count, COALESCE(SUM(b.jumlah), 0) as total_qty 
             FROM sarpras_kategori k
-            LEFT JOIN sarpras_barang b ON k.id = b.kategori_id
+            LEFT JOIN sarpras_barang b ON k.id = b.kategori_id AND ({$pkCond})
             GROUP BY k.id, k.nama_kategori
+            HAVING item_count > 0 OR " . (Auth::isJenjangRestricted() ? "0=1" : "1=1") . "
             ORDER BY total_qty DESC
-        ");
+        ", $pkParams);
 
         // Per Unit
+        $puParams = [];
+        $puCond = Auth::unitSqlCondition('unit', $puParams);
         $perUnit = $db->findAll("
             SELECT unit, COUNT(*) as item_count, COALESCE(SUM(jumlah), 0) as total_qty, COALESCE(SUM(jumlah * harga_perolehan), 0) as total_nilai
             FROM sarpras_barang
+            WHERE {$puCond}
             GROUP BY unit
             ORDER BY total_qty DESC
-        ");
+        ", $puParams);
 
         return [
             'total_item' => (int)($totalItem['cnt'] ?? 0),
@@ -146,6 +164,11 @@ class SarprasModel
 
         ";
         $params = [];
+
+        $uCond = Auth::unitSqlCondition('b.unit', $params);
+        if ($uCond !== '1=1') {
+            $sql .= " AND ({$uCond})";
+        }
 
         if (!empty($filters['unit'])) {
             $sql .= " AND b.unit = ?";
@@ -186,6 +209,11 @@ class SarprasModel
         $db = self::db();
         $sql = "SELECT COUNT(*) as cnt FROM sarpras_barang b WHERE 1=1";
         $params = [];
+
+        $uCond = Auth::unitSqlCondition('b.unit', $params);
+        if ($uCond !== '1=1') {
+            $sql .= " AND ({$uCond})";
+        }
 
         if (!empty($filters['unit'])) {
             $sql .= " AND b.unit = ?";
@@ -278,15 +306,18 @@ class SarprasModel
     public static function getAllRuangan(): array
     {
         $db = self::db();
+        $params = [];
+        $rCond = Auth::unitSqlCondition('r.unit', $params);
         return $db->findAll("
             SELECT r.*, b.nama_bangunan, b.kode_bangunan,
                    COUNT(DISTINCT dist.barang_id) as total_barang, COALESCE(SUM(dist.jumlah), 0) as total_qty
             FROM sarpras_ruangan r
             LEFT JOIN sarpras_bangunan b ON r.bangunan_id = b.id
             LEFT JOIN sarpras_distribusi dist ON r.id = dist.ruangan_id
+            WHERE {$rCond}
             GROUP BY r.id
             ORDER BY r.unit ASC, r.nama_ruangan ASC
-        ");
+        ", $params);
     }
 
     public static function getRuanganByBangunanId(int $bangunanId): array
@@ -390,6 +421,10 @@ class SarprasModel
             WHERE 1=1
         ";
         $params = [];
+        $uCond = Auth::unitSqlCondition('b.unit', $params);
+        if ($uCond !== '1=1') {
+            $sql .= " AND ({$uCond})";
+        }
         if (!empty($status)) {
             $sql .= " AND p.status = ?";
             $params[] = $status;
@@ -452,6 +487,10 @@ class SarprasModel
             WHERE 1=1
         ";
         $params = [];
+        $uCond = Auth::unitSqlCondition('b.unit', $params);
+        if ($uCond !== '1=1') {
+            $sql .= " AND ({$uCond})";
+        }
         if (!empty($status)) {
             $sql .= " AND m.status = ?";
             $params[] = $status;
@@ -553,19 +592,24 @@ class SarprasModel
     public static function getPemeliharaanStats(): array
     {
         $db = self::db();
+        $params = [];
+        $mCond = Auth::unitSqlCondition('COALESCE(r.unit, b.unit)', $params);
         $row = $db->find("
             SELECT 
                 COUNT(*) as total_laporan,
-                SUM(CASE WHEN status_verifikasi = 'Menunggu' THEN 1 ELSE 0 END) as total_menunggu_verifikasi,
-                SUM(CASE WHEN status = 'Disetujui' OR (status_verifikasi = 'Disetujui' AND status = 'Menunggu') THEN 1 ELSE 0 END) as total_disetujui,
-                SUM(CASE WHEN status = 'Diproses' THEN 1 ELSE 0 END) as total_diproses,
-                SUM(CASE WHEN status = 'Selesai' THEN 1 ELSE 0 END) as total_selesai,
-                SUM(CASE WHEN status = 'Ditolak' OR status_verifikasi = 'Ditolak' THEN 1 ELSE 0 END) as total_ditolak,
-                SUM(CASE WHEN status = 'Afkir' THEN 1 ELSE 0 END) as total_afkir,
-                COALESCE(SUM(biaya_realisasi), 0) as total_biaya_realisasi,
-                COALESCE(SUM(estimasi_biaya), 0) as total_estimasi_biaya
-            FROM sarpras_pemeliharaan
-        ");
+                SUM(CASE WHEN m.status_verifikasi = 'Menunggu' THEN 1 ELSE 0 END) as total_menunggu_verifikasi,
+                SUM(CASE WHEN m.status = 'Disetujui' OR (m.status_verifikasi = 'Disetujui' AND m.status = 'Menunggu') THEN 1 ELSE 0 END) as total_disetujui,
+                SUM(CASE WHEN m.status = 'Diproses' THEN 1 ELSE 0 END) as total_diproses,
+                SUM(CASE WHEN m.status = 'Selesai' THEN 1 ELSE 0 END) as total_selesai,
+                SUM(CASE WHEN m.status = 'Ditolak' OR m.status_verifikasi = 'Ditolak' THEN 1 ELSE 0 END) as total_ditolak,
+                SUM(CASE WHEN m.status = 'Afkir' THEN 1 ELSE 0 END) as total_afkir,
+                COALESCE(SUM(m.biaya_realisasi), 0) as total_biaya_realisasi,
+                COALESCE(SUM(m.estimasi_biaya), 0) as total_estimasi_biaya
+            FROM sarpras_pemeliharaan m
+            LEFT JOIN sarpras_barang b ON m.barang_id = b.id
+            LEFT JOIN sarpras_ruangan r ON m.ruangan_id = r.id
+            WHERE {$mCond}
+        ", $params);
         return $row ?: [];
     }
 
@@ -680,6 +724,11 @@ class SarprasModel
         ";
         $params = [];
 
+        $uCond = Auth::unitSqlCondition('COALESCE(NULLIF(p.unit, ""), r.unit)', $params);
+        if ($uCond !== '1=1') {
+            $sql .= " AND ({$uCond})";
+        }
+
         if (!empty($filters['status'])) {
             $sql .= " AND p.status = ?";
             $params[] = $filters['status'];
@@ -717,8 +766,13 @@ class SarprasModel
     public static function countPengajuanList(array $filters = []): int
     {
         $db = self::db();
-        $sql = "SELECT COUNT(*) as total FROM sarpras_pengajuan p WHERE 1=1";
+        $sql = "SELECT COUNT(*) as total FROM sarpras_pengajuan p LEFT JOIN sarpras_ruangan r ON p.ruangan_id = r.id WHERE 1=1";
         $params = [];
+
+        $uCond = Auth::unitSqlCondition('COALESCE(NULLIF(p.unit, ""), r.unit)', $params);
+        if ($uCond !== '1=1') {
+            $sql .= " AND ({$uCond})";
+        }
 
         if (!empty($filters['status'])) {
             $sql .= " AND p.status = ?";
@@ -827,6 +881,8 @@ class SarprasModel
     public static function getPengajuanStats(): array
     {
         $db = self::db();
+        $params = [];
+        $uCond = Auth::unitSqlCondition('p.unit', $params);
         $row = $db->find("
             SELECT 
                 COUNT(*) as total_pengajuan,
@@ -836,8 +892,9 @@ class SarprasModel
                 SUM(CASE WHEN status = 'Selesai' THEN 1 ELSE 0 END) as total_selesai,
                 COALESCE(SUM(total_estimasi), 0) as total_nilai_estimasi,
                 COALESCE(SUM(realisasi_harga), 0) as total_nilai_realisasi
-            FROM sarpras_pengajuan
-        ");
+            FROM sarpras_pengajuan p
+            WHERE {$uCond}
+        ", $params);
         return $row ?: [];
     }
 
@@ -1466,6 +1523,10 @@ class SarprasModel
             WHERE r.is_active = 1
         ";
         $ruanganParams = [];
+        $rUnitCond = Auth::unitSqlCondition('r.unit', $ruanganParams);
+        if ($rUnitCond !== '1=1') {
+            $ruanganQuery .= " AND ({$rUnitCond})";
+        }
         if (!empty($ruanganId) && is_numeric($ruanganId)) {
             $ruanganQuery .= " AND r.id = ?";
             $ruanganParams[] = (int)$ruanganId;

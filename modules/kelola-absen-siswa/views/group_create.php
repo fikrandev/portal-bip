@@ -2,12 +2,17 @@
 /**
  * Buat Wadah Grup Absen Baru
  */
-$unit_list = [
+$all_units = [
     'PAUD' => ['name' => 'PAUD / TK', 'icon' => '🧸', 'bg_soft' => 'bg-pink-50 text-pink-700'],
     'SD'   => ['name' => 'SD (Sekolah Dasar)', 'icon' => '🎒', 'bg_soft' => 'bg-primary-50 text-primary-700'],
     'SMP'  => ['name' => 'SMP (Sekolah Menengah Pertama)', 'icon' => '📚', 'bg_soft' => 'bg-primary-50 text-primary-700'],
     'SMA'  => ['name' => 'SMA / SMK', 'icon' => '🎓', 'bg_soft' => 'bg-purple-50 text-purple-700']
 ];
+$unit_list = array_filter($all_units, static fn($k) => Auth::canAccessJenjang($k), ARRAY_FILTER_USE_KEY);
+if (empty($unit_list)) {
+    $unit_list = $all_units;
+}
+$defaultUnit = array_key_exists('SD', $unit_list) ? 'SD' : array_key_first($unit_list);
 $prefillGuru = !empty($_GET['guru_id']) ? (int)$_GET['guru_id'] : 0;
 $prefillMapel = trim($_GET['mapel'] ?? '');
 $prefillKelas = trim($_GET['kelas'] ?? '');
@@ -45,8 +50,8 @@ $prefillTipe = trim($_GET['tipe'] ?? 'mapel');
                 </h3>
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-3xl">
                     <?php foreach ($unit_list as $uKey => $uInfo): ?>
-                        <label class="relative flex flex-col items-center justify-center p-4 rounded-2xl border-2 cursor-pointer transition-all hover:border-primary-400 hover:bg-slate-50/80 unit-card <?= $uKey === 'SD' ? 'border-primary-500 bg-primary-50/30' : 'border-slate-200 bg-white' ?>">
-                            <input type="radio" name="unit" value="<?= $uKey ?>" class="sr-only" <?= $uKey === 'SD' ? 'checked' : '' ?> required onchange="updateUnitSelection(this)">
+                        <label class="relative flex flex-col items-center justify-center p-4 rounded-2xl border-2 cursor-pointer transition-all hover:border-primary-400 hover:bg-slate-50/80 unit-card <?= $uKey === $defaultUnit ? 'border-primary-500 bg-primary-50/30' : 'border-slate-200 bg-white' ?>">
+                            <input type="radio" name="unit" value="<?= $uKey ?>" class="sr-only" <?= $uKey === $defaultUnit ? 'checked' : '' ?> required onchange="updateUnitSelection(this)">
                             <div class="w-10 h-10 rounded-xl flex items-center justify-center text-2xl mb-1.5 <?= $uInfo['bg_soft'] ?>">
                                 <?= $uInfo['icon'] ?>
                             </div>

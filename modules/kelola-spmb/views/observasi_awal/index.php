@@ -193,11 +193,14 @@ $groupLinks          = $groupLinks ?? [];
             <!-- Jenjang / Unit -->
             <div class="w-full md:w-44 shrink-0">
                 <select name="jenjang" onchange="this.form.submit()" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs sm:text-sm font-medium focus:ring-2 focus:ring-sky-500 bg-white">
+                    <?php if (!Auth::isJenjangRestricted() || count(Auth::getAllowedJenjang()) > 1): ?>
                     <option value="">Semua Unit</option>
-                    <option value="PAUD" <?= $selectedJenjang === 'PAUD' ? 'selected' : '' ?>>PAUD</option>
-                    <option value="SD" <?= $selectedJenjang === 'SD' ? 'selected' : '' ?>>SD</option>
-                    <option value="SMP" <?= $selectedJenjang === 'SMP' ? 'selected' : '' ?>>SMP</option>
-                    <option value="SMA" <?= $selectedJenjang === 'SMA' ? 'selected' : '' ?>>SMA</option>
+                    <?php endif; ?>
+                    <?php foreach (['PAUD', 'SD', 'SMP', 'SMA'] as $jOpt): ?>
+                        <?php if (Auth::canAccessJenjang($jOpt)): ?>
+                        <option value="<?= $jOpt ?>" <?= strtoupper($selectedJenjang) === $jOpt ? 'selected' : '' ?>><?= $jOpt ?></option>
+                        <?php endif; ?>
+                    <?php endforeach; ?>
                 </select>
             </div>
 
