@@ -79,6 +79,13 @@
                     <td class="px-6 py-4 text-slate-600 hidden sm:table-cell"><?= e($u['username']) ?></td>
                     <td class="px-6 py-4 hidden lg:table-cell">
                         <span class="inline-flex px-2.5 py-1 rounded-2xl bg-primary-50 text-primary-700 text-xs font-medium"><?= e($u['role_names'] ?? '-') ?></span>
+                        <?php if (!empty($u['allowed_jenjang'])): ?>
+                            <div class="mt-1 flex items-center gap-1 flex-wrap">
+                                <?php foreach (explode(',', $u['allowed_jenjang']) as $uj): ?>
+                                    <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200"><?= e(trim($uj)) ?></span>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php endif; ?>
                     </td>
                     <td class="px-6 py-4 text-center">
                         <?php if ($u['is_active']): ?>

@@ -33,7 +33,20 @@
                 <p class="text-xs text-slate-400"><?= e($role['slug']) ?></p>
             </div>
         </div>
-        <p class="text-sm text-slate-500 mb-4 line-clamp-2"><?= e($role['description'] ?? '-') ?></p>
+        <p class="text-sm text-slate-500 mb-3 line-clamp-2"><?= e($role['description'] ?? '-') ?></p>
+        <?php if (!empty($role['allowed_jenjang'])): ?>
+            <div class="flex items-center gap-1 mb-3 flex-wrap">
+                <span class="text-[10px] text-slate-400 font-bold">Jenjang:</span>
+                <?php foreach (explode(',', $role['allowed_jenjang']) as $j): ?>
+                    <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200"><?= e(trim($j)) ?></span>
+                <?php endforeach; ?>
+            </div>
+        <?php else: ?>
+            <div class="flex items-center gap-1 mb-3">
+                <span class="text-[10px] text-slate-400 font-bold">Jenjang:</span>
+                <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-600">Semua Jenjang</span>
+            </div>
+        <?php endif; ?>
         <div class="flex items-center justify-between">
             <span class="text-xs text-primary-600 font-medium bg-primary-50 px-2.5 py-1 rounded-2xl"><?= $role['user_count'] ?> pengguna</span>
             <div class="flex gap-1">

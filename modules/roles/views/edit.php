@@ -65,6 +65,46 @@
                           class="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-2xl text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 text-sm font-medium transition-all"
                           placeholder="Deskripsikan wewenang atau tanggung jawab peran ini..."><?= e($role['description'] ?? '') ?></textarea>
             </div>
+
+            <!-- Filter Jenjang Akses (RBAC Jenjang) -->
+            <?php
+            $currentRoleJenjang = !empty($role['allowed_jenjang']) ? explode(',', strtoupper($role['allowed_jenjang'])) : [];
+            $allJenjangList = [
+                'PAUD' => 'Pendidikan Anak Usia Dini / TK',
+                'SD'   => 'Sekolah Dasar',
+                'SMP'  => 'Sekolah Menengah Pertama',
+                'SMA'  => 'Sekolah Menengah Atas'
+            ];
+            ?>
+            <div class="pt-4 border-t border-slate-100">
+                <div class="flex items-center justify-between mb-2">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-800 flex items-center gap-2">
+                            <span>Filter Jenjang Akses Peran</span>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">Scope Jenjang</span>
+                        </label>
+                        <p class="text-[11px] text-slate-500 mt-0.5">
+                            Centang jenjang sekolah untuk peran ini. Pengguna dengan peran ini otomatis hanya dapat melihat dan mengelola data sesuai jenjang yang dicentang.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
+                    <?php foreach ($allJenjangList as $jCode => $jDesc): ?>
+                        <?php $isChecked = in_array($jCode, $currentRoleJenjang, true); ?>
+                        <label class="relative flex flex-col p-3 rounded-2xl border transition-all cursor-pointer select-none <?= $isChecked ? 'border-amber-400 bg-amber-50/50 shadow-xs' : 'border-slate-200 bg-slate-50/40 hover:bg-white hover:border-slate-300' ?>">
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="font-extrabold text-sm text-slate-800"><?= $jCode ?></span>
+                                <input type="checkbox" name="allowed_jenjang[]" value="<?= $jCode ?>" <?= $isChecked ? 'checked' : '' ?> class="w-4 h-4 rounded text-amber-600 focus:ring-amber-500 border-slate-300">
+                            </div>
+                            <span class="text-[10px] text-slate-500 line-clamp-1"><?= $jDesc ?></span>
+                        </label>
+                    <?php endforeach; ?>
+                </div>
+                <p class="text-[10px] text-slate-400 italic mt-2">
+                    *Jika tidak ada yang dicentang atau semua dicentang, maka peran ini memiliki akses ke <strong>Semua Jenjang</strong>.
+                </p>
+            </div>
         </div>
 
         <!-- Matriks Hak Akses & Fitur -->

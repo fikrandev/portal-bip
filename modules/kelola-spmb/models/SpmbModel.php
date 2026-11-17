@@ -290,7 +290,19 @@ class SpmbModel
             $params[] = (int)$filters['group_id'];
         }
 
-        if (!empty($filters['jenjang'])) {
+        if (Auth::isJenjangRestricted()) {
+            $allowedJenjang = Auth::getAllowedJenjang();
+            if (!empty($filters['jenjang']) && Auth::canAccessJenjang($filters['jenjang'])) {
+                $conditions[] = "p.jenjang = ?";
+                $params[] = strtoupper($filters['jenjang']);
+            } else {
+                $inP = implode(',', array_fill(0, count($allowedJenjang), '?'));
+                $conditions[] = "p.jenjang IN ({$inP})";
+                foreach ($allowedJenjang as $aj) {
+                    $params[] = strtoupper($aj);
+                }
+            }
+        } elseif (!empty($filters['jenjang'])) {
             $conditions[] = "p.jenjang = ?";
             $params[] = strtoupper($filters['jenjang']);
         }
@@ -386,7 +398,19 @@ class SpmbModel
             $params[] = (int)$filters['group_id'];
         }
 
-        if (!empty($filters['jenjang'])) {
+        if (Auth::isJenjangRestricted()) {
+            $allowedJenjang = Auth::getAllowedJenjang();
+            if (!empty($filters['jenjang']) && Auth::canAccessJenjang($filters['jenjang'])) {
+                $conditions[] = "p.jenjang = ?";
+                $params[] = strtoupper($filters['jenjang']);
+            } else {
+                $inP = implode(',', array_fill(0, count($allowedJenjang), '?'));
+                $conditions[] = "p.jenjang IN ({$inP})";
+                foreach ($allowedJenjang as $aj) {
+                    $params[] = strtoupper($aj);
+                }
+            }
+        } elseif (!empty($filters['jenjang'])) {
             $conditions[] = "p.jenjang = ?";
             $params[] = strtoupper($filters['jenjang']);
         }

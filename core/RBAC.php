@@ -254,8 +254,51 @@ class RBAC
             $_SESSION['rbac_modules_cache'],
             $_SESSION['rbac_modules_ts'],
             $_SESSION['rbac_modules_uid'],
-            $_SESSION['rbac_modules_sa']
+            $_SESSION['rbac_modules_sa'],
+            $_SESSION['user_allowed_jenjang'],
+            $_SESSION['user_is_jenjang_restricted']
         );
+    }
+
+    /**
+     * Get allowed jenjang configured for a specific role
+     */
+    public static function getRoleAllowedJenjang(int $roleId): array
+    {
+        $db = Database::getInstance();
+        $row = $db->find("SELECT allowed_jenjang FROM roles WHERE id = ?", [$roleId]);
+        if (!empty($row['allowed_jenjang'])) {
+            return array_filter(array_map('trim', explode(',', strtoupper($row['allowed_jenjang']))));
+        }
+        return [];
+    }
+
+    /**
+     * Get allowed jenjang configured for a specific user
+     */
+    public static function getUserAllowedJenjang(int $userId): array
+    {
+        $db = Database::getInstance();
+        $user = $db->find(
+            "SELECT u.allowed_jenjang as user_allowed_jenjang,
+                    GROUP_CONCAT(r.allowed_jenjang) as role_allowed_jenjangs
+             FROM users u
+             LEFT JOIN user_roles ur ON u.id = ur.user_id
+             LEFT JOIN roles r ON ur.role_id = r.id
+             WHERE u.id = ?
+             GROUP BY u.id",
+            [$userId]
+        );
+        if (!$user) {
+            return [];
+        }
+        if (!empty($user['user_allowed_jenjang'])) {
+            return array_filter(array_map('trim', explode(',', strtoupper($user['user_allowed_jenjang']))));
+        }
+        if (!empty($user['role_allowed_jenjangs'])) {
+            return array_values(array_unique(array_filter(array_map('trim', explode(',', strtoupper($user['role_allowed_jenjangs']))))));
+        }
+        return [];
     }
 
     /**

@@ -45,10 +45,19 @@ class RoleController
         $db = Database::getInstance();
         $db->beginTransaction();
         try {
+            $allowedJenjang = null;
+            if (!empty($_POST['allowed_jenjang']) && is_array($_POST['allowed_jenjang'])) {
+                $cleanJenjang = array_filter(array_map('trim', $_POST['allowed_jenjang']));
+                if (!empty($cleanJenjang)) {
+                    $allowedJenjang = implode(',', array_map('strtoupper', $cleanJenjang));
+                }
+            }
+
             $roleId = $db->insert('roles', [
                 'name' => trim($_POST['name']),
                 'slug' => trim($_POST['slug']),
                 'description' => trim($_POST['description'] ?? ''),
+                'allowed_jenjang' => $allowedJenjang,
             ]);
             if (!empty($_POST['permissions'])) {
                 foreach ($_POST['permissions'] as $permId) {
@@ -92,9 +101,18 @@ class RoleController
         
         $db->beginTransaction();
         try {
+            $allowedJenjang = null;
+            if (!empty($_POST['allowed_jenjang']) && is_array($_POST['allowed_jenjang'])) {
+                $cleanJenjang = array_filter(array_map('trim', $_POST['allowed_jenjang']));
+                if (!empty($cleanJenjang)) {
+                    $allowedJenjang = implode(',', array_map('strtoupper', $cleanJenjang));
+                }
+            }
+
             $db->update('roles', [
                 'name' => trim($_POST['name']),
                 'description' => trim($_POST['description'] ?? ''),
+                'allowed_jenjang' => $allowedJenjang,
             ], 'id = ?', [$id]);
             
             $db->delete('role_permissions', 'role_id = ?', [$id]);
@@ -110,6 +128,16 @@ class RoleController
             $db->rollback();
             Response::withError(url('roles/edit/' . $id), 'Gagal memperbarui peran.');
         }
+    }
+
+    public static function switchActiveJenjang(): void
+    {
+        $jenjang = trim($_POST['jenjang'] ?? $_GET['jenjang'] ?? '');
+        if ($jenjang !== '') {
+            Auth::setActiveJenjang($jenjang);
+        }
+        $redirect = $_SERVER['HTTP_REFERER'] ?? url('dashboard');
+        Response::redirect($redirect);
     }
 
     public static function delete(string $id): void

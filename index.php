@@ -273,6 +273,8 @@ $router->post('/roles/store', [RoleController::class, 'store'], [Middleware::per
 $router->get('/roles/edit/{id}', [RoleController::class, 'edit'], [Middleware::permissionRequired('roles.update')]);
 $router->post('/roles/update/{id}', [RoleController::class, 'update'], [Middleware::permissionRequired('roles.update')]);
 $router->post('/roles/delete/{id}', [RoleController::class, 'delete'], [Middleware::permissionRequired('roles.delete')]);
+$router->post('/switch-jenjang', [RoleController::class, 'switchActiveJenjang'], [Middleware::auth()]);
+$router->get('/switch-jenjang', [RoleController::class, 'switchActiveJenjang'], [Middleware::auth()]);
 
 // -- Module Manager --
 $router->get('/modules-manager', [ModuleController::class, 'index'], [Middleware::permissionRequired('modules.view')]);

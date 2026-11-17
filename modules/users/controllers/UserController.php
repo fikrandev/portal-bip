@@ -89,6 +89,14 @@ class UserController
         $db->beginTransaction();
         
         try {
+            $allowedJenjang = null;
+            if (!empty($_POST['allowed_jenjang']) && is_array($_POST['allowed_jenjang'])) {
+                $cleanJenjang = array_filter(array_map('trim', $_POST['allowed_jenjang']));
+                if (!empty($cleanJenjang)) {
+                    $allowedJenjang = implode(',', array_map('strtoupper', $cleanJenjang));
+                }
+            }
+
             $userId = $db->insert('users', [
                 'uuid'      => self::generateUUID(),
                 'full_name' => trim($_POST['full_name']),
@@ -96,6 +104,7 @@ class UserController
                 'username'  => trim($_POST['username']),
                 'password'  => password_hash($_POST['password'], PASSWORD_BCRYPT),
                 'phone'     => '',
+                'allowed_jenjang' => $allowedJenjang,
                 'is_active' => isset($_POST['is_active']) ? 1 : 0,
             ]);
             
@@ -170,11 +179,20 @@ class UserController
         
         $db->beginTransaction();
         try {
+            $allowedJenjang = null;
+            if (!empty($_POST['allowed_jenjang']) && is_array($_POST['allowed_jenjang'])) {
+                $cleanJenjang = array_filter(array_map('trim', $_POST['allowed_jenjang']));
+                if (!empty($cleanJenjang)) {
+                    $allowedJenjang = implode(',', array_map('strtoupper', $cleanJenjang));
+                }
+            }
+
             $data = [
                 'full_name' => trim($_POST['full_name']),
                 'email'     => trim($_POST['username']), // set email to username
                 'username'  => trim($_POST['username']),
                 'phone'     => '',
+                'allowed_jenjang' => $allowedJenjang,
                 'is_active' => isset($_POST['is_active']) ? 1 : 0,
             ];
             if (!empty($_POST['password'])) {

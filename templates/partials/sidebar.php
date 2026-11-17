@@ -68,6 +68,11 @@ if (defined('SYS_APP_FAVICON') && !empty(SYS_APP_FAVICON)) {
             <div class="min-w-0 flex-1">
                 <p class="text-sm font-semibold text-white truncate"><?= e(Auth::name()) ?></p>
                 <p class="text-xs text-primary-300 truncate"><?= e(implode(', ', Auth::roles())) ?></p>
+                <?php if (Auth::isJenjangRestricted()): ?>
+                    <span class="inline-block mt-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-400/20 text-amber-300 border border-amber-400/30">
+                        Jenjang: <?= implode(', ', Auth::getAllowedJenjang()) ?>
+                    </span>
+                <?php endif; ?>
             </div>
         </div>
     </div>

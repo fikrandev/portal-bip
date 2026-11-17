@@ -29,6 +29,14 @@ class SiswaController
         $filterDapodik = trim($_GET['dapodik'] ?? '');
         $filterStatus = isset($_GET['status']) && $_GET['status'] !== '' ? intval($_GET['status']) : '';
 
+        // RBAC Jenjang Filter
+        if (Auth::isJenjangRestricted()) {
+            $allowedJenjang = Auth::getAllowedJenjang();
+            if ($filterJenjang === '' || !Auth::canAccessJenjang($filterJenjang)) {
+                $filterJenjang = $allowedJenjang[0];
+            }
+        }
+
         $where = 'tahun_akademik_id = ?';
         $params = [$filterTa];
 
@@ -38,7 +46,19 @@ class SiswaController
             $params = array_merge($params, [$s, $s, $s, $s, $s, $s, $s, $s]);
         }
 
-        if ($filterJenjang !== '') {
+        if (Auth::isJenjangRestricted()) {
+            $allowedJenjang = Auth::getAllowedJenjang();
+            if ($filterJenjang !== '' && Auth::canAccessJenjang($filterJenjang)) {
+                $where .= " AND UPPER(jenjang) = ?";
+                $params[] = strtoupper($filterJenjang);
+            } else {
+                $inPlaceholders = implode(',', array_fill(0, count($allowedJenjang), '?'));
+                $where .= " AND UPPER(jenjang) IN ({$inPlaceholders})";
+                foreach ($allowedJenjang as $aj) {
+                    $params[] = strtoupper($aj);
+                }
+            }
+        } elseif ($filterJenjang !== '') {
             $where .= " AND UPPER(jenjang) = ?";
             $params[] = strtoupper($filterJenjang);
         }
@@ -718,7 +738,20 @@ class SiswaController
             $s = "%{$search}%";
             $params = [$s, $s, $s];
         }
-        if ($filterJenjang !== '') {
+
+        if (Auth::isJenjangRestricted()) {
+            $allowedJenjang = Auth::getAllowedJenjang();
+            if ($filterJenjang !== '' && Auth::canAccessJenjang($filterJenjang)) {
+                $where .= " AND UPPER(jenjang) = ?";
+                $params[] = strtoupper($filterJenjang);
+            } else {
+                $inPlaceholders = implode(',', array_fill(0, count($allowedJenjang), '?'));
+                $where .= " AND UPPER(jenjang) IN ({$inPlaceholders})";
+                foreach ($allowedJenjang as $aj) {
+                    $params[] = strtoupper($aj);
+                }
+            }
+        } elseif ($filterJenjang !== '') {
             $where .= " AND UPPER(jenjang) = ?";
             $params[] = strtoupper($filterJenjang);
         }

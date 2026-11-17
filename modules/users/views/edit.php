@@ -62,6 +62,37 @@
                     <?php endforeach; ?>
                 </div>
             </div>
+
+            <!-- Filter Jenjang Akses Pengguna -->
+            <?php
+            $currentUserJenjang = !empty($user['allowed_jenjang']) ? explode(',', strtoupper($user['allowed_jenjang'])) : [];
+            $allJenjangList = [
+                'PAUD' => 'PAUD / TK',
+                'SD'   => 'SD',
+                'SMP'  => 'SMP',
+                'SMA'  => 'SMA'
+            ];
+            ?>
+            <div class="mb-5 p-4 rounded-2xl bg-amber-50/50 border border-amber-200/80">
+                <div class="flex items-center justify-between mb-2">
+                    <label class="block text-xs font-bold text-slate-800 flex items-center gap-2">
+                        <span>Filter Jenjang Akses Pengguna</span>
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">Scope Jenjang</span>
+                    </label>
+                </div>
+                <p class="text-xs text-slate-500 mb-3">
+                    Tentukan jenjang yang dapat diakses pengguna ini saat login. Jika tidak dicentang, pengguna akan otomatis mengikuti pengaturan peran atau dapat mengakses semua jenjang.
+                </p>
+                <div class="flex flex-wrap gap-2.5">
+                    <?php foreach ($allJenjangList as $jCode => $jDesc): ?>
+                        <?php $isChecked = in_array($jCode, $currentUserJenjang, true); ?>
+                        <label class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border transition-all cursor-pointer select-none <?= $isChecked ? 'border-amber-400 bg-amber-100/70 text-amber-900 font-bold' : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700' ?>">
+                            <input type="checkbox" name="allowed_jenjang[]" value="<?= $jCode ?>" <?= $isChecked ? 'checked' : '' ?> class="w-4 h-4 rounded text-amber-600 focus:ring-amber-500 border-slate-300">
+                            <span class="text-xs"><?= $jCode ?> (<?= $jDesc ?>)</span>
+                        </label>
+                    <?php endforeach; ?>
+                </div>
+            </div>
             
             <div class="mb-6">
                 <label class="inline-flex items-center gap-2 cursor-pointer">

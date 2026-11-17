@@ -54,8 +54,19 @@
             <?php 
             $currPath = trim(parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH), '/');
             $isDashboard = ($currPath === 'dashboard' || $currPath === '' || str_ends_with($currPath, '/dashboard'));
-            if ($isDashboard): 
+            $userAllowedJenjang = Auth::getAllowedJenjang();
+            $isJenjangRestricted = Auth::isJenjangRestricted();
             ?>
+
+            <!-- Scope Jenjang Badge -->
+            <?php if ($isJenjangRestricted): ?>
+                <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 text-amber-800 border border-amber-200 text-xs font-bold shadow-xs" title="Akses sistem Anda dibatasi khusus untuk jenjang <?= implode(', ', $userAllowedJenjang) ?>">
+                    <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+                    <span>Jenjang: <?= implode(', ', $userAllowedJenjang) ?></span>
+                </div>
+            <?php endif; ?>
+            
+            <?php if ($isDashboard): ?>
             <!-- Portal Guru Mobile Shortcut Button (Hanya tampil di Dashboard Portal Utama) -->
             <a href="<?= url('mobile') ?>" 
                target="_blank"
@@ -130,6 +141,11 @@
                         <div class="min-w-0 flex-1">
                             <p class="text-sm font-semibold text-primary-900 truncate"><?= e(Auth::name()) ?></p>
                             <p class="text-xs text-primary-500 mt-0.5 truncate"><?= e(Auth::user()['email'] ?? '') ?></p>
+                            <?php if ($isJenjangRestricted): ?>
+                                <span class="inline-block mt-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                                    Scope: <?= implode(', ', $userAllowedJenjang) ?>
+                                </span>
+                            <?php endif; ?>
                         </div>
                     </div>
                     <div class="py-1">

@@ -713,10 +713,17 @@ class SarprasController
             return;
         }
 
+        $selectedUnit = trim($_GET['unit'] ?? '');
+        if (Auth::isJenjangRestricted()) {
+            if ($selectedUnit === '' || !Auth::canAccessJenjang($selectedUnit)) {
+                $selectedUnit = Auth::getActiveJenjang();
+            }
+        }
+
         $filters = [
             'status'            => trim($_GET['status'] ?? ''),
             'status_verifikasi' => trim($_GET['status_verifikasi'] ?? ''),
-            'unit'              => trim($_GET['unit'] ?? ''),
+            'unit'              => $selectedUnit,
             'kategori_id'       => trim($_GET['kategori_id'] ?? ''),
             'search'            => trim($_GET['search'] ?? '')
         ];

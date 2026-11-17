@@ -120,6 +120,21 @@
             'SMP' => ['label' => 'SMP', 'count' => $totalSmp, 'icon' => '📚'],
             'SMA' => ['label' => 'SMA', 'count' => $totalSma, 'icon' => '🏛️'],
         ];
+
+        if (Auth::isJenjangRestricted()) {
+            $allowedJenjang = Auth::getAllowedJenjang();
+            $newTabList = [];
+            foreach ($tabList as $k => $v) {
+                if ($k === '') {
+                    if (count($allowedJenjang) > 1) {
+                        $newTabList[$k] = ['label' => 'Semua (' . implode(', ', $allowedJenjang) . ')', 'count' => $totalSiswa, 'icon' => '🏫'];
+                    }
+                } elseif (in_array($k, $allowedJenjang, true)) {
+                    $newTabList[$k] = $v;
+                }
+            }
+            $tabList = $newTabList;
+        }
         ?>
         <?php foreach ($tabList as $key => $tab): ?>
             <?php

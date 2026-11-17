@@ -91,6 +91,7 @@ class AutoMigrate
             '2026_11_16_000053_add_dashboard_feature_permissions_to_all_modules' => 'migration053AddDashboardFeaturePermissionsToAllModules',
             '2026_11_16_000054_add_spmb_group_wa_observasi_features'       => 'migration054AddSpmbGroupWaObservasiFeatures',
             '2026_11_17_000055_add_sarpras_pengajuan_pembelian_and_perbaikan_verifikasi' => 'migration055AddSarprasPengajuanPembelianAndPerbaikanVerifikasi',
+            '2026_11_17_000056_add_rbac_jenjang_filter'                   => 'migration056AddRbacJenjangFilter',
         ];
     }
     /**
@@ -3812,6 +3813,19 @@ class AutoMigrate
                     }
                 }
             }
+        }
+    }
+
+    protected static function migration056AddRbacJenjangFilter(PDO $pdo): void
+    {
+        // 1. Tambah kolom allowed_jenjang pada tabel roles (PAUD, SD, SMP, SMA, atau kombinasi koma / NULL = ALL)
+        if (self::hasTable($pdo, 'roles')) {
+            self::addColumnIfNotExists($pdo, 'roles', 'allowed_jenjang', 'VARCHAR(100) NULL DEFAULT NULL AFTER `description`');
+        }
+
+        // 2. Tambah kolom allowed_jenjang pada tabel users
+        if (self::hasTable($pdo, 'users')) {
+            self::addColumnIfNotExists($pdo, 'users', 'allowed_jenjang', 'VARCHAR(100) NULL DEFAULT NULL AFTER `phone`');
         }
     }
 }

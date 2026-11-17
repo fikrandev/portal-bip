@@ -32,7 +32,8 @@ class Auth
 
         // Find user by username or email
         $user = $db->find(
-            "SELECT u.*, GROUP_CONCAT(r.slug) as role_slugs 
+            "SELECT u.*, GROUP_CONCAT(r.slug) as role_slugs,
+                    GROUP_CONCAT(r.allowed_jenjang) as role_allowed_jenjangs 
              FROM users u 
              LEFT JOIN user_roles ur ON u.id = ur.user_id 
              LEFT JOIN roles r ON ur.role_id = r.id 
@@ -60,6 +61,9 @@ class Auth
         $_SESSION['user_roles'] = $user['role_slugs'] ? explode(',', $user['role_slugs']) : [];
         $_SESSION['login_time'] = time();
         $_SESSION['ip_address'] = $_SERVER['REMOTE_ADDR'] ?? '';
+
+        // Resolve and store effective allowed jenjang
+        self::resolveAndStoreJenjang($user);
 
         // Reset static cache & avatar cache
         self::$currentUser = null;
@@ -92,7 +96,8 @@ class Auth
     {
         $db = Database::getInstance();
         $user = $db->find(
-            "SELECT u.*, GROUP_CONCAT(r.slug) as role_slugs 
+            "SELECT u.*, GROUP_CONCAT(r.slug) as role_slugs,
+                    GROUP_CONCAT(r.allowed_jenjang) as role_allowed_jenjangs 
              FROM users u 
              LEFT JOIN user_roles ur ON u.id = ur.user_id 
              LEFT JOIN roles r ON ur.role_id = r.id 
@@ -119,6 +124,9 @@ class Auth
         $_SESSION['user_roles'] = $user['role_slugs'] ? explode(',', $user['role_slugs']) : [];
         $_SESSION['login_time'] = time();
         $_SESSION['ip_address'] = $_SERVER['REMOTE_ADDR'] ?? '';
+
+        // Resolve and store effective allowed jenjang
+        self::resolveAndStoreJenjang($user);
 
         // Reset static cache & avatar cache
         self::$currentUser = null;
@@ -484,5 +492,148 @@ class Auth
         } catch (Throwable $e) {
             error_log('Audit log error: ' . $e->getMessage());
         }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // RBAC JENJANG FILTERING
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Resolves and stores effective allowed jenjang into session
+     */
+    public static function resolveAndStoreJenjang(array $user): void
+    {
+        $roleSlugs = !empty($user['role_slugs']) ? explode(',', $user['role_slugs']) : [];
+        $isSuperAdmin = in_array('super_admin', $roleSlugs, true);
+
+        // Super admin has full access to all jenjang
+        if ($isSuperAdmin) {
+            $_SESSION['user_allowed_jenjang'] = ['PAUD', 'SD', 'SMP', 'SMA'];
+            $_SESSION['user_is_jenjang_restricted'] = false;
+            if (empty($_SESSION['user_active_jenjang'])) {
+                $_SESSION['user_active_jenjang'] = 'PAUD';
+            }
+            return;
+        }
+
+        $allValid = ['PAUD', 'SD', 'SMP', 'SMA'];
+        $allowed = [];
+
+        // 1. Check user-level allowed_jenjang
+        if (!empty($user['allowed_jenjang'])) {
+            $raw = explode(',', strtoupper($user['allowed_jenjang']));
+            foreach ($raw as $j) {
+                $j = trim($j);
+                if (in_array($j, $allValid, true)) {
+                    $allowed[] = $j;
+                }
+            }
+        }
+
+        // 2. If user-level is empty, check role-level allowed_jenjang
+        if (empty($allowed) && !empty($user['role_allowed_jenjangs'])) {
+            $raw = explode(',', strtoupper($user['role_allowed_jenjangs']));
+            foreach ($raw as $j) {
+                $j = trim($j);
+                if (in_array($j, $allValid, true)) {
+                    $allowed[] = $j;
+                }
+            }
+        }
+
+        $allowed = array_values(array_unique($allowed));
+
+        // If specific jenjang is assigned, user is restricted!
+        if (!empty($allowed) && count($allowed) < count($allValid)) {
+            $_SESSION['user_allowed_jenjang'] = $allowed;
+            $_SESSION['user_is_jenjang_restricted'] = true;
+            if (empty($_SESSION['user_active_jenjang']) || !in_array($_SESSION['user_active_jenjang'], $allowed, true)) {
+                $_SESSION['user_active_jenjang'] = $allowed[0];
+            }
+        } else {
+            // Unrestricted (all jenjang)
+            $_SESSION['user_allowed_jenjang'] = !empty($allowed) ? $allowed : $allValid;
+            $_SESSION['user_is_jenjang_restricted'] = false;
+            if (empty($_SESSION['user_active_jenjang'])) {
+                $_SESSION['user_active_jenjang'] = 'PAUD';
+            }
+        }
+    }
+
+    /**
+     * Get user's allowed jenjang list e.g. ['PAUD'], ['SD'], ['PAUD', 'SD'], or ['PAUD', 'SD', 'SMP', 'SMA']
+     */
+    public static function getAllowedJenjang(): array
+    {
+        if (!isset($_SESSION['user_allowed_jenjang']) && self::check()) {
+            $db = Database::getInstance();
+            $user = $db->find(
+                "SELECT u.*, GROUP_CONCAT(r.slug) as role_slugs,
+                        GROUP_CONCAT(r.allowed_jenjang) as role_allowed_jenjangs
+                 FROM users u 
+                 LEFT JOIN user_roles ur ON u.id = ur.user_id 
+                 LEFT JOIN roles r ON ur.role_id = r.id 
+                 WHERE u.id = ? AND u.is_active = 1 
+                 GROUP BY u.id",
+                [self::id()]
+            );
+            if ($user) {
+                self::resolveAndStoreJenjang($user);
+            }
+        }
+        return $_SESSION['user_allowed_jenjang'] ?? ['PAUD', 'SD', 'SMP', 'SMA'];
+    }
+
+    /**
+     * Check if user is restricted to specific jenjang (not super admin and not all)
+     */
+    public static function isJenjangRestricted(): bool
+    {
+        if (self::isSuperAdmin()) {
+            return false;
+        }
+        if (!isset($_SESSION['user_is_jenjang_restricted']) && self::check()) {
+            self::getAllowedJenjang(); // triggers resolve
+        }
+        return (bool)($_SESSION['user_is_jenjang_restricted'] ?? false);
+    }
+
+    /**
+     * Get current active jenjang (e.g. 'PAUD', 'SD', 'SMP', 'SMA')
+     */
+    public static function getActiveJenjang(): string
+    {
+        if (!isset($_SESSION['user_active_jenjang']) && self::check()) {
+            self::getAllowedJenjang();
+        }
+        return $_SESSION['user_active_jenjang'] ?? (self::getAllowedJenjang()[0] ?? 'PAUD');
+    }
+
+    /**
+     * Set active jenjang if permitted
+     */
+    public static function setActiveJenjang(string $jenjang): bool
+    {
+        $jenjang = strtoupper(trim($jenjang));
+        $allowed = self::getAllowedJenjang();
+        if (self::isSuperAdmin() || in_array($jenjang, $allowed, true)) {
+            $_SESSION['user_active_jenjang'] = $jenjang;
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Check if user can access a specific jenjang
+     */
+    public static function canAccessJenjang(string $jenjang): bool
+    {
+        if (self::isSuperAdmin()) {
+            return true;
+        }
+        if (!self::isJenjangRestricted()) {
+            return true;
+        }
+        return in_array(strtoupper(trim($jenjang)), self::getAllowedJenjang(), true);
     }
 }

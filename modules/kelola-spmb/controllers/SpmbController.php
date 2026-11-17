@@ -105,10 +105,17 @@ class SpmbController
             }
         }
 
+        $selectedJenjang = trim($_GET['jenjang'] ?? '');
+        if (Auth::isJenjangRestricted()) {
+            if ($selectedJenjang === '' || !Auth::canAccessJenjang($selectedJenjang)) {
+                $selectedJenjang = Auth::getActiveJenjang();
+            }
+        }
+
         $filters = [
             'jenis_pendaftaran'     => 'Siswa Baru',
             'group_id'              => $selectedGroupId,
-            'jenjang'               => trim($_GET['jenjang'] ?? ''),
+            'jenjang'               => $selectedJenjang,
             'kategori_pendaftar'    => trim($_GET['kategori_pendaftar'] ?? ''),
             'status_kelulusan'      => trim($_GET['status_kelulusan'] ?? ''),
             'status_pembayaran'     => trim($_GET['status_pembayaran'] ?? ''),
@@ -514,10 +521,17 @@ class SpmbController
             }
         }
 
+        $selectedJenjang = trim($_GET['jenjang'] ?? '');
+        if (Auth::isJenjangRestricted()) {
+            if ($selectedJenjang === '' || !Auth::canAccessJenjang($selectedJenjang)) {
+                $selectedJenjang = Auth::getActiveJenjang();
+            }
+        }
+
         $filters = [
             'jenis_pendaftaran'     => 'Siswa Baru',
             'group_id'              => $selectedGroupId,
-            'jenjang'               => trim($_GET['jenjang'] ?? ''),
+            'jenjang'               => $selectedJenjang,
             'kategori_pendaftar'    => trim($_GET['kategori_pendaftar'] ?? ''),
             'status_kelulusan'      => trim($_GET['status_kelulusan'] ?? ''),
             'status_pembayaran'     => trim($_GET['status_pembayaran'] ?? ''),
@@ -637,10 +651,17 @@ class SpmbController
         $offset = $pagination['offset'];
         $perPageParam = $pagination['perPageParam'];
 
+        $selectedJenjang = trim($_GET['jenjang'] ?? '');
+        if (Auth::isJenjangRestricted()) {
+            if ($selectedJenjang === '' || !Auth::canAccessJenjang($selectedJenjang)) {
+                $selectedJenjang = Auth::getActiveJenjang();
+            }
+        }
+
         $filters = [
             'jenis_pendaftaran' => 'Pindahan',
             'group_id' => !empty($_GET['group_id']) ? (int)$_GET['group_id'] : $groupId,
-            'jenjang' => $_GET['jenjang'] ?? '',
+            'jenjang' => $selectedJenjang,
             'kategori_pendaftar' => $_GET['kategori_pendaftar'] ?? '',
             'status_kelulusan' => $_GET['status_kelulusan'] ?? '',
             'status_pembayaran' => $_GET['status_pembayaran'] ?? '',
@@ -979,10 +1000,17 @@ class SpmbController
         $offset = $pagination['offset'];
         $perPageParam = $pagination['perPageParam'];
 
+        $selectedJenjang = trim($_GET['jenjang'] ?? '');
+        if (Auth::isJenjangRestricted()) {
+            if ($selectedJenjang === '' || !Auth::canAccessJenjang($selectedJenjang)) {
+                $selectedJenjang = Auth::getActiveJenjang();
+            }
+        }
+
         $filters = [
             'jenis_pendaftaran' => 'Daftar Tunggu',
             'group_id' => !empty($_GET['group_id']) ? (int)$_GET['group_id'] : $groupId,
-            'jenjang' => $_GET['jenjang'] ?? '',
+            'jenjang' => $selectedJenjang,
             'kategori_pendaftar' => $_GET['kategori_pendaftar'] ?? '',
             'status_kelulusan' => $_GET['status_kelulusan'] ?? '',
             'search' => $_GET['search'] ?? ''

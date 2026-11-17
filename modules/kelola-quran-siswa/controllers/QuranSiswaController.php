@@ -16,6 +16,20 @@ class QuranSiswaController
      */
     public static function index(): void
     {
+        // Jika user memiliki filter jenjang tunggal, arahkan langsung ke halaman jenjang tersebut
+        if (Auth::isJenjangRestricted()) {
+            $allowed = Auth::getAllowedJenjang();
+            if (count($allowed) === 1) {
+                if ($allowed[0] === 'PAUD') {
+                    Response::redirect(url('kelola-quran-siswa-paud'));
+                    return;
+                } elseif ($allowed[0] === 'SD') {
+                    Response::redirect(url('kelola-quran-siswa-sd'));
+                    return;
+                }
+            }
+        }
+
         $pageTitle = "Pusat Qur'an Siswa";
         $breadcrumbs = [['label' => "Qur'an Siswa", 'url' => url('kelola-quran-siswa')]];
         $activeJenjang = 'HUB';
@@ -69,6 +83,12 @@ class QuranSiswaController
      */
     public static function sdIndex(): void
     {
+        if (Auth::isJenjangRestricted() && !Auth::canAccessJenjang('SD')) {
+            $_SESSION['flash_error'] = 'Hak akses Anda dibatasi untuk jenjang ' . implode(', ', Auth::getAllowedJenjang()) . '.';
+            Response::redirect(url('kelola-quran-siswa-' . strtolower(Auth::getActiveJenjang())));
+            return;
+        }
+
         $pageTitle = "Qur'an Siswa SD";
         $breadcrumbs = [
             ['label' => "Qur'an Siswa", 'url' => url('kelola-quran-siswa')],
@@ -180,6 +200,12 @@ class QuranSiswaController
      */
     public static function paudIndex(): void
     {
+        if (Auth::isJenjangRestricted() && !Auth::canAccessJenjang('PAUD')) {
+            $_SESSION['flash_error'] = 'Hak akses Anda dibatasi untuk jenjang ' . implode(', ', Auth::getAllowedJenjang()) . '.';
+            Response::redirect(url('kelola-quran-siswa-' . strtolower(Auth::getActiveJenjang())));
+            return;
+        }
+
         $pageTitle = "Dashboard Qur'an PAUD / TK";
         $breadcrumbs = [
             ['label' => "Qur'an Siswa", 'url' => url('kelola-quran-siswa')],
