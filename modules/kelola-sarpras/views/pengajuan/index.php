@@ -162,7 +162,7 @@
                             </td>
                         </tr>
                     <?php else: ?>
-                        <?php $no = $offset + 1; foreach ($items as $p): ?>
+                        <?php $no = ($offset ?? 0) + 1; foreach ($items as $p): ?>
                             <tr class="hover:bg-slate-50/70 transition-colors">
                                 <td class="py-3.5 px-4 text-center text-slate-400 font-medium"><?= $no++ ?></td>
                                 <td class="py-3.5 px-4">
@@ -370,7 +370,10 @@
                 </div>
                 <div>
                     <label class="block font-bold text-slate-700 mb-1">Estimasi Harga / Satuan <span class="text-rose-500">*</span></label>
-                    <input type="text" id="input_tambah_harga" name="estimasi_harga" value="0" required oninput="calcTotalEstimasi()" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-primary-500 font-bold text-right">
+                    <div class="relative">
+                        <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs select-none">Rp</span>
+                        <input type="text" id="input_tambah_harga" name="estimasi_harga" value="0" required oninput="formatRupiah(this); calcTotalEstimasi();" class="w-full pl-10 pr-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-primary-500 font-bold text-right">
+                    </div>
                 </div>
             </div>
 
@@ -494,7 +497,10 @@
             <!-- Realisasi Harga (Jika sudah dibeli) -->
             <div>
                 <label class="block font-bold text-slate-700 mb-1">Realisasi Harga Beli Total (Rp)</label>
-                <input type="text" name="realisasi_harga" id="verif-realisasi-harga" placeholder="0 jika belum dibeli" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-primary-500 font-bold">
+                <div class="relative">
+                    <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs select-none">Rp</span>
+                    <input type="text" name="realisasi_harga" id="verif-realisasi-harga" placeholder="0" oninput="formatRupiah(this)" class="w-full pl-10 pr-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-primary-500 font-bold text-slate-800">
+                </div>
                 <p class="text-[10px] text-slate-400 mt-0.5">Isi saat pembelian telah dilakukan atau disetujui plafon biayanya</p>
             </div>
 
@@ -612,13 +618,23 @@ function closeModalTambahPengajuan() {
     m.firstElementChild.classList.add('scale-95');
 }
 
+function formatRupiah(el) {
+    let clean = (el.value || '').replace(/[^0-9]/g, '');
+    if (!clean) {
+        el.value = '';
+        return;
+    }
+    const val = parseInt(clean, 10);
+    el.value = val > 0 ? val.toLocaleString('id-ID') : '0';
+}
+
 function calcTotalEstimasi() {
-    const jml = parseInt(document.getElementById('input_tambah_jumlah').value) || 1;
-    let hrgStr = document.getElementById('input_tambah_harga').value.replace(/[^0-9]/g, '');
-    const hrg = parseInt(hrgStr) || 0;
+    const jml = parseInt(document.getElementById('input_tambah_jumlah').value, 10) || 1;
+    let hrgStr = (document.getElementById('input_tambah_harga').value || '').replace(/[^0-9]/g, '');
+    const hrg = parseInt(hrgStr, 10) || 0;
     
     // Format input harga
-    document.getElementById('input_tambah_harga').value = hrg.toLocaleString('id-ID');
+    document.getElementById('input_tambah_harga').value = hrg > 0 ? hrg.toLocaleString('id-ID') : '0';
     
     const total = jml * hrg;
     document.getElementById('label_total_estimasi').innerText = 'Rp ' + total.toLocaleString('id-ID');

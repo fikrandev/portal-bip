@@ -753,6 +753,7 @@ class SarprasController
             'totalPages'   => $totalPages,
             'totalItems'   => $totalItems,
             'limit'        => $limit,
+            'offset'       => $offset,
             'canVerify'    => $canVerify,
             'canCreate'    => $canCreate,
             'canDelete'    => $canDelete
@@ -856,7 +857,8 @@ class SarprasController
 
         $action = trim($_POST['status_verifikasi'] ?? 'Disetujui'); // 'Disetujui', 'Ditolak', 'Selesai'
         $catatan = trim($_POST['catatan_verifikasi'] ?? '');
-        $realisasi = (float)str_replace(['.', ','], ['', '.'], $_POST['realisasi_harga'] ?? '0');
+        $rawRealisasi = preg_replace('/[^0-9]/', '', $_POST['realisasi_harga'] ?? '0');
+        $realisasi = (float)($rawRealisasi !== '' ? $rawRealisasi : '0');
 
         if ($action === 'Disetujui') {
             $statusVerif = 'Disetujui';
