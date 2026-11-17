@@ -439,7 +439,7 @@ class SarprasModel
     {
         $db = self::db();
         $sql = "
-            SELECT m.*, b.nama_barang, b.kode_barang, b.merk_model, b.satuan, r.nama_ruangan, r.kode_ruangan, r.unit as unit_ruangan, u.name as pelapor_account_name
+            SELECT m.*, b.nama_barang, b.kode_barang, b.merk_model, b.satuan, r.nama_ruangan, r.kode_ruangan, r.unit as unit_ruangan, u.full_name as pelapor_account_name
             FROM sarpras_pemeliharaan m
             LEFT JOIN sarpras_barang b ON m.barang_id = b.id
             LEFT JOIN sarpras_ruangan r ON m.ruangan_id = r.id
@@ -486,7 +486,7 @@ class SarprasModel
     {
         $db = self::db();
         return $db->find("
-            SELECT m.*, b.nama_barang, b.kode_barang, b.merk_model, b.satuan, r.nama_ruangan, r.kode_ruangan, r.unit as unit_ruangan, u.name as pelapor_account_name
+            SELECT m.*, b.nama_barang, b.kode_barang, b.merk_model, b.satuan, r.nama_ruangan, r.kode_ruangan, r.unit as unit_ruangan, u.full_name as pelapor_account_name
             FROM sarpras_pemeliharaan m
             LEFT JOIN sarpras_barang b ON m.barang_id = b.id
             LEFT JOIN sarpras_ruangan r ON m.ruangan_id = r.id
@@ -666,7 +666,7 @@ class SarprasModel
     {
         $db = self::db();
         $sql = "
-            SELECT p.*, k.nama_kategori, r.nama_ruangan, r.unit as unit_ruangan, u.name as user_account_name
+            SELECT p.*, k.nama_kategori, r.nama_ruangan, r.unit as unit_ruangan, u.full_name as user_account_name
             FROM sarpras_pengajuan p
             LEFT JOIN sarpras_kategori k ON p.kategori_id = k.id
             LEFT JOIN sarpras_ruangan r ON p.ruangan_id = r.id
@@ -753,7 +753,7 @@ class SarprasModel
     {
         $db = self::db();
         return $db->find("
-            SELECT p.*, k.nama_kategori, r.nama_ruangan, r.kode_ruangan, r.unit as unit_ruangan, u.name as user_account_name, u.email as user_email
+            SELECT p.*, k.nama_kategori, r.nama_ruangan, r.kode_ruangan, r.unit as unit_ruangan, u.full_name as user_account_name, u.email as user_email
             FROM sarpras_pengajuan p
             LEFT JOIN sarpras_kategori k ON p.kategori_id = k.id
             LEFT JOIN sarpras_ruangan r ON p.ruangan_id = r.id
