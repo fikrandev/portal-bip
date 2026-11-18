@@ -401,7 +401,7 @@ window.handleDoCheckin = async function(btn) {
       AndroidUI.success({
         title: isLate ? 'Check-in Tercatat (Terlambat)' : 'Check-in Berhasil!',
         subtitle: isLate ? 'Presensi masuk dicatat sebagai terlambat' : 'Presensi masuk tepat waktu berhasil dicatat',
-        message: `Absen masuk Anda tercatat pada pukul <strong class="text-slate-900 font-extrabold">${timeStr}</strong>.<br><div class="my-2">${subMsg}</div><span class="text-slate-400 text-xs">Jarak ke kantor: ${Math.round(resData.jarak_meter || 0)}m &bull; Absen Pulang buka jam 15.00 WITA.</span>`,
+        message: `Absen masuk Anda tercatat pada pukul <strong class="text-slate-900 font-extrabold">${timeStr}</strong>.<br><div class="my-2">${subMsg}</div><span class="text-slate-400 text-xs">Jarak ke kantor: ${Math.round(resData.jarak_meter || 0)}m &bull; Absen Pulang buka jam ${typeof window.getPulangTimeDisplay === 'function' ? window.getPulangTimeDisplay() : '15.00'} WITA.</span>`,
         buttonText: 'Selesai'
       });
     } else {
@@ -549,6 +549,12 @@ window.handleDoCheckout = function(btn) {
   });
 };
 
+// Helper: formatted pulang time display (e.g. "16.00" or "15.00")
+window.getPulangTimeDisplay = function() {
+  const pStr = window.SERVER_JAM_PULANG_MULAI || '15:00:00';
+  return pStr.substring(0, 5).replace(':', '.');
+};
+
 // Check if device hour is >= jam_pulang_mulai (default 15:00)
 window.isCheckoutTimeAllowed = function() {
   if (window._simulateAfternoonTime) return true;
@@ -563,12 +569,13 @@ window.isCheckoutTimeAllowed = function() {
   return nowMinutes >= targetMinutes;
 };
 
-// Toggle simulation for 15:00 for testing
+// Toggle simulation for jam pulang for testing
 window.toggleSimulateAfternoon = function() {
   window._simulateAfternoonTime = !window._simulateAfternoonTime;
   renderAttendancePageUI();
   syncBerandaAttendanceUI();
-  AndroidUI.toast(window._simulateAfternoonTime ? 'Simulasi jam 15:00 AKTIF' : 'Simulasi jam 15:00 NONAKTIF', 'info');
+  const pDisplay = window.getPulangTimeDisplay();
+  AndroidUI.toast(window._simulateAfternoonTime ? `Simulasi jam ${pDisplay} AKTIF` : `Simulasi jam ${pDisplay} NONAKTIF`, 'info');
 };
 
 // Render UI in /mobile/absen
@@ -621,15 +628,15 @@ function renderAttendancePageUI() {
         </div>
       </div>
 
-      <!-- Absen Pulang Section (Available at 15.00) -->
+      <!-- Absen Pulang Section (Available at jam pulang) -->
       <div class="bg-white rounded-3xl p-4 shadow-sm border border-slate-100 space-y-3">
         <div class="flex items-center justify-between">
           <div>
             <h3 class="font-bold text-slate-800 text-xs">Presensi Pulang</h3>
-            <p class="text-[10px] text-slate-400">Tersedia mulai pukul 15.00 WITA</p>
+            <p class="text-[10px] text-slate-400">Tersedia mulai pukul ${window.getPulangTimeDisplay()} WITA</p>
           </div>
           <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${isAllowed ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-500'}">
-            ${isAllowed ? 'Waktunya Pulang' : 'Belum Jam 15.00'}
+            ${isAllowed ? 'Waktunya Pulang' : 'Belum Jam ' + window.getPulangTimeDisplay()}
           </span>
         </div>
 
@@ -640,14 +647,14 @@ function renderAttendancePageUI() {
         ` : `
           <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100 text-center space-y-1">
             <p class="text-xs font-bold text-slate-700">🕒 Belum waktu Absen Pulang</p>
-            <p class="text-[10px] text-slate-400">Tombol absen pulang akan aktif otomatis pada pukul 15.00 waktu perangkat Anda.</p>
+            <p class="text-[10px] text-slate-400">Tombol absen pulang akan aktif otomatis pada pukul ${window.getPulangTimeDisplay()} waktu perangkat Anda.</p>
           </div>
           <button type="button" disabled class="w-full py-3 bg-slate-200 text-slate-400 font-bold text-xs rounded-2xl cursor-not-allowed flex items-center justify-center gap-2">
-            <span>🔒</span> Absen Pulang (Aktif Jam 15.00)
+            <span>🔒</span> Absen Pulang (Aktif Jam ${window.getPulangTimeDisplay()})
           </button>
           <div class="text-center pt-1">
             <button type="button" onclick="toggleSimulateAfternoon()" class="text-[10px] font-bold text-blue-600 hover:underline">
-              🧪 Simulasi jam 15.00 untuk uji coba
+              🧪 Simulasi jam ${window.getPulangTimeDisplay()} untuk uji coba
             </button>
           </div>
         `}
@@ -713,13 +720,13 @@ function syncBerandaAttendanceUI() {
     const badgeColor = isLate ? 'amber' : 'emerald';
     if (isAllowed) {
       berandaCheckinText.textContent = `Sudah Masuk (${state.checkin.time})`;
-      berandaCheckinSub.textContent = isLate ? `${state.checkin.status} • Waktunya Pulang (15.00+)` : 'Waktunya Absen Pulang (Pukul 15.00+)';
+      berandaCheckinSub.textContent = isLate ? `${state.checkin.status} • Waktunya Pulang (${window.getPulangTimeDisplay()}+)` : `Waktunya Absen Pulang (Pukul ${window.getPulangTimeDisplay()}+)`;
       berandaCheckinBtn.className = 'shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white shadow-md shadow-amber-500/30 press-bounce animate-pulse';
       berandaCheckinBtn.innerHTML = '<span>🏠</span><span>Absen Pulang</span>';
       berandaCheckinBtn.href = (window.APP_BASE_URL || '') + '/mobile/absen';
     } else {
       berandaCheckinText.textContent = `Sudah Masuk (${state.checkin.time})`;
-      berandaCheckinSub.textContent = isLate ? `${state.checkin.status} • Pulang jam 15.00` : 'Absen Pulang buka pukul 15.00';
+      berandaCheckinSub.textContent = isLate ? `${state.checkin.status} • Pulang jam ${window.getPulangTimeDisplay()}` : `Absen Pulang buka pukul ${window.getPulangTimeDisplay()}`;
       berandaCheckinBtn.className = isLate 
         ? 'shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200'
         : 'shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200';

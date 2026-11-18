@@ -197,35 +197,20 @@ class PortalGuruController
         } elseif (strcasecmp($jenisPegawai, 'Guru') === 0 || stripos($jenisPegawai, 'guru') !== false) {
             $isSupport = false;
         } else {
-            // Jika kolom jenis_pegawai di database masih kosong, cek kategori di master_jabatan terlebih dahulu
-            $matchedByMaster = false;
-            try {
-                $db = Database::getInstance();
-                $mjRow = $db->find(
-                    "SELECT kategori FROM master_jabatan WHERE LOWER(TRIM(nama)) = LOWER(TRIM(?)) LIMIT 1",
-                    [$role]
-                );
-                if ($mjRow && !empty($mjRow['kategori'])) {
-                    $isSupport = ($mjRow['kategori'] === 'support_system');
-                    $matchedByMaster = true;
-                }
-            } catch (Throwable $e) {}
-
-            if (!$matchedByMaster) {
-                $isSupport = (
-                    stripos($role, 'IT') !== false ||
-                    stripos($role, 'Media') !== false ||
-                    stripos($role, 'Sarpras') !== false ||
-                    stripos($role, 'Tata Usaha') !== false ||
-                    stripos($role, 'Tendik') !== false ||
-                    stripos($role, 'Staff') !== false ||
-                    stripos($role, 'Staf') !== false ||
-                    stripos($role, 'Keamanan') !== false ||
-                    stripos($role, 'Satpam') !== false ||
-                    stripos($role, 'Kebersihan') !== false ||
-                    stripos($role, 'Cleaning') !== false
-                );
-            }
+            // Jika kolom jenis_pegawai di database masih kosong, cek jabatan
+            $isSupport = (
+                stripos($role, 'IT') !== false ||
+                stripos($role, 'Media') !== false ||
+                stripos($role, 'Sarpras') !== false ||
+                stripos($role, 'Tata Usaha') !== false ||
+                stripos($role, 'Tendik') !== false ||
+                stripos($role, 'Staff') !== false ||
+                stripos($role, 'Staf') !== false ||
+                stripos($role, 'Keamanan') !== false ||
+                stripos($role, 'Satpam') !== false ||
+                stripos($role, 'Kebersihan') !== false ||
+                stripos($role, 'Cleaning') !== false
+            );
         }
 
         return [
@@ -704,6 +689,9 @@ class PortalGuruController
         require_once MODULES_PATH . '/kelola-absen-pegawai/models/AbsenPegawaiModel.php';
         $todayAttendance = AbsenPegawaiModel::getTodayAttendance($guruIdForIbadah);
         $globalConfig = AbsenPegawaiModel::getPengaturanGlobal();
+        $efektif = AbsenPegawaiModel::getLokasiEfektifPegawai($guruIdForIbadah);
+        $jamPulangMulai = $efektif['jam_pulang_mulai'] ?? ($globalConfig['jam_pulang_mulai'] ?? '15:00:00');
+        $jamMasukBatas = $efektif['jam_masuk_batas'] ?? ($globalConfig['jam_masuk_batas'] ?? '07:30:00');
 
         // ── Kalkulasi Metrik Dinamis Guru yang Login (Khusus Guru / KBM) ──
         $db = Database::getInstance();
@@ -770,6 +758,9 @@ class PortalGuruController
             'todayIbadahState' => $todayIbadahState,
             'todayAttendance' => $todayAttendance,
             'globalConfig' => $globalConfig,
+            'efektif' => $efektif,
+            'jamPulangMulai' => $jamPulangMulai,
+            'jamMasukBatas' => $jamMasukBatas,
             'totalClasses' => $totalClasses,
             'todayName' => $todayName,
             'todayDate' => date('d F Y'),
@@ -1895,14 +1886,10 @@ class PortalGuruController
      */
     private static function ensureTasbihTablesExist(): void
     {
-        static $checked = false;
-        if ($checked) {
-            return;
-        }
-
         try {
             $db = Database::getInstance();
-            $db->query("
+            $pdo = $db->getConnection();
+            $pdo->exec("
                 CREATE TABLE IF NOT EXISTS `tasbih_kategori` (
                   `id` INT(11) NOT NULL AUTO_INCREMENT,
                   `pegawai_id` INT(11) DEFAULT 0,
@@ -1917,7 +1904,7 @@ class PortalGuruController
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
             ");
 
-            $db->query("
+            $pdo->exec("
                 CREATE TABLE IF NOT EXISTS `tasbih_riwayat` (
                   `id` INT(11) NOT NULL AUTO_INCREMENT,
                   `pegawai_id` INT(11) NOT NULL,
@@ -1934,28 +1921,26 @@ class PortalGuruController
             ");
 
             // Seed kategori default jika masih kosong
-            $count = $db->find("SELECT COUNT(*) as c FROM tasbih_kategori WHERE pegawai_id = 0");
-            if (($count['c'] ?? 0) == 0) {
-                $defaults = [
-                    ['Subhanallah (Tasbih)', 'سُبْحَانَ اللَّهِ', 'Maha Suci Allah', 33, 1],
-                    ['Alhamdulillah (Tahmid)', 'الْحَمْدُ لِلَّهِ', 'Segala puji bagi Allah', 33, 1],
-                    ['Laa Ilaha Illallah (Tahlil)', 'لَا إِلٰهَ إِلَّا اللَّهُ', 'Tiada Tuhan selain Allah', 33, 1],
-                    ['Allahu Akbar (Takbir)', 'اللَّهُ أَكْبَرُ', 'Allah Maha Besar', 33, 1],
-                    ['Sholawat Nabi', 'اللَّهُمَّ صَلِّ عَلَى سَيِّدِنَا مُحَمَّدٍ', 'Ya Allah, limpahkanlah rahmat kepada junjungan kami Nabi Muhammad', 33, 1],
-                    ['Astaghfirullah (Istighfar)', 'أَسْتَغْفِرُ اللَّهَ الْعَظِيمَ', 'Aku memohon ampun kepada Allah Yang Maha Agung', 100, 1],
-                    ['Hauqalah', 'لَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللَّهِ', 'Tiada daya dan kekuatan kecuali dengan pertolongan Allah', 33, 1],
-                    ['Tasbih Lengkap (Subhanallah wa Bihamdihi)', 'سُبْحَانَ اللَّهِ وَبِحَمْدِهِ سُبْحَانَ اللَّهِ الْعَظِيمِ', 'Maha Suci Allah dengan memuji-Nya, Maha Suci Allah Yang Maha Agung', 100, 1],
-                ];
+            try {
+                $count = (int) $pdo->query("SELECT COUNT(*) FROM `tasbih_kategori` WHERE `pegawai_id` = 0")->fetchColumn();
+                if ($count === 0) {
+                    $defaults = [
+                        ['Subhanallah (Tasbih)', 'سُبْحَانَ اللَّهِ', 'Maha Suci Allah', 33, 1],
+                        ['Alhamdulillah (Tahmid)', 'الْحَمْدُ لِلَّهِ', 'Segala puji bagi Allah', 33, 1],
+                        ['Laa Ilaha Illallah (Tahlil)', 'لَا إِلٰهَ إِلَّا اللَّهُ', 'Tiada Tuhan selain Allah', 33, 1],
+                        ['Allahu Akbar (Takbir)', 'اللَّهُ أَكْبَرُ', 'Allah Maha Besar', 33, 1],
+                        ['Sholawat Nabi', 'اللَّهُمَّ صَلِّ عَلَى سَيِّدِنَا مُحَمَّدٍ', 'Ya Allah, limpahkanlah rahmat kepada junjungan kami Nabi Muhammad', 33, 1],
+                        ['Astaghfirullah (Istighfar)', 'أَسْتَغْفِرُ اللَّهَ الْعَظِيمَ', 'Aku memohon ampun kepada Allah Yang Maha Agung', 100, 1],
+                        ['Hauqalah', 'لَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللَّهِ', 'Tiada daya dan kekuatan kecuali dengan pertolongan Allah', 33, 1],
+                        ['Tasbih Lengkap (Subhanallah wa Bihamdihi)', 'سُبْحَانَ اللَّهِ وَبِحَمْدِهِ سُبْحَانَ اللَّهِ الْعَظِيمِ', 'Maha Suci Allah dengan memuji-Nya, Maha Suci Allah Yang Maha Agung', 100, 1],
+                    ];
 
-                foreach ($defaults as $d) {
-                    $db->query(
-                        "INSERT INTO tasbih_kategori (nama_tasbih, lafadz_arab, arti, target_default, is_default, pegawai_id) VALUES (?, ?, ?, ?, ?, 0)",
-                        [$d[0], $d[1], $d[2], $d[3], $d[4]]
-                    );
+                    $stmt = $pdo->prepare("INSERT INTO `tasbih_kategori` (`nama_tasbih`, `lafadz_arab`, `arti`, `target_default`, `is_default`, `pegawai_id`) VALUES (?, ?, ?, ?, ?, 0)");
+                    foreach ($defaults as $d) {
+                        $stmt->execute([$d[0], $d[1], $d[2], $d[3], $d[4]]);
+                    }
                 }
-            }
-
-            $checked = true;
+            } catch (Throwable $e) {}
         } catch (Throwable $e) {
             error_log('ensureTasbihTablesExist error: ' . $e->getMessage());
         }
@@ -1969,7 +1954,7 @@ class PortalGuruController
         self::ensureTasbihTablesExist();
         $teacher = self::getLoggedInTeacher();
         self::releaseSessionLock();
-        $guruId = (int)($teacher['pegawai_id'] ?: $teacher['user_id'] ?: 0);
+        $guruId = (int) ($teacher['pegawai_id'] ?: $teacher['user_id'] ?: 0);
         $db = Database::getInstance();
 
         // Ambil kategori bawaan (pegawai_id = 0) dan kustom milik pegawai saat ini
@@ -1980,7 +1965,8 @@ class PortalGuruController
                 WHERE pegawai_id = 0 OR pegawai_id = ?
                 ORDER BY is_default DESC, id ASC
             ", [$guruId]);
-        } catch (Throwable $e) {}
+        } catch (Throwable $e) {
+        }
 
         // Ambil riwayat tasbih hari ini dan statistik
         $riwayatHariIni = [];
@@ -1999,9 +1985,10 @@ class PortalGuruController
                 FROM tasbih_riwayat 
                 WHERE pegawai_id = ? AND DATE(created_at) = ?
             ", [$guruId, $today]);
-            $totalDzikirHariIni = (int)($stats['total_dzikir'] ?? 0);
-            $totalSesiHariIni = (int)($stats['total_sesi'] ?? 0);
-        } catch (Throwable $e) {}
+            $totalDzikirHariIni = (int) ($stats['total_dzikir'] ?? 0);
+            $totalSesiHariIni = (int) ($stats['total_sesi'] ?? 0);
+        } catch (Throwable $e) {
+        }
 
         self::render('tasbih', [
             'pageTitle' => 'Tasbih Digital',
@@ -2024,7 +2011,7 @@ class PortalGuruController
         self::releaseSessionLock();
         header('Content-Type: application/json; charset=utf-8');
 
-        $guruId = (int)($teacher['pegawai_id'] ?: $teacher['user_id'] ?: 0);
+        $guruId = (int) ($teacher['pegawai_id'] ?: $teacher['user_id'] ?: 0);
         if ($guruId <= 0) {
             echo json_encode(['success' => false, 'message' => 'Identitas pegawai tidak ditemukan.']);
             exit;
@@ -2034,8 +2021,9 @@ class PortalGuruController
         $namaTasbih = trim($input['nama_tasbih'] ?? '');
         $lafadzArab = trim($input['lafadz_arab'] ?? '');
         $arti = trim($input['arti'] ?? '');
-        $targetDefault = (int)($input['target_default'] ?? 33);
-        if ($targetDefault <= 0) $targetDefault = 33;
+        $targetDefault = (int) ($input['target_default'] ?? 33);
+        if ($targetDefault <= 0)
+            $targetDefault = 33;
 
         if (empty($namaTasbih)) {
             echo json_encode(['success' => false, 'message' => 'Nama dzikir/tasbih wajib diisi.']);
@@ -2048,7 +2036,7 @@ class PortalGuruController
                 INSERT INTO tasbih_kategori (pegawai_id, nama_tasbih, lafadz_arab, arti, target_default, is_default)
                 VALUES (?, ?, ?, ?, ?, 0)
             ", [$guruId, $namaTasbih, $lafadzArab, $arti, $targetDefault]);
-            $newId = (int)$db->lastInsertId();
+            $newId = (int) $db->lastInsertId();
 
             $newRow = $db->find("SELECT * FROM tasbih_kategori WHERE id = ?", [$newId]);
 
@@ -2059,8 +2047,27 @@ class PortalGuruController
             ]);
             exit;
         } catch (Throwable $e) {
-            echo json_encode(['success' => false, 'message' => 'Gagal menyimpan: ' . $e->getMessage()]);
-            exit;
+            // Auto-heal: jika tabel belum ada atau error DDL, paksa buat tabel dan retry sekali lagi
+            try {
+                self::ensureTasbihTablesExist();
+                $db = Database::getInstance();
+                $db->query("
+                    INSERT INTO tasbih_kategori (pegawai_id, nama_tasbih, lafadz_arab, arti, target_default, is_default)
+                    VALUES (?, ?, ?, ?, ?, 0)
+                ", [$guruId, $namaTasbih, $lafadzArab, $arti, $targetDefault]);
+                $newId = (int) $db->lastInsertId();
+                $newRow = $db->find("SELECT * FROM tasbih_kategori WHERE id = ?", [$newId]);
+
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Jenis tasbih baru berhasil disimpan!',
+                    'data' => $newRow
+                ]);
+                exit;
+            } catch (Throwable $reEx) {
+                echo json_encode(['success' => false, 'message' => 'Gagal menyimpan: ' . $reEx->getMessage()]);
+                exit;
+            }
         }
     }
 
@@ -2074,9 +2081,9 @@ class PortalGuruController
         self::releaseSessionLock();
         header('Content-Type: application/json; charset=utf-8');
 
-        $guruId = (int)($teacher['pegawai_id'] ?: $teacher['user_id'] ?: 0);
+        $guruId = (int) ($teacher['pegawai_id'] ?: $teacher['user_id'] ?: 0);
         $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
-        $id = (int)($input['id'] ?? 0);
+        $id = (int) ($input['id'] ?? 0);
 
         if ($id <= 0 || $guruId <= 0) {
             echo json_encode(['success' => false, 'message' => 'ID kategori tidak valid.']);
@@ -2105,7 +2112,7 @@ class PortalGuruController
         self::releaseSessionLock();
         header('Content-Type: application/json; charset=utf-8');
 
-        $guruId = (int)($teacher['pegawai_id'] ?: $teacher['user_id'] ?: 0);
+        $guruId = (int) ($teacher['pegawai_id'] ?: $teacher['user_id'] ?: 0);
         if ($guruId <= 0) {
             echo json_encode(['success' => false, 'message' => 'Identitas pegawai tidak ditemukan.']);
             exit;
@@ -2113,10 +2120,10 @@ class PortalGuruController
 
         $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
         $namaTasbih = trim($input['nama_tasbih'] ?? 'Dzikir');
-        $kategoriId = !empty($input['kategori_id']) ? (int)$input['kategori_id'] : null;
-        $jumlah = (int)($input['jumlah'] ?? 0);
-        $target = (int)($input['target'] ?? 33);
-        $putaran = (int)($input['putaran'] ?? 1);
+        $kategoriId = !empty($input['kategori_id']) ? (int) $input['kategori_id'] : null;
+        $jumlah = (int) ($input['jumlah'] ?? 0);
+        $target = (int) ($input['target'] ?? 33);
+        $putaran = (int) ($input['putaran'] ?? 1);
         $catatan = trim($input['catatan'] ?? '');
 
         if ($jumlah <= 0) {
@@ -2130,7 +2137,7 @@ class PortalGuruController
                 INSERT INTO tasbih_riwayat (pegawai_id, kategori_id, nama_tasbih, jumlah, target, putaran, catatan)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
             ", [$guruId, $kategoriId, $namaTasbih, $jumlah, $target, $putaran, $catatan]);
-            $insertedId = (int)$db->lastInsertId();
+            $insertedId = (int) $db->lastInsertId();
 
             // Auto centang dzikir mutabaah jika cocok
             $lowerName = strtolower($namaTasbih);
@@ -2151,7 +2158,8 @@ class PortalGuruController
                         ON DUPLICATE KEY UPDATE dzikir_sholawat = 1
                     ", [$guruId, $today, $gender]);
                 }
-            } catch (Throwable $e) {}
+            } catch (Throwable $e) {
+            }
 
             echo json_encode([
                 'success' => true,
@@ -2165,8 +2173,30 @@ class PortalGuruController
             ]);
             exit;
         } catch (Throwable $e) {
-            echo json_encode(['success' => false, 'message' => 'Gagal menyimpan riwayat tasbih: ' . $e->getMessage()]);
-            exit;
+            try {
+                self::ensureTasbihTablesExist();
+                $db = Database::getInstance();
+                $db->query("
+                    INSERT INTO tasbih_riwayat (pegawai_id, kategori_id, nama_tasbih, jumlah, target, putaran, catatan)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                ", [$guruId, $kategoriId, $namaTasbih, $jumlah, $target, $putaran, $catatan]);
+                $insertedId = (int) $db->lastInsertId();
+
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Alhamdulillah, sesi tasbih berhasil disimpan!',
+                    'data' => [
+                        'id' => $insertedId,
+                        'nama_tasbih' => $namaTasbih,
+                        'jumlah' => $jumlah,
+                        'waktu' => date('H:i')
+                    ]
+                ]);
+                exit;
+            } catch (Throwable $reEx) {
+                echo json_encode(['success' => false, 'message' => 'Gagal menyimpan riwayat tasbih: ' . $reEx->getMessage()]);
+                exit;
+            }
         }
     }
 
@@ -2180,7 +2210,7 @@ class PortalGuruController
         self::releaseSessionLock();
         header('Content-Type: application/json; charset=utf-8');
 
-        $guruId = (int)($teacher['pegawai_id'] ?: $teacher['user_id'] ?: 0);
+        $guruId = (int) ($teacher['pegawai_id'] ?: $teacher['user_id'] ?: 0);
         $db = Database::getInstance();
 
         try {

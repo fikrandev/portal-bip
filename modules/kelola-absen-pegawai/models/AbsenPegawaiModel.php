@@ -32,7 +32,7 @@ class AbsenPegawaiModel
         }
         self::$initialized = true;
 
-        $stampFile = BASE_PATH . '/storage/logs/.schema_absen_pegawai_v7.stamp';
+        $stampFile = BASE_PATH . '/storage/logs/.schema_absen_pegawai_v8.stamp';
         if (file_exists($stampFile)) {
             return;
         }
@@ -837,11 +837,11 @@ class AbsenPegawaiModel
         $namaHari = $dayNames[$hariKe] ?? 'Senin';
         $globalJam = self::resolveGlobalJamForDate($global, $tanggal);
 
-        if (!empty($dailyMap[$hariKe]['raw_masuk_batas'])) {
+        if (!empty($dailyMap[$hariKe]['raw_masuk_batas']) || !empty($dailyMap[$hariKe]['raw_pulang_mulai'])) {
             $d = $dailyMap[$hariKe];
             return [
                 'jam_masuk_mulai'     => !empty($d['raw_masuk_mulai']) ? $d['raw_masuk_mulai'] : $globalJam['jam_masuk_mulai'],
-                'jam_masuk_batas'     => $d['raw_masuk_batas'],
+                'jam_masuk_batas'     => !empty($d['raw_masuk_batas']) ? $d['raw_masuk_batas'] : $globalJam['jam_masuk_batas'],
                 'jam_pulang_mulai'    => !empty($d['raw_pulang_mulai']) ? $d['raw_pulang_mulai'] : $globalJam['jam_pulang_mulai'],
                 'is_custom_jam_kerja' => true,
                 'jam_kerja_label'     => "Khusus ({$namaHari})",
@@ -849,10 +849,10 @@ class AbsenPegawaiModel
             ];
         }
 
-        if (!empty($row['peg_jam_masuk_batas'])) {
+        if (!empty($row['peg_jam_masuk_batas']) || !empty($row['peg_jam_pulang_mulai'])) {
             return [
                 'jam_masuk_mulai'     => !empty($row['peg_jam_masuk_mulai']) ? $row['peg_jam_masuk_mulai'] : $globalJam['jam_masuk_mulai'],
-                'jam_masuk_batas'     => $row['peg_jam_masuk_batas'],
+                'jam_masuk_batas'     => !empty($row['peg_jam_masuk_batas']) ? $row['peg_jam_masuk_batas'] : $globalJam['jam_masuk_batas'],
                 'jam_pulang_mulai'    => !empty($row['peg_jam_pulang_mulai']) ? $row['peg_jam_pulang_mulai'] : $globalJam['jam_pulang_mulai'],
                 'is_custom_jam_kerja' => true,
                 'jam_kerja_label'     => 'Khusus Pegawai',
@@ -860,10 +860,10 @@ class AbsenPegawaiModel
             ];
         }
 
-        if (!empty($row['unit_jam_masuk_batas']) && (int)($row['unit_is_custom'] ?? 0) === 1) {
+        if (((int)($row['unit_is_custom'] ?? 0) === 1) && (!empty($row['unit_jam_masuk_batas']) || !empty($row['unit_jam_pulang_mulai']))) {
             return [
                 'jam_masuk_mulai'     => !empty($row['unit_jam_masuk_mulai']) ? $row['unit_jam_masuk_mulai'] : $globalJam['jam_masuk_mulai'],
-                'jam_masuk_batas'     => $row['unit_jam_masuk_batas'],
+                'jam_masuk_batas'     => !empty($row['unit_jam_masuk_batas']) ? $row['unit_jam_masuk_batas'] : $globalJam['jam_masuk_batas'],
                 'jam_pulang_mulai'    => !empty($row['unit_jam_pulang_mulai']) ? $row['unit_jam_pulang_mulai'] : $globalJam['jam_pulang_mulai'],
                 'is_custom_jam_kerja' => true,
                 'jam_kerja_label'     => 'Khusus Unit',

@@ -77,6 +77,8 @@ if ($hourNow < 11) {
         $attJamPulang = $todayAttendance['jam_pulang'] ?? '';
         $attKet = $todayAttendance['keterangan'] ?? '';
         $isTerlambat = ($attStatus === 'Terlambat');
+        $jamPulangFmt = !empty($jamPulangMulai) ? substr($jamPulangMulai, 0, 5) : '15:00';
+        $jamPulangDisplay = str_replace(':', '.', $jamPulangFmt);
     ?>
     <div class="bg-white rounded-3xl p-4 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-slate-100">
         <div class="flex items-center justify-between gap-3">
@@ -143,7 +145,7 @@ if ($hourNow < 11) {
                     <p id="beranda-checkin-sub" class="text-[10px] text-slate-500">Masuk: <?= e($attJamMasuk) ?> &bull; Pulang: <?= e($attJamPulang) ?></p>
                 <?php elseif ($hasCheckin): ?>
                     <p id="beranda-checkin-status" class="text-xs font-bold text-slate-800 leading-tight">Sudah Masuk (<?= e($attJamMasuk) ?>)</p>
-                    <p id="beranda-checkin-sub" class="text-[10px] <?= $isTerlambat ? 'text-amber-700 font-semibold' : 'text-slate-500' ?>"><?= e($attKet ?: ($isTerlambat ? 'Terlambat' : 'Tepat Waktu')) ?> &bull; Pulang jam 15.00+</p>
+                    <p id="beranda-checkin-sub" class="text-[10px] <?= $isTerlambat ? 'text-amber-700 font-semibold' : 'text-slate-500' ?>"><?= e($attKet ?: ($isTerlambat ? 'Terlambat' : 'Tepat Waktu')) ?> &bull; Pulang jam <?= e($jamPulangDisplay) ?>+</p>
                 <?php else: ?>
                     <p id="beranda-checkin-status" class="text-xs font-bold text-slate-700 leading-tight">Belum check-in hari ini</p>
                     <p id="beranda-checkin-sub" class="text-[10px] text-slate-400">Silakan klik tombol Check-in untuk merekam kehadiran.</p>
@@ -1194,6 +1196,8 @@ if ($hourNow < 11) {
     }
 
     // Sync Server Attendance State
+    window.SERVER_JAM_PULANG_MULAI = <?= json_encode($jamPulangMulai ?? '15:00:00') ?>;
+    window.SERVER_JAM_MASUK_BATAS = <?= json_encode($jamMasukBatas ?? '07:30:00') ?>;
     window.SERVER_ATTENDANCE_TODAY = <?= json_encode($todayAttendance ?? null) ?>;
     if (window.SERVER_ATTENDANCE_TODAY && typeof syncAttendanceFromTodayData === 'function') {
         syncAttendanceFromTodayData(window.SERVER_ATTENDANCE_TODAY);

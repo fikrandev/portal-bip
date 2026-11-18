@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Pengajuan Izin Guru View (Mobile)
  * Supports Full-Day Absence (Izin Tidak Masuk) & Partial Class Leaving (Izin Keluar/Tidak Mengajar)

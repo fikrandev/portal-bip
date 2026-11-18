@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Pengajuan Cuti Guru View (Mobile)
  * Features leave quotas, new leave application form, and multi-step approval verification timeline.
