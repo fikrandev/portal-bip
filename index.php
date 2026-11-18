@@ -218,6 +218,7 @@ spl_autoload_register(static function (string $class): void {
         'BukuAngkatanSiswaController'=> '/modules/kelola-buku-angkatan-siswa/controllers/BukuAngkatanSiswaController.php',
         'SarprasController'         => '/modules/kelola-sarpras/controllers/SarprasController.php',
         'JurnalGuruAdminController' => '/modules/kelola-jurnal-guru/controllers/JurnalGuruAdminController.php',
+        'JurnalStaffAdminController' => '/modules/kelola-jurnal-staff/controllers/JurnalStaffAdminController.php',
         'MobileSarprasController'   => '/modules/mobile-sarpras/controllers/MobileSarprasController.php',
         'MobileSarprasAuthController' => '/modules/mobile-sarpras/controllers/MobileSarprasAuthController.php',
     ];
@@ -564,6 +565,29 @@ $router->post('/kelola-jurnal-guru/store-saya', [PegawaiController::class, 'stor
 $router->post('/kelola-jurnal-guru/status/{id}', [JurnalGuruAdminController::class, 'updateStatus'], [Middleware::permissionRequired('jurnal.manage')]);
 $router->post('/kelola-jurnal-guru/delete/{id}', [JurnalGuruAdminController::class, 'delete'], [Middleware::permissionRequired('jurnal.delete')]);
 $router->post('/kelola-jurnal-guru/pengaturan-periode', [JurnalGuruAdminController::class, 'savePengaturanPeriode'], [Middleware::permissionRequired('jurnal.manage')]);
+
+// -- Kelola Jurnal Staff (Support System & Divisi) --
+$router->get('/kelola-jurnal-staff', [JurnalStaffAdminController::class, 'index'], [Middleware::permissionRequired('jurnal_staff.view')]);
+$router->get('/kelola-jurnal-staff/cetak', [JurnalStaffAdminController::class, 'cetak'], [Middleware::permissionRequired('jurnal_staff.view')]);
+$router->get('/kelola-jurnal-staff/api/tugas/{jabatanId}', [JurnalStaffAdminController::class, 'apiTugasByJabatan'], [Middleware::permissionRequired('jurnal_staff.view')]);
+$router->get('/kelola-jurnal-staff/api/detail/{id}', [JurnalStaffAdminController::class, 'apiDetailJurnal'], [Middleware::permissionRequired('jurnal_staff.view')]);
+
+$router->post('/kelola-jurnal-staff/jurnal/store', [JurnalStaffAdminController::class, 'storeJurnal'], [Middleware::permissionRequired('jurnal_staff.manage')]);
+$router->post('/kelola-jurnal-staff/jurnal/update/{id}', [JurnalStaffAdminController::class, 'updateJurnal'], [Middleware::permissionRequired('jurnal_staff.manage')]);
+$router->post('/kelola-jurnal-staff/jurnal/delete/{id}', [JurnalStaffAdminController::class, 'deleteJurnal'], [Middleware::permissionRequired('jurnal_staff.delete')]);
+$router->post('/kelola-jurnal-staff/jurnal/status/{id}', [JurnalStaffAdminController::class, 'updateStatusJurnal'], [Middleware::permissionRequired('jurnal_staff.manage')]);
+
+$router->post('/kelola-jurnal-staff/jam/store', [JurnalStaffAdminController::class, 'storeJam'], [Middleware::permissionRequired('jurnal_staff.manage')]);
+$router->post('/kelola-jurnal-staff/jam/update/{id}', [JurnalStaffAdminController::class, 'updateJam'], [Middleware::permissionRequired('jurnal_staff.manage')]);
+$router->post('/kelola-jurnal-staff/jam/delete/{id}', [JurnalStaffAdminController::class, 'deleteJam'], [Middleware::permissionRequired('jurnal_staff.delete')]);
+$router->post('/kelola-jurnal-staff/jam/toggle/{id}', [JurnalStaffAdminController::class, 'toggleJam'], [Middleware::permissionRequired('jurnal_staff.manage')]);
+
+$router->post('/kelola-jurnal-staff/tugas/store', [JurnalStaffAdminController::class, 'storeTugas'], [Middleware::permissionRequired('jurnal_staff.manage')]);
+$router->post('/kelola-jurnal-staff/tugas/update/{id}', [JurnalStaffAdminController::class, 'updateTugas'], [Middleware::permissionRequired('jurnal_staff.manage')]);
+$router->post('/kelola-jurnal-staff/tugas/delete/{id}', [JurnalStaffAdminController::class, 'deleteTugas'], [Middleware::permissionRequired('jurnal_staff.delete')]);
+$router->post('/kelola-jurnal-staff/tugas/toggle/{id}', [JurnalStaffAdminController::class, 'toggleTugas'], [Middleware::permissionRequired('jurnal_staff.manage')]);
+
+$router->post('/kelola-jurnal-staff/pengaturan-periode', [JurnalStaffAdminController::class, 'savePengaturanPeriode'], [Middleware::permissionRequired('jurnal_staff.manage')]);
 
 // Base Routes Modul Tambahan Lainnya
 $router->get('/kelola-nilai', [NilaiController::class, 'index'], [[Middleware::class, 'authRequired']]);
