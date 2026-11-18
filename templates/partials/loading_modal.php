@@ -279,6 +279,7 @@
         if (onsubmitAttr.includes('confirm') || form.hasAttribute('data-confirm')) return;
 
         var action = form.getAttribute('action') || window.location.href;
+        var method = String(form.getAttribute('method') || 'GET').toUpperCase();
         var text = form.getAttribute('data-loading-text');
         var sub = form.getAttribute('data-loading-sub');
 
@@ -291,10 +292,26 @@
             return;
         }
 
-        // Jika form ditangani oleh PortalRouter (jQuery PJAX) dan bukan proses berat (import/upload/sync), gunakan slim top progress bar saja tanpa modal blokir
-        var actLowerCheck = String(action).toLowerCase();
-        var isHeavyTask = actLowerCheck.includes('sync-dapodik') || actLowerCheck.includes('import');
-        if (!isHeavyTask && window.PortalRouter && typeof window.PortalRouter.isEligibleForm === 'function' && window.PortalRouter.isEligibleForm(form)) {
+        // Semua POST non-download (Simpan / Update / Hapus): loading tampil di tombol, bukan modal tengah
+        if (method === 'POST') {
+            var submitBtn = e.submitter
+                || form._pjaxTriggerBtn
+                || window.__lastActionBtn
+                || form.querySelector('button[type="submit"], input[type="submit"], button:not([type="button"])');
+            setTimeout(function() {
+                if (e.defaultPrevented) {
+                    if (submitBtn && window.ButtonLoader) window.ButtonLoader.stop(submitBtn);
+                    return;
+                }
+                if (submitBtn && window.ButtonLoader) {
+                    window.ButtonLoader.start(submitBtn, text, action);
+                }
+            }, 20);
+            return;
+        }
+
+        // Form GET filter/search: jika ditangani PortalRouter, PortalRouter.submitForm sudah memunculkan LoadingModal
+        if (window.PortalRouter && typeof window.PortalRouter.isEligibleForm === 'function' && window.PortalRouter.isEligibleForm(form)) {
             return;
         }
 
@@ -305,21 +322,9 @@
                 return;
             }
 
-            var actLower = action.toLowerCase();
             if (!text) {
-                if (actLower.includes('sync-dapodik')) {
-                    text = 'Menyinkronkan Dapodik...';
-                    sub = 'Sedang menarik data dari server Dapodik...';
-                } else if (actLower.includes('import') || actLower.includes('upload')) {
-                    text = 'Mengunggah & Memproses...';
-                    sub = 'Mohon jangan menutup halaman saat upload berlangsung...';
-                } else if (actLower.includes('delete') || actLower.includes('destroy') || actLower.includes('hapus')) {
-                    text = 'Menghapus Data...';
-                    sub = 'Sistem sedang memperbarui data...';
-                } else {
-                    text = 'Menyimpan & Memproses...';
-                    sub = 'Mohon tunggu sebentar...';
-                }
+                text = 'Memuat Data...';
+                sub = 'Sedang memfilter data yang dipilih...';
             }
 
             LoadingModal.show(text, sub);
@@ -396,19 +401,57 @@
         }
     });
 
-    // 9. jQuery AJAX Hook (jika jQuery aktif di halaman)
+    // 9. jQuery AJAX & Fetch Hook: GET tampilkan LoadingModal, POST/PUT/DELETE tampilkan loading di tombol
     if (window.jQuery) {
-        $(document).ajaxStart(function() {
-            if (!window.__silentAjax) {
-                LoadingModal.show('Memproses Data...', 'Sedang berkomunikasi dengan server...');
+        $(document).ajaxSend(function(_e, xhr, settings) {
+            if (window.__silentAjax) return;
+            var hdrs = settings && settings.headers ? settings.headers : {};
+            if (hdrs['X-Portal-Pjax']) return;
+            var urlStr = String((settings && settings.url) || '').toLowerCase();
+            if (urlStr.includes('status-ajax')) return;
+
+            var reqType = String((settings && settings.type) || 'GET').toUpperCase();
+            if (reqType !== 'GET') {
+                xhr._loadingBtn = window.__lastActionBtn;
+                if (xhr._loadingBtn && window.ButtonLoader) {
+                    window.ButtonLoader.start(xhr._loadingBtn, null, urlStr);
+                }
+            } else {
+                LoadingModal.show('Memuat Data...', 'Sedang mengambil data, mohon tunggu sebentar...');
             }
         });
-        $(document).ajaxStop(function() {
-            LoadingModal.hide();
+        $(document).ajaxComplete(function(_e, xhr, settings) {
+            if (xhr && xhr._loadingBtn && window.ButtonLoader) {
+                window.ButtonLoader.stop(xhr._loadingBtn);
+            }
+            var hdrs = settings && settings.headers ? settings.headers : {};
+            if (!hdrs['X-Portal-Pjax']) {
+                LoadingModal.hide();
+            }
         });
-        $(document).ajaxError(function() {
-            LoadingModal.hide();
-        });
+    }
+
+    if (typeof window.fetch === 'function' && !window.fetch._portalLoadingWrapped) {
+        var origFetch = window.fetch.bind(window);
+        var wrappedFetch = function(input, init) {
+            var method = String((init && init.method) || (input && input.method) || 'GET').toUpperCase();
+            var urlStr = typeof input === 'string' ? input : ((input && input.url) || '');
+            var isMutation = method !== 'GET' && method !== 'HEAD';
+            var activeBtn = (isMutation && !window.__silentAjax && !(init && init.silentBtn)) ? window.__lastActionBtn : null;
+
+            if (activeBtn && window.ButtonLoader) {
+                window.ButtonLoader.start(activeBtn, null, urlStr);
+            }
+            return origFetch(input, init).then(function(res) {
+                if (activeBtn && window.ButtonLoader) window.ButtonLoader.stop(activeBtn);
+                return res;
+            }, function(err) {
+                if (activeBtn && window.ButtonLoader) window.ButtonLoader.stop(activeBtn);
+                throw err;
+            });
+        };
+        wrappedFetch._portalLoadingWrapped = true;
+        window.fetch = wrappedFetch;
     }
 
 })();

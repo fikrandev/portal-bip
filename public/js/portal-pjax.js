@@ -580,6 +580,41 @@
         return next();
     }
 
+    // ── Loading Modal Helper for Data & Filter Navigation ───────────────────────
+    function showDataLoadingModal(targetUrl, options) {
+        if (!window.LoadingModal || typeof window.LoadingModal.show !== 'function') return 0;
+        options = options || {};
+        var isFilter = !!options.isFilter || /[?&](filter|search|q|jenjang|unit|kelas|tanggal|bulan|tahun|status|tab|page)=/i.test(String(targetUrl || ''));
+        if (isFilter) {
+            window.LoadingModal.show('Memuat Data...', 'Sedang memfilter data yang dipilih...');
+        } else {
+            window.LoadingModal.show(
+                options.loadingTitle || 'Memuat Halaman...',
+                options.loadingSub || 'Sedang mengambil data, mohon tunggu sebentar...'
+            );
+        }
+        return Date.now();
+    }
+
+    function hideLoadingModalSmooth(startedAt) {
+        if (!window.LoadingModal || typeof window.LoadingModal.hide !== 'function') return;
+        if (!startedAt) {
+            window.LoadingModal.hide();
+            return;
+        }
+        var elapsed = Date.now() - startedAt;
+        var remaining = Math.max(0, 120 - elapsed);
+        if (remaining > 0) {
+            setTimeout(function() {
+                if (window.LoadingModal && typeof window.LoadingModal.hide === 'function') {
+                    window.LoadingModal.hide();
+                }
+            }, remaining);
+        } else {
+            window.LoadingModal.hide();
+        }
+    }
+
     // ── Pre-Swap Cleanup & Post-Swap Hydration ──────────────────────────────────
     function cleanupBeforeSwap() {
         clearViewIntervals();
@@ -596,10 +631,10 @@
         // Remove floating dropdown menus moved onto document.body (e.g. SPMB table menus)
         $('body > [id^="action-menu-"]').remove();
 
-        // Reset scroll lock / open modals
+        // Reset scroll lock / non-loading modals
         document.body.style.overflow = '';
-        if (window.LoadingModal && typeof window.LoadingModal.hide === 'function') {
-            window.LoadingModal.hide();
+        if (window.ButtonLoader && typeof window.ButtonLoader.stopAll === 'function') {
+            window.ButtonLoader.stopAll();
         }
         if (window.Swal && typeof window.Swal.isVisible === 'function' && window.Swal.isVisible()) {
             try { window.Swal.close(); } catch (e) {}
@@ -687,6 +722,11 @@
                 }
                 if (typeof window.handleDeviceResolution === 'function') {
                     window.handleDeviceResolution();
+                }
+
+                hideLoadingModalSmooth(options.modalStartedAt || 0);
+                if (window.ButtonLoader && typeof window.ButtonLoader.stopAll === 'function') {
+                    window.ButtonLoader.stopAll();
                 }
 
                 $(document).trigger('portal:pjax:complete', [{ url: parsed.finalUrl || window.location.href }]);
@@ -815,6 +855,8 @@
             }
         }
 
+        var modalStartedAt = showDataLoadingModal(targetUrl, options);
+
         if (cached) {
             var finalCachedUrl = cached.finalUrl || targetUrl;
             if (options.pushState !== false) {
@@ -822,7 +864,8 @@
             }
             return hydrateParsedPage(cached, {
                 scrollToTop: options.scrollToTop !== false,
-                clearSearch: prevPath !== nextPath
+                clearSearch: prevPath !== nextPath,
+                modalStartedAt: modalStartedAt
             });
         }
 
@@ -841,12 +884,16 @@
             }
             return hydrateParsedPage(parsed, {
                 scrollToTop: options.scrollToTop !== false,
-                clearSearch: prevPath !== nextPath
+                clearSearch: prevPath !== nextPath,
+                modalStartedAt: modalStartedAt
             });
         }, function(err) {
             activeNavXhr = null;
             if (err && err.aborted) return;
             finishProgressBar();
+            if (window.LoadingModal && typeof window.LoadingModal.hide === 'function') {
+                window.LoadingModal.hide();
+            }
             if (navId !== currentNavId) return;
             window.location.href = (err && err.fallbackHardRedirect) ? err.fallbackHardRedirect : targetUrl;
         });
@@ -876,11 +923,14 @@
             }
             var targetUrlObj = new URL(resolvedAction, window.location.origin);
             targetUrlObj.search = params.toString();
-            return navigate(targetUrlObj.toString());
+            return navigate(targetUrlObj.toString(), { isFilter: true });
         }
 
-        // POST form submission via jQuery AJAX (FormData)
+        // POST form submission via jQuery AJAX (FormData) - Button Loading Only (no blocking modal)
         invalidateCache();
+        if (window.LoadingModal && typeof window.LoadingModal.hide === 'function') {
+            window.LoadingModal.hide();
+        }
         var navId = ++currentNavId;
         var formData;
         try {
@@ -892,13 +942,16 @@
             }
         }
 
-        startProgressBar();
-
-        var actLower = resolvedAction.toLowerCase();
-        var isHeavy = actLower.indexOf('import') !== -1 || actLower.indexOf('sync-dapodik') !== -1;
-        if (isHeavy && window.LoadingModal && typeof window.LoadingModal.show === 'function') {
-            window.LoadingModal.show('Mengunggah & Memproses...', 'Mohon tunggu sebentar...', 30000);
+        var activeBtn = submitter
+            || form._pjaxTriggerBtn
+            || window.__lastActionBtn
+            || form.querySelector('button[type="submit"], input[type="submit"], button:not([type="button"])');
+        form._pjaxTriggerBtn = null;
+        if (activeBtn && window.ButtonLoader) {
+            window.ButtonLoader.start(activeBtn, null, resolvedAction);
         }
+
+        startProgressBar();
 
         $.ajax({
             url: resolvedAction,
@@ -915,14 +968,20 @@
             }
         }).done(function(htmlText, textStatus, xhrObj) {
             finishProgressBar();
-            if (window.LoadingModal) window.LoadingModal.hide();
-            if (navId !== currentNavId) return;
+            if (window.LoadingModal && typeof window.LoadingModal.hide === 'function') {
+                window.LoadingModal.hide();
+            }
+            if (navId !== currentNavId) {
+                if (activeBtn && window.ButtonLoader) window.ButtonLoader.stop(activeBtn);
+                return;
+            }
 
             var finalUrl = xhrObj._finalResponseUrl || resolvedAction;
             var contentType = (xhrObj.getResponseHeader('Content-Type') || '').toLowerCase();
             var contentDisp = (xhrObj.getResponseHeader('Content-Disposition') || '').toLowerCase();
 
             if (finalUrl.indexOf('/login') !== -1 || contentDisp.indexOf('attachment') !== -1) {
+                if (activeBtn && window.ButtonLoader) window.ButtonLoader.stop(activeBtn);
                 window.location.href = finalUrl;
                 return;
             }
@@ -934,6 +993,7 @@
                     hydrateParsedPage(parsed, { scrollToTop: true, clearSearch: false });
                     return;
                 }
+                if (activeBtn && window.ButtonLoader) window.ButtonLoader.stop(activeBtn);
                 // Response was standalone HTML (e.g. print view returned by POST) - render safely without re-POSTing
                 document.open();
                 document.write(htmlText);
@@ -941,10 +1001,14 @@
                 return;
             }
 
+            if (activeBtn && window.ButtonLoader) window.ButtonLoader.stop(activeBtn);
             window.location.href = finalUrl;
         }).fail(function() {
             finishProgressBar();
-            if (window.LoadingModal) window.LoadingModal.hide();
+            if (activeBtn && window.ButtonLoader) window.ButtonLoader.stop(activeBtn);
+            if (window.LoadingModal && typeof window.LoadingModal.hide === 'function') {
+                window.LoadingModal.hide();
+            }
             // Fallback: submit natively if AJAX transport failed
             form._pjaxBypassSubmit = true;
             form.submit();

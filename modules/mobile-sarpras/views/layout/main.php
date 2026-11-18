@@ -238,6 +238,17 @@ endif;
          data-warning="<?= e($flashWarning ?? '') ?>"
          data-info="<?= e($flashInfo ?? '') ?>"></div>
 
+    <!-- Center Loading Overlay (Data & Filter) -->
+    <div id="sarpras-loading-modal"
+         onclick="window.SarprasLoading && window.SarprasLoading.hide()"
+         class="fixed inset-0 z-[9998] bg-slate-950/40 backdrop-blur-xs flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-200 cursor-pointer"
+         aria-hidden="true">
+        <div onclick="event.stopPropagation();" class="bg-white/95 backdrop-blur-xl px-6 py-5 rounded-3xl shadow-2xl border border-slate-100 flex flex-col items-center gap-3 min-w-[180px] text-center cursor-default">
+            <div class="w-9 h-9 rounded-full border-3 border-slate-100 border-t-blue-600 animate-spin"></div>
+            <p id="sarpras-loading-text" class="text-xs font-bold text-slate-700">Memuat data...</p>
+        </div>
+    </div>
+
     <!-- Mobile Floating Toast Container -->
     <div id="mobile-toast-container"></div>
 

@@ -1050,6 +1050,9 @@ window.MobileRouter = (function() {
     if (typeof window.fetchServerAttendanceState === 'function') {
       window.fetchServerAttendanceState();
     }
+    if (window.AndroidUI && typeof window.AndroidUI.hideCenterLoading === 'function') {
+      window.AndroidUI.hideCenterLoading();
+    }
   }
 
   function navigate(targetUrl, options = {}) {
@@ -1063,6 +1066,10 @@ window.MobileRouter = (function() {
     const stuckModal = document.getElementById('journal-input-modal');
     if (stuckModal && !stuckModal.classList.contains('hidden')) {
       stuckModal.classList.add('hidden');
+    }
+    const stuckStaffModal = document.getElementById('modal-jurnal-staff');
+    if (stuckStaffModal && !stuckStaffModal.classList.contains('hidden')) {
+      stuckStaffModal.classList.add('hidden');
     }
 
     // Close any open Bottom Sheet immediately
@@ -1088,6 +1095,10 @@ window.MobileRouter = (function() {
     const cached = !options.forceReload ? pageCache.get(norm) : null;
     const now = Date.now();
 
+    if (window.AndroidUI && typeof window.AndroidUI.showCenterLoading === 'function') {
+      window.AndroidUI.showCenterLoading('Memuat data...', 5000);
+    }
+
     // Case 1: Instant 0ms Swap from Cache (Stale-While-Revalidate)
     if (cached && (now - cached.timestamp) < CACHE_TTL_MAX) {
       if (pushState) {
@@ -1110,7 +1121,12 @@ window.MobileRouter = (function() {
       .then(parsed => {
         isNavigating = false;
         finishProgressBar();
-        if (activeNavigationUrl !== norm || !parsed) return;
+        if (activeNavigationUrl !== norm || !parsed) {
+          if (window.AndroidUI && typeof window.AndroidUI.hideCenterLoading === 'function') {
+            window.AndroidUI.hideCenterLoading();
+          }
+          return;
+        }
         if (pushState) {
           window.history.pushState({ spaUrl: targetUrl }, parsed.title || '', targetUrl);
         }
@@ -1119,6 +1135,9 @@ window.MobileRouter = (function() {
       .catch(() => {
         isNavigating = false;
         finishProgressBar();
+        if (window.AndroidUI && typeof window.AndroidUI.hideCenterLoading === 'function') {
+          window.AndroidUI.hideCenterLoading();
+        }
         // Fallback to native navigation if network/parse fails
         window.location.href = targetUrl;
       });

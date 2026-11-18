@@ -188,11 +188,35 @@ class PortalGuruController
         $rawJk = strtoupper(trim((string) ($pegawai['jenis_kelamin'] ?? 'P')));
         $gender = ($rawJk === 'L' || str_starts_with($rawJk, 'LAKI')) ? 'L' : 'P';
 
+        $penugasanKategori = null;
+        if ($pegawaiId > 0) {
+            try {
+                $db = Database::getInstance();
+                $penRow = $db->find("
+                    SELECT mj.nama, mj.kategori
+                    FROM pegawai_penugasan pp
+                    INNER JOIN master_jabatan mj ON mj.id = pp.jabatan_id
+                    LEFT JOIN penugasan_grup pg ON pg.id = pp.grup_id
+                    WHERE pp.pegawai_id = ? AND pp.status = 'Aktif'
+                    ORDER BY COALESCE(pg.is_active, 0) DESC, pp.id DESC
+                    LIMIT 1
+                ", [$pegawaiId]);
+                if ($penRow && !empty($penRow['nama'])) {
+                    $role = $penRow['nama'];
+                    $penugasanKategori = strtolower(trim((string)($penRow['kategori'] ?? '')));
+                }
+            } catch (Throwable $e) {}
+        }
+
         $jenisPegawai = trim((string) ($pegawai['jenis_pegawai'] ?? ''));
 
-        // Deteksi apakah jenis_pegawai adalah Support System
+        // Deteksi apakah pegawai ini Support System (utamakan kategori jabatan di penugasan)
         $isSupport = false;
-        if (strcasecmp($jenisPegawai, 'Support System') === 0 || stripos($jenisPegawai, 'support') !== false) {
+        if ($penugasanKategori === 'support_system') {
+            $isSupport = true;
+        } elseif ($penugasanKategori === 'guru') {
+            $isSupport = false;
+        } elseif (strcasecmp($jenisPegawai, 'Support System') === 0 || stripos($jenisPegawai, 'support') !== false) {
             $isSupport = true;
         } elseif (strcasecmp($jenisPegawai, 'Guru') === 0 || stripos($jenisPegawai, 'guru') !== false) {
             $isSupport = false;
@@ -1295,39 +1319,82 @@ class PortalGuruController
         $pegawaiId = (int) ($teacher['pegawai_id'] ?: $teacher['user_id'] ?: 0);
         $staff = JurnalStaffModel::getStaffById($pegawaiId) ?: $teacher;
 
-        $jabatanName = $staff['jabatan'] ?? ($teacher['role'] ?? 'Staff Support System');
+        // Ambil jabatan yang ditugaskan dari Penugasan Pegawai (prioritaskan grup penugasan aktif)
+        $assignedJabatans = [];
+        if ($pegawaiId > 0) {
+            try {
+                $penRows = $db->findAll("
+                    SELECT mj.id, mj.nama, COALESCE(pg.is_active, 0) AS grup_active
+                    FROM pegawai_penugasan pp
+                    INNER JOIN master_jabatan mj ON mj.id = pp.jabatan_id
+                    LEFT JOIN penugasan_grup pg ON pg.id = pp.grup_id
+                    WHERE pp.pegawai_id = ? AND pp.status = 'Aktif'
+                    ORDER BY COALESCE(pg.is_active, 0) DESC, pp.id DESC
+                ", [$pegawaiId]);
 
-        // Cari master_jabatan yang sesuai untuk mendapatkan jabatan_id
-        $jabatanRow = null;
-        try {
-            $jabatanRow = $db->find("
-                SELECT id, nama, kategori 
-                FROM master_jabatan 
-                WHERE LOWER(TRIM(nama)) = LOWER(TRIM(?)) LIMIT 1
-            ", [$jabatanName]);
-        } catch (Throwable $e) {}
+                if (!empty($penRows)) {
+                    $hasActiveGrup = false;
+                    foreach ($penRows as $pr) {
+                        if ((int)$pr['grup_active'] === 1) {
+                            $hasActiveGrup = true;
+                            break;
+                        }
+                    }
+                    foreach ($penRows as $pr) {
+                        if ($hasActiveGrup && (int)$pr['grup_active'] !== 1) {
+                            continue;
+                        }
+                        $jid = (int)$pr['id'];
+                        if ($jid > 0 && !isset($assignedJabatans[$jid])) {
+                            $assignedJabatans[$jid] = trim((string)$pr['nama']);
+                        }
+                    }
+                }
+            } catch (Throwable $e) {}
+        }
 
-        $jabatanId = $jabatanRow ? (int) $jabatanRow['id'] : 0;
+        // Fallback ke kolom pegawai.jabatan hanya jika pegawai belum memiliki penugasan aktif
+        if (empty($assignedJabatans)) {
+            $fallbackJabName = trim((string)($staff['jabatan'] ?? ($teacher['role'] ?? '')));
+            if ($fallbackJabName !== '') {
+                try {
+                    $jabatanRow = $db->find("
+                        SELECT id, nama
+                        FROM master_jabatan
+                        WHERE LOWER(TRIM(nama)) = LOWER(TRIM(?))
+                        LIMIT 1
+                    ", [$fallbackJabName]);
+                    if ($jabatanRow) {
+                        $assignedJabatans[(int)$jabatanRow['id']] = trim((string)$jabatanRow['nama']);
+                    }
+                } catch (Throwable $e) {}
+            }
+        }
+
+        $assignedJabatanIds = array_keys($assignedJabatans);
+        $assignedJabatanNames = array_values($assignedJabatans);
+        $jabatanId = !empty($assignedJabatanIds) ? (int)$assignedJabatanIds[0] : 0;
+        $jabatanName = !empty($assignedJabatanNames)
+            ? implode(', ', $assignedJabatanNames)
+            : ($staff['jabatan'] ?? ($teacher['role'] ?? 'Staff Support System'));
 
         // Ambil daftar slot jam kerja (jurnal_staff_jam)
         $jamList = JurnalStaffModel::getJamList(true);
 
-        // Ambil tugas-tugas aktif berdasarkan jabatan
+        // Ambil tugas-tugas aktif HANYA berdasarkan jabatan yang ditugaskan kepada pegawai ini
         $tugasJabatan = [];
-        if ($jabatanId > 0) {
-            $tugasJabatan = JurnalStaffModel::getTugasByJabatan($jabatanId, true);
+        if (!empty($assignedJabatanIds)) {
+            $placeholders = implode(',', array_fill(0, count($assignedJabatanIds), '?'));
+            try {
+                $tugasJabatan = $db->findAll("
+                    SELECT id, jabatan_id, nama_jabatan, nama_tugas, deskripsi, kategori_tugas
+                    FROM jurnal_staff_tugas
+                    WHERE is_active = 1 AND jabatan_id IN ({$placeholders})
+                    ORDER BY jabatan_id ASC, kategori_tugas ASC, id ASC
+                ", $assignedJabatanIds);
+            } catch (Throwable $e) {}
         }
-
-        // Ambil juga semua tugas aktif yang ada di sistem sebagai referensi / opsi cadangan
         $allTugas = [];
-        try {
-            $allTugas = $db->findAll("
-                SELECT id, jabatan_id, nama_jabatan, nama_tugas, deskripsi, kategori_tugas
-                FROM jurnal_staff_tugas
-                WHERE is_active = 1
-                ORDER BY nama_jabatan ASC, nama_tugas ASC
-            ");
-        } catch (Throwable $e) {}
 
         // Tanggal terpilih (default hari ini)
         $selectedDate = trim($_GET['tanggal'] ?? date('Y-m-d'));

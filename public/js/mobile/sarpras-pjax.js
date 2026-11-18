@@ -222,6 +222,78 @@
         return xhr;
     }
 
+    var loadingTimer = null;
+
+    var SarprasLoading = {
+        show: function(message) {
+            var $el = $('#sarpras-loading-modal');
+            if (!$el.length) return;
+            $('#sarpras-loading-text').text(message || 'Memuat data...');
+            $el.removeClass('opacity-0 pointer-events-none').addClass('opacity-100 pointer-events-auto').attr('aria-hidden', 'false');
+            clearTimeout(loadingTimer);
+            loadingTimer = setTimeout(function() {
+                SarprasLoading.hide();
+            }, 6000);
+        },
+        hide: function() {
+            clearTimeout(loadingTimer);
+            var $el = $('#sarpras-loading-modal');
+            if (!$el.length) return;
+            $el.removeClass('opacity-100 pointer-events-auto').addClass('opacity-0 pointer-events-none').attr('aria-hidden', 'true');
+        }
+    };
+    window.SarprasLoading = SarprasLoading;
+
+    function guessBtnLoadingText(btn, actionUrl) {
+        if (btn && btn.getAttribute('data-loading-text')) return btn.getAttribute('data-loading-text');
+        var raw = ((btn && (btn.tagName === 'INPUT' ? btn.value : btn.textContent)) || '') + ' ' + (actionUrl || '');
+        raw = raw.toLowerCase();
+        if (/hapus|delete|destroy|tolak/.test(raw)) return 'Menghapus...';
+        if (/update|perbarui|ubah|edit/.test(raw)) return 'Memperbarui...';
+        return 'Menyimpan...';
+    }
+
+    function startBtnLoading(btn, actionUrl) {
+        if (!btn || !document.body.contains(btn) || btn.getAttribute('data-btn-loading') === '1') return;
+        var label = guessBtnLoadingText(btn, actionUrl);
+        btn.setAttribute('data-btn-loading', '1');
+        if (btn.tagName === 'INPUT') {
+            btn.setAttribute('data-original-value', btn.value);
+            btn.value = label;
+            btn.disabled = true;
+            return;
+        }
+        btn.setAttribute('data-original-html', btn.innerHTML);
+        btn.disabled = true;
+        btn.classList.add('opacity-80', 'cursor-not-allowed');
+        btn.innerHTML =
+            '<span class="inline-flex items-center justify-center gap-1.5">' +
+                '<svg class="animate-spin h-4 w-4 text-current shrink-0 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">' +
+                    '<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>' +
+                    '<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>' +
+                '</svg>' +
+                '<span>' + label + '</span>' +
+            '</span>';
+    }
+
+    function stopAllBtnLoading() {
+        $('[data-btn-loading="1"]').each(function() {
+            var btn = this;
+            if (btn.tagName === 'INPUT') {
+                var v = btn.getAttribute('data-original-value');
+                if (v !== null) btn.value = v;
+                btn.removeAttribute('data-original-value');
+            } else {
+                var h = btn.getAttribute('data-original-html');
+                if (h !== null) btn.innerHTML = h;
+                btn.removeAttribute('data-original-html');
+            }
+            btn.removeAttribute('data-btn-loading');
+            btn.disabled = false;
+            $(btn).removeClass('opacity-80 cursor-not-allowed');
+        });
+    }
+
     function hydrateParsed(parsed, options) {
         options = options || {};
         stopActiveScannerIfAny();
@@ -263,6 +335,8 @@
                 if (parsed.flash.warning) window.showToast(parsed.flash.warning, 'warning');
                 if (parsed.flash.info) window.showToast(parsed.flash.info, 'info');
             }
+            SarprasLoading.hide();
+            stopAllBtnLoading();
             $(document).trigger('sarpras:pjax:complete', [{ url: parsed.finalUrl }]);
         });
     }
@@ -328,6 +402,8 @@
         }
 
         var cached = !options.forceReload ? pageCache.get(norm) : null;
+        SarprasLoading.show(options.loadingText || 'Memuat data...');
+
         if (cached && (Date.now() - cached.timestamp) < CACHE_TTL_MS) {
             var resolved = cached.finalUrl || targetUrl;
             if (options.pushState !== false) {
@@ -353,6 +429,7 @@
             activeNavXhr = null;
             if (err && err.aborted) return;
             finishProgressBar();
+            SarprasLoading.hide();
             window.location.href = (err && err.fallbackUrl) ? err.fallbackUrl : targetUrl;
         });
     }
@@ -377,10 +454,15 @@
             if (submitter && submitter.name) params.append(submitter.name, submitter.value || '');
             var targetObj = new URL(resolvedAction, window.location.origin);
             targetObj.search = params.toString();
-            return navigate(targetObj.toString());
+            return navigate(targetObj.toString(), { loadingText: 'Memuat data filter...' });
         }
 
+        // POST (Simpan / Update / Hapus): loading tampil di tombol tanpa center modal
         pageCache.clear();
+        SarprasLoading.hide();
+        var activeBtn = submitter || form.querySelector('button[type="submit"], input[type="submit"], button:not([type="button"])');
+        if (activeBtn) startBtnLoading(activeBtn, resolvedAction);
+
         var formData;
         try {
             formData = submitter ? new FormData(form, submitter) : new FormData(form);
@@ -412,9 +494,11 @@
                 hydrateParsed(parsed, { scrollToTop: true });
                 return;
             }
+            stopAllBtnLoading();
             window.location.href = finalUrl;
         }).fail(function() {
             finishProgressBar();
+            stopAllBtnLoading();
             form._sarprasBypassSubmit = true;
             form.submit();
             form._sarprasBypassSubmit = false;

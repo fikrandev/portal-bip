@@ -72,11 +72,122 @@
         document.head.appendChild(st);
     }
 
+    // Track tombol terakhir yang diklik agar AJAX / modal konfirmasi bisa menampilkan loading pada tombol pemicu
+    window.__lastActionBtn = null;
+    document.addEventListener('click', function(e) {
+        var btn = e.target && e.target.closest
+            ? e.target.closest('button, input[type="submit"], input[type="button"], a[role="button"], [data-loading-btn]')
+            : null;
+        if (btn && !btn.closest('.swal2-container')) {
+            window.__lastActionBtn = btn;
+        }
+    }, true);
+
+    // Universal Button Loading Helper (Simpan / Update / Hapus)
+    var ButtonLoader = {
+        guessText: function(btn, actionUrl) {
+            if (btn && btn.getAttribute('data-loading-text')) {
+                return btn.getAttribute('data-loading-text');
+            }
+            var txt = '';
+            if (btn) {
+                txt = (btn.tagName === 'INPUT' ? btn.value : btn.textContent) || '';
+            }
+            var combined = (txt + ' ' + (actionUrl || '')).toLowerCase();
+
+            if (/hapus|delete|destroy|reset|tolak|nonaktif|keluar|batalkan/.test(combined)) {
+                return 'Menghapus...';
+            }
+            if (/update|perbarui|ubah|edit|simpan perubahan/.test(combined)) {
+                return 'Memperbarui...';
+            }
+            if (/import|upload|unggah/.test(combined)) {
+                return 'Mengunggah...';
+            }
+            if (/sync|sinkron/.test(combined)) {
+                return 'Menyinkronkan...';
+            }
+            if (/proses|verifikasi|terima|setuju|approve|kirim/.test(combined)) {
+                return 'Memproses...';
+            }
+            return 'Menyimpan...';
+        },
+
+        start: function(btn, customText, actionUrl) {
+            if (!btn || !document.body.contains(btn)) return btn;
+            if (btn.getAttribute('data-btn-loading') === '1') return btn;
+
+            var label = customText || this.guessText(btn, actionUrl);
+            btn.setAttribute('data-btn-loading', '1');
+
+            if (btn.tagName === 'INPUT') {
+                btn.setAttribute('data-original-value', btn.value);
+                btn.value = label;
+                btn.disabled = true;
+                btn.classList.add('opacity-80', 'cursor-not-allowed');
+                return btn;
+            }
+
+            btn.setAttribute('data-original-html', btn.innerHTML);
+            if (btn.offsetWidth > 0) {
+                btn.style.minWidth = Math.max(btn.offsetWidth, 80) + 'px';
+            }
+            btn.disabled = true;
+            btn.classList.add('opacity-80', 'cursor-not-allowed');
+            btn.innerHTML =
+                '<span class="inline-flex items-center justify-center gap-1.5">' +
+                    '<svg class="animate-spin h-4 w-4 text-current shrink-0 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">' +
+                        '<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>' +
+                        '<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>' +
+                    '</svg>' +
+                    '<span>' + cleanHtmlText(label) + '</span>' +
+                '</span>';
+            return btn;
+        },
+
+        stop: function(btn) {
+            if (!btn) return;
+            if (btn.getAttribute('data-btn-loading') !== '1') return;
+
+            if (btn.tagName === 'INPUT') {
+                var origVal = btn.getAttribute('data-original-value');
+                if (origVal !== null) {
+                    btn.value = origVal;
+                    btn.removeAttribute('data-original-value');
+                }
+            } else {
+                var origHtml = btn.getAttribute('data-original-html');
+                if (origHtml !== null) {
+                    btn.innerHTML = origHtml;
+                    btn.removeAttribute('data-original-html');
+                }
+                btn.style.minWidth = '';
+            }
+
+            btn.removeAttribute('data-btn-loading');
+            btn.disabled = false;
+            btn.classList.remove('opacity-80', 'cursor-not-allowed');
+        },
+
+        stopAll: function() {
+            var self = this;
+            document.querySelectorAll('[data-btn-loading="1"]').forEach(function(btn) {
+                self.stop(btn);
+            });
+        }
+    };
+
     var ModalHelper = {
         /**
          * Pembersih teks dari entitas HTML (menghindari &#039;, &amp;, dll)
          */
         cleanText: cleanHtmlText,
+        setButtonLoading: function(btn, customText, actionUrl) {
+            return ButtonLoader.start(btn, customText, actionUrl);
+        },
+        resetButton: function(btn) {
+            return ButtonLoader.stop(btn);
+        },
 
         /**
          * Membuka modal biasa berdasarkan ID elemen
@@ -174,6 +285,11 @@
             title = cleanHtmlText(title);
             message = cleanHtmlText(message);
 
+            var triggerBtn = (eventObj && eventObj.target && eventObj.target.closest ? eventObj.target.closest('button, input[type="submit"], a') : null)
+                || (eventObj && eventObj.currentTarget && eventObj.currentTarget.nodeName !== 'FORM' ? eventObj.currentTarget : null)
+                || window.__lastActionBtn
+                || (formElement ? formElement.querySelector('button[type="submit"], input[type="submit"], button') : null);
+
             if (!confirmText) {
                 confirmText = type === 'danger' ? 'Ya, Hapus Data' : 'Ya, Lanjutkan';
             }
@@ -225,9 +341,12 @@
                         }
                     }).then(function(result) {
                         if (result.isConfirmed) {
-                            if (window.LoadingModal && typeof window.LoadingModal.show === 'function') {
-                                var actText = type === 'danger' ? 'Menghapus Data...' : 'Memproses...';
-                                window.LoadingModal.show(actText, 'Sistem sedang memperbarui data...');
+                            var btnText = type === 'danger' ? 'Menghapus...' : 'Memproses...';
+                            if (triggerBtn && window.ButtonLoader) {
+                                window.ButtonLoader.start(triggerBtn, btnText);
+                            }
+                            if (formElement) {
+                                formElement._pjaxTriggerBtn = triggerBtn;
                             }
 
                             if (typeof onConfirmCb === 'function') {
@@ -249,6 +368,13 @@
             // Fallback native confirm jika Swal belum terload
             var confirmed = window.confirm(title + '\n\n' + message);
             if (confirmed) {
+                var btnTextFallback = type === 'danger' ? 'Menghapus...' : 'Memproses...';
+                if (triggerBtn && window.ButtonLoader) {
+                    window.ButtonLoader.start(triggerBtn, btnTextFallback);
+                }
+                if (formElement) {
+                    formElement._pjaxTriggerBtn = triggerBtn;
+                }
                 if (typeof onConfirmCb === 'function') {
                     onConfirmCb();
                 } else if (formElement && typeof formElement.submit === 'function') {
@@ -335,6 +461,7 @@
     });
 
     // Expose ke global window
+    window.ButtonLoader = ButtonLoader;
     window.ModalHelper = ModalHelper;
 
 })(window, document);

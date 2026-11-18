@@ -142,6 +142,9 @@ const AppNotif = {
 
         // Fallback jika ModalHelper belum terdefinisi
         if (e && e.preventDefault) e.preventDefault();
+        const triggerBtn = (e && e.target && e.target.closest ? e.target.closest('button, input[type="submit"], a') : null)
+            || window.__lastActionBtn
+            || (formElement ? formElement.querySelector('button[type="submit"], input[type="submit"], button') : null);
 
         this.modalMixin.fire({
             title: title,
@@ -162,8 +165,13 @@ const AppNotif = {
             }
         }).then((result) => {
             if (result.isConfirmed) {
-                // Submit form secara programatik
-                formElement.submit();
+                if (triggerBtn && window.ButtonLoader) {
+                    window.ButtonLoader.start(triggerBtn, 'Menghapus...');
+                }
+                if (formElement) {
+                    formElement._pjaxTriggerBtn = triggerBtn;
+                    formElement.submit();
+                }
             }
         });
     }

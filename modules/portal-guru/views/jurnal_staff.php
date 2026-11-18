@@ -362,183 +362,182 @@
 <!-- ======================================================== -->
 <!-- MODAL POPUP FORM ISI JURNAL STAFF (BOTTOM SHEET STYLE)  -->
 <!-- ======================================================== -->
-<div id="modal-jurnal-staff" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 hidden transition-opacity duration-200">
-    <div class="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden max-h-[92vh] flex flex-col animate-in slide-in-from-bottom-6 duration-200">
-        
-        <!-- Modal Header -->
-        <div class="px-5 pt-4 pb-3 border-b border-slate-100 flex items-center justify-between shrink-0 bg-slate-50/50">
-            <div>
-                <h3 class="font-extrabold text-slate-900 text-sm leading-tight flex items-center gap-1.5" id="modal-title-text">
-                    <span>Isi Jurnal Staff</span>
-                    <span class="text-xs">📝</span>
-                </h3>
-                <p class="text-[11px] text-primary-700 font-bold mt-0.5" id="modal-jam-sub">
-                    08:00 - 09:00 WITA &bull; Aktifitas Kerja
-                </p>
-            </div>
-            <button type="button" onclick="closeModalJurnalStaff()" class="w-8 h-8 rounded-full bg-slate-200/70 text-slate-600 hover:bg-slate-300 flex items-center justify-center press-bounce text-sm">
-                ✕
-            </button>
-        </div>
+<div id="modal-jurnal-staff" class="hidden fixed inset-0 z-[9999] overflow-hidden select-none">
+    <!-- Backdrop Scrim -->
+    <div id="modal-jurnal-staff-scrim" onclick="closeModalJurnalStaff()" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity duration-250 opacity-0 pointer-events-none"></div>
 
-        <!-- Modal Body (Scrollable Form) -->
-        <form id="form-jurnal-staff" onsubmit="submitJurnalStaff(event)" class="p-5 space-y-4 overflow-y-auto flex-1 text-xs" enctype="multipart/form-data">
-            
-            <!-- Hidden Fields -->
-            <input type="hidden" name="jurnal_id" id="inp_jurnal_id" value="">
-            <input type="hidden" name="jam_id" id="inp_jam_id" value="">
-            <input type="hidden" name="jam_ids" id="inp_jam_ids" value="">
-            <input type="hidden" name="jam_rentang" id="inp_jam_rentang" value="">
-            <input type="hidden" name="tanggal" id="inp_tanggal" value="<?= e($selectedDate) ?>">
+    <!-- Sheet Wrapper -->
+    <div class="fixed inset-x-0 bottom-0 max-w-md mx-auto w-full pointer-events-none z-10">
+        <form id="form-jurnal-staff" onsubmit="submitJurnalStaff(event)" enctype="multipart/form-data"
+              class="bg-white rounded-t-[32px] shadow-2xl pointer-events-auto border-t border-slate-200/80 flex flex-col max-h-[88vh] w-full transform translate-y-full transition-transform duration-250 ease-out overflow-hidden text-xs">
 
-            <!-- Info Bar Tanggal & Jam Terpilih -->
-            <div class="p-3 rounded-2xl bg-gradient-to-br from-primary-50 to-emerald-50/50 border border-primary-100 space-y-2 text-[11px]">
-                <div class="flex items-center justify-between">
-                    <span class="text-slate-600 font-medium">Tanggal Tugas:</span>
-                    <span class="font-bold text-primary-900" id="modal-tanggal-badge">
-                        <?= e($namaHari . ', ' . date('d M Y', strtotime($selectedDate))) ?>
-                    </span>
-                </div>
-                
-                <div id="modal-selected-jam-box" class="pt-2 border-t border-primary-100/70 space-y-1.5">
-                    <div class="flex items-center justify-between text-[10.5px]">
-                        <span class="text-slate-700 font-bold flex items-center gap-1">
-                            <span>🕒</span> Jam Kerja Terpilih:
-                        </span>
-                        <span class="font-extrabold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full" id="modal-selected-count-badge">
-                            1 Sesi
-                        </span>
+            <!-- 1. FIXED HEADER (shrink-0) -->
+            <div class="px-5 pt-3.5 pb-3 border-b border-slate-100 shrink-0 bg-white">
+                <div class="w-10 h-1.5 bg-slate-200 rounded-full mx-auto mb-3 cursor-grab" onclick="closeModalJurnalStaff()"></div>
+                <div class="flex items-center justify-between gap-2">
+                    <div class="min-w-0 pr-2">
+                        <h3 class="font-extrabold text-slate-900 text-sm leading-tight flex items-center gap-1.5 truncate" id="modal-title-text">
+                            <span>Isi Jurnal Staff</span>
+                            <span class="text-xs">📝</span>
+                        </h3>
+                        <p class="text-[11px] text-primary-700 font-bold mt-0.5 truncate" id="modal-jam-sub">
+                            08:00 - 09:00 WITA &bull; Aktifitas Kerja
+                        </p>
                     </div>
-                    <div id="modal-selected-jam-pills" class="flex flex-wrap gap-1">
-                        <!-- Dynamic pills injected via JS -->
-                    </div>
-                    <p class="text-[9.5px] text-slate-500 italic leading-snug">
-                        * Tugas dan keterangan yang Anda simpan akan otomatis terisi untuk seluruh jam di atas.
-                    </p>
+                    <button type="button" onclick="closeModalJurnalStaff()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center press-bounce text-xs font-bold shrink-0">
+                        ✕
+                    </button>
                 </div>
             </div>
 
-            <!-- 1. Dropdown Pilihan Tugas / Job Desk Sesuai Divisi -->
-            <div class="space-y-1">
-                <label class="block text-xs font-bold text-slate-800">
-                    Pilih Tugas / Job Desk <span class="text-rose-500">*</span>
-                </label>
-                <div class="relative">
-                    <select id="modal_select_tugas" name="tugas_id" onchange="handleSelectTugasChange(this)" required
-                            class="w-full px-3.5 py-3 rounded-2xl border border-slate-200 bg-white font-medium text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-xs">
-                        <option value="">-- Pilih Tugas Dari Daftar --</option>
-                        
-                        <?php if (!empty($tugasJabatan)): ?>
-                            <optgroup label="⭐ Tugas Jabatan Saya (<?= e($jabatanName) ?>)">
-                                <?php foreach ($tugasJabatan as $tj): ?>
-                                    <option value="<?= (int)$tj['id'] ?>" data-nama="<?= e($tj['nama_tugas']) ?>" data-deskripsi="<?= e($tj['deskripsi'] ?? '') ?>">
-                                        <?= e($tj['nama_tugas']) ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </optgroup>
-                        <?php endif; ?>
+            <!-- 2. SCROLLABLE MIDDLE BODY (flex-1 min-h-0 overflow-y-auto) -->
+            <div class="flex-1 min-h-0 overflow-y-auto p-4 sm:p-5 space-y-3.5 no-scrollbar select-text">
 
-                        <?php if (!empty($allTugas)): ?>
-                            <?php
-                                // Kelompokkan tugas divisi lainnya
-                                $otherTugas = array_filter($allTugas, fn($t) => (int)$t['jabatan_id'] !== (int)$jabatanId);
-                            ?>
-                            <?php if (!empty($otherTugas)): ?>
-                                <optgroup label="📂 Tugas Divisi Lainnya">
-                                    <?php foreach ($otherTugas as $ot): ?>
-                                        <option value="<?= (int)$ot['id'] ?>" data-nama="<?= e($ot['nama_tugas']) ?>" data-deskripsi="<?= e($ot['deskripsi'] ?? '') ?>">
-                                            [<?= e($ot['nama_jabatan']) ?>] <?= e($ot['nama_tugas']) ?>
+                <!-- Hidden Fields -->
+                <input type="hidden" name="jurnal_id" id="inp_jurnal_id" value="">
+                <input type="hidden" name="jam_id" id="inp_jam_id" value="">
+                <input type="hidden" name="jam_ids" id="inp_jam_ids" value="">
+                <input type="hidden" name="jam_rentang" id="inp_jam_rentang" value="">
+                <input type="hidden" name="tanggal" id="inp_tanggal" value="<?= e($selectedDate) ?>">
+
+                <!-- Info Bar Tanggal & Jam Terpilih -->
+                <div class="p-3 rounded-2xl bg-gradient-to-br from-primary-50 to-emerald-50/50 border border-primary-100 space-y-2 text-[11px]">
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-600 font-medium">Tanggal Tugas:</span>
+                        <span class="font-bold text-primary-900" id="modal-tanggal-badge">
+                            <?= e($namaHari . ', ' . date('d M Y', strtotime($selectedDate))) ?>
+                        </span>
+                    </div>
+
+                    <div id="modal-selected-jam-box" class="pt-2 border-t border-primary-100/70 space-y-1.5">
+                        <div class="flex items-center justify-between text-[10.5px]">
+                            <span class="text-slate-700 font-bold flex items-center gap-1">
+                                <span>🕒</span> Jam Kerja Terpilih:
+                            </span>
+                            <span class="font-extrabold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full" id="modal-selected-count-badge">
+                                1 Sesi
+                            </span>
+                        </div>
+                        <div id="modal-selected-jam-pills" class="flex flex-wrap gap-1">
+                            <!-- Dynamic pills injected via JS -->
+                        </div>
+                        <p class="text-[9.5px] text-slate-500 italic leading-snug">
+                            * Tugas dan keterangan yang Anda simpan akan otomatis terisi untuk seluruh jam di atas.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- 1. Dropdown Pilihan Tugas / Job Desk Sesuai Jabatan Penugasan -->
+                <div class="space-y-1">
+                    <label class="block text-xs font-bold text-slate-800">
+                        Pilih Tugas / Job Desk <span class="text-rose-500">*</span>
+                    </label>
+                    <div class="relative">
+                        <select id="modal_select_tugas" name="tugas_id" onchange="handleSelectTugasChange(this)" required
+                                class="w-full px-3.5 py-3 rounded-2xl border border-slate-200 bg-white font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-xs">
+                            <option value="">-- Pilih Tugas Dari Daftar --</option>
+
+                            <?php if (!empty($tugasJabatan)): ?>
+                                <optgroup label="⭐ Tugas Jabatan (<?= e($jabatanName) ?>)">
+                                    <?php foreach ($tugasJabatan as $tj): ?>
+                                        <option value="<?= (int)$tj['id'] ?>" data-nama="<?= e($tj['nama_tugas']) ?>" data-deskripsi="<?= e($tj['deskripsi'] ?? '') ?>">
+                                            <?= e($tj['nama_tugas']) ?>
                                         </option>
                                     <?php endforeach; ?>
                                 </optgroup>
                             <?php endif; ?>
-                        <?php endif; ?>
 
-                        <optgroup label="✍️ Input Mandiri">
-                            <option value="custom">[+ Tulis Tugas Sendiri / Aktivitas Lainnya]</option>
-                        </optgroup>
-                    </select>
+                            <optgroup label="✍️ Input Mandiri">
+                                <option value="custom">[+ Tulis Tugas Sendiri / Aktivitas Lainnya]</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                    <?php if (empty($tugasJabatan)): ?>
+                        <p class="text-[10.5px] text-amber-700 bg-amber-50 border border-amber-200/80 rounded-xl px-3 py-1.5 mt-1">
+                            Belum ada rincian tugas terjadwal untuk jabatan <strong><?= e($jabatanName) ?></strong>. Pilih <em>Tulis Tugas Sendiri</em> atau hubungi Admin.
+                        </p>
+                    <?php endif; ?>
                 </div>
-            </div>
 
-            <!-- Input Tugas Custom (Muncul jika pilih Tulis Sendiri) -->
-            <div id="container-tugas-custom" class="space-y-1 hidden">
-                <label class="block text-xs font-bold text-amber-800">
-                    Ketik Nama Tugas / Aktivitas Baru <span class="text-rose-500">*</span>
-                </label>
-                <input type="text" name="aktivitas_custom" id="inp_aktivitas_custom" placeholder="Contoh: Koordinasi teknis maintenance WiFi & Server"
-                       class="w-full px-3.5 py-2.5 rounded-2xl border border-amber-300 bg-amber-50/50 font-medium text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all text-xs">
-            </div>
-
-            <!-- 2. Keterangan / Uraian Hasil Kerja -->
-            <div class="space-y-1">
-                <label class="block text-xs font-bold text-slate-800">
-                    Keterangan & Hasil Kerja <span class="text-rose-500">*</span>
-                </label>
-                <textarea name="uraian_hasil" id="inp_uraian_hasil" rows="3" required
-                          placeholder="Jelaskan apa yang Anda kerjakan dan hasil/progres yang telah dicapai..."
-                          class="w-full px-3.5 py-2.5 rounded-2xl border border-slate-200 bg-white font-normal text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-xs leading-relaxed"></textarea>
-            </div>
-
-            <!-- 3. Kendala (Opsional) -->
-            <div class="space-y-1">
-                <label class="block text-xs font-bold text-slate-700">
-                    Kendala / Hambatan <span class="text-slate-400 font-normal">(Opsional)</span>
-                </label>
-                <input type="text" name="kendala" id="inp_kendala" placeholder="Misal: Menunggu material, jaringan sempat down, dll."
-                       class="w-full px-3.5 py-2.5 rounded-2xl border border-slate-200 bg-white font-normal text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-xs">
-            </div>
-
-            <!-- 4. Status Penyelesaian -->
-            <div class="space-y-1.5">
-                <label class="block text-xs font-bold text-slate-800">Status Pekerjaan:</label>
-                <div class="grid grid-cols-3 gap-2" id="group-status-pills">
-                    <label class="status-option-label flex items-center justify-center gap-1.5 p-2 rounded-2xl border border-emerald-200 bg-emerald-50 text-emerald-800 font-bold text-[11px] cursor-pointer press-bounce">
-                        <input type="radio" name="status" value="selesai" checked class="hidden status-radio" onchange="updateStatusPillStyle()">
-                        <span>✓ Selesai</span>
+                <!-- Input Tugas Custom (Muncul jika pilih Tulis Sendiri) -->
+                <div id="container-tugas-custom" class="space-y-1 hidden">
+                    <label class="block text-xs font-bold text-amber-800">
+                        Ketik Nama Tugas / Aktivitas Baru <span class="text-rose-500">*</span>
                     </label>
-                    <label class="status-option-label flex items-center justify-center gap-1.5 p-2 rounded-2xl border border-slate-200 bg-white text-slate-600 font-medium text-[11px] cursor-pointer press-bounce">
-                        <input type="radio" name="status" value="proses" class="hidden status-radio" onchange="updateStatusPillStyle()">
-                        <span>⏳ Proses</span>
-                    </label>
-                    <label class="status-option-label flex items-center justify-center gap-1.5 p-2 rounded-2xl border border-slate-200 bg-white text-slate-600 font-medium text-[11px] cursor-pointer press-bounce">
-                        <input type="radio" name="status" value="tertunda" class="hidden status-radio" onchange="updateStatusPillStyle()">
-                        <span>⏸️ Pending</span>
-                    </label>
+                    <input type="text" name="aktivitas_custom" id="inp_aktivitas_custom" placeholder="Contoh: Koordinasi teknis maintenance WiFi & Server"
+                           class="w-full px-3.5 py-2.5 rounded-2xl border border-amber-300 bg-amber-50/50 font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all text-xs">
                 </div>
-            </div>
 
-            <!-- 5. Foto Bukti Kegiatan (Opsional) -->
-            <div class="space-y-1.5 pt-1">
-                <label class="block text-xs font-bold text-slate-700 flex items-center justify-between">
-                    <span>Foto Bukti Kegiatan <span class="text-slate-400 font-normal">(Opsional)</span></span>
-                    <span id="label-foto-info" class="text-[10px] text-slate-400 font-normal">JPG/PNG maks 5MB</span>
-                </label>
-                <div class="flex items-center gap-2.5">
-                    <label class="flex-1 px-3 py-2.5 rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 hover:bg-slate-100 flex items-center justify-center gap-2 cursor-pointer transition-all press-bounce">
-                        <i data-lucide="camera" class="w-4 h-4 text-slate-500"></i>
-                        <span class="text-xs font-semibold text-slate-600" id="btn-foto-text">Ambil Foto / Upload</span>
-                        <input type="file" name="foto_bukti" id="inp_foto_bukti" accept="image/*" onchange="handleFotoPreview(this)" class="hidden">
+                <!-- 2. Keterangan / Uraian Hasil Kerja -->
+                <div class="space-y-1">
+                    <label class="block text-xs font-bold text-slate-800">
+                        Keterangan & Hasil Kerja <span class="text-rose-500">*</span>
                     </label>
-                    <div id="preview-foto-container" class="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden shrink-0 hidden">
-                        <img id="img-foto-preview" src="" alt="Bukti" class="w-full h-full object-cover">
+                    <textarea name="uraian_hasil" id="inp_uraian_hasil" rows="3" required
+                              placeholder="Jelaskan apa yang Anda kerjakan dan hasil/progres yang telah dicapai..."
+                              class="w-full px-3.5 py-2.5 rounded-2xl border border-slate-200 bg-white font-normal text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-xs leading-relaxed"></textarea>
+                </div>
+
+                <!-- 3. Kendala (Opsional) -->
+                <div class="space-y-1">
+                    <label class="block text-xs font-bold text-slate-700">
+                        Kendala / Hambatan <span class="text-slate-400 font-normal">(Opsional)</span>
+                    </label>
+                    <input type="text" name="kendala" id="inp_kendala" placeholder="Misal: Menunggu material, jaringan sempat down, dll."
+                           class="w-full px-3.5 py-2.5 rounded-2xl border border-slate-200 bg-white font-normal text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-xs">
+                </div>
+
+                <!-- 4. Status Penyelesaian -->
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-bold text-slate-800">Status Pekerjaan:</label>
+                    <div class="grid grid-cols-3 gap-2" id="group-status-pills">
+                        <label class="status-option-label flex items-center justify-center gap-1.5 p-2 rounded-2xl border border-emerald-200 bg-emerald-50 text-emerald-800 font-bold text-[11px] cursor-pointer press-bounce">
+                            <input type="radio" name="status" value="selesai" checked class="hidden status-radio" onchange="updateStatusPillStyle()">
+                            <span>✓ Selesai</span>
+                        </label>
+                        <label class="status-option-label flex items-center justify-center gap-1.5 p-2 rounded-2xl border border-slate-200 bg-white text-slate-600 font-medium text-[11px] cursor-pointer press-bounce">
+                            <input type="radio" name="status" value="proses" class="hidden status-radio" onchange="updateStatusPillStyle()">
+                            <span>⏳ Proses</span>
+                        </label>
+                        <label class="status-option-label flex items-center justify-center gap-1.5 p-2 rounded-2xl border border-slate-200 bg-white text-slate-600 font-medium text-[11px] cursor-pointer press-bounce">
+                            <input type="radio" name="status" value="tertunda" class="hidden status-radio" onchange="updateStatusPillStyle()">
+                            <span>⏸️ Pending</span>
+                        </label>
                     </div>
                 </div>
+
+                <!-- 5. Foto Bukti Kegiatan (Opsional) -->
+                <div class="space-y-1.5 pt-1">
+                    <label class="block text-xs font-bold text-slate-700 flex items-center justify-between">
+                        <span>Foto Bukti Kegiatan <span class="text-slate-400 font-normal">(Opsional)</span></span>
+                        <span id="label-foto-info" class="text-[10px] text-slate-400 font-normal">JPG/PNG maks 5MB</span>
+                    </label>
+                    <div class="flex items-center gap-2.5">
+                        <label class="flex-1 px-3 py-2.5 rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 hover:bg-slate-100 flex items-center justify-center gap-2 cursor-pointer transition-all press-bounce">
+                            <i data-lucide="camera" class="w-4 h-4 text-slate-500"></i>
+                            <span class="text-xs font-semibold text-slate-600" id="btn-foto-text">Ambil Foto / Upload</span>
+                            <input type="file" name="foto_bukti" id="inp_foto_bukti" accept="image/*" onchange="handleFotoPreview(this)" class="hidden">
+                        </label>
+                        <div id="preview-foto-container" class="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden shrink-0 hidden">
+                            <img id="img-foto-preview" src="" alt="Bukti" class="w-full h-full object-cover">
+                        </div>
+                    </div>
+                </div>
+
             </div>
 
-            <!-- Modal Action Buttons -->
-            <div class="pt-2 flex items-center gap-2">
-                <button type="button" onclick="closeModalJurnalStaff()" class="flex-1 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs press-bounce transition-all">
+            <!-- 3. FIXED STICKY FOOTER (shrink-0) -->
+            <div class="shrink-0 px-5 py-3.5 bg-white border-t border-slate-100 flex items-center gap-2.5 safe-bottom">
+                <button type="button" onclick="closeModalJurnalStaff()" class="w-1/3 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs press-bounce transition-all">
                     Batal
                 </button>
-                <button type="submit" id="btn-submit-jurnal-staff" class="flex-2 py-3 rounded-2xl bg-gradient-to-r from-primary-600 to-emerald-600 hover:from-primary-700 hover:to-emerald-700 text-white font-bold text-xs shadow-md shadow-primary-600/30 press-bounce flex items-center justify-center gap-2 transition-all">
+                <button type="submit" id="btn-submit-jurnal-staff" class="w-2/3 py-3 rounded-2xl bg-gradient-to-r from-primary-600 to-emerald-600 hover:from-primary-700 hover:to-emerald-700 text-white font-bold text-xs shadow-md shadow-primary-600/25 press-bounce flex items-center justify-center gap-2 transition-all">
                     <span>💾</span>
                     <span id="btn-submit-text">Simpan Jurnal</span>
                 </button>
             </div>
 
         </form>
-
     </div>
 </div>
 
@@ -725,9 +724,27 @@
         }
     }
 
+    // Pastikan modal terpasang langsung di document.body agar bebas dari transform & scroll container
+    function ensureStaffModalMounted() {
+        const modal = document.getElementById('modal-jurnal-staff');
+        if (!modal) return;
+        const allModals = document.querySelectorAll('#modal-jurnal-staff');
+        if (allModals.length > 1) {
+            for (let i = 0; i < allModals.length - 1; i++) {
+                allModals[i].remove();
+            }
+        }
+        if (modal.parentElement !== document.body) {
+            document.body.appendChild(modal);
+        }
+    }
+
     // Buka Modal Pengisian Jurnal Staff
     function openModalJurnalStaff(data) {
+        ensureStaffModalMounted();
         const modal = document.getElementById('modal-jurnal-staff');
+        const scrim = document.getElementById('modal-jurnal-staff-scrim');
+        const sheet = document.getElementById('form-jurnal-staff');
         if (!modal) return;
 
         // Hidden input IDs
@@ -836,8 +853,16 @@
         });
         updateStatusPillStyle();
 
-        // Tampilkan modal
+        // Tampilkan modal bottom sheet dengan transisi halus
         modal.classList.remove('hidden');
+        void modal.offsetWidth;
+        if (scrim) {
+            scrim.classList.remove('opacity-0', 'pointer-events-none');
+            scrim.classList.add('opacity-100', 'pointer-events-auto');
+        }
+        if (sheet) {
+            sheet.classList.remove('translate-y-full');
+        }
         document.body.classList.add('overflow-hidden');
 
         if (window.lucide && typeof lucide.createIcons === 'function') {
@@ -848,10 +873,24 @@
     // Tutup Modal
     function closeModalJurnalStaff() {
         const modal = document.getElementById('modal-jurnal-staff');
-        if (modal) {
-            modal.classList.add('hidden');
-            document.body.classList.remove('overflow-hidden');
+        const scrim = document.getElementById('modal-jurnal-staff-scrim');
+        const sheet = document.getElementById('form-jurnal-staff');
+
+        if (scrim) {
+            scrim.classList.remove('opacity-100', 'pointer-events-auto');
+            scrim.classList.add('opacity-0', 'pointer-events-none');
         }
+        if (sheet) {
+            sheet.classList.add('translate-y-full');
+        }
+        document.body.classList.remove('overflow-hidden');
+        document.body.style.overflow = '';
+
+        setTimeout(() => {
+            if (modal && sheet && sheet.classList.contains('translate-y-full')) {
+                modal.classList.add('hidden');
+            }
+        }, 250);
     }
 
     // Event Handler saat dropdown tugas diubah
@@ -954,9 +993,13 @@
             formData.set('jam_ids', jamIdsVal);
         }
 
-        // State loading
-        btnSubmit.disabled = true;
-        btnText.textContent = 'Menyimpan...';
+        // State loading di tombol
+        if (typeof AndroidUI !== 'undefined' && typeof AndroidUI.setButtonLoading === 'function') {
+            AndroidUI.setButtonLoading(btnSubmit, 'Menyimpan...');
+        } else {
+            btnSubmit.disabled = true;
+            if (btnText) btnText.textContent = 'Menyimpan...';
+        }
 
         try {
             const targetUrl = '<?= url('mobile/jurnal-staff/simpan') ?>';
@@ -977,10 +1020,13 @@
                     alert(json.message || 'Jurnal berhasil disimpan!');
                 }
                 closeModalJurnalStaff();
-                // Reload halaman dengan tanggal yang sama agar semua slot jam terisi langsung muncul
                 setTimeout(() => {
-                    location.reload();
-                }, 400);
+                    if (window.MobileRouter && typeof window.MobileRouter.reload === 'function') {
+                        window.MobileRouter.reload();
+                    } else {
+                        location.reload();
+                    }
+                }, 300);
             } else {
                 const msg = (json && json.message) || 'Gagal menyimpan jurnal kerja.';
                 if (typeof AndroidUI !== 'undefined') {
@@ -1003,8 +1049,12 @@
                 alert('Terjadi kesalahan jaringan.');
             }
         } finally {
-            btnSubmit.disabled = false;
-            btnText.textContent = 'Simpan Jurnal';
+            if (typeof AndroidUI !== 'undefined' && typeof AndroidUI.resetButton === 'function') {
+                AndroidUI.resetButton(btnSubmit);
+            } else {
+                btnSubmit.disabled = false;
+                if (btnText) btnText.textContent = 'Simpan Jurnal';
+            }
         }
     }
 </script>
