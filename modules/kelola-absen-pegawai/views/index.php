@@ -387,10 +387,15 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
                                         </a>
                                     </td>
                                     <td class="py-3.5 px-4 text-center">
+                                        <?php
+                                        $jamLabelTampil = $p['jam_kerja_label'] ?? (!empty($p['is_custom_jam_kerja']) ? 'Khusus' : 'Global');
+                                        $jamHarianRow = $p['jam_harian'] ?? [];
+                                        $dayAbbrMap = [1 => 'Sen', 2 => 'Sel', 3 => 'Rab', 4 => 'Kam', 5 => 'Jum', 6 => 'Sab', 7 => 'Min'];
+                                        ?>
                                         <?php if (!empty($p['is_custom_jam_kerja'])): ?>
                                             <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-800 border border-amber-200">
                                                 <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-                                                Khusus
+                                                <?= e($jamLabelTampil) ?>
                                             </span>
                                             <div class="font-mono font-bold text-xs text-slate-800 mt-0.5">
                                                 <?= substr($p['jam_masuk_batas_efektif'] ?? $jamMasukBatas, 0, 5) ?> - <?= substr($p['jam_pulang_mulai_efektif'] ?? $jamPulangMulai, 0, 5) ?>
@@ -398,10 +403,19 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
                                             <div class="text-[10px] text-amber-700">Mulai: <?= substr($p['jam_masuk_mulai_efektif'] ?? $jamMasukMulai, 0, 5) ?></div>
                                         <?php else: ?>
                                             <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200">
-                                                Global
+                                                <?= e($jamLabelTampil) ?>
                                             </span>
                                             <div class="font-mono text-xs text-slate-700 font-bold mt-0.5">
                                                 <?= substr($p['jam_masuk_batas_efektif'] ?? $jamMasukBatas, 0, 5) ?> - <?= substr($p['jam_pulang_mulai_efektif'] ?? $jamPulangMulai, 0, 5) ?>
+                                            </div>
+                                        <?php endif; ?>
+                                        <?php if (!empty($jamHarianRow)): ?>
+                                            <div class="mt-1 flex flex-wrap items-center justify-center gap-1 max-w-[190px] mx-auto">
+                                                <?php foreach ($jamHarianRow as $hkNum => $hVal): ?>
+                                                    <span class="px-1.5 py-0.5 rounded bg-amber-50 border border-amber-200 text-[9px] font-mono font-bold text-amber-900" title="Batas <?= e($dayAbbrMap[(int)$hkNum] ?? $hkNum) ?>: <?= e($hVal['jam_masuk_batas']) ?>">
+                                                        <?= e($dayAbbrMap[(int)$hkNum] ?? $hkNum) ?> <?= e($hVal['jam_masuk_batas']) ?>
+                                                    </span>
+                                                <?php endforeach; ?>
                                             </div>
                                         <?php endif; ?>
                                     </td>
@@ -443,8 +457,11 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
                                                 📍 Lokasi
                                             </button>
 
+                                            <?php
+                                            $jamModeBtn = !empty($p['jam_harian']) ? 'per_hari' : (!empty($p['is_custom_jam_kerja']) ? 'custom' : 'global');
+                                            ?>
                                             <button type="button"
-                                                onclick="openModalCustomJamKerja(<?= (int)$p['id'] ?>, <?= htmlspecialchars(json_encode($namaLengkap), ENT_QUOTES, 'UTF-8') ?>, '<?= !empty($p['is_custom_jam_kerja']) ? 'custom' : 'global' ?>', '<?= substr($p['jam_masuk_mulai_efektif'] ?? $jamMasukMulai, 0, 5) ?>', '<?= substr($p['jam_masuk_batas_efektif'] ?? $jamMasukBatas, 0, 5) ?>', '<?= substr($p['jam_pulang_mulai_efektif'] ?? $jamPulangMulai, 0, 5) ?>')"
+                                                onclick="openModalCustomJamKerja(<?= (int)$p['id'] ?>, <?= htmlspecialchars(json_encode($namaLengkap), ENT_QUOTES, 'UTF-8') ?>, '<?= $jamModeBtn ?>', '<?= substr($p['jam_masuk_mulai_efektif'] ?? $jamMasukMulai, 0, 5) ?>', '<?= substr($p['jam_masuk_batas_efektif'] ?? $jamMasukBatas, 0, 5) ?>', '<?= substr($p['jam_pulang_mulai_efektif'] ?? $jamPulangMulai, 0, 5) ?>')"
                                                 class="px-2.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-bold text-[11px] transition-colors cursor-pointer" title="Atur Jam Kedatangan & Pulang">
                                                 ⏰ Jam
                                             </button>
@@ -1186,23 +1203,23 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
      MODAL KHUSUS: ATUR JAM KERJA (KEDATANGAN & PULANG) PER PEGAWAI / MASSAL
      ═════════════════════════════════════════════════════════════════════════ -->
 <div id="modalCustomJamKerja" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
-    <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 my-8">
+    <div class="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100 my-8">
         <div class="flex items-center justify-between pb-3 border-b border-slate-100">
             <div>
                 <h3 id="modal_jam_title" class="text-base font-extrabold text-slate-900">Atur Jam Kerja Pegawai</h3>
-                <p class="text-xs text-slate-500">Tentukan jam buka masuk, batas keterlambatan, dan jam pulang</p>
+                <p class="text-xs text-slate-500">Tentukan jam kedatangan &amp; pulang sama setiap hari, atau berbeda-beda tiap hari (Senin – Sabtu)</p>
             </div>
             <button type="button" onclick="closeModal('modalCustomJamKerja')" class="p-1.5 rounded-full text-slate-400 hover:text-slate-600 cursor-pointer">✕</button>
         </div>
 
-        <form method="POST" action="<?= url('kelola-absen-pegawai/jam-kerja/save') ?>" class="space-y-4 mt-4">
+        <form method="POST" action="<?= url('kelola-absen-pegawai/jam-kerja/save') ?>" onsubmit="return validateModalJamSubmit();" class="space-y-4 mt-4">
             <?= CSRF::field() ?>
             <input type="hidden" name="return_tab" value="pegawai">
             <input type="hidden" name="pegawai_ids_csv" id="modal_jam_ids_csv" value="">
 
             <div id="modal_jam_select_wrapper">
                 <label class="block text-xs font-bold text-slate-700 mb-1">Pilih Pegawai <span class="text-rose-500">*</span></label>
-                <select name="pegawai_id" id="modal_jam_select" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-bold text-slate-800 outline-none focus:border-amber-500">
+                <select name="pegawai_id" id="modal_jam_select" onchange="onModalJamPegawaiSelectChange(this.value)" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-bold text-slate-800 outline-none focus:border-amber-500">
                     <?php foreach ($allPegawaiDropdown as $pg):
                         $nm = $pg['nama'] . (!empty($pg['gelar']) ? ', ' . $pg['gelar'] : '');
                     ?>
@@ -1224,15 +1241,25 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
                         <input type="radio" name="mode_jam_kerja" id="mode_jam_global" value="global" onchange="toggleModalJamMode()" class="mt-0.5 text-primary-600">
                         <div>
                             <div class="text-xs font-bold text-slate-800">Ikuti Jam Kerja Global (Semua Pegawai)</div>
-                            <div class="text-[11px] text-slate-500">Mulai <?= substr($jamMasukMulai, 0, 5) ?> &bull; Batas <?= substr($jamMasukBatas, 0, 5) ?> &bull; Pulang <?= substr($jamPulangMulai, 0, 5) ?> WITA</div>
+                            <div class="text-[11px] text-slate-500">
+                                Senin–Jumat <?= substr($jamMasukBatas, 0, 5) ?><?= $sabtuKhususAktif ? ' &bull; Sabtu ' . e($sabtuJamMasukBatas) : '' ?> &bull; Pulang <?= substr($jamPulangMulai, 0, 5) ?> WITA
+                            </div>
                         </div>
                     </label>
 
                     <label class="flex items-start gap-2.5 p-2 rounded-xl border border-amber-300 bg-amber-50/50 cursor-pointer hover:border-amber-400">
                         <input type="radio" name="mode_jam_kerja" id="mode_jam_custom" value="custom" checked onchange="toggleModalJamMode()" class="mt-0.5 text-amber-600">
                         <div>
-                            <div class="text-xs font-bold text-amber-900">Atur Jam Kerja Khusus (Custom Pegawai)</div>
-                            <div class="text-[11px] text-amber-700">Tentukan jam masuk, batas toleransi, dan jam pulang sendiri</div>
+                            <div class="text-xs font-bold text-amber-900">Jam Kerja Khusus (Sama Setiap Hari)</div>
+                            <div class="text-[11px] text-amber-700">Satu aturan jam masuk &amp; pulang khusus untuk seluruh hari kerja</div>
+                        </div>
+                    </label>
+
+                    <label class="flex items-start gap-2.5 p-2 rounded-xl border border-sky-300 bg-sky-50/60 cursor-pointer hover:border-sky-400">
+                        <input type="radio" name="mode_jam_kerja" id="mode_jam_per_hari" value="per_hari" onchange="toggleModalJamMode()" class="mt-0.5 text-sky-600">
+                        <div>
+                            <div class="text-xs font-bold text-sky-950">🗓️ Jadwal Khusus Per Hari (Senin – Sabtu Berbeda-beda)</div>
+                            <div class="text-[11px] text-sky-800">Misal Selasa 06:30, Senin 07:00, dll. Hari yang tidak dicentang otomatis mengikuti Jam Global.</div>
                         </div>
                     </label>
                 </div>
@@ -1259,6 +1286,67 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
                         <span class="text-[10px] text-amber-700">Awal check-out</span>
                     </div>
                 </div>
+            </div>
+
+            <!-- Jadwal Per Hari (Senin - Sabtu) -->
+            <div id="box_inputs_jam_harian" class="hidden p-3.5 rounded-2xl bg-sky-50/60 border border-sky-200 space-y-3">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <span class="text-xs font-extrabold text-sky-950">Centang Hari yang Ingin Diatur Khusus:</span>
+                    <div class="flex items-center gap-1.5">
+                        <button type="button" onclick="setAllHariJamHarian(true)" class="px-2.5 py-1 rounded-lg bg-white hover:bg-sky-600 hover:text-white border border-sky-300 text-[10px] font-bold text-sky-800 transition-colors cursor-pointer">
+                            Centang Senin–Sabtu
+                        </button>
+                        <button type="button" onclick="setAllHariJamHarian(false)" class="px-2.5 py-1 rounded-lg bg-white hover:bg-slate-200 border border-slate-200 text-[10px] font-bold text-slate-600 transition-colors cursor-pointer">
+                            Kosongkan
+                        </button>
+                    </div>
+                </div>
+
+                <div class="space-y-2 max-h-64 overflow-y-auto pr-1">
+                    <?php
+                    $hariListForm = [
+                        1 => ['nama' => 'Senin',  'mulai' => $jamMasukMulai, 'batas' => $jamMasukBatas, 'pulang' => $jamPulangMulai],
+                        2 => ['nama' => 'Selasa', 'mulai' => $jamMasukMulai, 'batas' => $jamMasukBatas, 'pulang' => $jamPulangMulai],
+                        3 => ['nama' => 'Rabu',   'mulai' => $jamMasukMulai, 'batas' => $jamMasukBatas, 'pulang' => $jamPulangMulai],
+                        4 => ['nama' => 'Kamis',  'mulai' => $jamMasukMulai, 'batas' => $jamMasukBatas, 'pulang' => $jamPulangMulai],
+                        5 => ['nama' => 'Jumat',  'mulai' => $jamMasukMulai, 'batas' => $jamMasukBatas, 'pulang' => $jamPulangMulai],
+                        6 => ['nama' => 'Sabtu',  'mulai' => ($sabtuKhususAktif ? $sabtuJamMasukMulai : $jamMasukMulai), 'batas' => ($sabtuKhususAktif ? $sabtuJamMasukBatas : $jamMasukBatas), 'pulang' => ($sabtuKhususAktif ? $sabtuJamPulangMulai : $jamPulangMulai)],
+                    ];
+                    foreach ($hariListForm as $hk => $hDef): ?>
+                        <div id="row_hari_jam_<?= $hk ?>" class="grid grid-cols-12 items-center gap-2 p-2 rounded-xl border border-slate-200 bg-white/80 opacity-65 transition-all">
+                            <label class="col-span-12 sm:col-span-3 inline-flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" name="hari_custom[<?= $hk ?>][aktif]" value="1"
+                                       id="hari_jam_aktif_<?= $hk ?>"
+                                       data-hari="<?= $hk ?>"
+                                       onchange="refreshHariJamRowStyle(<?= $hk ?>)"
+                                       class="chk-hari-jam-pegawai rounded text-sky-600 focus:ring-sky-500">
+                                <span class="text-xs font-extrabold text-slate-800"><?= $hDef['nama'] ?></span>
+                            </label>
+                            <div class="col-span-4 sm:col-span-3">
+                                <span class="block text-[9px] font-bold text-slate-400">Mulai</span>
+                                <input type="time" name="hari_custom[<?= $hk ?>][jam_masuk_mulai]" id="hari_jam_mulai_<?= $hk ?>"
+                                       value="<?= e($hDef['mulai']) ?>" data-default="<?= e($hDef['mulai']) ?>"
+                                       class="w-full px-2 py-1 rounded-lg border border-slate-200 bg-white text-[11px] font-bold text-slate-800 outline-none">
+                            </div>
+                            <div class="col-span-4 sm:col-span-3">
+                                <span class="block text-[9px] font-bold text-rose-600">Batas Masuk</span>
+                                <input type="time" name="hari_custom[<?= $hk ?>][jam_masuk_batas]" id="hari_jam_batas_<?= $hk ?>"
+                                       value="<?= e($hDef['batas']) ?>" data-default="<?= e($hDef['batas']) ?>"
+                                       class="w-full px-2 py-1 rounded-lg border border-rose-300 bg-white text-[11px] font-extrabold text-rose-700 outline-none">
+                            </div>
+                            <div class="col-span-4 sm:col-span-3">
+                                <span class="block text-[9px] font-bold text-slate-400">Pulang</span>
+                                <input type="time" name="hari_custom[<?= $hk ?>][jam_pulang_mulai]" id="hari_jam_pulang_<?= $hk ?>"
+                                       value="<?= e($hDef['pulang']) ?>" data-default="<?= e($hDef['pulang']) ?>"
+                                       class="w-full px-2 py-1 rounded-lg border border-slate-200 bg-white text-[11px] font-bold text-slate-800 outline-none">
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+
+                <p class="text-[11px] text-sky-800 leading-relaxed">
+                    💡 Hari yang <strong>tidak dicentang</strong> otomatis mengikuti pengaturan Jam Global (Senin–Jumat: <strong><?= e($jamMasukBatas) ?></strong><?= $sabtuKhususAktif ? ', Sabtu: <strong>' . e($sabtuJamMasukBatas) . '</strong>' : '' ?>).
+                </p>
             </div>
 
             <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
@@ -1641,12 +1729,88 @@ function openBulkCustomPegawai() {
     setTimeout(initModalPegMap, 150);
 }
 
-// ── Modal Custom Jam Kerja (Per Pegawai & Massal) ──
+// ── Modal Custom Jam Kerja (Per Pegawai, Per Hari & Massal) ──
+<?php
+$jamHarianByPegawai = [];
+foreach ($allPegawaiDropdown as $pgRow) {
+    if (!empty($pgRow['jam_harian'])) {
+        $jamHarianByPegawai[(int)$pgRow['id']] = $pgRow['jam_harian'];
+    }
+}
+?>
+const PEGAWAI_JAM_HARIAN_MAP = <?= json_encode($jamHarianByPegawai ?: new stdClass()) ?>;
+
+function refreshHariJamRowStyle(hk) {
+    const chk = document.getElementById('hari_jam_aktif_' + hk);
+    const row = document.getElementById('row_hari_jam_' + hk);
+    const active = !!(chk && chk.checked);
+    if (row) {
+        row.classList.toggle('opacity-65', !active);
+        row.classList.toggle('border-sky-300', active);
+        row.classList.toggle('bg-white', active);
+    }
+}
+
+function setAllHariJamHarian(checked) {
+    for (let hk = 1; hk <= 6; hk++) {
+        const chk = document.getElementById('hari_jam_aktif_' + hk);
+        if (chk) {
+            chk.checked = !!checked;
+            refreshHariJamRowStyle(hk);
+        }
+    }
+}
+
+function populateHariJamInputs(scheduleMap) {
+    const map = scheduleMap || {};
+    for (let hk = 1; hk <= 6; hk++) {
+        const cfg = map[hk] || map[String(hk)] || null;
+        const chk = document.getElementById('hari_jam_aktif_' + hk);
+        const mEl = document.getElementById('hari_jam_mulai_' + hk);
+        const bEl = document.getElementById('hari_jam_batas_' + hk);
+        const pEl = document.getElementById('hari_jam_pulang_' + hk);
+        if (cfg && cfg.jam_masuk_batas) {
+            if (chk) chk.checked = true;
+            if (mEl) mEl.value = cfg.jam_masuk_mulai || mEl.dataset.default || GLOBAL_JAM_MASUK_MULAI;
+            if (bEl) bEl.value = cfg.jam_masuk_batas || bEl.dataset.default || GLOBAL_JAM_MASUK_BATAS;
+            if (pEl) pEl.value = cfg.jam_pulang_mulai || pEl.dataset.default || GLOBAL_JAM_PULANG_MULAI;
+        } else {
+            if (chk) chk.checked = false;
+            if (mEl) mEl.value = mEl.dataset.default || GLOBAL_JAM_MASUK_MULAI;
+            if (bEl) bEl.value = bEl.dataset.default || GLOBAL_JAM_MASUK_BATAS;
+            if (pEl) pEl.value = pEl.dataset.default || GLOBAL_JAM_PULANG_MULAI;
+        }
+        refreshHariJamRowStyle(hk);
+    }
+}
+
+function onModalJamPegawaiSelectChange(pegawaiId) {
+    const sched = PEGAWAI_JAM_HARIAN_MAP[String(pegawaiId)] || null;
+    populateHariJamInputs(sched);
+}
+
+function validateModalJamSubmit() {
+    const perHariChecked = document.getElementById('mode_jam_per_hari') && document.getElementById('mode_jam_per_hari').checked;
+    if (perHariChecked) {
+        const anyDay = Array.from(document.querySelectorAll('.chk-hari-jam-pegawai')).some(c => c.checked);
+        if (!anyDay) {
+            alert('Centang minimal 1 hari pada Jadwal Khusus Per Hari.');
+            return false;
+        }
+    }
+    return true;
+}
+
 function toggleModalJamMode() {
     const isCustom = document.getElementById('mode_jam_custom').checked;
+    const isPerHari = document.getElementById('mode_jam_per_hari') ? document.getElementById('mode_jam_per_hari').checked : false;
     const box = document.getElementById('box_inputs_jam_kerja');
     if (box) {
         box.classList.toggle('hidden', !isCustom);
+    }
+    const boxHarian = document.getElementById('box_inputs_jam_harian');
+    if (boxHarian) {
+        boxHarian.classList.toggle('hidden', !isPerHari);
     }
     const batasEl = document.getElementById('modal_jam_masuk_batas');
     if (batasEl) {
@@ -1664,9 +1828,12 @@ function openModalCustomJamKerja(pegawaiId = null, namaPegawai = '', mode = 'cus
         document.getElementById('modal_jam_title').textContent = 'Atur Jam Kerja: ' + namaPegawai;
     } else {
         document.getElementById('modal_jam_title').textContent = 'Atur Jam Kerja Pegawai';
+        pegawaiId = document.getElementById('modal_jam_select').value || null;
     }
 
-    if (mode === 'custom') {
+    if (mode === 'per_hari') {
+        document.getElementById('mode_jam_per_hari').checked = true;
+    } else if (mode === 'custom') {
         document.getElementById('mode_jam_custom').checked = true;
     } else {
         document.getElementById('mode_jam_global').checked = true;
@@ -1676,6 +1843,8 @@ function openModalCustomJamKerja(pegawaiId = null, namaPegawai = '', mode = 'cus
     document.getElementById('modal_jam_masuk_mulai').value = masukMulai || GLOBAL_JAM_MASUK_MULAI;
     document.getElementById('modal_jam_masuk_batas').value = masukBatas || GLOBAL_JAM_MASUK_BATAS;
     document.getElementById('modal_jam_pulang_mulai').value = pulangMulai || GLOBAL_JAM_PULANG_MULAI;
+
+    populateHariJamInputs(pegawaiId ? (PEGAWAI_JAM_HARIAN_MAP[String(pegawaiId)] || null) : null);
 
     const modal = document.getElementById('modalCustomJamKerja');
     modal.classList.remove('hidden');
@@ -1699,6 +1868,7 @@ function openBulkCustomJamKerja() {
     document.getElementById('modal_jam_masuk_mulai').value = GLOBAL_JAM_MASUK_MULAI;
     document.getElementById('modal_jam_masuk_batas').value = GLOBAL_JAM_MASUK_BATAS;
     document.getElementById('modal_jam_pulang_mulai').value = GLOBAL_JAM_PULANG_MULAI;
+    populateHariJamInputs(null);
 
     const modal = document.getElementById('modalCustomJamKerja');
     modal.classList.remove('hidden');

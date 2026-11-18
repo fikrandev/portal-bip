@@ -203,9 +203,13 @@ class AbsenPegawaiController
 
             $modeJam = $_POST['mode_jam_kerja'] ?? 'custom';
             $resetToGlobal = ($modeJam === 'global');
+            $isPerHari = ($modeJam === 'per_hari');
             $jamMasukMulai = trim($_POST['jam_masuk_mulai'] ?? '');
             $jamMasukBatas = trim($_POST['jam_masuk_batas'] ?? '');
             $jamPulangMulai = trim($_POST['jam_pulang_mulai'] ?? '');
+            $jamHarian = $isPerHari && isset($_POST['hari_custom']) && is_array($_POST['hari_custom'])
+                ? $_POST['hari_custom']
+                : null;
 
             $cnt = AbsenPegawaiModel::saveJamKerjaPegawai(
                 $pegawaiIds,
@@ -213,12 +217,25 @@ class AbsenPegawaiController
                 $jamMasukBatas,
                 $jamPulangMulai,
                 $resetToGlobal,
-                Auth::id()
+                Auth::id(),
+                $jamHarian
             );
 
-            $msg = $resetToGlobal
-                ? "Jam kerja {$cnt} pegawai berhasil di-reset kembali mengikuti Jam Kerja Global (Semua)."
-                : "Jam kerja khusus (Batas Masuk: " . substr($jamMasukBatas, 0, 5) . ", Pulang: " . substr($jamPulangMulai, 0, 5) . ") berhasil disimpan untuk {$cnt} pegawai.";
+            if ($resetToGlobal) {
+                $msg = "Jam kerja {$cnt} pegawai berhasil di-reset kembali mengikuti Jam Kerja Global (Semua).";
+            } elseif ($isPerHari) {
+                $dayShort = [1 => 'Senin', 2 => 'Selasa', 3 => 'Rabu', 4 => 'Kamis', 5 => 'Jumat', 6 => 'Sabtu', 7 => 'Minggu'];
+                $parts = [];
+                foreach (($jamHarian ?? []) as $hk => $cfg) {
+                    if (!empty($cfg['aktif']) && !empty($cfg['jam_masuk_batas'])) {
+                        $parts[] = ($dayShort[(int)$hk] ?? "Hari {$hk}") . ': ' . substr(trim((string)$cfg['jam_masuk_batas']), 0, 5);
+                    }
+                }
+                $summary = !empty($parts) ? implode(', ', $parts) : 'Per Hari';
+                $msg = "Jadwal jam kerja khusus per hari ({$summary}) berhasil disimpan untuk {$cnt} pegawai.";
+            } else {
+                $msg = "Jam kerja khusus (Batas Masuk: " . substr($jamMasukBatas, 0, 5) . ", Pulang: " . substr($jamPulangMulai, 0, 5) . ") berhasil disimpan untuk {$cnt} pegawai.";
+            }
 
             Response::redirect(url('kelola-absen-pegawai?tab=' . urlencode($returnTab)), $msg, 'success');
         } catch (Throwable $e) {
