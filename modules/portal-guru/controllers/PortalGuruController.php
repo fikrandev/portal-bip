@@ -197,20 +197,35 @@ class PortalGuruController
         } elseif (strcasecmp($jenisPegawai, 'Guru') === 0 || stripos($jenisPegawai, 'guru') !== false) {
             $isSupport = false;
         } else {
-            // Jika kolom jenis_pegawai di database masih kosong, cek jabatan
-            $isSupport = (
-                stripos($role, 'IT') !== false ||
-                stripos($role, 'Media') !== false ||
-                stripos($role, 'Sarpras') !== false ||
-                stripos($role, 'Tata Usaha') !== false ||
-                stripos($role, 'Tendik') !== false ||
-                stripos($role, 'Staff') !== false ||
-                stripos($role, 'Staf') !== false ||
-                stripos($role, 'Keamanan') !== false ||
-                stripos($role, 'Satpam') !== false ||
-                stripos($role, 'Kebersihan') !== false ||
-                stripos($role, 'Cleaning') !== false
-            );
+            // Jika kolom jenis_pegawai di database masih kosong, cek kategori di master_jabatan terlebih dahulu
+            $matchedByMaster = false;
+            try {
+                $db = Database::getInstance();
+                $mjRow = $db->find(
+                    "SELECT kategori FROM master_jabatan WHERE LOWER(TRIM(nama)) = LOWER(TRIM(?)) LIMIT 1",
+                    [$role]
+                );
+                if ($mjRow && !empty($mjRow['kategori'])) {
+                    $isSupport = ($mjRow['kategori'] === 'support_system');
+                    $matchedByMaster = true;
+                }
+            } catch (Throwable $e) {}
+
+            if (!$matchedByMaster) {
+                $isSupport = (
+                    stripos($role, 'IT') !== false ||
+                    stripos($role, 'Media') !== false ||
+                    stripos($role, 'Sarpras') !== false ||
+                    stripos($role, 'Tata Usaha') !== false ||
+                    stripos($role, 'Tendik') !== false ||
+                    stripos($role, 'Staff') !== false ||
+                    stripos($role, 'Staf') !== false ||
+                    stripos($role, 'Keamanan') !== false ||
+                    stripos($role, 'Satpam') !== false ||
+                    stripos($role, 'Kebersihan') !== false ||
+                    stripos($role, 'Cleaning') !== false
+                );
+            }
         }
 
         return [

@@ -149,12 +149,12 @@ class JurnalStaffModel
             WHERE is_active = 1
         ")->fetchColumn();
 
-        // Total Staff Support System spesifik (atau non-guru)
-        $totalSupportStaff = (int)$pdo->query("
-            SELECT COUNT(*) FROM pegawai 
-            WHERE is_active = 1 
-              AND (jenis_pegawai = 'Support System' OR (jabatan IS NOT NULL AND jabatan != '' AND jabatan NOT LIKE '%Guru%' AND jabatan NOT LIKE '%Wali Kelas%'))
-        ")->fetchColumn();
+        // Total Staff Support System spesifik (berdasarkan jenis_pegawai atau master_jabatan kategori support_system)
+        $supportParams = [];
+        $supportCond = self::buildSupportStaffCondition($supportParams);
+        $stmtSup = $pdo->prepare("SELECT COUNT(*) FROM pegawai p WHERE p.is_active = 1 AND ({$supportCond})");
+        $stmtSup->execute($supportParams);
+        $totalSupportStaff = (int)$stmtSup->fetchColumn();
         if ($totalSupportStaff === 0) {
             $totalSupportStaff = $totalStaff;
         }
@@ -874,9 +874,45 @@ class JurnalStaffModel
      * =========================================================================
      */
 
+    /**
+     * Build collation-safe SQL condition identifying Support System employees
+     */
+    private static function buildSupportStaffCondition(array &$params): string
+    {
+        $jabs = self::getMasterJabatanList('support_system');
+        $names = [];
+        foreach ($jabs as $j) {
+            $n = strtolower(trim((string)($j['nama'] ?? '')));
+            if ($n !== '') {
+                $names[] = $n;
+            }
+        }
+        $names = array_values(array_unique($names));
+        if (!empty($names)) {
+            $placeholders = implode(',', array_fill(0, count($names), '?'));
+            foreach ($names as $n) {
+                $params[] = $n;
+            }
+            return "(p.jenis_pegawai = 'Support System' OR LOWER(TRIM(p.jabatan)) IN ({$placeholders}))";
+        }
+        return "(p.jenis_pegawai = 'Support System' OR (p.jabatan IS NOT NULL AND p.jabatan != '' AND p.jabatan NOT LIKE '%Guru%' AND p.jabatan NOT LIKE '%Wali Kelas%'))";
+    }
+
     public static function getStaffList(): array
     {
         $db = Database::getInstance();
+        $params = [];
+        $cond = self::buildSupportStaffCondition($params);
+        $rows = $db->findAll("
+            SELECT p.id, p.nama, p.niy, p.jabatan, p.unit_tugas, p.jenis_pegawai, p.foto
+            FROM pegawai p
+            WHERE p.is_active = 1 AND ({$cond})
+            ORDER BY p.nama ASC
+        ", $params);
+        if (!empty($rows)) {
+            return $rows;
+        }
+
         return $db->findAll("
             SELECT id, nama, niy, jabatan, unit_tugas, jenis_pegawai, foto
             FROM pegawai
