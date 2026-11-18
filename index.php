@@ -974,6 +974,8 @@ $router->post('/mobile/api/absen/checkout', [PortalGuruController::class, 'apiCh
 $router->get('/mobile/jurnal', [PortalGuruController::class, 'jurnal'], [[PortalGuruAuthController::class, 'authRequired']]);
 $router->get('/mobile/rekap-jurnal', [PortalGuruController::class, 'rekapJurnal'], [[PortalGuruAuthController::class, 'authRequired']]);
 $router->post('/mobile/jurnal/simpan', [PortalGuruController::class, 'simpanJurnal'], [[PortalGuruAuthController::class, 'authRequired']]);
+$router->post('/mobile/jurnal-staff/simpan', [PortalGuruController::class, 'simpanJurnalStaff'], [[PortalGuruAuthController::class, 'authRequired']]);
+$router->post('/mobile/jurnal-staff/hapus', [PortalGuruController::class, 'hapusJurnalStaff'], [[PortalGuruAuthController::class, 'authRequired']]);
 $router->get('/mobile/api/jurnal/detail/{id}', [PortalGuruController::class, 'apiJurnalDetail'], [[PortalGuruAuthController::class, 'authRequired']]);
 $router->get('/mobile/api/siswa-kelas', [PortalGuruController::class, 'apiSiswaKelas'], [[PortalGuruAuthController::class, 'authRequired']]);
 $router->get('/mobile/kelas', [PortalGuruController::class, 'kelas'], [[PortalGuruAuthController::class, 'authRequired']]);

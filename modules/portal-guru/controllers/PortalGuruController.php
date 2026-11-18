@@ -1001,6 +1001,13 @@ class PortalGuruController
     {
         $teacher = self::getLoggedInTeacher();
         self::releaseSessionLock();
+
+        // Jika pegawai adalah Support System / Staff, tampilkan layar Jurnal Khusus Staff (Jam Kerja & Dropdown Tugas)
+        if (!empty($teacher['is_support'])) {
+            self::jurnalStaffScreen($teacher);
+            return;
+        }
+
         $db = Database::getInstance();
 
         $indonesianDays = [
@@ -1099,6 +1106,13 @@ class PortalGuruController
         header('Content-Type: application/json; charset=utf-8');
 
         $teacher = self::getLoggedInTeacher();
+
+        // Jika request berasal dari pegawai Support System atau form jurnal staff
+        if (!empty($teacher['is_support']) || !empty($_POST['is_staff_jurnal']) || !empty($_POST['jam_rentang']) || !empty($_POST['jam_id'])) {
+            self::simpanJurnalStaff();
+            return;
+        }
+
         $db = Database::getInstance();
 
         $jadwalId = !empty($_POST['jadwal_id']) ? (int) $_POST['jadwal_id'] : null;
@@ -1266,6 +1280,277 @@ class PortalGuruController
 
         echo json_encode(['success' => true, 'data' => $jurnal]);
         exit;
+    }
+
+    /**
+     * Layar Jurnal Khusus Staff (Support System)
+     * Menampilkan daftar jam kerja harian, progres harian, dan modal input tugas & keterangan
+     */
+    private static function jurnalStaffScreen(array $teacher): void
+    {
+        require_once MODULES_PATH . '/kelola-jurnal-staff/models/JurnalStaffModel.php';
+        JurnalStaffModel::ensureTablesExist();
+
+        $db = Database::getInstance();
+        $pegawaiId = (int) ($teacher['pegawai_id'] ?: $teacher['user_id'] ?: 0);
+        $staff = JurnalStaffModel::getStaffById($pegawaiId) ?: $teacher;
+
+        $jabatanName = $staff['jabatan'] ?? ($teacher['role'] ?? 'Staff Support System');
+
+        // Cari master_jabatan yang sesuai untuk mendapatkan jabatan_id
+        $jabatanRow = null;
+        try {
+            $jabatanRow = $db->find("
+                SELECT id, nama, kategori 
+                FROM master_jabatan 
+                WHERE LOWER(TRIM(nama)) = LOWER(TRIM(?)) LIMIT 1
+            ", [$jabatanName]);
+        } catch (Throwable $e) {}
+
+        $jabatanId = $jabatanRow ? (int) $jabatanRow['id'] : 0;
+
+        // Ambil daftar slot jam kerja (jurnal_staff_jam)
+        $jamList = JurnalStaffModel::getJamList(true);
+
+        // Ambil tugas-tugas aktif berdasarkan jabatan
+        $tugasJabatan = [];
+        if ($jabatanId > 0) {
+            $tugasJabatan = JurnalStaffModel::getTugasByJabatan($jabatanId, true);
+        }
+
+        // Ambil juga semua tugas aktif yang ada di sistem sebagai referensi / opsi cadangan
+        $allTugas = [];
+        try {
+            $allTugas = $db->findAll("
+                SELECT id, jabatan_id, nama_jabatan, nama_tugas, deskripsi, kategori_tugas
+                FROM jurnal_staff_tugas
+                WHERE is_active = 1
+                ORDER BY nama_jabatan ASC, nama_tugas ASC
+            ");
+        } catch (Throwable $e) {}
+
+        // Tanggal terpilih (default hari ini)
+        $selectedDate = trim($_GET['tanggal'] ?? date('Y-m-d'));
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $selectedDate)) {
+            $selectedDate = date('Y-m-d');
+        }
+
+        // Ambil jurnal staff pada tanggal terpilih
+        $journalsOnDate = [];
+        try {
+            $journalsOnDate = $db->findAll("
+                SELECT js.*, jst.kategori_tugas
+                FROM jurnal_staff js
+                LEFT JOIN jurnal_staff_tugas jst ON js.tugas_id = jst.id
+                WHERE js.pegawai_id = ? AND js.tanggal = ?
+                ORDER BY js.jam_rentang ASC, js.id ASC
+            ", [$pegawaiId, $selectedDate]);
+        } catch (Throwable $e) {}
+
+        // Mapping jurnal pada tanggal tersebut berdasarkan jam_id dan jam_rentang
+        $journalByJamId = [];
+        foreach ($journalsOnDate as $jo) {
+            if (!empty($jo['jam_id'])) {
+                $journalByJamId[(int) $jo['jam_id']] = $jo;
+            }
+            if (!empty($jo['jam_rentang'])) {
+                $journalByJamId[$jo['jam_rentang']] = $jo;
+            }
+        }
+
+        // Riwayat 30 jurnal terakhir milik staff ini
+        $recentStaffJournals = [];
+        try {
+            $recentStaffJournals = $db->findAll("
+                SELECT js.*, jst.kategori_tugas
+                FROM jurnal_staff js
+                LEFT JOIN jurnal_staff_tugas jst ON js.tugas_id = jst.id
+                WHERE js.pegawai_id = ?
+                ORDER BY js.tanggal DESC, js.jam_rentang DESC, js.id DESC
+                LIMIT 30
+            ", [$pegawaiId]);
+        } catch (Throwable $e) {}
+
+        $totalSesi = count($jamList);
+        $totalTerisi = count($journalsOnDate);
+        $totalBelum = max(0, $totalSesi - $totalTerisi);
+        $persenTerisi = $totalSesi > 0 ? round(($totalTerisi / $totalSesi) * 100) : 0;
+
+        self::render('jurnal_staff', [
+            'pageTitle' => 'Jurnal Kerja Staff',
+            'activeTab' => 'jurnal',
+            'isSupport' => true,
+            'teacher' => $teacher,
+            'staff' => $staff,
+            'jabatanName' => $jabatanName,
+            'jabatanId' => $jabatanId,
+            'jamList' => $jamList,
+            'tugasJabatan' => $tugasJabatan,
+            'allTugas' => $allTugas,
+            'selectedDate' => $selectedDate,
+            'journalByJamId' => $journalByJamId,
+            'journalsOnDate' => $journalsOnDate,
+            'recentStaffJournals' => $recentStaffJournals,
+            'totalSesi' => $totalSesi,
+            'totalTerisi' => $totalTerisi,
+            'totalBelum' => $totalBelum,
+            'persenTerisi' => $persenTerisi,
+            'todayDate' => date('Y-m-d')
+        ]);
+    }
+
+    /**
+     * API: Simpan / Perbarui Jurnal Kerja Staff (Support System)
+     */
+    public static function simpanJurnalStaff(): void
+    {
+        self::releaseSessionLock();
+        header('Content-Type: application/json; charset=utf-8');
+
+        $teacher = self::getLoggedInTeacher();
+        $pegawaiId = (int) ($teacher['pegawai_id'] ?: $teacher['user_id'] ?: 0);
+        if ($pegawaiId <= 0) {
+            echo json_encode(['success' => false, 'message' => 'Identitas pegawai tidak ditemukan.']);
+            exit;
+        }
+
+        require_once MODULES_PATH . '/kelola-jurnal-staff/models/JurnalStaffModel.php';
+        JurnalStaffModel::ensureTablesExist();
+
+        $input = $_POST;
+        if (empty($input)) {
+            $input = json_decode(file_get_contents('php://input'), true) ?: [];
+        }
+
+        $jurnalId = !empty($input['jurnal_id']) ? (int) $input['jurnal_id'] : null;
+        $jamId = !empty($input['jam_id']) ? (int) $input['jam_id'] : null;
+        $jamRentang = trim($input['jam_rentang'] ?? '');
+        $tanggal = !empty($input['tanggal']) ? trim($input['tanggal']) : date('Y-m-d');
+        
+        $rawTugasId = trim($input['tugas_id'] ?? '');
+        $tugasId = ($rawTugasId !== '' && $rawTugasId !== 'custom' && is_numeric($rawTugasId)) ? (int) $rawTugasId : null;
+
+        $aktivitas = trim($input['aktivitas'] ?? '');
+        if (empty($aktivitas) && !empty($input['aktivitas_custom'])) {
+            $aktivitas = trim($input['aktivitas_custom']);
+        }
+
+        $uraianHasil = trim($input['uraian_hasil'] ?? ($input['keterangan'] ?? ''));
+        $kendala = trim($input['kendala'] ?? '');
+        $status = in_array($input['status'] ?? '', ['selesai', 'proses', 'tertunda'], true) ? $input['status'] : 'selesai';
+
+        // Jika jamRentang masih kosong, ambil dari jurnal_staff_jam
+        if ($jamRentang === '' && $jamId) {
+            $jamRow = JurnalStaffModel::getJamById($jamId);
+            if ($jamRow) {
+                $jamRentang = date('H:i', strtotime($jamRow['jam_mulai'])) . ' - ' . date('H:i', strtotime($jamRow['jam_selesai']));
+            }
+        }
+        if ($jamRentang === '') {
+            $jamRentang = '08:00 - 09:00';
+        }
+
+        // Jika aktivitas masih kosong tapi tugas_id ada, ambil nama tugasnya
+        if ($aktivitas === '' && $tugasId) {
+            $tRow = JurnalStaffModel::getTugasById($tugasId);
+            if ($tRow) {
+                $aktivitas = $tRow['nama_tugas'];
+            }
+        }
+        if ($aktivitas === '') {
+            echo json_encode(['success' => false, 'message' => 'Pilih tugas atau masukkan nama aktivitas kerja.']);
+            exit;
+        }
+
+        if ($uraianHasil === '') {
+            echo json_encode(['success' => false, 'message' => 'Keterangan / uraian hasil kerja wajib diisi.']);
+            exit;
+        }
+
+        try {
+            $db = Database::getInstance();
+            $file = $_FILES['foto_bukti'] ?? ($_FILES['foto'] ?? null);
+
+            // Cek apakah sudah pernah ada jurnal untuk (pegawai_id, tanggal, jam_id)
+            if (!$jurnalId && $jamId) {
+                $exist = $db->find("
+                    SELECT id FROM jurnal_staff 
+                    WHERE pegawai_id = ? AND tanggal = ? AND jam_id = ? 
+                    LIMIT 1
+                ", [$pegawaiId, $tanggal, $jamId]);
+                if ($exist) {
+                    $jurnalId = (int) $exist['id'];
+                }
+            }
+
+            $data = [
+                'pegawai_id' => $pegawaiId,
+                'tanggal' => $tanggal,
+                'jam_id' => $jamId,
+                'jam_rentang' => $jamRentang,
+                'tugas_id' => $tugasId,
+                'aktivitas' => $aktivitas,
+                'uraian_hasil' => $uraianHasil,
+                'kendala' => $kendala ?: null,
+                'status' => $status
+            ];
+
+            if ($jurnalId > 0) {
+                JurnalStaffModel::updateJurnal($jurnalId, $data, $file);
+                $savedId = $jurnalId;
+                $msg = 'Jurnal kerja berhasil diperbarui.';
+            } else {
+                $savedId = JurnalStaffModel::storeJurnal($data, $file);
+                $msg = 'Jurnal kerja berhasil disimpan!';
+            }
+
+            $savedRow = JurnalStaffModel::getJurnalById($savedId);
+
+            echo json_encode([
+                'success' => true,
+                'message' => $msg,
+                'data' => $savedRow
+            ]);
+            exit;
+        } catch (Throwable $e) {
+            echo json_encode(['success' => false, 'message' => 'Gagal menyimpan: ' . $e->getMessage()]);
+            exit;
+        }
+    }
+
+    /**
+     * API: Hapus Jurnal Kerja Staff
+     */
+    public static function hapusJurnalStaff(): void
+    {
+        self::releaseSessionLock();
+        header('Content-Type: application/json; charset=utf-8');
+
+        $teacher = self::getLoggedInTeacher();
+        $pegawaiId = (int) ($teacher['pegawai_id'] ?: $teacher['user_id'] ?: 0);
+        $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
+        $id = (int) ($input['id'] ?? 0);
+
+        if ($id <= 0 || $pegawaiId <= 0) {
+            echo json_encode(['success' => false, 'message' => 'ID jurnal tidak valid.']);
+            exit;
+        }
+
+        require_once MODULES_PATH . '/kelola-jurnal-staff/models/JurnalStaffModel.php';
+        $existing = JurnalStaffModel::getJurnalById($id);
+        if (!$existing || (int) $existing['pegawai_id'] !== $pegawaiId) {
+            echo json_encode(['success' => false, 'message' => 'Data jurnal tidak ditemukan atau Anda tidak memiliki akses.']);
+            exit;
+        }
+
+        try {
+            JurnalStaffModel::deleteJurnal($id);
+            echo json_encode(['success' => true, 'message' => 'Jurnal berhasil dihapus.']);
+            exit;
+        } catch (Throwable $e) {
+            echo json_encode(['success' => false, 'message' => 'Gagal menghapus: ' . $e->getMessage()]);
+            exit;
+        }
     }
 
     /**
@@ -2607,13 +2892,14 @@ class PortalGuruController
             }
         }
 
-        $pegawaiId = (int)($teacher['pegawai_id'] ?: $teacher['id']);
+        $pegawaiId = (int) ($teacher['pegawai_id'] ?: $teacher['id']);
 
         // Ambil daftar rekan guru aktif untuk pilihan guru pengganti
         $teachersList = [];
         try {
             $teachersList = Database::getInstance()->findAll("SELECT id, nama, gelar FROM pegawai WHERE is_active = 1 ORDER BY nama ASC");
-        } catch (Throwable $e) {}
+        } catch (Throwable $e) {
+        }
 
         $permitsData = PortalGuruModel::getTeacherPermits($pegawaiId);
 
@@ -2636,7 +2922,7 @@ class PortalGuruController
         self::releaseSessionLock();
         header('Content-Type: application/json; charset=utf-8');
 
-        $pegawaiId = (int)($teacher['pegawai_id'] ?: $teacher['id']);
+        $pegawaiId = (int) ($teacher['pegawai_id'] ?: $teacher['id']);
         if ($pegawaiId <= 0) {
             echo json_encode(['success' => false, 'message' => 'Identitas pegawai tidak ditemukan.']);
             exit;
@@ -2682,7 +2968,7 @@ class PortalGuruController
         try {
             $db = Database::getInstance();
             // Generate nomor unik
-            $nomorIzin = 'IZN-' . date('Ymd') . '-' . str_pad((string)mt_rand(1, 9999), 4, '0', STR_PAD_LEFT);
+            $nomorIzin = 'IZN-' . date('Ymd') . '-' . str_pad((string) mt_rand(1, 9999), 4, '0', STR_PAD_LEFT);
 
             $db->query("
                 INSERT INTO izin_guru (
@@ -2725,7 +3011,7 @@ class PortalGuruController
     {
         $teacher = self::getLoggedInTeacher();
         self::releaseSessionLock();
-        $pegawaiId = (int)($teacher['pegawai_id'] ?: $teacher['id']);
+        $pegawaiId = (int) ($teacher['pegawai_id'] ?: $teacher['id']);
 
         $leavesData = PortalGuruModel::getTeacherLeaves($pegawaiId);
 
@@ -2733,13 +3019,15 @@ class PortalGuruController
         $daftarJenisCuti = [];
         try {
             $daftarJenisCuti = Database::getInstance()->findAll("SELECT * FROM cuti_jenis WHERE is_active = 1 ORDER BY id ASC");
-        } catch (Throwable $e) {}
+        } catch (Throwable $e) {
+        }
 
         // Ambil daftar rekan guru aktif untuk pelimpahan tugas
         $teachersList = [];
         try {
             $teachersList = Database::getInstance()->findAll("SELECT id, nama, gelar FROM pegawai WHERE is_active = 1 ORDER BY nama ASC");
-        } catch (Throwable $e) {}
+        } catch (Throwable $e) {
+        }
 
         self::render('cuti', [
             'pageTitle' => 'Pengajuan Cuti Guru',
@@ -2760,13 +3048,13 @@ class PortalGuruController
         self::releaseSessionLock();
         header('Content-Type: application/json; charset=utf-8');
 
-        $pegawaiId = (int)($teacher['pegawai_id'] ?: $teacher['id']);
+        $pegawaiId = (int) ($teacher['pegawai_id'] ?: $teacher['id']);
         if ($pegawaiId <= 0) {
             echo json_encode(['success' => false, 'message' => 'Identitas pegawai tidak ditemukan.']);
             exit;
         }
 
-        $jenisCutiId = (int)($_POST['jenis_cuti_id'] ?? 0);
+        $jenisCutiId = (int) ($_POST['jenis_cuti_id'] ?? 0);
         $tanggalMulai = trim($_POST['tanggal_mulai'] ?? '');
         $tanggalSelesai = trim($_POST['tanggal_selesai'] ?? '');
         $alasan = trim($_POST['alasan'] ?? '');
@@ -2810,7 +3098,7 @@ class PortalGuruController
                 'file_lampiran' => $lampiran
             ];
 
-            $userId = (int)($teacher['user_id'] ?? 0);
+            $userId = (int) ($teacher['user_id'] ?? 0);
             $userName = $teacher['name'] ?? 'Pegawai';
             $newId = CutiModel::createPengajuan($payload, $userId, $userName);
 

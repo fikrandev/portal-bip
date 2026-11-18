@@ -489,20 +489,35 @@ if ($hourNow < 11) {
         </div>
         
         <?php if (!empty($isSupport)): ?>
-        <!-- Support System (Hanya Rekap Presensi & Keterlambatan) -->
-        <div class="grid grid-cols-1 gap-3">
-            <a href="<?= url('mobile/rekap-absen') ?>" class="bg-gradient-to-br from-primary-50/80 to-white rounded-3xl p-4 shadow-sm border border-primary-100 hover:border-primary-300 transition-all press-bounce block relative overflow-hidden group">
+        <!-- Support System (Rekap Presensi & Jurnal Staff) -->
+        <div class="grid grid-cols-2 gap-3">
+            <a href="<?= url('mobile/rekap-absen') ?>" class="bg-gradient-to-br from-indigo-50 to-white rounded-3xl p-3.5 shadow-sm border border-indigo-100 hover:border-indigo-300 transition-all press-bounce block relative overflow-hidden group">
                 <div class="flex items-center justify-between mb-2">
-                    <div class="w-10 h-10 rounded-2xl bg-primary-600 text-white flex items-center justify-center text-lg shadow-sm shadow-primary-500/20">
+                    <div class="w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-lg shadow-md shadow-indigo-500/20">
                         📊
                     </div>
-                    <span class="text-[10px] font-bold text-primary-700 bg-primary-100/70 px-2.5 py-1 rounded-full">Presensi & Keterlambatan</span>
+                    <span class="text-[9px] font-bold text-indigo-700 bg-indigo-100/70 px-2 py-0.5 rounded-full">Presensi</span>
                 </div>
-                <h4 class="font-bold text-slate-800 text-sm leading-tight">Rekap Presensi & Terlambat Pegawai</h4>
-                <p class="text-[11px] text-slate-500 mt-1">Cek riwayat kehadiran tepat waktu, jam keterlambatan harian, dan izin/cuti Anda</p>
-                <div class="flex items-center gap-1.5 text-xs font-bold text-primary-600 mt-3 pt-2.5 border-t border-primary-100/60">
-                    <span>Buka Rekapitulasi Lengkap</span>
-                    <i data-lucide="arrow-right" class="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform"></i>
+                <h4 class="font-black text-slate-900 text-xs leading-tight">Rekap Presensi Pegawai</h4>
+                <p class="text-[10px] text-slate-500 mt-1">Cek hadir tepat waktu, jam telat & cuti</p>
+                <div class="flex items-center gap-1 text-[10px] font-bold text-indigo-600 mt-2.5 pt-2 border-t border-indigo-100/60">
+                    <span>Lihat Rekap</span>
+                    <i data-lucide="arrow-right" class="w-3 h-3 group-hover:translate-x-1 transition-transform"></i>
+                </div>
+            </a>
+
+            <a href="<?= url('mobile/jurnal') ?>" class="bg-gradient-to-br from-emerald-50 to-white rounded-3xl p-3.5 shadow-sm border border-emerald-100 hover:border-emerald-300 transition-all press-bounce block relative overflow-hidden group">
+                <div class="flex items-center justify-between mb-2">
+                    <div class="w-10 h-10 rounded-2xl bg-emerald-600 text-white flex items-center justify-center text-lg shadow-md shadow-emerald-500/20">
+                        💼
+                    </div>
+                    <span class="text-[9px] font-bold text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded-full">Jurnal</span>
+                </div>
+                <h4 class="font-black text-slate-900 text-xs leading-tight">Jurnal Kerja Staff</h4>
+                <p class="text-[10px] text-slate-500 mt-1">Isi tugas per jam & pantau laporan kerja</p>
+                <div class="flex items-center gap-1 text-[10px] font-bold text-emerald-600 mt-2.5 pt-2 border-t border-emerald-100/60">
+                    <span>Buka Jurnal</span>
+                    <i data-lucide="arrow-right" class="w-3 h-3 group-hover:translate-x-1 transition-transform"></i>
                 </div>
             </a>
         </div>
