@@ -997,7 +997,9 @@ $router->get('/mobile/api/ibadah/today', [PortalGuruController::class, 'apiIbada
 $router->post('/mobile/ibadah/simpan', [PortalGuruController::class, 'simpanIbadah'], [[PortalGuruAuthController::class, 'authRequired']]);
 $router->get('/mobile/keterlambatan-siswa', [PortalGuruController::class, 'keterlambatanSiswa'], [[PortalGuruAuthController::class, 'authRequired']]);
 $router->get('/mobile/izin', [PortalGuruController::class, 'izin'], [[PortalGuruAuthController::class, 'authRequired']]);
+$router->post('/mobile/izin/submit', [PortalGuruController::class, 'submitIzin'], [[PortalGuruAuthController::class, 'authRequired']]);
 $router->get('/mobile/cuti', [PortalGuruController::class, 'cuti'], [[PortalGuruAuthController::class, 'authRequired']]);
+$router->post('/mobile/cuti/submit', [PortalGuruController::class, 'submitCuti'], [[PortalGuruAuthController::class, 'authRequired']]);
 
 // ==============================================================================
 // MOBILE SARPRAS PWA ROUTES

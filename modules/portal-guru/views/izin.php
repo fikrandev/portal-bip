@@ -87,89 +87,101 @@
         </div>
 
         <div id="izin-list-container" class="space-y-3">
-            <?php foreach ($records as $r): ?>
-                <div class="izin-card bg-white rounded-3xl p-4 shadow-sm border border-slate-100 space-y-3 transition-all" data-type="<?= $r['type'] ?>">
-                    
-                    <!-- Header Bar: Type & Status Badge -->
-                    <div class="flex items-center justify-between gap-2">
-                        <div class="flex items-center gap-2 min-w-0">
-                            <span class="w-8 h-8 rounded-xl bg-<?= $r['badgeColor'] ?>-50 text-<?= $r['badgeColor'] ?>-700 flex items-center justify-center text-sm font-bold shrink-0">
-                                <?= $r['type'] === 'tidak_masuk' ? '🏥' : '🚪' ?>
-                            </span>
-                            <div class="min-w-0">
-                                <h4 class="font-black text-slate-900 text-xs truncate leading-tight"><?= htmlspecialchars($r['typeLabel']) ?></h4>
-                                <p class="text-[10px] text-slate-400 font-semibold mt-0.5"><?= htmlspecialchars($r['id']) ?></p>
-                            </div>
-                        </div>
-
-                        <!-- Status Badge -->
-                        <?php if ($r['status'] === 'Disetujui'): ?>
-                            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-primary-100 text-primary-800 shrink-0 flex items-center gap-1">
-                                <i data-lucide="check-circle" class="w-3 h-3 text-primary-600"></i> Disetujui
-                            </span>
-                        <?php elseif ($r['status'] === 'Menunggu Persetujuan'): ?>
-                            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 shrink-0 flex items-center gap-1">
-                                <i data-lucide="clock" class="w-3 h-3 text-amber-600"></i> Menunggu
-                            </span>
-                        <?php else: ?>
-                            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 shrink-0 flex items-center gap-1">
-                                <i data-lucide="x-circle" class="w-3 h-3 text-rose-600"></i> Ditolak
-                            </span>
-                        <?php endif; ?>
+            <?php if (empty($records)): ?>
+                <div id="izin-empty-state" class="bg-white rounded-3xl p-8 border border-slate-100 shadow-sm text-center space-y-3">
+                    <div class="w-16 h-16 mx-auto rounded-3xl bg-amber-50 text-amber-600 flex items-center justify-center text-3xl">
+                        📄
                     </div>
-
-                    <!-- Information Details Box -->
-                    <div class="bg-slate-50 rounded-2xl p-3 border border-slate-100 space-y-2 text-xs">
-                        
-                        <!-- Waktu & Durasi -->
-                        <div class="flex items-center justify-between text-slate-700">
-                            <span class="text-slate-400 font-semibold text-[11px]">Waktu:</span>
-                            <span class="font-bold text-slate-800">
-                                <?= htmlspecialchars($r['startDate']) ?> <?= $r['startDate'] !== $r['endDate'] ? ' s.d. ' . htmlspecialchars($r['endDate']) : '' ?>
-                                <?= $r['timeRange'] ? ' (' . htmlspecialchars($r['timeRange']) . ')' : '' ?>
-                            </span>
-                        </div>
-
-                        <?php if (!empty($r['classAffected'])): ?>
-                            <div class="flex items-center justify-between text-slate-700">
-                                <span class="text-slate-400 font-semibold text-[11px]">Kelas Terdampak:</span>
-                                <span class="font-bold text-primary-700"><?= htmlspecialchars($r['classAffected']) ?></span>
-                            </div>
-                        <?php endif; ?>
-
-                        <!-- Alasan -->
-                        <div class="text-slate-700 pt-1 border-t border-slate-200/60">
-                            <span class="text-slate-400 font-semibold text-[11px] block mb-0.5">Alasan:</span>
-                            <p class="font-medium text-slate-800 leading-relaxed"><?= htmlspecialchars($r['reason']) ?></p>
-                        </div>
-
-                        <?php if (!empty($r['taskGiven'])): ?>
-                            <div class="text-slate-700 pt-1 border-t border-slate-200/60">
-                                <span class="text-slate-400 font-semibold text-[11px] block mb-0.5">Tugas untuk Siswa:</span>
-                                <p class="font-semibold text-primary-800 leading-relaxed"><?= htmlspecialchars($r['taskGiven']) ?></p>
-                            </div>
-                        <?php endif; ?>
-
-                        <!-- Guru Pengganti -->
-                        <div class="flex items-center justify-between text-slate-700 pt-1 border-t border-slate-200/60">
-                            <span class="text-slate-400 font-semibold text-[11px]">Guru Pengganti:</span>
-                            <span class="font-bold text-slate-800"><?= htmlspecialchars($r['substituteTeacher']) ?></span>
-                        </div>
-
+                    <div>
+                        <h4 class="font-bold text-slate-800 text-sm">Belum Ada Pengajuan Izin</h4>
+                        <p class="text-xs text-slate-400 mt-1 max-w-xs mx-auto">Anda belum memiliki riwayat pengajuan izin tidak masuk atau izin keluar. Klik tombol di atas untuk mengajukan permohonan baru.</p>
                     </div>
-
-                    <!-- Card Footer: Submitted Time -->
-                    <div class="flex items-center justify-between text-[10px] text-slate-400 px-1">
-                        <span>Diajukan: <?= htmlspecialchars($r['submittedAt']) ?></span>
-                        <?php if (!empty($r['document'])): ?>
-                            <span class="font-bold text-primary-600 flex items-center gap-1">
-                                <i data-lucide="paperclip" class="w-3 h-3"></i> Lampiran Terlampir
-                            </span>
-                        <?php endif; ?>
-                    </div>
-
                 </div>
-            <?php endforeach; ?>
+            <?php else: ?>
+                <?php foreach ($records as $r): ?>
+                    <div class="izin-card bg-white rounded-3xl p-4 shadow-sm border border-slate-100 space-y-3 transition-all" data-type="<?= $r['type'] ?>">
+                        
+                        <!-- Header Bar: Type & Status Badge -->
+                        <div class="flex items-center justify-between gap-2">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <span class="w-8 h-8 rounded-xl bg-<?= $r['badgeColor'] ?>-50 text-<?= $r['badgeColor'] ?>-700 flex items-center justify-center text-sm font-bold shrink-0">
+                                    <?= $r['type'] === 'tidak_masuk' ? '🏥' : '🚪' ?>
+                                </span>
+                                <div class="min-w-0">
+                                    <h4 class="font-black text-slate-900 text-xs truncate leading-tight"><?= htmlspecialchars($r['typeLabel']) ?></h4>
+                                    <p class="text-[10px] text-slate-400 font-semibold mt-0.5"><?= htmlspecialchars($r['id']) ?></p>
+                                </div>
+                            </div>
+
+                            <!-- Status Badge -->
+                            <?php if ($r['status'] === 'Disetujui'): ?>
+                                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-primary-100 text-primary-800 shrink-0 flex items-center gap-1">
+                                    <i data-lucide="check-circle" class="w-3 h-3 text-primary-600"></i> Disetujui
+                                </span>
+                            <?php elseif ($r['status'] === 'Menunggu Persetujuan'): ?>
+                                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 shrink-0 flex items-center gap-1">
+                                    <i data-lucide="clock" class="w-3 h-3 text-amber-600"></i> Menunggu
+                                </span>
+                            <?php else: ?>
+                                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 shrink-0 flex items-center gap-1">
+                                    <i data-lucide="x-circle" class="w-3 h-3 text-rose-600"></i> Ditolak
+                                </span>
+                            <?php endif; ?>
+                        </div>
+
+                        <!-- Information Details Box -->
+                        <div class="bg-slate-50 rounded-2xl p-3 border border-slate-100 space-y-2 text-xs">
+                            
+                            <!-- Waktu & Durasi -->
+                            <div class="flex items-center justify-between text-slate-700">
+                                <span class="text-slate-400 font-semibold text-[11px]">Waktu:</span>
+                                <span class="font-bold text-slate-800">
+                                    <?= htmlspecialchars($r['startDate']) ?> <?= $r['startDate'] !== $r['endDate'] ? ' s.d. ' . htmlspecialchars($r['endDate']) : '' ?>
+                                    <?= $r['timeRange'] ? ' (' . htmlspecialchars($r['timeRange']) . ')' : '' ?>
+                                </span>
+                            </div>
+
+                            <?php if (!empty($r['classAffected'])): ?>
+                                <div class="flex items-center justify-between text-slate-700">
+                                    <span class="text-slate-400 font-semibold text-[11px]">Kelas Terdampak:</span>
+                                    <span class="font-bold text-primary-700"><?= htmlspecialchars($r['classAffected']) ?></span>
+                                </div>
+                            <?php endif; ?>
+
+                            <!-- Alasan -->
+                            <div class="text-slate-700 pt-1 border-t border-slate-200/60">
+                                <span class="text-slate-400 font-semibold text-[11px] block mb-0.5">Alasan:</span>
+                                <p class="font-medium text-slate-800 leading-relaxed"><?= htmlspecialchars($r['reason']) ?></p>
+                            </div>
+
+                            <?php if (!empty($r['taskGiven'])): ?>
+                                <div class="text-slate-700 pt-1 border-t border-slate-200/60">
+                                    <span class="text-slate-400 font-semibold text-[11px] block mb-0.5">Tugas untuk Siswa:</span>
+                                    <p class="font-semibold text-primary-800 leading-relaxed"><?= htmlspecialchars($r['taskGiven']) ?></p>
+                                </div>
+                            <?php endif; ?>
+
+                            <!-- Guru Pengganti -->
+                            <div class="flex items-center justify-between text-slate-700 pt-1 border-t border-slate-200/60">
+                                <span class="text-slate-400 font-semibold text-[11px]">Guru Pengganti:</span>
+                                <span class="font-bold text-slate-800"><?= htmlspecialchars($r['substituteTeacher']) ?></span>
+                            </div>
+
+                        </div>
+
+                        <!-- Card Footer: Submitted Time -->
+                        <div class="flex items-center justify-between text-[10px] text-slate-400 px-1">
+                            <span>Diajukan: <?= htmlspecialchars($r['submittedAt']) ?></span>
+                            <?php if (!empty($r['document'])): ?>
+                                <span class="font-bold text-primary-600 flex items-center gap-1">
+                                    <i data-lucide="paperclip" class="w-3 h-3"></i> Lampiran Terlampir
+                                </span>
+                            <?php endif; ?>
+                        </div>
+
+                    </div>
+                <?php endforeach; ?>
+            <?php endif; ?>
         </div>
     </div>
 
@@ -177,6 +189,9 @@
 
 <script>
     let activeIzinFilter = 'all';
+    window.TEACHERS_LIST = <?= json_encode(array_map(function($t) {
+        return trim(($t['nama'] ?? '') . (!empty($t['gelar']) ? (', ' . $t['gelar']) : ''));
+    }, $teachersList ?? [])) ?>;
 
     function setIzinTypeFilter(type) {
         activeIzinFilter = type;
@@ -202,6 +217,13 @@
     function openFormIzinModal(type) {
         const isFullDay = type === 'tidak_masuk';
         const todayStr = new Date().toISOString().split('T')[0];
+
+        let teacherOpts = '<option value="Guru Piket yang Bertugas">Guru Piket yang Bertugas Hari Ini</option>';
+        if (Array.isArray(window.TEACHERS_LIST) && window.TEACHERS_LIST.length > 0) {
+            window.TEACHERS_LIST.forEach(name => {
+                if (name) teacherOpts += `<option value="${name}">${name}</option>`;
+            });
+        }
 
         AndroidUI.bottomSheet({
             title: isFullDay ? 'Izin Tidak Masuk (Full Day)' : 'Izin Keluar / Tidak Mengajar',
@@ -255,7 +277,7 @@
 
                         <!-- Tugas untuk Siswa -->
                         <div>
-                            <label class="block text-xs font-bold text-slate-700 mb-1">Tugas / Materi Titipan Siswa <span class="text-rose-500">*</span></label>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Tugas / Materi Titipan Siswa</label>
                             <textarea id="modal-izin-task" rows="2" placeholder="Tuliskan tugas yang harus dikerjakan siswa selama ditinggal..." class="w-full px-3.5 py-2 text-xs bg-slate-50 rounded-2xl border border-slate-200 font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-inner resize-none"></textarea>
                         </div>
                     `}
@@ -270,10 +292,7 @@
                     <div>
                         <label class="block text-xs font-bold text-slate-700 mb-1">Guru Pengganti / Guru Piket</label>
                         <select id="modal-izin-substitute" class="w-full px-3.5 py-2.5 text-xs bg-slate-50 rounded-2xl border border-slate-200 font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-${isFullDay ? 'amber' : 'blue'}-500 shadow-inner">
-                            <option value="Pak Hendra, M.Pd">Pak Hendra, M.Pd</option>
-                            <option value="Bu Fitri, S.Pd (Guru Piket)">Bu Fitri, S.Pd (Guru Piket)</option>
-                            <option value="Pak Ridwan, S.Kom">Pak Ridwan, S.Kom</option>
-                            <option value="Guru Piket yang Bertugas">Guru Piket yang Bertugas Hari Ini</option>
+                            ${teacherOpts}
                         </select>
                     </div>
 
@@ -281,7 +300,7 @@
                     <div>
                         <label class="block text-xs font-bold text-slate-700 mb-1">Lampiran Dokumen / Surat (Opsional)</label>
                         <div class="flex items-center gap-2">
-                            <input type="file" id="modal-izin-file" class="text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer">
+                            <input type="file" id="modal-izin-file" accept=".jpg,.jpeg,.png,.pdf,.doc,.docx" class="text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer">
                         </div>
                     </div>
 
@@ -309,80 +328,75 @@
         }, 350);
     }
 
-    function submitIzin(type, btn) {
+    async function submitIzin(type, btn) {
         const isFullDay = type === 'tidak_masuk';
         const reason = document.getElementById('modal-izin-reason')?.value.trim();
-        const substitute = document.getElementById('modal-izin-substitute')?.value;
+        const substitute = document.getElementById('modal-izin-substitute')?.value || '';
+        const fileInput = document.getElementById('modal-izin-file');
 
         if (!reason) {
             AndroidUI.toast('Mohon isi alasan pengajuan izin!', 'warning');
             return;
         }
 
+        const formData = new FormData();
+        formData.append('jenis_izin', type);
+        formData.append('alasan', reason);
+        formData.append('guru_pengganti', substitute);
+
+        if (isFullDay) {
+            const kategori = document.getElementById('modal-izin-kategori')?.value || 'Sakit';
+            const startDate = document.getElementById('modal-izin-start')?.value || '';
+            const endDate = document.getElementById('modal-izin-end')?.value || startDate;
+            formData.append('kategori', kategori);
+            formData.append('tanggal_mulai', startDate);
+            formData.append('tanggal_selesai', endDate);
+        } else {
+            const timeOut = document.getElementById('modal-izin-time-out')?.value || '';
+            const timeIn = document.getElementById('modal-izin-time-in')?.value || '';
+            const classImpact = document.getElementById('modal-izin-class-impact')?.value || '';
+            const task = document.getElementById('modal-izin-task')?.value || '';
+            formData.append('jam_keluar', timeOut);
+            formData.append('jam_kembali', timeIn);
+            formData.append('kelas_terdampak', classImpact);
+            formData.append('tugas_siswa', task);
+            formData.append('tanggal_mulai', new Date().toISOString().split('T')[0]);
+            formData.append('tanggal_selesai', new Date().toISOString().split('T')[0]);
+        }
+
+        if (fileInput && fileInput.files && fileInput.files[0]) {
+            formData.append('lampiran', fileInput.files[0]);
+        }
+
         AndroidUI.setButtonLoading(btn, 'Mengirim Pengajuan...');
 
-        setTimeout(() => {
-            AndroidUI.resetButton(btn);
-            AndroidUI.closeBottomSheet();
-
-            // Insert new card to UI
-            const container = document.getElementById('izin-list-container');
-            if (container) {
-                const newId = 'IZN-' + Math.floor(1000 + Math.random() * 9000);
-                const newCard = document.createElement('div');
-                newCard.className = 'izin-card bg-white rounded-3xl p-4 shadow-sm border border-slate-100 space-y-3 transition-all animate-bounce-short';
-                newCard.setAttribute('data-type', type);
-
-                const typeTitle = isFullDay ? 'Izin Tidak Masuk' : 'Izin Keluar / Tidak Mengajar';
-                const timeDesc = isFullDay ? 'Hari ini' : 'Jam ' + (document.getElementById('modal-izin-time-out')?.value || '10:00') + ' WITA';
-
-                newCard.innerHTML = `
-                    <div class="flex items-center justify-between gap-2">
-                        <div class="flex items-center gap-2 min-w-0">
-                            <span class="w-8 h-8 rounded-xl ${isFullDay ? 'bg-amber-50 text-amber-700' : 'bg-primary-50 text-primary-700'} flex items-center justify-center text-sm font-bold shrink-0">
-                                ${isFullDay ? '🏥' : '🚪'}
-                            </span>
-                            <div class="min-w-0">
-                                <h4 class="font-black text-slate-900 text-xs truncate leading-tight">${typeTitle}</h4>
-                                <p class="text-[10px] text-slate-400 font-semibold mt-0.5">${newId}</p>
-                            </div>
-                        </div>
-                        <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 shrink-0 flex items-center gap-1">
-                            <i data-lucide="clock" class="w-3 h-3 text-amber-600"></i> Menunggu
-                        </span>
-                    </div>
-                    <div class="bg-slate-50 rounded-2xl p-3 border border-slate-100 space-y-2 text-xs">
-                        <div class="flex items-center justify-between text-slate-700">
-                            <span class="text-slate-400 font-semibold text-[11px]">Waktu:</span>
-                            <span class="font-bold text-slate-800">${timeDesc}</span>
-                        </div>
-                        <div class="text-slate-700 pt-1 border-t border-slate-200/60">
-                            <span class="text-slate-400 font-semibold text-[11px] block mb-0.5">Alasan:</span>
-                            <p class="font-medium text-slate-800 leading-relaxed">${reason}</p>
-                        </div>
-                        <div class="flex items-center justify-between text-slate-700 pt-1 border-t border-slate-200/60">
-                            <span class="text-slate-400 font-semibold text-[11px]">Guru Pengganti:</span>
-                            <span class="font-bold text-slate-800">${substitute}</span>
-                        </div>
-                    </div>
-                    <div class="flex items-center justify-between text-[10px] text-slate-400 px-1">
-                        <span>Diajukan: Baru Saja</span>
-                        <span class="font-bold text-amber-600">Menunggu Verifikasi</span>
-                    </div>
-                `;
-
-                container.prepend(newCard);
-                if (window.lucide) window.lucide.createIcons();
-            }
-
-            AndroidUI.success({
-                title: 'Pengajuan Terkirim! 📄✓',
-                subtitle: 'Menunggu Persetujuan Kepala Sekolah',
-                message: `Pengajuan izin Anda telah berhasil dikirim ke pimpinan sekolah dan sedang menunggu verifikasi.`,
-                buttonText: 'Tutup'
+        try {
+            const res = await fetch('<?= url("mobile/izin/submit") ?>', {
+                method: 'POST',
+                body: formData
             });
+            const data = await res.json();
 
-        }, 450);
+            AndroidUI.resetButton(btn);
+
+            if (data.success) {
+                AndroidUI.closeBottomSheet();
+                AndroidUI.success({
+                    title: 'Pengajuan Terkirim! 📄✓',
+                    subtitle: 'Nomor: ' + (data.nomor_izin || 'Tersimpan'),
+                    message: data.message || 'Pengajuan izin Anda berhasil dikirim ke pimpinan sekolah.',
+                    buttonText: 'OK',
+                    onClick: () => {
+                        window.location.reload();
+                    }
+                });
+            } else {
+                AndroidUI.toast(data.message || 'Gagal mengirim pengajuan izin', 'error');
+            }
+        } catch (err) {
+            AndroidUI.resetButton(btn);
+            AndroidUI.toast('Terjadi kesalahan koneksi saat mengirim pengajuan.', 'error');
+        }
     }
 
     document.addEventListener('DOMContentLoaded', () => {

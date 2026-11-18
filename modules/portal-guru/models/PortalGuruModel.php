@@ -241,120 +241,198 @@ class PortalGuruModel
     }
 
     /**
-     * Get Teacher Permit / Absence Submissions (Pengajuan Izin)
+     * Get Teacher Permit / Absence Submissions (Pengajuan Izin) Real Data dari Database
      */
     public static function getTeacherPermits(int $userId = 1): array
     {
+        $db = Database::getInstance();
+
+        // 1. Ambil summary bulan ini
+        $summaryRow = $db->find("
+            SELECT 
+                COUNT(*) as total_all,
+                SUM(CASE WHEN MONTH(tanggal_mulai) = MONTH(CURRENT_DATE()) AND YEAR(tanggal_mulai) = YEAR(CURRENT_DATE()) THEN 1 ELSE 0 END) as total_this_month,
+                SUM(CASE WHEN status = 'Disetujui' THEN 1 ELSE 0 END) as total_approved,
+                SUM(CASE WHEN status = 'Menunggu Persetujuan' THEN 1 ELSE 0 END) as total_pending
+            FROM izin_guru
+            WHERE guru_id = ?
+        ", [$userId]);
+
+        $summary = [
+            'totalThisMonth' => (int)($summaryRow['total_this_month'] ?? 0),
+            'approved' => (int)($summaryRow['total_approved'] ?? 0),
+            'pending' => (int)($summaryRow['total_pending'] ?? 0),
+        ];
+
+        // 2. Ambil riwayat izin riil
+        $rows = $db->findAll("
+            SELECT * FROM izin_guru
+            WHERE guru_id = ?
+            ORDER BY tanggal_mulai DESC, id DESC
+        ", [$userId]);
+
+        $records = [];
+        foreach ($rows as $r) {
+            $type = $r['jenis_izin'] ?? 'tidak_masuk';
+            $kat = $r['kategori'] ?? 'Sakit';
+            $status = $r['status'] ?? 'Menunggu Persetujuan';
+
+            $badgeColor = 'amber';
+            if ($kat === 'Dinas Luar') $badgeColor = 'purple';
+            elseif ($kat === 'Keperluan Keluarga') $badgeColor = 'emerald';
+            elseif ($type === 'keluar_mengajar') $badgeColor = 'blue';
+
+            $statusBadge = 'amber';
+            if ($status === 'Disetujui') $statusBadge = 'emerald';
+            elseif ($status === 'Ditolak') $statusBadge = 'rose';
+
+            $typeLabel = ($type === 'tidak_masuk') ? ("Izin Tidak Masuk" . ($kat ? " ($kat)" : "")) : "Izin Keluar / Tidak Mengajar";
+
+            // Durasi
+            $duration = '1 Hari';
+            if ($type === 'tidak_masuk') {
+                if (!empty($r['tanggal_mulai']) && !empty($r['tanggal_selesai'])) {
+                    $d1 = new DateTime($r['tanggal_mulai']);
+                    $d2 = new DateTime($r['tanggal_selesai']);
+                    $diff = $d1->diff($d2)->days + 1;
+                    $duration = $diff . ' Hari';
+                }
+            } else {
+                if (!empty($r['jam_keluar']) && !empty($r['jam_kembali'])) {
+                    $duration = substr($r['jam_keluar'], 0, 5) . ' - ' . substr($r['jam_kembali'], 0, 5) . ' WITA';
+                } else {
+                    $duration = 'Keluar Sementara';
+                }
+            }
+
+            $timeRange = null;
+            if ($type === 'keluar_mengajar' && !empty($r['jam_keluar']) && !empty($r['jam_kembali'])) {
+                $timeRange = substr($r['jam_keluar'], 0, 5) . ' - ' . substr($r['jam_kembali'], 0, 5) . ' WITA';
+            }
+
+            $records[] = [
+                'id' => $r['nomor_izin'] ?: ('IZN-' . str_pad((string)$r['id'], 4, '0', STR_PAD_LEFT)),
+                'type' => $type,
+                'typeLabel' => $typeLabel,
+                'badgeColor' => $badgeColor,
+                'startDate' => !empty($r['tanggal_mulai']) ? date('d M Y', strtotime($r['tanggal_mulai'])) : '-',
+                'endDate' => !empty($r['tanggal_selesai']) ? date('d M Y', strtotime($r['tanggal_selesai'])) : '-',
+                'duration' => $duration,
+                'timeRange' => $timeRange,
+                'classAffected' => $r['kelas_terdampak'] ?? null,
+                'taskGiven' => $r['tugas_siswa'] ?? null,
+                'reason' => $r['alasan'] ?? '-',
+                'document' => $r['lampiran_dokumen'] ?? null,
+                'status' => $status,
+                'statusBadge' => $statusBadge,
+                'submittedAt' => !empty($r['created_at']) ? date('d M Y, H:i WITA', strtotime($r['created_at'])) : '-',
+                'substituteTeacher' => $r['guru_pengganti'] ?? '-',
+                'catatanPimpinan' => $r['catatan_pimpinan'] ?? null,
+            ];
+        }
+
         return [
-            'summary' => [
-                'totalThisMonth' => 3,
-                'approved' => 2,
-                'pending' => 1
-            ],
-            'records' => [
-                [
-                    'id' => 'IZN-2026-004',
-                    'type' => 'tidak_masuk', // tidak_masuk (Full Day) or keluar_mengajar (Partial)
-                    'typeLabel' => 'Izin Tidak Masuk (Sakit)',
-                    'badgeColor' => 'amber',
-                    'startDate' => date('d M Y'),
-                    'endDate' => date('d M Y'),
-                    'duration' => '1 Hari',
-                    'timeRange' => null,
-                    'reason' => 'Demam dan flu berat sesuai anjuran istirahat dokter.',
-                    'document' => 'surat_dokter_rina.pdf',
-                    'status' => 'Menunggu Persetujuan',
-                    'statusBadge' => 'amber',
-                    'submittedAt' => date('d M Y, 06:30 WITA'),
-                    'substituteTeacher' => 'Pak Hendra, M.Pd'
-                ],
-                [
-                    'id' => 'IZN-2026-003',
-                    'type' => 'keluar_mengajar',
-                    'typeLabel' => 'Izin Keluar / Tidak Mengajar',
-                    'badgeColor' => 'blue',
-                    'startDate' => date('d M Y', strtotime('-3 days')),
-                    'endDate' => date('d M Y', strtotime('-3 days')),
-                    'duration' => '2 Jam Pelajaran',
-                    'timeRange' => '10:00 - 11:30 WITA',
-                    'classAffected' => 'Kelas 8A (Jam ke 3-4)',
-                    'reason' => 'Menghadiri undangan rapat MGMP Matematika tingkat Kota.',
-                    'taskGiven' => 'Latihan soal mandiri Bab 4 Hal. 88 (dikumpulkan di meja guru)',
-                    'document' => 'undangan_mgmp.pdf',
-                    'status' => 'Disetujui',
-                    'statusBadge' => 'emerald',
-                    'submittedAt' => date('d M Y, 08:00 WITA', strtotime('-3 days')),
-                    'substituteTeacher' => 'Bu Fitri, S.Pd (Guru Piket)'
-                ],
-                [
-                    'id' => 'IZN-2026-002',
-                    'type' => 'tidak_masuk',
-                    'typeLabel' => 'Izin Dinas Luar',
-                    'badgeColor' => 'purple',
-                    'startDate' => date('d M Y', strtotime('-10 days')),
-                    'endDate' => date('d M Y', strtotime('-9 days')),
-                    'duration' => '2 Hari',
-                    'timeRange' => null,
-                    'reason' => 'Pelatihan Implementasi Kurikulum Merdeka di LPMP.',
-                    'document' => 'surat_tugas_lpmp.pdf',
-                    'status' => 'Disetujui',
-                    'statusBadge' => 'emerald',
-                    'submittedAt' => date('d M Y', strtotime('-12 days')),
-                    'substituteTeacher' => 'Pak Ridwan, S.Kom'
-                ]
-            ]
+            'summary' => $summary,
+            'records' => $records
         ];
     }
 
     /**
-     * Get Teacher Leave Requests & Quotas (Pengajuan Cuti Guru)
+     * Get Teacher Leave Requests & Quotas (Pengajuan Cuti Guru) Real Data dari Database
      */
     public static function getTeacherLeaves(int $userId = 1): array
     {
-        return [
-            'quotas' => [
-                'tahunan' => ['total' => 12, 'used' => 2, 'remaining' => 10],
-                'sakit' => ['total' => 14, 'used' => 0, 'remaining' => 14],
-                'alasan_penting' => ['total' => 5, 'used' => 0, 'remaining' => 5]
+        $db = Database::getInstance();
+
+        // Load CutiModel agar tabel dan saldo tersinkronisasi
+        if (class_exists('CutiModel') || file_exists(BASE_PATH . '/modules/kelola-cuti/models/CutiModel.php')) {
+            require_once BASE_PATH . '/modules/kelola-cuti/models/CutiModel.php';
+            CutiModel::init();
+        }
+
+        // 1. Ambil saldo cuti riil dari cuti_saldo_pegawai
+        $saldoRow = $db->find("SELECT * FROM cuti_saldo_pegawai WHERE pegawai_id = ?", [$userId]);
+        $saldoTahunan = $saldoRow ? (int)$saldoRow['saldo_tahunan'] : 12;
+        $totalDidapat = $saldoRow ? (int)$saldoRow['total_didapat'] : 12;
+        $totalTerpakaiTahunan = $saldoRow ? (int)$saldoRow['total_terpakai_tahunan'] : 0;
+
+        // Hitung pemakaian cuti khusus tahun ini
+        $usedSpecialRow = $db->find("
+            SELECT 
+                SUM(CASE WHEN cj.kode = 'CK-SAKIT' AND cp.status = 'Disetujui' THEN cp.jumlah_hari ELSE 0 END) as sakit_used,
+                SUM(CASE WHEN cj.kode IN ('CK-DUKA', 'CK-MENIKAH') AND cp.status = 'Disetujui' THEN cp.jumlah_hari ELSE 0 END) as penting_used
+            FROM cuti_pengajuan cp
+            JOIN cuti_jenis cj ON cp.jenis_cuti_id = cj.id
+            WHERE cp.pegawai_id = ? AND YEAR(cp.tanggal_mulai) = YEAR(CURRENT_DATE())
+        ", [$userId]);
+
+        $sakitUsed = (int)($usedSpecialRow['sakit_used'] ?? 0);
+        $pentingUsed = (int)($usedSpecialRow['penting_used'] ?? 0);
+
+        $quotas = [
+            'tahunan' => [
+                'total' => max(12, $totalDidapat),
+                'used' => $totalTerpakaiTahunan,
+                'remaining' => $saldoTahunan
             ],
-            'records' => [
-                [
-                    'id' => 'CT-2026-001',
-                    'type' => 'Cuti Tahunan',
-                    'startDate' => date('d M Y', strtotime('+5 days')),
-                    'endDate' => date('d M Y', strtotime('+6 days')),
-                    'daysCount' => 2,
-                    'reason' => 'Menghadiri pernikahan adik kandung di luar kota.',
-                    'emergencyContact' => '0812-4455-6677 (Suami)',
-                    'substitute' => 'Pak Hendra, M.Pd & Bu Fitri, S.Pd',
-                    'status' => 'Disetujui Kepala Sekolah',
-                    'statusBadge' => 'emerald',
-                    'submittedAt' => date('d M Y, 09:15 WITA', strtotime('-2 days')),
-                    'timeline' => [
-                        ['step' => 'Pengajuan Diajukan', 'time' => '18 Agu 2026, 09:15', 'done' => true],
-                        ['step' => 'Verifikasi Wakasek SDM', 'time' => '18 Agu 2026, 14:00', 'done' => true],
-                        ['step' => 'Persetujuan Kepala Sekolah', 'time' => '19 Agu 2026, 10:30', 'done' => true]
-                    ]
-                ],
-                [
-                    'id' => 'CT-2025-089',
-                    'type' => 'Cuti Tahunan',
-                    'startDate' => '22 Des 2025',
-                    'endDate' => '24 Des 2025',
-                    'daysCount' => 3,
-                    'reason' => 'Libur akhir tahun bersama keluarga.',
-                    'emergencyContact' => '0812-4455-6677',
-                    'substitute' => 'Guru Piket Sekolah',
-                    'status' => 'Selesai',
-                    'statusBadge' => 'emerald',
-                    'submittedAt' => '15 Des 2025',
-                    'timeline' => [
-                        ['step' => 'Pengajuan Diajukan', 'time' => '15 Des 2025', 'done' => true],
-                        ['step' => 'Verifikasi Wakasek SDM', 'time' => '16 Des 2025', 'done' => true],
-                        ['step' => 'Persetujuan Kepala Sekolah', 'time' => '17 Des 2025', 'done' => true]
-                    ]
-                ]
+            'sakit' => [
+                'total' => 14,
+                'used' => $sakitUsed,
+                'remaining' => max(0, 14 - $sakitUsed)
+            ],
+            'alasan_penting' => [
+                'total' => 5,
+                'used' => $pentingUsed,
+                'remaining' => max(0, 5 - $pentingUsed)
             ]
+        ];
+
+        // 2. Ambil riwayat pengajuan cuti riil
+        $rows = $db->findAll("
+            SELECT cp.*, cj.nama_jenis, cj.kode as jenis_kode, cj.kategori as jenis_kategori
+            FROM cuti_pengajuan cp
+            LEFT JOIN cuti_jenis cj ON cp.jenis_cuti_id = cj.id
+            WHERE cp.pegawai_id = ?
+            ORDER BY cp.created_at DESC, cp.id DESC
+        ", [$userId]);
+
+        $records = [];
+        foreach ($rows as $r) {
+            $status = $r['status'] ?? 'Pending';
+            $statusBadge = 'amber';
+            if ($status === 'Disetujui') $statusBadge = 'emerald';
+            elseif ($status === 'Ditolak' || $status === 'Dibatalkan') $statusBadge = 'rose';
+
+            $tglBuat = !empty($r['created_at']) ? date('d M Y, H:i', strtotime($r['created_at'])) : '-';
+
+            $timeline = [
+                ['step' => 'Pengajuan Diajukan', 'time' => $tglBuat, 'done' => true],
+                ['step' => 'Verifikasi Wakasek SDM', 'time' => in_array($status, ['Disetujui', 'Ditolak']) ? (!empty($r['verified_at']) ? date('d M Y, H:i', strtotime($r['verified_at'])) : 'Selesai') : 'Menunggu', 'done' => in_array($status, ['Disetujui', 'Ditolak'])],
+                ['step' => 'Persetujuan Kepala Sekolah', 'time' => ($status === 'Disetujui') ? (!empty($r['approved_at']) ? date('d M Y, H:i', strtotime($r['approved_at'])) : 'Disetujui') : ($status === 'Ditolak' ? 'Ditolak' : 'Menunggu'), 'done' => ($status === 'Disetujui')]
+            ];
+
+            $records[] = [
+                'id' => $r['nomor_pengajuan'] ?: ('CT-' . str_pad((string)$r['id'], 4, '0', STR_PAD_LEFT)),
+                'type' => $r['nama_jenis'] ?? ($r['kategori_cuti'] . ' Cuti'),
+                'startDate' => !empty($r['tanggal_mulai']) ? date('d M Y', strtotime($r['tanggal_mulai'])) : '-',
+                'endDate' => !empty($r['tanggal_selesai']) ? date('d M Y', strtotime($r['tanggal_selesai'])) : '-',
+                'daysCount' => (int)($r['jumlah_hari'] ?? 1),
+                'reason' => $r['alasan'] ?? '-',
+                'emergencyContact' => $r['kontak_darurat'] ?? '-',
+                'address' => $r['alamat_selama_cuti'] ?? '-',
+                'substitute' => $r['pelimpahan_tugas'] ?? '-',
+                'document' => $r['file_lampiran'] ?? null,
+                'status' => $status,
+                'statusBadge' => $statusBadge,
+                'submittedAt' => !empty($r['created_at']) ? date('d M Y, H:i WITA', strtotime($r['created_at'])) : '-',
+                'timeline' => $timeline,
+                'catatan' => $r['catatan_approval'] ?? null,
+            ];
+        }
+
+        return [
+            'quotas' => $quotas,
+            'records' => $records
         ];
     }
 }

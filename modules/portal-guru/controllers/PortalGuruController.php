@@ -2577,15 +2577,115 @@ class PortalGuruController
             }
         }
 
-        $permitsData = PortalGuruModel::getTeacherPermits();
+        $pegawaiId = (int)($teacher['pegawai_id'] ?: $teacher['id']);
+
+        // Ambil daftar rekan guru aktif untuk pilihan guru pengganti
+        $teachersList = [];
+        try {
+            $teachersList = Database::getInstance()->findAll("SELECT id, nama, gelar FROM pegawai WHERE is_active = 1 ORDER BY nama ASC");
+        } catch (Throwable $e) {}
+
+        $permitsData = PortalGuruModel::getTeacherPermits($pegawaiId);
 
         self::render('izin', [
             'pageTitle' => 'Pengajuan Izin Guru',
             'activeTab' => 'izin',
             'summary' => $permitsData['summary'],
             'records' => $permitsData['records'],
-            'classes' => $classes
+            'classes' => $classes,
+            'teachersList' => $teachersList
         ]);
+    }
+
+    /**
+     * API: Submit Pengajuan Izin Guru (Real DB)
+     */
+    public static function submitIzin(): void
+    {
+        $teacher = self::getLoggedInTeacher();
+        self::releaseSessionLock();
+        header('Content-Type: application/json; charset=utf-8');
+
+        $pegawaiId = (int)($teacher['pegawai_id'] ?: $teacher['id']);
+        if ($pegawaiId <= 0) {
+            echo json_encode(['success' => false, 'message' => 'Identitas pegawai tidak ditemukan.']);
+            exit;
+        }
+
+        $jenisIzin = trim($_POST['jenis_izin'] ?? 'tidak_masuk');
+        if (!in_array($jenisIzin, ['tidak_masuk', 'keluar_mengajar'])) {
+            $jenisIzin = 'tidak_masuk';
+        }
+
+        $kategori = trim($_POST['kategori'] ?? 'Sakit');
+        $alasan = trim($_POST['alasan'] ?? '');
+        $tanggalMulai = trim($_POST['tanggal_mulai'] ?? date('Y-m-d'));
+        $tanggalSelesai = trim($_POST['tanggal_selesai'] ?? $tanggalMulai);
+        $jamKeluar = !empty($_POST['jam_keluar']) ? trim($_POST['jam_keluar']) : null;
+        $jamKembali = !empty($_POST['jam_kembali']) ? trim($_POST['jam_kembali']) : null;
+        $kelasTerdampak = trim($_POST['kelas_terdampak'] ?? '');
+        $tugasSiswa = trim($_POST['tugas_siswa'] ?? '');
+        $guruPengganti = trim($_POST['guru_pengganti'] ?? '');
+
+        if (empty($alasan)) {
+            echo json_encode(['success' => false, 'message' => 'Alasan izin wajib diisi.']);
+            exit;
+        }
+
+        // Upload lampiran jika ada
+        $lampiran = null;
+        if (!empty($_FILES['lampiran']['name']) && $_FILES['lampiran']['error'] === UPLOAD_ERR_OK) {
+            $uploadDir = BASE_PATH . '/storage/uploads/izin';
+            if (!is_dir($uploadDir)) {
+                @mkdir($uploadDir, 0777, true);
+            }
+            $ext = strtolower(pathinfo($_FILES['lampiran']['name'], PATHINFO_EXTENSION));
+            $allowedExts = ['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx'];
+            if (in_array($ext, $allowedExts)) {
+                $filename = 'izin_' . $pegawaiId . '_' . date('Ymd_His') . '.' . $ext;
+                if (move_uploaded_file($_FILES['lampiran']['tmp_name'], $uploadDir . '/' . $filename)) {
+                    $lampiran = 'storage/uploads/izin/' . $filename;
+                }
+            }
+        }
+
+        try {
+            $db = Database::getInstance();
+            // Generate nomor unik
+            $nomorIzin = 'IZN-' . date('Ymd') . '-' . str_pad((string)mt_rand(1, 9999), 4, '0', STR_PAD_LEFT);
+
+            $db->query("
+                INSERT INTO izin_guru (
+                    nomor_izin, guru_id, jenis_izin, kategori, tanggal_mulai, tanggal_selesai,
+                    jam_keluar, jam_kembali, kelas_terdampak, tugas_siswa, guru_pengganti,
+                    alasan, lampiran_dokumen, status
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Menunggu Persetujuan')
+            ", [
+                $nomorIzin,
+                $pegawaiId,
+                $jenisIzin,
+                $kategori,
+                $tanggalMulai,
+                $tanggalSelesai,
+                $jamKeluar,
+                $jamKembali,
+                $kelasTerdampak ?: null,
+                $tugasSiswa ?: null,
+                $guruPengganti ?: null,
+                $alasan,
+                $lampiran
+            ]);
+
+            echo json_encode([
+                'success' => true,
+                'message' => 'Pengajuan izin berhasil dikirimkan!',
+                'nomor_izin' => $nomorIzin
+            ]);
+            exit;
+        } catch (Throwable $e) {
+            echo json_encode(['success' => false, 'message' => 'Gagal menyimpan pengajuan: ' . $e->getMessage()]);
+            exit;
+        }
     }
 
     /**
@@ -2593,14 +2693,108 @@ class PortalGuruController
      */
     public static function cuti(): void
     {
+        $teacher = self::getLoggedInTeacher();
         self::releaseSessionLock();
-        $leavesData = PortalGuruModel::getTeacherLeaves();
+        $pegawaiId = (int)($teacher['pegawai_id'] ?: $teacher['id']);
+
+        $leavesData = PortalGuruModel::getTeacherLeaves($pegawaiId);
+
+        // Ambil master jenis cuti aktif
+        $daftarJenisCuti = [];
+        try {
+            $daftarJenisCuti = Database::getInstance()->findAll("SELECT * FROM cuti_jenis WHERE is_active = 1 ORDER BY id ASC");
+        } catch (Throwable $e) {}
+
+        // Ambil daftar rekan guru aktif untuk pelimpahan tugas
+        $teachersList = [];
+        try {
+            $teachersList = Database::getInstance()->findAll("SELECT id, nama, gelar FROM pegawai WHERE is_active = 1 ORDER BY nama ASC");
+        } catch (Throwable $e) {}
 
         self::render('cuti', [
             'pageTitle' => 'Pengajuan Cuti Guru',
             'activeTab' => 'cuti',
             'quotas' => $leavesData['quotas'],
-            'records' => $leavesData['records']
+            'records' => $leavesData['records'],
+            'daftarJenisCuti' => $daftarJenisCuti,
+            'teachersList' => $teachersList
         ]);
+    }
+
+    /**
+     * API: Submit Permohonan Cuti Guru (Real DB)
+     */
+    public static function submitCuti(): void
+    {
+        $teacher = self::getLoggedInTeacher();
+        self::releaseSessionLock();
+        header('Content-Type: application/json; charset=utf-8');
+
+        $pegawaiId = (int)($teacher['pegawai_id'] ?: $teacher['id']);
+        if ($pegawaiId <= 0) {
+            echo json_encode(['success' => false, 'message' => 'Identitas pegawai tidak ditemukan.']);
+            exit;
+        }
+
+        $jenisCutiId = (int)($_POST['jenis_cuti_id'] ?? 0);
+        $tanggalMulai = trim($_POST['tanggal_mulai'] ?? '');
+        $tanggalSelesai = trim($_POST['tanggal_selesai'] ?? '');
+        $alasan = trim($_POST['alasan'] ?? '');
+        $pelimpahanTugas = trim($_POST['pelimpahan_tugas'] ?? '');
+        $alamatSelamaCuti = trim($_POST['alamat_selama_cuti'] ?? '');
+        $kontakDarurat = trim($_POST['kontak_darurat'] ?? '');
+
+        if ($jenisCutiId <= 0 || empty($tanggalMulai) || empty($tanggalSelesai) || empty($alasan)) {
+            echo json_encode(['success' => false, 'message' => 'Jenis cuti, tanggal, dan alasan wajib diisi lengkap.']);
+            exit;
+        }
+
+        // Upload file jika ada
+        $lampiran = null;
+        if (!empty($_FILES['lampiran']['name']) && $_FILES['lampiran']['error'] === UPLOAD_ERR_OK) {
+            $uploadDir = BASE_PATH . '/storage/uploads/cuti';
+            if (!is_dir($uploadDir)) {
+                @mkdir($uploadDir, 0777, true);
+            }
+            $ext = strtolower(pathinfo($_FILES['lampiran']['name'], PATHINFO_EXTENSION));
+            $allowedExts = ['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx'];
+            if (in_array($ext, $allowedExts)) {
+                $filename = 'cuti_' . $pegawaiId . '_' . date('Ymd_His') . '.' . $ext;
+                if (move_uploaded_file($_FILES['lampiran']['tmp_name'], $uploadDir . '/' . $filename)) {
+                    $lampiran = 'storage/uploads/cuti/' . $filename;
+                }
+            }
+        }
+
+        try {
+            require_once BASE_PATH . '/modules/kelola-cuti/models/CutiModel.php';
+            $payload = [
+                'pegawai_id' => $pegawaiId,
+                'jenis_cuti_id' => $jenisCutiId,
+                'tanggal_mulai' => $tanggalMulai,
+                'tanggal_selesai' => $tanggalSelesai,
+                'alasan' => $alasan,
+                'pelimpahan_tugas' => $pelimpahanTugas,
+                'alamat_selama_cuti' => $alamatSelamaCuti,
+                'kontak_darurat' => $kontakDarurat,
+                'file_lampiran' => $lampiran
+            ];
+
+            $userId = (int)($teacher['user_id'] ?? 0);
+            $userName = $teacher['name'] ?? 'Pegawai';
+            $newId = CutiModel::createPengajuan($payload, $userId, $userName);
+
+            $newRow = Database::getInstance()->find("SELECT nomor_pengajuan FROM cuti_pengajuan WHERE id = ?", [$newId]);
+
+            echo json_encode([
+                'success' => true,
+                'message' => 'Permohonan cuti berhasil diajukan!',
+                'nomor_pengajuan' => $newRow['nomor_pengajuan'] ?? ('CT-' . $newId)
+            ]);
+            exit;
+        } catch (Throwable $e) {
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            exit;
+        }
     }
 }

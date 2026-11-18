@@ -84,81 +84,131 @@
         </div>
 
         <div id="cuti-list-container" class="space-y-3">
-            <?php foreach ($records as $r): ?>
-                <div class="bg-white rounded-3xl p-4 shadow-sm border border-slate-100 space-y-3">
-                    
-                    <!-- Header: Type & Status -->
-                    <div class="flex items-center justify-between gap-2">
-                        <div class="flex items-center gap-2.5 min-w-0">
-                            <div class="w-10 h-10 rounded-2xl bg-primary-50 text-primary-600 flex items-center justify-center text-lg font-bold shrink-0">
-                                🏖️
-                            </div>
-                            <div class="min-w-0">
-                                <h4 class="font-black text-slate-900 text-xs truncate leading-tight"><?= htmlspecialchars($r['type']) ?></h4>
-                                <p class="text-[10px] text-slate-400 font-semibold mt-0.5"><?= htmlspecialchars($r['id']) ?> • <?= $r['daysCount'] ?> Hari Kerja</p>
-                            </div>
-                        </div>
-
-                        <!-- Status Badge -->
-                        <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-primary-100 text-primary-800 shrink-0 flex items-center gap-1">
-                            <i data-lucide="check-circle" class="w-3 h-3 text-primary-600"></i> <?= htmlspecialchars($r['status']) ?>
-                        </span>
+            <?php if (empty($records)): ?>
+                <div id="cuti-empty-state" class="bg-white rounded-3xl p-8 border border-slate-100 shadow-sm text-center space-y-3">
+                    <div class="w-16 h-16 mx-auto rounded-3xl bg-cyan-50 text-cyan-600 flex items-center justify-center text-3xl">
+                        🏖️
                     </div>
-
-                    <!-- Details Box -->
-                    <div class="bg-slate-50 rounded-2xl p-3 border border-slate-100 space-y-2 text-xs">
-                        <div class="flex items-center justify-between text-slate-700">
-                            <span class="text-slate-400 font-semibold text-[11px]">Tanggal Cuti:</span>
-                            <span class="font-bold text-slate-800"><?= htmlspecialchars($r['startDate']) ?> s.d. <?= htmlspecialchars($r['endDate']) ?></span>
-                        </div>
-                        <div class="text-slate-700 pt-1 border-t border-slate-200/60">
-                            <span class="text-slate-400 font-semibold text-[11px] block mb-0.5">Keperluan / Alasan:</span>
-                            <p class="font-medium text-slate-800 leading-relaxed"><?= htmlspecialchars($r['reason']) ?></p>
-                        </div>
-                        <div class="flex items-center justify-between text-slate-700 pt-1 border-t border-slate-200/60">
-                            <span class="text-slate-400 font-semibold text-[11px]">Pengganti Tugas:</span>
-                            <span class="font-bold text-slate-800"><?= htmlspecialchars($r['substitute']) ?></span>
-                        </div>
+                    <div>
+                        <h4 class="font-bold text-slate-800 text-sm">Belum Ada Riwayat Cuti</h4>
+                        <p class="text-xs text-slate-400 mt-1 max-w-xs mx-auto">Anda belum pernah mengajukan permohonan cuti. Klik tombol di atas untuk mengajukan permohonan baru.</p>
                     </div>
-
-                    <!-- 3-Step Approval Timeline -->
-                    <?php if (!empty($r['timeline'])): ?>
-                        <div class="pt-1 px-1">
-                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Proses Verifikasi</span>
-                            <div class="space-y-2">
-                                <?php foreach ($r['timeline'] as $tIdx => $t): ?>
-                                    <div class="flex items-center gap-2 text-xs">
-                                        <div class="w-4 h-4 rounded-full bg-primary-500 text-white flex items-center justify-center text-[9px] font-bold shrink-0">
-                                            ✓
-                                        </div>
-                                        <div class="flex-1 flex items-center justify-between">
-                                            <span class="font-bold text-slate-800 text-[11px]"><?= htmlspecialchars($t['step']) ?></span>
-                                            <span class="text-[10px] text-slate-400"><?= htmlspecialchars($t['time']) ?></span>
-                                        </div>
-                                    </div>
-                                <?php endforeach; ?>
-                            </div>
-                        </div>
-                    <?php endif; ?>
-
-                    <div class="text-[10px] text-slate-400 pt-1 border-t border-slate-50 flex items-center justify-between">
-                        <span>Diajukan: <?= htmlspecialchars($r['submittedAt']) ?></span>
-                        <span class="font-semibold text-primary-700">Dokumen Lengkap</span>
-                    </div>
-
                 </div>
-            <?php endforeach; ?>
+            <?php else: ?>
+                <?php foreach ($records as $r): ?>
+                    <div class="bg-white rounded-3xl p-4 shadow-sm border border-slate-100 space-y-3">
+                        
+                        <!-- Header: Type & Status -->
+                        <div class="flex items-center justify-between gap-2">
+                            <div class="flex items-center gap-2.5 min-w-0">
+                                <div class="w-10 h-10 rounded-2xl bg-primary-50 text-primary-600 flex items-center justify-center text-lg font-bold shrink-0">
+                                    🏖️
+                                </div>
+                                <div class="min-w-0">
+                                    <h4 class="font-black text-slate-900 text-xs truncate leading-tight"><?= htmlspecialchars($r['type']) ?></h4>
+                                    <p class="text-[10px] text-slate-400 font-semibold mt-0.5"><?= htmlspecialchars($r['id']) ?> • <?= $r['daysCount'] ?> Hari Kerja</p>
+                                </div>
+                            </div>
+
+                            <!-- Status Badge -->
+                            <?php if ($r['status'] === 'Disetujui'): ?>
+                                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-primary-100 text-primary-800 shrink-0 flex items-center gap-1">
+                                    <i data-lucide="check-circle" class="w-3 h-3 text-primary-600"></i> Disetujui
+                                </span>
+                            <?php elseif ($r['status'] === 'Pending'): ?>
+                                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 shrink-0 flex items-center gap-1">
+                                    <i data-lucide="clock" class="w-3 h-3 text-amber-600"></i> Diajukan
+                                </span>
+                            <?php else: ?>
+                                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 shrink-0 flex items-center gap-1">
+                                    <i data-lucide="x-circle" class="w-3 h-3 text-rose-600"></i> <?= htmlspecialchars($r['status']) ?>
+                                </span>
+                            <?php endif; ?>
+                        </div>
+
+                        <!-- Details Box -->
+                        <div class="bg-slate-50 rounded-2xl p-3 border border-slate-100 space-y-2 text-xs">
+                            <div class="flex items-center justify-between text-slate-700">
+                                <span class="text-slate-400 font-semibold text-[11px]">Tanggal Cuti:</span>
+                                <span class="font-bold text-slate-800"><?= htmlspecialchars($r['startDate']) ?> s.d. <?= htmlspecialchars($r['endDate']) ?></span>
+                            </div>
+                            <div class="text-slate-700 pt-1 border-t border-slate-200/60">
+                                <span class="text-slate-400 font-semibold text-[11px] block mb-0.5">Keperluan / Alasan:</span>
+                                <p class="font-medium text-slate-800 leading-relaxed"><?= htmlspecialchars($r['reason']) ?></p>
+                            </div>
+                            <div class="flex items-center justify-between text-slate-700 pt-1 border-t border-slate-200/60">
+                                <span class="text-slate-400 font-semibold text-[11px]">Pengganti Tugas:</span>
+                                <span class="font-bold text-slate-800"><?= htmlspecialchars($r['substitute']) ?></span>
+                            </div>
+                        </div>
+
+                        <!-- 3-Step Approval Timeline -->
+                        <?php if (!empty($r['timeline'])): ?>
+                            <div class="pt-1 px-1">
+                                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Proses Verifikasi</span>
+                                <div class="space-y-2">
+                                    <?php foreach ($r['timeline'] as $tIdx => $t): ?>
+                                        <div class="flex items-center gap-2 text-xs">
+                                            <div class="w-4 h-4 rounded-full <?= !empty($t['done']) ? 'bg-primary-500 text-white' : 'bg-slate-200 text-slate-400' ?> flex items-center justify-center text-[9px] font-bold shrink-0">
+                                                <?= !empty($t['done']) ? '✓' : '•' ?>
+                                            </div>
+                                            <div class="flex-1 flex items-center justify-between">
+                                                <span class="font-bold text-slate-800 text-[11px]"><?= htmlspecialchars($t['step']) ?></span>
+                                                <span class="text-[10px] text-slate-400"><?= htmlspecialchars($t['time']) ?></span>
+                                            </div>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+
+                        <div class="text-[10px] text-slate-400 pt-1 border-t border-slate-50 flex items-center justify-between">
+                            <span>Diajukan: <?= htmlspecialchars($r['submittedAt']) ?></span>
+                            <?php if (!empty($r['document'])): ?>
+                                <span class="font-semibold text-primary-700 flex items-center gap-1">
+                                    <i data-lucide="paperclip" class="w-3 h-3"></i> Dokumen Terlampir
+                                </span>
+                            <?php endif; ?>
+                        </div>
+
+                    </div>
+                <?php endforeach; ?>
+            <?php endif; ?>
         </div>
     </div>
 
 </div>
 
 <script>
+    window.DAFTAR_JENIS_CUTI = <?= json_encode($daftarJenisCuti ?? []) ?>;
+    window.TEACHERS_LIST = <?= json_encode(array_map(function($t) {
+        return trim(($t['nama'] ?? '') . (!empty($t['gelar']) ? (', ' . $t['gelar']) : ''));
+    }, $teachersList ?? [])) ?>;
+
     function openFormCutiModal() {
         const todayStr = new Date().toISOString().split('T')[0];
 
+        // Buat options jenis cuti dinamis dari database
+        let jenisOpts = '';
+        if (Array.isArray(window.DAFTAR_JENIS_CUTI) && window.DAFTAR_JENIS_CUTI.length > 0) {
+            window.DAFTAR_JENIS_CUTI.forEach((j, idx) => {
+                const kuotaInfo = j.kuota_hari > 0 ? ` (Maks ${j.kuota_hari} hari)` : '';
+                jenisOpts += `<option value="${j.id}" ${idx === 0 ? 'selected' : ''}>${j.nama_jenis}${kuotaInfo}</option>`;
+            });
+        } else {
+            jenisOpts = '<option value="1">Cuti Tahunan</option>';
+        }
+
+        // Buat options guru pengganti
+        let teacherOpts = '<option value="Guru Piket dan Tim Bidang">Guru Piket dan Tim Bidang</option>';
+        if (Array.isArray(window.TEACHERS_LIST) && window.TEACHERS_LIST.length > 0) {
+            window.TEACHERS_LIST.forEach(name => {
+                if (name) teacherOpts += `<option value="${name}">${name}</option>`;
+            });
+        }
+
         AndroidUI.bottomSheet({
-            title: 'Pengajuan Cuti Guru',
+            title: 'Pengajuan Cuti Pegawai',
             subtitle: 'Isi formulir permohonan cuti resmi',
             icon: '🏖️',
             iconBg: 'bg-primary-100 text-primary-600',
@@ -169,12 +219,7 @@
                     <div>
                         <label class="block text-xs font-bold text-slate-700 mb-1">Jenis Cuti <span class="text-rose-500">*</span></label>
                         <select id="modal-cuti-type" class="w-full px-3.5 py-2.5 text-xs bg-slate-50 rounded-2xl border border-slate-200 font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-inner">
-                            <option value="Cuti Tahunan">Cuti Tahunan (Sisa 10 Hari)</option>
-                            <option value="Cuti Sakit">Cuti Sakit (> 3 Hari / Rawat Inap)</option>
-                            <option value="Cuti Alasan Penting">Cuti Alasan Penting / Keluarga</option>
-                            <option value="Cuti Melahirkan">Cuti Melahirkan</option>
-                            <option value="Cuti Ibadah Keagamaan">Cuti Ibadah Keagamaan (Umrah / Haji)</option>
-                            <option value="Cuti di Luar Tanggungan">Cuti di Luar Tanggungan</option>
+                            ${jenisOpts}
                         </select>
                     </div>
 
@@ -198,24 +243,27 @@
 
                     <!-- Kontak / Alamat Selama Cuti -->
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">Nomor Kontak Darurat & Alamat Selama Cuti</label>
-                        <input type="text" id="modal-cuti-contact" placeholder="Contoh: 0812-4455-6677 (Jl. Merpati No. 12)" class="w-full px-3.5 py-2.5 text-xs bg-slate-50 rounded-2xl border border-slate-200 font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-inner">
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Nomor Kontak Darurat</label>
+                        <input type="text" id="modal-cuti-contact" placeholder="Contoh: 0812-4455-6677 (Suami/Istri)" class="w-full px-3.5 py-2.5 text-xs bg-slate-50 rounded-2xl border border-slate-200 font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-inner">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Alamat Selama Cuti</label>
+                        <input type="text" id="modal-cuti-address" placeholder="Contoh: Jl. Merpati No. 12, Kota Palu" class="w-full px-3.5 py-2.5 text-xs bg-slate-50 rounded-2xl border border-slate-200 font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-inner">
                     </div>
 
                     <!-- Guru Pengganti / Pelimpahan Tugas -->
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">Pelimpahan Tugas Mengajar</label>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Pelimpahan Tugas / Pengganti</label>
                         <select id="modal-cuti-substitute" class="w-full px-3.5 py-2.5 text-xs bg-slate-50 rounded-2xl border border-slate-200 font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-inner">
-                            <option value="Pak Hendra, M.Pd & Bu Fitri, S.Pd">Pak Hendra, M.Pd & Bu Fitri, S.Pd</option>
-                            <option value="Pak Ridwan, S.Kom">Pak Ridwan, S.Kom</option>
-                            <option value="Guru Piket dan MGMP Matematika">Guru Piket dan Tim MGMP Matematika</option>
+                            ${teacherOpts}
                         </select>
                     </div>
 
                     <!-- Lampiran Surat Pendukung -->
                     <div>
                         <label class="block text-xs font-bold text-slate-700 mb-1">Dokumen Pendukung (Surat Dokter / Undangan)</label>
-                        <input type="file" id="modal-cuti-file" class="text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer">
+                        <input type="file" id="modal-cuti-file" accept=".jpg,.jpeg,.png,.pdf,.doc,.docx" class="text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer">
                     </div>
 
                 </div>
@@ -242,72 +290,68 @@
         }, 350);
     }
 
-    function submitCuti(btn) {
-        const type = document.getElementById('modal-cuti-type')?.value;
+    async function submitCuti(btn) {
+        const jenisId = document.getElementById('modal-cuti-type')?.value;
+        const startDate = document.getElementById('modal-cuti-start')?.value || '';
+        const endDate = document.getElementById('modal-cuti-end')?.value || startDate;
         const reason = document.getElementById('modal-cuti-reason')?.value.trim();
-        const substitute = document.getElementById('modal-cuti-substitute')?.value;
+        const contact = document.getElementById('modal-cuti-contact')?.value.trim() || '';
+        const address = document.getElementById('modal-cuti-address')?.value.trim() || '';
+        const substitute = document.getElementById('modal-cuti-substitute')?.value || '';
+        const fileInput = document.getElementById('modal-cuti-file');
+
+        if (!jenisId) {
+            AndroidUI.toast('Mohon pilih jenis cuti!', 'warning');
+            return;
+        }
 
         if (!reason) {
             AndroidUI.toast('Mohon isi alasan permohonan cuti!', 'warning');
             return;
         }
 
+        const formData = new FormData();
+        formData.append('jenis_cuti_id', jenisId);
+        formData.append('tanggal_mulai', startDate);
+        formData.append('tanggal_selesai', endDate);
+        formData.append('alasan', reason);
+        formData.append('kontak_darurat', contact);
+        formData.append('alamat_selama_cuti', address);
+        formData.append('pelimpahan_tugas', substitute);
+
+        if (fileInput && fileInput.files && fileInput.files[0]) {
+            formData.append('lampiran', fileInput.files[0]);
+        }
+
         AndroidUI.setButtonLoading(btn, 'Mengajukan Cuti...');
 
-        setTimeout(() => {
-            AndroidUI.resetButton(btn);
-            AndroidUI.closeBottomSheet();
-
-            // Add new card to UI
-            const container = document.getElementById('cuti-list-container');
-            if (container) {
-                const newId = 'CT-2026-' + Math.floor(100 + Math.random() * 900);
-                const newCard = document.createElement('div');
-                newCard.className = 'bg-white rounded-3xl p-4 shadow-sm border border-slate-100 space-y-3 transition-all animate-bounce-short';
-                
-                newCard.innerHTML = `
-                    <div class="flex items-center justify-between gap-2">
-                        <div class="flex items-center gap-2.5 min-w-0">
-                            <div class="w-10 h-10 rounded-2xl bg-primary-50 text-primary-600 flex items-center justify-center text-lg font-bold shrink-0">
-                                🏖️
-                            </div>
-                            <div class="min-w-0">
-                                <h4 class="font-black text-slate-900 text-xs truncate leading-tight">${type}</h4>
-                                <p class="text-[10px] text-slate-400 font-semibold mt-0.5">${newId} • Menunggu Verifikasi</p>
-                            </div>
-                        </div>
-                        <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 shrink-0 flex items-center gap-1">
-                            <i data-lucide="clock" class="w-3 h-3 text-amber-600"></i> Diajukan
-                        </span>
-                    </div>
-                    <div class="bg-slate-50 rounded-2xl p-3 border border-slate-100 space-y-2 text-xs">
-                        <div class="text-slate-700">
-                            <span class="text-slate-400 font-semibold text-[11px] block mb-0.5">Keperluan:</span>
-                            <p class="font-medium text-slate-800 leading-relaxed">${reason}</p>
-                        </div>
-                        <div class="flex items-center justify-between text-slate-700 pt-1 border-t border-slate-200/60">
-                            <span class="text-slate-400 font-semibold text-[11px]">Pengganti:</span>
-                            <span class="font-bold text-slate-800">${substitute}</span>
-                        </div>
-                    </div>
-                    <div class="text-[10px] text-slate-400 pt-1 border-t border-slate-50 flex items-center justify-between">
-                        <span>Diajukan: Baru Saja</span>
-                        <span class="font-bold text-amber-600">Verifikasi Wakasek</span>
-                    </div>
-                `;
-
-                container.prepend(newCard);
-                if (window.lucide) window.lucide.createIcons();
-            }
-
-            AndroidUI.success({
-                title: 'Permohonan Cuti Terkirim! 🏖️✓',
-                subtitle: 'Menunggu Verifikasi Wakasek & Kepala Sekolah',
-                message: `Permohonan <strong>${type}</strong> Anda telah berhasil didaftarkan dan sedang dalam proses verifikasi pimpinan.`,
-                buttonText: 'Tutup'
+        try {
+            const res = await fetch('<?= url("mobile/cuti/submit") ?>', {
+                method: 'POST',
+                body: formData
             });
+            const data = await res.json();
 
-        }, 450);
+            AndroidUI.resetButton(btn);
+
+            if (data.success) {
+                AndroidUI.closeBottomSheet();
+                AndroidUI.success({
+                    title: 'Permohonan Cuti Terkirim! 🏖️✓',
+                    subtitle: 'Nomor: ' + (data.nomor_pengajuan || 'Tersimpan'),
+                    message: data.message || 'Permohonan cuti Anda berhasil diajukan dan sedang menunggu verifikasi.',
+                    buttonText: 'OK',
+                    onClick: () => {
+                        window.location.reload();
+                    }
+                });
+            } else {
+                AndroidUI.toast(data.message || 'Gagal mengajukan cuti', 'error');
+            }
+        } catch (err) {
+            AndroidUI.resetButton(btn);
+            AndroidUI.toast('Terjadi kesalahan koneksi saat mengirim permohonan.', 'error');
+        }
     }
 
     document.addEventListener('DOMContentLoaded', () => {

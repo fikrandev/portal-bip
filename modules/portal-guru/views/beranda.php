@@ -378,128 +378,34 @@ if ($hourNow < 11) {
     </div>
     <?php endif; ?>
 
-    <!-- 5. Akses Cepat (6 Action Items) -->
+    <!-- 5. Akses Cepat (Maksimal 3 Fitur Paling Sering Diakses) -->
     <div class="pt-1">
         <h3 class="font-bold text-slate-800 text-sm mb-3">Akses Cepat</h3>
         
         <div class="bg-white rounded-3xl p-4 shadow-sm border border-slate-100 grid grid-cols-3 gap-3">
-            
-            <?php if (!empty($isSupport)): ?>
-                <!-- Support System Akses Cepat (Non-KBM) -->
-                <!-- 1: Al-Qur'an Digital (Emerald) -->
-                <a href="<?= url('mobile/quran') ?>" class="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-primary-50/50 transition-all press-bounce">
-                    <div class="w-12 h-12 rounded-2xl bg-primary-600 text-white flex items-center justify-center shadow-md shadow-primary-500/20 text-lg">
-                        📖
-                    </div>
-                    <span class="text-[11px] font-bold text-slate-800 text-center leading-tight">Al-Qur'an<br>Digital</span>
-                </a>
+            <!-- 1: Al-Qur'an Digital (Emerald) -->
+            <a href="<?= url('mobile/quran') ?>" class="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-primary-50/50 transition-all press-bounce">
+                <div class="w-12 h-12 rounded-2xl bg-primary-600 text-white flex items-center justify-center shadow-md shadow-primary-500/20 text-lg">
+                    📖
+                </div>
+                <span class="text-[11px] font-bold text-slate-800 text-center leading-tight">Al-Qur'an<br>Digital</span>
+            </a>
 
-                <!-- 2: Dzikir Al-Ma'tsurat (Purple) -->
-                <a href="<?= url('mobile/dzikir') ?>" class="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-purple-50/50 transition-all press-bounce">
-                    <div class="w-12 h-12 rounded-2xl bg-purple-600 text-white flex items-center justify-center shadow-md shadow-purple-500/20 text-lg">
-                        📿
-                    </div>
-                    <span class="text-[11px] font-bold text-slate-800 text-center leading-tight">Dzikir<br>Al-Ma'tsurat</span>
-                </a>
+            <!-- 2: Dzikir Al-Ma'tsurat (Purple) -->
+            <a href="<?= url('mobile/dzikir') ?>" class="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-purple-50/50 transition-all press-bounce">
+                <div class="w-12 h-12 rounded-2xl bg-purple-600 text-white flex items-center justify-center shadow-md shadow-purple-500/20 text-lg">
+                    📿
+                </div>
+                <span class="text-[11px] font-bold text-slate-800 text-center leading-tight">Dzikir<br>Al-Ma'tsurat</span>
+            </a>
 
-                <!-- 3: Tasbih Digital (Amber) -->
-                <a href="<?= url('mobile/tasbih') ?>" class="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-amber-50/50 transition-all press-bounce">
-                    <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-600 to-amber-500 text-white flex items-center justify-center shadow-md shadow-amber-500/20 text-lg">
-                        ✨
-                    </div>
-                    <span class="text-[11px] font-bold text-slate-800 text-center leading-tight">Tasbih<br>Digital</span>
-                </a>
-
-                <!-- 4: Presensi GPS (Green) -->
-                <a href="<?= url('mobile/absen') ?>" class="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-emerald-50/50 transition-all press-bounce">
-                    <div class="w-12 h-12 rounded-2xl bg-[#16a34a] text-white flex items-center justify-center shadow-md shadow-emerald-500/20 text-lg">
-                        📍
-                    </div>
-                    <span class="text-[11px] font-bold text-slate-800 text-center leading-tight">Presensi<br>GPS</span>
-                </a>
-
-                <!-- 4: Jurnal Harian (Blue) -->
-                <a href="<?= url('mobile/jurnal') ?>" class="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-blue-50/50 transition-all press-bounce">
-                    <div class="w-12 h-12 rounded-2xl bg-[#2563eb] text-white flex items-center justify-center shadow-md shadow-blue-500/20 text-lg">
-                        📝
-                    </div>
-                    <span class="text-[11px] font-bold text-slate-800 text-center leading-tight">Jurnal<br>Harian</span>
-                </a>
-
-                <!-- 5: Pengajuan Izin (Amber) -->
-                <a href="<?= url('mobile/izin') ?>" class="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-amber-50/50 transition-all press-bounce">
-                    <div class="w-12 h-12 rounded-2xl bg-[#f59e0b] text-white flex items-center justify-center shadow-md shadow-amber-500/20 text-lg">
-                        📄
-                    </div>
-                    <span class="text-[11px] font-bold text-slate-800 text-center leading-tight">Pengajuan<br>Izin</span>
-                </a>
-
-                <!-- 6: Pengajuan Cuti (Cyan) -->
-                <a href="<?= url('mobile/cuti') ?>" class="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-cyan-50/50 transition-all press-bounce">
-                    <div class="w-12 h-12 rounded-2xl bg-[#06b6d4] text-white flex items-center justify-center shadow-md shadow-cyan-500/20 text-lg">
-                        🏖️
-                    </div>
-                    <span class="text-[11px] font-bold text-slate-800 text-center leading-tight">Pengajuan<br>Cuti</span>
-                </a>
-            <?php else: ?>
-                <!-- Guru Pengajar Akses Cepat (KBM) -->
-                <!-- 1: Al-Qur'an Digital (Emerald) -->
-                <a href="<?= url('mobile/quran') ?>" class="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-primary-50/50 transition-all press-bounce">
-                    <div class="w-12 h-12 rounded-2xl bg-primary-600 text-white flex items-center justify-center shadow-md shadow-primary-500/20 text-lg">
-                        📖
-                    </div>
-                    <span class="text-[11px] font-bold text-slate-800 text-center leading-tight">Al-Qur'an<br>Digital</span>
-                </a>
-
-                <!-- 2: Dzikir Al-Ma'tsurat (Purple) -->
-                <a href="<?= url('mobile/dzikir') ?>" class="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-purple-50/50 transition-all press-bounce">
-                    <div class="w-12 h-12 rounded-2xl bg-purple-600 text-white flex items-center justify-center shadow-md shadow-purple-500/20 text-lg">
-                        📿
-                    </div>
-                    <span class="text-[11px] font-bold text-slate-800 text-center leading-tight">Dzikir<br>Al-Ma'tsurat</span>
-                </a>
-
-                <!-- 3: Tasbih Digital (Amber) -->
-                <a href="<?= url('mobile/tasbih') ?>" class="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-amber-50/50 transition-all press-bounce">
-                    <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-600 to-amber-500 text-white flex items-center justify-center shadow-md shadow-amber-500/20 text-lg">
-                        ✨
-                    </div>
-                    <span class="text-[11px] font-bold text-slate-800 text-center leading-tight">Tasbih<br>Digital</span>
-                </a>
-
-                <!-- 4: Materi Pembelajaran (Blue) -->
-                <a href="<?= url('mobile/materi') ?>" class="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-primary-50/50 transition-all press-bounce">
-                    <div class="w-12 h-12 rounded-2xl bg-[#3b82f6] text-white flex items-center justify-center shadow-md shadow-primary-500/20">
-                        <i data-lucide="book-open" class="w-5 h-5"></i>
-                    </div>
-                    <span class="text-[11px] font-bold text-slate-800 text-center leading-tight">Materi<br>Ajar</span>
-                </a>
-
-                <!-- 4: Buat Tugas (Green) -->
-                <a href="<?= url('mobile/buat-tugas') ?>" class="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-primary-50/50 transition-all press-bounce">
-                    <div class="w-12 h-12 rounded-2xl bg-[#10b981] text-white flex items-center justify-center shadow-md shadow-primary-500/20">
-                        <i data-lucide="clipboard-check" class="w-5 h-5"></i>
-                    </div>
-                    <span class="text-[11px] font-bold text-slate-800 text-center leading-tight">Buat<br>Tugas</span>
-                </a>
-
-                <!-- 5: Absensi Kelas (Orange) -->
-                <a href="<?= url('mobile/absensi-kelas') ?>" class="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-orange-50/50 transition-all press-bounce">
-                    <div class="w-12 h-12 rounded-2xl bg-[#f97316] text-white flex items-center justify-center shadow-md shadow-orange-500/20">
-                        <i data-lucide="user-check" class="w-5 h-5"></i>
-                    </div>
-                    <span class="text-[11px] font-bold text-slate-800 text-center leading-tight">Absensi<br>Kelas</span>
-                </a>
-
-                <!-- 6: Bank Soal (Cyan) -->
-                <a href="<?= url('mobile/bank-soal') ?>" class="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-cyan-50/50 transition-all press-bounce">
-                    <div class="w-12 h-12 rounded-2xl bg-[#06b6d4] text-white flex items-center justify-center shadow-md shadow-cyan-500/20">
-                        <i data-lucide="folder" class="w-5 h-5"></i>
-                    </div>
-                    <span class="text-[11px] font-bold text-slate-800 text-center leading-tight">Bank<br>Soal</span>
-                </a>
-            <?php endif; ?>
-
+            <!-- 3: Tasbih Digital (Amber) -->
+            <a href="<?= url('mobile/tasbih') ?>" class="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-amber-50/50 transition-all press-bounce">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-600 to-amber-500 text-white flex items-center justify-center shadow-md shadow-amber-500/20 text-lg">
+                    ✨
+                </div>
+                <span class="text-[11px] font-bold text-slate-800 text-center leading-tight">Tasbih<br>Digital</span>
+            </a>
         </div>
     </div>
 
