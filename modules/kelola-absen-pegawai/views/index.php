@@ -19,6 +19,13 @@ $defaultLng = (float)($globalConfig['longitude_default'] ?? 119.8707000);
 $jamMasukMulai = substr($globalConfig['jam_masuk_mulai'] ?? '06:00:00', 0, 5);
 $jamMasukBatas = substr($globalConfig['jam_masuk_batas'] ?? '07:30:00', 0, 5);
 $jamPulangMulai = substr($globalConfig['jam_pulang_mulai'] ?? '15:00:00', 0, 5);
+$sabtuKhususAktif = !empty($globalConfig['sabtu_khusus_aktif']);
+$sabtuJamMasukMulai = substr($globalConfig['sabtu_jam_masuk_mulai'] ?? $jamMasukMulai, 0, 5);
+$sabtuJamMasukBatas = substr($globalConfig['sabtu_jam_masuk_batas'] ?? '07:30:00', 0, 5);
+$sabtuJamPulangMulai = substr($globalConfig['sabtu_jam_pulang_mulai'] ?? $jamPulangMulai, 0, 5);
+$globalJamHariIni = AbsenPegawaiModel::resolveGlobalJamForDate($globalConfig);
+$jamMasukBatasHariIni = substr($globalJamHariIni['jam_masuk_batas'], 0, 5);
+$jamPulangMulaiHariIni = substr($globalJamHariIni['jam_pulang_mulai'], 0, 5);
 $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
 ?>
 
@@ -285,7 +292,10 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
                     <span class="text-xs font-bold text-amber-800 bg-amber-50 px-3 py-1 rounded-xl border border-amber-200">
-                        ⏰ Jam Global: <?= substr($jamMasukBatas, 0, 5) ?> - <?= substr($jamPulangMulai, 0, 5) ?> WITA
+                        ⏰ Jam Global <?= !empty($globalJamHariIni['is_sabtu_khusus']) ? '(Sabtu)' : '' ?>: <?= $jamMasukBatasHariIni ?> - <?= $jamPulangMulaiHariIni ?> WITA
+                        <?php if ($sabtuKhususAktif && empty($globalJamHariIni['is_sabtu_khusus'])): ?>
+                            <span class="text-amber-600 font-semibold">(Sabtu: <?= $sabtuJamMasukBatas ?>)</span>
+                        <?php endif; ?>
                     </span>
                     <span class="text-xs font-extrabold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-xl border border-emerald-200">
                         Radius: <?= $radiusGlobal ?>m
@@ -663,8 +673,9 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
                                         <?php endif; ?>
                                     </td>
                                     <td class="py-3.5 px-4">
-                                        <div class="font-medium text-slate-800 truncate max-w-[200px]" title="<?= e($r['nama_kantor_absen'] ?: $r['nama_kantor_efektif']) ?>">
-                                            🏢 <?= e($r['nama_kantor_absen'] ?: $r['nama_kantor_efektif']) ?>
+                                        <?php $lokasiRekapTampil = ($r['nama_kantor_absen'] ?: ($r['nama_kantor_efektif'] ?? $defaultKantor)); ?>
+                                        <div class="font-medium text-slate-800 truncate max-w-[200px]" title="<?= e($lokasiRekapTampil) ?>">
+                                            🏢 <?= e($lokasiRekapTampil) ?>
                                         </div>
                                     </td>
                                     <td class="py-3.5 px-4 text-center font-mono">
@@ -839,11 +850,13 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
 
                     <!-- Jam Kerja & Batas Keterlambatan -->
                     <div class="p-4 rounded-2xl bg-amber-50/70 border border-amber-200 space-y-3">
-                        <div class="flex items-center gap-2">
-                            <span class="text-base">⏰</span>
-                            <div>
-                                <h4 class="text-xs font-extrabold text-amber-950">Jam Kedatangan & Toleransi Absen</h4>
-                                <p class="text-[11px] text-amber-800">Menentukan jam buka presensi, jam batas toleransi keterlambatan, dan jam pulang.</p>
+                        <div class="flex items-center justify-between gap-2">
+                            <div class="flex items-center gap-2">
+                                <span class="text-base">⏰</span>
+                                <div>
+                                    <h4 class="text-xs font-extrabold text-amber-950">Jam Kedatangan &amp; Toleransi Absen (Senin – Jumat)</h4>
+                                    <p class="text-[11px] text-amber-800">Berlaku sebagai jam kerja standar hari kerja biasa untuk semua pegawai (yang tidak diatur khusus).</p>
+                                </div>
                             </div>
                         </div>
 
@@ -865,6 +878,37 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
                                 <input type="time" name="jam_pulang_mulai" value="<?= e($jamPulangMulai) ?>" required
                                        class="w-full px-3 py-2 rounded-xl border border-amber-300 bg-white text-xs font-bold text-slate-800 outline-none">
                                 <span class="text-[10px] text-amber-700">Awal buka absen pulang</span>
+                            </div>
+                        </div>
+
+                        <!-- Pengaturan Jam Khusus Hari Sabtu -->
+                        <div class="pt-3 mt-1 border-t border-amber-200/80 space-y-2.5">
+                            <label class="inline-flex items-center gap-2 cursor-pointer select-none">
+                                <input type="checkbox" name="sabtu_khusus_aktif" id="chk_sabtu_khusus" value="1"
+                                       <?= $sabtuKhususAktif ? 'checked' : '' ?> onchange="toggleSabtuKhususGlobal()"
+                                       class="rounded text-amber-600 focus:ring-amber-500">
+                                <span class="text-xs font-extrabold text-amber-950">🗓️ Bedakan Jam Khusus Hari Sabtu</span>
+                                <span class="text-[10px] font-semibold text-amber-700">(Misal Senin–Jumat 07:00, Sabtu 07:30)</span>
+                            </label>
+
+                            <div id="box_sabtu_khusus_global" class="<?= $sabtuKhususAktif ? '' : 'hidden' ?> p-3 rounded-xl bg-white/90 border border-amber-200">
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                    <div>
+                                        <label class="block text-[11px] font-bold text-slate-700 mb-1">Mulai Check-in (Sabtu)</label>
+                                        <input type="time" name="sabtu_jam_masuk_mulai" id="sabtu_jam_masuk_mulai" value="<?= e($sabtuJamMasukMulai) ?>"
+                                               class="w-full px-3 py-1.5 rounded-xl border border-amber-300 bg-white text-xs font-bold text-slate-800 outline-none">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[11px] font-bold text-slate-700 mb-1">Batas Tepat Waktu (Sabtu) <span class="text-rose-500">*</span></label>
+                                        <input type="time" name="sabtu_jam_masuk_batas" id="sabtu_jam_masuk_batas" value="<?= e($sabtuJamMasukBatas) ?>" <?= $sabtuKhususAktif ? 'required' : '' ?>
+                                               class="w-full px-3 py-1.5 rounded-xl border border-rose-300 bg-white text-xs font-extrabold text-rose-700 outline-none">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[11px] font-bold text-slate-700 mb-1">Buka Check-out (Sabtu)</label>
+                                        <input type="time" name="sabtu_jam_pulang_mulai" id="sabtu_jam_pulang_mulai" value="<?= e($sabtuJamPulangMulai) ?>"
+                                               class="w-full px-3 py-1.5 rounded-xl border border-amber-300 bg-white text-xs font-bold text-slate-800 outline-none">
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1316,6 +1360,15 @@ const GLOBAL_JAM_PULANG_MULAI = <?= json_encode($jamPulangMulai) ?>;
 let defaultMap = null, defaultMarker = null, defaultCircle = null;
 let pegMap = null, pegMarker = null, pegCircle = null;
 let unitMap = null, unitMarker = null, unitCircle = null;
+
+function toggleSabtuKhususGlobal() {
+    const chk = document.getElementById('chk_sabtu_khusus');
+    const box = document.getElementById('box_sabtu_khusus_global');
+    const batasEl = document.getElementById('sabtu_jam_masuk_batas');
+    const active = !!(chk && chk.checked);
+    if (box) box.classList.toggle('hidden', !active);
+    if (batasEl) batasEl.required = active;
+}
 
 function setPeriodeAbsen(preset) {
     const awalEl = document.getElementById('periode_awal_absen');

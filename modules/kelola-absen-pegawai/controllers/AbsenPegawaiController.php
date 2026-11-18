@@ -70,9 +70,12 @@ class AbsenPegawaiController
             $radius = max(1, (int)($_POST['radius_meter'] ?? 10));
             $kantor = trim($_POST['nama_kantor_default'] ?? '');
             $jamBatas = trim($_POST['jam_masuk_batas'] ?? '07:30:00');
+            $sabtuInfo = !empty($_POST['sabtu_khusus_aktif'])
+                ? ', Sabtu Khusus: ' . substr(trim($_POST['sabtu_jam_masuk_batas'] ?? '07:30'), 0, 5) . ' WITA'
+                : '';
             Response::redirect(
                 url('kelola-absen-pegawai?tab=' . urlencode($returnTab)),
-                "Pengaturan berhasil disimpan! Radius: {$radius}m, Lokasi: {$kantor}, Batas Jam Masuk: " . substr($jamBatas, 0, 5) . " WITA.",
+                "Pengaturan berhasil disimpan! Radius: {$radius}m, Lokasi: {$kantor}, Batas Jam Masuk (Senin-Jumat): " . substr($jamBatas, 0, 5) . " WITA{$sabtuInfo}.",
                 'success'
             );
         } catch (Throwable $e) {
