@@ -95,6 +95,7 @@ class AutoMigrate
             '2026_11_17_000057_make_spmb_rbac_granular_permissions'       => 'migration057MakeSpmbRbacGranularPermissions',
             '2026_11_17_000058_make_all_modules_rbac_granular'            => 'migration058MakeAllModulesRbacGranular',
             '2026_11_18_000059_register_kelola_jurnal_staff_module'       => 'migration059RegisterKelolaJurnalStaffModule',
+            '2026_11_18_000060_add_kategori_to_master_jabatan'            => 'migration060AddKategoriToMasterJabatan',
         ];
     }
     /**
@@ -4550,6 +4551,30 @@ class AutoMigrate
         // 9. Bersihkan RBAC cache agar langsung ter-refresh di sesi pengguna
         if (class_exists('RBAC')) {
             RBAC::clearCache();
+        }
+    }
+
+    /**
+     * 060. Tambah kolom kategori ke master_jabatan (support_system vs guru)
+     */
+    public static function migration060AddKategoriToMasterJabatan(PDO $pdo): void
+    {
+        if (self::hasTable($pdo, 'master_jabatan')) {
+            if (!self::hasColumn($pdo, 'master_jabatan', 'kategori')) {
+                self::addColumnIfNotExists($pdo, 'master_jabatan', 'kategori', "VARCHAR(50) NOT NULL DEFAULT 'support_system'", 'nama');
+            }
+
+            try {
+                $pdo->exec("
+                    UPDATE `master_jabatan` 
+                    SET `kategori` = 'guru' 
+                    WHERE (LOWER(`nama`) LIKE '%guru%' 
+                       OR LOWER(`nama`) LIKE '%wali kelas%'
+                       OR LOWER(`nama`) LIKE '%wakakum%'
+                       OR LOWER(`nama`) LIKE '%kepala sekolah%')
+                      AND (`kategori` = 'support_system' OR `kategori` IS NULL OR `kategori` = '')
+                ");
+            } catch (Throwable $e) {}
         }
     }
 }

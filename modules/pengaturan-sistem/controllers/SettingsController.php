@@ -280,8 +280,13 @@ class SettingsController
         }
         try {
             $db->find("SELECT 1 FROM master_jabatan LIMIT 1");
+            $cols = $db->findAll("SHOW COLUMNS FROM master_jabatan LIKE 'kategori'");
+            if (empty($cols)) {
+                $db->getConnection()->exec("ALTER TABLE `master_jabatan` ADD COLUMN `kategori` VARCHAR(50) NOT NULL DEFAULT 'support_system' AFTER `nama`");
+                $db->getConnection()->exec("UPDATE `master_jabatan` SET `kategori` = 'guru' WHERE (LOWER(`nama`) LIKE '%guru%' OR LOWER(`nama`) LIKE '%wali kelas%' OR LOWER(`nama`) LIKE '%wakakum%' OR LOWER(`nama`) LIKE '%kepala sekolah%') AND (`kategori` = 'support_system' OR `kategori` IS NULL OR `kategori` = '')");
+            }
         } catch (Exception $e) {
-            $db->getConnection()->exec("CREATE TABLE IF NOT EXISTS `master_jabatan` (`id` INT AUTO_INCREMENT PRIMARY KEY, `nama` VARCHAR(100) NOT NULL, `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP)");
+            $db->getConnection()->exec("CREATE TABLE IF NOT EXISTS `master_jabatan` (`id` INT AUTO_INCREMENT PRIMARY KEY, `nama` VARCHAR(100) NOT NULL, `kategori` VARCHAR(50) NOT NULL DEFAULT 'support_system', `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP)");
         }
         
         $unit_tugas = $db->findAll("SELECT * FROM master_unit_tugas ORDER BY nama ASC");
@@ -360,10 +365,45 @@ class SettingsController
             exit;
         }
 
+        $kategori = trim($_POST['kategori'] ?? 'support_system');
+        if (!in_array($kategori, ['support_system', 'guru'])) {
+            $kategori = 'support_system';
+        }
+
         $db = Database::getInstance();
-        $db->insert('master_jabatan', ['nama' => $nama]);
+        $db->insert('master_jabatan', [
+            'nama' => $nama,
+            'kategori' => $kategori
+        ]);
         
         $_SESSION['flash_success'] = 'Jabatan berhasil ditambahkan.';
+        header('Location: ' . url('pengaturan-sistem/master-pegawai'));
+        exit;
+    }
+
+    /**
+     * Update Kategori Jabatan (support_system vs guru)
+     */
+    public static function updateKategoriJabatan(int $id): void
+    {
+        if (!CSRF::validate()) { 
+            $_SESSION['flash_error'] = 'Token tidak valid.';
+            header('Location: ' . url('pengaturan-sistem/master-pegawai'));
+            exit;
+        }
+
+        $kategori = trim($_POST['kategori'] ?? '');
+        if (!in_array($kategori, ['support_system', 'guru'])) {
+            $_SESSION['flash_error'] = 'Pilihan kategori jabatan tidak valid.';
+            header('Location: ' . url('pengaturan-sistem/master-pegawai'));
+            exit;
+        }
+
+        $db = Database::getInstance();
+        $db->update('master_jabatan', ['kategori' => $kategori], 'id = ?', [$id]);
+        
+        $label = ($kategori === 'guru') ? 'Guru (Pendidik)' : 'Support System';
+        $_SESSION['flash_success'] = "Kategori jabatan berhasil diubah menjadi {$label}.";
         header('Location: ' . url('pengaturan-sistem/master-pegawai'));
         exit;
     }

@@ -679,15 +679,33 @@ class JurnalStaffModel
      * =========================================================================
      */
 
-    public static function getMasterJabatanList(): array
+    public static function getMasterJabatanList(string $kategori = 'support_system'): array
     {
         $db = Database::getInstance();
+        try {
+            $hasKategori = $db->find("SHOW COLUMNS FROM master_jabatan LIKE 'kategori'");
+            if ($hasKategori) {
+                if ($kategori === 'all') {
+                    return $db->findAll("SELECT id, nama, kategori FROM master_jabatan ORDER BY nama ASC");
+                }
+                return $db->findAll("SELECT id, nama, kategori FROM master_jabatan WHERE kategori = ? ORDER BY nama ASC", [$kategori]);
+            }
+        } catch (Throwable $e) {}
+
         return $db->findAll("SELECT id, nama FROM master_jabatan ORDER BY nama ASC");
     }
 
     public static function getJabatanById(int $id): ?array
     {
         $db = Database::getInstance();
+        try {
+            $hasKategori = $db->find("SHOW COLUMNS FROM master_jabatan LIKE 'kategori'");
+            if ($hasKategori) {
+                $res = $db->find("SELECT id, nama, kategori FROM master_jabatan WHERE id = ?", [$id]);
+                return $res ?: null;
+            }
+        } catch (Throwable $e) {}
+
         $res = $db->find("SELECT id, nama FROM master_jabatan WHERE id = ?", [$id]);
         return $res ?: null;
     }

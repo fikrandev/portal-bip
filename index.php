@@ -917,6 +917,7 @@ $router->get('/pengaturan-sistem/master-pegawai', [SettingsController::class, 'm
 $router->post('/pengaturan-sistem/master-pegawai/unit-tugas/store', [SettingsController::class, 'storeUnitTugas'], [Middleware::permissionRequired('settings.master.update')]);
 $router->post('/pengaturan-sistem/master-pegawai/unit-tugas/delete/{id}', [SettingsController::class, 'deleteUnitTugas'], [Middleware::permissionRequired('settings.master.update')]);
 $router->post('/pengaturan-sistem/master-pegawai/jabatan/store', [SettingsController::class, 'storeJabatan'], [Middleware::permissionRequired('settings.master.update')]);
+$router->post('/pengaturan-sistem/master-pegawai/jabatan/update-kategori/{id}', [SettingsController::class, 'updateKategoriJabatan'], [Middleware::permissionRequired('settings.master.update')]);
 $router->post('/pengaturan-sistem/master-pegawai/jabatan/delete/{id}', [SettingsController::class, 'deleteJabatan'], [Middleware::permissionRequired('settings.master.update')]);
 $router->post('/pengaturan-sistem/master-pegawai/status-kerja/store', [SettingsController::class, 'storeStatusKerja'], [Middleware::permissionRequired('settings.master.update')]);
 $router->post('/pengaturan-sistem/master-pegawai/status-kerja/delete/{id}', [SettingsController::class, 'deleteStatusKerja'], [Middleware::permissionRequired('settings.master.update')]);
