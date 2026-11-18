@@ -1471,45 +1471,100 @@ class PortalGuruController
             $db = Database::getInstance();
             $file = $_FILES['foto_bukti'] ?? ($_FILES['foto'] ?? null);
 
-            // Cek apakah sudah pernah ada jurnal untuk (pegawai_id, tanggal, jam_id)
-            if (!$jurnalId && $jamId) {
-                $exist = $db->find("
-                    SELECT id FROM jurnal_staff 
-                    WHERE pegawai_id = ? AND tanggal = ? AND jam_id = ? 
-                    LIMIT 1
-                ", [$pegawaiId, $tanggal, $jamId]);
-                if ($exist) {
-                    $jurnalId = (int) $exist['id'];
+            // Upload foto sekali saja jika ada, agar bisa dipakai bersama untuk semua jam yang dipilih
+            $sharedFoto = null;
+            if ($file && !empty($file['tmp_name']) && $file['error'] === UPLOAD_ERR_OK) {
+                $sharedFoto = JurnalStaffModel::uploadBuktiFile($file);
+            }
+
+            // Support Multi-Jam Selection (e.g. jam_ids = [2, 3, 4] atau string "2,3,4")
+            $jamIds = [];
+            if (!empty($input['jam_ids'])) {
+                if (is_array($input['jam_ids'])) {
+                    $jamIds = array_map('intval', $input['jam_ids']);
+                } else {
+                    $jamIds = array_map('intval', explode(',', (string) $input['jam_ids']));
                 }
+            } elseif (!empty($input['jam_id'])) {
+                $jamIds = [(int) $input['jam_id']];
+            }
+            $jamIds = array_values(array_filter(array_unique($jamIds), fn($id) => $id > 0));
+
+            // Fallback jika tidak ada jam_ids
+            if (empty($jamIds)) {
+                $jamIds = [$jamId ?: 0];
             }
 
-            $data = [
-                'pegawai_id' => $pegawaiId,
-                'tanggal' => $tanggal,
-                'jam_id' => $jamId,
-                'jam_rentang' => $jamRentang,
-                'tugas_id' => $tugasId,
-                'aktivitas' => $aktivitas,
-                'uraian_hasil' => $uraianHasil,
-                'kendala' => $kendala ?: null,
-                'status' => $status
-            ];
+            $savedCount = 0;
+            $savedIds = [];
 
-            if ($jurnalId > 0) {
-                JurnalStaffModel::updateJurnal($jurnalId, $data, $file);
-                $savedId = $jurnalId;
-                $msg = 'Jurnal kerja berhasil diperbarui.';
-            } else {
-                $savedId = JurnalStaffModel::storeJurnal($data, $file);
-                $msg = 'Jurnal kerja berhasil disimpan!';
+            // Loop simpan jurnal untuk setiap jam yang dipilih
+            foreach ($jamIds as $currJamId) {
+                $currRentang = '';
+                if ($currJamId > 0) {
+                    $jamRow = JurnalStaffModel::getJamById($currJamId);
+                    if ($jamRow) {
+                        $currRentang = date('H:i', strtotime($jamRow['jam_mulai'])) . ' - ' . date('H:i', strtotime($jamRow['jam_selesai']));
+                    }
+                }
+                if ($currRentang === '') {
+                    $currRentang = $jamRentang ?: '08:00 - 09:00';
+                }
+
+                // Cek apakah sudah pernah ada jurnal untuk (pegawai_id, tanggal, jam_id)
+                $currJurnalId = null;
+                if ($currJamId > 0) {
+                    $exist = $db->find("
+                        SELECT id FROM jurnal_staff 
+                        WHERE pegawai_id = ? AND tanggal = ? AND jam_id = ? 
+                        LIMIT 1
+                    ", [$pegawaiId, $tanggal, $currJamId]);
+                    if ($exist) {
+                        $currJurnalId = (int) $exist['id'];
+                    }
+                } elseif ($jurnalId && count($jamIds) === 1) {
+                    $currJurnalId = $jurnalId;
+                }
+
+                $data = [
+                    'pegawai_id' => $pegawaiId,
+                    'tanggal' => $tanggal,
+                    'jam_id' => $currJamId ?: null,
+                    'jam_rentang' => $currRentang,
+                    'tugas_id' => $tugasId,
+                    'aktivitas' => $aktivitas,
+                    'uraian_hasil' => $uraianHasil,
+                    'kendala' => $kendala ?: null,
+                    'status' => $status
+                ];
+
+                // Jika ada foto yang baru diunggah, lampirkan ke record
+                if ($sharedFoto !== null) {
+                    $data['foto_bukti'] = $sharedFoto;
+                }
+
+                if ($currJurnalId > 0) {
+                    JurnalStaffModel::updateJurnal($currJurnalId, $data, null);
+                    $savedIds[] = $currJurnalId;
+                } else {
+                    $newId = JurnalStaffModel::storeJurnal($data, null);
+                    $savedIds[] = $newId;
+                }
+                $savedCount++;
             }
 
-            $savedRow = JurnalStaffModel::getJurnalById($savedId);
+            $msg = $savedCount > 1 
+                ? "Alhamdulillah, jurnal kerja berhasil disimpan untuk {$savedCount} sesi jam kerja!" 
+                : 'Jurnal kerja berhasil disimpan!';
+
+            $firstSavedRow = !empty($savedIds) ? JurnalStaffModel::getJurnalById($savedIds[0]) : null;
 
             echo json_encode([
                 'success' => true,
                 'message' => $msg,
-                'data' => $savedRow
+                'count' => $savedCount,
+                'saved_ids' => $savedIds,
+                'data' => $firstSavedRow
             ]);
             exit;
         } catch (Throwable $e) {
@@ -2225,7 +2280,8 @@ class PortalGuruController
                         $stmt->execute([$d[0], $d[1], $d[2], $d[3], $d[4]]);
                     }
                 }
-            } catch (Throwable $e) {}
+            } catch (Throwable $e) {
+            }
         } catch (Throwable $e) {
             error_log('ensureTasbihTablesExist error: ' . $e->getMessage());
         }

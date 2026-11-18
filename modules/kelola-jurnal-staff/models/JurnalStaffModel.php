@@ -445,9 +445,12 @@ class JurnalStaffModel
         $kodeJurnal = 'JSTF-' . date('Ymd', strtotime($tanggal)) . '-' . $randStr;
 
         // Upload foto jika ada
-        $fotoBukti = null;
+        $fotoBukti = !empty($data['foto_bukti']) ? $data['foto_bukti'] : null;
         if ($file && !empty($file['tmp_name']) && $file['error'] === UPLOAD_ERR_OK) {
-            $fotoBukti = self::uploadBuktiFile($file);
+            $uploaded = self::uploadBuktiFile($file);
+            if ($uploaded) {
+                $fotoBukti = $uploaded;
+            }
         }
 
         $db->query("
@@ -498,7 +501,7 @@ class JurnalStaffModel
         $kendala = isset($data['kendala']) ? trim($data['kendala']) : $existing['kendala'];
         $status = in_array($data['status'] ?? '', ['selesai', 'proses', 'tertunda'], true) ? $data['status'] : $existing['status'];
 
-        $fotoBukti = $existing['foto_bukti'];
+        $fotoBukti = isset($data['foto_bukti']) ? $data['foto_bukti'] : $existing['foto_bukti'];
         if ($file && !empty($file['tmp_name']) && $file['error'] === UPLOAD_ERR_OK) {
             $newFoto = self::uploadBuktiFile($file);
             if ($newFoto) {
@@ -933,9 +936,9 @@ class JurnalStaffModel
     }
 
     /**
-     * Helper upload foto bukti
+     * Helper upload foto bukti (Public agar bisa dipakai controller mobile)
      */
-    private static function uploadBuktiFile(array $file): ?string
+    public static function uploadBuktiFile(array $file): ?string
     {
         $allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
         $finfo = finfo_open(FILEINFO_MIME_TYPE);

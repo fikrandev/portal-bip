@@ -956,6 +956,114 @@ ALTER TABLE `user_roles`
   ADD CONSTRAINT `fk_ur_assigned_by` FOREIGN KEY (`assigned_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
   ADD CONSTRAINT `fk_ur_role` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_ur_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+--
+-- Table structure for table `tasbih_kategori`
+--
+CREATE TABLE IF NOT EXISTS `tasbih_kategori` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `pegawai_id` int(11) DEFAULT 0,
+  `nama_tasbih` varchar(100) NOT NULL,
+  `lafadz_arab` varchar(255) DEFAULT NULL,
+  `arti` text DEFAULT NULL,
+  `target_default` int(11) DEFAULT 33,
+  `is_default` tinyint(1) DEFAULT 0,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `idx_pegawai` (`pegawai_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Table structure for table `tasbih_riwayat`
+--
+CREATE TABLE IF NOT EXISTS `tasbih_riwayat` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `pegawai_id` int(11) NOT NULL,
+  `kategori_id` int(11) DEFAULT NULL,
+  `nama_tasbih` varchar(100) NOT NULL,
+  `jumlah` int(11) NOT NULL DEFAULT 0,
+  `target` int(11) NOT NULL DEFAULT 33,
+  `putaran` int(11) NOT NULL DEFAULT 1,
+  `catatan` varchar(255) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `idx_pegawai_tgl` (`pegawai_id`, `created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Table structure for table `jurnal_staff_jam`
+--
+CREATE TABLE IF NOT EXISTS `jurnal_staff_jam` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `nama_sesi` varchar(100) NOT NULL,
+  `jam_mulai` time NOT NULL,
+  `jam_selesai` time NOT NULL,
+  `tipe` enum('tilawah','aktifitas','istirahat','laporan') NOT NULL DEFAULT 'aktifitas',
+  `urutan` int(11) NOT NULL DEFAULT 0,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `keterangan` text DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `idx_jam_urutan` (`urutan`, `is_active`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Table structure for table `jurnal_staff_tugas`
+--
+CREATE TABLE IF NOT EXISTS `jurnal_staff_tugas` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `jabatan_id` int(11) NOT NULL,
+  `nama_tugas` varchar(255) NOT NULL,
+  `deskripsi` text DEFAULT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `idx_tugas_jabatan` (`jabatan_id`, `is_active`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Table structure for table `jurnal_staff`
+--
+CREATE TABLE IF NOT EXISTS `jurnal_staff` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `kode_jurnal` varchar(50) NOT NULL,
+  `pegawai_id` int(11) NOT NULL,
+  `nama_staff` varchar(150) NOT NULL,
+  `jabatan` varchar(100) NOT NULL,
+  `unit_tugas` varchar(100) DEFAULT NULL,
+  `tanggal` date NOT NULL,
+  `jam_id` int(11) DEFAULT NULL,
+  `jam_rentang` varchar(50) NOT NULL,
+  `tugas_id` int(11) DEFAULT NULL,
+  `aktivitas` text NOT NULL,
+  `uraian_hasil` text NOT NULL,
+  `kendala` text DEFAULT NULL,
+  `foto_bukti` varchar(255) DEFAULT NULL,
+  `status` enum('selesai','proses','tertunda') NOT NULL DEFAULT 'selesai',
+  `catatan_pimpinan` text DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `idx_staff_tgl` (`pegawai_id`, `tanggal`),
+  KEY `idx_staff_jam` (`jam_id`),
+  KEY `idx_staff_tugas` (`tugas_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Table structure for table `jurnal_staff_pengaturan`
+--
+CREATE TABLE IF NOT EXISTS `jurnal_staff_pengaturan` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `periode_nama` varchar(100) NOT NULL,
+  `tanggal_mulai` date NOT NULL,
+  `tanggal_selesai` date NOT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

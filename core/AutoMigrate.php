@@ -98,6 +98,7 @@ class AutoMigrate
             '2026_11_18_000060_add_kategori_to_master_jabatan'            => 'migration060AddKategoriToMasterJabatan',
             '2026_11_18_000061_create_tasbih_digital_tables'              => 'migration061CreateTasbihDigitalTables',
             '2026_11_18_000062_sync_absen_pegawai_jam_harian_and_tasbih'  => 'migration062SyncAbsenPegawaiJamHarianAndTasbih',
+            '2026_11_18_000063_sync_jurnal_staff_and_tasbih_tables'        => 'migration063SyncJurnalStaffAndTasbihTables',
         ];
     }
     /**
@@ -4713,6 +4714,75 @@ class AutoMigrate
                 }
             }
         } catch (Throwable $e) {}
+    }
+
+    /**
+     * 063. Sync Jurnal Staff & Tasbih Digital Tables Schema Integrity
+     */
+    public static function migration063SyncJurnalStaffAndTasbihTables(PDO $pdo): void
+    {
+        // 1. Tasbih Digital Kategori
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `tasbih_kategori` (
+              `id` INT(11) NOT NULL AUTO_INCREMENT,
+              `pegawai_id` INT(11) DEFAULT 0,
+              `nama_tasbih` VARCHAR(100) NOT NULL,
+              `lafadz_arab` VARCHAR(255) DEFAULT NULL,
+              `arti` TEXT DEFAULT NULL,
+              `target_default` INT(11) DEFAULT 33,
+              `is_default` TINYINT(1) DEFAULT 0,
+              `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              PRIMARY KEY (`id`),
+              KEY `idx_pegawai` (`pegawai_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
+
+        // 2. Tasbih Digital Riwayat
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `tasbih_riwayat` (
+              `id` INT(11) NOT NULL AUTO_INCREMENT,
+              `pegawai_id` INT(11) NOT NULL,
+              `kategori_id` INT(11) DEFAULT NULL,
+              `nama_tasbih` VARCHAR(100) NOT NULL,
+              `jumlah` INT(11) NOT NULL DEFAULT 0,
+              `target` INT(11) NOT NULL DEFAULT 33,
+              `putaran` INT(11) NOT NULL DEFAULT 1,
+              `catatan` VARCHAR(255) DEFAULT NULL,
+              `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              PRIMARY KEY (`id`),
+              KEY `idx_pegawai_tgl` (`pegawai_id`, `created_at`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
+
+        // Seed default categories jika kosong
+        try {
+            $count = (int)$pdo->query("SELECT COUNT(*) FROM `tasbih_kategori` WHERE `pegawai_id` = 0")->fetchColumn();
+            if ($count === 0) {
+                $defaults = [
+                    ['Subhanallah (Tasbih)', 'سُبْحَانَ اللَّهِ', 'Maha Suci Allah', 33, 1],
+                    ['Alhamdulillah (Tahmid)', 'الْحَمْدُ لِلَّهِ', 'Segala puji bagi Allah', 33, 1],
+                    ['Laa Ilaha Illallah (Tahlil)', 'لَا إِلٰهَ إِلَّا اللَّهُ', 'Tiada Tuhan selain Allah', 33, 1],
+                    ['Allahu Akbar (Takbir)', 'اللَّهُ أَكْبَرُ', 'Allah Maha Besar', 33, 1],
+                    ['Sholawat Nabi', 'اللَّهُمَّ صَلِّ عَلَى سَيِّدِنَا مُحَمَّدٍ', 'Ya Allah, limpahkanlah rahmat kepada junjungan kami Nabi Muhammad', 33, 1],
+                    ['Astaghfirullah (Istighfar)', 'أَسْتَغْفِرُ اللَّهَ الْعَظِيمَ', 'Aku memohon ampun kepada Allah Yang Maha Agung', 100, 1],
+                    ['Hauqalah', 'لَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللَّهِ', 'Tiada daya dan kekuatan kecuali dengan pertolongan Allah', 33, 1],
+                    ['Tasbih Lengkap (Subhanallah wa Bihamdihi)', 'سُبْحَانَ اللَّهِ وَبِحَمْدِهِ سُبْحَانَ اللَّهِ الْعَظِيمِ', 'Maha Suci Allah dengan memuji-Nya, Maha Suci Allah Yang Maha Agung', 100, 1],
+                ];
+
+                $stmt = $pdo->prepare("INSERT INTO `tasbih_kategori` (`nama_tasbih`, `lafadz_arab`, `arti`, `target_default`, `is_default`, `pegawai_id`) VALUES (?, ?, ?, ?, ?, 0)");
+                foreach ($defaults as $d) {
+                    $stmt->execute([$d[0], $d[1], $d[2], $d[3], $d[4]]);
+                }
+            }
+        } catch (Throwable $e) {}
+
+        // 3. Jurnal Staff Core Tables
+        if (file_exists(BASE_PATH . '/modules/kelola-jurnal-staff/models/JurnalStaffModel.php')) {
+            require_once BASE_PATH . '/modules/kelola-jurnal-staff/models/JurnalStaffModel.php';
+            if (class_exists('JurnalStaffModel')) {
+                JurnalStaffModel::ensureTablesExist();
+            }
+        }
     }
 }
 
