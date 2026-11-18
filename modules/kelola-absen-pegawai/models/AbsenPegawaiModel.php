@@ -32,7 +32,7 @@ class AbsenPegawaiModel
         }
         self::$initialized = true;
 
-        $stampFile = BASE_PATH . '/storage/logs/.schema_absen_pegawai_v4.stamp';
+        $stampFile = BASE_PATH . '/storage/logs/.schema_absen_pegawai_v5.stamp';
         if (file_exists($stampFile)) {
             return;
         }
@@ -128,33 +128,32 @@ class AbsenPegawaiModel
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
         ");
 
-        // Pastikan kolom jadwal tanggal_mulai, tanggal_selesai, dan hari_aktif tersedia jika tabel sudah dibuat sebelumnya
-        try {
-            $cols = $pdo->query("SHOW COLUMNS FROM `absen_pegawai_lokasi` LIKE 'tanggal_mulai'")->fetchAll();
-            if (empty($cols)) {
-                $pdo->exec("ALTER TABLE `absen_pegawai_lokasi` ADD COLUMN `tanggal_mulai` DATE NULL DEFAULT NULL AFTER `longitude`");
+        // Pastikan kolom tambahan tersedia pada tabel yang sudah ada (idempoten per kolom)
+        $schemaColumns = [
+            'absen_pegawai_lokasi' => [
+                'tanggal_mulai'    => 'DATE NULL DEFAULT NULL AFTER `longitude`',
+                'tanggal_selesai'  => 'DATE NULL DEFAULT NULL AFTER `tanggal_mulai`',
+                'hari_aktif'       => 'VARCHAR(100) NULL DEFAULT NULL AFTER `tanggal_selesai`',
+                'jam_masuk_mulai'  => 'TIME NULL DEFAULT NULL AFTER `hari_aktif`',
+                'jam_masuk_batas'  => 'TIME NULL DEFAULT NULL AFTER `jam_masuk_mulai`',
+                'jam_pulang_mulai' => 'TIME NULL DEFAULT NULL AFTER `jam_masuk_batas`',
+            ],
+            'absen_pegawai_lokasi_unit' => [
+                'jam_masuk_mulai'  => 'TIME NULL DEFAULT NULL AFTER `is_custom`',
+                'jam_masuk_batas'  => 'TIME NULL DEFAULT NULL AFTER `jam_masuk_mulai`',
+                'jam_pulang_mulai' => 'TIME NULL DEFAULT NULL AFTER `jam_masuk_batas`',
+            ],
+        ];
+        foreach ($schemaColumns as $tableName => $columns) {
+            foreach ($columns as $colName => $colDef) {
+                try {
+                    $exists = $pdo->query("SHOW COLUMNS FROM `{$tableName}` LIKE '{$colName}'")->fetchAll();
+                    if (empty($exists)) {
+                        $pdo->exec("ALTER TABLE `{$tableName}` ADD COLUMN `{$colName}` {$colDef}");
+                    }
+                } catch (Throwable $e) {}
             }
-            $cols2 = $pdo->query("SHOW COLUMNS FROM `absen_pegawai_lokasi` LIKE 'tanggal_selesai'")->fetchAll();
-            if (empty($cols2)) {
-                $pdo->exec("ALTER TABLE `absen_pegawai_lokasi` ADD COLUMN `tanggal_selesai` DATE NULL DEFAULT NULL AFTER `tanggal_mulai`");
-            }
-            $cols3 = $pdo->query("SHOW COLUMNS FROM `absen_pegawai_lokasi` LIKE 'hari_aktif'")->fetchAll();
-            if (empty($cols3)) {
-                $pdo->exec("ALTER TABLE `absen_pegawai_lokasi` ADD COLUMN `hari_aktif` VARCHAR(100) NULL DEFAULT NULL AFTER `tanggal_selesai`");
-            }
-            $cols4 = $pdo->query("SHOW COLUMNS FROM `absen_pegawai_lokasi` LIKE 'jam_masuk_batas'")->fetchAll();
-            if (empty($cols4)) {
-                $pdo->exec("ALTER TABLE `absen_pegawai_lokasi` ADD COLUMN `jam_masuk_mulai` TIME NULL DEFAULT NULL AFTER `hari_aktif`");
-                $pdo->exec("ALTER TABLE `absen_pegawai_lokasi` ADD COLUMN `jam_masuk_batas` TIME NULL DEFAULT NULL AFTER `jam_masuk_mulai`");
-                $pdo->exec("ALTER TABLE `absen_pegawai_lokasi` ADD COLUMN `jam_pulang_mulai` TIME NULL DEFAULT NULL AFTER `jam_masuk_batas`");
-            }
-            $cols5 = $pdo->query("SHOW COLUMNS FROM `absen_pegawai_lokasi_unit` LIKE 'jam_masuk_batas'")->fetchAll();
-            if (empty($cols5)) {
-                $pdo->exec("ALTER TABLE `absen_pegawai_lokasi_unit` ADD COLUMN `jam_masuk_mulai` TIME NULL DEFAULT NULL AFTER `is_custom`");
-                $pdo->exec("ALTER TABLE `absen_pegawai_lokasi_unit` ADD COLUMN `jam_masuk_batas` TIME NULL DEFAULT NULL AFTER `jam_masuk_mulai`");
-                $pdo->exec("ALTER TABLE `absen_pegawai_lokasi_unit` ADD COLUMN `jam_pulang_mulai` TIME NULL DEFAULT NULL AFTER `jam_masuk_batas`");
-            }
-        } catch (Throwable $e) {}
+        }
 
         // 4. Tabel Log Kehadiran / Presensi Harian Pegawai
         $pdo->exec("

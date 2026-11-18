@@ -1100,21 +1100,23 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
                     </div>
                 </div>
 
-                <div id="box_jam_custom_pegawai" class="hidden grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-amber-200/80">
-                    <div>
-                        <label class="block text-[11px] font-bold text-amber-900 mb-1">Mulai Masuk</label>
-                        <input type="time" name="jam_masuk_mulai" id="modal_peg_jam_masuk_mulai" value="<?= substr($jamMasukMulai, 0, 5) ?>"
-                               class="w-full px-3 py-1.5 rounded-xl border border-amber-300 bg-white text-xs font-bold text-slate-800 outline-none">
-                    </div>
-                    <div>
-                        <label class="block text-[11px] font-bold text-amber-900 mb-1">Batas Tepat Waktu <span class="text-rose-500">*</span></label>
-                        <input type="time" name="jam_masuk_batas" id="modal_peg_jam_masuk_batas" value="<?= substr($jamMasukBatas, 0, 5) ?>"
-                               class="w-full px-3 py-1.5 rounded-xl border border-rose-300 bg-white text-xs font-bold text-rose-700 outline-none">
-                    </div>
-                    <div>
-                        <label class="block text-[11px] font-bold text-amber-900 mb-1">Buka Check-out</label>
-                        <input type="time" name="jam_pulang_mulai" id="modal_peg_jam_pulang_mulai" value="<?= substr($jamPulangMulai, 0, 5) ?>"
-                               class="w-full px-3 py-1.5 rounded-xl border border-amber-300 bg-white text-xs font-bold text-slate-800 outline-none">
+                <div id="box_jam_custom_pegawai" class="hidden pt-2 border-t border-amber-200/80">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div>
+                            <label class="block text-[11px] font-bold text-amber-900 mb-1">Mulai Masuk</label>
+                            <input type="time" name="jam_masuk_mulai" id="modal_peg_jam_masuk_mulai" value="<?= substr($jamMasukMulai, 0, 5) ?>"
+                                   class="w-full px-3 py-1.5 rounded-xl border border-amber-300 bg-white text-xs font-bold text-slate-800 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-amber-900 mb-1">Batas Tepat Waktu <span class="text-rose-500">*</span></label>
+                            <input type="time" name="jam_masuk_batas" id="modal_peg_jam_masuk_batas" value="<?= substr($jamMasukBatas, 0, 5) ?>"
+                                   class="w-full px-3 py-1.5 rounded-xl border border-rose-300 bg-white text-xs font-bold text-rose-700 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-amber-900 mb-1">Buka Check-out</label>
+                            <input type="time" name="jam_pulang_mulai" id="modal_peg_jam_pulang_mulai" value="<?= substr($jamPulangMulai, 0, 5) ?>"
+                                   class="w-full px-3 py-1.5 rounded-xl border border-amber-300 bg-white text-xs font-bold text-slate-800 outline-none">
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1192,24 +1194,26 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
                 </div>
             </div>
 
-            <div id="box_inputs_jam_kerja" class="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3.5 rounded-2xl bg-amber-50/60 border border-amber-200">
-                <div>
-                    <label class="block text-[11px] font-bold text-amber-950 mb-1">Mulai Masuk</label>
-                    <input type="time" name="jam_masuk_mulai" id="modal_jam_masuk_mulai" value="<?= substr($jamMasukMulai, 0, 5) ?>"
-                           class="w-full px-3 py-2 rounded-xl border border-amber-300 bg-white text-xs font-bold text-slate-800 outline-none">
-                    <span class="text-[10px] text-amber-700">Awal check-in</span>
-                </div>
-                <div>
-                    <label class="block text-[11px] font-bold text-amber-950 mb-1">Batas Tepat Waktu <span class="text-rose-500">*</span></label>
-                    <input type="time" name="jam_masuk_batas" id="modal_jam_masuk_batas" value="<?= substr($jamMasukBatas, 0, 5) ?>" required
-                           class="w-full px-3 py-2 rounded-xl border border-rose-300 bg-white text-xs font-extrabold text-rose-700 outline-none">
-                    <span class="text-[10px] text-rose-600 font-semibold">&gt; jam ini = Terlambat</span>
-                </div>
-                <div>
-                    <label class="block text-[11px] font-bold text-amber-950 mb-1">Buka Check-out</label>
-                    <input type="time" name="jam_pulang_mulai" id="modal_jam_pulang_mulai" value="<?= substr($jamPulangMulai, 0, 5) ?>"
-                           class="w-full px-3 py-2 rounded-xl border border-amber-300 bg-white text-xs font-bold text-slate-800 outline-none">
-                    <span class="text-[10px] text-amber-700">Awal check-out</span>
+            <div id="box_inputs_jam_kerja" class="p-3.5 rounded-2xl bg-amber-50/60 border border-amber-200">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-[11px] font-bold text-amber-950 mb-1">Mulai Masuk</label>
+                        <input type="time" name="jam_masuk_mulai" id="modal_jam_masuk_mulai" value="<?= substr($jamMasukMulai, 0, 5) ?>"
+                               class="w-full px-3 py-2 rounded-xl border border-amber-300 bg-white text-xs font-bold text-slate-800 outline-none">
+                        <span class="text-[10px] text-amber-700">Awal check-in</span>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-amber-950 mb-1">Batas Tepat Waktu <span class="text-rose-500">*</span></label>
+                        <input type="time" name="jam_masuk_batas" id="modal_jam_masuk_batas" value="<?= substr($jamMasukBatas, 0, 5) ?>" required
+                               class="w-full px-3 py-2 rounded-xl border border-rose-300 bg-white text-xs font-extrabold text-rose-700 outline-none">
+                        <span class="text-[10px] text-rose-600 font-semibold">&gt; jam ini = Terlambat</span>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-amber-950 mb-1">Buka Check-out</label>
+                        <input type="time" name="jam_pulang_mulai" id="modal_jam_pulang_mulai" value="<?= substr($jamPulangMulai, 0, 5) ?>"
+                               class="w-full px-3 py-2 rounded-xl border border-amber-300 bg-white text-xs font-bold text-slate-800 outline-none">
+                        <span class="text-[10px] text-amber-700">Awal check-out</span>
+                    </div>
                 </div>
             </div>
 
@@ -1305,6 +1309,9 @@ const DEFAULT_LAT = <?= json_encode($defaultLat) ?>;
 const DEFAULT_LNG = <?= json_encode($defaultLng) ?>;
 const DEFAULT_KANTOR = <?= json_encode($defaultKantor) ?>;
 const GLOBAL_RADIUS = <?= json_encode($radiusGlobal) ?>;
+const GLOBAL_JAM_MASUK_MULAI = <?= json_encode($jamMasukMulai) ?>;
+const GLOBAL_JAM_MASUK_BATAS = <?= json_encode($jamMasukBatas) ?>;
+const GLOBAL_JAM_PULANG_MULAI = <?= json_encode($jamPulangMulai) ?>;
 
 let defaultMap = null, defaultMarker = null, defaultCircle = null;
 let pegMap = null, pegMarker = null, pegCircle = null;
@@ -1441,6 +1448,10 @@ function toggleJamCustomPegawai() {
     if (box) {
         box.classList.toggle('hidden', !isCustom);
     }
+    const batasEl = document.getElementById('modal_peg_jam_masuk_batas');
+    if (batasEl) {
+        batasEl.required = isCustom;
+    }
 }
 
 function formatYmd(dateObj) {
@@ -1556,6 +1567,19 @@ function openBulkCustomPegawai() {
     document.getElementById('modal_peg_kantor').value = DEFAULT_KANTOR;
     document.getElementById('modal_peg_lat').value = DEFAULT_LAT;
     document.getElementById('modal_peg_lng').value = DEFAULT_LNG;
+    document.getElementById('modal_peg_ket').value = '';
+
+    document.getElementById('durasi_permanen').checked = true;
+    document.getElementById('modal_peg_tgl_mulai').value = '';
+    document.getElementById('modal_peg_tgl_selesai').value = '';
+    document.querySelectorAll('.chk-hari-aktif').forEach(c => c.checked = false);
+    toggleJadwalCustomPegawai();
+
+    document.getElementById('jam_tipe_global').checked = true;
+    document.getElementById('modal_peg_jam_masuk_mulai').value = GLOBAL_JAM_MASUK_MULAI;
+    document.getElementById('modal_peg_jam_masuk_batas').value = GLOBAL_JAM_MASUK_BATAS;
+    document.getElementById('modal_peg_jam_pulang_mulai').value = GLOBAL_JAM_PULANG_MULAI;
+    toggleJamCustomPegawai();
 
     const modal = document.getElementById('modalCustomPegawai');
     modal.classList.remove('hidden');
@@ -1570,6 +1594,10 @@ function toggleModalJamMode() {
     const box = document.getElementById('box_inputs_jam_kerja');
     if (box) {
         box.classList.toggle('hidden', !isCustom);
+    }
+    const batasEl = document.getElementById('modal_jam_masuk_batas');
+    if (batasEl) {
+        batasEl.required = isCustom;
     }
 }
 
@@ -1592,9 +1620,9 @@ function openModalCustomJamKerja(pegawaiId = null, namaPegawai = '', mode = 'cus
     }
     toggleModalJamMode();
 
-    if (masukMulai) document.getElementById('modal_jam_masuk_mulai').value = masukMulai;
-    if (masukBatas) document.getElementById('modal_jam_masuk_batas').value = masukBatas;
-    if (pulangMulai) document.getElementById('modal_jam_pulang_mulai').value = pulangMulai;
+    document.getElementById('modal_jam_masuk_mulai').value = masukMulai || GLOBAL_JAM_MASUK_MULAI;
+    document.getElementById('modal_jam_masuk_batas').value = masukBatas || GLOBAL_JAM_MASUK_BATAS;
+    document.getElementById('modal_jam_pulang_mulai').value = pulangMulai || GLOBAL_JAM_PULANG_MULAI;
 
     const modal = document.getElementById('modalCustomJamKerja');
     modal.classList.remove('hidden');
@@ -1615,16 +1643,13 @@ function openBulkCustomJamKerja() {
     document.getElementById('mode_jam_custom').checked = true;
     toggleModalJamMode();
 
+    document.getElementById('modal_jam_masuk_mulai').value = GLOBAL_JAM_MASUK_MULAI;
+    document.getElementById('modal_jam_masuk_batas').value = GLOBAL_JAM_MASUK_BATAS;
+    document.getElementById('modal_jam_pulang_mulai').value = GLOBAL_JAM_PULANG_MULAI;
+
     const modal = document.getElementById('modalCustomJamKerja');
     modal.classList.remove('hidden');
     modal.classList.add('flex');
-}
-
-    const modal = document.getElementById('modalCustomPegawai');
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
-
-    setTimeout(initModalPegMap, 150);
 }
 
 // ── Modal Custom Unit ──
