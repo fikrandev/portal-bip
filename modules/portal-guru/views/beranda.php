@@ -166,6 +166,9 @@ if ($hourNow < 11) {
                 <a href="<?= url('mobile/dzikir') ?>" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-800 hover:bg-purple-200 flex items-center gap-1 transition-all press-bounce">
                     <span>📿</span> Dzikir
                 </a>
+                <a href="<?= url('mobile/tasbih') ?>" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 hover:bg-amber-200 flex items-center gap-1 transition-all press-bounce">
+                    <span>✨</span> Tasbih
+                </a>
                 <span id="ibadah-total-badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary-50 text-primary-700 border border-primary-200">
                     0/4 Selesai
                 </span>
@@ -399,7 +402,15 @@ if ($hourNow < 11) {
                     <span class="text-[11px] font-bold text-slate-800 text-center leading-tight">Dzikir<br>Al-Ma'tsurat</span>
                 </a>
 
-                <!-- 3: Presensi GPS (Green) -->
+                <!-- 3: Tasbih Digital (Amber) -->
+                <a href="<?= url('mobile/tasbih') ?>" class="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-amber-50/50 transition-all press-bounce">
+                    <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-600 to-amber-500 text-white flex items-center justify-center shadow-md shadow-amber-500/20 text-lg">
+                        ✨
+                    </div>
+                    <span class="text-[11px] font-bold text-slate-800 text-center leading-tight">Tasbih<br>Digital</span>
+                </a>
+
+                <!-- 4: Presensi GPS (Green) -->
                 <a href="<?= url('mobile/absen') ?>" class="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-emerald-50/50 transition-all press-bounce">
                     <div class="w-12 h-12 rounded-2xl bg-[#16a34a] text-white flex items-center justify-center shadow-md shadow-emerald-500/20 text-lg">
                         📍
@@ -448,7 +459,15 @@ if ($hourNow < 11) {
                     <span class="text-[11px] font-bold text-slate-800 text-center leading-tight">Dzikir<br>Al-Ma'tsurat</span>
                 </a>
 
-                <!-- 3: Materi Pembelajaran (Blue) -->
+                <!-- 3: Tasbih Digital (Amber) -->
+                <a href="<?= url('mobile/tasbih') ?>" class="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-amber-50/50 transition-all press-bounce">
+                    <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-600 to-amber-500 text-white flex items-center justify-center shadow-md shadow-amber-500/20 text-lg">
+                        ✨
+                    </div>
+                    <span class="text-[11px] font-bold text-slate-800 text-center leading-tight">Tasbih<br>Digital</span>
+                </a>
+
+                <!-- 4: Materi Pembelajaran (Blue) -->
                 <a href="<?= url('mobile/materi') ?>" class="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-primary-50/50 transition-all press-bounce">
                     <div class="w-12 h-12 rounded-2xl bg-[#3b82f6] text-white flex items-center justify-center shadow-md shadow-primary-500/20">
                         <i data-lucide="book-open" class="w-5 h-5"></i>

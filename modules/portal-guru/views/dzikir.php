@@ -25,6 +25,23 @@
 
 <div class="p-4 space-y-3.5">
 
+    <!-- Shortcut Tasbih Digital Interaktif -->
+    <a href="<?= url('mobile/tasbih') ?>" class="p-3 bg-gradient-to-r from-amber-500/10 via-amber-50 to-orange-50 border border-amber-200 rounded-2xl flex items-center justify-between text-xs press-bounce shadow-xs">
+        <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-amber-600 to-amber-500 text-white flex items-center justify-center font-bold text-sm shadow-sm shadow-amber-500/30">
+                ✨
+            </div>
+            <div>
+                <h4 class="font-bold text-slate-900 text-xs">Tasbih Digital Interaktif</h4>
+                <p class="text-[10px] text-slate-500">Hitung Tahlil, Tahmid, Sholawat, atau input jenis dzikir sendiri</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-1 text-[11px] font-bold text-amber-700 shrink-0 bg-white/80 px-2.5 py-1 rounded-xl border border-amber-200/60">
+            <span>Buka</span>
+            <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+        </div>
+    </a>
+
     <!-- Mode Selector (Pagi vs Petang & Sugro vs Kubro) -->
     <div class="bg-white rounded-3xl p-3.5 shadow-sm border border-slate-100 space-y-2.5">
         

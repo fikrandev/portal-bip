@@ -324,6 +324,11 @@
                             <div class="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center shadow-md shadow-purple-500/20 text-base font-bold">📿</div>
                             <span class="text-[11px] font-bold text-slate-700 text-center leading-tight">Dzikir</span>
                         </a>
+
+                        <a href="<?= url('mobile/tasbih') ?>" class="flex flex-col items-center gap-1.5 p-2.5 bg-amber-50 rounded-2xl border border-amber-100 press-bounce">
+                            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-600 to-amber-500 text-white flex items-center justify-center shadow-md shadow-amber-500/20 text-base font-bold">✨</div>
+                            <span class="text-[11px] font-bold text-slate-700 text-center leading-tight">Tasbih</span>
+                        </a>
                     </div>
                 `
             });
@@ -373,6 +378,11 @@
                         <a href="<?= url('mobile/buat-tugas') ?>" class="flex flex-col items-center gap-1.5 p-2.5 bg-purple-50 rounded-2xl border border-purple-100 press-bounce">
                             <div class="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center shadow-md shadow-purple-500/20 text-base font-bold">📋</div>
                             <span class="text-[11px] font-bold text-slate-700 text-center leading-tight">Buat Tugas</span>
+                        </a>
+
+                        <a href="<?= url('mobile/tasbih') ?>" class="flex flex-col items-center gap-1.5 p-2.5 bg-amber-50 rounded-2xl border border-amber-100 press-bounce">
+                            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-600 to-amber-500 text-white flex items-center justify-center shadow-md shadow-amber-500/20 text-base font-bold">✨</div>
+                            <span class="text-[11px] font-bold text-slate-700 text-center leading-tight">Tasbih</span>
                         </a>
                     </div>
                 `

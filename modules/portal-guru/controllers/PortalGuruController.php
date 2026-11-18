@@ -1731,13 +1731,6 @@ class PortalGuruController
      */
     public static function materi(): void
     {
-        $teacher = self::getLoggedInTeacher();
-        self::releaseSessionLock();
-        if (!empty($teacher['is_support'])) {
-            header('Location: ' . url('mobile'));
-            exit;
-        }
-
         self::render('materi', [
             'pageTitle' => 'Materi Pembelajaran',
             'activeTab' => 'materi',
@@ -1756,11 +1749,6 @@ class PortalGuruController
     {
         $teacher = self::getLoggedInTeacher();
         self::releaseSessionLock();
-        if (!empty($teacher['is_support'])) {
-            header('Location: ' . url('mobile'));
-            exit;
-        }
-
         $classesMap = self::getTeacherClasses($teacher['pegawai_id'], $teacher['name']);
         $classes = !empty($classesMap) ? array_keys($classesMap) : [];
         if (empty($classes)) {
@@ -1787,11 +1775,6 @@ class PortalGuruController
     {
         $teacher = self::getLoggedInTeacher();
         self::releaseSessionLock();
-        if (!empty($teacher['is_support'])) {
-            header('Location: ' . url('mobile'));
-            exit;
-        }
-
         $classesMap = self::getTeacherClasses($teacher['pegawai_id'], $teacher['name']);
         $classes = !empty($classesMap) ? array_keys($classesMap) : [];
         if (empty($classes)) {
@@ -1816,13 +1799,6 @@ class PortalGuruController
      */
     public static function bankSoal(): void
     {
-        $teacher = self::getLoggedInTeacher();
-        self::releaseSessionLock();
-        if (!empty($teacher['is_support'])) {
-            header('Location: ' . url('mobile'));
-            exit;
-        }
-
         self::render('bank_soal', [
             'pageTitle' => 'Bank Soal Matematika',
             'activeTab' => 'bank_soal',
@@ -1870,6 +1846,231 @@ class PortalGuruController
             'teacherPegawaiId' => $guruIdForIbadah,
             'todayIbadahState' => self::getTodayIbadahState($guruIdForIbadah, $teacherGender),
         ]);
+    }
+
+    /**
+     * Tasbih Digital Interaktif dengan Kategori Kustom & Riwayat Dzikir
+     */
+    public static function tasbih(): void
+    {
+        $teacher = self::getLoggedInTeacher();
+        self::releaseSessionLock();
+        $guruId = (int)($teacher['pegawai_id'] ?: $teacher['user_id'] ?: 0);
+        $db = Database::getInstance();
+
+        // Ambil kategori bawaan (pegawai_id = 0) dan kustom milik pegawai saat ini
+        $kategori = [];
+        try {
+            $kategori = $db->findAll("
+                SELECT * FROM tasbih_kategori 
+                WHERE pegawai_id = 0 OR pegawai_id = ?
+                ORDER BY is_default DESC, id ASC
+            ", [$guruId]);
+        } catch (Throwable $e) {}
+
+        // Ambil riwayat tasbih hari ini dan statistik
+        $riwayatHariIni = [];
+        $totalDzikirHariIni = 0;
+        $totalSesiHariIni = 0;
+        try {
+            $today = date('Y-m-d');
+            $riwayatHariIni = $db->findAll("
+                SELECT * FROM tasbih_riwayat 
+                WHERE pegawai_id = ? AND DATE(created_at) = ?
+                ORDER BY created_at DESC LIMIT 30
+            ", [$guruId, $today]);
+
+            $stats = $db->find("
+                SELECT SUM(jumlah) as total_dzikir, COUNT(*) as total_sesi 
+                FROM tasbih_riwayat 
+                WHERE pegawai_id = ? AND DATE(created_at) = ?
+            ", [$guruId, $today]);
+            $totalDzikirHariIni = (int)($stats['total_dzikir'] ?? 0);
+            $totalSesiHariIni = (int)($stats['total_sesi'] ?? 0);
+        } catch (Throwable $e) {}
+
+        self::render('tasbih', [
+            'pageTitle' => 'Tasbih Digital',
+            'activeTab' => 'tasbih',
+            'kategori' => $kategori,
+            'riwayatHariIni' => $riwayatHariIni,
+            'totalDzikirHariIni' => $totalDzikirHariIni,
+            'totalSesiHariIni' => $totalSesiHariIni,
+            'teacher' => $teacher,
+        ]);
+    }
+
+    /**
+     * API: Simpan Jenis / Kategori Tasbih Kustom (Input Sendiri)
+     */
+    public static function simpanKategoriTasbih(): void
+    {
+        $teacher = self::getLoggedInTeacher();
+        self::releaseSessionLock();
+        header('Content-Type: application/json; charset=utf-8');
+
+        $guruId = (int)($teacher['pegawai_id'] ?: $teacher['user_id'] ?: 0);
+        if ($guruId <= 0) {
+            echo json_encode(['success' => false, 'message' => 'Identitas pegawai tidak ditemukan.']);
+            exit;
+        }
+
+        $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
+        $namaTasbih = trim($input['nama_tasbih'] ?? '');
+        $lafadzArab = trim($input['lafadz_arab'] ?? '');
+        $arti = trim($input['arti'] ?? '');
+        $targetDefault = (int)($input['target_default'] ?? 33);
+        if ($targetDefault <= 0) $targetDefault = 33;
+
+        if (empty($namaTasbih)) {
+            echo json_encode(['success' => false, 'message' => 'Nama dzikir/tasbih wajib diisi.']);
+            exit;
+        }
+
+        try {
+            $db = Database::getInstance();
+            $db->query("
+                INSERT INTO tasbih_kategori (pegawai_id, nama_tasbih, lafadz_arab, arti, target_default, is_default)
+                VALUES (?, ?, ?, ?, ?, 0)
+            ", [$guruId, $namaTasbih, $lafadzArab, $arti, $targetDefault]);
+            $newId = (int)$db->lastInsertId();
+
+            $newRow = $db->find("SELECT * FROM tasbih_kategori WHERE id = ?", [$newId]);
+
+            echo json_encode([
+                'success' => true,
+                'message' => 'Jenis tasbih baru berhasil disimpan!',
+                'data' => $newRow
+            ]);
+            exit;
+        } catch (Throwable $e) {
+            echo json_encode(['success' => false, 'message' => 'Gagal menyimpan: ' . $e->getMessage()]);
+            exit;
+        }
+    }
+
+    /**
+     * API: Hapus Jenis Tasbih Kustom milik pegawai
+     */
+    public static function hapusKategoriTasbih(): void
+    {
+        $teacher = self::getLoggedInTeacher();
+        self::releaseSessionLock();
+        header('Content-Type: application/json; charset=utf-8');
+
+        $guruId = (int)($teacher['pegawai_id'] ?: $teacher['user_id'] ?: 0);
+        $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
+        $id = (int)($input['id'] ?? 0);
+
+        if ($id <= 0 || $guruId <= 0) {
+            echo json_encode(['success' => false, 'message' => 'ID kategori tidak valid.']);
+            exit;
+        }
+
+        try {
+            $db = Database::getInstance();
+            // Hanya boleh menghapus kategori kustom milik pegawai sendiri
+            $db->query("DELETE FROM tasbih_kategori WHERE id = ? AND pegawai_id = ? AND is_default = 0", [$id, $guruId]);
+            echo json_encode(['success' => true, 'message' => 'Jenis tasbih berhasil dihapus.']);
+            exit;
+        } catch (Throwable $e) {
+            echo json_encode(['success' => false, 'message' => 'Gagal menghapus: ' . $e->getMessage()]);
+            exit;
+        }
+    }
+
+    /**
+     * API: Simpan Hasil Hitungan / Sesi Tasbih Digital
+     */
+    public static function simpanSesiTasbih(): void
+    {
+        $teacher = self::getLoggedInTeacher();
+        self::releaseSessionLock();
+        header('Content-Type: application/json; charset=utf-8');
+
+        $guruId = (int)($teacher['pegawai_id'] ?: $teacher['user_id'] ?: 0);
+        if ($guruId <= 0) {
+            echo json_encode(['success' => false, 'message' => 'Identitas pegawai tidak ditemukan.']);
+            exit;
+        }
+
+        $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
+        $namaTasbih = trim($input['nama_tasbih'] ?? 'Dzikir');
+        $kategoriId = !empty($input['kategori_id']) ? (int)$input['kategori_id'] : null;
+        $jumlah = (int)($input['jumlah'] ?? 0);
+        $target = (int)($input['target'] ?? 33);
+        $putaran = (int)($input['putaran'] ?? 1);
+        $catatan = trim($input['catatan'] ?? '');
+
+        if ($jumlah <= 0) {
+            echo json_encode(['success' => false, 'message' => 'Jumlah hitungan tasbih minimal 1.']);
+            exit;
+        }
+
+        try {
+            $db = Database::getInstance();
+            $db->query("
+                INSERT INTO tasbih_riwayat (pegawai_id, kategori_id, nama_tasbih, jumlah, target, putaran, catatan)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ", [$guruId, $kategoriId, $namaTasbih, $jumlah, $target, $putaran, $catatan]);
+            $insertedId = (int)$db->lastInsertId();
+
+            // Auto centang dzikir mutabaah jika cocok
+            $lowerName = strtolower($namaTasbih);
+            $today = date('Y-m-d');
+            $gender = $teacher['gender'] ?? 'P';
+            if (strpos($lowerName, 'istighfar') !== false) {
+                self::ensureTodayIbadahRow($guruId, $gender, $today);
+                $db->query("UPDATE mutabaah_ibadah_guru SET dzikir_istighfar = 1 WHERE guru_id = ? AND tanggal = ?", [$guruId, $today]);
+            }
+            if (strpos($lowerName, 'sholawat') !== false) {
+                self::ensureTodayIbadahRow($guruId, $gender, $today);
+                $db->query("UPDATE mutabaah_ibadah_guru SET dzikir_sholawat = 1 WHERE guru_id = ? AND tanggal = ?", [$guruId, $today]);
+            }
+
+            echo json_encode([
+                'success' => true,
+                'message' => 'Alhamdulillah, sesi tasbih berhasil disimpan!',
+                'data' => [
+                    'id' => $insertedId,
+                    'nama_tasbih' => $namaTasbih,
+                    'jumlah' => $jumlah,
+                    'waktu' => date('H:i')
+                ]
+            ]);
+            exit;
+        } catch (Throwable $e) {
+            echo json_encode(['success' => false, 'message' => 'Gagal menyimpan riwayat tasbih: ' . $e->getMessage()]);
+            exit;
+        }
+    }
+
+    /**
+     * API: Ambil Riwayat Tasbih Pegawai
+     */
+    public static function apiTasbihRiwayat(): void
+    {
+        $teacher = self::getLoggedInTeacher();
+        self::releaseSessionLock();
+        header('Content-Type: application/json; charset=utf-8');
+
+        $guruId = (int)($teacher['pegawai_id'] ?: $teacher['user_id'] ?: 0);
+        $db = Database::getInstance();
+
+        try {
+            $riwayat = $db->findAll("
+                SELECT * FROM tasbih_riwayat 
+                WHERE pegawai_id = ? 
+                ORDER BY created_at DESC 
+                LIMIT 50
+            ", [$guruId]);
+
+            echo json_encode(['success' => true, 'data' => $riwayat]);
+            exit;
+        } catch (Throwable $e) {
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            exit;
+        }
     }
 
     /**
@@ -2208,11 +2409,6 @@ class PortalGuruController
     {
         $teacher = self::getLoggedInTeacher();
         self::releaseSessionLock();
-        if (!empty($teacher['is_support'])) {
-            header('Location: ' . url('mobile'));
-            exit;
-        }
-
         $classesMap = self::getTeacherClasses($teacher['pegawai_id'], $teacher['name']);
         $classes = !empty($classesMap) ? array_keys($classesMap) : [];
         if (empty($classes)) {

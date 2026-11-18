@@ -963,6 +963,11 @@ $router->get('/mobile/pesan-kelas', [PortalGuruController::class, 'pesanKelas'],
 $router->get('/mobile/bank-soal', [PortalGuruController::class, 'bankSoal'], [[PortalGuruAuthController::class, 'authRequired']]);
 $router->get('/mobile/quran', [PortalGuruController::class, 'quran'], [[PortalGuruAuthController::class, 'authRequired']]);
 $router->get('/mobile/dzikir', [PortalGuruController::class, 'dzikir'], [[PortalGuruAuthController::class, 'authRequired']]);
+$router->get('/mobile/tasbih', [PortalGuruController::class, 'tasbih'], [[PortalGuruAuthController::class, 'authRequired']]);
+$router->post('/mobile/tasbih/simpan-kategori', [PortalGuruController::class, 'simpanKategoriTasbih'], [[PortalGuruAuthController::class, 'authRequired']]);
+$router->post('/mobile/tasbih/hapus-kategori', [PortalGuruController::class, 'hapusKategoriTasbih'], [[PortalGuruAuthController::class, 'authRequired']]);
+$router->post('/mobile/tasbih/simpan-sesi', [PortalGuruController::class, 'simpanSesiTasbih'], [[PortalGuruAuthController::class, 'authRequired']]);
+$router->get('/mobile/api/tasbih/riwayat', [PortalGuruController::class, 'apiTasbihRiwayat'], [[PortalGuruAuthController::class, 'authRequired']]);
 $router->get('/mobile/api/ibadah/today', [PortalGuruController::class, 'apiIbadahToday'], [[PortalGuruAuthController::class, 'authRequired']]);
 $router->post('/mobile/ibadah/simpan', [PortalGuruController::class, 'simpanIbadah'], [[PortalGuruAuthController::class, 'authRequired']]);
 $router->get('/mobile/keterlambatan-siswa', [PortalGuruController::class, 'keterlambatanSiswa'], [[PortalGuruAuthController::class, 'authRequired']]);
