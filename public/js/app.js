@@ -97,6 +97,8 @@
         }
     }
 
+    window.handleDeviceResolution = handleDeviceResolution;
+
     var resizeDebounce;
     window.addEventListener('resize', function() {
         clearTimeout(resizeDebounce);
@@ -232,25 +234,45 @@
         });
     }
 
-    var globalSearch = document.getElementById('global-search');
-    if (globalSearch) {
-        globalSearch.addEventListener('input', function(e) {
-            handleSearch(e.target.value);
-            var mobileSearch = document.getElementById('module-search-mobile');
-            if (mobileSearch && mobileSearch.value !== e.target.value) {
-                mobileSearch.value = e.target.value;
+    if (window.jQuery) {
+        $(document).on('input.portalSearch', '#global-search', function() {
+            var val = $(this).val();
+            handleSearch(val);
+            var $mobileSearch = $('#module-search-mobile');
+            if ($mobileSearch.length && $mobileSearch.val() !== val) {
+                $mobileSearch.val(val);
             }
         });
-    }
 
-    var mobileSearch = document.getElementById('module-search-mobile');
-    if (mobileSearch) {
-        mobileSearch.addEventListener('input', function(e) {
-            handleSearch(e.target.value);
-            if (globalSearch && globalSearch.value !== e.target.value) {
-                globalSearch.value = e.target.value;
+        $(document).on('input.portalSearch', '#module-search-mobile', function() {
+            var val = $(this).val();
+            handleSearch(val);
+            var $globalSearch = $('#global-search');
+            if ($globalSearch.length && $globalSearch.val() !== val) {
+                $globalSearch.val(val);
             }
         });
+    } else {
+        var globalSearch = document.getElementById('global-search');
+        if (globalSearch) {
+            globalSearch.addEventListener('input', function(e) {
+                handleSearch(e.target.value);
+                var mobileSearch = document.getElementById('module-search-mobile');
+                if (mobileSearch && mobileSearch.value !== e.target.value) {
+                    mobileSearch.value = e.target.value;
+                }
+            });
+        }
+
+        var mobileSearch = document.getElementById('module-search-mobile');
+        if (mobileSearch) {
+            mobileSearch.addEventListener('input', function(e) {
+                handleSearch(e.target.value);
+                if (globalSearch && globalSearch.value !== e.target.value) {
+                    globalSearch.value = e.target.value;
+                }
+            });
+        }
     }
 
 })();

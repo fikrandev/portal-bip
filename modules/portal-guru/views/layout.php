@@ -56,6 +56,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
     <link rel="preconnect" href="https://unpkg.com" crossorigin>
+    <link rel="preconnect" href="https://code.jquery.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         @font-face {
@@ -277,6 +278,7 @@
     </div>
 
     <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
     <script src="<?= asset('js/mobile/android-ui.js') ?>?v=<?= file_exists(BASE_PATH . '/public/js/mobile/android-ui.js') ? filemtime(BASE_PATH . '/public/js/mobile/android-ui.js') : 3 ?>"></script>
     <script src="<?= asset('js/mobile/mobile-api.js') ?>?v=<?= file_exists(BASE_PATH . '/public/js/mobile/mobile-api.js') ? filemtime(BASE_PATH . '/public/js/mobile/mobile-api.js') : 3 ?>"></script>
     <script src="<?= asset('js/mobile/lazy-load.js') ?>?v=2"></script>
@@ -294,40 +296,40 @@
                 iconBg: 'bg-primary-100 text-primary-600',
                 content: `
                     <div class="grid grid-cols-3 gap-2.5 pt-1 pb-1">
-                        <a href="<?= url('mobile/absen') ?>" class="flex flex-col items-center gap-1.5 p-2.5 bg-emerald-50 rounded-2xl border border-emerald-100 press-bounce">
-                            <div class="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-md shadow-emerald-500/20 text-base font-bold">📍</div>
-                            <span class="text-[11px] font-bold text-slate-700 text-center leading-tight">Absen GPS</span>
+                        <a href="<?= url('mobile/absen') ?>" class="flex flex-col items-center gap-1.5 p-2.5 bg-primary-50/60 hover:bg-primary-50 rounded-2xl border border-primary-100 press-bounce">
+                            <div class="w-10 h-10 rounded-xl bg-primary-600 text-white flex items-center justify-center shadow-sm shadow-primary-500/20 text-base font-bold">📍</div>
+                            <span class="text-xs font-bold text-slate-800 text-center leading-tight">Absen GPS</span>
                         </a>
-                        <a href="<?= url('mobile/jurnal') ?>" class="flex flex-col items-center gap-1.5 p-2.5 bg-primary-50 rounded-2xl border border-primary-100 press-bounce">
-                            <div class="w-10 h-10 rounded-xl bg-primary-600 text-white flex items-center justify-center shadow-md shadow-primary-500/20 text-base font-bold">📝</div>
-                            <span class="text-[11px] font-bold text-slate-700 text-center leading-tight">Isi Jurnal</span>
+                        <a href="<?= url('mobile/jurnal') ?>" class="flex flex-col items-center gap-1.5 p-2.5 bg-primary-50/60 hover:bg-primary-50 rounded-2xl border border-primary-100 press-bounce">
+                            <div class="w-10 h-10 rounded-xl bg-primary-600 text-white flex items-center justify-center shadow-sm shadow-primary-500/20 text-base font-bold">📝</div>
+                            <span class="text-xs font-bold text-slate-800 text-center leading-tight">Isi Jurnal</span>
                         </a>
-                        <a href="<?= url('mobile/rekap-absen') ?>" class="flex flex-col items-center gap-1.5 p-2.5 bg-indigo-50 rounded-2xl border border-indigo-100 press-bounce">
-                            <div class="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-md shadow-indigo-500/20 text-base font-bold">📊</div>
-                            <span class="text-[11px] font-bold text-slate-700 text-center leading-tight">Rekap Absen</span>
-                        </a>
-
-                        <a href="<?= url('mobile/izin') ?>" class="flex flex-col items-center gap-1.5 p-2.5 bg-amber-50 rounded-2xl border border-amber-100 press-bounce">
-                            <div class="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-md shadow-amber-500/20 text-base font-bold">📄</div>
-                            <span class="text-[11px] font-bold text-slate-700 text-center leading-tight">Izin Pegawai</span>
-                        </a>
-                        <a href="<?= url('mobile/cuti') ?>" class="flex flex-col items-center gap-1.5 p-2.5 bg-cyan-50 rounded-2xl border border-cyan-100 press-bounce">
-                            <div class="w-10 h-10 rounded-xl bg-cyan-600 text-white flex items-center justify-center shadow-md shadow-cyan-500/20 text-base font-bold">🏖️</div>
-                            <span class="text-[11px] font-bold text-slate-700 text-center leading-tight">Cuti Pegawai</span>
-                        </a>
-                        <a href="<?= url('mobile/quran') ?>" class="flex flex-col items-center gap-1.5 p-2.5 bg-blue-50 rounded-2xl border border-blue-100 press-bounce">
-                            <div class="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-500/20 text-base font-bold">📖</div>
-                            <span class="text-[11px] font-bold text-slate-700 text-center leading-tight">Al-Qur'an</span>
+                        <a href="<?= url('mobile/rekap-absen') ?>" class="flex flex-col items-center gap-1.5 p-2.5 bg-primary-50/60 hover:bg-primary-50 rounded-2xl border border-primary-100 press-bounce">
+                            <div class="w-10 h-10 rounded-xl bg-primary-600 text-white flex items-center justify-center shadow-sm shadow-primary-500/20 text-base font-bold">📊</div>
+                            <span class="text-xs font-bold text-slate-800 text-center leading-tight">Rekap Absen</span>
                         </a>
 
-                        <a href="<?= url('mobile/dzikir') ?>" class="flex flex-col items-center gap-1.5 p-2.5 bg-purple-50 rounded-2xl border border-purple-100 press-bounce">
-                            <div class="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center shadow-md shadow-purple-500/20 text-base font-bold">📿</div>
-                            <span class="text-[11px] font-bold text-slate-700 text-center leading-tight">Dzikir</span>
+                        <a href="<?= url('mobile/izin') ?>" class="flex flex-col items-center gap-1.5 p-2.5 bg-primary-50/60 hover:bg-primary-50 rounded-2xl border border-primary-100 press-bounce">
+                            <div class="w-10 h-10 rounded-xl bg-primary-600 text-white flex items-center justify-center shadow-sm shadow-primary-500/20 text-base font-bold">📄</div>
+                            <span class="text-xs font-bold text-slate-800 text-center leading-tight">Izin Pegawai</span>
+                        </a>
+                        <a href="<?= url('mobile/cuti') ?>" class="flex flex-col items-center gap-1.5 p-2.5 bg-primary-50/60 hover:bg-primary-50 rounded-2xl border border-primary-100 press-bounce">
+                            <div class="w-10 h-10 rounded-xl bg-primary-600 text-white flex items-center justify-center shadow-sm shadow-primary-500/20 text-base font-bold">🏖️</div>
+                            <span class="text-xs font-bold text-slate-800 text-center leading-tight">Cuti Pegawai</span>
+                        </a>
+                        <a href="<?= url('mobile/quran') ?>" class="flex flex-col items-center gap-1.5 p-2.5 bg-primary-50/60 hover:bg-primary-50 rounded-2xl border border-primary-100 press-bounce">
+                            <div class="w-10 h-10 rounded-xl bg-primary-600 text-white flex items-center justify-center shadow-sm shadow-primary-500/20 text-base font-bold">📖</div>
+                            <span class="text-xs font-bold text-slate-800 text-center leading-tight">Al-Qur'an</span>
                         </a>
 
-                        <a href="<?= url('mobile/tasbih') ?>" class="flex flex-col items-center gap-1.5 p-2.5 bg-amber-50 rounded-2xl border border-amber-100 press-bounce">
-                            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-600 to-amber-500 text-white flex items-center justify-center shadow-md shadow-amber-500/20 text-base font-bold">✨</div>
-                            <span class="text-[11px] font-bold text-slate-700 text-center leading-tight">Tasbih</span>
+                        <a href="<?= url('mobile/dzikir') ?>" class="flex flex-col items-center gap-1.5 p-2.5 bg-primary-50/60 hover:bg-primary-50 rounded-2xl border border-primary-100 press-bounce">
+                            <div class="w-10 h-10 rounded-xl bg-primary-600 text-white flex items-center justify-center shadow-sm shadow-primary-500/20 text-base font-bold">📿</div>
+                            <span class="text-xs font-bold text-slate-800 text-center leading-tight">Dzikir</span>
+                        </a>
+
+                        <a href="<?= url('mobile/tasbih') ?>" class="flex flex-col items-center gap-1.5 p-2.5 bg-primary-50/60 hover:bg-primary-50 rounded-2xl border border-primary-100 press-bounce">
+                            <div class="w-10 h-10 rounded-xl bg-primary-600 text-white flex items-center justify-center shadow-sm shadow-primary-500/20 text-base font-bold">✨</div>
+                            <span class="text-xs font-bold text-slate-800 text-center leading-tight">Tasbih</span>
                         </a>
                     </div>
                 `
@@ -340,49 +342,49 @@
                 iconBg: 'bg-primary-100 text-primary-600',
                 content: `
                     <div class="grid grid-cols-3 gap-2.5 pt-1 pb-1">
-                        <a href="<?= url('mobile/absen') ?>" class="flex flex-col items-center gap-1.5 p-2.5 bg-primary-50 rounded-2xl border border-primary-100 press-bounce">
-                            <div class="w-10 h-10 rounded-xl bg-primary-500 text-white flex items-center justify-center shadow-md shadow-primary-500/20 text-base font-bold">📍</div>
-                            <span class="text-[11px] font-bold text-slate-700 text-center leading-tight">Absen GPS</span>
+                        <a href="<?= url('mobile/absen') ?>" class="flex flex-col items-center gap-1.5 p-2.5 bg-primary-50/60 hover:bg-primary-50 rounded-2xl border border-primary-100 press-bounce">
+                            <div class="w-10 h-10 rounded-xl bg-primary-600 text-white flex items-center justify-center shadow-sm shadow-primary-500/20 text-base font-bold">📍</div>
+                            <span class="text-xs font-bold text-slate-800 text-center leading-tight">Absen GPS</span>
                         </a>
-                        <a href="<?= url('mobile/jurnal') ?>" class="flex flex-col items-center gap-1.5 p-2.5 bg-primary-50 rounded-2xl border border-primary-100 press-bounce">
-                            <div class="w-10 h-10 rounded-xl bg-primary-600 text-white flex items-center justify-center shadow-md shadow-primary-500/20 text-base font-bold">📝</div>
-                            <span class="text-[11px] font-bold text-slate-700 text-center leading-tight">Isi Jurnal</span>
+                        <a href="<?= url('mobile/jurnal') ?>" class="flex flex-col items-center gap-1.5 p-2.5 bg-primary-50/60 hover:bg-primary-50 rounded-2xl border border-primary-100 press-bounce">
+                            <div class="w-10 h-10 rounded-xl bg-primary-600 text-white flex items-center justify-center shadow-sm shadow-primary-500/20 text-base font-bold">📝</div>
+                            <span class="text-xs font-bold text-slate-800 text-center leading-tight">Isi Jurnal</span>
                         </a>
-                        <a href="<?= url('mobile/absensi-kelas') ?>" class="flex flex-col items-center gap-1.5 p-2.5 bg-amber-50 rounded-2xl border border-amber-100 press-bounce">
-                            <div class="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-md shadow-amber-500/20 text-base font-bold">👥</div>
-                            <span class="text-[11px] font-bold text-slate-700 text-center leading-tight">Absen Kelas</span>
+                        <a href="<?= url('mobile/absensi-kelas') ?>" class="flex flex-col items-center gap-1.5 p-2.5 bg-primary-50/60 hover:bg-primary-50 rounded-2xl border border-primary-100 press-bounce">
+                            <div class="w-10 h-10 rounded-xl bg-primary-600 text-white flex items-center justify-center shadow-sm shadow-primary-500/20 text-base font-bold">👥</div>
+                            <span class="text-xs font-bold text-slate-800 text-center leading-tight">Absen Kelas</span>
                         </a>
 
                         <!-- Rekapitulasi Presensi & Jurnal PIC -->
-                        <a href="<?= url('mobile/rekap-absen') ?>" class="flex flex-col items-center gap-1.5 p-2.5 bg-indigo-50 rounded-2xl border border-indigo-100 press-bounce">
-                            <div class="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-md shadow-indigo-500/20 text-base font-bold">📊</div>
-                            <span class="text-[11px] font-bold text-slate-700 text-center leading-tight">Rekap Absen</span>
+                        <a href="<?= url('mobile/rekap-absen') ?>" class="flex flex-col items-center gap-1.5 p-2.5 bg-primary-50/60 hover:bg-primary-50 rounded-2xl border border-primary-100 press-bounce">
+                            <div class="w-10 h-10 rounded-xl bg-primary-600 text-white flex items-center justify-center shadow-sm shadow-primary-500/20 text-base font-bold">📊</div>
+                            <span class="text-xs font-bold text-slate-800 text-center leading-tight">Rekap Absen</span>
                         </a>
-                        <a href="<?= url('mobile/rekap-jurnal') ?>" class="flex flex-col items-center gap-1.5 p-2.5 bg-purple-50 rounded-2xl border border-purple-100 press-bounce">
-                            <div class="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center shadow-md shadow-purple-500/20 text-base font-bold">📈</div>
-                            <span class="text-[11px] font-bold text-slate-700 text-center leading-tight">Rekap Jurnal</span>
+                        <a href="<?= url('mobile/rekap-jurnal') ?>" class="flex flex-col items-center gap-1.5 p-2.5 bg-primary-50/60 hover:bg-primary-50 rounded-2xl border border-primary-100 press-bounce">
+                            <div class="w-10 h-10 rounded-xl bg-primary-600 text-white flex items-center justify-center shadow-sm shadow-primary-500/20 text-base font-bold">📈</div>
+                            <span class="text-xs font-bold text-slate-800 text-center leading-tight">Rekap Jurnal</span>
                         </a>
-                        <a href="<?= url('mobile/keterlambatan-siswa') ?>" class="flex flex-col items-center gap-1.5 p-2.5 bg-rose-50 rounded-2xl border border-rose-100 press-bounce">
-                            <div class="w-10 h-10 rounded-xl bg-rose-500 text-white flex items-center justify-center shadow-md shadow-rose-500/20 text-base font-bold">⏳</div>
-                            <span class="text-[11px] font-bold text-slate-700 text-center leading-tight">Terlambat</span>
-                        </a>
-
-                        <a href="<?= url('mobile/izin') ?>" class="flex flex-col items-center gap-1.5 p-2.5 bg-slate-50 rounded-2xl border border-slate-200 press-bounce">
-                            <div class="w-10 h-10 rounded-xl bg-slate-600 text-white flex items-center justify-center shadow-md shadow-slate-500/20 text-base font-bold">📄</div>
-                            <span class="text-[11px] font-bold text-slate-700 text-center leading-tight">Izin Guru</span>
-                        </a>
-                        <a href="<?= url('mobile/cuti') ?>" class="flex flex-col items-center gap-1.5 p-2.5 bg-primary-50 rounded-2xl border border-primary-100 press-bounce">
-                            <div class="w-10 h-10 rounded-xl bg-primary-600 text-white flex items-center justify-center shadow-md shadow-primary-500/20 text-base font-bold">🏖️</div>
-                            <span class="text-[11px] font-bold text-slate-700 text-center leading-tight">Cuti Guru</span>
-                        </a>
-                        <a href="<?= url('mobile/buat-tugas') ?>" class="flex flex-col items-center gap-1.5 p-2.5 bg-purple-50 rounded-2xl border border-purple-100 press-bounce">
-                            <div class="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center shadow-md shadow-purple-500/20 text-base font-bold">📋</div>
-                            <span class="text-[11px] font-bold text-slate-700 text-center leading-tight">Buat Tugas</span>
+                        <a href="<?= url('mobile/keterlambatan-siswa') ?>" class="flex flex-col items-center gap-1.5 p-2.5 bg-primary-50/60 hover:bg-primary-50 rounded-2xl border border-primary-100 press-bounce">
+                            <div class="w-10 h-10 rounded-xl bg-primary-600 text-white flex items-center justify-center shadow-sm shadow-primary-500/20 text-base font-bold">⏳</div>
+                            <span class="text-xs font-bold text-slate-800 text-center leading-tight">Terlambat</span>
                         </a>
 
-                        <a href="<?= url('mobile/tasbih') ?>" class="flex flex-col items-center gap-1.5 p-2.5 bg-amber-50 rounded-2xl border border-amber-100 press-bounce">
-                            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-600 to-amber-500 text-white flex items-center justify-center shadow-md shadow-amber-500/20 text-base font-bold">✨</div>
-                            <span class="text-[11px] font-bold text-slate-700 text-center leading-tight">Tasbih</span>
+                        <a href="<?= url('mobile/izin') ?>" class="flex flex-col items-center gap-1.5 p-2.5 bg-primary-50/60 hover:bg-primary-50 rounded-2xl border border-primary-100 press-bounce">
+                            <div class="w-10 h-10 rounded-xl bg-primary-600 text-white flex items-center justify-center shadow-sm shadow-primary-500/20 text-base font-bold">📄</div>
+                            <span class="text-xs font-bold text-slate-800 text-center leading-tight">Izin Guru</span>
+                        </a>
+                        <a href="<?= url('mobile/cuti') ?>" class="flex flex-col items-center gap-1.5 p-2.5 bg-primary-50/60 hover:bg-primary-50 rounded-2xl border border-primary-100 press-bounce">
+                            <div class="w-10 h-10 rounded-xl bg-primary-600 text-white flex items-center justify-center shadow-sm shadow-primary-500/20 text-base font-bold">🏖️</div>
+                            <span class="text-xs font-bold text-slate-800 text-center leading-tight">Cuti Guru</span>
+                        </a>
+                        <a href="<?= url('mobile/buat-tugas') ?>" class="flex flex-col items-center gap-1.5 p-2.5 bg-primary-50/60 hover:bg-primary-50 rounded-2xl border border-primary-100 press-bounce">
+                            <div class="w-10 h-10 rounded-xl bg-primary-600 text-white flex items-center justify-center shadow-sm shadow-primary-500/20 text-base font-bold">📋</div>
+                            <span class="text-xs font-bold text-slate-800 text-center leading-tight">Buat Tugas</span>
+                        </a>
+
+                        <a href="<?= url('mobile/tasbih') ?>" class="flex flex-col items-center gap-1.5 p-2.5 bg-primary-50/60 hover:bg-primary-50 rounded-2xl border border-primary-100 press-bounce">
+                            <div class="w-10 h-10 rounded-xl bg-primary-600 text-white flex items-center justify-center shadow-sm shadow-primary-500/20 text-base font-bold">✨</div>
+                            <span class="text-xs font-bold text-slate-800 text-center leading-tight">Tasbih</span>
                         </a>
                     </div>
                 `

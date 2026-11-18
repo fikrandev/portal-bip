@@ -63,72 +63,72 @@
 
     <!-- Title -->
     <div class="pt-1">
-        <h3 class="text-lg font-bold text-slate-800 tracking-tight">Dashboard Sarpras</h3>
-        <p class="text-xs text-slate-500 mt-1">Ringkasan aset dan pergerakan sarpras</p>
+        <h3 class="text-sm font-bold text-slate-800 tracking-tight">Dashboard Sarpras</h3>
+        <p class="text-xs text-slate-500 mt-0.5">Ringkasan aset dan pergerakan sarpras</p>
     </div>
 
     <!-- Quick Stats Grid -->
-    <div class="grid grid-cols-2 gap-4">
-        <a href="<?= url('mobile-sarpras/inventaris') ?>" class="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm flex flex-col items-center text-center active:scale-95 transition-transform">
-            <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mb-3">
-                <i data-lucide="package" class="w-6 h-6"></i>
+    <div class="grid grid-cols-2 gap-3.5">
+        <a href="<?= url('mobile-sarpras/inventaris') ?>" class="bg-white p-4 rounded-3xl border border-slate-100 hover:border-blue-200 shadow-sm flex flex-col items-center text-center active:scale-95 transition-all">
+            <div class="w-11 h-11 bg-blue-50 text-blue-600 border border-blue-100/80 rounded-2xl flex items-center justify-center mb-2.5">
+                <i data-lucide="package" class="w-5 h-5"></i>
             </div>
-            <span class="text-2xl font-bold text-slate-800"><?= number_format($statistik['total_barang'] ?? 0, 0, ',', '.') ?></span>
-            <span class="text-xs text-slate-500 font-medium mt-1">Inventaris (Unit)</span>
+            <span class="text-2xl font-extrabold text-slate-900"><?= number_format($statistik['total_barang'] ?? 0, 0, ',', '.') ?></span>
+            <span class="text-xs font-semibold text-slate-600 mt-1">Inventaris (Unit)</span>
         </a>
         
-        <a href="<?= url('mobile-sarpras/tanah') ?>" class="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm flex flex-col items-center text-center active:scale-95 transition-transform">
-            <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mb-3">
-                <i data-lucide="map-pin" class="w-6 h-6"></i>
+        <a href="<?= url('mobile-sarpras/tanah') ?>" class="bg-white p-4 rounded-3xl border border-slate-100 hover:border-blue-200 shadow-sm flex flex-col items-center text-center active:scale-95 transition-all">
+            <div class="w-11 h-11 bg-blue-50 text-blue-600 border border-blue-100/80 rounded-2xl flex items-center justify-center mb-2.5">
+                <i data-lucide="map-pin" class="w-5 h-5"></i>
             </div>
-            <span class="text-2xl font-bold text-slate-800"><?= number_format($statistik['total_tanah'] ?? 0, 0, ',', '.') ?></span>
-            <span class="text-xs text-slate-500 font-medium mt-1">Tanah & Lahan</span>
+            <span class="text-2xl font-extrabold text-slate-900"><?= number_format($statistik['total_tanah'] ?? 0, 0, ',', '.') ?></span>
+            <span class="text-xs font-semibold text-slate-600 mt-1">Tanah & Lahan</span>
         </a>
 
-        <a href="<?= url('mobile-sarpras/bangunan') ?>" class="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm flex flex-col items-center text-center active:scale-95 transition-transform">
-            <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-full flex items-center justify-center mb-3">
-                <i data-lucide="building-2" class="w-6 h-6"></i>
+        <a href="<?= url('mobile-sarpras/bangunan') ?>" class="bg-white p-4 rounded-3xl border border-slate-100 hover:border-blue-200 shadow-sm flex flex-col items-center text-center active:scale-95 transition-all">
+            <div class="w-11 h-11 bg-blue-50 text-blue-600 border border-blue-100/80 rounded-2xl flex items-center justify-center mb-2.5">
+                <i data-lucide="building-2" class="w-5 h-5"></i>
             </div>
-            <span class="text-2xl font-bold text-slate-800"><?= number_format($statistik['total_bangunan'] ?? 0, 0, ',', '.') ?></span>
-            <span class="text-xs text-slate-500 font-medium mt-1">Gedung / Bangunan</span>
+            <span class="text-2xl font-extrabold text-slate-900"><?= number_format($statistik['total_bangunan'] ?? 0, 0, ',', '.') ?></span>
+            <span class="text-xs font-semibold text-slate-600 mt-1">Gedung / Bangunan</span>
         </a>
 
-        <a href="<?= url('mobile-sarpras/ruangan') ?>" class="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm flex flex-col items-center text-center active:scale-95 transition-transform">
-            <div class="w-12 h-12 bg-purple-50 text-purple-600 rounded-full flex items-center justify-center mb-3">
-                <i data-lucide="door-open" class="w-6 h-6"></i>
+        <a href="<?= url('mobile-sarpras/ruangan') ?>" class="bg-white p-4 rounded-3xl border border-slate-100 hover:border-blue-200 shadow-sm flex flex-col items-center text-center active:scale-95 transition-all">
+            <div class="w-11 h-11 bg-blue-50 text-blue-600 border border-blue-100/80 rounded-2xl flex items-center justify-center mb-2.5">
+                <i data-lucide="door-open" class="w-5 h-5"></i>
             </div>
-            <span class="text-2xl font-bold text-slate-800"><?= number_format($statistik['total_ruangan'] ?? 0, 0, ',', '.') ?></span>
-            <span class="text-xs text-slate-500 font-medium mt-1">Total Ruangan</span>
+            <span class="text-2xl font-extrabold text-slate-900"><?= number_format($statistik['total_ruangan'] ?? 0, 0, ',', '.') ?></span>
+            <span class="text-xs font-semibold text-slate-600 mt-1">Total Ruangan</span>
         </a>
     </div>
 
     <!-- Quick Actions -->
     <div>
-        <h3 class="text-sm font-bold text-slate-800 mb-3 uppercase tracking-wider">Aksi Cepat</h3>
+        <h3 class="text-sm font-bold text-slate-800 tracking-tight mb-3">Aksi Cepat</h3>
         <div class="grid grid-cols-4 gap-2">
             <a href="<?= url('mobile-sarpras/inventaris') ?>" class="flex flex-col items-center gap-2">
-                <div class="w-14 h-14 bg-white border border-slate-100 rounded-2xl shadow-sm flex items-center justify-center text-blue-600 active:bg-blue-50 transition">
-                    <i data-lucide="box" class="w-6 h-6"></i>
+                <div class="w-12 h-12 bg-blue-50/70 border border-blue-100 rounded-2xl shadow-2xs flex items-center justify-center text-blue-600 active:bg-blue-100 transition">
+                    <i data-lucide="box" class="w-5 h-5"></i>
                 </div>
-                <span class="text-[10px] text-center font-medium text-slate-600">Inventaris</span>
+                <span class="text-xs text-center font-semibold text-slate-700">Inventaris</span>
             </a>
             <a href="<?= url('mobile-sarpras/tanah') ?>" class="flex flex-col items-center gap-2">
-                <div class="w-14 h-14 bg-white border border-slate-100 rounded-2xl shadow-sm flex items-center justify-center text-emerald-600 active:bg-emerald-50 transition">
-                    <i data-lucide="map" class="w-6 h-6"></i>
+                <div class="w-12 h-12 bg-blue-50/70 border border-blue-100 rounded-2xl shadow-2xs flex items-center justify-center text-blue-600 active:bg-blue-100 transition">
+                    <i data-lucide="map" class="w-5 h-5"></i>
                 </div>
-                <span class="text-[10px] text-center font-medium text-slate-600">Tanah</span>
+                <span class="text-xs text-center font-semibold text-slate-700">Tanah</span>
             </a>
             <a href="<?= url('mobile-sarpras/bangunan') ?>" class="flex flex-col items-center gap-2">
-                <div class="w-14 h-14 bg-white border border-slate-100 rounded-2xl shadow-sm flex items-center justify-center text-amber-600 active:bg-amber-50 transition">
-                    <i data-lucide="building" class="w-6 h-6"></i>
+                <div class="w-12 h-12 bg-blue-50/70 border border-blue-100 rounded-2xl shadow-2xs flex items-center justify-center text-blue-600 active:bg-blue-100 transition">
+                    <i data-lucide="building" class="w-5 h-5"></i>
                 </div>
-                <span class="text-[10px] text-center font-medium text-slate-600">Gedung</span>
+                <span class="text-xs text-center font-semibold text-slate-700">Gedung</span>
             </a>
             <a href="<?= url('mobile-sarpras/ruangan') ?>" class="flex flex-col items-center gap-2">
-                <div class="w-14 h-14 bg-white border border-slate-100 rounded-2xl shadow-sm flex items-center justify-center text-purple-600 active:bg-purple-50 transition">
-                    <i data-lucide="door-open" class="w-6 h-6"></i>
+                <div class="w-12 h-12 bg-blue-50/70 border border-blue-100 rounded-2xl shadow-2xs flex items-center justify-center text-blue-600 active:bg-blue-100 transition">
+                    <i data-lucide="door-open" class="w-5 h-5"></i>
                 </div>
-                <span class="text-[10px] text-center font-medium text-slate-600">Ruangan</span>
+                <span class="text-xs text-center font-semibold text-slate-700">Ruangan</span>
             </a>
         </div>
     </div>
@@ -136,7 +136,7 @@
     <!-- Recent Activities or Maintenance -->
     <div>
         <div class="flex justify-between items-center mb-3">
-            <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider">Pintasan Ruangan / Kelas</h3>
+            <h3 class="text-sm font-bold text-slate-800 tracking-tight">Pintasan Ruangan / Kelas</h3>
             <a href="<?= url('mobile-sarpras/ruangan') ?>" class="text-xs text-blue-600 font-semibold">Semua Ruangan &rarr;</a>
         </div>
         <?php if (empty($ruanganList)): ?>

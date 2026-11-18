@@ -130,10 +130,18 @@
     transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
-/* ── Card Hover Effects ──────────────────────────── */
+/* ── Design Tokens & Card Hover Effects ──────────── */
+
+:root {
+    --dash-section-title: 0.9375rem; /* 15px */
+    --dash-card-title: 0.875rem;     /* 14px */
+    --dash-card-desc: 0.75rem;       /* 12px */
+}
 
 .module-card {
-    will-change: transform, box-shadow;
+    transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1),
+                box-shadow 0.2s cubic-bezier(0.22, 1, 0.36, 1),
+                border-color 0.2s ease;
 }
 
 /* ── Table Responsive ────────────────────────────── */
@@ -179,4 +187,40 @@ input[type="button"],
 input[type="reset"], 
 [role="button"] {
     cursor: pointer !important;
+}
+
+/* ── jQuery PJAX Slim Top Progress Bar & Transition ─ */
+#portal-pjax-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 3px;
+    width: 0%;
+    z-index: 999999;
+    background: linear-gradient(90deg, #3b82f6 0%, #6366f1 50%, #0ea5e9 100%);
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.55);
+    opacity: 0;
+    pointer-events: none;
+    transition: width 220ms cubic-bezier(0.22, 1, 0.36, 1), opacity 180ms ease;
+    will-change: width, opacity;
+}
+
+#portal-pjax-bar.is-loading {
+    opacity: 1;
+}
+
+@keyframes portalPjaxFadeIn {
+    from {
+        opacity: 0.72;
+        transform: translateY(4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.portal-pjax-enter {
+    animation: portalPjaxFadeIn 150ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    will-change: opacity, transform;
 }

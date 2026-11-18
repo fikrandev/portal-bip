@@ -11,6 +11,69 @@ unset(
     $_SESSION['flash_warning'], $_SESSION['warning'],
     $_SESSION['flash_info'], $_SESSION['info']
 );
+
+$isSarprasPjax = !empty($_SERVER['HTTP_X_PORTAL_PJAX']);
+if ($isSarprasPjax):
+?>
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title><?= e($pageTitle ?? 'Sarpras Mobile') ?></title>
+</head>
+<body>
+    <div id="sarpras-flash-data" class="hidden"
+         data-success="<?= e($flashSuccess ?? '') ?>"
+         data-error="<?= e($flashError ?? '') ?>"
+         data-warning="<?= e($flashWarning ?? '') ?>"
+         data-info="<?= e($flashInfo ?? '') ?>"></div>
+    <div id="sarpras-header-left" class="flex items-center gap-3 min-w-0">
+        <?php if (($activeTab ?? '') !== 'beranda'): ?>
+            <button onclick="history.back()" class="p-1 rounded-full hover:bg-blue-700 transition">
+                <i data-lucide="arrow-left" class="w-6 h-6"></i>
+            </button>
+        <?php endif; ?>
+        <h1 class="text-lg font-bold truncate"><?= e($pageTitle ?? 'Sarpras Mobile') ?></h1>
+    </div>
+    <div id="sarpras-pjax-content" class="pb-24">
+        <?= $content ?? '' ?>
+    </div>
+    <div id="sarpras-bottom-nav" class="flex justify-around items-center px-2 py-2">
+        <a href="<?= url('mobile-sarpras') ?>" class="flex flex-col items-center p-2 rounded-2xl w-16 <?= ($activeTab === 'beranda') ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600' ?>">
+            <div class="<?= ($activeTab === 'beranda') ? 'bg-blue-100 p-1.5 rounded-xl' : '' ?> transition-all">
+                <i data-lucide="layout-dashboard" class="w-6 h-6"></i>
+            </div>
+            <span class="text-[10px] font-medium mt-1">Dashboard</span>
+        </a>
+        <a href="<?= url('mobile-sarpras/inventaris') ?>" class="flex flex-col items-center p-2 rounded-2xl w-16 <?= ($activeTab === 'inventaris' || $activeTab === 'input') ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600' ?>">
+            <div class="<?= ($activeTab === 'inventaris' || $activeTab === 'input') ? 'bg-blue-100 p-1.5 rounded-xl' : '' ?> transition-all">
+                <i data-lucide="package" class="w-6 h-6"></i>
+            </div>
+            <span class="text-[10px] font-medium mt-1">Inventaris</span>
+        </a>
+        <div class="relative -top-5">
+            <a href="<?= url('mobile-sarpras/scan') ?>" class="flex flex-col items-center justify-center w-14 h-14 bg-blue-600 text-white rounded-full shadow-lg shadow-blue-500/40 hover:bg-blue-700 transition-transform hover:scale-105 active:scale-95 border-4 border-slate-50">
+                <i data-lucide="qr-code" class="w-6 h-6"></i>
+            </a>
+        </div>
+        <a href="<?= url('mobile-sarpras/maintenance') ?>" class="flex flex-col items-center p-2 rounded-2xl w-16 <?= ($activeTab === 'maintenance') ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600' ?>">
+            <div class="<?= ($activeTab === 'maintenance') ? 'bg-blue-100 p-1.5 rounded-xl' : '' ?> transition-all">
+                <i data-lucide="wrench" class="w-6 h-6"></i>
+            </div>
+            <span class="text-[10px] font-medium mt-1">Perbaikan</span>
+        </a>
+        <a href="<?= url('mobile-sarpras/peminjaman') ?>" class="flex flex-col items-center p-2 rounded-2xl w-16 <?= ($activeTab === 'peminjaman') ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600' ?>">
+            <div class="<?= ($activeTab === 'peminjaman') ? 'bg-blue-100 p-1.5 rounded-xl' : '' ?> transition-all">
+                <i data-lucide="arrow-right-left" class="w-6 h-6"></i>
+            </div>
+            <span class="text-[10px] font-medium mt-1">Pinjam</span>
+        </a>
+    </div>
+</body>
+</html>
+<?php
+    return;
+endif;
 ?>
 <!DOCTYPE html>
 <html lang="id" class="h-full antialiased bg-slate-50">
@@ -146,9 +209,34 @@ unset(
             from { transform: scaleX(1); }
             to { transform: scaleX(0); }
         }
+
+        /* Slim Top Progress Bar & PJAX Transition */
+        #spa-progress-bar {
+            position: fixed; top: 0; left: 0; height: 3px; width: 0%;
+            background: linear-gradient(90deg, #93c5fd, #ffffff, #60a5fa);
+            z-index: 999999; opacity: 0; pointer-events: none;
+            transition: width 200ms ease, opacity 180ms ease;
+        }
+        #spa-progress-bar.is-loading { opacity: 1; width: 78%; }
+        #spa-progress-bar.is-finishing { opacity: 1; width: 100%; }
+        @keyframes sarprasFadeIn {
+            from { opacity: 0.72; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .sarpras-pjax-enter { animation: sarprasFadeIn 140ms ease-out forwards; }
     </style>
 </head>
 <body class="h-full flex flex-col overflow-hidden bg-slate-50 relative">
+
+    <!-- Slim Top PJAX Progress Bar -->
+    <div id="spa-progress-bar" aria-hidden="true"></div>
+
+    <!-- Flash Data Marker for PJAX -->
+    <div id="sarpras-flash-data" class="hidden"
+         data-success="<?= e($flashSuccess ?? '') ?>"
+         data-error="<?= e($flashError ?? '') ?>"
+         data-warning="<?= e($flashWarning ?? '') ?>"
+         data-info="<?= e($flashInfo ?? '') ?>"></div>
 
     <!-- Mobile Floating Toast Container -->
     <div id="mobile-toast-container"></div>
@@ -245,7 +333,7 @@ unset(
     <!-- Top App Bar -->
     <header class="bg-blue-600 text-white shadow-md z-40 flex-shrink-0 mobile-safe-top">
         <div class="px-4 py-3 flex items-center justify-between">
-            <div class="flex items-center gap-3">
+            <div id="sarpras-header-left" class="flex items-center gap-3 min-w-0">
                 <?php if (($activeTab ?? '') !== 'beranda'): ?>
                     <button onclick="history.back()" class="p-1 rounded-full hover:bg-blue-700 transition">
                         <i data-lucide="arrow-left" class="w-6 h-6"></i>
@@ -279,14 +367,14 @@ unset(
                 <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
             </svg>
         </div>
-        <div class="pb-24">
+        <div id="sarpras-pjax-content" class="pb-24">
             <?= $content ?? '' ?>
         </div>
     </main>
 
     <!-- Bottom Navigation -->
     <nav class="fixed bottom-0 w-full max-w-md left-1/2 -translate-x-1/2 bg-white border-t border-slate-200 z-40 mobile-safe-bottom shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] rounded-t-3xl">
-        <div class="flex justify-around items-center px-2 py-2">
+        <div id="sarpras-bottom-nav" class="flex justify-around items-center px-2 py-2">
             <!-- Beranda -->
             <a href="<?= url('mobile-sarpras') ?>" class="flex flex-col items-center p-2 rounded-2xl w-16 <?= ($activeTab === 'beranda') ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600' ?>">
                 <div class="<?= ($activeTab === 'beranda') ? 'bg-blue-100 p-1.5 rounded-xl' : '' ?> transition-all">
@@ -328,18 +416,19 @@ unset(
         </div>
     </nav>
 
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    <script src="<?= asset('js/mobile/sarpras-pjax.js') ?>?v=<?= file_exists(PUBLIC_PATH . '/js/mobile/sarpras-pjax.js') ? filemtime(PUBLIC_PATH . '/js/mobile/sarpras-pjax.js') : '1.0' ?>"></script>
     <script>
-        // Remove Splash Screen Loader when everything is loaded
-        window.addEventListener('load', function() {
+        // Hide Splash Screen Loader quickly once DOM is ready (no artificial delay)
+        document.addEventListener('DOMContentLoaded', function() {
             const loader = document.getElementById('mobile-splash-loader');
             if (loader) {
-                // Add a small delay to make it feel deliberate
                 setTimeout(() => {
                     loader.style.opacity = '0';
                     setTimeout(() => {
                         loader.style.display = 'none';
-                    }, 500);
-                }, 300);
+                    }, 220);
+                }, 40);
             }
         });
 
@@ -409,9 +498,17 @@ unset(
                     if (diff >= threshold && mainContent.scrollTop <= 0) {
                         ptrIndicator.classList.add('refreshing');
                         ptrIndicator.style.transform = 'translateX(-50%) translateY(50px)';
-                        setTimeout(() => {
-                            window.location.reload();
-                        }, 400);
+                        if (window.SarprasRouter && typeof window.SarprasRouter.reload === 'function') {
+                            window.SarprasRouter.reload().always(function() {
+                                ptrIndicator.classList.remove('active', 'refreshing');
+                                ptrIndicator.style.transform = 'translateX(-50%) translateY(-50px)';
+                                ptrIndicator.style.opacity = '0';
+                            });
+                        } else {
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 250);
+                        }
                     } else {
                         ptrIndicator.classList.remove('active');
                         ptrIndicator.style.transform = 'translateX(-50%) translateY(-50px)';

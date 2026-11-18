@@ -155,20 +155,20 @@ if ($hourNow < 11) {
     </div>
 
     <!-- 2. Ibadah Harian (Clean 4-Column Modular Cards) -->
-    <div class="space-y-2">
-        <div class="flex items-center justify-between px-1">
-            <div class="flex items-center gap-1.5">
+    <div class="space-y-2.5">
+        <div class="flex items-center justify-between px-1 gap-2">
+            <div class="flex items-center gap-1.5 min-w-0">
                 <span class="text-sm">🌙</span>
-                <h3 class="font-bold text-slate-800 text-xs">Ibadah Harian</h3>
+                <h3 class="text-sm font-bold text-slate-800 tracking-tight truncate">Ibadah Harian</h3>
             </div>
-            <div class="flex items-center gap-1">
-                <a href="<?= url('mobile/quran') ?>" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary-100 text-primary-800 hover:bg-primary-200 flex items-center gap-1 transition-all press-bounce">
+            <div class="flex items-center gap-1 shrink-0">
+                <a href="<?= url('mobile/quran') ?>" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary-50 text-primary-700 border border-primary-100 hover:bg-primary-100 flex items-center gap-1 transition-all press-bounce">
                     <span>📖</span> Qur'an
                 </a>
-                <a href="<?= url('mobile/dzikir') ?>" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-800 hover:bg-purple-200 flex items-center gap-1 transition-all press-bounce">
+                <a href="<?= url('mobile/dzikir') ?>" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary-50 text-primary-700 border border-primary-100 hover:bg-primary-100 flex items-center gap-1 transition-all press-bounce">
                     <span>📿</span> Dzikir
                 </a>
-                <a href="<?= url('mobile/tasbih') ?>" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 hover:bg-amber-200 flex items-center gap-1 transition-all press-bounce">
+                <a href="<?= url('mobile/tasbih') ?>" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary-50 text-primary-700 border border-primary-100 hover:bg-primary-100 flex items-center gap-1 transition-all press-bounce">
                     <span>✨</span> Tasbih
                 </a>
                 <span id="ibadah-total-badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary-50 text-primary-700 border border-primary-200">
@@ -185,12 +185,12 @@ if ($hourNow < 11) {
                 <span id="badge-ibadah-sholat" class="absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center text-[8px] font-bold">
                     ⋯
                 </span>
-                <div class="w-9 h-9 rounded-xl bg-primary-50 text-primary-700 flex items-center justify-center text-base shadow-xs">
+                <div class="w-10 h-10 rounded-xl bg-primary-50 text-primary-700 border border-primary-100/80 flex items-center justify-center text-base shadow-2xs">
                     🕌
                 </div>
                 <div class="w-full">
-                    <h4 class="font-bold text-[11px] text-slate-900 leading-tight truncate">Sholat</h4>
-                    <p id="sub-ibadah-sholat" class="text-[9px] text-slate-400 mt-0.5 font-medium truncate">0/5</p>
+                    <h4 class="font-bold text-xs text-slate-800 leading-tight truncate">Sholat</h4>
+                    <p id="sub-ibadah-sholat" class="text-[10px] text-slate-500 mt-0.5 font-medium truncate">0/5</p>
                 </div>
             </div>
 
@@ -199,40 +199,40 @@ if ($hourNow < 11) {
                 <span id="badge-ibadah-tilawah" onclick="event.stopPropagation(); openTilawahModal();" title="Buka Detail Tilawah" class="absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full bg-slate-100 text-slate-400 hover:bg-primary-100 hover:text-primary-700 flex items-center justify-center text-[8px] font-bold cursor-pointer">
                     ⋯
                 </span>
-                <div class="w-9 h-9 rounded-xl bg-primary-50 text-primary-700 flex items-center justify-center text-base shadow-xs">
+                <div class="w-10 h-10 rounded-xl bg-primary-50 text-primary-700 border border-primary-100/80 flex items-center justify-center text-base shadow-2xs">
                     📖
                 </div>
                 <div class="w-full">
-                    <h4 class="font-bold text-[11px] text-slate-900 leading-tight truncate">Tilawah</h4>
-                    <p id="sub-ibadah-tilawah" class="text-[9px] text-slate-400 mt-0.5 font-medium truncate">Belum</p>
+                    <h4 class="font-bold text-xs text-slate-800 leading-tight truncate">Tilawah</h4>
+                    <p id="sub-ibadah-tilawah" class="text-[10px] text-slate-500 mt-0.5 font-medium truncate">Belum</p>
                 </div>
             </div>
 
             <!-- Card 3: Istighfar & Sholawat (Direct Click Toggle) -->
-            <div onclick="toggleDirectIbadah('dzikir')" id="card-ibadah-dzikir" class="bg-white rounded-2xl p-2.5 shadow-sm border border-slate-100 hover:border-purple-200 cursor-pointer press-bounce flex flex-col items-center text-center space-y-1.5 transition-all relative">
-                <span id="badge-ibadah-dzikir" onclick="event.stopPropagation(); openDzikirModal();" title="Buka Detail Dzikir" class="absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full bg-slate-100 text-slate-400 hover:bg-purple-100 hover:text-purple-700 flex items-center justify-center text-[8px] font-bold cursor-pointer">
+            <div onclick="toggleDirectIbadah('dzikir')" id="card-ibadah-dzikir" class="bg-white rounded-2xl p-2.5 shadow-sm border border-slate-100 hover:border-primary-200 cursor-pointer press-bounce flex flex-col items-center text-center space-y-1.5 transition-all relative">
+                <span id="badge-ibadah-dzikir" onclick="event.stopPropagation(); openDzikirModal();" title="Buka Detail Dzikir" class="absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full bg-slate-100 text-slate-400 hover:bg-primary-100 hover:text-primary-700 flex items-center justify-center text-[8px] font-bold cursor-pointer">
                     ⋯
                 </span>
-                <div class="w-9 h-9 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center text-base shadow-xs">
+                <div class="w-10 h-10 rounded-xl bg-primary-50 text-primary-700 border border-primary-100/80 flex items-center justify-center text-base shadow-2xs">
                     📿
                 </div>
                 <div class="w-full">
-                    <h4 class="font-bold text-[11px] text-slate-900 leading-tight truncate">Dzikir</h4>
-                    <p id="sub-ibadah-dzikir" class="text-[9px] text-slate-400 mt-0.5 font-medium truncate">0/2</p>
+                    <h4 class="font-bold text-xs text-slate-800 leading-tight truncate">Dzikir</h4>
+                    <p id="sub-ibadah-dzikir" class="text-[10px] text-slate-500 mt-0.5 font-medium truncate">0/2</p>
                 </div>
             </div>
 
             <!-- Card 4: Tadabbur & Tadzkirah (Direct Click Toggle) -->
-            <div onclick="toggleDirectIbadah('tadabbur')" id="card-ibadah-tadabbur" class="bg-white rounded-2xl p-2.5 shadow-sm border border-slate-100 hover:border-amber-200 cursor-pointer press-bounce flex flex-col items-center text-center space-y-1.5 transition-all relative">
-                <span id="badge-ibadah-tadabbur" onclick="event.stopPropagation(); openTadabburModal();" title="Tulis Catatan Tadabbur" class="absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full bg-slate-100 text-slate-400 hover:bg-amber-100 hover:text-amber-700 flex items-center justify-center text-[8px] font-bold cursor-pointer">
+            <div onclick="toggleDirectIbadah('tadabbur')" id="card-ibadah-tadabbur" class="bg-white rounded-2xl p-2.5 shadow-sm border border-slate-100 hover:border-primary-200 cursor-pointer press-bounce flex flex-col items-center text-center space-y-1.5 transition-all relative">
+                <span id="badge-ibadah-tadabbur" onclick="event.stopPropagation(); openTadabburModal();" title="Tulis Catatan Tadabbur" class="absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full bg-slate-100 text-slate-400 hover:bg-primary-100 hover:text-primary-700 flex items-center justify-center text-[8px] font-bold cursor-pointer">
                     ⋯
                 </span>
-                <div class="w-9 h-9 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center text-base shadow-xs">
+                <div class="w-10 h-10 rounded-xl bg-primary-50 text-primary-700 border border-primary-100/80 flex items-center justify-center text-base shadow-2xs">
                     💡
                 </div>
                 <div class="w-full">
-                    <h4 class="font-bold text-[11px] text-slate-900 leading-tight truncate">Tadabbur</h4>
-                    <p id="sub-ibadah-tadabbur" class="text-[9px] text-slate-400 mt-0.5 font-medium truncate">Belum</p>
+                    <h4 class="font-bold text-xs text-slate-800 leading-tight truncate">Tadabbur</h4>
+                    <p id="sub-ibadah-tadabbur" class="text-[10px] text-slate-500 mt-0.5 font-medium truncate">Belum</p>
                 </div>
             </div>
 
@@ -246,12 +246,12 @@ if ($hourNow < 11) {
         <!-- Header -->
         <div class="flex items-center justify-between mb-3.5">
             <div class="flex items-center gap-2.5">
-                <div class="w-8 h-8 rounded-xl bg-primary-600 text-white flex items-center justify-center shadow-md shadow-primary-600/30">
+                <div class="w-9 h-9 rounded-xl bg-primary-600 text-white flex items-center justify-center shadow-sm shadow-primary-600/25">
                     <i data-lucide="calendar" class="w-4 h-4"></i>
                 </div>
                 <div>
-                    <h3 class="font-bold text-slate-800 text-sm">Jadwal Hari Ini (<?= e($todayName ?? 'Hari Ini') ?>)</h3>
-                    <p class="text-[10px] text-slate-400 font-medium"><?= !empty($todaySchedule) ? count($todaySchedule) . ' Jam Pelajaran Terjadwal' : 'Tidak ada jadwal mengajar' ?></p>
+                    <h3 class="text-sm font-bold text-slate-800 tracking-tight">Jadwal Hari Ini (<?= e($todayName ?? 'Hari Ini') ?>)</h3>
+                    <p class="text-[11px] text-slate-500 font-medium"><?= !empty($todaySchedule) ? count($todaySchedule) . ' Jam Pelajaran Terjadwal' : 'Tidak ada jadwal mengajar' ?></p>
                 </div>
             </div>
             <a href="<?= url('mobile/jurnal') ?>" class="text-xs font-bold text-primary-600 hover:text-primary-700 flex items-center gap-1">
@@ -312,7 +312,7 @@ if ($hourNow < 11) {
         <!-- Metric 1: Kelas Diampu -->
         <a href="<?= url('mobile/kelas') ?>" class="bg-white rounded-2xl p-3.5 shadow-sm border border-slate-100 hover:border-primary-200 transition-all press-bounce block">
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-2xl bg-primary-50 text-primary-600 flex items-center justify-center shrink-0">
+                <div class="w-10 h-10 rounded-2xl bg-primary-50 text-primary-600 border border-primary-100/80 flex items-center justify-center shrink-0">
                     <i data-lucide="users" class="w-5 h-5"></i>
                 </div>
                 <div>
@@ -329,7 +329,7 @@ if ($hourNow < 11) {
         <!-- Metric 2: Tugas Aktif -->
         <a href="<?= url('mobile/buat-tugas') ?>" class="bg-white rounded-2xl p-3.5 shadow-sm border border-slate-100 hover:border-primary-200 transition-all press-bounce block">
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                <div class="w-10 h-10 rounded-2xl bg-primary-50 text-primary-600 border border-primary-100/80 flex items-center justify-center shrink-0">
                     <i data-lucide="clipboard-list" class="w-5 h-5"></i>
                 </div>
                 <div>
@@ -344,9 +344,9 @@ if ($hourNow < 11) {
         </a>
 
         <!-- Metric 3: Belum Dinilai -->
-        <a href="<?= url('mobile/jurnal') ?>" class="bg-white rounded-2xl p-3.5 shadow-sm border border-slate-100 hover:border-amber-200 transition-all press-bounce block">
+        <a href="<?= url('mobile/jurnal') ?>" class="bg-white rounded-2xl p-3.5 shadow-sm border border-slate-100 hover:border-primary-200 transition-all press-bounce block">
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                <div class="w-10 h-10 rounded-2xl bg-primary-50 text-primary-600 border border-primary-100/80 flex items-center justify-center shrink-0">
                     <i data-lucide="file-text" class="w-5 h-5"></i>
                 </div>
                 <div>
@@ -361,9 +361,9 @@ if ($hourNow < 11) {
         </a>
 
         <!-- Metric 4: Laporan Kelas -->
-        <a href="<?= url('mobile/absensi-kelas') ?>" class="bg-white rounded-2xl p-3.5 shadow-sm border border-slate-100 hover:border-purple-200 transition-all press-bounce block">
+        <a href="<?= url('mobile/absensi-kelas') ?>" class="bg-white rounded-2xl p-3.5 shadow-sm border border-slate-100 hover:border-primary-200 transition-all press-bounce block">
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
+                <div class="w-10 h-10 rounded-2xl bg-primary-50 text-primary-600 border border-primary-100/80 flex items-center justify-center shrink-0">
                     <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
                 </div>
                 <div>
@@ -382,61 +382,61 @@ if ($hourNow < 11) {
 
     <!-- 5. Akses Cepat (Maksimal 3 Fitur Paling Sering Diakses) -->
     <div class="pt-1">
-        <h3 class="font-bold text-slate-800 text-sm mb-3">Akses Cepat</h3>
+        <h3 class="text-sm font-bold text-slate-800 tracking-tight mb-3 px-1">Akses Cepat</h3>
         
         <div class="bg-white rounded-3xl p-4 shadow-sm border border-slate-100 grid grid-cols-3 gap-3">
-            <!-- 1: Al-Qur'an Digital (Emerald) -->
-            <a href="<?= url('mobile/quran') ?>" class="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-primary-50/50 transition-all press-bounce">
-                <div class="w-12 h-12 rounded-2xl bg-primary-600 text-white flex items-center justify-center shadow-md shadow-primary-500/20 text-lg">
+            <!-- 1: Al-Qur'an Digital -->
+            <a href="<?= url('mobile/quran') ?>" class="flex flex-col items-center gap-2 p-2.5 rounded-2xl hover:bg-primary-50/70 transition-all press-bounce">
+                <div class="w-11 h-11 rounded-2xl bg-primary-600 text-white flex items-center justify-center shadow-sm shadow-primary-500/20 text-lg">
                     📖
                 </div>
-                <span class="text-[11px] font-bold text-slate-800 text-center leading-tight">Al-Qur'an<br>Digital</span>
+                <span class="text-xs font-bold text-slate-800 text-center leading-tight">Al-Qur'an<br>Digital</span>
             </a>
 
-            <!-- 2: Dzikir Al-Ma'tsurat (Purple) -->
-            <a href="<?= url('mobile/dzikir') ?>" class="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-purple-50/50 transition-all press-bounce">
-                <div class="w-12 h-12 rounded-2xl bg-purple-600 text-white flex items-center justify-center shadow-md shadow-purple-500/20 text-lg">
+            <!-- 2: Dzikir Al-Ma'tsurat -->
+            <a href="<?= url('mobile/dzikir') ?>" class="flex flex-col items-center gap-2 p-2.5 rounded-2xl hover:bg-primary-50/70 transition-all press-bounce">
+                <div class="w-11 h-11 rounded-2xl bg-primary-600 text-white flex items-center justify-center shadow-sm shadow-primary-500/20 text-lg">
                     📿
                 </div>
-                <span class="text-[11px] font-bold text-slate-800 text-center leading-tight">Dzikir<br>Al-Ma'tsurat</span>
+                <span class="text-xs font-bold text-slate-800 text-center leading-tight">Dzikir<br>Al-Ma'tsurat</span>
             </a>
 
-            <!-- 3: Tasbih Digital (Amber) -->
-            <a href="<?= url('mobile/tasbih') ?>" class="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-amber-50/50 transition-all press-bounce">
-                <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-600 to-amber-500 text-white flex items-center justify-center shadow-md shadow-amber-500/20 text-lg">
+            <!-- 3: Tasbih Digital -->
+            <a href="<?= url('mobile/tasbih') ?>" class="flex flex-col items-center gap-2 p-2.5 rounded-2xl hover:bg-primary-50/70 transition-all press-bounce">
+                <div class="w-11 h-11 rounded-2xl bg-primary-600 text-white flex items-center justify-center shadow-sm shadow-primary-500/20 text-lg">
                     ✨
                 </div>
-                <span class="text-[11px] font-bold text-slate-800 text-center leading-tight">Tasbih<br>Digital</span>
+                <span class="text-xs font-bold text-slate-800 text-center leading-tight">Tasbih<br>Digital</span>
             </a>
         </div>
     </div>
 
     <!-- 5b. Layanan Izin & Kepegawaian -->
     <div class="pt-1">
-        <h3 class="font-bold text-slate-800 text-sm mb-3"><?= !empty($isSupport) ? 'Layanan Kepegawaian' : 'Layanan Izin & Kesiswaan' ?></h3>
+        <h3 class="text-sm font-bold text-slate-800 tracking-tight mb-3 px-1"><?= !empty($isSupport) ? 'Layanan Kepegawaian' : 'Layanan Izin & Kesiswaan' ?></h3>
         
         <?php if (!empty($isSupport)): ?>
         <!-- Support System (Hanya Izin Pegawai & Cuti) -->
         <div class="grid grid-cols-2 gap-2.5">
-            <!-- Item 1: Pengajuan Izin (Amber) -->
-            <a href="<?= url('mobile/izin') ?>" class="bg-white rounded-3xl p-3.5 shadow-sm border border-slate-100 hover:border-amber-200 flex flex-col items-center text-center gap-1.5 press-bounce">
-                <div class="w-11 h-11 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center text-lg font-bold shadow-xs">
+            <!-- Item 1: Pengajuan Izin -->
+            <a href="<?= url('mobile/izin') ?>" class="bg-white rounded-3xl p-3.5 shadow-sm border border-slate-100 hover:border-primary-200 flex flex-col items-center text-center gap-2 press-bounce">
+                <div class="w-11 h-11 rounded-2xl bg-primary-50 text-primary-600 border border-primary-100/80 flex items-center justify-center text-lg font-bold shadow-2xs">
                     📄
                 </div>
                 <div>
-                    <h4 class="font-black text-slate-900 text-xs leading-tight">Pengajuan Izin</h4>
-                    <span class="text-[9.5px] font-bold text-amber-600">Sakit / Dinas Luar</span>
+                    <h4 class="font-bold text-slate-800 text-xs leading-tight">Pengajuan Izin</h4>
+                    <span class="text-[10px] font-semibold text-primary-600">Sakit / Dinas Luar</span>
                 </div>
             </a>
 
-            <!-- Item 2: Pengajuan Cuti (Teal) -->
-            <a href="<?= url('mobile/cuti') ?>" class="bg-white rounded-3xl p-3.5 shadow-sm border border-slate-100 hover:border-primary-200 flex flex-col items-center text-center gap-1.5 press-bounce">
-                <div class="w-11 h-11 rounded-2xl bg-primary-50 text-primary-600 flex items-center justify-center text-lg font-bold shadow-xs">
+            <!-- Item 2: Pengajuan Cuti -->
+            <a href="<?= url('mobile/cuti') ?>" class="bg-white rounded-3xl p-3.5 shadow-sm border border-slate-100 hover:border-primary-200 flex flex-col items-center text-center gap-2 press-bounce">
+                <div class="w-11 h-11 rounded-2xl bg-primary-50 text-primary-600 border border-primary-100/80 flex items-center justify-center text-lg font-bold shadow-2xs">
                     🏖️
                 </div>
                 <div>
-                    <h4 class="font-black text-slate-900 text-xs leading-tight">Pengajuan Cuti</h4>
-                    <span class="text-[9.5px] font-bold text-primary-600">Cuti Tahunan / Khusus</span>
+                    <h4 class="font-bold text-slate-800 text-xs leading-tight">Pengajuan Cuti</h4>
+                    <span class="text-[10px] font-semibold text-primary-600">Cuti Tahunan / Khusus</span>
                 </div>
             </a>
         </div>
@@ -444,36 +444,36 @@ if ($hourNow < 11) {
         <!-- Guru Pengajar (Terlambat Siswa, Izin Guru, Cuti Guru) -->
         <div class="grid grid-cols-3 gap-2.5">
             
-            <!-- Item 1: Keterlambatan Siswa (Rose) -->
-            <a href="<?= url('mobile/keterlambatan-siswa') ?>" class="bg-white rounded-3xl p-3 shadow-sm border border-slate-100 hover:border-rose-200 flex flex-col items-center text-center gap-1.5 press-bounce">
-                <div class="w-11 h-11 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center text-lg font-bold shadow-xs">
+            <!-- Item 1: Keterlambatan Siswa -->
+            <a href="<?= url('mobile/keterlambatan-siswa') ?>" class="bg-white rounded-3xl p-3 shadow-sm border border-slate-100 hover:border-primary-200 flex flex-col items-center text-center gap-2 press-bounce">
+                <div class="w-11 h-11 rounded-2xl bg-primary-50 text-primary-600 border border-primary-100/80 flex items-center justify-center text-lg font-bold shadow-2xs">
                     ⏳
                 </div>
                 <div>
-                    <h4 class="font-black text-slate-900 text-[11px] leading-tight">Terlambat<br>Siswa</h4>
-                    <span class="text-[9px] font-bold text-rose-600">Catat Jam</span>
+                    <h4 class="font-bold text-slate-800 text-xs leading-tight">Terlambat<br>Siswa</h4>
+                    <span class="text-[10px] font-semibold text-primary-600">Catat Jam</span>
                 </div>
             </a>
 
-            <!-- Item 2: Pengajuan Izin (Amber) -->
-            <a href="<?= url('mobile/izin') ?>" class="bg-white rounded-3xl p-3 shadow-sm border border-slate-100 hover:border-amber-200 flex flex-col items-center text-center gap-1.5 press-bounce">
-                <div class="w-11 h-11 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center text-lg font-bold shadow-xs">
+            <!-- Item 2: Pengajuan Izin -->
+            <a href="<?= url('mobile/izin') ?>" class="bg-white rounded-3xl p-3 shadow-sm border border-slate-100 hover:border-primary-200 flex flex-col items-center text-center gap-2 press-bounce">
+                <div class="w-11 h-11 rounded-2xl bg-primary-50 text-primary-600 border border-primary-100/80 flex items-center justify-center text-lg font-bold shadow-2xs">
                     📄
                 </div>
                 <div>
-                    <h4 class="font-black text-slate-900 text-[11px] leading-tight">Pengajuan<br>Izin Guru</h4>
-                    <span class="text-[9px] font-bold text-amber-600">Sakit / Dinas</span>
+                    <h4 class="font-bold text-slate-800 text-xs leading-tight">Pengajuan<br>Izin Guru</h4>
+                    <span class="text-[10px] font-semibold text-primary-600">Sakit / Dinas</span>
                 </div>
             </a>
 
-            <!-- Item 3: Pengajuan Cuti (Teal) -->
-            <a href="<?= url('mobile/cuti') ?>" class="bg-white rounded-3xl p-3 shadow-sm border border-slate-100 hover:border-primary-200 flex flex-col items-center text-center gap-1.5 press-bounce">
-                <div class="w-11 h-11 rounded-2xl bg-primary-50 text-primary-600 flex items-center justify-center text-lg font-bold shadow-xs">
+            <!-- Item 3: Pengajuan Cuti -->
+            <a href="<?= url('mobile/cuti') ?>" class="bg-white rounded-3xl p-3 shadow-sm border border-slate-100 hover:border-primary-200 flex flex-col items-center text-center gap-2 press-bounce">
+                <div class="w-11 h-11 rounded-2xl bg-primary-50 text-primary-600 border border-primary-100/80 flex items-center justify-center text-lg font-bold shadow-2xs">
                     🏖️
                 </div>
                 <div>
-                    <h4 class="font-black text-slate-900 text-[11px] leading-tight">Pengajuan<br>Cuti Guru</h4>
-                    <span class="text-[9px] font-bold text-primary-600">Sisa 10 Hari</span>
+                    <h4 class="font-bold text-slate-800 text-xs leading-tight">Pengajuan<br>Cuti Guru</h4>
+                    <span class="text-[10px] font-semibold text-primary-600">Sisa 10 Hari</span>
                 </div>
             </a>
 
@@ -484,23 +484,23 @@ if ($hourNow < 11) {
     <!-- 5c. Rekapitulasi Presensi & Jurnal -->
     <div class="pt-1">
         <div class="flex items-center justify-between mb-3 px-1">
-            <h3 class="font-bold text-slate-800 text-sm"><?= !empty($isSupport) ? 'Rekapitulasi Kehadiran Pegawai' : 'Rekapitulasi & Monitoring Guru' ?></h3>
-            <span class="text-[10px] font-bold text-primary-600 bg-primary-50 px-2 py-0.5 rounded-full">Periode Aktif</span>
+            <h3 class="text-sm font-bold text-slate-800 tracking-tight"><?= !empty($isSupport) ? 'Rekapitulasi Kehadiran Pegawai' : 'Rekapitulasi & Monitoring Guru' ?></h3>
+            <span class="text-[10px] font-bold text-primary-700 bg-primary-50 border border-primary-100 px-2 py-0.5 rounded-full">Periode Aktif</span>
         </div>
         
         <?php if (!empty($isSupport)): ?>
         <!-- Support System (Hanya Rekap Presensi & Keterlambatan) -->
         <div class="grid grid-cols-1 gap-3">
-            <a href="<?= url('mobile/rekap-absen') ?>" class="bg-gradient-to-br from-indigo-50 to-white rounded-3xl p-4 shadow-sm border border-indigo-100 hover:border-indigo-300 transition-all press-bounce block relative overflow-hidden group">
+            <a href="<?= url('mobile/rekap-absen') ?>" class="bg-gradient-to-br from-primary-50/80 to-white rounded-3xl p-4 shadow-sm border border-primary-100 hover:border-primary-300 transition-all press-bounce block relative overflow-hidden group">
                 <div class="flex items-center justify-between mb-2">
-                    <div class="w-11 h-11 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-xl shadow-md shadow-indigo-500/20">
+                    <div class="w-10 h-10 rounded-2xl bg-primary-600 text-white flex items-center justify-center text-lg shadow-sm shadow-primary-500/20">
                         📊
                     </div>
-                    <span class="text-[10px] font-bold text-indigo-700 bg-indigo-100/70 px-2.5 py-1 rounded-full">Presensi & Keterlambatan</span>
+                    <span class="text-[10px] font-bold text-primary-700 bg-primary-100/70 px-2.5 py-1 rounded-full">Presensi & Keterlambatan</span>
                 </div>
-                <h4 class="font-black text-slate-900 text-sm leading-tight">Rekap Presensi & Terlambat Pegawai</h4>
-                <p class="text-xs text-slate-500 mt-1">Cek riwayat kehadiran tepat waktu, jam keterlambatan harian, dan izin/cuti Anda</p>
-                <div class="flex items-center gap-1.5 text-xs font-bold text-indigo-600 mt-3 pt-2.5 border-t border-indigo-100/60">
+                <h4 class="font-bold text-slate-800 text-sm leading-tight">Rekap Presensi & Terlambat Pegawai</h4>
+                <p class="text-[11px] text-slate-500 mt-1">Cek riwayat kehadiran tepat waktu, jam keterlambatan harian, dan izin/cuti Anda</p>
+                <div class="flex items-center gap-1.5 text-xs font-bold text-primary-600 mt-3 pt-2.5 border-t border-primary-100/60">
                     <span>Buka Rekapitulasi Lengkap</span>
                     <i data-lucide="arrow-right" class="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform"></i>
                 </div>
@@ -510,32 +510,32 @@ if ($hourNow < 11) {
         <!-- Guru Pengajar (Rekap Presensi + Rekap Jurnal PIC) -->
         <div class="grid grid-cols-2 gap-3">
             <!-- Rekap Presensi & Keterlambatan -->
-            <a href="<?= url('mobile/rekap-absen') ?>" class="bg-gradient-to-br from-indigo-50 to-white rounded-3xl p-3.5 shadow-sm border border-indigo-100 hover:border-indigo-300 transition-all press-bounce block relative overflow-hidden group">
+            <a href="<?= url('mobile/rekap-absen') ?>" class="bg-gradient-to-br from-primary-50/80 to-white rounded-3xl p-3.5 shadow-sm border border-primary-100 hover:border-primary-300 transition-all press-bounce block relative overflow-hidden group">
                 <div class="flex items-center justify-between mb-2">
-                    <div class="w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-lg shadow-md shadow-indigo-500/20">
+                    <div class="w-10 h-10 rounded-2xl bg-primary-600 text-white flex items-center justify-center text-lg shadow-sm shadow-primary-500/20">
                         📊
                     </div>
-                    <span class="text-[9px] font-bold text-indigo-700 bg-indigo-100/70 px-2 py-0.5 rounded-full">Presensi</span>
+                    <span class="text-[9.5px] font-bold text-primary-700 bg-primary-100/70 px-2 py-0.5 rounded-full">Presensi</span>
                 </div>
-                <h4 class="font-black text-slate-900 text-xs leading-tight">Rekap Presensi & Terlambat</h4>
-                <p class="text-[10px] text-slate-500 mt-1">Cek hadir tepat waktu, jam telat & alpa</p>
-                <div class="flex items-center gap-1 text-[10px] font-bold text-indigo-600 mt-2.5 pt-2 border-t border-indigo-100/60">
+                <h4 class="font-bold text-slate-800 text-xs leading-tight">Rekap Presensi & Terlambat</h4>
+                <p class="text-[11px] text-slate-500 mt-1">Cek hadir tepat waktu, jam telat & alpa</p>
+                <div class="flex items-center gap-1 text-[10px] font-bold text-primary-600 mt-2.5 pt-2 border-t border-primary-100/60">
                     <span>Lihat Rekap</span>
                     <i data-lucide="arrow-right" class="w-3 h-3 group-hover:translate-x-1 transition-transform"></i>
                 </div>
             </a>
 
             <!-- Rekap Jurnal PIC & Ketuntasan KBM -->
-            <a href="<?= url('mobile/rekap-jurnal') ?>" class="bg-gradient-to-br from-purple-50 to-white rounded-3xl p-3.5 shadow-sm border border-purple-100 hover:border-purple-300 transition-all press-bounce block relative overflow-hidden group">
+            <a href="<?= url('mobile/rekap-jurnal') ?>" class="bg-gradient-to-br from-primary-50/80 to-white rounded-3xl p-3.5 shadow-sm border border-primary-100 hover:border-primary-300 transition-all press-bounce block relative overflow-hidden group">
                 <div class="flex items-center justify-between mb-2">
-                    <div class="w-10 h-10 rounded-2xl bg-purple-600 text-white flex items-center justify-center text-lg shadow-md shadow-purple-500/20">
+                    <div class="w-10 h-10 rounded-2xl bg-primary-600 text-white flex items-center justify-center text-lg shadow-sm shadow-primary-500/20">
                         📝
                     </div>
-                    <span class="text-[9px] font-bold text-purple-700 bg-purple-100/70 px-2 py-0.5 rounded-full">Jurnal PIC</span>
+                    <span class="text-[9.5px] font-bold text-primary-700 bg-primary-100/70 px-2 py-0.5 rounded-full">Jurnal PIC</span>
                 </div>
-                <h4 class="font-black text-slate-900 text-xs leading-tight">Rekap Jurnal & KBM Terlewat</h4>
-                <p class="text-[10px] text-slate-500 mt-1">Cek sesi kosong & ketuntasan jurnal</p>
-                <div class="flex items-center gap-1 text-[10px] font-bold text-purple-600 mt-2.5 pt-2 border-t border-purple-100/60">
+                <h4 class="font-bold text-slate-800 text-xs leading-tight">Rekap Jurnal & KBM Terlewat</h4>
+                <p class="text-[11px] text-slate-500 mt-1">Cek sesi kosong & ketuntasan jurnal</p>
+                <div class="flex items-center gap-1 text-[10px] font-bold text-primary-600 mt-2.5 pt-2 border-t border-primary-100/60">
                     <span>Lihat Rekap</span>
                     <i data-lucide="arrow-right" class="w-3 h-3 group-hover:translate-x-1 transition-transform"></i>
                 </div>

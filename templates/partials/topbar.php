@@ -9,7 +9,7 @@
     <div class="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
         
         <!-- Left: Mobile menu + Page title -->
-        <div class="flex items-center gap-3">
+        <div id="portal-topbar-left" class="flex items-center gap-3">
             <!-- Mobile Menu Toggle -->
             <?php if (!($hideSidebar ?? false)): ?>
             <button onclick="toggleSidebar()" 
@@ -66,6 +66,7 @@
                 </div>
             <?php endif; ?>
             
+            <div id="portal-topbar-guru-slot" class="contents">
             <?php if ($isDashboard): ?>
             <!-- Portal Guru Mobile Shortcut Button (Hanya tampil di Dashboard Portal Utama) -->
             <a href="<?= url('mobile') ?>" 
@@ -80,6 +81,7 @@
                 <span class="sm:hidden">📱 Mobile</span>
             </a>
             <?php endif; ?>
+            </div>
             
             <!-- Search (Desktop) -->
             <div class="hidden md:block relative">

@@ -291,6 +291,13 @@
             return;
         }
 
+        // Jika form ditangani oleh PortalRouter (jQuery PJAX) dan bukan proses berat (import/upload/sync), gunakan slim top progress bar saja tanpa modal blokir
+        var actLowerCheck = String(action).toLowerCase();
+        var isHeavyTask = actLowerCheck.includes('sync-dapodik') || actLowerCheck.includes('import');
+        if (!isHeavyTask && window.PortalRouter && typeof window.PortalRouter.isEligibleForm === 'function' && window.PortalRouter.isEligibleForm(form)) {
+            return;
+        }
+
         // Tunda 35ms untuk memastikan tidak ada handler JS yang memanggil preventDefault() (misal validasi AJAX)
         setTimeout(function() {
             if (e.defaultPrevented) {
@@ -353,6 +360,11 @@
                 window.removeEventListener('focus', onFocusOnce);
                 setTimeout(function() { LoadingModal.hide(); }, 300);
             });
+            return;
+        }
+
+        // JIKA TAUTAN DITANGANI OLEH PORTAL PJAX ROUTER: cukup slim bar atas, tidak perlu modal blokir
+        if (window.PortalRouter && typeof window.PortalRouter.isEligibleLink === 'function' && window.PortalRouter.isEligibleLink(link)) {
             return;
         }
 

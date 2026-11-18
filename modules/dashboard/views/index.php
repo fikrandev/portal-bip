@@ -82,8 +82,8 @@
 <!-- Section Header -->
 <div class="flex items-center justify-between mb-6">
     <div>
-        <h3 class="text-lg font-bold text-primary-900">Modul Tersedia</h3>
-        <p class="text-sm text-slate-500"><?= count($modules) ?> modul yang dapat Anda akses</p>
+        <h3 class="text-base sm:text-lg font-bold text-slate-800 tracking-tight">Modul Tersedia</h3>
+        <p class="text-xs sm:text-sm text-slate-500"><?= count($modules) ?> modul yang dapat Anda akses</p>
     </div>
 </div>
 
@@ -101,28 +101,36 @@ foreach ($modules as $module) {
 }
 ?>
 
-<!-- Ungrouped Modules -->
-<?php if (!empty($ungroupedDashModules)): ?>
-    <div class="mb-8">
-        <div id="modules-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            <?php foreach ($ungroupedDashModules as $index => $module): ?>
-                <?php include TEMPLATES_PATH . '/components/module-card.php'; ?>
-            <?php endforeach; ?>
+<?php if (!empty($modules)): ?>
+<div id="modules-grid" class="space-y-8">
+    <!-- Ungrouped Modules -->
+    <?php if (!empty($ungroupedDashModules)): ?>
+        <div class="dashboard-group-section">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                <?php foreach ($ungroupedDashModules as $index => $module): ?>
+                    <?php include TEMPLATES_PATH . '/components/module-card.php'; ?>
+                <?php endforeach; ?>
+            </div>
         </div>
-    </div>
-<?php endif; ?>
+    <?php endif; ?>
 
-<!-- Grouped Modules -->
-<?php foreach ($groupedDashModules as $groupName => $grpModules): ?>
-    <div class="mb-8">
-        <h4 class="text-md font-bold text-slate-700 mb-4 pb-2 border-b border-slate-200"><?= e($groupName) ?></h4>
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            <?php foreach ($grpModules as $index => $module): ?>
-                <?php include TEMPLATES_PATH . '/components/module-card.php'; ?>
-            <?php endforeach; ?>
+    <!-- Grouped Modules -->
+    <?php foreach ($groupedDashModules as $groupName => $grpModules): ?>
+        <div class="dashboard-group-section">
+            <div class="flex items-center gap-2.5 mb-4 pb-2.5 border-b border-slate-200/80">
+                <span class="w-2 h-5 rounded-full bg-primary-600 shrink-0"></span>
+                <h4 class="text-sm sm:text-base font-bold text-slate-800 tracking-tight"><?= e($groupName) ?></h4>
+                <span class="ml-auto px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary-50 text-primary-700 border border-primary-100"><?= count($grpModules) ?> Modul</span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                <?php foreach ($grpModules as $index => $module): ?>
+                    <?php include TEMPLATES_PATH . '/components/module-card.php'; ?>
+                <?php endforeach; ?>
+            </div>
         </div>
-    </div>
-<?php endforeach; ?>
+    <?php endforeach; ?>
+</div>
+<?php endif; ?>
 
 <!-- Empty State -->
 <?php if (empty($modules)): ?>

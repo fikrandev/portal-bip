@@ -923,6 +923,44 @@ window.MobileRouter = (function() {
       return inFlight.get(norm);
     }
 
+    if (window.jQuery) {
+      const dfd = window.jQuery.Deferred();
+      const jqXHR = window.jQuery.ajax({
+        url: url,
+        type: 'GET',
+        dataType: 'text',
+        global: false,
+        headers: { 'X-Requested-With': 'MobileRouter' }
+      });
+
+      jqXHR.done((text, _status, xhrObj) => {
+        inFlight.delete(norm);
+        const respUrl = xhrObj && xhrObj.responseURL ? xhrObj.responseURL : '';
+        if (respUrl && respUrl.includes('/login')) {
+          window.location.href = respUrl;
+          dfd.resolve(null);
+          return;
+        }
+        if (!text) {
+          dfd.resolve(null);
+          return;
+        }
+        const parsed = parseHtmlDocument(text);
+        if (parsed) {
+          pageCache.set(norm, parsed);
+        }
+        dfd.resolve(parsed);
+      }).fail((_xhr, status) => {
+        inFlight.delete(norm);
+        dfd.reject(new Error('HTTP ' + status));
+      });
+
+      const promise = dfd.promise();
+      promise._jqXHR = jqXHR;
+      inFlight.set(norm, promise);
+      return promise;
+    }
+
     const promise = fetch(url, {
       method: 'GET',
       credentials: 'same-origin',

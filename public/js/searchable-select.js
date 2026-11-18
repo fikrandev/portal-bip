@@ -489,7 +489,11 @@
         });
 
         // Click outside to close
-        document.addEventListener('click', function(e) {
+        document.addEventListener('click', function onDocClick(e) {
+            if (!document.body.contains(wrapper)) {
+                document.removeEventListener('click', onDocClick);
+                return;
+            }
             if (!wrapper.contains(e.target)) {
                 closeDropdown();
             }

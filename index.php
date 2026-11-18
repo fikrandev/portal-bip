@@ -47,7 +47,7 @@ AutoMigrate::run();
 // ── Global System Settings (Session-Cached 300s) ───
 try {
     if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
-        unset($_SESSION['_sys_boot_cache']);
+        unset($_SESSION['_sys_boot_cache'], $_SESSION['_dash_stats_cache']);
     }
     $now = time();
     if (
