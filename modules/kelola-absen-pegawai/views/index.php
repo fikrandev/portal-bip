@@ -372,6 +372,7 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
                                                         'batas_jam' => substr($late['jam_masuk_batas'], 0, 5),
                                                         'has_log' => true,
                                                         'return_tab' => 'dashboard',
+                                                        'rekap_view' => 'harian',
                                                     ]), ENT_QUOTES, 'UTF-8') ?>)"
                                                     class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 transition-all cursor-pointer shadow-xs"
                                                     title="Ubah Log Presensi">
@@ -1353,6 +1354,7 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
                                                     'batas_jam' => substr($jamBatasEfektif, 0, 5),
                                                     'has_log' => !empty($r['log_id']),
                                                     'return_tab' => 'rekap',
+                                                    'rekap_view' => 'harian',
                                                 ]), ENT_QUOTES, 'UTF-8') ?>)"
                                                 class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-primary-50 text-primary-700 hover:bg-primary-600 hover:text-white border border-primary-200 transition-all cursor-pointer shadow-xs">
                                             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
@@ -3066,6 +3068,9 @@ function openModalEditLogPresensi(data) {
     document.getElementById('editlog_pegawai_id').value = data.pegawai_id || '';
     document.getElementById('editlog_tanggal').value = data.tanggal || '';
     document.getElementById('editlog_return_tab').value = data.return_tab || 'rekap';
+    if (document.getElementById('editlog_rekap_view')) {
+        document.getElementById('editlog_rekap_view').value = data.rekap_view || 'harian';
+    }
     document.getElementById('editlog_nama_display').textContent = data.nama + (data.niy ? ' (' + data.niy + ')' : '');
     document.getElementById('editlog_unit_display').textContent = (data.unit_tugas || '-') + ' • ' + (data.jabatan || '-');
     document.getElementById('editlog_tanggal_display').textContent = data.tanggal_formatted || data.tanggal || '';

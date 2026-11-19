@@ -118,3 +118,29 @@ class Response
         unset($_SESSION['old_input']);
     }
 }
+
+/**
+ * Flash Notification Helper (Alias for Response Flash Messages)
+ */
+class Flash
+{
+    public static function success(string $message): void
+    {
+        $_SESSION['flash_success'] = $message;
+    }
+
+    public static function error(string $message): void
+    {
+        $_SESSION['flash_error'] = $message;
+    }
+
+    public static function info(string $message): void
+    {
+        $_SESSION['flash_info'] = $message;
+    }
+
+    public static function warning(string $message): void
+    {
+        $_SESSION['flash_warning'] = $message;
+    }
+}

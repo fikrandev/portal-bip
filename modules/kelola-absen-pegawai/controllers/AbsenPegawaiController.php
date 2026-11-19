@@ -459,13 +459,13 @@ class AbsenPegawaiController
         $returnTab = $_POST['return_tab'] ?? 'rekap';
         $returnDate = $_POST['tanggal'] ?? date('Y-m-d');
         $rekapView = $_POST['rekap_view'] ?? 'harian';
+        $redirectUrl = url('kelola-absen-pegawai?tab=' . urlencode($returnTab) . '&tanggal=' . urlencode($returnDate) . '&rekap_view=' . urlencode($rekapView));
 
         try {
             $pegawaiId = (int)($_POST['pegawai_id'] ?? 0);
             $tanggal = trim((string)($_POST['tanggal'] ?? ''));
             if (!$pegawaiId || empty($tanggal)) {
-                Flash::error('Data pegawai atau tanggal tidak valid.');
-                redirect('kelola-absen-pegawai?tab=' . urlencode($returnTab) . '&tanggal=' . urlencode($returnDate) . '&rekap_view=' . urlencode($rekapView));
+                Response::redirect($redirectUrl, 'Data pegawai atau tanggal tidak valid.', 'error');
             }
 
             // Periksa hak akses unit
@@ -473,8 +473,7 @@ class AbsenPegawaiController
             if ($effUnit !== null) {
                 $pegUnit = AbsenPegawaiModel::getPegawaiUnit($pegawaiId);
                 if ($pegUnit && strcasecmp($pegUnit, $effUnit) !== 0 && stripos($pegUnit, $effUnit) === false) {
-                    Flash::error('Anda tidak memiliki hak akses untuk mengubah presensi pegawai unit ' . $pegUnit);
-                    redirect('kelola-absen-pegawai?tab=' . urlencode($returnTab) . '&tanggal=' . urlencode($returnDate) . '&rekap_view=' . urlencode($rekapView));
+                    Response::redirect($redirectUrl, 'Anda tidak memiliki hak akses untuk mengubah presensi pegawai unit ' . $pegUnit, 'error');
                 }
             }
 
@@ -489,15 +488,13 @@ class AbsenPegawaiController
             ]);
 
             if ($success) {
-                Flash::success('Log presensi pegawai berhasil diperbarui.');
+                Response::redirect($redirectUrl, 'Log presensi pegawai berhasil diperbarui.', 'success');
             } else {
-                Flash::error('Gagal memperbarui log presensi.');
+                Response::redirect($redirectUrl, 'Gagal memperbarui log presensi.', 'error');
             }
         } catch (\Throwable $e) {
-            Flash::error('Terjadi kesalahan: ' . $e->getMessage());
+            Response::redirect($redirectUrl, 'Terjadi kesalahan: ' . $e->getMessage(), 'error');
         }
-
-        redirect('kelola-absen-pegawai?tab=' . urlencode($returnTab) . '&tanggal=' . urlencode($returnDate) . '&rekap_view=' . urlencode($rekapView));
     }
 
     /**
@@ -509,13 +506,13 @@ class AbsenPegawaiController
         $returnTab = $_POST['return_tab'] ?? 'rekap';
         $returnDate = $_POST['tanggal'] ?? date('Y-m-d');
         $rekapView = $_POST['rekap_view'] ?? 'harian';
+        $redirectUrl = url('kelola-absen-pegawai?tab=' . urlencode($returnTab) . '&tanggal=' . urlencode($returnDate) . '&rekap_view=' . urlencode($rekapView));
 
         try {
             $pegawaiId = (int)($_POST['pegawai_id'] ?? 0);
             $tanggal = trim((string)($_POST['tanggal'] ?? ''));
             if (!$pegawaiId || empty($tanggal)) {
-                Flash::error('Data pegawai atau tanggal tidak valid.');
-                redirect('kelola-absen-pegawai?tab=' . urlencode($returnTab) . '&tanggal=' . urlencode($returnDate) . '&rekap_view=' . urlencode($rekapView));
+                Response::redirect($redirectUrl, 'Data pegawai atau tanggal tidak valid.', 'error');
             }
 
             // Periksa hak akses unit
@@ -523,22 +520,19 @@ class AbsenPegawaiController
             if ($effUnit !== null) {
                 $pegUnit = AbsenPegawaiModel::getPegawaiUnit($pegawaiId);
                 if ($pegUnit && strcasecmp($pegUnit, $effUnit) !== 0 && stripos($pegUnit, $effUnit) === false) {
-                    Flash::error('Anda tidak memiliki hak akses untuk menghapus log presensi pegawai unit ' . $pegUnit);
-                    redirect('kelola-absen-pegawai?tab=' . urlencode($returnTab) . '&tanggal=' . urlencode($returnDate) . '&rekap_view=' . urlencode($rekapView));
+                    Response::redirect($redirectUrl, 'Anda tidak memiliki hak akses untuk menghapus log presensi pegawai unit ' . $pegUnit, 'error');
                 }
             }
 
             $success = AbsenPegawaiModel::deleteLogPresensi($pegawaiId, $tanggal);
             if ($success) {
-                Flash::success('Log presensi pegawai berhasil dihapus (status kembali ke Belum Absen).');
+                Response::redirect($redirectUrl, 'Log presensi pegawai berhasil dihapus (status kembali ke Belum Absen).', 'success');
             } else {
-                Flash::error('Gagal menghapus log presensi.');
+                Response::redirect($redirectUrl, 'Gagal menghapus log presensi.', 'error');
             }
         } catch (\Throwable $e) {
-            Flash::error('Terjadi kesalahan: ' . $e->getMessage());
+            Response::redirect($redirectUrl, 'Terjadi kesalahan: ' . $e->getMessage(), 'error');
         }
-
-        redirect('kelola-absen-pegawai?tab=' . urlencode($returnTab) . '&tanggal=' . urlencode($returnDate) . '&rekap_view=' . urlencode($rekapView));
     }
 
     /**
@@ -549,6 +543,7 @@ class AbsenPegawaiController
         CSRF::validate();
         $returnTab = $_POST['return_tab'] ?? 'dashboard';
         $returnDate = $_POST['tanggal'] ?? date('Y-m-d');
+        $redirectUrl = url('kelola-absen-pegawai?tab=' . urlencode($returnTab) . '&tanggal=' . urlencode($returnDate));
 
         try {
             $pegawaiId = (int)($_POST['pegawai_id'] ?? 0);
@@ -557,8 +552,7 @@ class AbsenPegawaiController
             $tindakLanjut = trim((string)($_POST['tindak_lanjut'] ?? ''));
 
             if (!$pegawaiId || empty($tanggal)) {
-                Flash::error('Data pegawai atau tanggal tidak valid.');
-                redirect('kelola-absen-pegawai?tab=' . urlencode($returnTab) . '&tanggal=' . urlencode($returnDate));
+                Response::redirect($redirectUrl, 'Data pegawai atau tanggal tidak valid.', 'error');
             }
 
             // Periksa hak akses unit
@@ -566,8 +560,7 @@ class AbsenPegawaiController
             if ($effUnit !== null) {
                 $pegUnit = AbsenPegawaiModel::getPegawaiUnit($pegawaiId);
                 if ($pegUnit && strcasecmp($pegUnit, $effUnit) !== 0 && stripos($pegUnit, $effUnit) === false) {
-                    Flash::error('Anda tidak memiliki hak akses untuk memberikan catatan pegawai unit ' . $pegUnit);
-                    redirect('kelola-absen-pegawai?tab=' . urlencode($returnTab) . '&tanggal=' . urlencode($returnDate));
+                    Response::redirect($redirectUrl, 'Anda tidak memiliki hak akses untuk memberikan catatan pegawai unit ' . $pegUnit, 'error');
                 }
             }
 
@@ -576,15 +569,13 @@ class AbsenPegawaiController
 
             $success = AbsenPegawaiModel::saveCatatanTerlambat($pegawaiId, $tanggal, $evaluasi, $tindakLanjut, $evaluator);
             if ($success) {
-                Flash::success('Catatan evaluasi & tindak lanjut keterlambatan berhasil disimpan.');
+                Response::redirect($redirectUrl, 'Catatan evaluasi & tindak lanjut keterlambatan berhasil disimpan.', 'success');
             } else {
-                Flash::error('Gagal menyimpan catatan evaluasi keterlambatan.');
+                Response::redirect($redirectUrl, 'Gagal menyimpan catatan evaluasi keterlambatan.', 'error');
             }
         } catch (\Throwable $e) {
-            Flash::error('Terjadi kesalahan: ' . $e->getMessage());
+            Response::redirect($redirectUrl, 'Terjadi kesalahan: ' . $e->getMessage(), 'error');
         }
-
-        redirect('kelola-absen-pegawai?tab=' . urlencode($returnTab) . '&tanggal=' . urlencode($returnDate));
     }
 
     /**
@@ -595,14 +586,14 @@ class AbsenPegawaiController
         CSRF::validate();
         $returnTab = $_POST['return_tab'] ?? 'dashboard';
         $returnDate = $_POST['tanggal'] ?? date('Y-m-d');
+        $redirectUrl = url('kelola-absen-pegawai?tab=' . urlencode($returnTab) . '&tanggal=' . urlencode($returnDate));
 
         try {
             $pegawaiId = (int)($_POST['pegawai_id'] ?? 0);
             $tanggal = trim((string)($_POST['tanggal'] ?? ''));
 
             if (!$pegawaiId || empty($tanggal)) {
-                Flash::error('Data pegawai atau tanggal tidak valid.');
-                redirect('kelola-absen-pegawai?tab=' . urlencode($returnTab) . '&tanggal=' . urlencode($returnDate));
+                Response::redirect($redirectUrl, 'Data pegawai atau tanggal tidak valid.', 'error');
             }
 
             // Periksa hak akses unit
@@ -610,21 +601,18 @@ class AbsenPegawaiController
             if ($effUnit !== null) {
                 $pegUnit = AbsenPegawaiModel::getPegawaiUnit($pegawaiId);
                 if ($pegUnit && strcasecmp($pegUnit, $effUnit) !== 0 && stripos($pegUnit, $effUnit) === false) {
-                    Flash::error('Anda tidak memiliki hak akses untuk menghapus catatan pegawai unit ' . $pegUnit);
-                    redirect('kelola-absen-pegawai?tab=' . urlencode($returnTab) . '&tanggal=' . urlencode($returnDate));
+                    Response::redirect($redirectUrl, 'Anda tidak memiliki hak akses untuk menghapus catatan pegawai unit ' . $pegUnit, 'error');
                 }
             }
 
             $success = AbsenPegawaiModel::deleteCatatanTerlambat($pegawaiId, $tanggal);
             if ($success) {
-                Flash::success('Catatan evaluasi & tindak lanjut berhasil direset.');
+                Response::redirect($redirectUrl, 'Catatan evaluasi & tindak lanjut berhasil direset.', 'success');
             } else {
-                Flash::error('Gagal mereset catatan evaluasi.');
+                Response::redirect($redirectUrl, 'Gagal mereset catatan evaluasi.', 'error');
             }
         } catch (\Throwable $e) {
-            Flash::error('Terjadi kesalahan: ' . $e->getMessage());
+            Response::redirect($redirectUrl, 'Terjadi kesalahan: ' . $e->getMessage(), 'error');
         }
-
-        redirect('kelola-absen-pegawai?tab=' . urlencode($returnTab) . '&tanggal=' . urlencode($returnDate));
     }
 }

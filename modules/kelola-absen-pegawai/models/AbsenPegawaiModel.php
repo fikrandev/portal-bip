@@ -2564,6 +2564,11 @@ class AbsenPegawaiModel
         $namaKantor = !empty($data['nama_kantor_absen']) ? trim((string)$data['nama_kantor_absen']) : null;
         $keterangan = !empty($data['keterangan']) ? trim((string)$data['keterangan']) : null;
 
+        if ($status === 'Terlambat' && empty($keterangan) && !empty($jamMasuk)) {
+            $menit = max(1, (int)round((strtotime($jamMasuk) - strtotime('07:30:00')) / 60));
+            $keterangan = "Terlambat {$menit} Menit";
+        }
+
         $existing = self::db()->find(
             "SELECT id FROM `absen_pegawai_log` WHERE `pegawai_id` = ? AND `tanggal` = ? LIMIT 1",
             [$pegawaiId, $tanggal]

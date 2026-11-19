@@ -109,6 +109,14 @@ function url(string $path = ''): string {
 }
 
 /**
+ * Redirect to path or absolute URL (optionally with flash message)
+ */
+function redirect(string $path, ?string $message = null, string $type = 'success'): void {
+    $targetUrl = (strpos($path, 'http://') === 0 || strpos($path, 'https://') === 0) ? $path : url($path);
+    Response::redirect($targetUrl, $message, $type);
+}
+
+/**
  * Generate asset URL
  */
 function asset(string $path): string {
