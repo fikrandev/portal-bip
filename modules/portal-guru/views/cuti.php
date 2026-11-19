@@ -198,6 +198,9 @@
 
     function openFormCutiModal() {
         const todayStr = new Date().toISOString().split('T')[0];
+        if (!window.selectedCutiDates || window.selectedCutiDates.length === 0) {
+            window.selectedCutiDates = [todayStr];
+        }
 
         // Buat options jenis cuti dinamis dari database
         let jenisOpts = '';
@@ -216,6 +219,11 @@
             window.TEACHERS_LIST.forEach(name => {
                 if (name) teacherOpts += `<option value="${name}">${name}</option>`;
             });
+        }
+
+        if (typeof AndroidUI === 'undefined' || typeof AndroidUI.bottomSheet !== 'function') {
+            alert('Komponen UI sedang dimuat, silakan coba beberapa detik lagi.');
+            return;
         }
 
         AndroidUI.bottomSheet({
@@ -394,17 +402,20 @@
         const fileInput = document.getElementById('modal-cuti-file');
 
         if (!jenisId) {
-            AndroidUI.toast('Mohon pilih jenis cuti!', 'warning');
+            if (typeof AndroidUI !== 'undefined') AndroidUI.toast('Mohon pilih jenis cuti!', 'warning');
+            else alert('Mohon pilih jenis cuti!');
             return;
         }
 
         if (!window.selectedCutiDates || window.selectedCutiDates.length === 0) {
-            AndroidUI.toast('Silakan pilih minimal 1 tanggal cuti!', 'warning');
+            if (typeof AndroidUI !== 'undefined') AndroidUI.toast('Silakan pilih minimal 1 tanggal cuti!', 'warning');
+            else alert('Silakan pilih minimal 1 tanggal cuti!');
             return;
         }
 
         if (!reason) {
-            AndroidUI.toast('Mohon isi alasan permohonan cuti!', 'warning');
+            if (typeof AndroidUI !== 'undefined') AndroidUI.toast('Mohon isi alasan permohonan cuti!', 'warning');
+            else alert('Mohon isi alasan permohonan cuti!');
             return;
         }
 
@@ -421,32 +432,17 @@
         formData.append('alasan', reason);
         formData.append('kontak_darurat', contact);
         formData.append('alamat_selama_cuti', address);
-        const fileInput = document.getElementById('modal-cuti-file');
-
-        if (!jenisId) {
-            AndroidUI.toast('Mohon pilih jenis cuti!', 'warning');
-            return;
-        }
-
-        if (!reason) {
-            AndroidUI.toast('Mohon isi alasan permohonan cuti!', 'warning');
-            return;
-        }
-
-        const formData = new FormData();
-        formData.append('jenis_cuti_id', jenisId);
-        formData.append('tanggal_mulai', startDate);
-        formData.append('tanggal_selesai', endDate);
-        formData.append('alasan', reason);
-        formData.append('kontak_darurat', contact);
-        formData.append('alamat_selama_cuti', address);
         formData.append('pelimpahan_tugas', substitute);
 
         if (fileInput && fileInput.files && fileInput.files[0]) {
             formData.append('lampiran', fileInput.files[0]);
         }
 
-        AndroidUI.setButtonLoading(btn, 'Mengajukan Cuti...');
+        if (typeof AndroidUI !== 'undefined' && typeof AndroidUI.setButtonLoading === 'function') {
+            AndroidUI.setButtonLoading(btn, 'Mengajukan Cuti...');
+        } else if (btn) {
+            btn.disabled = true;
+        }
 
         try {
             const res = await fetch('<?= url("mobile/cuti/submit") ?>', {
@@ -455,27 +451,58 @@
             });
             const data = await res.json();
 
-            AndroidUI.resetButton(btn);
+            if (typeof AndroidUI !== 'undefined' && typeof AndroidUI.resetButton === 'function') {
+                AndroidUI.resetButton(btn);
+            } else if (btn) {
+                btn.disabled = false;
+            }
 
             if (data.success) {
-                AndroidUI.closeBottomSheet();
-                AndroidUI.success({
-                    title: 'Permohonan Cuti Terkirim! 🏖️✓',
-                    subtitle: 'Nomor: ' + (data.nomor_pengajuan || 'Tersimpan'),
-                    message: data.message || 'Permohonan cuti Anda berhasil diajukan dan sedang menunggu verifikasi.',
-                    buttonText: 'OK',
-                    onClick: () => {
-                        window.location.reload();
-                    }
-                });
+                if (typeof AndroidUI !== 'undefined' && typeof AndroidUI.closeBottomSheet === 'function') {
+                    AndroidUI.closeBottomSheet();
+                }
+                if (typeof AndroidUI !== 'undefined' && typeof AndroidUI.success === 'function') {
+                    AndroidUI.success({
+                        title: 'Permohonan Cuti Terkirim! 🏖️✓',
+                        subtitle: 'Nomor: ' + (data.nomor_pengajuan || 'Tersimpan'),
+                        message: data.message || 'Permohonan cuti Anda berhasil diajukan dan sedang menunggu verifikasi.',
+                        buttonText: 'OK',
+                        onClick: () => {
+                            window.location.reload();
+                        }
+                    });
+                } else {
+                    alert(data.message || 'Permohonan cuti berhasil diajukan!');
+                    window.location.reload();
+                }
             } else {
-                AndroidUI.toast(data.message || 'Gagal mengajukan cuti', 'error');
+                if (typeof AndroidUI !== 'undefined' && typeof AndroidUI.toast === 'function') {
+                    AndroidUI.toast(data.message || 'Gagal mengajukan cuti', 'error');
+                } else {
+                    alert(data.message || 'Gagal mengajukan cuti');
+                }
             }
         } catch (err) {
-            AndroidUI.resetButton(btn);
-            AndroidUI.toast('Terjadi kesalahan koneksi saat mengirim permohonan.', 'error');
+            if (typeof AndroidUI !== 'undefined' && typeof AndroidUI.resetButton === 'function') {
+                AndroidUI.resetButton(btn);
+            } else if (btn) {
+                btn.disabled = false;
+            }
+            if (typeof AndroidUI !== 'undefined' && typeof AndroidUI.toast === 'function') {
+                AndroidUI.toast('Terjadi kesalahan koneksi saat mengirim permohonan.', 'error');
+            } else {
+                alert('Terjadi kesalahan koneksi saat mengirim permohonan.');
+            }
         }
     }
+
+    // Expose functions globally for template event triggers
+    window.openFormCutiModal = openFormCutiModal;
+    window.renderCutiChipsMobile = renderCutiChipsMobile;
+    window.tambahTanggalCutiMobile = tambahTanggalCutiMobile;
+    window.hapusTanggalCutiMobile = hapusTanggalCutiMobile;
+    window.clearSemuaTanggalCutiMobile = clearSemuaTanggalCutiMobile;
+    window.submitCuti = submitCuti;
 
     document.addEventListener('DOMContentLoaded', () => {
         if (window.lucide) window.lucide.createIcons();
