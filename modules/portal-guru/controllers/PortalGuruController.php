@@ -3180,16 +3180,26 @@ class PortalGuruController
             exit;
         }
 
+        require_once BASE_PATH . '/modules/kelola-cuti/models/CutiModel.php';
+
         $jenisCutiId = (int) ($_POST['jenis_cuti_id'] ?? 0);
+        $tanggalPilihan = $_POST['tanggal_pilihan'] ?? ($_POST['tanggal_cuti_list'] ?? null);
+        $parsedDates = CutiModel::parseTanggalPilihan($tanggalPilihan);
+
         $tanggalMulai = trim($_POST['tanggal_mulai'] ?? '');
-        $tanggalSelesai = trim($_POST['tanggal_selesai'] ?? '');
+        $tanggalSelesai = trim($_POST['tanggal_selesai'] ?? $tanggalMulai);
+        if (!empty($parsedDates)) {
+            $tanggalMulai = $parsedDates[0];
+            $tanggalSelesai = end($parsedDates);
+        }
+
         $alasan = trim($_POST['alasan'] ?? '');
         $pelimpahanTugas = trim($_POST['pelimpahan_tugas'] ?? '');
         $alamatSelamaCuti = trim($_POST['alamat_selama_cuti'] ?? '');
         $kontakDarurat = trim($_POST['kontak_darurat'] ?? '');
 
-        if ($jenisCutiId <= 0 || empty($tanggalMulai) || empty($tanggalSelesai) || empty($alasan)) {
-            echo json_encode(['success' => false, 'message' => 'Jenis cuti, tanggal, dan alasan wajib diisi lengkap.']);
+        if ($jenisCutiId <= 0 || empty($tanggalMulai) || empty($alasan)) {
+            echo json_encode(['success' => false, 'message' => 'Jenis cuti, tanggal cuti, dan alasan wajib diisi lengkap.']);
             exit;
         }
 
@@ -3211,10 +3221,10 @@ class PortalGuruController
         }
 
         try {
-            require_once BASE_PATH . '/modules/kelola-cuti/models/CutiModel.php';
             $payload = [
                 'pegawai_id' => $pegawaiId,
                 'jenis_cuti_id' => $jenisCutiId,
+                'tanggal_pilihan' => $parsedDates,
                 'tanggal_mulai' => $tanggalMulai,
                 'tanggal_selesai' => $tanggalSelesai,
                 'alasan' => $alasan,

@@ -411,11 +411,16 @@ class PortalGuruModel
                 ['step' => 'Persetujuan Kepala Sekolah', 'time' => ($status === 'Disetujui') ? (!empty($r['approved_at']) ? date('d M Y, H:i', strtotime($r['approved_at'])) : 'Disetujui') : ($status === 'Ditolak' ? 'Ditolak' : 'Menunggu'), 'done' => ($status === 'Disetujui')]
             ];
 
+            $displayTanggal = CutiModel::formatTanggalCutiDisplay($r, 'd M Y');
+            $cutiDatesList = CutiModel::parseTanggalPilihan($r['tanggal_cuti_list'] ?? null);
+
             $records[] = [
                 'id' => $r['nomor_pengajuan'] ?: ('CT-' . str_pad((string)$r['id'], 4, '0', STR_PAD_LEFT)),
                 'type' => $r['nama_jenis'] ?? ($r['kategori_cuti'] . ' Cuti'),
                 'startDate' => !empty($r['tanggal_mulai']) ? date('d M Y', strtotime($r['tanggal_mulai'])) : '-',
                 'endDate' => !empty($r['tanggal_selesai']) ? date('d M Y', strtotime($r['tanggal_selesai'])) : '-',
+                'datesDisplay' => $displayTanggal,
+                'datesList' => $cutiDatesList,
                 'daysCount' => (int)($r['jumlah_hari'] ?? 1),
                 'reason' => $r['alasan'] ?? '-',
                 'emergencyContact' => $r['kontak_darurat'] ?? '-',

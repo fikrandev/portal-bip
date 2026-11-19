@@ -35,7 +35,7 @@ $staffTotal = (int)($dashStats['total_support_staff'] ?? 0);
                     <img src="<?= $sbLogo ?>" alt="Logo Sekolah" class="max-w-full max-h-full object-contain">
                 </div>
             <?php else: ?>
-                <div class="w-9 h-9 rounded-2xl bg-gradient-to-br from-indigo-500 to-primary-600 flex items-center justify-center shadow-lg shadow-indigo-500/20 text-white font-bold shrink-0">
+                <div class="w-9 h-9 rounded-2xl bg-primary-600 flex items-center justify-center shadow-lg shadow-primary-600/20 text-white font-bold shrink-0">
                     <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25ZM6.75 12h.008v.008H6.75V12Zm0 3h.008v.008H6.75V15Zm0 3h.008v.008H6.75V18Z" />
                     </svg>
@@ -60,10 +60,10 @@ $staffTotal = (int)($dashStats['total_support_staff'] ?? 0);
         <div class="bg-primary-950/40 rounded-xl p-3 border border-primary-800/60">
             <div class="flex items-center justify-between text-xs mb-1">
                 <span class="text-primary-300 font-medium flex items-center gap-1.5">
-                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span class="w-2 h-2 rounded-full bg-primary-400 animate-pulse"></span>
                     Aktivitas Hari Ini
                 </span>
-                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary-500/20 text-primary-200 border border-primary-500/30">
                     <?= $cntToday ?> Catatan
                 </span>
             </div>
@@ -74,7 +74,7 @@ $staffTotal = (int)($dashStats['total_support_staff'] ?? 0);
                 <?php 
                     $pct = $staffTotal > 0 ? min(100, round(($staffToday / $staffTotal) * 100)) : 0;
                 ?>
-                <div class="bg-gradient-to-r from-emerald-400 to-teal-400 h-1.5 rounded-full transition-all duration-500" style="width: <?= $pct ?>%"></div>
+                <div class="bg-primary-400 h-1.5 rounded-full transition-all duration-500" style="width: <?= $pct ?>%"></div>
             </div>
         </div>
     </div>
@@ -106,7 +106,7 @@ $staffTotal = (int)($dashStats['total_support_staff'] ?? 0);
                         'label' => '3. Pengaturan Jam',
                         'icon' => '<path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />',
                         'badge' => count($jamList ?? []),
-                        'badgeClass' => 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                        'badgeClass' => 'bg-primary-500/20 text-primary-200 border border-primary-500/30'
                     ],
                     [
                         'tab' => 'tugas',
@@ -157,7 +157,7 @@ $staffTotal = (int)($dashStats['total_support_staff'] ?? 0);
                     <a href="<?= url('kelola-jurnal-staff/cetak?start_date=' . urlencode($filterStartDate ?? date('Y-m-01')) . '&end_date=' . urlencode($filterEndDate ?? date('Y-m-t'))) ?>" 
                        target="_blank"
                        class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-primary-200 hover:bg-primary-800/60 hover:text-white transition-all text-xs font-medium">
-                        <svg class="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <svg class="w-4 h-4 text-primary-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24-1.076-.672-2.144-1.28-3.093l-.408-.637c-.368-.574-.532-.83-.532-1.127 0-.482.352-.892.83-.974.776-.133 1.57-.213 2.378-.238m10.584 6.069c.24-1.076.672-2.144 1.28-3.093l.408-.637c.368-.574.532-.83.532-1.127 0-.482-.352-.892-.83-.974a24.28 24.28 0 0 0-2.378-.238M6.75 6.75h10.5a2.25 2.25 0 0 1 2.25 2.25v9.75a2.25 2.25 0 0 1-2.25 2.25H6.75a2.25 2.25 0 0 1-2.25-2.25V9a2.25 2.25 0 0 1 2.25-2.25Zm0 0V4.5a2.25 2.25 0 0 1 2.25-2.25h6a2.25 2.25 0 0 1 2.25 2.25v2.25" />
                         </svg>
                         <span>Cetak Laporan Rekap</span>

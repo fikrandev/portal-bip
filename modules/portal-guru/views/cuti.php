@@ -128,9 +128,20 @@
 
                         <!-- Details Box -->
                         <div class="bg-slate-50 rounded-2xl p-3 border border-slate-100 space-y-2 text-xs">
-                            <div class="flex items-center justify-between text-slate-700">
-                                <span class="text-slate-400 font-semibold text-[11px]">Tanggal Cuti:</span>
-                                <span class="font-bold text-slate-800"><?= htmlspecialchars($r['startDate']) ?> s.d. <?= htmlspecialchars($r['endDate']) ?></span>
+                            <div class="flex items-start justify-between gap-2 text-slate-700">
+                                <span class="text-slate-400 font-semibold text-[11px] shrink-0">Tanggal Cuti:</span>
+                                <div class="text-right">
+                                    <span class="font-bold text-slate-800 text-xs block"><?= htmlspecialchars($r['datesDisplay'] ?? ($r['startDate'] . ' s.d. ' . $r['endDate'])) ?></span>
+                                    <?php if (!empty($r['datesList']) && count($r['datesList']) > 1): ?>
+                                        <div class="flex flex-wrap justify-end gap-1 mt-1">
+                                            <?php foreach ($r['datesList'] as $dl): ?>
+                                                <span class="px-1.5 py-0.5 rounded-md bg-white border border-slate-200 text-[10px] font-semibold text-slate-700">
+                                                    <?= date('d M', strtotime($dl)) ?>
+                                                </span>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
                             </div>
                             <div class="text-slate-700 pt-1 border-t border-slate-200/60">
                                 <span class="text-slate-400 font-semibold text-[11px] block mb-0.5">Keperluan / Alasan:</span>
@@ -223,15 +234,31 @@
                         </select>
                     </div>
 
-                    <!-- Rentang Tanggal Cuti -->
-                    <div class="grid grid-cols-2 gap-2">
-                        <div>
-                            <label class="block text-xs font-bold text-slate-700 mb-1">Tanggal Mulai <span class="text-rose-500">*</span></label>
-                            <input type="date" id="modal-cuti-start" value="${todayStr}" class="w-full px-3 py-2 text-xs bg-slate-50 rounded-2xl border border-slate-200 font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-inner">
+                    <!-- Pemilihan Tanggal Cuti Spesifik (Bukan Rentang) -->
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <label class="block text-xs font-bold text-slate-700">
+                                Pilih Tanggal Cuti <span class="text-rose-500">*</span>
+                            </label>
+                            <span class="text-[10px] text-slate-400 font-medium">Bisa lompat hari libur</span>
                         </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-700 mb-1">Tanggal Selesai <span class="text-rose-500">*</span></label>
-                            <input type="date" id="modal-cuti-end" value="${todayStr}" class="w-full px-3 py-2 text-xs bg-slate-50 rounded-2xl border border-slate-200 font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-inner">
+                        <div class="flex items-center gap-2">
+                            <input type="date" id="picker-tambah-cuti" value="${todayStr}" onchange="tambahTanggalCutiMobile()" class="flex-1 px-3 py-2 text-xs bg-slate-50 rounded-2xl border border-slate-200 font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-inner">
+                            <button type="button" onclick="tambahTanggalCutiMobile()" class="px-3.5 py-2 bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white font-bold text-xs rounded-2xl shadow-sm flex items-center gap-1 shrink-0 press-bounce">
+                                <span>+ Tambah</span>
+                            </button>
+                        </div>
+
+                        <!-- Chip Tanggal Terpilih -->
+                        <div class="mt-2 p-2 bg-slate-50 rounded-2xl border border-slate-200/80 min-h-[46px]">
+                            <div id="container-chips-cuti" class="flex flex-wrap gap-1.5">
+                                <!-- Populated dynamically -->
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between text-[11px] px-1 mt-1 font-semibold text-slate-500">
+                            <span>Total Cuti: <b id="text-total-hari-cuti" class="text-primary-700 font-extrabold text-xs">1 Hari Kerja</b></span>
+                            <button type="button" onclick="clearSemuaTanggalCutiMobile()" class="text-rose-500 hover:text-rose-700 text-[10px] font-bold">✕ Kosongkan</button>
                         </div>
                     </div>
 
@@ -285,19 +312,115 @@
         });
 
         setTimeout(() => {
+            renderCutiChipsMobile();
             const reasonArea = document.getElementById('modal-cuti-reason');
             if (reasonArea) reasonArea.focus();
-        }, 350);
+        }, 100);
+    }
+
+    const NAMA_HARI_INDO = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+    const NAMA_BULAN_INDO = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+
+    function formatTglIndoMobile(dateStr) {
+        if (!dateStr) return '';
+        const parts = dateStr.split('-');
+        if (parts.length !== 3) return dateStr;
+        const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+        const hari = NAMA_HARI_INDO[d.getDay()] || '';
+        const tgl = d.getDate();
+        const bln = NAMA_BULAN_INDO[d.getMonth()] || '';
+        return `${hari}, ${tgl} ${bln}`;
+    }
+
+    function renderCutiChipsMobile() {
+        const container = document.getElementById('container-chips-cuti');
+        const badge = document.getElementById('text-total-hari-cuti');
+        if (!container) return;
+
+        if (!Array.isArray(window.selectedCutiDates)) window.selectedCutiDates = [];
+        window.selectedCutiDates.sort();
+
+        if (window.selectedCutiDates.length === 0) {
+            container.innerHTML = '<span class="text-[11px] text-slate-400 italic py-1 px-1">Pilih tanggal di atas & klik "+ Tambah".</span>';
+            if (badge) badge.textContent = '0 Hari Kerja';
+            return;
+        }
+
+        container.innerHTML = window.selectedCutiDates.map(dateStr => {
+            const label = formatTglIndoMobile(dateStr);
+            return `
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-bold bg-white border border-primary-200 text-primary-900 shadow-2xs">
+                    <span>📅 ${label}</span>
+                    <button type="button" onclick="hapusTanggalCutiMobile('${dateStr}')" class="text-slate-400 hover:text-rose-600 font-extrabold ml-0.5" title="Hapus">✕</button>
+                </span>
+            `;
+        }).join('');
+
+        if (badge) {
+            badge.textContent = `${window.selectedCutiDates.length} Hari Kerja`;
+        }
+    }
+
+    function tambahTanggalCutiMobile() {
+        const picker = document.getElementById('picker-tambah-cuti');
+        if (!picker || !picker.value) return;
+        const val = picker.value.trim();
+        if (!window.selectedCutiDates) window.selectedCutiDates = [];
+        if (window.selectedCutiDates.includes(val)) {
+            if (typeof AndroidUI !== 'undefined') AndroidUI.toast('Tanggal sudah ada di daftar cuti.', 'warning');
+            return;
+        }
+        window.selectedCutiDates.push(val);
+        renderCutiChipsMobile();
+    }
+
+    function hapusTanggalCutiMobile(val) {
+        if (!window.selectedCutiDates) return;
+        window.selectedCutiDates = window.selectedCutiDates.filter(d => d !== val);
+        renderCutiChipsMobile();
+    }
+
+    function clearSemuaTanggalCutiMobile() {
+        window.selectedCutiDates = [];
+        renderCutiChipsMobile();
     }
 
     async function submitCuti(btn) {
         const jenisId = document.getElementById('modal-cuti-type')?.value;
-        const startDate = document.getElementById('modal-cuti-start')?.value || '';
-        const endDate = document.getElementById('modal-cuti-end')?.value || startDate;
         const reason = document.getElementById('modal-cuti-reason')?.value.trim();
         const contact = document.getElementById('modal-cuti-contact')?.value.trim() || '';
         const address = document.getElementById('modal-cuti-address')?.value.trim() || '';
         const substitute = document.getElementById('modal-cuti-substitute')?.value || '';
+        const fileInput = document.getElementById('modal-cuti-file');
+
+        if (!jenisId) {
+            AndroidUI.toast('Mohon pilih jenis cuti!', 'warning');
+            return;
+        }
+
+        if (!window.selectedCutiDates || window.selectedCutiDates.length === 0) {
+            AndroidUI.toast('Silakan pilih minimal 1 tanggal cuti!', 'warning');
+            return;
+        }
+
+        if (!reason) {
+            AndroidUI.toast('Mohon isi alasan permohonan cuti!', 'warning');
+            return;
+        }
+
+        const sortedDates = [...window.selectedCutiDates].sort();
+        const startDate = sortedDates[0];
+        const endDate = sortedDates[sortedDates.length - 1];
+
+        const formData = new FormData();
+        formData.append('jenis_cuti_id', jenisId);
+        formData.append('tanggal_pilihan', JSON.stringify(sortedDates));
+        formData.append('tanggal_mulai', startDate);
+        formData.append('tanggal_selesai', endDate);
+        formData.append('jumlah_hari', sortedDates.length);
+        formData.append('alasan', reason);
+        formData.append('kontak_darurat', contact);
+        formData.append('alamat_selama_cuti', address);
         const fileInput = document.getElementById('modal-cuti-file');
 
         if (!jenisId) {

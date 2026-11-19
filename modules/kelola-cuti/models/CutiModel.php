@@ -30,12 +30,20 @@ class CutiModel
         }
         self::$tablesInitialized = true;
 
-        $stampFile = BASE_PATH . '/storage/logs/.schema_cuti_' . date('Y_m_d') . '.stamp';
+        $stampFile = BASE_PATH . '/storage/logs/.schema_cuti_v3_' . date('Y_m_d') . '.stamp';
         if (file_exists($stampFile)) {
             return;
         }
 
         $pdo = self::db()->getConnection();
+
+        // Pastikan kolom tanggal_cuti_list tersedia pada cuti_pengajuan
+        try {
+            $colExists = $pdo->query("SHOW COLUMNS FROM `cuti_pengajuan` LIKE 'tanggal_cuti_list'")->fetch();
+            if (!$colExists) {
+                $pdo->exec("ALTER TABLE `cuti_pengajuan` ADD COLUMN `tanggal_cuti_list` TEXT NULL AFTER `tanggal_selesai`");
+            }
+        } catch (Throwable $e) {}
 
         // 1. Tabel Master Jenis Cuti
         $pdo->exec("
@@ -82,6 +90,7 @@ class CutiModel
                 `kategori_cuti` ENUM('Tahunan', 'Khusus') NOT NULL DEFAULT 'Tahunan',
                 `tanggal_mulai` DATE NOT NULL,
                 `tanggal_selesai` DATE NOT NULL,
+                `tanggal_cuti_list` TEXT NULL COMMENT 'JSON array tanggal pilihan cuti, contoh: [\"2026-11-20\",\"2026-11-24\"]',
                 `jumlah_hari` INT NOT NULL DEFAULT 1,
                 `alasan` TEXT NOT NULL,
                 `pelimpahan_tugas` VARCHAR(191) NULL,
@@ -230,6 +239,85 @@ class CutiModel
                 $d['keterangan']
             ]);
         }
+    }
+
+    /**
+     * Parse input tanggal pilihan cuti (bisa JSON array, array PHP, atau string koma)
+     * Mengembalikan array tanggal valid yang terurut kronologis unik: ['2026-11-20', '2026-11-24']
+     */
+    public static function parseTanggalPilihan($raw): array
+    {
+        if (empty($raw)) {
+            return [];
+        }
+        if (is_string($raw)) {
+            $trimmed = trim($raw);
+            if ((str_starts_with($trimmed, '[') && str_ends_with($trimmed, ']')) || (str_starts_with($trimmed, '\"[') && str_ends_with($trimmed, ']\"'))) {
+                $decoded = json_decode(stripslashes($trimmed), true);
+                if (is_array($decoded)) {
+                    $raw = $decoded;
+                } else {
+                    $raw = explode(',', $trimmed);
+                }
+            } else {
+                $raw = explode(',', $trimmed);
+            }
+        }
+        if (!is_array($raw)) {
+            return [];
+        }
+
+        $dates = [];
+        foreach ($raw as $d) {
+            $d = trim((string)$d);
+            // Bersihkan kutip ganda/spasi
+            $d = trim($d, " '\"\t\n\r\0\x0B");
+            if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $d)) {
+                $dates[] = $d;
+            }
+        }
+        $dates = array_unique($dates);
+        sort($dates);
+        return array_values($dates);
+    }
+
+    /**
+     * Format tampilan tanggal cuti untuk tabel riwayat, surat cuti, dan mobile card
+     * Menampilkan per tanggal (bila ada jeda hari libur) atau format ringkas "dd/mm/yyyy s.d. dd/mm/yyyy" bila berurutan
+     */
+    public static function formatTanggalCutiDisplay(array $row, string $dateFormat = 'd/m/Y'): string
+    {
+        $list = self::parseTanggalPilihan($row['tanggal_cuti_list'] ?? null);
+        if (!empty($list)) {
+            if (count($list) === 1) {
+                return date($dateFormat, strtotime($list[0]));
+            }
+            // Cek apakah tanggal berurutan tanpa jeda
+            $isContinuous = true;
+            for ($i = 0; $i < count($list) - 1; $i++) {
+                $nextDay = date('Y-m-d', strtotime($list[$i] . ' +1 day'));
+                if ($nextDay !== $list[$i + 1]) {
+                    $isContinuous = false;
+                    break;
+                }
+            }
+            if ($isContinuous) {
+                return date($dateFormat, strtotime($list[0])) . ' s.d. ' . date($dateFormat, strtotime(end($list)));
+            }
+
+            // Jika ada jeda libur: tampilkan tanggal-tanggal pilihan
+            $formatted = array_map(function($d) use ($dateFormat) {
+                return date($dateFormat, strtotime($d));
+            }, $list);
+            return implode(', ', $formatted);
+        }
+
+        $m = !empty($row['tanggal_mulai']) ? date($dateFormat, strtotime($row['tanggal_mulai'])) : '-';
+        $s = !empty($row['tanggal_selesai']) ? date($dateFormat, strtotime($row['tanggal_selesai'])) : '-';
+        if ($m === $s || empty($row['tanggal_selesai'])) {
+            return $m;
+        }
+        return $m . ' s.d. ' . $s;
     }
 
     /**
@@ -498,13 +586,16 @@ class CutiModel
         $totalApproved = (int)(self::db()->find("SELECT COUNT(*) as c FROM `cuti_pengajuan` cp JOIN `pegawai` p ON cp.pegawai_id = p.id WHERE cp.`status` = 'Disetujui' AND ({$cpUCond})", $cpParams)['c'] ?? 0);
         $totalRejected = (int)(self::db()->find("SELECT COUNT(*) as c FROM `cuti_pengajuan` cp JOIN `pegawai` p ON cp.pegawai_id = p.id WHERE cp.`status` = 'Ditolak' AND ({$cpUCond})", $cpParams)['c'] ?? 0);
 
-        $scParams = array_merge([$today], $cpParams);
+        $scParams = array_merge(['%"' . $today . '"%', $today], $cpParams);
         $sedangCutiHariIni = (int)(self::db()->find("
             SELECT COUNT(DISTINCT cp.pegawai_id) as c
             FROM `cuti_pengajuan` cp
             JOIN `pegawai` p ON cp.pegawai_id = p.id
             WHERE cp.`status` = 'Disetujui'
-              AND ? BETWEEN cp.`tanggal_mulai` AND cp.`tanggal_selesai`
+              AND (
+                  (cp.`tanggal_cuti_list` IS NOT NULL AND cp.`tanggal_cuti_list` LIKE ?)
+                  OR (cp.`tanggal_cuti_list` IS NULL AND ? BETWEEN cp.`tanggal_mulai` AND cp.`tanggal_selesai`)
+              )
               AND ({$cpUCond})
         ", $scParams)['c'] ?? 0);
         $totalJenisKhusus = (int)(self::db()->find("SELECT COUNT(*) as c FROM `cuti_jenis` WHERE `kategori` = 'Khusus' AND `is_active` = 1")['c'] ?? 0);
@@ -530,7 +621,7 @@ class CutiModel
         self::init();
         $today = date('Y-m-d');
         $where = ["p.is_active = 1"];
-        $params = [$today];
+        $params = ['%"' . $today . '"%', $today];
 
         $uCond = Auth::unitSqlCondition('p.unit_tugas', $params);
         if ($uCond !== '1=1') {
@@ -582,7 +673,10 @@ class CutiModel
                     SELECT COUNT(*) FROM `cuti_pengajuan` cp2 
                     WHERE cp2.pegawai_id = p.id 
                       AND cp2.status = 'Disetujui' 
-                      AND ? BETWEEN cp2.tanggal_mulai AND cp2.tanggal_selesai
+                      AND (
+                          (cp2.tanggal_cuti_list IS NOT NULL AND cp2.tanggal_cuti_list LIKE ?)
+                          OR (cp2.tanggal_cuti_list IS NULL AND ? BETWEEN cp2.tanggal_mulai AND cp2.tanggal_selesai)
+                      )
                 ) as sedang_cuti
             FROM `pegawai` p
             LEFT JOIN `cuti_saldo_pegawai` s ON s.pegawai_id = p.id
@@ -719,23 +813,42 @@ class CutiModel
         self::init();
         $pegawaiId = (int)($data['pegawai_id'] ?? 0);
         $jenisCutiId = (int)($data['jenis_cuti_id'] ?? 0);
-        $tglMulai = trim($data['tanggal_mulai'] ?? '');
-        $tglSelesai = trim($data['tanggal_selesai'] ?? '');
         $alasan = trim($data['alasan'] ?? '');
 
-        if ($pegawaiId <= 0 || $jenisCutiId <= 0 || $tglMulai === '' || $tglSelesai === '' || $alasan === '') {
-            throw new Exception('Pegawai, Jenis Cuti, Tanggal Mulai/Selesai, dan Alasan wajib diisi lengkap.');
+        // Proses daftar tanggal pilihan (multi-date selection / melewati hari libur)
+        $selectedDates = self::parseTanggalPilihan($data['tanggal_pilihan'] ?? $data['tanggal_cuti_list'] ?? null);
+        if (!empty($selectedDates)) {
+            $hitungHari = count($selectedDates);
+            $tglMulai = $selectedDates[0];
+            $tglSelesai = end($selectedDates);
+            $tanggalCutiList = json_encode($selectedDates);
+        } else {
+            $tglMulai = trim($data['tanggal_mulai'] ?? '');
+            $tglSelesai = trim($data['tanggal_selesai'] ?? $tglMulai);
+            if ($tglMulai === '') {
+                throw new Exception('Tanggal permohonan cuti wajib dipilih.');
+            }
+            $d1 = new DateTime($tglMulai);
+            $d2 = new DateTime($tglSelesai);
+            if ($d2 < $d1) {
+                throw new Exception('Tanggal selesai tidak boleh lebih awal dari tanggal mulai.');
+            }
+            $hitungHari = (int)($data['jumlah_hari'] ?? 0);
+            if ($hitungHari <= 0) {
+                $hitungHari = $d1->diff($d2)->days + 1;
+            }
+            // Generate list tanggal kontinu
+            $datesArr = [];
+            $cur = clone $d1;
+            while ($cur <= $d2) {
+                $datesArr[] = $cur->format('Y-m-d');
+                $cur->modify('+1 day');
+            }
+            $tanggalCutiList = json_encode($datesArr);
         }
 
-        $d1 = new DateTime($tglMulai);
-        $d2 = new DateTime($tglSelesai);
-        if ($d2 < $d1) {
-            throw new Exception('Tanggal selesai tidak boleh lebih awal dari tanggal mulai.');
-        }
-
-        $hitungHari = (int)($data['jumlah_hari'] ?? 0);
-        if ($hitungHari <= 0) {
-            $hitungHari = $d1->diff($d2)->days + 1;
+        if ($pegawaiId <= 0 || $jenisCutiId <= 0 || empty($tglMulai) || empty($tglSelesai) || $alasan === '') {
+            throw new Exception('Pegawai, Jenis Cuti, Tanggal Cuti, dan Alasan wajib diisi lengkap.');
         }
 
         $jenis = self::db()->find("SELECT * FROM `cuti_jenis` WHERE `id` = ?", [$jenisCutiId]);
@@ -760,10 +873,10 @@ class CutiModel
         self::db()->query("
             INSERT INTO `cuti_pengajuan` (
                 `nomor_pengajuan`, `pegawai_id`, `jenis_cuti_id`, `kategori_cuti`,
-                `tanggal_mulai`, `tanggal_selesai`, `jumlah_hari`, `alasan`,
+                `tanggal_mulai`, `tanggal_selesai`, `tanggal_cuti_list`, `jumlah_hari`, `alasan`,
                 `pelimpahan_tugas`, `alamat_selama_cuti`, `kontak_darurat`, `file_lampiran`,
                 `status`, `created_by`
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', ?)
         ", [
             $nomor,
             $pegawaiId,
@@ -771,6 +884,7 @@ class CutiModel
             $jenis['kategori'],
             $tglMulai,
             $tglSelesai,
+            $tanggalCutiList,
             $hitungHari,
             $alasan,
             trim($data['pelimpahan_tugas'] ?? '') ?: null,

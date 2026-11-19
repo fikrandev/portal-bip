@@ -37,13 +37,13 @@
 <div class="p-4 space-y-4">
 
     <!-- 1. Date Selector & Daily Progress Card -->
-    <div class="bg-gradient-to-br from-slate-900 via-primary-950 to-emerald-950 rounded-3xl p-4 text-white shadow-lg shadow-primary-950/20 space-y-3">
+    <div class="bg-primary-700 border border-primary-600 rounded-3xl p-4 text-white shadow-lg shadow-primary-700/20 space-y-3">
         <!-- Tanggal Bar -->
         <div class="flex items-center justify-between gap-2">
             <div>
                 <p class="text-[10px] uppercase font-bold tracking-wider text-primary-200">Tanggal Jurnal:</p>
                 <div class="flex items-center gap-1.5 mt-0.5">
-                    <span class="text-sm font-black text-amber-300">
+                    <span class="text-sm font-black text-white">
                         <?php
                             $ts = strtotime($selectedDate);
                             $dayNames = ['Sunday' => 'Minggu', 'Monday' => 'Senin', 'Tuesday' => 'Selasa', 'Wednesday' => 'Rabu', 'Thursday' => 'Kamis', 'Friday' => 'Jumat', 'Saturday' => 'Sabtu'];
@@ -52,7 +52,7 @@
                         ?>
                     </span>
                     <?php if ($selectedDate === date('Y-m-d')): ?>
-                        <span class="px-2 py-0.2 rounded-full text-[9px] font-bold bg-emerald-500/30 text-emerald-300 border border-emerald-400/30">Hari Ini</span>
+                        <span class="px-2 py-0.2 rounded-full text-[9px] font-bold bg-white/20 text-white border border-white/30">Hari Ini</span>
                     <?php endif; ?>
                 </div>
             </div>
@@ -85,12 +85,12 @@
         <div class="bg-white/10 rounded-2xl p-2.5 backdrop-blur-xs border border-white/10 space-y-1.5">
             <div class="flex items-center justify-between text-xs">
                 <span class="font-medium text-slate-200 text-[11px]">Progres Pengisian Sesi:</span>
-                <span class="font-black <?= $totalTerisi === $totalSesi && $totalSesi > 0 ? 'text-emerald-300' : 'text-amber-300' ?>">
+                <span class="font-black <?= $totalTerisi === $totalSesi && $totalSesi > 0 ? 'text-white' : 'text-primary-100' ?>">
                     <?= $totalTerisi ?> / <?= $totalSesi ?> Sesi Terisi (<?= $persenTerisi ?>%)
                 </span>
             </div>
-            <div class="w-full h-2 rounded-full bg-black/30 overflow-hidden">
-                <div class="h-full rounded-full bg-gradient-to-r from-amber-400 via-emerald-400 to-emerald-500 transition-all duration-500" style="width: <?= min(100, $persenTerisi) ?>%"></div>
+            <div class="w-full h-2 rounded-full bg-white/25 overflow-hidden">
+                <div class="h-full rounded-full bg-white transition-all duration-500" style="width: <?= min(100, $persenTerisi) ?>%"></div>
             </div>
         </div>
     </div>
@@ -332,7 +332,7 @@
         
         <!-- Left: Counter & Summary Jam -->
         <div class="flex items-center gap-2.5 min-w-0">
-            <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 text-white font-black text-xs flex items-center justify-center shrink-0 shadow-md shadow-emerald-500/30" id="floating-count-badge">
+            <div class="w-8 h-8 rounded-xl bg-primary-600 text-white font-black text-xs flex items-center justify-center shrink-0 shadow-md shadow-primary-600/30" id="floating-count-badge">
                 0
             </div>
             <div class="min-w-0">
@@ -350,7 +350,7 @@
             <button type="button" onclick="clearSelectedJam()" class="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 flex items-center justify-center text-xs press-bounce transition-all" title="Batal Pilih">
                 ✕
             </button>
-            <button type="button" onclick="openModalFromFloatingBar()" class="px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-bold text-xs shadow-md shadow-emerald-500/25 press-bounce flex items-center gap-1.5 transition-all">
+            <button type="button" onclick="openModalFromFloatingBar()" class="px-3.5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-md shadow-primary-600/25 press-bounce flex items-center gap-1.5 transition-all">
                 <span>📝</span>
                 <span id="floating-btn-text">Isi Jurnal</span>
             </button>
@@ -362,18 +362,19 @@
 <!-- ======================================================== -->
 <!-- MODAL POPUP FORM ISI JURNAL STAFF (BOTTOM SHEET STYLE)  -->
 <!-- ======================================================== -->
-<div id="modal-jurnal-staff" class="hidden fixed inset-0 z-[9999] overflow-hidden select-none">
+<div id="modal-jurnal-staff" class="hidden fixed inset-0 z-[9999] overflow-hidden select-none" style="touch-action: none; overscroll-behavior: none;">
     <!-- Backdrop Scrim -->
     <div id="modal-jurnal-staff-scrim" onclick="closeModalJurnalStaff()" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity duration-250 opacity-0 pointer-events-none"></div>
 
     <!-- Sheet Wrapper -->
     <div class="fixed inset-x-0 bottom-0 max-w-md mx-auto w-full pointer-events-none z-10">
         <form id="form-jurnal-staff" onsubmit="submitJurnalStaff(event)" enctype="multipart/form-data"
+              style="touch-action: pan-y; overscroll-behavior: contain;"
               class="bg-white rounded-t-[32px] shadow-2xl pointer-events-auto border-t border-slate-200/80 flex flex-col max-h-[88vh] w-full transform translate-y-full transition-transform duration-250 ease-out overflow-hidden text-xs">
 
             <!-- 1. FIXED HEADER (shrink-0) -->
-            <div class="px-5 pt-3.5 pb-3 border-b border-slate-100 shrink-0 bg-white">
-                <div class="w-10 h-1.5 bg-slate-200 rounded-full mx-auto mb-3 cursor-grab" onclick="closeModalJurnalStaff()"></div>
+            <div class="px-5 pt-3.5 pb-3 border-b border-slate-100 shrink-0 bg-white" style="touch-action: none;">
+                <div class="w-10 h-1.5 bg-slate-200 rounded-full mx-auto mb-3"></div>
                 <div class="flex items-center justify-between gap-2">
                     <div class="min-w-0 pr-2">
                         <h3 class="font-extrabold text-slate-900 text-sm leading-tight flex items-center gap-1.5 truncate" id="modal-title-text">
@@ -391,7 +392,7 @@
             </div>
 
             <!-- 2. SCROLLABLE MIDDLE BODY (flex-1 min-h-0 overflow-y-auto) -->
-            <div class="flex-1 min-h-0 overflow-y-auto p-4 sm:p-5 space-y-3.5 no-scrollbar select-text">
+            <div class="staff-modal-scroll flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 sm:p-5 space-y-3.5 no-scrollbar select-text" style="touch-action: pan-y; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;">
 
                 <!-- Hidden Fields -->
                 <input type="hidden" name="jurnal_id" id="inp_jurnal_id" value="">
@@ -401,7 +402,7 @@
                 <input type="hidden" name="tanggal" id="inp_tanggal" value="<?= e($selectedDate) ?>">
 
                 <!-- Info Bar Tanggal & Jam Terpilih -->
-                <div class="p-3 rounded-2xl bg-gradient-to-br from-primary-50 to-emerald-50/50 border border-primary-100 space-y-2 text-[11px]">
+                <div class="p-3 rounded-2xl bg-primary-50/70 border border-primary-100 space-y-2 text-[11px]">
                     <div class="flex items-center justify-between">
                         <span class="text-slate-600 font-medium">Tanggal Tugas:</span>
                         <span class="font-bold text-primary-900" id="modal-tanggal-badge">
@@ -414,7 +415,7 @@
                             <span class="text-slate-700 font-bold flex items-center gap-1">
                                 <span>🕒</span> Jam Kerja Terpilih:
                             </span>
-                            <span class="font-extrabold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full" id="modal-selected-count-badge">
+                            <span class="font-extrabold text-primary-700 bg-primary-100 px-2 py-0.5 rounded-full" id="modal-selected-count-badge">
                                 1 Sesi
                             </span>
                         </div>
@@ -519,7 +520,7 @@
 
                     <div class="grid grid-cols-5 gap-2">
                         <button type="button" onclick="openStaffLiveCamera()" id="btn-open-live-camera"
-                                class="col-span-3 px-3 py-2.5 rounded-2xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 text-emerald-700 flex items-center justify-center gap-2 transition-all press-bounce">
+                                class="col-span-3 px-3 py-2.5 rounded-2xl bg-primary-50 hover:bg-primary-100 border border-primary-200/80 text-primary-700 flex items-center justify-center gap-2 transition-all press-bounce">
                             <i data-lucide="camera" class="w-4 h-4 shrink-0"></i>
                             <span class="text-xs font-bold truncate" id="btn-foto-text">Buka Kamera Langsung</span>
                         </button>
@@ -555,7 +556,7 @@
                 <button type="button" onclick="closeModalJurnalStaff()" class="w-1/3 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs press-bounce transition-all">
                     Batal
                 </button>
-                <button type="submit" id="btn-submit-jurnal-staff" class="w-2/3 py-3 rounded-2xl bg-gradient-to-r from-primary-600 to-emerald-600 hover:from-primary-700 hover:to-emerald-700 text-white font-bold text-xs shadow-md shadow-primary-600/25 press-bounce flex items-center justify-center gap-2 transition-all">
+                <button type="submit" id="btn-submit-jurnal-staff" class="w-2/3 py-3 rounded-2xl bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white font-bold text-xs shadow-md shadow-primary-600/25 press-bounce flex items-center justify-center gap-2 transition-all">
                     <span>💾</span>
                     <span id="btn-submit-text">Simpan Jurnal</span>
                 </button>
@@ -667,17 +668,17 @@
 
     // Terapkan style aktif terpilih pada kartu
     function styleCardSelected(card) {
-        card.classList.add('border-emerald-500', 'ring-2', 'ring-emerald-500/30', 'bg-emerald-50/60');
+        card.classList.add('border-primary-500', 'ring-2', 'ring-primary-500/30', 'bg-primary-50/60');
         card.classList.remove('border-slate-200/90', 'border-emerald-200', 'bg-white', 'bg-emerald-50/25');
         const check = card.querySelector('.jam-check-box');
         if (check) {
-            check.className = 'jam-check-box w-5 h-5 rounded-full border border-emerald-500 bg-emerald-500 flex items-center justify-center text-[10px] font-black text-white transition-all shadow-xs';
+            check.className = 'jam-check-box w-5 h-5 rounded-full border border-primary-600 bg-primary-600 flex items-center justify-center text-[10px] font-black text-white transition-all shadow-xs';
         }
     }
 
     // Kembalikan style normal kartu saat unselected
     function unstyleCard(card) {
-        card.classList.remove('border-emerald-500', 'ring-2', 'ring-emerald-500/30', 'bg-emerald-50/60');
+        card.classList.remove('border-primary-500', 'ring-2', 'ring-primary-500/30', 'bg-primary-50/60');
         const isFilled = card.dataset.isFilled === '1';
         if (isFilled) {
             card.classList.add('border-emerald-200', 'bg-emerald-50/25');
@@ -874,7 +875,7 @@
             }
             items.forEach(it => {
                 const pill = document.createElement('span');
-                pill.className = 'px-2 py-0.5 rounded-lg bg-emerald-100 text-emerald-800 border border-emerald-200 text-[10px] font-bold flex items-center gap-1';
+                pill.className = 'px-2 py-0.5 rounded-lg bg-white text-primary-700 border border-primary-200 text-[10px] font-bold flex items-center gap-1';
                 pill.innerHTML = `<span>🕒</span> <span>${(it.jam_rentang || data.jam_rentang).replace(/:00/g, '')}</span>`;
                 pillsContainer.appendChild(pill);
             });
@@ -978,12 +979,63 @@
         if (sheet) {
             sheet.classList.remove('translate-y-full');
         }
-        document.body.classList.add('overflow-hidden');
+        lockStaffModalScroll();
 
         if (window.lucide && typeof lucide.createIcons === 'function') {
             lucide.createIcons();
         }
     }
+
+    // Kunci halaman di belakang modal agar modal tidak bisa ikut tergeser (iOS/Android)
+    function lockStaffModalScroll() {
+        document.body.classList.add('overflow-hidden');
+        document.body.style.touchAction = 'none';
+        document.documentElement.style.overscrollBehavior = 'none';
+        const mainView = document.getElementById('mobile-main-view');
+        if (mainView) {
+            if (mainView.dataset.staffPrevOverflow === undefined) {
+                mainView.dataset.staffPrevOverflow = mainView.style.overflow || '';
+            }
+            mainView.style.overflow = 'hidden';
+            mainView.style.touchAction = 'none';
+        }
+        const modal = document.getElementById('modal-jurnal-staff');
+        if (modal && !modal.dataset.touchGuard) {
+            modal.dataset.touchGuard = '1';
+            let startY = 0;
+            modal.addEventListener('touchstart', (e) => {
+                startY = e.touches && e.touches[0] ? e.touches[0].clientY : 0;
+            }, { passive: true });
+            modal.addEventListener('touchmove', (e) => {
+                const scroller = e.target.closest ? e.target.closest('.staff-modal-scroll') : null;
+                if (!scroller) {
+                    e.preventDefault();
+                    return;
+                }
+                const y = e.touches && e.touches[0] ? e.touches[0].clientY : 0;
+                const dy = y - startY;
+                const atTop = scroller.scrollTop <= 0;
+                const atBottom = scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 1;
+                if ((atTop && dy > 0) || (atBottom && dy < 0) || scroller.scrollHeight <= scroller.clientHeight) {
+                    e.preventDefault();
+                }
+            }, { passive: false });
+        }
+    }
+
+    function unlockStaffModalScroll() {
+        document.body.classList.remove('overflow-hidden');
+        document.body.style.overflow = '';
+        document.body.style.touchAction = '';
+        document.documentElement.style.overscrollBehavior = '';
+        const mainView = document.getElementById('mobile-main-view');
+        if (mainView && mainView.dataset.staffPrevOverflow !== undefined) {
+            mainView.style.overflow = mainView.dataset.staffPrevOverflow;
+            mainView.style.touchAction = '';
+            delete mainView.dataset.staffPrevOverflow;
+        }
+    }
+    window.unlockStaffModalScroll = unlockStaffModalScroll;
 
     // Tutup Modal
     function closeModalJurnalStaff() {
@@ -1001,8 +1053,7 @@
         if (sheet) {
             sheet.classList.add('translate-y-full');
         }
-        document.body.classList.remove('overflow-hidden');
-        document.body.style.overflow = '';
+        unlockStaffModalScroll();
 
         setTimeout(() => {
             if (modal && sheet && sheet.classList.contains('translate-y-full')) {

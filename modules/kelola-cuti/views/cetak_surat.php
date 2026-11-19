@@ -74,7 +74,7 @@ $namaPegawai = ($cuti['nama_pegawai'] ?? '-') . (!empty($cuti['gelar']) ? ', ' .
                 </tr>
                 <tr class="border-b border-slate-200">
                     <td class="py-2 px-3 bg-slate-50 font-semibold text-slate-600">Tanggal Pelaksanaan</td>
-                    <td class="py-2 px-3 font-bold"><?= date('d/m/Y', strtotime($cuti['tanggal_mulai'])) ?> s.d. <?= date('d/m/Y', strtotime($cuti['tanggal_selesai'])) ?> (<?= (int)$cuti['jumlah_hari'] ?> Hari)</td>
+                    <td class="py-2 px-3 font-bold"><?= CutiModel::formatTanggalCutiDisplay($cuti) ?> (<?= (int)$cuti['jumlah_hari'] ?> Hari Kerja)</td>
                 </tr>
                 <tr class="border-b border-slate-200">
                     <td class="py-2 px-3 bg-slate-50 font-semibold text-slate-600">Alasan / Keperluan</td>

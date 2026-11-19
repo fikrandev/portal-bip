@@ -482,7 +482,7 @@ $tambahPerBulan = (int)($cfgTahunan['tambah_per_bulan'] ?? 1);
                                     </td>
                                     <td class="py-3.5 px-4">
                                         <div class="font-bold text-slate-800">
-                                            <?= date('d/m/Y', strtotime($cp['tanggal_mulai'])) ?> - <?= date('d/m/Y', strtotime($cp['tanggal_selesai'])) ?>
+                                            <?= CutiModel::formatTanggalCutiDisplay($cp) ?>
                                         </div>
                                         <span class="inline-block mt-0.5 px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-bold text-[10px]">
                                             <?= (int)$cp['jumlah_hari'] ?> Hari
@@ -612,7 +612,7 @@ $tambahPerBulan = (int)($cfgTahunan['tambah_per_bulan'] ?? 1);
                                     </td>
                                     <td class="py-3.5 px-4">
                                         <div class="font-bold text-slate-800">
-                                            <?= date('d/m/Y', strtotime($cp['tanggal_mulai'])) ?> s.d. <?= date('d/m/Y', strtotime($cp['tanggal_selesai'])) ?>
+                                            <?= CutiModel::formatTanggalCutiDisplay($cp) ?>
                                         </div>
                                         <span class="inline-block mt-1 px-2.5 py-0.5 rounded-lg bg-amber-100 text-amber-800 font-extrabold text-[11px]">
                                             <?= (int)$cp['jumlah_hari'] ?> Hari
@@ -740,7 +740,7 @@ $tambahPerBulan = (int)($cfgTahunan['tambah_per_bulan'] ?? 1);
                                     <td class="py-3.5 px-4">
                                         <div class="font-bold text-slate-800"><?= e($cp['nama_jenis']) ?> (<?= (int)$cp['jumlah_hari'] ?> Hari)</div>
                                         <div class="text-[11px] text-slate-500">
-                                            <?= date('d/m/Y', strtotime($cp['tanggal_mulai'])) ?> s.d. <?= date('d/m/Y', strtotime($cp['tanggal_selesai'])) ?>
+                                            <?= CutiModel::formatTanggalCutiDisplay($cp) ?>
                                         </div>
                                     </td>
                                     <td class="py-3.5 px-4 text-center">
@@ -1124,23 +1124,40 @@ $tambahPerBulan = (int)($cfgTahunan['tambah_per_bulan'] ?? 1);
                 </select>
             </div>
 
-            <!-- Tanggal Mulai, Selesai, & Jumlah Hari -->
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Tanggal Mulai <span class="text-rose-500">*</span></label>
-                    <input type="date" name="tanggal_mulai" id="ajukan_tgl_mulai" value="<?= date('Y-m-d') ?>" required onchange="hitungDurasiCuti()"
-                           class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 outline-none focus:border-primary-500">
+            <!-- Tanggal Cuti Spesifik (Pilih Satu per Satu / Melewati Hari Libur) -->
+            <div>
+                <div class="flex items-center justify-between mb-1">
+                    <label class="block text-xs font-bold text-slate-700">
+                        Pilih Tanggal Cuti <span class="text-rose-500">*</span>
+                    </label>
+                    <span class="text-[11px] text-slate-400">Pilih per tanggal untuk melewati hari libur</span>
                 </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Tanggal Selesai <span class="text-rose-500">*</span></label>
-                    <input type="date" name="tanggal_selesai" id="ajukan_tgl_selesai" value="<?= date('Y-m-d') ?>" required onchange="hitungDurasiCuti()"
-                           class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 outline-none focus:border-primary-500">
+                <div class="flex items-center gap-2">
+                    <input type="date" id="admin_picker_tgl_cuti" value="<?= date('Y-m-d') ?>" onchange="adminTambahTanggalCuti()"
+                           class="flex-1 px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 outline-none focus:border-primary-500">
+                    <button type="button" onclick="adminTambahTanggalCuti()"
+                            class="px-3.5 py-2 bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs rounded-xl shadow-sm flex items-center gap-1 shrink-0 cursor-pointer">
+                        <span>+ Tambah Tanggal</span>
+                    </button>
                 </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Jumlah Hari Cuti <span class="text-rose-500">*</span></label>
-                    <input type="number" name="jumlah_hari" id="ajukan_jumlah_hari" value="1" min="1" max="120" required
-                           class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-extrabold text-primary-700 bg-primary-50/50 outline-none focus:border-primary-500">
+
+                <!-- Kontainer Chips Tanggal Terpilih -->
+                <div class="mt-2 p-2.5 bg-slate-50 rounded-xl border border-slate-200 min-h-[48px]">
+                    <div id="admin_container_chips_cuti" class="flex flex-wrap gap-1.5">
+                        <!-- Populated by JS -->
+                    </div>
                 </div>
+
+                <div class="flex items-center justify-between text-xs px-1 mt-1 font-semibold text-slate-500">
+                    <span>Total Cuti: <b id="admin_text_total_hari_cuti" class="text-primary-700 font-extrabold">1 Hari Kerja</b></span>
+                    <button type="button" onclick="adminClearSemuaTanggalCuti()" class="text-rose-500 hover:underline text-[11px] cursor-pointer">✕ Kosongkan</button>
+                </div>
+
+                <!-- Hidden inputs passed on submit -->
+                <input type="hidden" name="tanggal_pilihan" id="admin_input_tanggal_pilihan" value="">
+                <input type="hidden" name="tanggal_mulai" id="ajukan_tgl_mulai" value="<?= date('Y-m-d') ?>">
+                <input type="hidden" name="tanggal_selesai" id="ajukan_tgl_selesai" value="<?= date('Y-m-d') ?>">
+                <input type="hidden" name="jumlah_hari" id="ajukan_jumlah_hari" value="1">
             </div>
 
             <!-- Alasan Cuti -->
@@ -1389,14 +1406,93 @@ function closeModal(id) {
     }
 }
 
+let adminSelectedCutiDates = ['<?= date('Y-m-d') ?>'];
+
+function adminFormatTglIndo(dateStr) {
+    if (!dateStr) return '';
+    const parts = dateStr.split('-');
+    if (parts.length !== 3) return dateStr;
+    const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+    const hari = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'][d.getDay()] || '';
+    const bln = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'][d.getMonth()] || '';
+    return `${hari}, ${d.getDate()} ${bln} ${d.getFullYear()}`;
+}
+
+function adminRenderCutiChips() {
+    const container = document.getElementById('admin_container_chips_cuti');
+    const badge = document.getElementById('admin_text_total_hari_cuti');
+    const inPilihan = document.getElementById('admin_input_tanggal_pilihan');
+    const inMulai = document.getElementById('ajukan_tgl_mulai');
+    const inSelesai = document.getElementById('ajukan_tgl_selesai');
+    const inJumlah = document.getElementById('ajukan_jumlah_hari');
+
+    if (!container) return;
+
+    if (!Array.isArray(adminSelectedCutiDates)) adminSelectedCutiDates = [];
+    adminSelectedCutiDates.sort();
+
+    if (adminSelectedCutiDates.length === 0) {
+        container.innerHTML = '<span class="text-slate-400 italic text-[11px] py-1 px-1">Pilih tanggal di atas & klik "+ Tambah Tanggal".</span>';
+        if (badge) badge.textContent = '0 Hari Kerja';
+        if (inPilihan) inPilihan.value = '[]';
+        if (inJumlah) inJumlah.value = 0;
+        return;
+    }
+
+    container.innerHTML = adminSelectedCutiDates.map(dStr => {
+        const label = adminFormatTglIndo(dStr);
+        return `
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-white border border-primary-200 text-primary-900 shadow-2xs">
+                <span>📅 ${label}</span>
+                <button type="button" onclick="adminHapusTanggalCuti('${dStr}')" class="text-slate-400 hover:text-rose-600 font-extrabold ml-0.5 cursor-pointer" title="Hapus">✕</button>
+            </span>
+        `;
+    }).join('');
+
+    const count = adminSelectedCutiDates.length;
+    if (badge) badge.textContent = `${count} Hari Kerja`;
+    if (inPilihan) inPilihan.value = JSON.stringify(adminSelectedCutiDates);
+    if (inMulai) inMulai.value = adminSelectedCutiDates[0];
+    if (inSelesai) inSelesai.value = adminSelectedCutiDates[count - 1];
+    if (inJumlah) inJumlah.value = count;
+}
+
+function adminTambahTanggalCuti() {
+    const picker = document.getElementById('admin_picker_tgl_cuti');
+    if (!picker || !picker.value) return;
+    const val = picker.value.trim();
+    if (!adminSelectedCutiDates) adminSelectedCutiDates = [];
+    if (adminSelectedCutiDates.includes(val)) {
+        alert('Tanggal tersebut sudah ada di daftar cuti.');
+        return;
+    }
+    adminSelectedCutiDates.push(val);
+    adminRenderCutiChips();
+}
+
+function adminHapusTanggalCuti(val) {
+    if (!adminSelectedCutiDates) return;
+    adminSelectedCutiDates = adminSelectedCutiDates.filter(d => d !== val);
+    adminRenderCutiChips();
+}
+
+function adminClearSemuaTanggalCuti() {
+    adminSelectedCutiDates = [];
+    adminRenderCutiChips();
+}
+
 function openModalAjukanCuti(pegawaiId = null) {
     const modal = document.getElementById('modalAjukanCuti');
     const sel = document.getElementById('ajukan_pegawai_id');
     if (pegawaiId && sel) {
         sel.value = String(pegawaiId);
     }
+    const today = new Date().toISOString().split('T')[0];
+    if (!adminSelectedCutiDates || adminSelectedCutiDates.length === 0) {
+        adminSelectedCutiDates = [today];
+    }
+    adminRenderCutiChips();
     updateInfoSaldoPegawai();
-    hitungDurasiCuti();
     modal.classList.remove('hidden');
     modal.classList.add('flex');
 }

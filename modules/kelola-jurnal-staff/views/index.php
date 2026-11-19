@@ -21,8 +21,8 @@ $todayYmd = date('Y-m-d');
                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">
                         Kepegawaian & Support System
                     </span>
-                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-100">
-                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-50 text-primary-700 border border-primary-200">
+                        <span class="w-1.5 h-1.5 rounded-full bg-primary-500 animate-pulse"></span>
                         Live Monitoring
                     </span>
                 </div>
@@ -47,8 +47,8 @@ $todayYmd = date('Y-m-d');
 
                 <a href="<?= url('kelola-jurnal-staff/cetak?start_date=' . urlencode($filterStartDate) . '&end_date=' . urlencode($filterEndDate) . '&jabatan=' . urlencode($jabatan) . '&status=' . urlencode($status)) ?>" 
                    target="_blank"
-                   class="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl transition-all shadow-sm">
-                    <svg class="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                   class="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-primary-700 bg-primary-50 hover:bg-primary-100 border border-primary-200 rounded-xl transition-all shadow-sm">
+                    <svg class="w-4 h-4 text-primary-600" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24-1.076-.672-2.144-1.28-3.093l-.408-.637c-.368-.574-.532-.83-.532-1.127 0-.482.352-.892.83-.974.776-.133 1.57-.213 2.378-.238m10.584 6.069c.24-1.076.672-2.144 1.28-3.093l.408-.637c.368-.574.532-.83.532-1.127 0-.482-.352-.892-.83-.974a24.28 24.28 0 0 0-2.378-.238M6.75 6.75h10.5a2.25 2.25 0 0 1 2.25 2.25v9.75a2.25 2.25 0 0 1-2.25 2.25H6.75a2.25 2.25 0 0 1-2.25-2.25V9a2.25 2.25 0 0 1 2.25-2.25Zm0 0V4.5a2.25 2.25 0 0 1 2.25-2.25h6a2.25 2.25 0 0 1 2.25 2.25v2.25" />
                     </svg>
                     <span>Cetak Rekap</span>
@@ -56,7 +56,7 @@ $todayYmd = date('Y-m-d');
 
                 <button type="button" 
                         onclick="openModalInputJurnal()"
-                        class="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-all shadow-md shadow-indigo-600/20">
+                        class="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-primary-600 hover:bg-primary-700 rounded-xl transition-all shadow-md shadow-primary-600/20">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                     </svg>
@@ -100,7 +100,7 @@ $todayYmd = date('Y-m-d');
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                     </svg>
                     <span>3. Pengaturan Jam</span>
-                    <span class="px-2 py-0.5 text-xs rounded-full bg-emerald-50 text-emerald-600 font-bold"><?= count($jamList ?? []) ?> Sesi</span>
+                    <span class="px-2 py-0.5 text-xs rounded-full bg-primary-50 text-primary-600 font-bold"><?= count($jamList ?? []) ?> Sesi</span>
                 </button>
 
                 <!-- Tab 4: Pengaturan Tugas -->
@@ -142,10 +142,10 @@ $todayYmd = date('Y-m-d');
             <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex items-center justify-between">
                 <div>
                     <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Jurnal Hari Ini</p>
-                    <h3 class="text-2xl font-bold text-emerald-600 mt-1"><?= $dashboardStats['jurnal_hari_ini'] ?? 0 ?></h3>
+                    <h3 class="text-2xl font-bold text-primary-600 mt-1"><?= $dashboardStats['jurnal_hari_ini'] ?? 0 ?></h3>
                     <p class="text-[11px] text-slate-400 mt-1"><?= date('d F Y') ?></p>
                 </div>
-                <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                <div class="w-12 h-12 rounded-2xl bg-primary-50 text-primary-600 flex items-center justify-center shrink-0">
                     <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                     </svg>
@@ -160,7 +160,7 @@ $todayYmd = date('Y-m-d');
                     <div class="flex items-center gap-1.5 mt-1">
                         <span class="text-[11px] font-bold text-sky-600"><?= $dashboardStats['persen_hari_ini'] ?? 0 ?>%</span>
                         <div class="w-16 bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                            <div class="bg-sky-500 h-1.5 rounded-full" style="width: <?= min(100, $dashboardStats['persen_hari_ini'] ?? 0) ?>%"></div>
+                            <div class="bg-primary-600 h-1.5 rounded-full" style="width: <?= min(100, $dashboardStats['persen_hari_ini'] ?? 0) ?>%"></div>
                         </div>
                     </div>
                 </div>
@@ -210,8 +210,8 @@ $todayYmd = date('Y-m-d');
                     <div class="h-48 flex items-end justify-between gap-2 pt-6 px-2 border-b border-slate-100">
                         <?php foreach ($trendArr as $t): 
                             $heightPct = $maxVal > 0 ? max(8, round(($t['count'] / $maxVal) * 100)) : 8;
-                            $barColor = $t['is_today'] ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-slate-200 hover:bg-indigo-400';
-                            $textColor = $t['is_today'] ? 'text-indigo-600 font-bold' : 'text-slate-500';
+                            $barColor = $t['is_today'] ? 'bg-primary-600 hover:bg-primary-700' : 'bg-slate-200 hover:bg-primary-400';
+                            $textColor = $t['is_today'] ? 'text-primary-600 font-bold' : 'text-slate-500';
                         ?>
                             <div class="flex-1 flex flex-col items-center gap-2 h-full justify-end group">
                                 <span class="text-[11px] font-bold text-slate-600 transition-opacity opacity-0 group-hover:opacity-100">
@@ -228,7 +228,7 @@ $todayYmd = date('Y-m-d');
 
                 <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
                     <span class="flex items-center gap-1.5">
-                        <span class="w-3 h-3 rounded bg-indigo-600 inline-block"></span> Hari ini
+                        <span class="w-3 h-3 rounded bg-primary-600 inline-block"></span> Hari ini
                     </span>
                     <span>Monitoring performa pengisian tim support</span>
                 </div>
@@ -262,7 +262,7 @@ $todayYmd = date('Y-m-d');
                                 <span class="text-slate-500 font-bold"><?= $rj['total_jurnal'] ?> <span class="font-normal text-[10px]">catatan</span></span>
                             </div>
                             <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-                                <div class="bg-gradient-to-r from-indigo-500 to-sky-500 h-2 rounded-full" style="width: <?= min(100, $jabPct) ?>%"></div>
+                                <div class="bg-primary-600 h-2 rounded-full" style="width: <?= min(100, $jabPct) ?>%"></div>
                             </div>
                         </div>
                     <?php endforeach; endif; ?>
@@ -448,7 +448,7 @@ $todayYmd = date('Y-m-d');
                         <a href="<?= url('kelola-jurnal-staff?tab=data') ?>" class="px-3.5 py-2 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">
                             Reset
                         </a>
-                        <button type="submit" class="px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-all shadow-sm">
+                        <button type="submit" class="px-4 py-2 text-xs font-semibold text-white bg-primary-600 hover:bg-primary-700 rounded-xl transition-all shadow-sm">
                             Terapkan Filter
                         </button>
                     </div>
@@ -468,8 +468,8 @@ $todayYmd = date('Y-m-d');
                 <div class="flex items-center gap-2">
                     <a href="<?= url('kelola-jurnal-staff/cetak?start_date=' . urlencode($filterStartDate) . '&end_date=' . urlencode($filterEndDate) . '&jabatan=' . urlencode($jabatan) . '&status=' . urlencode($status) . '&search=' . urlencode($search)) ?>" 
                        target="_blank"
-                       class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl transition-colors">
-                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                       class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-primary-700 bg-primary-50 hover:bg-primary-100 border border-primary-200 rounded-xl transition-colors">
+                        <svg class="w-3.5 h-3.5 text-primary-600" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24-1.076-.672-2.144-1.28-3.093l-.408-.637c-.368-.574-.532-.83-.532-1.127 0-.482.352-.892.83-.974.776-.133 1.57-.213 2.378-.238m10.584 6.069c.24-1.076.672-2.144 1.28-3.093l.408-.637c.368-.574.532-.83.532-1.127 0-.482-.352-.892-.83-.974a24.28 24.28 0 0 0-2.378-.238M6.75 6.75h10.5a2.25 2.25 0 0 1 2.25 2.25v9.75a2.25 2.25 0 0 1-2.25 2.25H6.75a2.25 2.25 0 0 1-2.25-2.25V9a2.25 2.25 0 0 1 2.25-2.25Zm0 0V4.5a2.25 2.25 0 0 1 2.25-2.25h6a2.25 2.25 0 0 1 2.25 2.25v2.25" />
                         </svg>
                         <span>Cetak Data Ini</span>
@@ -671,7 +671,7 @@ $todayYmd = date('Y-m-d');
             </div>
             <button type="button" 
                     onclick="openModalTambahJam()"
-                    class="shrink-0 inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-all shadow-md shadow-indigo-600/20">
+                    class="shrink-0 inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-white bg-primary-600 hover:bg-primary-700 rounded-xl transition-all shadow-md shadow-primary-600/20">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                 </svg>
@@ -863,7 +863,7 @@ $todayYmd = date('Y-m-d');
                         <?php if ($selectedJabatan): ?>
                             <button type="button" 
                                     onclick="openModalTambahTugas(<?= (int)$selectedJabatan['id'] ?>, '<?= htmlspecialchars(addslashes($selectedJabatan['nama'])) ?>')"
-                                    class="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-all shadow-md shadow-indigo-600/20 shrink-0">
+                                    class="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-white bg-primary-600 hover:bg-primary-700 rounded-xl transition-all shadow-md shadow-primary-600/20 shrink-0">
                                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                                 </svg>
@@ -970,7 +970,7 @@ $todayYmd = date('Y-m-d');
 <!-- ========================================================================= -->
 <div id="modal-input-jurnal" class="fixed inset-0 z-50 hidden overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="relative bg-white rounded-3xl max-w-2xl w-full shadow-2xl border border-slate-100 overflow-hidden my-8">
-        <div class="p-6 border-b border-slate-100 flex items-center justify-between bg-indigo-50/50">
+        <div class="p-6 border-b border-slate-100 flex items-center justify-between bg-primary-50/50">
             <div>
                 <h3 id="modal-jurnal-title" class="text-lg font-bold text-slate-800">Input Catatan Jurnal Staff</h3>
                 <p class="text-xs text-slate-500">Rekam aktivitas kerja staf support system & divisi</p>
@@ -1069,7 +1069,7 @@ $todayYmd = date('Y-m-d');
                 <button type="button" onclick="closeModalInputJurnal()" class="px-4 py-2 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">
                     Batal
                 </button>
-                <button type="submit" class="px-5 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-all shadow-md shadow-indigo-600/20">
+                <button type="submit" class="px-5 py-2 text-xs font-semibold text-white bg-primary-600 hover:bg-primary-700 rounded-xl transition-all shadow-md shadow-primary-600/20">
                     Simpan Catatan Jurnal
                 </button>
             </div>
@@ -1157,7 +1157,7 @@ $todayYmd = date('Y-m-d');
 <!-- ========================================================================= -->
 <div id="modal-jam" class="fixed inset-0 z-50 hidden overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="relative bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-slate-100 overflow-hidden my-8">
-        <div class="p-6 border-b border-slate-100 flex items-center justify-between bg-emerald-50/50">
+        <div class="p-6 border-b border-slate-100 flex items-center justify-between bg-primary-50/50">
             <div>
                 <h3 id="modal-jam-title" class="text-lg font-bold text-slate-800">Tambah Sesi Jam Kerja Staff</h3>
                 <p class="text-xs text-slate-500">Contoh: 07.00 - 08.00 (Tilawah), 08.00 - 09.00 (Aktifitas)</p>
@@ -1221,7 +1221,7 @@ $todayYmd = date('Y-m-d');
                 <button type="button" onclick="closeModalJam()" class="px-4 py-2 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">
                     Batal
                 </button>
-                <button type="submit" class="px-5 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-all shadow-md shadow-emerald-600/20">
+                <button type="submit" class="px-5 py-2 text-xs font-semibold text-white bg-primary-600 hover:bg-primary-700 rounded-xl transition-all shadow-md shadow-primary-600/20">
                     Simpan Jam Kerja
                 </button>
             </div>
@@ -1234,7 +1234,7 @@ $todayYmd = date('Y-m-d');
 <!-- ========================================================================= -->
 <div id="modal-tugas" class="fixed inset-0 z-50 hidden overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="relative bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-slate-100 overflow-hidden my-8">
-        <div class="p-6 border-b border-slate-100 flex items-center justify-between bg-amber-50/50">
+        <div class="p-6 border-b border-slate-100 flex items-center justify-between bg-primary-50/50">
             <div>
                 <h3 id="modal-tugas-title" class="text-lg font-bold text-slate-800">Tambah Tugas Jabatan</h3>
                 <p id="modal-tugas-sub" class="text-xs text-slate-500">Kelola rincian job desk untuk jabatan referensi</p>
@@ -1296,7 +1296,7 @@ $todayYmd = date('Y-m-d');
                 <button type="button" onclick="closeModalTugas()" class="px-4 py-2 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">
                     Batal
                 </button>
-                <button type="submit" class="px-5 py-2 text-xs font-semibold text-white bg-amber-600 hover:bg-amber-700 rounded-xl transition-all shadow-md shadow-amber-600/20">
+                <button type="submit" class="px-5 py-2 text-xs font-semibold text-white bg-primary-600 hover:bg-primary-700 rounded-xl transition-all shadow-md shadow-primary-600/20">
                     Simpan Tugas
                 </button>
             </div>
@@ -1344,7 +1344,7 @@ $todayYmd = date('Y-m-d');
                 <button type="button" onclick="closeModalPengaturanPeriode()" class="px-4 py-2 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">
                     Batal
                 </button>
-                <button type="submit" class="px-5 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-all shadow-md shadow-indigo-600/20">
+                <button type="submit" class="px-5 py-2 text-xs font-semibold text-white bg-primary-600 hover:bg-primary-700 rounded-xl transition-all shadow-md shadow-primary-600/20">
                     Simpan Periode
                 </button>
             </div>
