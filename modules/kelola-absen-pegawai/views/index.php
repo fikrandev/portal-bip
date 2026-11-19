@@ -228,6 +228,7 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
                                 <th class="py-3 px-4 text-center">Keterlambatan</th>
                                 <th class="py-3 px-4">Lokasi Absen</th>
                                 <th class="py-3 px-4 text-center">Status</th>
+                                <th class="py-3 px-4 text-center w-20">Aksi</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100 font-medium">
@@ -283,6 +284,32 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
                                         <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-800 border border-amber-300">
                                             Terlambat
                                         </span>
+                                    </td>
+                                    <td class="py-3.5 px-4 text-center">
+                                        <button type="button" 
+                                                onclick="openModalEditLogPresensi(<?= htmlspecialchars(json_encode([
+                                                    'pegawai_id' => $late['id'],
+                                                    'nama' => $late['nama'],
+                                                    'niy' => $late['niy'] ?? '',
+                                                    'unit_tugas' => $late['unit_tugas'] ?? '',
+                                                    'jabatan' => $late['jabatan'] ?? '',
+                                                    'tanggal' => $targetDate,
+                                                    'tanggal_formatted' => date('d F Y', strtotime($targetDate)),
+                                                    'jam_masuk' => $late['jam_masuk'] ?? '',
+                                                    'jam_pulang' => $late['jam_pulang'] ?? '',
+                                                    'status' => 'Terlambat',
+                                                    'keterangan' => $late['keterangan'] ?? '',
+                                                    'nama_kantor' => $late['nama_kantor_absen'] ?? '',
+                                                    'batas_jam' => substr($late['jam_masuk_batas'], 0, 5),
+                                                    'has_log' => true,
+                                                    'return_tab' => 'dashboard',
+                                                ]), ENT_QUOTES, 'UTF-8') ?>)"
+                                                class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold bg-primary-50 text-primary-700 hover:bg-primary-600 hover:text-white border border-primary-200 transition-all cursor-pointer shadow-xs">
+                                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+                                            </svg>
+                                            <span>Ubah</span>
+                                        </button>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
@@ -1145,12 +1172,13 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
                             <th class="py-3.5 px-4">Lokasi Absen Efektif</th>
                             <th class="py-3.5 px-4 text-center">Jarak Meter</th>
                             <th class="py-3.5 px-4">Keterangan</th>
+                            <th class="py-3.5 px-3 text-center w-20">Aksi</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
                         <?php if (empty($rekapData['logs'])): ?>
                             <tr>
-                                <td colspan="9" class="py-12 text-center text-slate-400">
+                                <td colspan="10" class="py-12 text-center text-slate-400">
                                     Tidak ada data kehadiran pada tanggal <?= date('d F Y', strtotime($targetDate)) ?>.
                                 </td>
                             </tr>
@@ -1238,6 +1266,32 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
                                     </td>
                                     <td class="py-3.5 px-4">
                                         <span class="text-xs text-slate-600"><?= e($r['keterangan'] ?? $r['log_keterangan'] ?? '-') ?></span>
+                                    </td>
+                                    <td class="py-3.5 px-3 text-center">
+                                        <button type="button" 
+                                                onclick="openModalEditLogPresensi(<?= htmlspecialchars(json_encode([
+                                                    'pegawai_id' => $r['id'],
+                                                    'nama' => $namaLengkap,
+                                                    'niy' => $r['niy'] ?? '',
+                                                    'unit_tugas' => $r['unit_tugas'] ?? '',
+                                                    'jabatan' => $r['jabatan'] ?? '',
+                                                    'tanggal' => $targetDate,
+                                                    'tanggal_formatted' => date('d F Y', strtotime($targetDate)),
+                                                    'jam_masuk' => $r['jam_masuk'] ?? '',
+                                                    'jam_pulang' => $r['jam_pulang'] ?? '',
+                                                    'status' => $statusKehadiran ?: 'Hadir',
+                                                    'keterangan' => $r['keterangan'] ?? $r['log_keterangan'] ?? '',
+                                                    'nama_kantor' => $r['nama_kantor_absen'] ?: ($r['nama_kantor_efektif'] ?? $defaultKantor),
+                                                    'batas_jam' => substr($jamBatasEfektif, 0, 5),
+                                                    'has_log' => !empty($r['log_id']),
+                                                    'return_tab' => 'rekap',
+                                                ]), ENT_QUOTES, 'UTF-8') ?>)"
+                                                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-primary-50 text-primary-700 hover:bg-primary-600 hover:text-white border border-primary-200 transition-all cursor-pointer shadow-xs">
+                                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+                                            </svg>
+                                            <span>Ubah</span>
+                                        </button>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
@@ -1969,6 +2023,159 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
     </div>
 </div>
 
+
+<!-- ═════════════════════════════════════════════════════════════════════
+     MODAL 4: UBAH LOG PRESENSI HARIAN PEGAWAI (TEPAT WAKTU / TERLAMBAT / DLL)
+     ═════════════════════════════════════════════════════════════════════ -->
+<div id="modalEditLogPresensi" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
+    <div class="relative bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 my-8">
+        <!-- Modal Header -->
+        <div class="flex items-start justify-between pb-4 border-b border-slate-100">
+            <div>
+                <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-primary-50 text-primary-700 border border-primary-200 mb-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-primary-600"></span>
+                    Edit Presensi Harian
+                </div>
+                <h3 class="text-base font-extrabold text-slate-900">Ubah Log Presensi Pegawai</h3>
+                <p class="text-xs text-slate-500">Sesuaikan jam masuk, status kehadiran (Tepat Waktu / Terlambat), atau alasan gagal absen.</p>
+            </div>
+            <button type="button" onclick="closeModal('modalEditLogPresensi')" class="p-1.5 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Info Pegawai Card -->
+        <div class="my-4 p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center justify-between gap-3">
+            <div>
+                <h4 id="editlog_nama_display" class="font-extrabold text-sm text-slate-900">Nama Pegawai</h4>
+                <p id="editlog_unit_display" class="text-xs text-slate-500 mt-0.5">Unit Tugas • Jabatan</p>
+            </div>
+            <div class="text-right shrink-0">
+                <span id="editlog_tanggal_display" class="inline-flex px-2.5 py-1 rounded-xl text-xs font-bold bg-white text-slate-700 border border-slate-200 shadow-xs">
+                    Tanggal
+                </span>
+                <div class="text-[10px] text-slate-400 mt-1">
+                    Batas Jam: <strong id="editlog_batas_display" class="text-rose-600 font-mono">07:30 WITA</strong>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Update Log -->
+        <form method="POST" action="<?= url('kelola-absen-pegawai/log/update') ?>" class="space-y-4">
+            <?= CSRF::field() ?>
+            <input type="hidden" name="return_tab" id="editlog_return_tab" value="rekap">
+            <input type="hidden" name="rekap_view" id="editlog_rekap_view" value="harian">
+            <input type="hidden" name="pegawai_id" id="editlog_pegawai_id" value="">
+            <input type="hidden" name="tanggal" id="editlog_tanggal" value="">
+
+            <!-- Preset Cepat Status Kehadiran -->
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1.5">Pilih Cepat Status:</label>
+                <div class="flex flex-wrap gap-1.5">
+                    <button type="button" onclick="setEditLogStatusPreset('Hadir')" class="px-2.5 py-1 rounded-xl text-xs font-bold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 transition-colors cursor-pointer">
+                        🟢 Tepat Waktu (07:15)
+                    </button>
+                    <button type="button" onclick="setEditLogStatusPreset('Terlambat')" class="px-2.5 py-1 rounded-xl text-xs font-bold bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 transition-colors cursor-pointer">
+                        🟡 Terlambat (07:45)
+                    </button>
+                    <button type="button" onclick="setEditLogStatusPreset('Izin')" class="px-2.5 py-1 rounded-xl text-xs font-bold bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 transition-colors cursor-pointer">
+                        🔵 Izin
+                    </button>
+                    <button type="button" onclick="setEditLogStatusPreset('Sakit')" class="px-2.5 py-1 rounded-xl text-xs font-bold bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 transition-colors cursor-pointer">
+                        🟣 Sakit
+                    </button>
+                    <button type="button" onclick="setEditLogStatusPreset('Cuti')" class="px-2.5 py-1 rounded-xl text-xs font-bold bg-teal-50 hover:bg-teal-100 text-teal-700 border border-teal-200 transition-colors cursor-pointer">
+                        🏖️ Cuti
+                    </button>
+                    <button type="button" onclick="setEditLogStatusPreset('Alpha')" class="px-2.5 py-1 rounded-xl text-xs font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 transition-colors cursor-pointer">
+                        🔴 Alpa
+                    </button>
+                </div>
+            </div>
+
+            <!-- Status Kehadiran Dropdown -->
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Status Kehadiran <span class="text-rose-500">*</span></label>
+                <select name="status" id="editlog_status" required
+                        class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-bold text-slate-800 outline-none focus:bg-white focus:border-primary-500">
+                    <option value="Hadir">Hadir (Tepat Waktu)</option>
+                    <option value="Terlambat">Hadir Terlambat</option>
+                    <option value="Izin">Izin</option>
+                    <option value="Sakit">Sakit</option>
+                    <option value="Cuti">Cuti</option>
+                    <option value="Alpha">Alpa (Tanpa Keterangan)</option>
+                    <option value="Dinas Luar">Tugas / Dinas Luar</option>
+                </select>
+            </div>
+
+            <!-- Jam Masuk & Jam Pulang -->
+            <div class="grid grid-cols-2 gap-3" id="editlog_jam_wrapper">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">
+                        Jam Kedatangan (Check-in)
+                    </label>
+                    <input type="time" name="jam_masuk" id="editlog_jam_masuk"
+                           class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-mono font-bold text-slate-800 outline-none focus:bg-white focus:border-primary-500">
+                    <p class="text-[10px] text-slate-400 mt-1">Kosongkan jika Izin/Sakit/Alpa</p>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">
+                        Jam Pulang (Check-out)
+                    </label>
+                    <input type="time" name="jam_pulang" id="editlog_jam_pulang"
+                           class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-mono font-bold text-slate-800 outline-none focus:bg-white focus:border-primary-500">
+                    <p class="text-[10px] text-slate-400 mt-1">Opsional jam kepulangan</p>
+                </div>
+            </div>
+
+            <!-- Nama Kantor Tempat Absen -->
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Nama Kantor / Tempat Absen</label>
+                <input type="text" name="nama_kantor_absen" id="editlog_nama_kantor" placeholder="Contoh: Kampus Utama SIT Bina Insan Palu"
+                       class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs text-slate-800 outline-none focus:bg-white focus:border-primary-500">
+            </div>
+
+            <!-- Keterangan / Catatan -->
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Keterangan / Alasan Perubahan</label>
+                <input type="text" name="keterangan" id="editlog_keterangan" placeholder="Contoh: Gagal absen karena kendala GPS / Absen manual admin"
+                       class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs text-slate-800 outline-none focus:bg-white focus:border-primary-500">
+            </div>
+
+            <!-- Modal Actions -->
+            <div class="pt-4 border-t border-slate-100 flex items-center justify-between gap-2">
+                <div id="editlog_delete_wrapper">
+                    <button type="button" onclick="submitDeleteCurrentLog()" id="btn_delete_log"
+                            class="px-3.5 py-2 rounded-xl text-xs font-bold text-rose-600 hover:text-white bg-rose-50 hover:bg-rose-600 border border-rose-200 transition-all cursor-pointer">
+                        Hapus / Reset Log
+                    </button>
+                </div>
+
+                <div class="flex items-center gap-2 ml-auto">
+                    <button type="button" onclick="closeModal('modalEditLogPresensi')"
+                            class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer">
+                        Batal
+                    </button>
+                    <button type="submit"
+                            class="px-5 py-2 rounded-xl text-xs font-bold text-white bg-primary-600 hover:bg-primary-700 shadow-md shadow-primary-600/20 transition-all cursor-pointer">
+                        Simpan Perubahan
+                    </button>
+                </div>
+            </div>
+        </form>
+
+        <!-- Hidden Delete Form -->
+        <form id="formDeleteLogPresensi" method="POST" action="<?= url('kelola-absen-pegawai/log/delete') ?>" class="hidden">
+            <?= CSRF::field() ?>
+            <input type="hidden" name="return_tab" id="dellog_return_tab" value="rekap">
+            <input type="hidden" name="rekap_view" value="harian">
+            <input type="hidden" name="pegawai_id" id="dellog_pegawai_id" value="">
+            <input type="hidden" name="tanggal" id="dellog_tanggal" value="">
+        </form>
+    </div>
+</div>
 <script>
 const DEFAULT_LAT = <?= json_encode($defaultLat) ?>;
 const DEFAULT_LNG = <?= json_encode($defaultLng) ?>;
@@ -2626,4 +2833,77 @@ document.addEventListener('DOMContentLoaded', function() {
         setTimeout(initDefaultMap, 200);
     }
 });
+
+let currentEditLogData = null;
+
+function openModalEditLogPresensi(data) {
+    currentEditLogData = data;
+    document.getElementById('editlog_pegawai_id').value = data.pegawai_id || '';
+    document.getElementById('editlog_tanggal').value = data.tanggal || '';
+    document.getElementById('editlog_return_tab').value = data.return_tab || 'rekap';
+    document.getElementById('editlog_nama_display').textContent = data.nama + (data.niy ? ' (' + data.niy + ')' : '');
+    document.getElementById('editlog_unit_display').textContent = (data.unit_tugas || '-') + ' • ' + (data.jabatan || '-');
+    document.getElementById('editlog_tanggal_display').textContent = data.tanggal_formatted || data.tanggal || '';
+    document.getElementById('editlog_batas_display').textContent = data.batas_jam ? data.batas_jam + ' WITA' : '07:30 WITA';
+
+    let st = data.status || 'Hadir';
+    if (st.toLowerCase() === 'alpa') st = 'Alpha';
+    document.getElementById('editlog_status').value = st;
+
+    const jamIn = data.jam_masuk ? data.jam_masuk.substring(0, 5) : '';
+    document.getElementById('editlog_jam_masuk').value = jamIn;
+
+    const jamOut = data.jam_pulang ? data.jam_pulang.substring(0, 5) : '';
+    document.getElementById('editlog_jam_pulang').value = jamOut;
+
+    document.getElementById('editlog_nama_kantor').value = data.nama_kantor || '';
+    document.getElementById('editlog_keterangan').value = data.keterangan || '';
+
+    const btnDel = document.getElementById('btn_delete_log');
+    if (btnDel) {
+        btnDel.style.display = data.has_log ? 'inline-block' : 'none';
+    }
+
+    const modal = document.getElementById('modalEditLogPresensi');
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+}
+
+function setEditLogStatusPreset(st) {
+    document.getElementById('editlog_status').value = st;
+    const jamInp = document.getElementById('editlog_jam_masuk');
+    const jamOut = document.getElementById('editlog_jam_pulang');
+    const batasJam = (currentEditLogData && currentEditLogData.batas_jam) ? currentEditLogData.batas_jam : '07:30';
+
+    if (st === 'Hadir') {
+        if (!jamInp.value || jamInp.value > batasJam) {
+            jamInp.value = '07:15';
+        }
+        if (!jamOut.value) jamOut.value = '15:00';
+    } else if (st === 'Terlambat') {
+        if (!jamInp.value || jamInp.value <= batasJam) {
+            jamInp.value = '07:45';
+        }
+        if (!jamOut.value) jamOut.value = '15:00';
+    } else if (['Izin', 'Sakit', 'Cuti', 'Alpha'].includes(st)) {
+        jamInp.value = '';
+        jamOut.value = '';
+    } else if (st === 'Dinas Luar') {
+        if (!jamInp.value) jamInp.value = '07:30';
+        if (!jamOut.value) jamOut.value = '15:00';
+    }
+}
+
+function submitDeleteCurrentLog() {
+    if (!currentEditLogData || !currentEditLogData.pegawai_id || !currentEditLogData.tanggal) return;
+    if (!confirm('Hapus log presensi ' + currentEditLogData.nama + ' pada tanggal ' + currentEditLogData.tanggal + ' dan kembalikan ke status Belum Absen?')) {
+        return;
+    }
+    document.getElementById('dellog_pegawai_id').value = currentEditLogData.pegawai_id;
+    document.getElementById('dellog_tanggal').value = currentEditLogData.tanggal;
+    document.getElementById('dellog_return_tab').value = currentEditLogData.return_tab || 'rekap';
+    document.getElementById('formDeleteLogPresensi').submit();
+}
 </script>

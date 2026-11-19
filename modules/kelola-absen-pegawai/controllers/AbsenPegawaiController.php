@@ -449,4 +449,95 @@ class AbsenPegawaiController
         fclose($out);
         exit;
     }
+
+    /**
+     * Update log presensi harian pegawai (ubah status tepat waktu / terlambat / izin / sakit dsb)
+     */
+    public static function updateLogPresensi(): void
+    {
+        CSRF::validate();
+        $returnTab = $_POST['return_tab'] ?? 'rekap';
+        $returnDate = $_POST['tanggal'] ?? date('Y-m-d');
+        $rekapView = $_POST['rekap_view'] ?? 'harian';
+
+        try {
+            $pegawaiId = (int)($_POST['pegawai_id'] ?? 0);
+            $tanggal = trim((string)($_POST['tanggal'] ?? ''));
+            if (!$pegawaiId || empty($tanggal)) {
+                Flash::error('Data pegawai atau tanggal tidak valid.');
+                redirect('kelola-absen-pegawai?tab=' . urlencode($returnTab) . '&tanggal=' . urlencode($returnDate) . '&rekap_view=' . urlencode($rekapView));
+            }
+
+            // Periksa hak akses unit
+            $effUnit = AbsenPegawaiModel::getEffectiveUserUnit();
+            if ($effUnit !== null) {
+                $pegUnit = AbsenPegawaiModel::getPegawaiUnit($pegawaiId);
+                if ($pegUnit && strcasecmp($pegUnit, $effUnit) !== 0 && stripos($pegUnit, $effUnit) === false) {
+                    Flash::error('Anda tidak memiliki hak akses untuk mengubah presensi pegawai unit ' . $pegUnit);
+                    redirect('kelola-absen-pegawai?tab=' . urlencode($returnTab) . '&tanggal=' . urlencode($returnDate) . '&rekap_view=' . urlencode($rekapView));
+                }
+            }
+
+            $success = AbsenPegawaiModel::updateLogPresensi([
+                'pegawai_id' => $pegawaiId,
+                'tanggal' => $tanggal,
+                'status' => $_POST['status'] ?? 'Hadir',
+                'jam_masuk' => $_POST['jam_masuk'] ?? null,
+                'jam_pulang' => $_POST['jam_pulang'] ?? null,
+                'nama_kantor_absen' => $_POST['nama_kantor_absen'] ?? null,
+                'keterangan' => $_POST['keterangan'] ?? null,
+            ]);
+
+            if ($success) {
+                Flash::success('Log presensi pegawai berhasil diperbarui.');
+            } else {
+                Flash::error('Gagal memperbarui log presensi.');
+            }
+        } catch (\Throwable $e) {
+            Flash::error('Terjadi kesalahan: ' . $e->getMessage());
+        }
+
+        redirect('kelola-absen-pegawai?tab=' . urlencode($returnTab) . '&tanggal=' . urlencode($returnDate) . '&rekap_view=' . urlencode($rekapView));
+    }
+
+    /**
+     * Hapus / Reset log presensi harian pegawai (kembalikan ke Belum Absen)
+     */
+    public static function deleteLogPresensi(): void
+    {
+        CSRF::validate();
+        $returnTab = $_POST['return_tab'] ?? 'rekap';
+        $returnDate = $_POST['tanggal'] ?? date('Y-m-d');
+        $rekapView = $_POST['rekap_view'] ?? 'harian';
+
+        try {
+            $pegawaiId = (int)($_POST['pegawai_id'] ?? 0);
+            $tanggal = trim((string)($_POST['tanggal'] ?? ''));
+            if (!$pegawaiId || empty($tanggal)) {
+                Flash::error('Data pegawai atau tanggal tidak valid.');
+                redirect('kelola-absen-pegawai?tab=' . urlencode($returnTab) . '&tanggal=' . urlencode($returnDate) . '&rekap_view=' . urlencode($rekapView));
+            }
+
+            // Periksa hak akses unit
+            $effUnit = AbsenPegawaiModel::getEffectiveUserUnit();
+            if ($effUnit !== null) {
+                $pegUnit = AbsenPegawaiModel::getPegawaiUnit($pegawaiId);
+                if ($pegUnit && strcasecmp($pegUnit, $effUnit) !== 0 && stripos($pegUnit, $effUnit) === false) {
+                    Flash::error('Anda tidak memiliki hak akses untuk menghapus log presensi pegawai unit ' . $pegUnit);
+                    redirect('kelola-absen-pegawai?tab=' . urlencode($returnTab) . '&tanggal=' . urlencode($returnDate) . '&rekap_view=' . urlencode($rekapView));
+                }
+            }
+
+            $success = AbsenPegawaiModel::deleteLogPresensi($pegawaiId, $tanggal);
+            if ($success) {
+                Flash::success('Log presensi pegawai berhasil dihapus (status kembali ke Belum Absen).');
+            } else {
+                Flash::error('Gagal menghapus log presensi.');
+            }
+        } catch (\Throwable $e) {
+            Flash::error('Terjadi kesalahan: ' . $e->getMessage());
+        }
+
+        redirect('kelola-absen-pegawai?tab=' . urlencode($returnTab) . '&tanggal=' . urlencode($returnDate) . '&rekap_view=' . urlencode($rekapView));
+    }
 }

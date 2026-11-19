@@ -2489,5 +2489,92 @@ class AbsenPegawaiModel
             ]
         ];
     }
+
+    /**
+     * Ambil unit tugas efektif seorang pegawai
+     */
+    public static function getPegawaiUnit(int $pegawaiId): ?string
+    {
+        self::init();
+        $row = self::db()->find("
+            SELECT COALESCE(NULLIF(TRIM(p.unit_tugas), ''), (mu.nama COLLATE utf8mb4_unicode_ci), 'Yayasan') as unit_tugas
+            FROM `pegawai` p
+            LEFT JOIN `pegawai_penugasan` pp ON pp.pegawai_id = p.id
+            LEFT JOIN `master_unit_tugas` mu ON mu.id = pp.unit_tugas_id
+            WHERE p.id = ? LIMIT 1
+        ", [$pegawaiId]);
+        return $row['unit_tugas'] ?? null;
+    }
+
+    /**
+     * Update atau Insert (Upsert) Log Presensi Pegawai secara manual oleh Admin/Pengelola
+     */
+    public static function updateLogPresensi(array $data): bool
+    {
+        self::init();
+        $pegawaiId = (int)($data['pegawai_id'] ?? 0);
+        $tanggal = trim((string)($data['tanggal'] ?? ''));
+        if (!$pegawaiId || empty($tanggal)) {
+            return false;
+        }
+
+        $status = trim((string)($data['status'] ?? 'Hadir'));
+        if (strcasecmp($status, 'Alpa') === 0) {
+            $status = 'Alpha';
+        }
+        $validStatuses = ['Hadir', 'Terlambat', 'Izin', 'Sakit', 'Cuti', 'Alpha', 'Dinas Luar'];
+        if (!in_array($status, $validStatuses, true)) {
+            $status = 'Hadir';
+        }
+
+        $jamMasuk = !empty($data['jam_masuk']) ? self::normalizeTimeStr($data['jam_masuk'], '07:15:00') : null;
+        $jamPulang = !empty($data['jam_pulang']) ? self::normalizeTimeStr($data['jam_pulang'], '15:00:00') : null;
+
+        if (in_array($status, ['Izin', 'Sakit', 'Cuti', 'Alpha'], true) && empty($data['jam_masuk'])) {
+            $jamMasuk = null;
+            $jamPulang = null;
+        }
+
+        $namaKantor = !empty($data['nama_kantor_absen']) ? trim((string)$data['nama_kantor_absen']) : null;
+        $keterangan = !empty($data['keterangan']) ? trim((string)$data['keterangan']) : null;
+
+        $existing = self::db()->find(
+            "SELECT id FROM `absen_pegawai_log` WHERE `pegawai_id` = ? AND `tanggal` = ? LIMIT 1",
+            [$pegawaiId, $tanggal]
+        );
+
+        if ($existing) {
+            $sql = "UPDATE `absen_pegawai_log` SET 
+                        `status` = ?, 
+                        `jam_masuk` = ?, 
+                        `jam_pulang` = ?, 
+                        `keterangan` = ?,
+                        `nama_kantor_absen` = COALESCE(?, `nama_kantor_absen`),
+                        `updated_at` = NOW()
+                    WHERE `id` = ?";
+            self::db()->query($sql, [$status, $jamMasuk, $jamPulang, $keterangan, $namaKantor, $existing['id']]);
+            return true;
+        } else {
+            $sql = "INSERT INTO `absen_pegawai_log` 
+                        (`pegawai_id`, `tanggal`, `jam_masuk`, `jam_pulang`, `status`, `nama_kantor_absen`, `keterangan`, `created_at`, `updated_at`)
+                    VALUES 
+                        (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())";
+            self::db()->query($sql, [$pegawaiId, $tanggal, $jamMasuk, $jamPulang, $status, $namaKantor, $keterangan]);
+            return true;
+        }
+    }
+
+    /**
+     * Hapus / Reset Log Presensi Pegawai pada tanggal tertentu (kembali ke Belum Absen)
+     */
+    public static function deleteLogPresensi(int $pegawaiId, string $tanggal): bool
+    {
+        self::init();
+        self::db()->query(
+            "DELETE FROM `absen_pegawai_log` WHERE `pegawai_id` = ? AND `tanggal` = ?",
+            [$pegawaiId, $tanggal]
+        );
+        return true;
+    }
 }
 
