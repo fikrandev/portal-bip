@@ -36,211 +36,40 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
 <div class="space-y-6">
 
     <!-- ═════════════════════════════════════════════════════════════════════
-         TOP HERO BANNER & PENGATURAN CEPAT RADIUS GLOBAL
-         ═════════════════════════════════════════════════════════════════════ -->
-    <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary-950 via-primary-900 to-sky-950 p-6 sm:p-8 text-white shadow-xl border border-primary-800/80">
-        <div class="absolute -right-10 -bottom-10 w-72 h-72 rounded-full bg-sky-500/10 blur-3xl pointer-events-none"></div>
-        <div class="absolute right-1/4 -top-10 w-60 h-60 rounded-full bg-emerald-500/10 blur-2xl pointer-events-none"></div>
-
-        <div class="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-            <div class="max-w-2xl">
-                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-xs font-semibold mb-3">
-                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-                    <span>Radius Global Aktif: <strong><?= $radiusGlobal ?> Meter</strong> (Berlaku untuk Semua Pegawai & Unit)</span>
-                </div>
-                <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-white mb-2">
-                    Kelola Lokasi & Radius Absen Pegawai
-                </h1>
-                <p class="text-primary-200/90 text-sm leading-relaxed">
-                    Atur titik koordinat lokasi absen (<strong>Nama Kantor Tempat Absen</strong>, <strong>Latitude</strong>, dan <strong>Longitude</strong>) secara <strong>Custom Per Pegawai</strong>, <strong>Custom Per Unit</strong>, atau <strong>Reset ke Lokasi Semula</strong>, dengan <strong>Radius Global</strong> yang seragam untuk seluruh pegawai.
-                </p>
-                <div class="flex flex-wrap items-center gap-2.5 mt-4 text-xs text-primary-200">
-                    <span class="inline-flex items-center gap-1.5 bg-primary-900/70 px-3 py-1.5 rounded-xl border border-primary-700/60">
-                        📍 Lokasi Semula: <strong class="text-white"><?= e($defaultKantor) ?></strong>
-                    </span>
-                    <span class="inline-flex items-center gap-1.5 bg-primary-900/70 px-3 py-1.5 rounded-xl border border-primary-700/60 font-mono">
-                        Lat: <strong class="text-sky-300"><?= number_format($defaultLat, 6, '.', '') ?></strong> | Lng: <strong class="text-sky-300"><?= number_format($defaultLng, 6, '.', '') ?></strong>
-                    </span>
-                </div>
-            </div>
-
-            <div class="flex flex-wrap items-center gap-2.5 shrink-0">
-                <button type="button" onclick="openModalCustomPegawai()"
-                    class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold text-xs shadow-lg shadow-emerald-500/25 transition-all cursor-pointer">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z"/></svg>
-                    <span>+ Custom Lokasi Pegawai</span>
-                </button>
-
-                <button type="button" onclick="openModalCustomUnit()"
-                    class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-semibold text-xs border border-white/20 backdrop-blur-sm transition-all cursor-pointer">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21"/></svg>
-                    <span>+ Custom Lokasi Unit</span>
-                </button>
-
-                <form method="POST" action="<?= url('kelola-absen-pegawai/reset-semua') ?>" onsubmit="return confirm('Reset SELURUH pegawai dan unit kembali ke Lokasi Absen Semula (<?= e(addslashes($defaultKantor)) ?>)?');">
-                    <?= CSRF::field() ?>
-                    <input type="hidden" name="return_tab" value="<?= e($activeTab) ?>">
-                    <button type="submit"
-                        class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 hover:text-white font-semibold text-xs border border-rose-400/30 backdrop-blur-sm transition-all cursor-pointer">
-                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"/></svg>
-                        <span>Reset Semua ke Semula</span>
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- ═════════════════════════════════════════════════════════════════════
-         BAR PENGATURAN CEPAT RADIUS GLOBAL (UNTUK SEMUA PEGAWAI & SEMUA UNIT)
-         ═════════════════════════════════════════════════════════════════════ -->
-    <div class="bg-white rounded-2xl p-4 sm:p-5 border border-primary-200/80 shadow-xs flex flex-col xl:flex-row xl:items-center justify-between gap-4">
-        <div class="flex items-start sm:items-center gap-3.5">
-            <div class="w-11 h-11 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center font-extrabold text-sm shrink-0">
-                <?= $radiusGlobal ?>m
-            </div>
-            <div>
-                <div class="flex items-center gap-2">
-                    <h3 class="font-extrabold text-slate-900 text-sm">Pengaturan Radius Absen Global (Berlaku untuk Semua)</h3>
-                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">Global Semua Pegawai & Unit</span>
-                </div>
-                <p class="text-xs text-slate-500 mt-0.5">
-                    Pilih tombol ukuran cepat (5m, 10m, 15m, dst.) atau ketik jarak meter sesuai kebutuhan. Radius ini otomatis berlaku seragam untuk seluruh pegawai.
-                </p>
-            </div>
-        </div>
-
-        <form method="POST" action="<?= url('kelola-absen-pegawai/radius/update') ?>" class="flex flex-wrap items-center gap-2 shrink-0">
-            <?= CSRF::field() ?>
-            <input type="hidden" name="return_tab" value="<?= e($activeTab) ?>">
-
-            <!-- Preset Buttons -->
-            <div class="flex flex-wrap items-center gap-1.5 mr-1">
-                <?php foreach ([5, 10, 15, 20, 25, 50, 100] as $presetM): ?>
-                    <button type="button"
-                        onclick="document.getElementById('quick_radius_input').value='<?= $presetM ?>'; this.form.submit();"
-                        class="px-2.5 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer <?= $radiusGlobal === $presetM ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs' : 'bg-slate-50 hover:bg-emerald-50 text-slate-700 hover:text-emerald-700 border-slate-200' ?>">
-                        <?= $presetM ?>m
-                    </button>
-                <?php endforeach; ?>
-            </div>
-
-            <!-- Custom Meter Input -->
-            <div class="flex items-center bg-slate-50 rounded-xl border border-slate-200 px-3 py-1.5">
-                <input type="number" name="radius_meter" id="quick_radius_input" value="<?= $radiusGlobal ?>" min="1" max="5000" required
-                       class="w-16 bg-transparent text-xs font-extrabold text-slate-900 outline-none text-center">
-                <span class="text-xs font-bold text-slate-500 ml-1">Meter</span>
-            </div>
-
-            <button type="submit" class="px-4 py-2 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-xs transition-colors cursor-pointer">
-                Simpan Radius
-            </button>
-        </form>
-    </div>
-
-    <!-- ═════════════════════════════════════════════════════════════════════
-         4 KPI CARDS RINGKASAN LOKASI ABSEN
-         ═════════════════════════════════════════════════════════════════════ -->
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
-        <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs">
-            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Pegawai Aktif</span>
-            <div class="text-2xl font-extrabold text-slate-900 mt-1"><?= number_format($stats['totalPegawai']) ?></div>
-            <p class="text-[11px] text-slate-500 mt-0.5">Terdaftar dalam sistem absen</p>
-        </div>
-
-        <div class="bg-white rounded-2xl p-4 border border-sky-200/80 shadow-xs">
-            <span class="text-[11px] font-bold text-sky-600 uppercase tracking-wider">Lokasi Semula (Default)</span>
-            <div class="text-2xl font-extrabold text-sky-600 mt-1"><?= number_format($stats['totalDefault']) ?> <span class="text-xs font-normal text-slate-400">Pegawai</span></div>
-            <p class="text-[11px] text-slate-500 mt-0.5 truncate" title="<?= e($defaultKantor) ?>"><?= e($defaultKantor) ?></p>
-        </div>
-
-        <div class="bg-white rounded-2xl p-4 border border-purple-200/80 shadow-xs">
-            <span class="text-[11px] font-bold text-purple-600 uppercase tracking-wider">Custom Lokasi Per Unit</span>
-            <div class="text-2xl font-extrabold text-purple-600 mt-1"><?= number_format($stats['totalCustomUnit']) ?> <span class="text-xs font-normal text-slate-400">Pegawai</span></div>
-            <p class="text-[11px] text-slate-500 mt-0.5"><?= (int)$stats['unitCustomCount'] ?> dari <?= (int)$stats['totalUnit'] ?> unit diatur khusus</p>
-        </div>
-
-        <div class="bg-white rounded-2xl p-4 border border-emerald-200/80 shadow-xs">
-            <span class="text-[11px] font-bold text-emerald-600 uppercase tracking-wider">Custom Per Pegawai</span>
-            <div class="text-2xl font-extrabold text-emerald-600 mt-1"><?= number_format($stats['totalCustomPegawai']) ?> <span class="text-xs font-normal text-slate-400">Pegawai</span></div>
-            <p class="text-[11px] text-slate-500 mt-0.5">Titik lokasi khusus individu</p>
-        </div>
-    </div>
-
-    <!-- ═════════════════════════════════════════════════════════════════════
-         NAVIGATION TABS
-         ═════════════════════════════════════════════════════════════════════ -->
-    <div class="bg-white rounded-2xl p-2 border border-slate-200/80 shadow-xs flex flex-wrap items-center justify-between gap-2">
-        <div class="flex items-center gap-1.5 overflow-x-auto">
-            <!-- 1. Dashboard -->
-            <button type="button" onclick="switchAbsenTab('dashboard')" data-tab-btn="dashboard"
-                class="absen-tab-btn px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer <?= $activeTab === 'dashboard' ? 'bg-primary-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100' ?>">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z" />
-                </svg>
-                <span>1. Dashboard Absen</span>
-                <?php if (($dashboardData['stats']['terlambat'] ?? 0) > 0): ?>
-                    <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500 text-white animate-pulse">
-                        <?= $dashboardData['stats']['terlambat'] ?> Terlambat
-                    </span>
-                <?php endif; ?>
-            </button>
-
-            <!-- 2. Lokasi Per Pegawai -->
-            <button type="button" onclick="switchAbsenTab('pegawai')" data-tab-btn="pegawai"
-                class="absen-tab-btn px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer <?= $activeTab === 'pegawai' ? 'bg-primary-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100' ?>">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
-                </svg>
-                <span>2. Lokasi Per Pegawai</span>
-                <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold <?= $activeTab === 'pegawai' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700' ?>">
-                    <?= count($pegawaiList) ?>
-                </span>
-            </button>
-
-            <!-- 3. Data Absen & Rekap PDF -->
-            <button type="button" onclick="switchAbsenTab('rekap')" data-tab-btn="rekap"
-                class="absen-tab-btn px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer <?= $activeTab === 'rekap' ? 'bg-primary-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100' ?>">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
-                </svg>
-                <span>3. Data Absen & Rekap PDF</span>
-            </button>
-
-            <!-- 4. Lokasi Custom Unit -->
-            <button type="button" onclick="switchAbsenTab('unit')" data-tab-btn="unit"
-                class="absen-tab-btn px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer <?= $activeTab === 'unit' ? 'bg-primary-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100' ?>">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Z" />
-                </svg>
-                <span>4. Lokasi Custom Unit</span>
-                <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold <?= $activeTab === 'unit' ? 'bg-white/20 text-white' : 'bg-purple-100 text-purple-700' ?>">
-                    <?= count($unitLokasiList) ?> Unit
-                </span>
-            </button>
-
-            <!-- 5. Radius Global & Jam Masuk -->
-            <button type="button" onclick="switchAbsenTab('pengaturan')" data-tab-btn="pengaturan"
-                class="absen-tab-btn px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer <?= $activeTab === 'pengaturan' ? 'bg-primary-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100' ?>">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                </svg>
-                <span>5. Radius & Jam Masuk</span>
-            </button>
-        </div>
-
-        <div class="flex items-center gap-2">
-            <a href="<?= url('kelola-absen-pegawai/export') ?>"
-               class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center gap-1.5 transition-colors">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
-                <span>Export CSV</span>
-            </a>
-        </div>
-    </div>
-
-    <!-- ═════════════════════════════════════════════════════════════════════
          TAB 1: DASHBOARD ABSEN & DAFTAR PEGAWAI TERLAMBAT HARI INI
          ═════════════════════════════════════════════════════════════════════ -->
     <div id="absen-panel-dashboard" class="absen-tab-panel space-y-5 <?= $activeTab === 'dashboard' ? '' : 'hidden' ?>">
+
+        <!-- ═════════════════════════════════════════════════════════════════════
+             HEADER DASHBOARD PRESENSI PEGAWAI
+             ═════════════════════════════════════════════════════════════════════ -->
+        <div class="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+                <div class="flex items-center gap-2 mb-1.5">
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-primary-50 text-primary-700 border border-primary-200">
+                        <span class="w-1.5 h-1.5 rounded-full bg-primary-600 animate-pulse"></span>
+                        Live Monitoring Presensi
+                    </span>
+                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold <?= !empty($effectiveUserUnit) ? 'bg-sky-50 text-sky-800 border border-sky-200' : 'bg-slate-100 text-slate-700 border border-slate-200' ?>">
+                        Unit: <strong><?= !empty($effectiveUserUnit) ? e($effectiveUserUnit) : 'Semua Unit (Super Admin)' ?></strong>
+                    </span>
+                </div>
+                <h1 class="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
+                    Dashboard Presensi Pegawai
+                </h1>
+                <p class="text-xs text-slate-500 mt-1">
+                    Daftar pegawai yang terlambat hari ini dan rekapitulasi persentase kehadiran pegawai <?= !empty($effectiveUserUnit) ? 'unit <strong>' . e($effectiveUserUnit) . '</strong>' : 'seluruh unit' ?>.
+                </p>
+            </div>
+
+            <div class="flex items-center gap-2.5 shrink-0">
+                <div class="bg-slate-50 px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs flex items-center gap-2">
+                    <span class="text-slate-500 font-medium">Batas Jam Masuk Hari Ini:</span>
+                    <strong class="text-rose-600 font-mono text-sm"><?= substr($dashboardData['global_jam']['jam_masuk_batas'] ?? $jamMasukBatasHariIni, 0, 5) ?> WITA</strong>
+                </div>
+            </div>
+        </div>
+
 
         <!-- Toolbar Filter Tanggal & Unit Dashboard -->
         <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -545,7 +374,96 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
     <!-- ═════════════════════════════════════════════════════════════════════
          TAB 2: LOKASI ABSEN MASING-MASING PEGAWAI (CUSTOM PER PEGAWAI & RESET)
          ═════════════════════════════════════════════════════════════════════ -->
-    <div id="absen-panel-pegawai" class="absen-tab-panel space-y-4 <?= $activeTab === 'pegawai' ? '' : 'hidden' ?>">
+    <div id="absen-panel-pegawai" class="absen-tab-panel space-y-5 <?= $activeTab === 'pegawai' ? '' : 'hidden' ?>">
+
+        <!-- ═════════════════════════════════════════════════════════════════════
+             TOP HERO BANNER & STATISTIK LOKASI PEGAWAI
+             ═════════════════════════════════════════════════════════════════════ -->
+        <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary-950 via-primary-900 to-sky-950 p-6 sm:p-8 text-white shadow-xl border border-primary-800/80">
+            <div class="absolute -right-10 -bottom-10 w-72 h-72 rounded-full bg-sky-500/10 blur-3xl pointer-events-none"></div>
+            <div class="absolute right-1/4 -top-10 w-60 h-60 rounded-full bg-emerald-500/10 blur-2xl pointer-events-none"></div>
+
+            <div class="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                <div class="max-w-2xl">
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-xs font-semibold mb-3">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                        <span>Radius Global Aktif: <strong><?= $radiusGlobal ?> Meter</strong> (Berlaku untuk Seluruh Pegawai & Unit)</span>
+                    </div>
+                    <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-white mb-2">
+                        Kelola Lokasi Absen Pegawai
+                    </h2>
+                    <p class="text-primary-200/90 text-sm leading-relaxed">
+                        Atur titik koordinat lokasi kantor absen (<strong>Nama Kantor</strong>, <strong>Latitude</strong>, dan <strong>Longitude</strong>) secara <strong>Custom Per Pegawai</strong>, <strong>Custom Per Unit</strong>, atau <strong>Reset ke Lokasi Semula</strong>.
+                    </p>
+                    <div class="flex flex-wrap items-center gap-2.5 mt-4 text-xs text-primary-200">
+                        <span class="inline-flex items-center gap-1.5 bg-primary-900/70 px-3 py-1.5 rounded-xl border border-primary-700/60">
+                            📍 Lokasi Semula: <strong class="text-white"><?= e($defaultKantor) ?></strong>
+                        </span>
+                        <span class="inline-flex items-center gap-1.5 bg-primary-900/70 px-3 py-1.5 rounded-xl border border-primary-700/60 font-mono">
+                            Lat: <strong class="text-sky-300"><?= number_format($defaultLat, 6, '.', '') ?></strong> | Lng: <strong class="text-sky-300"><?= number_format($defaultLng, 6, '.', '') ?></strong>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-2.5 shrink-0">
+                    <button type="button" onclick="openModalCustomPegawai()"
+                        class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold text-xs shadow-lg shadow-emerald-500/25 transition-all cursor-pointer">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z"/></svg>
+                        <span>+ Custom Lokasi Pegawai</span>
+                    </button>
+
+                    <button type="button" onclick="openModalCustomUnit()"
+                        class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-semibold text-xs border border-white/20 backdrop-blur-sm transition-all cursor-pointer">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21"/></svg>
+                        <span>+ Custom Lokasi Unit</span>
+                    </button>
+
+                    <a href="<?= url('kelola-absen-pegawai/export') ?>"
+                       class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-semibold text-xs border border-white/20 backdrop-blur-sm transition-all cursor-pointer">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+                        <span>Export CSV</span>
+                    </a>
+
+                    <form method="POST" action="<?= url('kelola-absen-pegawai/reset-semua') ?>" onsubmit="return confirm('Reset SELURUH pegawai dan unit kembali ke Lokasi Absen Semula (<?= e(addslashes($defaultKantor)) ?>)?');">
+                        <?= CSRF::field() ?>
+                        <input type="hidden" name="return_tab" value="pegawai">
+                        <button type="submit"
+                            class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 hover:text-white font-semibold text-xs border border-rose-400/30 backdrop-blur-sm transition-all cursor-pointer">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"/></svg>
+                            <span>Reset Semua ke Semula</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4 KPI CARDS RINGKASAN LOKASI ABSEN -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+            <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs">
+                <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Pegawai Aktif</span>
+                <div class="text-2xl font-extrabold text-slate-900 mt-1"><?= number_format($stats['totalPegawai']) ?></div>
+                <p class="text-[11px] text-slate-500 mt-0.5">Terdaftar dalam sistem absen</p>
+            </div>
+
+            <div class="bg-white rounded-2xl p-4 border border-sky-200/80 shadow-xs">
+                <span class="text-[11px] font-bold text-sky-600 uppercase tracking-wider">Lokasi Semula (Default)</span>
+                <div class="text-2xl font-extrabold text-sky-600 mt-1"><?= number_format($stats['totalDefault']) ?> <span class="text-xs font-normal text-slate-400">Pegawai</span></div>
+                <p class="text-[11px] text-slate-500 mt-0.5 truncate" title="<?= e($defaultKantor) ?>"><?= e($defaultKantor) ?></p>
+            </div>
+
+            <div class="bg-white rounded-2xl p-4 border border-purple-200/80 shadow-xs">
+                <span class="text-[11px] font-bold text-purple-600 uppercase tracking-wider">Custom Lokasi Per Unit</span>
+                <div class="text-2xl font-extrabold text-purple-600 mt-1"><?= number_format($stats['totalCustomUnit']) ?> <span class="text-xs font-normal text-slate-400">Pegawai</span></div>
+                <p class="text-[11px] text-slate-500 mt-0.5"><?= (int)$stats['unitCustomCount'] ?> dari <?= (int)$stats['totalUnit'] ?> unit diatur khusus</p>
+            </div>
+
+            <div class="bg-white rounded-2xl p-4 border border-emerald-200/80 shadow-xs">
+                <span class="text-[11px] font-bold text-emerald-600 uppercase tracking-wider">Custom Per Pegawai</span>
+                <div class="text-2xl font-extrabold text-emerald-600 mt-1"><?= number_format($stats['totalCustomPegawai']) ?> <span class="text-xs font-normal text-slate-400">Pegawai</span></div>
+                <p class="text-[11px] text-slate-500 mt-0.5">Titik lokasi khusus individu</p>
+            </div>
+        </div>
+
 
         <!-- Filter & Bulk Action Toolbar -->
         <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-4">

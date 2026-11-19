@@ -90,7 +90,7 @@ $namaKantorDefault = $sidebarStats['globalConfig']['nama_kantor_default'] ?? 'Ka
                         $href = url('kelola-absen-pegawai?tab=' . $tabKey);
 
                         echo '<li>
-                            <a href="' . $href . '" onclick="if(typeof switchAbsenTab === \'function\'){ switchAbsenTab(\'' . $tabKey . '\'); return false; }" data-sidebar-tab="' . $tabKey . '" class="absen-sidebar-link flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-200 group ' . $activeClass . '">
+                            <a href="' . $href . '" onclick="if(typeof switchAbsenTab === \'function\'){ switchAbsenTab(\'' . $tabKey . '\'); if(window.innerWidth < 1024 && typeof toggleSidebar === \'function\') toggleSidebar(); return false; }" data-sidebar-tab="' . $tabKey . '" class="absen-sidebar-link flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-200 group ' . $activeClass . '">
                                 <div class="flex items-center gap-3 min-w-0">
                                     <div class="w-5 h-5 [&>svg]:w-5 [&>svg]:h-5 ' . $iconClass . ' transition-colors shrink-0">' . $icon . '</div>
                                     <span class="text-sm truncate">' . e($label) . '</span>
