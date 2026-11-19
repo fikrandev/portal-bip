@@ -252,6 +252,587 @@ class AbsenPegawaiModel
     }
 
     /**
+     * Ambil Unit Tugas efektif pengguna yang sedang login.
+     * Jika Super Admin, mengembalikan null (akses seluruh unit).
+     * Jika user unit tertentu (PAUD, SD, SMP, SMA, Yayasan, Staff), mengembalikan unit tersebut.
+     */
+    public static function getEffectiveUserUnit(): ?string
+    {
+        if (class_exists('Auth') && Auth::isSuperAdmin()) {
+            return null;
+        }
+
+        // 1. Cek restriction jenjang RBAC
+        if (class_exists('Auth') && Auth::isJenjangRestricted()) {
+            $active = Auth::getActiveJenjang();
+            if (!empty($active)) {
+                return $active;
+            }
+            $allowed = Auth::getAllowedJenjang();
+            if (!empty($allowed) && !empty($allowed[0])) {
+                return $allowed[0];
+            }
+        }
+
+        // 2. Cek pegawai yang tertaut ke akun user
+        if (class_exists('Auth')) {
+            $linked = Auth::findLinkedPegawai();
+            if ($linked) {
+                $u = trim((string)($linked['unit_tugas'] ?? ''));
+                if ($u !== '') {
+                    return $u;
+                }
+                // Fallback: cek riwayat penugasan pegawai
+                try {
+                    $pid = (int)($linked['id'] ?? 0);
+                    if ($pid > 0) {
+                        $assignUnit = self::db()->findColumn("
+                            SELECT mu.nama 
+                            FROM pegawai_penugasan pp 
+                            JOIN master_unit_tugas mu ON mu.id = pp.unit_tugas_id 
+                            WHERE pp.pegawai_id = ? 
+                            ORDER BY pp.id DESC LIMIT 1
+                        ", [$pid]);
+                        if (!empty($assignUnit)) {
+                            return trim($assignUnit);
+                        }
+                    }
+                } catch (Throwable $e) {}
+            }
+        }
+
+        // 3. Cek allowed_jenjang pada user
+        if (class_exists('Auth')) {
+            $u = Auth::user();
+            if (!empty($u['allowed_jenjang'])) {
+                $parts = array_map('trim', explode(',', $u['allowed_jenjang']));
+                if (!empty($parts[0])) {
+                    return $parts[0];
+                }
+            }
+        }
+
+        // 4. Session jenjang
+        if (!empty($_SESSION['user_active_jenjang'])) {
+            return $_SESSION['user_active_jenjang'];
+        }
+
+        return null;
+    }
+
+    /**
+     * Bangun kondisi SQL filtering Unit Tugas yang aman dan konsisten.
+     * Mengunci filter ke unit user jika bukan Super Admin.
+     */
+    public static function getUnitFilterSql(string $column, array &$params, ?string $requestedUnit = null): string
+    {
+        $effective = self::getEffectiveUserUnit();
+        $targetUnit = $effective ?: $requestedUnit;
+
+        if (empty($targetUnit) || in_array(strtolower($targetUnit), ['semua', 'all', 'semua unit'], true)) {
+            if (!empty($effective)) {
+                $targetUnit = $effective;
+            } else {
+                return '1=1';
+            }
+        }
+
+        $targetUnit = trim($targetUnit);
+        $upper = strtoupper($targetUnit);
+
+        if ($upper === 'PAUD' || $upper === 'TK') {
+            $params[] = 'PAUD';
+            $params[] = 'TK';
+            $params[] = 'PAUD IT';
+            $params[] = 'TK IT';
+            $params[] = 'PAUD / TK';
+            $params[] = 'PAUD/TK';
+            return "(UPPER(TRIM({$column})) IN (?, ?, ?, ?, ?, ?) OR {$column} LIKE 'PAUD%' OR {$column} LIKE 'TK%')";
+        }
+
+        if ($upper === 'SD') {
+            $params[] = 'SD';
+            $params[] = 'SD IT';
+            $params[] = 'SDIT';
+            $params[] = 'SD IT BINA INSAN';
+            return "(UPPER(TRIM({$column})) IN (?, ?, ?, ?) OR {$column} LIKE 'SD%')";
+        }
+
+        if ($upper === 'SMP') {
+            $params[] = 'SMP';
+            $params[] = 'SMP IT';
+            $params[] = 'SMPIT';
+            return "(UPPER(TRIM({$column})) IN (?, ?, ?) OR {$column} LIKE 'SMP%')";
+        }
+
+        if ($upper === 'SMA') {
+            $params[] = 'SMA';
+            $params[] = 'SMA IT';
+            $params[] = 'SMAIT';
+            return "(UPPER(TRIM({$column})) IN (?, ?, ?) OR {$column} LIKE 'SMA%')";
+        }
+
+        if (stripos($upper, 'YAYASAN') !== false || in_array($upper, ['UMUM', 'UMUM / YAYASAN'], true)) {
+            $params[] = 'Yayasan';
+            $params[] = 'Umum / Yayasan';
+            $params[] = 'Umum';
+            return "({$column} IS NULL OR TRIM({$column}) = '' OR UPPER(TRIM({$column})) IN (?, ?, ?) OR {$column} LIKE '%Yayasan%')";
+        }
+
+        if ($upper === 'STAFF') {
+            $params[] = 'Staff';
+            $params[] = 'Support System';
+            return "(UPPER(TRIM({$column})) IN (?, ?) OR {$column} LIKE '%Staff%')";
+        }
+
+        $params[] = $targetUnit;
+        $params[] = '%' . $targetUnit . '%';
+        return "(UPPER(TRIM({$column})) = UPPER(?) OR {$column} LIKE ?)";
+    }
+
+    /**
+     * Ambil data lengkap Dashboard Absen Pegawai:
+     * 1. Daftar Pegawai Terlambat Hari Ini (Foto, Nama, NIY, Unit, Jam Masuk, Batas, Durasi Menit, Lokasi).
+     * 2. KPI Statistik Presensi Hari Ini (Hadir Total, Tepat Waktu, Terlambat, Izin/Sakit/Cuti, Belum Absen, Persentase).
+     * 3. Breakdown Persentase Kehadiran per Unit Tugas.
+     * Semua otomatis disaring sesuai Unit pengguna yang sedang login.
+     */
+    public static function getDashboardData(?string $tanggal = null, ?string $unit = null): array
+    {
+        self::init();
+        $targetDate = !empty($tanggal) ? trim($tanggal) : date('Y-m-d');
+        $global = self::getPengaturanGlobal();
+        $globalJam = self::resolveGlobalJamForDate($global, $targetDate);
+        $jamBatasFallback = addslashes($globalJam['jam_masuk_batas'] ?: '07:30:00');
+
+        $effectiveUnit = self::getEffectiveUserUnit();
+        $targetUnit = $effectiveUnit ?: $unit;
+
+        $where = ["p.is_active = 1"];
+        $params = [$targetDate];
+
+        $unitColExpr = "COALESCE(NULLIF(TRIM(p.unit_tugas), ''), (mu.nama COLLATE utf8mb4_unicode_ci), 'Yayasan')";
+        $uCond = self::getUnitFilterSql($unitColExpr, $params, $targetUnit);
+        if ($uCond !== '1=1') {
+            $where[] = "({$uCond})";
+        }
+        $whereSql = implode(' AND ', $where);
+
+        $sql = "
+            SELECT 
+                p.id, p.niy, p.nama, p.gelar, p.foto, p.jabatan,
+                COALESCE(NULLIF(TRIM(p.unit_tugas), ''), (mu.nama COLLATE utf8mb4_unicode_ci), 'Yayasan') as unit_tugas_efektif,
+                apl.id as log_id,
+                apl.jam_masuk,
+                apl.jam_pulang,
+                apl.status as log_status,
+                apl.keterangan as log_keterangan,
+                apl.nama_kantor_absen,
+                apl.jarak_masuk_meter,
+                apl.lat_masuk,
+                apl.lng_masuk,
+                COALESCE(l.jam_masuk_batas, u.jam_masuk_batas, '{$jamBatasFallback}') as batas_jam_masuk
+            FROM `pegawai` p
+            LEFT JOIN `pegawai_penugasan` pp ON pp.pegawai_id = p.id
+            LEFT JOIN `master_unit_tugas` mu ON mu.id = pp.unit_tugas_id
+            LEFT JOIN `absen_pegawai_lokasi` l ON l.pegawai_id = p.id
+            LEFT JOIN `absen_pegawai_lokasi_unit` u ON u.unit_tugas = COALESCE(NULLIF(TRIM(p.unit_tugas), ''), (mu.nama COLLATE utf8mb4_unicode_ci), 'Yayasan')
+            LEFT JOIN `absen_pegawai_log` apl ON apl.pegawai_id = p.id AND apl.tanggal = ?
+            WHERE {$whereSql}
+            GROUP BY p.id
+            ORDER BY 
+                CASE 
+                    WHEN apl.status = 'Terlambat' THEN 1 
+                    WHEN apl.jam_masuk IS NOT NULL AND apl.jam_masuk > COALESCE(l.jam_masuk_batas, u.jam_masuk_batas, '{$jamBatasFallback}') THEN 2
+                    WHEN apl.status = 'Hadir' THEN 3
+                    WHEN apl.jam_masuk IS NOT NULL THEN 4
+                    ELSE 5 
+                END,
+                apl.jam_masuk DESC,
+                p.nama ASC
+        ";
+
+        $rows = self::db()->findAll($sql, $params);
+
+        $totalPegawai = count($rows);
+        $hadirTotal = 0;
+        $hadirTepatWaktu = 0;
+        $terlambat = 0;
+        $izin = 0;
+        $sakit = 0;
+        $cuti = 0;
+        $dinasLuar = 0;
+        $daftarTerlambat = [];
+        $unitStatsMap = [];
+
+        foreach ($rows as $r) {
+            $unitName = $r['unit_tugas_efektif'] ?: 'Yayasan';
+            if (!isset($unitStatsMap[$unitName])) {
+                $unitStatsMap[$unitName] = [
+                    'unit_name' => $unitName,
+                    'total_pegawai' => 0,
+                    'hadir_total' => 0,
+                    'hadir_tepat_waktu' => 0,
+                    'terlambat' => 0,
+                    'izin' => 0,
+                    'sakit' => 0,
+                    'cuti' => 0,
+                    'belum_absen' => 0,
+                    'persen_kehadiran' => 0.0
+                ];
+            }
+            $unitStatsMap[$unitName]['total_pegawai']++;
+
+            $jamMasuk = $r['jam_masuk'] ? substr($r['jam_masuk'], 0, 8) : null;
+            $jamBatas = $r['batas_jam_masuk'] ? substr($r['batas_jam_masuk'], 0, 8) : '07:30:00';
+            $logStatus = trim((string)($r['log_status'] ?? ''));
+
+            $isLate = false;
+            if ($logStatus === 'Terlambat') {
+                $isLate = true;
+            } elseif (!empty($jamMasuk) && strtotime($jamMasuk) > strtotime($jamBatas)) {
+                $isLate = true;
+            }
+
+            if ($isLate) {
+                $terlambat++;
+                $hadirTotal++;
+                $unitStatsMap[$unitName]['terlambat']++;
+                $unitStatsMap[$unitName]['hadir_total']++;
+
+                $menitTerlambat = 0;
+                if (preg_match('/(\d+)\s*Menit/i', (string)($r['log_keterangan'] ?? ''), $m)) {
+                    $menitTerlambat = (int)$m[1];
+                } elseif (!empty($jamMasuk)) {
+                    $menitTerlambat = max(1, (int)round((strtotime($jamMasuk) - strtotime($jamBatas)) / 60));
+                }
+
+                $gelarStr = !empty($r['gelar']) ? ', ' . trim($r['gelar']) : '';
+                $daftarTerlambat[] = [
+                    'id'                => (int)$r['id'],
+                    'pegawai_id'        => (int)$r['id'],
+                    'nama'              => trim($r['nama'] . $gelarStr),
+                    'nama_polos'        => $r['nama'],
+                    'gelar'             => $r['gelar'],
+                    'niy'               => $r['niy'] ?: '-',
+                    'foto'              => $r['foto'],
+                    'unit_tugas'        => $unitName,
+                    'jabatan'           => $r['jabatan'] ?: 'Pegawai',
+                    'jam_masuk'         => $jamMasuk,
+                    'jam_masuk_batas'   => $jamBatas,
+                    'menit_terlambat'   => $menitTerlambat,
+                    'nama_kantor_absen' => $r['nama_kantor_absen'] ?: '-',
+                    'jarak_masuk_meter' => (float)($r['jarak_masuk_meter'] ?? 0),
+                    'lat_masuk'         => $r['lat_masuk'],
+                    'lng_masuk'         => $r['lng_masuk'],
+                    'keterangan'        => $r['log_keterangan'] ?: "Terlambat {$menitTerlambat} Menit"
+                ];
+            } elseif ($logStatus === 'Hadir' || !empty($jamMasuk)) {
+                $hadirTepatWaktu++;
+                $hadirTotal++;
+                $unitStatsMap[$unitName]['hadir_tepat_waktu']++;
+                $unitStatsMap[$unitName]['hadir_total']++;
+            } elseif ($logStatus === 'Izin') {
+                $izin++;
+                $unitStatsMap[$unitName]['izin']++;
+            } elseif ($logStatus === 'Sakit') {
+                $sakit++;
+                $unitStatsMap[$unitName]['sakit']++;
+            } elseif ($logStatus === 'Cuti') {
+                $cuti++;
+                $unitStatsMap[$unitName]['cuti']++;
+            } elseif ($logStatus === 'Dinas Luar') {
+                $dinasLuar++;
+                $hadirTotal++;
+                $unitStatsMap[$unitName]['hadir_total']++;
+            } else {
+                $unitStatsMap[$unitName]['belum_absen']++;
+            }
+        }
+
+        $belumAbsen = max(0, $totalPegawai - ($hadirTotal + $izin + $sakit + $cuti));
+        $persenKehadiran = $totalPegawai > 0 ? round(($hadirTotal / $totalPegawai) * 100, 1) : 0.0;
+        $persenTepatWaktu = $totalPegawai > 0 ? round(($hadirTepatWaktu / $totalPegawai) * 100, 1) : 0.0;
+        $persenTerlambat = $totalPegawai > 0 ? round(($terlambat / $totalPegawai) * 100, 1) : 0.0;
+
+        foreach ($unitStatsMap as $uKey => &$uStat) {
+            $uTot = $uStat['total_pegawai'];
+            $uStat['persen_kehadiran'] = $uTot > 0 ? round(($uStat['hadir_total'] / $uTot) * 100, 1) : 0.0;
+        }
+        unset($uStat);
+        ksort($unitStatsMap);
+
+        return [
+            'tanggal'          => $targetDate,
+            'unit_efektif'     => $effectiveUnit,
+            'target_unit'      => $targetUnit,
+            'is_restricted'    => !empty($effectiveUnit),
+            'global_jam'       => $globalJam,
+            'stats'            => [
+                'total_pegawai'      => $totalPegawai,
+                'hadir_total'        => $hadirTotal,
+                'hadir_tepat_waktu'  => $hadirTepatWaktu,
+                'terlambat'          => $terlambat,
+                'izin'               => $izin,
+                'sakit'              => $sakit,
+                'cuti'               => $cuti,
+                'dinas_luar'         => $dinasLuar,
+                'belum_absen'        => $belumAbsen,
+                'persen_kehadiran'   => $persenKehadiran,
+                'persen_tepat_waktu' => $persenTepatWaktu,
+                'persen_terlambat'   => $persenTerlambat,
+            ],
+            'daftar_terlambat' => $daftarTerlambat,
+            'unit_breakdown'   => array_values($unitStatsMap),
+        ];
+    }
+
+    /**
+     * Ambil Rekapitulasi Presensi Pegawai Periode (Bulanan/Kustom) untuk tabel Data Absen & Cetak PDF.
+     * Kolom Rekap:
+     * - No, Nama Pegawai, NIY, Unit Tugas, Jabatan
+     * - Jumlah Hari Kerja, Jumlah Hadir, Jumlah Hadir Tanpa Terlambat
+     * - Terlambat, Izin, Sakit, Cuti, Alpa
+     * - Total Kehadiran (%)
+     */
+    public static function getRekapPeriode(string $startDate, string $endDate, ?string $unit = null, ?string $search = null): array
+    {
+        self::init();
+        $startTs = strtotime($startDate);
+        $endTs = strtotime($endDate);
+        if ($startTs > $endTs) {
+            $tmp = $startDate;
+            $startDate = $endDate;
+            $endDate = $tmp;
+            $startTs = strtotime($startDate);
+            $endTs = strtotime($endDate);
+        }
+
+        $todayTs = strtotime(date('Y-m-d'));
+        $evalEndTs = min($endTs, $todayTs);
+
+        // Hitung Jumlah Hari Kerja (Senin - Sabtu, abaikan Minggu)
+        $jumlahHariKerja = 0;
+        $curTs = $startTs;
+        while ($curTs <= $evalEndTs) {
+            if ((int)date('N', $curTs) !== 7) {
+                $jumlahHariKerja++;
+            }
+            $curTs = strtotime('+1 day', $curTs);
+        }
+        $jumlahHariKerja = max(1, $jumlahHariKerja);
+
+        $effectiveUnit = self::getEffectiveUserUnit();
+        $targetUnit = $effectiveUnit ?: $unit;
+
+        $where = ["p.is_active = 1"];
+        $params = [];
+
+        $unitColExpr = "COALESCE(NULLIF(TRIM(p.unit_tugas), ''), (mu.nama COLLATE utf8mb4_unicode_ci), 'Yayasan')";
+        $uCond = self::getUnitFilterSql($unitColExpr, $params, $targetUnit);
+        if ($uCond !== '1=1') {
+            $where[] = "({$uCond})";
+        }
+
+        if (!empty($search)) {
+            $term = '%' . trim($search) . '%';
+            $where[] = "(p.nama LIKE ? OR p.niy LIKE ? OR p.jabatan LIKE ?)";
+            $params[] = $term;
+            $params[] = $term;
+            $params[] = $term;
+        }
+
+        $whereSql = implode(' AND ', $where);
+
+        $sqlPegawai = "
+            SELECT 
+                p.id, p.niy, p.nama, p.gelar, p.foto, p.jabatan,
+                COALESCE(NULLIF(TRIM(p.unit_tugas), ''), (mu.nama COLLATE utf8mb4_unicode_ci), 'Yayasan') as unit_tugas_efektif
+            FROM `pegawai` p
+            LEFT JOIN `pegawai_penugasan` pp ON pp.pegawai_id = p.id
+            LEFT JOIN `master_unit_tugas` mu ON mu.id = pp.unit_tugas_id
+            WHERE {$whereSql}
+            GROUP BY p.id
+            ORDER BY 
+                COALESCE(NULLIF(TRIM(p.unit_tugas), ''), (mu.nama COLLATE utf8mb4_unicode_ci), 'Yayasan') ASC,
+                p.nama ASC
+        ";
+
+        $pegawaiList = self::db()->findAll($sqlPegawai, $params);
+
+        // Ambil seluruh log absensi dalam rentang periode
+        $sqlLogs = "
+            SELECT 
+                apl.pegawai_id,
+                apl.tanggal,
+                apl.jam_masuk,
+                apl.status,
+                apl.keterangan
+            FROM `absen_pegawai_log` apl
+            WHERE apl.tanggal BETWEEN ? AND ?
+        ";
+        $logs = self::db()->findAll($sqlLogs, [$startDate, $endDate]);
+
+        $logsByPegawai = [];
+        foreach ($logs as $l) {
+            $logsByPegawai[$l['pegawai_id']][] = $l;
+        }
+
+        // Ambil cuti disetujui jika ada
+        $cutiMap = [];
+        try {
+            $cutiRows = self::db()->findAll("
+                SELECT pegawai_id, SUM(jumlah_hari) as total_cuti 
+                FROM `cuti_pengajuan` 
+                WHERE status = 'Disetujui' AND tanggal_mulai <= ? AND tanggal_selesai >= ?
+                GROUP BY pegawai_id
+            ", [$endDate, $startDate]);
+            foreach ($cutiRows as $cr) {
+                $cutiMap[$cr['pegawai_id']] = (int)$cr['total_cuti'];
+            }
+        } catch (Throwable $e) {}
+
+        // Ambil izin guru disetujui jika ada
+        $izinMap = [];
+        try {
+            $izinRows = self::db()->findAll("
+                SELECT guru_id as pegawai_id, kategori, COUNT(*) as cnt 
+                FROM `izin_guru` 
+                WHERE status = 'Disetujui' AND tanggal_mulai <= ? AND tanggal_selesai >= ?
+                GROUP BY guru_id, kategori
+            ", [$endDate, $startDate]);
+            foreach ($izinRows as $ir) {
+                $pid = (int)$ir['pegawai_id'];
+                $kat = strtolower(trim((string)$ir['kategori']));
+                if (!isset($izinMap[$pid])) {
+                    $izinMap[$pid] = ['izin' => 0, 'sakit' => 0];
+                }
+                if ($kat === 'sakit') {
+                    $izinMap[$pid]['sakit'] += (int)$ir['cnt'];
+                } else {
+                    $izinMap[$pid]['izin'] += (int)$ir['cnt'];
+                }
+            }
+        } catch (Throwable $e) {}
+
+        $rows = [];
+        $no = 1;
+        $totalHadirSemua = 0;
+        $totalTepatWaktuSemua = 0;
+        $totalTerlambatSemua = 0;
+        $totalIzinSemua = 0;
+        $totalSakitSemua = 0;
+        $totalCutiSemua = 0;
+        $totalAlpaSemua = 0;
+        $sumPersen = 0;
+
+        foreach ($pegawaiList as $p) {
+            $pid = (int)$p['id'];
+            $pegLogs = $logsByPegawai[$pid] ?? [];
+
+            $hadirCount = 0;
+            $hadirTepatWaktuCount = 0;
+            $terlambatCount = 0;
+            $izinCount = 0;
+            $sakitCount = 0;
+            $cutiCount = 0;
+            $alpaExplicitCount = 0;
+
+            foreach ($pegLogs as $pl) {
+                $st = trim((string)($pl['status'] ?? ''));
+                if ($st === 'Terlambat') {
+                    $terlambatCount++;
+                    $hadirCount++;
+                } elseif ($st === 'Hadir' || !empty($pl['jam_masuk'])) {
+                    $hadirTepatWaktuCount++;
+                    $hadirCount++;
+                } elseif ($st === 'Izin') {
+                    $izinCount++;
+                } elseif ($st === 'Sakit') {
+                    $sakitCount++;
+                } elseif ($st === 'Cuti') {
+                    $cutiCount++;
+                } elseif (in_array($st, ['Alpha', 'Alpa'], true)) {
+                    $alpaExplicitCount++;
+                }
+            }
+
+            // Gabungkan dengan data izin/cuti disetujui jika di log belum tercatat
+            if ($cutiCount === 0 && !empty($cutiMap[$pid])) {
+                $cutiCount = $cutiMap[$pid];
+            }
+            if ($izinCount === 0 && !empty($izinMap[$pid]['izin'])) {
+                $izinCount = $izinMap[$pid]['izin'];
+            }
+            if ($sakitCount === 0 && !empty($izinMap[$pid]['sakit'])) {
+                $sakitCount = $izinMap[$pid]['sakit'];
+            }
+
+            // Alpa dihitung dari sisa hari kerja yang tidak ada keterangan kehadiran
+            $calcAlpa = max(0, $jumlahHariKerja - ($hadirCount + $izinCount + $sakitCount + $cutiCount));
+            $alpa = max($calcAlpa, $alpaExplicitCount);
+
+            $persen = round(($hadirCount / $jumlahHariKerja) * 100, 1);
+            $persen = min(100.0, max(0.0, $persen));
+
+            $totalHadirSemua += $hadirCount;
+            $totalTepatWaktuSemua += $hadirTepatWaktuCount;
+            $totalTerlambatSemua += $terlambatCount;
+            $totalIzinSemua += $izinCount;
+            $totalSakitSemua += $sakitCount;
+            $totalCutiSemua += $cutiCount;
+            $totalAlpaSemua += $alpa;
+            $sumPersen += $persen;
+
+            $gelarStr = !empty($p['gelar']) ? ', ' . trim($p['gelar']) : '';
+            $rows[] = [
+                'no'                    => $no++,
+                'pegawai_id'            => $pid,
+                'nama'                  => trim($p['nama'] . $gelarStr),
+                'nama_polos'            => $p['nama'],
+                'gelar'                 => $p['gelar'],
+                'niy'                   => $p['niy'] ?: '-',
+                'foto'                  => $p['foto'],
+                'unit_tugas'            => $p['unit_tugas_efektif'] ?: 'Yayasan',
+                'jabatan'               => $p['jabatan'] ?: 'Pegawai',
+                'jumlah_hari_kerja'     => $jumlahHariKerja,
+                'jumlah_hadir'          => $hadirCount,
+                'hadir_tanpa_terlambat' => $hadirTepatWaktuCount,
+                'terlambat'             => $terlambatCount,
+                'izin'                  => $izinCount,
+                'sakit'                 => $sakitCount,
+                'cuti'                  => $cutiCount,
+                'alpa'                  => $alpa,
+                'total_kehadiran'       => $persen
+            ];
+        }
+
+        $totalPeg = count($rows);
+        $rataRata = $totalPeg > 0 ? round($sumPersen / $totalPeg, 1) : 0.0;
+
+        return [
+            'start_date'        => $startDate,
+            'end_date'          => $endDate,
+            'jumlah_hari_kerja' => $jumlahHariKerja,
+            'unit_efektif'      => $effectiveUnit,
+            'target_unit'       => $targetUnit,
+            'is_restricted'     => !empty($effectiveUnit),
+            'summary'           => [
+                'total_pegawai'           => $totalPeg,
+                'rata_rata_kehadiran'     => $rataRata,
+                'total_hadir_semua'       => $totalHadirSemua,
+                'total_tepat_waktu_semua' => $totalTepatWaktuSemua,
+                'total_terlambat_semua'   => $totalTerlambatSemua,
+                'total_izin_semua'        => $totalIzinSemua,
+                'total_sakit_semua'       => $totalSakitSemua,
+                'total_cuti_semua'        => $totalCutiSemua,
+                'total_alpa_semua'        => $totalAlpaSemua,
+            ],
+            'rows'              => $rows
+        ];
+    }
+
+    /**
      * Ambil pengaturan global (Lokasi Semula/Default & Radius Global)
      */
     public static function getPengaturanGlobal(): array
@@ -553,33 +1134,39 @@ class AbsenPegawaiModel
     {
         self::init();
         $global = self::getPengaturanGlobal();
+        $effectiveUnit = self::getEffectiveUserUnit();
 
-        // Gabungkan nama unit dari master_unit_tugas dan pegawai aktif (respects jenjang restriction)
+        // Gabungkan nama unit dari master_unit_tugas dan pegawai aktif (respects unit / jenjang restriction)
         $uParams = [];
-        $uCond = Auth::unitSqlCondition('unit_tugas', $uParams);
+        $unitColExpr = "COALESCE(NULLIF(TRIM(p.unit_tugas), ''), (mu.nama COLLATE utf8mb4_unicode_ci), 'Yayasan')";
+        $uCond = self::getUnitFilterSql($unitColExpr, $uParams, null);
+
         $unitsRaw = self::db()->findAll("
             SELECT unit_name, COUNT(*) as total_pegawai
             FROM (
-                SELECT COALESCE(NULLIF(TRIM(unit_tugas), ''), 'Umum / Yayasan') as unit_name
-                FROM `pegawai`
-                WHERE is_active = 1 AND ({$uCond})
+                SELECT COALESCE(NULLIF(TRIM(p.unit_tugas), ''), (mu.nama COLLATE utf8mb4_unicode_ci), 'Yayasan') as unit_name
+                FROM `pegawai` p
+                LEFT JOIN `pegawai_penugasan` pp ON pp.pegawai_id = p.id
+                LEFT JOIN `master_unit_tugas` mu ON mu.id = pp.unit_tugas_id
+                WHERE p.is_active = 1 AND ({$uCond})
+                GROUP BY p.id
             ) t
             GROUP BY unit_name
             ORDER BY unit_name ASC
         ", $uParams);
 
-        try {
-            $muParams = [];
-            $muCond = Auth::unitSqlCondition('nama', $muParams);
-            $masterUnits = self::db()->findAll("SELECT nama FROM `master_unit_tugas` WHERE {$muCond} ORDER BY nama ASC", $muParams);
-            $existingMap = array_column($unitsRaw, 'total_pegawai', 'unit_name');
-            foreach ($masterUnits as $mu) {
-                $uName = trim($mu['nama'] ?? '');
-                if ($uName !== '' && !isset($existingMap[$uName])) {
-                    $unitsRaw[] = ['unit_name' => $uName, 'total_pegawai' => 0];
+        if (empty($effectiveUnit)) {
+            try {
+                $masterUnits = self::db()->findAll("SELECT nama FROM `master_unit_tugas` ORDER BY nama ASC");
+                $existingMap = array_column($unitsRaw, 'total_pegawai', 'unit_name');
+                foreach ($masterUnits as $mu) {
+                    $uName = trim($mu['nama'] ?? '');
+                    if ($uName !== '' && !isset($existingMap[$uName])) {
+                        $unitsRaw[] = ['unit_name' => $uName, 'total_pegawai' => 0];
+                    }
                 }
-            }
-        } catch (Throwable $e) {}
+            } catch (Throwable $e) {}
+        }
 
         $customUnits = self::db()->findAll("SELECT * FROM `absen_pegawai_lokasi_unit`");
         $customMap = [];
@@ -1121,7 +1708,8 @@ class AbsenPegawaiModel
         $where = ["p.is_active = 1"];
         $params = [];
 
-        $uCondPeg = Auth::unitSqlCondition('p.unit_tugas', $params);
+        $unitColExpr = "COALESCE(NULLIF(TRIM(p.unit_tugas), ''), (mu.nama COLLATE utf8mb4_unicode_ci), 'Yayasan')";
+        $uCondPeg = self::getUnitFilterSql($unitColExpr, $params, $filters['unit_tugas'] ?? null);
         if ($uCondPeg !== '1=1') {
             $where[] = "({$uCondPeg})";
         }
@@ -1135,20 +1723,13 @@ class AbsenPegawaiModel
             $params[] = $term;
         }
 
-        if (!empty($filters['unit_tugas'])) {
-            if ($filters['unit_tugas'] === 'Umum / Yayasan') {
-                $where[] = "(p.unit_tugas IS NULL OR TRIM(p.unit_tugas) = '' OR TRIM(p.unit_tugas) = 'Umum / Yayasan')";
-            } else {
-                $where[] = "TRIM(p.unit_tugas) = ?";
-                $params[] = trim($filters['unit_tugas']);
-            }
-        }
-
         $whereSql = implode(' AND ', $where);
 
         $rows = self::db()->findAll("
             SELECT 
-                p.id, p.niy, p.nama, p.gelar, p.foto, p.unit_tugas, p.jabatan, p.status_pegawai, p.status_kerja,
+                p.id, p.niy, p.nama, p.gelar, p.foto,
+                COALESCE(NULLIF(TRIM(p.unit_tugas), ''), (mu.nama COLLATE utf8mb4_unicode_ci), 'Yayasan') as unit_tugas,
+                p.jabatan, p.status_pegawai, p.status_kerja,
                 l.mode_lokasi as peg_mode,
                 l.nama_kantor as peg_kantor,
                 l.latitude as peg_lat,
@@ -1174,10 +1755,13 @@ class AbsenPegawaiModel
                 apl.keterangan as today_keterangan,
                 apl.jarak_masuk_meter as today_jarak
             FROM `pegawai` p
+            LEFT JOIN `pegawai_penugasan` pp ON pp.pegawai_id = p.id
+            LEFT JOIN `master_unit_tugas` mu ON mu.id = pp.unit_tugas_id
             LEFT JOIN `absen_pegawai_lokasi` l ON l.pegawai_id = p.id
-            LEFT JOIN `absen_pegawai_lokasi_unit` u ON u.unit_tugas = COALESCE(NULLIF(TRIM(p.unit_tugas), ''), 'Umum / Yayasan')
+            LEFT JOIN `absen_pegawai_lokasi_unit` u ON u.unit_tugas = COALESCE(NULLIF(TRIM(p.unit_tugas), ''), (mu.nama COLLATE utf8mb4_unicode_ci), 'Yayasan')
             LEFT JOIN `absen_pegawai_log` apl ON apl.pegawai_id = p.id AND apl.tanggal = CURDATE()
             WHERE {$whereSql}
+            GROUP BY p.id
             ORDER BY p.nama ASC
         ", $params);
 
@@ -1755,7 +2339,8 @@ class AbsenPegawaiModel
         $where = ["p.is_active = 1"];
         $params = [$targetDate];
 
-        $uCondRekap = Auth::unitSqlCondition('p.unit_tugas', $params);
+        $unitColExpr = "COALESCE(NULLIF(TRIM(p.unit_tugas), ''), (mu.nama COLLATE utf8mb4_unicode_ci), 'Yayasan')";
+        $uCondRekap = self::getUnitFilterSql($unitColExpr, $params, $filters['unit_tugas'] ?? null);
         if ($uCondRekap !== '1=1') {
             $where[] = "({$uCondRekap})";
         }
@@ -1766,15 +2351,6 @@ class AbsenPegawaiModel
             $params[] = $term;
             $params[] = $term;
             $params[] = $term;
-        }
-
-        if (!empty($filters['unit_tugas'])) {
-            if ($filters['unit_tugas'] === 'Umum / Yayasan') {
-                $where[] = "(p.unit_tugas IS NULL OR TRIM(p.unit_tugas) = '' OR TRIM(p.unit_tugas) = 'Umum / Yayasan')";
-            } else {
-                $where[] = "TRIM(p.unit_tugas) = ?";
-                $params[] = trim($filters['unit_tugas']);
-            }
         }
 
         if (!empty($filters['status'])) {
@@ -1790,7 +2366,9 @@ class AbsenPegawaiModel
 
         $rows = self::db()->findAll("
             SELECT 
-                p.id, p.niy, p.nama, p.gelar, p.foto, p.unit_tugas, p.jabatan,
+                p.id, p.niy, p.nama, p.gelar, p.foto,
+                COALESCE(NULLIF(TRIM(p.unit_tugas), ''), (mu.nama COLLATE utf8mb4_unicode_ci), 'Yayasan') as unit_tugas,
+                p.jabatan,
                 apl.id as log_id,
                 apl.tanggal,
                 apl.jam_masuk,
@@ -1817,10 +2395,13 @@ class AbsenPegawaiModel
                 u.jam_masuk_batas as unit_jam_masuk_batas,
                 u.jam_pulang_mulai as unit_jam_pulang_mulai
             FROM `pegawai` p
+            LEFT JOIN `pegawai_penugasan` pp ON pp.pegawai_id = p.id
+            LEFT JOIN `master_unit_tugas` mu ON mu.id = pp.unit_tugas_id
             LEFT JOIN `absen_pegawai_lokasi` l ON l.pegawai_id = p.id
-            LEFT JOIN `absen_pegawai_lokasi_unit` u ON u.unit_tugas = COALESCE(NULLIF(TRIM(p.unit_tugas), ''), 'Umum / Yayasan')
+            LEFT JOIN `absen_pegawai_lokasi_unit` u ON u.unit_tugas = COALESCE(NULLIF(TRIM(p.unit_tugas), ''), (mu.nama COLLATE utf8mb4_unicode_ci), 'Yayasan')
             LEFT JOIN `absen_pegawai_log` apl ON apl.pegawai_id = p.id AND apl.tanggal = ?
             WHERE {$whereSql}
+            GROUP BY p.id
             ORDER BY 
                 CASE 
                     WHEN apl.status = 'Terlambat' THEN 1 

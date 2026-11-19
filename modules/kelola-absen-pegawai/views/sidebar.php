@@ -47,24 +47,28 @@ $namaKantorDefault = $sidebarStats['globalConfig']['nama_kantor_default'] ?? 'Ka
         </button>
     </div>
 
-    <!-- Info Radius Global Badge -->
-    <div class="px-4 pt-4 pb-2 shrink-0">
+    <!-- Info Radius Global & Unit Badge -->
+    <div class="px-4 pt-4 pb-2 shrink-0 space-y-2">
+        <?php
+        $effUnit = class_exists('AbsenPegawaiModel') ? AbsenPegawaiModel::getEffectiveUserUnit() : null;
+        ?>
         <div class="bg-primary-950/40 rounded-xl p-3 border border-primary-800/60">
             <div class="flex items-center justify-between text-xs mb-1">
                 <span class="text-primary-300 font-medium flex items-center gap-1.5">
                     <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                    Radius Global (Semua)
+                    Unit Akses
                 </span>
-                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                    <?= $radiusGlobal ?> Meter
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full <?= $effUnit ? 'bg-sky-500/20 text-sky-300 border border-sky-500/30' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' ?>">
+                    <?= $effUnit ? e($effUnit) : 'Semua Unit' ?>
                 </span>
             </div>
-            <div class="text-white font-bold text-xs tracking-wide mt-1 truncate" title="<?= e($namaKantorDefault) ?>">
+            <div class="text-white font-bold text-xs tracking-wide truncate" title="<?= e($namaKantorDefault) ?>">
                 📍 <?= e($namaKantorDefault) ?>
             </div>
-            <p class="text-primary-300 text-[11px] mt-0.5 truncate">
-                Berlaku untuk seluruh pegawai & unit
-            </p>
+            <div class="flex items-center justify-between text-[11px] text-primary-300 mt-1.5 pt-1.5 border-t border-primary-800/40">
+                <span>Radius Global:</span>
+                <span class="font-bold text-emerald-300"><?= $radiusGlobal ?> Meter</span>
+            </div>
         </div>
     </div>
 
@@ -99,9 +103,20 @@ $namaKantorDefault = $sidebarStats['globalConfig']['nama_kantor_default'] ?? 'Ka
                     }
                 }
 
-                // 1. Lokasi Absen Per Pegawai
+                // 1. Dashboard Absen Pegawai
+                $dashTerlambat = (int)($dashboardData['stats']['terlambat'] ?? ($rekapData['stats']['totalTerlambat'] ?? 0));
                 renderAbsenPegawaiSidebarMenu(
-                    'Lokasi Per Pegawai',
+                    '1. Dashboard Absen',
+                    'dashboard',
+                    '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z" /></svg>',
+                    $currentTab,
+                    $dashTerlambat > 0 ? $dashTerlambat : null,
+                    'bg-amber-500 text-white animate-pulse'
+                );
+
+                // 2. Lokasi Absen Per Pegawai
+                renderAbsenPegawaiSidebarMenu(
+                    '2. Lokasi Per Pegawai',
                     'pegawai',
                     '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" /></svg>',
                     $currentTab,
@@ -109,17 +124,17 @@ $namaKantorDefault = $sidebarStats['globalConfig']['nama_kantor_default'] ?? 'Ka
                     'bg-primary-700 text-primary-100'
                 );
 
-                // 2. Rekap & Jam Kedatangan Hari Ini
+                // 3. Data Absen & Rekap PDF
                 renderAbsenPegawaiSidebarMenu(
-                    'Rekap & Jam Kedatangan',
+                    '3. Data Absen & Rekap',
                     'rekap',
-                    '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>',
+                    '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" /></svg>',
                     $currentTab
                 );
 
-                // 3. Lokasi Custom Per Unit
+                // 4. Lokasi Custom Per Unit
                 renderAbsenPegawaiSidebarMenu(
-                    'Lokasi Custom Per Unit',
+                    '4. Lokasi Custom Unit',
                     'unit',
                     '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Z" /></svg>',
                     $currentTab,
@@ -127,11 +142,11 @@ $namaKantorDefault = $sidebarStats['globalConfig']['nama_kantor_default'] ?? 'Ka
                     'bg-purple-500/30 text-purple-200'
                 );
 
-                // 4. Pengaturan Radius Global & Jam Masuk
+                // 5. Pengaturan Radius Global & Jam Masuk
                 renderAbsenPegawaiSidebarMenu(
-                    'Radius Global & Jam Masuk',
+                    '5. Radius & Jam Masuk',
                     'pengaturan',
-                    '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" /></svg>',
+                    '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>',
                     $currentTab
                 );
                 ?>

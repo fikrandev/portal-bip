@@ -171,47 +171,379 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
          ═════════════════════════════════════════════════════════════════════ -->
     <div class="bg-white rounded-2xl p-2 border border-slate-200/80 shadow-xs flex flex-wrap items-center justify-between gap-2">
         <div class="flex items-center gap-1.5 overflow-x-auto">
+            <!-- 1. Dashboard -->
+            <button type="button" onclick="switchAbsenTab('dashboard')" data-tab-btn="dashboard"
+                class="absen-tab-btn px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer <?= $activeTab === 'dashboard' ? 'bg-primary-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100' ?>">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z" />
+                </svg>
+                <span>1. Dashboard Absen</span>
+                <?php if (($dashboardData['stats']['terlambat'] ?? 0) > 0): ?>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500 text-white animate-pulse">
+                        <?= $dashboardData['stats']['terlambat'] ?> Terlambat
+                    </span>
+                <?php endif; ?>
+            </button>
+
+            <!-- 2. Lokasi Per Pegawai -->
             <button type="button" onclick="switchAbsenTab('pegawai')" data-tab-btn="pegawai"
                 class="absen-tab-btn px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer <?= $activeTab === 'pegawai' ? 'bg-primary-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100' ?>">
-                <span>1. Lokasi Absen Pegawai</span>
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
+                </svg>
+                <span>2. Lokasi Per Pegawai</span>
                 <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold <?= $activeTab === 'pegawai' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700' ?>">
                     <?= count($pegawaiList) ?>
                 </span>
             </button>
 
+            <!-- 3. Data Absen & Rekap PDF -->
             <button type="button" onclick="switchAbsenTab('rekap')" data-tab-btn="rekap"
                 class="absen-tab-btn px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer <?= $activeTab === 'rekap' ? 'bg-primary-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100' ?>">
-                <span>2. Rekap & Jam Kedatangan</span>
-                <?php if (($rekapData['stats']['totalTerlambat'] ?? 0) > 0): ?>
-                    <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500 text-white animate-pulse">
-                        <?= $rekapData['stats']['totalTerlambat'] ?> Terlambat
-                    </span>
-                <?php endif; ?>
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                </svg>
+                <span>3. Data Absen & Rekap PDF</span>
             </button>
 
+            <!-- 4. Lokasi Custom Unit -->
             <button type="button" onclick="switchAbsenTab('unit')" data-tab-btn="unit"
                 class="absen-tab-btn px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer <?= $activeTab === 'unit' ? 'bg-primary-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100' ?>">
-                <span>3. Lokasi Custom Per Unit</span>
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Z" />
+                </svg>
+                <span>4. Lokasi Custom Unit</span>
                 <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold <?= $activeTab === 'unit' ? 'bg-white/20 text-white' : 'bg-purple-100 text-purple-700' ?>">
                     <?= count($unitLokasiList) ?> Unit
                 </span>
             </button>
 
+            <!-- 5. Radius Global & Jam Masuk -->
             <button type="button" onclick="switchAbsenTab('pengaturan')" data-tab-btn="pengaturan"
                 class="absen-tab-btn px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer <?= $activeTab === 'pengaturan' ? 'bg-primary-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100' ?>">
-                <span>4. Radius Global & Jam Masuk</span>
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                </svg>
+                <span>5. Radius & Jam Masuk</span>
             </button>
         </div>
 
-        <a href="<?= url('kelola-absen-pegawai/export') ?>"
-           class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center gap-1.5">
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
-            <span>Export CSV</span>
-        </a>
+        <div class="flex items-center gap-2">
+            <a href="<?= url('kelola-absen-pegawai/export') ?>"
+               class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center gap-1.5 transition-colors">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+                <span>Export CSV</span>
+            </a>
+        </div>
     </div>
 
     <!-- ═════════════════════════════════════════════════════════════════════
-         TAB 1: LOKASI ABSEN MASING-MASING PEGAWAI (CUSTOM PER PEGAWAI & RESET)
+         TAB 1: DASHBOARD ABSEN & DAFTAR PEGAWAI TERLAMBAT HARI INI
+         ═════════════════════════════════════════════════════════════════════ -->
+    <div id="absen-panel-dashboard" class="absen-tab-panel space-y-5 <?= $activeTab === 'dashboard' ? '' : 'hidden' ?>">
+
+        <!-- Toolbar Filter Tanggal & Unit Dashboard -->
+        <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <form method="GET" action="<?= url('kelola-absen-pegawai') ?>" class="flex flex-wrap items-center gap-2.5 flex-1">
+                <input type="hidden" name="tab" value="dashboard">
+
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold text-slate-700">Tanggal:</span>
+                    <input type="date" name="tanggal" value="<?= e($targetDate) ?>" onchange="this.form.submit()"
+                           class="px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:bg-white focus:border-primary-500">
+                </div>
+
+                <div class="flex items-center gap-1.5">
+                    <button type="button" onclick="document.querySelector('#absen-panel-dashboard input[name=tanggal]').value='<?= date('Y-m-d') ?>'; this.closest('form').submit();"
+                            class="px-2.5 py-1.5 rounded-xl text-xs font-bold <?= $targetDate === date('Y-m-d') ? 'bg-primary-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' ?>">
+                        Hari Ini
+                    </button>
+                    <button type="button" onclick="document.querySelector('#absen-panel-dashboard input[name=tanggal]').value='<?= date('Y-m-d', strtotime('-1 day')) ?>'; this.closest('form').submit();"
+                            class="px-2.5 py-1.5 rounded-xl text-xs font-bold <?= $targetDate === date('Y-m-d', strtotime('-1 day')) ? 'bg-primary-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' ?>">
+                        Kemarin
+                    </button>
+                </div>
+
+                <?php if (!empty($effectiveUserUnit)): ?>
+                    <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-50 text-sky-800 border border-sky-200 text-xs font-bold">
+                        <span class="w-2 h-2 rounded-full bg-sky-500 animate-pulse"></span>
+                        <span>Unit Tugas Anda: <strong><?= e($effectiveUserUnit) ?></strong></span>
+                    </div>
+                <?php else: ?>
+                    <select name="unit_tugas" onchange="this.form.submit()" class="px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 outline-none focus:border-primary-500">
+                        <option value="">Semua Unit Tugas</option>
+                        <?php foreach ($unitLokasiList as $ul): ?>
+                            <option value="<?= e($ul['unit_tugas']) ?>" <?= ($filters['unit_tugas'] ?? '') === $ul['unit_tugas'] ? 'selected' : '' ?>>
+                                <?= e($ul['unit_tugas']) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                <?php endif; ?>
+
+                <button type="submit" class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-xl text-xs cursor-pointer shadow-xs">
+                    Refresh Dashboard
+                </button>
+            </form>
+
+            <div class="flex items-center gap-2 shrink-0">
+                <span class="text-xs font-semibold text-slate-500">
+                    Batas Jam Masuk: <strong class="text-rose-600 font-mono"><?= substr($dashboardData['global_jam']['jam_masuk_batas'] ?? $jamMasukBatasHariIni, 0, 5) ?> WITA</strong>
+                </span>
+            </div>
+        </div>
+
+        <!-- 6 KPI Cards Dashboard Presensi -->
+        <?php $dStats = $dashboardData['stats'] ?? []; ?>
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5">
+            <!-- Total Pegawai -->
+            <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs">
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Pegawai</span>
+                <div class="text-2xl font-extrabold text-slate-900 mt-1"><?= number_format($dStats['total_pegawai'] ?? 0) ?></div>
+                <p class="text-[11px] text-slate-500 mt-0.5">Pegawai aktif unit</p>
+            </div>
+
+            <!-- Hadir Tepat Waktu -->
+            <div class="bg-white rounded-2xl p-4 border border-emerald-200/80 shadow-xs">
+                <span class="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">Tepat Waktu</span>
+                <div class="text-2xl font-extrabold text-emerald-600 mt-1"><?= number_format($dStats['hadir_tepat_waktu'] ?? 0) ?></div>
+                <p class="text-[11px] text-emerald-700/80 mt-0.5 font-semibold"><?= number_format($dStats['persen_tepat_waktu'] ?? 0, 1) ?>% tepat waktu</p>
+            </div>
+
+            <!-- Terlambat -->
+            <div class="bg-white rounded-2xl p-4 border <?= ($dStats['terlambat'] ?? 0) > 0 ? 'border-amber-300 bg-amber-50/20' : 'border-slate-200/80' ?> shadow-xs">
+                <span class="text-[10px] font-bold text-amber-600 uppercase tracking-wider">Terlambat</span>
+                <div class="text-2xl font-extrabold text-amber-600 mt-1"><?= number_format($dStats['terlambat'] ?? 0) ?></div>
+                <p class="text-[11px] text-amber-700/80 mt-0.5 font-semibold"><?= number_format($dStats['persen_terlambat'] ?? 0, 1) ?>% terlambat</p>
+            </div>
+
+            <!-- Izin / Sakit / Cuti -->
+            <div class="bg-white rounded-2xl p-4 border border-sky-200/80 shadow-xs">
+                <span class="text-[10px] font-bold text-sky-600 uppercase tracking-wider">Izin / Sakit / Cuti</span>
+                <div class="text-2xl font-extrabold text-sky-600 mt-1"><?= number_format(($dStats['izin'] ?? 0) + ($dStats['sakit'] ?? 0) + ($dStats['cuti'] ?? 0)) ?></div>
+                <p class="text-[11px] text-slate-500 mt-0.5"><?= $dStats['izin'] ?? 0 ?> Izin, <?= $dStats['sakit'] ?? 0 ?> Sakit, <?= $dStats['cuti'] ?? 0 ?> Cuti</p>
+            </div>
+
+            <!-- Belum Absen -->
+            <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs">
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Belum Absen</span>
+                <div class="text-2xl font-extrabold text-slate-600 mt-1"><?= number_format($dStats['belum_absen'] ?? 0) ?></div>
+                <p class="text-[11px] text-slate-400 mt-0.5">Belum melakukan presensi</p>
+            </div>
+
+            <!-- Persentase Kehadiran -->
+            <div class="bg-white rounded-2xl p-4 border border-primary-200/80 shadow-xs bg-gradient-to-br from-white to-primary-50/40">
+                <span class="text-[10px] font-bold text-primary-600 uppercase tracking-wider">% Kehadiran</span>
+                <div class="text-2xl font-extrabold text-primary-700 mt-1"><?= number_format($dStats['persen_kehadiran'] ?? 0, 1) ?>%</div>
+                <div class="w-full bg-slate-200 h-1.5 rounded-full mt-2 overflow-hidden">
+                    <div class="bg-primary-600 h-full rounded-full transition-all duration-500" style="width: <?= min(100, (float)($dStats['persen_kehadiran'] ?? 0)) ?>%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═════════════════════════════════════════════════════════════════
+             BAGIAN 1: DAFTAR PEGAWAI TERLAMBAT HARI INI
+             ═════════════════════════════════════════════════════════════════ -->
+        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+            <div class="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gradient-to-r from-amber-50/50 to-white">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                            <span>Daftar Pegawai yang Terlambat Hari Ini</span>
+                            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold <?= count($dashboardData['daftar_terlambat'] ?? []) > 0 ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800' ?>">
+                                <?= count($dashboardData['daftar_terlambat'] ?? []) ?> Orang
+                            </span>
+                        </h3>
+                        <p class="text-xs text-slate-500 mt-0.5">
+                            Presensi melewati batas jam masuk (<?= substr($dashboardData['global_jam']['jam_masuk_batas'] ?? $jamMasukBatasHariIni, 0, 5) ?> WITA) pada <?= date('d F Y', strtotime($targetDate)) ?>
+                        </p>
+                    </div>
+                </div>
+
+                <?php if (count($dashboardData['daftar_terlambat'] ?? []) > 0): ?>
+                    <span class="text-xs font-bold text-amber-700 bg-amber-100/80 px-3 py-1.5 rounded-xl border border-amber-200">
+                        ⚠️ Perlu Pembinaan / Monitoring Kedisiplinan
+                    </span>
+                <?php endif; ?>
+            </div>
+
+            <?php if (empty($dashboardData['daftar_terlambat'])): ?>
+                <!-- Empty State: Tidak ada yang terlambat -->
+                <div class="p-12 text-center">
+                    <div class="w-16 h-16 rounded-3xl bg-emerald-50 text-emerald-600 border border-emerald-100 mx-auto flex items-center justify-center mb-3.5 shadow-sm">
+                        <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                        </svg>
+                    </div>
+                    <h4 class="text-base font-bold text-slate-800">Alhamdulillah! Tidak Ada Pegawai yang Terlambat</h4>
+                    <p class="text-xs text-slate-500 max-w-md mx-auto mt-1">
+                        Seluruh pegawai di unit ini yang sudah hadir melakukan check-in tepat waktu sebelum batas jam masuk.
+                    </p>
+                </div>
+            <?php else: ?>
+                <!-- Tabel Daftar Pegawai Terlambat -->
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-slate-50/80 border-b border-slate-200/80 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                                <th class="py-3 px-4 w-12 text-center">No</th>
+                                <th class="py-3 px-4">Pegawai</th>
+                                <th class="py-3 px-4">NIY</th>
+                                <th class="py-3 px-4">Unit Tugas & Jabatan</th>
+                                <th class="py-3 px-4 text-center">Jam Masuk</th>
+                                <th class="py-3 px-4 text-center">Batas Jam</th>
+                                <th class="py-3 px-4 text-center">Keterlambatan</th>
+                                <th class="py-3 px-4">Lokasi Absen</th>
+                                <th class="py-3 px-4 text-center">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 font-medium">
+                            <?php 
+                            $noL = 1;
+                            foreach ($dashboardData['daftar_terlambat'] as $late): 
+                            ?>
+                                <tr class="hover:bg-amber-50/30 transition-colors">
+                                    <td class="py-3.5 px-4 text-center text-slate-400 font-bold"><?= $noL++ ?></td>
+                                    <td class="py-3.5 px-4">
+                                        <div class="flex items-center gap-3">
+                                            <?php if (!empty($late['foto'])): ?>
+                                                <img src="<?= url(ltrim($late['foto'], '/')) ?>" alt="Foto" class="w-9 h-9 rounded-xl object-cover border border-slate-200 shrink-0">
+                                            <?php else: ?>
+                                                <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 text-white font-extrabold text-xs flex items-center justify-center shrink-0 shadow-xs">
+                                                    <?= strtoupper(substr($late['nama_polos'], 0, 2)) ?>
+                                                </div>
+                                            <?php endif; ?>
+                                            <div>
+                                                <div class="font-bold text-slate-900 text-xs"><?= e($late['nama']) ?></div>
+                                                <div class="text-[10px] text-slate-500"><?= e($late['jabatan']) ?></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="py-3.5 px-4 font-mono text-[11px] text-slate-600"><?= e($late['niy']) ?></td>
+                                    <td class="py-3.5 px-4">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-lg text-[10px] font-bold bg-slate-100 text-slate-700">
+                                            <?= e($late['unit_tugas']) ?>
+                                        </span>
+                                    </td>
+                                    <td class="py-3.5 px-4 text-center">
+                                        <span class="font-mono font-bold text-amber-700 bg-amber-50 px-2 py-1 rounded-lg border border-amber-200">
+                                            <?= substr($late['jam_masuk'], 0, 5) ?> WITA
+                                        </span>
+                                    </td>
+                                    <td class="py-3.5 px-4 text-center font-mono text-slate-400 text-xs">
+                                        <?= substr($late['jam_masuk_batas'], 0, 5) ?> WITA
+                                    </td>
+                                    <td class="py-3.5 px-4 text-center">
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-rose-50 text-rose-700 border border-rose-200">
+                                            <span>+<?= $late['menit_terlambat'] ?> Menit</span>
+                                        </span>
+                                    </td>
+                                    <td class="py-3.5 px-4">
+                                        <div class="text-xs font-semibold text-slate-800 truncate max-w-xs" title="<?= e($late['nama_kantor_absen']) ?>">
+                                            📍 <?= e($late['nama_kantor_absen']) ?>
+                                        </div>
+                                        <?php if ($late['jarak_masuk_meter'] > 0): ?>
+                                            <div class="text-[10px] text-slate-400">Jarak: <?= round($late['jarak_masuk_meter']) ?> m</div>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td class="py-3.5 px-4 text-center">
+                                        <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-800 border border-amber-300">
+                                            Terlambat
+                                        </span>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            <?php endif; ?>
+        </div>
+
+        <!-- ═════════════════════════════════════════════════════════════════
+             BAGIAN 2: REKAPITULASI PERSENTASE KEHADIRAN PEGAWAI PER UNIT
+             ═════════════════════════════════════════════════════════════════ -->
+        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+            <div class="p-5 border-b border-slate-100 flex items-center justify-between gap-3 bg-gradient-to-r from-primary-50/50 to-white">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-primary-100 text-primary-700 flex items-center justify-center shrink-0">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-extrabold text-slate-900">Rekapitulasi Persentase Kehadiran Pegawai</h3>
+                        <p class="text-xs text-slate-500 mt-0.5">Persentase tingkat kehadiran per unit tugas dan breakdown status presensi</p>
+                    </div>
+                </div>
+
+                <div class="text-right">
+                    <span class="text-xs font-bold text-primary-700 bg-primary-50 px-3 py-1.5 rounded-xl border border-primary-200">
+                        Rata-rata: <strong><?= number_format($dStats['persen_kehadiran'] ?? 0, 1) ?>%</strong>
+                    </span>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-xs">
+                    <thead>
+                        <tr class="bg-slate-50/80 border-b border-slate-200/80 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                            <th class="py-3 px-4">Unit Tugas</th>
+                            <th class="py-3 px-4 text-center">Total Pegawai</th>
+                            <th class="py-3 px-4 text-center">Hadir Total</th>
+                            <th class="py-3 px-4 text-center">Tepat Waktu</th>
+                            <th class="py-3 px-4 text-center">Terlambat</th>
+                            <th class="py-3 px-4 text-center">Izin / Sakit / Cuti</th>
+                            <th class="py-3 px-4 text-center">Belum Absen</th>
+                            <th class="py-3 px-4 text-center w-48">Persentase Kehadiran</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 font-medium">
+                        <?php 
+                        $breakdowns = $dashboardData['unit_breakdown'] ?? [];
+                        if (empty($breakdowns)): 
+                        ?>
+                            <tr>
+                                <td colspan="8" class="py-6 text-center text-slate-400">Tidak ada data unit tugas.</td>
+                            </tr>
+                        <?php else: ?>
+                            <?php foreach ($breakdowns as $ub): ?>
+                                <tr class="hover:bg-slate-50/50 transition-colors">
+                                    <td class="py-3.5 px-4 font-bold text-slate-800">
+                                        <div class="flex items-center gap-2">
+                                            <span class="w-2.5 h-2.5 rounded-full bg-primary-500"></span>
+                                            <span><?= e($ub['unit_name']) ?></span>
+                                        </div>
+                                    </td>
+                                    <td class="py-3.5 px-4 text-center font-bold text-slate-900"><?= $ub['total_pegawai'] ?></td>
+                                    <td class="py-3.5 px-4 text-center font-bold text-primary-700"><?= $ub['hadir_total'] ?></td>
+                                    <td class="py-3.5 px-4 text-center font-bold text-emerald-600"><?= $ub['hadir_tepat_waktu'] ?></td>
+                                    <td class="py-3.5 px-4 text-center font-bold text-amber-600"><?= $ub['terlambat'] ?></td>
+                                    <td class="py-3.5 px-4 text-center font-bold text-sky-600"><?= ($ub['izin'] ?? 0) + ($ub['sakit'] ?? 0) + ($ub['cuti'] ?? 0) ?></td>
+                                    <td class="py-3.5 px-4 text-center text-slate-400"><?= $ub['belum_absen'] ?></td>
+                                    <td class="py-3.5 px-4 text-center">
+                                        <div class="flex items-center gap-2.5 justify-center">
+                                            <div class="w-24 bg-slate-100 h-2 rounded-full overflow-hidden shrink-0">
+                                                <div class="bg-gradient-to-r from-primary-500 to-emerald-500 h-full rounded-full" style="width: <?= min(100, (float)$ub['persen_kehadiran']) ?>%"></div>
+                                            </div>
+                                            <span class="font-extrabold text-xs text-slate-900"><?= number_format($ub['persen_kehadiran'], 1) ?>%</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ═════════════════════════════════════════════════════════════════════
+         TAB 2: LOKASI ABSEN MASING-MASING PEGAWAI (CUSTOM PER PEGAWAI & RESET)
          ═════════════════════════════════════════════════════════════════════ -->
     <div id="absen-panel-pegawai" class="absen-tab-panel space-y-4 <?= $activeTab === 'pegawai' ? '' : 'hidden' ?>">
 
@@ -499,9 +831,291 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
     </div>
 
     <!-- ═════════════════════════════════════════════════════════════════════
-         TAB 2: REKAP & JAM KEDATANGAN PEGAWAI (DETEKSI TERLAMBAT)
+         TAB 3: DATA ABSEN & REKAP (REKAPITULASI PERIODE CETAK PDF & LOG HARIAN)
          ═════════════════════════════════════════════════════════════════════ -->
     <div id="absen-panel-rekap" class="absen-tab-panel space-y-4 <?= $activeTab === 'rekap' ? '' : 'hidden' ?>">
+
+        <!-- Sub-Navigation Toggle: Rekapitulasi Periode vs Log Harian -->
+        <?php $currentRekapView = $filters['rekap_view'] ?? 'periode'; ?>
+        <div class="bg-white p-2 rounded-2xl border border-slate-200/80 shadow-xs flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-1.5">
+                <button type="button" onclick="switchRekapSubView('periode')" id="btn-rekap-sub-periode"
+                        class="px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer <?= $currentRekapView === 'periode' ? 'bg-primary-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100' ?>">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                    </svg>
+                    <span>Rekapitulasi Periode & Cetak PDF</span>
+                </button>
+
+                <button type="button" onclick="switchRekapSubView('harian')" id="btn-rekap-sub-harian"
+                        class="px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer <?= $currentRekapView === 'harian' ? 'bg-primary-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100' ?>">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                    </svg>
+                    <span>Log Presensi Harian</span>
+                </button>
+            </div>
+
+            <!-- Tombol Cetak PDF Cepat -->
+            <?php
+            $cetakPdfUrl = url('kelola-absen-pegawai/cetak-pdf?' . http_build_query([
+                'start_date' => $filters['start_date'] ?? date('Y-m-01'),
+                'end_date'   => $filters['end_date'] ?? date('Y-m-d'),
+                'unit_tugas' => $filters['unit_tugas'] ?? '',
+                'search'     => $filters['search'] ?? ''
+            ]));
+            ?>
+            <a href="<?= $cetakPdfUrl ?>" target="_blank"
+               class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-500 hover:to-rose-600 text-white text-xs font-bold shadow-md shadow-rose-600/20 transition-all cursor-pointer">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24-1.076-.672-2.144-1.28-3.093l-.408-.637c-.368-.574-.532-.83-.532-1.127 0-.482.352-.892.83-.974.776-.133 1.57-.213 2.378-.238m10.584 6.069c.24-1.076.672-2.144 1.28-3.093l.408-.637c.368-.574.532-.83.532-1.127 0-.482-.352-.892-.83-.974a24.28 24.28 0 0 0-2.378-.238M6.75 6.75h10.5a2.25 2.25 0 0 1 2.25 2.25v9.75a2.25 2.25 0 0 1-2.25 2.25H6.75a2.25 2.25 0 0 1-2.25-2.25V9a2.25 2.25 0 0 1 2.25-2.25Zm0 0V4.5a2.25 2.25 0 0 1 2.25-2.25h6a2.25 2.25 0 0 1 2.25 2.25v2.25" />
+                </svg>
+                <span>Cetak PDF Rekap</span>
+            </a>
+        </div>
+
+        <!-- ═════════════════════════════════════════════════════════════════
+             SUB-VIEW A: REKAPITULASI PERIODE & CETAK PDF
+             ═════════════════════════════════════════════════════════════════ -->
+        <div id="subview-rekap-periode" class="space-y-4 <?= $currentRekapView === 'periode' ? '' : 'hidden' ?>">
+
+            <!-- Toolbar Filter Rekapitulasi Periode -->
+            <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+                <form method="GET" action="<?= url('kelola-absen-pegawai') ?>" class="flex flex-wrap items-center gap-2.5 flex-1">
+                    <input type="hidden" name="tab" value="rekap">
+                    <input type="hidden" name="rekap_view" value="periode">
+
+                    <!-- Periode Mulai & Selesai -->
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-xs font-bold text-slate-700">Periode:</span>
+                        <input type="date" name="start_date" id="rekap_start_date" value="<?= e($filters['start_date']) ?>"
+                               class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:bg-white focus:border-primary-500">
+                        <span class="text-xs text-slate-400 font-bold">s/d</span>
+                        <input type="date" name="end_date" id="rekap_end_date" value="<?= e($filters['end_date']) ?>"
+                               class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:bg-white focus:border-primary-500">
+                    </div>
+
+                    <!-- Shortcut Periode -->
+                    <div class="flex items-center gap-1">
+                        <button type="button" onclick="setPeriodeShortcut('bulan_ini')"
+                                class="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors">
+                            Bulan Ini
+                        </button>
+                        <button type="button" onclick="setPeriodeShortcut('bulan_lalu')"
+                                class="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors">
+                            Bulan Lalu
+                        </button>
+                    </div>
+
+                    <!-- Cari Pegawai / NIY -->
+                    <div class="relative min-w-[180px]">
+                        <input type="text" name="search" value="<?= e($filters['search']) ?>" placeholder="Cari nama / NIY..."
+                               class="w-full pl-9 pr-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 outline-none focus:bg-white focus:border-primary-500">
+                        <svg class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"/></svg>
+                    </div>
+
+                    <!-- Filter Unit (Jika Bukan Restricted) -->
+                    <?php if (!empty($effectiveUserUnit)): ?>
+                        <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-50 text-sky-800 border border-sky-200 text-xs font-bold">
+                            <span class="w-2 h-2 rounded-full bg-sky-500"></span>
+                            <span>Unit: <strong><?= e($effectiveUserUnit) ?></strong></span>
+                        </div>
+                    <?php else: ?>
+                        <select name="unit_tugas" class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 outline-none focus:border-primary-500">
+                            <option value="">Semua Unit Tugas</option>
+                            <?php foreach ($unitLokasiList as $ul): ?>
+                                <option value="<?= e($ul['unit_tugas']) ?>" <?= ($filters['unit_tugas'] ?? '') === $ul['unit_tugas'] ? 'selected' : '' ?>>
+                                    <?= e($ul['unit_tugas']) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    <?php endif; ?>
+
+                    <button type="submit" class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-xl text-xs cursor-pointer shadow-xs">
+                        Filter Rekap
+                    </button>
+                </form>
+
+                <div class="flex items-center gap-2 shrink-0">
+                    <a href="<?= $cetakPdfUrl ?>" target="_blank"
+                       class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-primary-50 hover:bg-primary-100 text-primary-700 border border-primary-200 text-xs font-bold transition-all">
+                        <svg class="w-4 h-4 text-primary-600" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24-1.076-.672-2.144-1.28-3.093l-.408-.637c-.368-.574-.532-.83-.532-1.127 0-.482.352-.892.83-.974.776-.133 1.57-.213 2.378-.238m10.584 6.069c.24-1.076.672-2.144 1.28-3.093l.408-.637c.368-.574.532-.83.532-1.127 0-.482-.352-.892-.83-.974a24.28 24.28 0 0 0-2.378-.238M6.75 6.75h10.5a2.25 2.25 0 0 1 2.25 2.25v9.75a2.25 2.25 0 0 1-2.25 2.25H6.75a2.25 2.25 0 0 1-2.25-2.25V9a2.25 2.25 0 0 1 2.25-2.25Zm0 0V4.5a2.25 2.25 0 0 1 2.25-2.25h6a2.25 2.25 0 0 1 2.25 2.25v2.25" />
+                        </svg>
+                        <span>Pratinjau Cetak</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Summary Bar Periode -->
+            <?php $pSum = $rekapPeriodeData['summary'] ?? []; ?>
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5">
+                <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Pegawai</span>
+                    <div class="text-2xl font-extrabold text-slate-900 mt-1"><?= number_format($pSum['total_pegawai'] ?? count($rekapPeriodeData['rows'] ?? [])) ?></div>
+                    <p class="text-[11px] text-slate-500 mt-0.5">Pegawai dalam rekap</p>
+                </div>
+
+                <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Hari Kerja</span>
+                    <div class="text-2xl font-extrabold text-slate-900 mt-1"><?= (int)($rekapPeriodeData['jumlah_hari_kerja'] ?? 1) ?> <span class="text-xs font-normal text-slate-500">Hari</span></div>
+                    <p class="text-[11px] text-slate-500 mt-0.5">Senin - Sabtu (efektif)</p>
+                </div>
+
+                <div class="bg-white rounded-2xl p-4 border border-emerald-200/80 shadow-xs">
+                    <span class="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">Hadir Tepat Waktu</span>
+                    <div class="text-2xl font-extrabold text-emerald-600 mt-1"><?= number_format($pSum['total_tepat_waktu_semua'] ?? 0) ?></div>
+                    <p class="text-[11px] text-slate-500 mt-0.5">Total hari tepat waktu</p>
+                </div>
+
+                <div class="bg-white rounded-2xl p-4 border border-amber-200/80 shadow-xs">
+                    <span class="text-[10px] font-bold text-amber-600 uppercase tracking-wider">Terlambat</span>
+                    <div class="text-2xl font-extrabold text-amber-600 mt-1"><?= number_format($pSum['total_terlambat_semua'] ?? 0) ?></div>
+                    <p class="text-[11px] text-slate-500 mt-0.5">Total presensi terlambat</p>
+                </div>
+
+                <div class="bg-white rounded-2xl p-4 border border-rose-200/80 shadow-xs">
+                    <span class="text-[10px] font-bold text-rose-600 uppercase tracking-wider">Alpa (Tanpa Ket.)</span>
+                    <div class="text-2xl font-extrabold text-rose-600 mt-1"><?= number_format($pSum['total_alpa_semua'] ?? 0) ?></div>
+                    <p class="text-[11px] text-slate-500 mt-0.5">Hari tanpa presensi/izin</p>
+                </div>
+
+                <div class="bg-white rounded-2xl p-4 border border-primary-200/80 shadow-xs bg-gradient-to-br from-white to-primary-50/40">
+                    <span class="text-[10px] font-bold text-primary-600 uppercase tracking-wider">Rata-rata Hadir</span>
+                    <div class="text-2xl font-extrabold text-primary-700 mt-1"><?= number_format($pSum['rata_rata_kehadiran'] ?? 0, 1) ?>%</div>
+                    <p class="text-[11px] text-primary-600 font-semibold mt-0.5">Tingkat kehadiran unit</p>
+                </div>
+            </div>
+
+            <!-- Tabel Rekapitulasi Presensi Pegawai Sesuai Format Resmi PDF -->
+            <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+                <div class="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/50">
+                    <div>
+                        <h3 class="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                            <span>Tabel Rekapitulasi Presensi Pegawai (Periode)</span>
+                            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-primary-100 text-primary-800">
+                                <?= count($rekapPeriodeData['rows'] ?? []) ?> Pegawai
+                            </span>
+                        </h3>
+                        <p class="text-xs text-slate-500 mt-0.5">
+                            Data rekapitulasi kehadiran resmi per pegawai siap diekspor dan dicetak PDF.
+                        </p>
+                    </div>
+
+                    <a href="<?= $cetakPdfUrl ?>" target="_blank"
+                       class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-sm transition-all shrink-0">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24-1.076-.672-2.144-1.28-3.093l-.408-.637c-.368-.574-.532-.83-.532-1.127 0-.482.352-.892.83-.974.776-.133 1.57-.213 2.378-.238m10.584 6.069c.24-1.076.672-2.144 1.28-3.093l.408-.637c.368-.574.532-.83.532-1.127 0-.482-.352-.892-.83-.974a24.28 24.28 0 0 0-2.378-.238M6.75 6.75h10.5a2.25 2.25 0 0 1 2.25 2.25v9.75a2.25 2.25 0 0 1-2.25 2.25H6.75a2.25 2.25 0 0 1-2.25-2.25V9a2.25 2.25 0 0 1 2.25-2.25Zm0 0V4.5a2.25 2.25 0 0 1 2.25-2.25h6a2.25 2.25 0 0 1 2.25 2.25v2.25" />
+                        </svg>
+                        <span>Cetak Dokumen PDF</span>
+                    </a>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-slate-50/80 border-b border-slate-200/80 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                                <th class="py-3 px-3 w-10 text-center">No</th>
+                                <th class="py-3 px-4 min-w-[200px]">Nama Pegawai</th>
+                                <th class="py-3 px-3 text-center">NIY</th>
+                                <th class="py-3 px-3 text-center">Unit Tugas</th>
+                                <th class="py-3 px-3 text-center" title="Jumlah Hari Kerja Efektif">Hari Kerja</th>
+                                <th class="py-3 px-3 text-center" title="Jumlah Hadir (Total)">Hadir Total</th>
+                                <th class="py-3 px-3 text-center text-emerald-700" title="Jumlah Hadir Tanpa Terlambat">Hadir Tepat</th>
+                                <th class="py-3 px-3 text-center text-amber-700" title="Terlambat">Terlambat</th>
+                                <th class="py-3 px-3 text-center" title="Izin">Izin</th>
+                                <th class="py-3 px-3 text-center" title="Sakit">Sakit</th>
+                                <th class="py-3 px-3 text-center" title="Cuti">Cuti</th>
+                                <th class="py-3 px-3 text-center text-rose-700" title="Alpa">Alpa</th>
+                                <th class="py-3 px-4 text-center min-w-[120px]" title="Total Kehadiran (%)">Total Kehadiran (%)</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 font-medium">
+                            <?php 
+                            $rRows = $rekapPeriodeData['rows'] ?? [];
+                            if (empty($rRows)): 
+                            ?>
+                                <tr>
+                                    <td colspan="13" class="py-12 text-center text-slate-400">
+                                        Tidak ada data pegawai yang sesuai dengan filter periode atau unit.
+                                    </td>
+                                </tr>
+                            <?php else: ?>
+                                <?php 
+                                $rNo = 1;
+                                foreach ($rRows as $row): 
+                                    $pct = (float)$row['total_kehadiran'];
+                                    $badgeBg = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+                                    if ($pct < 75) {
+                                        $badgeBg = 'bg-rose-50 text-rose-700 border-rose-200';
+                                    } elseif ($pct < 90) {
+                                        $badgeBg = 'bg-sky-50 text-sky-700 border-sky-200';
+                                    }
+                                ?>
+                                    <tr class="hover:bg-slate-50/50 transition-colors">
+                                        <td class="py-3 px-3 text-center text-slate-400 font-bold"><?= $rNo++ ?></td>
+                                        <td class="py-3 px-4">
+                                            <div class="flex items-center gap-2.5">
+                                                <?php if (!empty($row['foto'])): ?>
+                                                    <img src="<?= url(ltrim($row['foto'], '/')) ?>" alt="Foto" class="w-8 h-8 rounded-xl object-cover border border-slate-200 shrink-0">
+                                                <?php else: ?>
+                                                    <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-primary-400 to-primary-600 text-white font-extrabold text-[11px] flex items-center justify-center shrink-0">
+                                                        <?= strtoupper(substr($row['nama_polos'], 0, 2)) ?>
+                                                    </div>
+                                                <?php endif; ?>
+                                                <div>
+                                                    <div class="font-bold text-slate-900"><?= e($row['nama']) ?></div>
+                                                    <div class="text-[10px] text-slate-500"><?= e($row['jabatan']) ?></div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="py-3 px-3 text-center font-mono text-[11px] text-slate-600"><?= e($row['niy']) ?></td>
+                                        <td class="py-3 px-3 text-center">
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] font-bold bg-slate-100 text-slate-700">
+                                                <?= e($row['unit_tugas']) ?>
+                                            </span>
+                                        </td>
+                                        <td class="py-3 px-3 text-center font-bold text-slate-900"><?= $row['jumlah_hari_kerja'] ?></td>
+                                        <td class="py-3 px-3 text-center font-extrabold text-primary-700"><?= $row['jumlah_hadir'] ?></td>
+                                        <td class="py-3 px-3 text-center font-bold text-emerald-600"><?= $row['hadir_tanpa_terlambat'] ?></td>
+                                        <td class="py-3 px-3 text-center font-bold <?= $row['terlambat'] > 0 ? 'text-amber-600 bg-amber-50/50 rounded' : 'text-slate-400' ?>"><?= $row['terlambat'] ?></td>
+                                        <td class="py-3 px-3 text-center <?= $row['izin'] > 0 ? 'font-bold text-sky-600' : 'text-slate-400' ?>"><?= $row['izin'] ?></td>
+                                        <td class="py-3 px-3 text-center <?= $row['sakit'] > 0 ? 'font-bold text-purple-600' : 'text-slate-400' ?>"><?= $row['sakit'] ?></td>
+                                        <td class="py-3 px-3 text-center <?= $row['cuti'] > 0 ? 'font-bold text-teal-600' : 'text-slate-400' ?>"><?= $row['cuti'] ?></td>
+                                        <td class="py-3 px-3 text-center <?= $row['alpa'] > 0 ? 'font-bold text-rose-600 bg-rose-50/50 rounded' : 'text-slate-400' ?>"><?= $row['alpa'] ?></td>
+                                        <td class="py-3 px-4 text-center">
+                                            <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-extrabold border <?= $badgeBg ?>">
+                                                <span><?= number_format($pct, 1) ?>%</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
+                        <tfoot class="bg-slate-100/80 border-t-2 border-slate-200 text-xs font-bold text-slate-800">
+                            <tr>
+                                <td colspan="4" class="py-3.5 px-4 text-right">TOTAL / RATA-RATA UNIT:</td>
+                                <td class="py-3.5 px-3 text-center"><?= (int)($rekapPeriodeData['jumlah_hari_kerja'] ?? 1) ?></td>
+                                <td class="py-3.5 px-3 text-center text-primary-700"><?= number_format($pSum['total_hadir_semua'] ?? 0) ?></td>
+                                <td class="py-3.5 px-3 text-center text-emerald-600"><?= number_format($pSum['total_tepat_waktu_semua'] ?? 0) ?></td>
+                                <td class="py-3.5 px-3 text-center text-amber-600"><?= number_format($pSum['total_terlambat_semua'] ?? 0) ?></td>
+                                <td class="py-3.5 px-3 text-center"><?= number_format($pSum['total_izin_semua'] ?? 0) ?></td>
+                                <td class="py-3.5 px-3 text-center"><?= number_format($pSum['total_sakit_semua'] ?? 0) ?></td>
+                                <td class="py-3.5 px-3 text-center"><?= number_format($pSum['total_cuti_semua'] ?? 0) ?></td>
+                                <td class="py-3.5 px-3 text-center text-rose-600"><?= number_format($pSum['total_alpa_semua'] ?? 0) ?></td>
+                                <td class="py-3.5 px-4 text-center text-primary-700"><?= number_format($pSum['rata_rata_kehadiran'] ?? 0, 1) ?>%</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ═════════════════════════════════════════════════════════════════
+             SUB-VIEW B: LOG PRESENSI HARIAN PEGAWAI (DETAIL PER TANGGAL)
+             ═════════════════════════════════════════════════════════════════ -->
+        <div id="subview-rekap-harian" class="space-y-4 <?= $currentRekapView === 'harian' ? '' : 'hidden' ?>">
 
         <!-- Toolbar Filter Tanggal & Unit -->
         <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -714,7 +1328,8 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
                 </table>
             </div>
         </div>
-    </div>
+        </div> <!-- End of subview-rekap-harian -->
+    </div> <!-- End of absen-panel-rekap -->
 
     <!-- ═════════════════════════════════════════════════════════════════════
          TAB 3: LOKASI ABSEN CUSTOM PER UNIT
@@ -1485,6 +2100,60 @@ function setPeriodeAbsen(preset) {
         const last = new Date(y, endMonth + 1, 0);
         awalEl.value = first.toISOString().slice(0, 10);
         akhirEl.value = last.toISOString().slice(0, 10);
+    }
+}
+
+function switchRekapSubView(mode) {
+    const subPeriode = document.getElementById('subview-rekap-periode');
+    const subHarian  = document.getElementById('subview-rekap-harian');
+    const btnPeriode = document.getElementById('btn-rekap-sub-periode');
+    const btnHarian  = document.getElementById('btn-rekap-sub-harian');
+
+    if (mode === 'periode') {
+        if (subPeriode) subPeriode.classList.remove('hidden');
+        if (subHarian)  subHarian.classList.add('hidden');
+        if (btnPeriode) {
+            btnPeriode.className = 'px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer bg-primary-600 text-white shadow-xs';
+        }
+        if (btnHarian) {
+            btnHarian.className = 'px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer text-slate-600 hover:bg-slate-100';
+        }
+    } else {
+        if (subPeriode) subPeriode.classList.add('hidden');
+        if (subHarian)  subHarian.classList.remove('hidden');
+        if (btnPeriode) {
+            btnPeriode.className = 'px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer text-slate-600 hover:bg-slate-100';
+        }
+        if (btnHarian) {
+            btnHarian.className = 'px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer bg-primary-600 text-white shadow-xs';
+        }
+    }
+
+    const urlObj = new URL(window.location.href);
+    urlObj.searchParams.set('tab', 'rekap');
+    urlObj.searchParams.set('rekap_view', mode);
+    window.history.replaceState({}, '', urlObj.toString());
+}
+
+function setPeriodeShortcut(preset) {
+    const startInp = document.getElementById('rekap_start_date');
+    const endInp   = document.getElementById('rekap_end_date');
+    if (!startInp || !endInp) return;
+
+    const now = new Date();
+    if (preset === 'bulan_ini') {
+        const y = now.getFullYear();
+        const m = String(now.getMonth() + 1).padStart(2, '0');
+        const d = String(now.getDate()).padStart(2, '0');
+        startInp.value = `${y}-${m}-01`;
+        endInp.value   = `${y}-${m}-${d}`;
+    } else if (preset === 'bulan_lalu') {
+        const prevMonthDate = new Date(now.getFullYear(), now.getMonth(), 0);
+        const y = prevMonthDate.getFullYear();
+        const m = String(prevMonthDate.getMonth() + 1).padStart(2, '0');
+        const lastDay = String(prevMonthDate.getDate()).padStart(2, '0');
+        startInp.value = `${y}-${m}-01`;
+        endInp.value   = `${y}-${m}-${lastDay}`;
     }
 }
 

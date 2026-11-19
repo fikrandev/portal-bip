@@ -654,6 +654,7 @@ $router->post('/kelola-absen-pegawai/unit/save', [AbsenPegawaiController::class,
 $router->post('/kelola-absen-pegawai/unit/reset', [AbsenPegawaiController::class, 'resetLokasiUnit'], [Middleware::permissionRequired('absen_pegawai.update')]);
 $router->post('/kelola-absen-pegawai/reset-semua', [AbsenPegawaiController::class, 'resetSemuaLokasi'], [Middleware::permissionRequired('absen_pegawai.delete')]);
 $router->get('/kelola-absen-pegawai/export', [AbsenPegawaiController::class, 'exportCsv'], [Middleware::permissionRequired('absen_pegawai.view')]);
+$router->get('/kelola-absen-pegawai/cetak-pdf', [AbsenPegawaiController::class, 'cetakPdfRekap'], [Middleware::permissionRequired('absen_pegawai.view')]);
 // Modul Qur'an Siswa (Hub + 3 Jenjang: SD, PAUD, SMP & SMA)
 $router->get('/kelola-quran-siswa', [QuranSiswaController::class, 'index'], [[Middleware::class, 'authRequired']]);
 $router->get('/kelola-quran-siswa-sd', [QuranSiswaController::class, 'sdIndex'], [Middleware::permissionRequired('quran_siswa.sd_smp.view')]);

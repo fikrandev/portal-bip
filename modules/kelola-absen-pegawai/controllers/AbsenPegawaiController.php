@@ -15,36 +15,51 @@ class AbsenPegawaiController
     {
         AbsenPegawaiModel::init();
 
-        $activeTab = $_GET['tab'] ?? 'pegawai';
-        $allowedTabs = ['pegawai', 'rekap', 'unit', 'pengaturan'];
+        $activeTab = $_GET['tab'] ?? 'dashboard';
+        $allowedTabs = ['dashboard', 'pegawai', 'rekap', 'unit', 'pengaturan'];
         if (!in_array($activeTab, $allowedTabs, true)) {
-            $activeTab = 'pegawai';
+            $activeTab = 'dashboard';
         }
+
+        $effectiveUserUnit = AbsenPegawaiModel::getEffectiveUserUnit();
+        $isUnitRestricted = !empty($effectiveUserUnit);
 
         $stats = AbsenPegawaiModel::getSummaryStats();
         $globalConfig = $stats['globalConfig'];
 
         $filters = [
-            'search' => trim($_GET['search'] ?? ''),
-            'unit_tugas' => trim($_GET['unit_tugas'] ?? ''),
+            'search'      => trim($_GET['search'] ?? ''),
+            'unit_tugas'  => $isUnitRestricted ? $effectiveUserUnit : trim($_GET['unit_tugas'] ?? ''),
             'mode_lokasi' => trim($_GET['mode_lokasi'] ?? ''),
-            'status' => trim($_GET['status'] ?? '')
+            'status'      => trim($_GET['status'] ?? ''),
+            'rekap_view'  => trim($_GET['rekap_view'] ?? 'periode'),
+            'start_date'  => trim($_GET['start_date'] ?? date('Y-m-01')),
+            'end_date'    => trim($_GET['end_date'] ?? date('Y-m-d')),
         ];
 
+        $targetDate = trim($_GET['tanggal'] ?? date('Y-m-d'));
+
+        // Load data scoped to user unit
+        $dashboardData = AbsenPegawaiModel::getDashboardData($targetDate, $filters['unit_tugas']);
+        $rekapPeriodeData = AbsenPegawaiModel::getRekapPeriode(
+            $filters['start_date'],
+            $filters['end_date'],
+            $filters['unit_tugas'],
+            $filters['search']
+        );
+        $rekapData = AbsenPegawaiModel::getRekapHarian($targetDate, $filters);
         $pegawaiList = AbsenPegawaiModel::getAllPegawaiLokasi($filters);
         $allPegawaiDropdown = AbsenPegawaiModel::getAllPegawaiLokasi([]);
         $unitLokasiList = AbsenPegawaiModel::getAllUnitLokasi();
-
-        $targetDate = trim($_GET['tanggal'] ?? date('Y-m-d'));
-        $rekapData = AbsenPegawaiModel::getRekapHarian($targetDate, $filters);
 
         $pageTitle = 'Kelola Absen Pegawai';
         $breadcrumbs = [
             ['label' => 'Kelola Absen Pegawai', 'url' => url('kelola-absen-pegawai')],
             ['label' => match($activeTab) {
-                'rekap'      => 'Rekap & Jam Kedatangan',
+                'dashboard'  => 'Dashboard & Terlambat Hari Ini',
+                'rekap'      => 'Data Absen & Rekap PDF',
                 'unit'       => 'Lokasi Custom Per Unit',
-                'pengaturan' => 'Radius Global & Jam Kedatangan',
+                'pengaturan' => 'Radius Global & Jam Masuk',
                 default      => 'Lokasi Absen Per Pegawai'
             }]
         ];
@@ -55,6 +70,26 @@ class AbsenPegawaiController
         $content = ob_get_clean();
 
         include TEMPLATES_PATH . '/layouts/app.php';
+    }
+
+    /**
+     * Cetak Laporan PDF / Print View Rekapitulasi Absensi Pegawai
+     */
+    public static function cetakPdfRekap(): void
+    {
+        AbsenPegawaiModel::init();
+
+        $effectiveUserUnit = AbsenPegawaiModel::getEffectiveUserUnit();
+        $unit = $effectiveUserUnit ?: trim($_GET['unit_tugas'] ?? '');
+        $startDate = trim($_GET['start_date'] ?? date('Y-m-01'));
+        $endDate = trim($_GET['end_date'] ?? date('Y-m-d'));
+        $search = trim($_GET['search'] ?? '');
+
+        $rekapPeriodeData = AbsenPegawaiModel::getRekapPeriode($startDate, $endDate, $unit, $search);
+        $globalConfig = AbsenPegawaiModel::getPengaturanGlobal();
+        $targetUnit = $unit;
+
+        include BASE_PATH . '/modules/kelola-absen-pegawai/views/cetak_pdf.php';
     }
 
     /**
