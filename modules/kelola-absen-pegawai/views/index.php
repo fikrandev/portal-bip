@@ -228,7 +228,8 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
                                 <th class="py-3 px-4 text-center">Keterlambatan</th>
                                 <th class="py-3 px-4">Lokasi Absen</th>
                                 <th class="py-3 px-4 text-center">Status</th>
-                                <th class="py-3 px-4 text-center w-20">Aksi</th>
+                                <th class="py-3 px-4">Catatan (Evaluasi & Tindak Lanjut)</th>
+                                <th class="py-3 px-4 text-center w-36">Aksi</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100 font-medium">
@@ -285,31 +286,98 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
                                             Terlambat
                                         </span>
                                     </td>
+                                    <td class="py-3.5 px-4">
+                                        <?php if (!empty($late['evaluasi']) || !empty($late['tindak_lanjut'])): ?>
+                                            <div class="space-y-1.5 min-w-[200px] max-w-xs">
+                                                <?php if (!empty($late['evaluasi'])): ?>
+                                                    <div class="bg-amber-50/70 rounded-xl p-2 border border-amber-200/70 text-slate-800 text-[11px] leading-relaxed">
+                                                        <div class="flex items-center gap-1 font-extrabold text-amber-800 text-[10px] uppercase tracking-wide">
+                                                            <span>📝 Evaluasi:</span>
+                                                        </div>
+                                                        <div class="mt-0.5 text-slate-800 font-medium" title="<?= e($late['evaluasi']) ?>">
+                                                            <?= e($late['evaluasi']) ?>
+                                                        </div>
+                                                    </div>
+                                                <?php endif; ?>
+                                                <?php if (!empty($late['tindak_lanjut'])): ?>
+                                                    <div class="bg-blue-50/70 rounded-xl p-2 border border-blue-200/70 text-slate-800 text-[11px] leading-relaxed">
+                                                        <div class="flex items-center gap-1 font-extrabold text-primary-700 text-[10px] uppercase tracking-wide">
+                                                            <span>🎯 Tindak Lanjut:</span>
+                                                        </div>
+                                                        <div class="mt-0.5 text-slate-800 font-medium" title="<?= e($late['tindak_lanjut']) ?>">
+                                                            <?= e($late['tindak_lanjut']) ?>
+                                                        </div>
+                                                    </div>
+                                                <?php endif; ?>
+                                                <?php if (!empty($late['evaluasi_oleh'])): ?>
+                                                    <div class="text-[10px] text-slate-400 flex items-center gap-1 pt-0.5">
+                                                        <span>Oleh: <?= e($late['evaluasi_oleh']) ?></span>
+                                                        <?php if (!empty($late['evaluasi_at'])): ?>
+                                                            <span>• <?= date('d/m H:i', strtotime($late['evaluasi_at'])) ?></span>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                <?php endif; ?>
+                                            </div>
+                                        <?php else: ?>
+                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] font-semibold bg-slate-50 text-slate-400 border border-dashed border-slate-200">
+                                                <svg class="w-3.5 h-3.5 text-slate-300" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+                                                </svg>
+                                                Belum ada evaluasi
+                                            </span>
+                                        <?php endif; ?>
+                                    </td>
                                     <td class="py-3.5 px-4 text-center">
-                                        <button type="button" 
-                                                onclick="openModalEditLogPresensi(<?= htmlspecialchars(json_encode([
-                                                    'pegawai_id' => $late['id'],
-                                                    'nama' => $late['nama'],
-                                                    'niy' => $late['niy'] ?? '',
-                                                    'unit_tugas' => $late['unit_tugas'] ?? '',
-                                                    'jabatan' => $late['jabatan'] ?? '',
-                                                    'tanggal' => $targetDate,
-                                                    'tanggal_formatted' => date('d F Y', strtotime($targetDate)),
-                                                    'jam_masuk' => $late['jam_masuk'] ?? '',
-                                                    'jam_pulang' => $late['jam_pulang'] ?? '',
-                                                    'status' => 'Terlambat',
-                                                    'keterangan' => $late['keterangan'] ?? '',
-                                                    'nama_kantor' => $late['nama_kantor_absen'] ?? '',
-                                                    'batas_jam' => substr($late['jam_masuk_batas'], 0, 5),
-                                                    'has_log' => true,
-                                                    'return_tab' => 'dashboard',
-                                                ]), ENT_QUOTES, 'UTF-8') ?>)"
-                                                class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold bg-primary-50 text-primary-700 hover:bg-primary-600 hover:text-white border border-primary-200 transition-all cursor-pointer shadow-xs">
-                                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
-                                            </svg>
-                                            <span>Ubah</span>
-                                        </button>
+                                        <div class="flex items-center justify-center gap-1.5">
+                                            <button type="button" 
+                                                    onclick="openModalCatatanTerlambat(<?= htmlspecialchars(json_encode([
+                                                        'pegawai_id'        => $late['id'],
+                                                        'nama'              => $late['nama'],
+                                                        'niy'               => $late['niy'] ?? '',
+                                                        'unit_tugas'        => $late['unit_tugas'] ?? '',
+                                                        'jabatan'           => $late['jabatan'] ?? '',
+                                                        'tanggal'           => $targetDate,
+                                                        'tanggal_formatted' => date('d F Y', strtotime($targetDate)),
+                                                        'jam_masuk'         => $late['jam_masuk'] ?? '',
+                                                        'batas_jam'         => substr($late['jam_masuk_batas'], 0, 5),
+                                                        'menit_terlambat'   => $late['menit_terlambat'] ?? 0,
+                                                        'evaluasi'          => $late['evaluasi'] ?? '',
+                                                        'tindak_lanjut'     => $late['tindak_lanjut'] ?? '',
+                                                        'evaluasi_oleh'     => $late['evaluasi_oleh'] ?? '',
+                                                        'evaluasi_at'       => $late['evaluasi_at'] ?? '',
+                                                        'return_tab'        => 'dashboard',
+                                                    ]), ENT_QUOTES, 'UTF-8') ?>)"
+                                                    class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold <?= (!empty($late['evaluasi']) || !empty($late['tindak_lanjut'])) ? 'bg-amber-50 text-amber-800 hover:bg-amber-600 hover:text-white border border-amber-300' : 'bg-primary-600 text-white hover:bg-primary-700 shadow-xs' ?> transition-all cursor-pointer"
+                                                    title="<?= (!empty($late['evaluasi']) || !empty($late['tindak_lanjut'])) ? 'Edit Catatan (Evaluasi & Tindak Lanjut)' : 'Tambah Catatan (Evaluasi & Tindak Lanjut)' ?>">
+                                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+                                                </svg>
+                                                <span><?= (!empty($late['evaluasi']) || !empty($late['tindak_lanjut'])) ? 'Catatan 📝' : 'Catatan' ?></span>
+                                            </button>
+
+                                            <button type="button" 
+                                                    onclick="openModalEditLogPresensi(<?= htmlspecialchars(json_encode([
+                                                        'pegawai_id' => $late['id'],
+                                                        'nama' => $late['nama'],
+                                                        'niy' => $late['niy'] ?? '',
+                                                        'unit_tugas' => $late['unit_tugas'] ?? '',
+                                                        'jabatan' => $late['jabatan'] ?? '',
+                                                        'tanggal' => $targetDate,
+                                                        'tanggal_formatted' => date('d F Y', strtotime($targetDate)),
+                                                        'jam_masuk' => $late['jam_masuk'] ?? '',
+                                                        'jam_pulang' => $late['jam_pulang'] ?? '',
+                                                        'status' => 'Terlambat',
+                                                        'keterangan' => $late['keterangan'] ?? '',
+                                                        'nama_kantor' => $late['nama_kantor_absen'] ?? '',
+                                                        'batas_jam' => substr($late['jam_masuk_batas'], 0, 5),
+                                                        'has_log' => true,
+                                                        'return_tab' => 'dashboard',
+                                                    ]), ENT_QUOTES, 'UTF-8') ?>)"
+                                                    class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 transition-all cursor-pointer shadow-xs"
+                                                    title="Ubah Log Presensi">
+                                                <span>Ubah</span>
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
@@ -2176,6 +2244,163 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
         </form>
     </div>
 </div>
+
+<!-- Modal Catatan Keterlambatan (Evaluasi & Tindak Lanjut) -->
+<div id="modalCatatanTerlambat" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
+    <div class="relative w-full max-w-xl bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden my-8 animate-in fade-in zoom-in duration-150">
+        <!-- Header -->
+        <div class="px-6 py-5 border-b border-slate-100 bg-gradient-to-r from-primary-600 to-primary-700 text-white flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-white/10 text-white flex items-center justify-center backdrop-blur-xs shadow-inner shrink-0">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-base font-extrabold text-white">Catatan Keterlambatan Pegawai</h3>
+                    <p class="text-xs text-white/80">Evaluasi klarifikasi penyebab & tetapkan komitmen tindak lanjut pembinaan</p>
+                </div>
+            </div>
+            <button type="button" onclick="closeModalCatatanTerlambat()" class="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer">
+                ✕
+            </button>
+        </div>
+
+        <!-- Info Pegawai Card -->
+        <div class="p-5 bg-slate-50/70 border-b border-slate-100">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                    <div class="text-sm font-extrabold text-slate-900" id="catatan_nama_display">-</div>
+                    <div class="text-xs text-slate-500 mt-0.5" id="catatan_unit_display">-</div>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="px-2.5 py-1 rounded-xl text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200" id="catatan_terlambat_badge">
+                        Terlambat
+                    </span>
+                    <span class="px-2.5 py-1 rounded-xl text-xs font-mono font-bold bg-rose-50 text-rose-700 border border-rose-200" id="catatan_jam_display">
+                        00:00 WITA
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Simpan Catatan -->
+        <form method="POST" action="<?= url('kelola-absen-pegawai/catatan-terlambat/save') ?>" class="p-6 space-y-5">
+            <?= CSRF::field() ?>
+            <input type="hidden" name="return_tab" value="dashboard">
+            <input type="hidden" name="tanggal" id="catatan_tanggal" value="">
+            <input type="hidden" name="pegawai_id" id="catatan_pegawai_id" value="">
+
+            <!-- 1. Evaluasi Keterlambatan -->
+            <div>
+                <div class="flex items-center justify-between mb-1.5">
+                    <label class="block text-xs font-extrabold text-slate-800">
+                        1. Evaluasi Penyebab Keterlambatan <span class="text-rose-500">*</span>
+                    </label>
+                    <span class="text-[10px] text-slate-400">Pilih template cepat di bawah</span>
+                </div>
+
+                <!-- Template Chips Evaluasi -->
+                <div class="flex flex-wrap gap-1.5 mb-2">
+                    <button type="button" onclick="appendCatatanPreset('evaluasi', 'Macet parah dan kendala lalu lintas di perjalanan')" class="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-100 hover:bg-primary-50 hover:text-primary-700 text-slate-700 border border-slate-200 transition-colors cursor-pointer">
+                        🚗 Kendala Lalu Lintas
+                    </button>
+                    <button type="button" onclick="appendCatatanPreset('evaluasi', 'Ada keperluan keluarga mendesak sebelum berangkat')" class="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-100 hover:bg-primary-50 hover:text-primary-700 text-slate-700 border border-slate-200 transition-colors cursor-pointer">
+                        👨‍👩‍👧 Keperluan Keluarga
+                    </button>
+                    <button type="button" onclick="appendCatatanPreset('evaluasi', 'Cuaca hujan lebat dan genangan air di rute')" class="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-100 hover:bg-primary-50 hover:text-primary-700 text-slate-700 border border-slate-200 transition-colors cursor-pointer">
+                        🌧️ Hujan Lebat / Cuaca
+                    </button>
+                    <button type="button" onclick="appendCatatanPreset('evaluasi', 'Kondisi kesehatan kurang fit / singgah membeli obat')" class="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-100 hover:bg-primary-50 hover:text-primary-700 text-slate-700 border border-slate-200 transition-colors cursor-pointer">
+                        🏥 Kondisi Kurang Fit
+                    </button>
+                    <button type="button" onclick="appendCatatanPreset('evaluasi', 'Kendaraan bermotor mogok / ban bocor')" class="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-100 hover:bg-primary-50 hover:text-primary-700 text-slate-700 border border-slate-200 transition-colors cursor-pointer">
+                        🔧 Masalah Kendaraan
+                    </button>
+                    <button type="button" onclick="appendCatatanPreset('evaluasi', 'Kesiangan dan terlambat bangun pagi')" class="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-100 hover:bg-primary-50 hover:text-primary-700 text-slate-700 border border-slate-200 transition-colors cursor-pointer">
+                        ⏰ Kesiangan
+                    </button>
+                </div>
+
+                <textarea name="evaluasi" id="catatan_evaluasi" rows="3" required placeholder="Tuliskan hasil klarifikasi / penyebab keterlambatan pegawai..."
+                          class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs text-slate-800 leading-relaxed outline-none focus:bg-white focus:border-primary-500 focus:ring-2 focus:ring-primary-500/10"></textarea>
+            </div>
+
+            <!-- 2. Tindak Lanjut / Solusi / Sanksi -->
+            <div>
+                <div class="flex items-center justify-between mb-1.5">
+                    <label class="block text-xs font-extrabold text-slate-800">
+                        2. Tindak Lanjut / Pembinaan / Solusi <span class="text-rose-500">*</span>
+                    </label>
+                    <span class="text-[10px] text-slate-400">Pilih template cepat di bawah</span>
+                </div>
+
+                <!-- Template Chips Tindak Lanjut -->
+                <div class="flex flex-wrap gap-1.5 mb-2">
+                    <button type="button" onclick="appendCatatanPreset('tindak_lanjut', 'Diberikan teguran lisan dan arahan disiplin oleh pimpinan')" class="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-100 hover:bg-primary-50 hover:text-primary-700 text-slate-700 border border-slate-200 transition-colors cursor-pointer">
+                        🗣️ Teguran Lisan
+                    </button>
+                    <button type="button" onclick="appendCatatanPreset('tindak_lanjut', 'Pegawai berkomitmen berangkat lebih awal (minimal 20 menit sebelumnya)')" class="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-100 hover:bg-primary-50 hover:text-primary-700 text-slate-700 border border-slate-200 transition-colors cursor-pointer">
+                        ⏰ Komitmen Datang Awal
+                    </button>
+                    <button type="button" onclick="appendCatatanPreset('tindak_lanjut', 'Mengganti kekurangan jam kerja pada saat kepulangan sore hari')" class="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-100 hover:bg-primary-50 hover:text-primary-700 text-slate-700 border border-slate-200 transition-colors cursor-pointer">
+                        ⏳ Ganti Jam Pulang Sore
+                    </button>
+                    <button type="button" onclick="appendCatatanPreset('tindak_lanjut', 'Monitoring kedisiplinan khusus selama 1 pekan ke depan')" class="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-100 hover:bg-primary-50 hover:text-primary-700 text-slate-700 border border-slate-200 transition-colors cursor-pointer">
+                        📋 Monitoring 1 Pekan
+                    </button>
+                    <button type="button" onclick="appendCatatanPreset('tindak_lanjut', 'Keterlambatan dapat dimaklumi (force majeure/alasan mendesak valid)')" class="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-100 hover:bg-primary-50 hover:text-primary-700 text-slate-700 border border-slate-200 transition-colors cursor-pointer">
+                        ✅ Dispensasi / Dimaklumi
+                    </button>
+                    <button type="button" onclick="appendCatatanPreset('tindak_lanjut', 'Diberikan Surat Peringatan Pertama (SP 1) jika mengulang keterlambatan')" class="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-100 hover:bg-primary-50 hover:text-primary-700 text-slate-700 border border-slate-200 transition-colors cursor-pointer">
+                        ⚠️ Peringatan SP 1
+                    </button>
+                </div>
+
+                <textarea name="tindak_lanjut" id="catatan_tindak_lanjut" rows="3" required placeholder="Tuliskan tindak lanjut, komitmen perbaikan, atau solusi pembinaan yang disepakati..."
+                          class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs text-slate-800 leading-relaxed outline-none focus:bg-white focus:border-primary-500 focus:ring-2 focus:ring-primary-500/10"></textarea>
+            </div>
+
+            <!-- Evaluator Meta Info -->
+            <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/80 flex items-center justify-between text-[11px] text-slate-500">
+                <div class="flex items-center gap-1.5">
+                    <svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+                    </svg>
+                    <span>Dicatat oleh: <strong class="text-slate-800"><?= e(Auth::user()['nama'] ?? (Auth::user()['username'] ?? 'Admin')) ?></strong></span>
+                </div>
+                <div id="catatan_last_updated" class="text-[10px] text-slate-400"></div>
+            </div>
+
+            <!-- Footer Actions -->
+            <div class="pt-3 border-t border-slate-100 flex items-center justify-between gap-3">
+                <button type="button" onclick="submitResetCatatanTerlambat()" id="btn_reset_catatan"
+                        class="px-3.5 py-2 rounded-xl text-xs font-bold text-rose-600 hover:text-white bg-rose-50 hover:bg-rose-600 border border-rose-200 transition-all cursor-pointer hidden">
+                    Reset Catatan
+                </button>
+
+                <div class="flex items-center gap-2 ml-auto">
+                    <button type="button" onclick="closeModalCatatanTerlambat()"
+                            class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer">
+                        Batal
+                    </button>
+                    <button type="submit"
+                            class="px-5 py-2 rounded-xl text-xs font-bold text-white bg-primary-600 hover:bg-primary-700 shadow-md shadow-primary-600/20 transition-all cursor-pointer">
+                        Simpan Catatan
+                    </button>
+                </div>
+            </div>
+        </form>
+
+        <!-- Hidden Delete Catatan Form -->
+        <form id="formDeleteCatatanTerlambat" method="POST" action="<?= url('kelola-absen-pegawai/catatan-terlambat/delete') ?>" class="hidden">
+            <?= CSRF::field() ?>
+            <input type="hidden" name="return_tab" value="dashboard">
+            <input type="hidden" name="pegawai_id" id="delcatatan_pegawai_id" value="">
+            <input type="hidden" name="tanggal" id="delcatatan_tanggal" value="">
+        </form>
+    </div>
+</div>
 <script>
 const DEFAULT_LAT = <?= json_encode($defaultLat) ?>;
 const DEFAULT_LNG = <?= json_encode($defaultLng) ?>;
@@ -2905,5 +3130,71 @@ function submitDeleteCurrentLog() {
     document.getElementById('dellog_tanggal').value = currentEditLogData.tanggal;
     document.getElementById('dellog_return_tab').value = currentEditLogData.return_tab || 'rekap';
     document.getElementById('formDeleteLogPresensi').submit();
+}
+
+let currentCatatanData = null;
+
+function openModalCatatanTerlambat(data) {
+    currentCatatanData = data;
+    document.getElementById('catatan_pegawai_id').value = data.pegawai_id || '';
+    document.getElementById('catatan_tanggal').value = data.tanggal || '';
+    document.getElementById('delcatatan_pegawai_id').value = data.pegawai_id || '';
+    document.getElementById('delcatatan_tanggal').value = data.tanggal || '';
+
+    document.getElementById('catatan_nama_display').textContent = data.nama + (data.niy && data.niy !== '-' ? ' (' + data.niy + ')' : '');
+    document.getElementById('catatan_unit_display').textContent = (data.unit_tugas || '-') + ' • ' + (data.jabatan || '-');
+    document.getElementById('catatan_terlambat_badge').textContent = 'Terlambat +' + (data.menit_terlambat || '0') + ' Menit';
+    document.getElementById('catatan_jam_display').textContent = 'Check-in: ' + (data.jam_masuk ? data.jam_masuk.substring(0, 5) : '-') + ' WITA (Batas: ' + (data.batas_jam || '-') + ' WITA)';
+
+    document.getElementById('catatan_evaluasi').value = data.evaluasi || '';
+    document.getElementById('catatan_tindak_lanjut').value = data.tindak_lanjut || '';
+
+    const btnReset = document.getElementById('btn_reset_catatan');
+    const lastUpdate = document.getElementById('catatan_last_updated');
+    if (data.evaluasi || data.tindak_lanjut) {
+        btnReset.classList.remove('hidden');
+        if (data.evaluasi_oleh) {
+            lastUpdate.textContent = 'Terakhir diisi oleh ' + data.evaluasi_oleh;
+        } else {
+            lastUpdate.textContent = '';
+        }
+    } else {
+        btnReset.classList.add('hidden');
+        lastUpdate.textContent = '';
+    }
+
+    const modal = document.getElementById('modalCatatanTerlambat');
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+}
+
+function closeModalCatatanTerlambat() {
+    const modal = document.getElementById('modalCatatanTerlambat');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+}
+
+function appendCatatanPreset(field, text) {
+    const el = document.getElementById('catatan_' + field);
+    if (!el) return;
+    const currentVal = el.value.trim();
+    if (!currentVal) {
+        el.value = text;
+    } else {
+        el.value = currentVal + '. ' + text;
+    }
+    el.focus();
+}
+
+function submitResetCatatanTerlambat() {
+    if (!currentCatatanData || !currentCatatanData.pegawai_id || !currentCatatanData.tanggal) return;
+    if (!confirm('Yakin ingin mereset/menghapus catatan evaluasi dan tindak lanjut untuk ' + currentCatatanData.nama + '?')) {
+        return;
+    }
+    document.getElementById('formDeleteCatatanTerlambat').submit();
 }
 </script>

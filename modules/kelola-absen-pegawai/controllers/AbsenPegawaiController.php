@@ -540,4 +540,91 @@ class AbsenPegawaiController
 
         redirect('kelola-absen-pegawai?tab=' . urlencode($returnTab) . '&tanggal=' . urlencode($returnDate) . '&rekap_view=' . urlencode($rekapView));
     }
+
+    /**
+     * Simpan Catatan Keterlambatan (Evaluasi & Tindak Lanjut)
+     */
+    public static function saveCatatanTerlambat(): void
+    {
+        CSRF::validate();
+        $returnTab = $_POST['return_tab'] ?? 'dashboard';
+        $returnDate = $_POST['tanggal'] ?? date('Y-m-d');
+
+        try {
+            $pegawaiId = (int)($_POST['pegawai_id'] ?? 0);
+            $tanggal = trim((string)($_POST['tanggal'] ?? ''));
+            $evaluasi = trim((string)($_POST['evaluasi'] ?? ''));
+            $tindakLanjut = trim((string)($_POST['tindak_lanjut'] ?? ''));
+
+            if (!$pegawaiId || empty($tanggal)) {
+                Flash::error('Data pegawai atau tanggal tidak valid.');
+                redirect('kelola-absen-pegawai?tab=' . urlencode($returnTab) . '&tanggal=' . urlencode($returnDate));
+            }
+
+            // Periksa hak akses unit
+            $effUnit = AbsenPegawaiModel::getEffectiveUserUnit();
+            if ($effUnit !== null) {
+                $pegUnit = AbsenPegawaiModel::getPegawaiUnit($pegawaiId);
+                if ($pegUnit && strcasecmp($pegUnit, $effUnit) !== 0 && stripos($pegUnit, $effUnit) === false) {
+                    Flash::error('Anda tidak memiliki hak akses untuk memberikan catatan pegawai unit ' . $pegUnit);
+                    redirect('kelola-absen-pegawai?tab=' . urlencode($returnTab) . '&tanggal=' . urlencode($returnDate));
+                }
+            }
+
+            $u = Auth::user();
+            $evaluator = $u['nama'] ?? ($u['username'] ?? 'Admin');
+
+            $success = AbsenPegawaiModel::saveCatatanTerlambat($pegawaiId, $tanggal, $evaluasi, $tindakLanjut, $evaluator);
+            if ($success) {
+                Flash::success('Catatan evaluasi & tindak lanjut keterlambatan berhasil disimpan.');
+            } else {
+                Flash::error('Gagal menyimpan catatan evaluasi keterlambatan.');
+            }
+        } catch (\Throwable $e) {
+            Flash::error('Terjadi kesalahan: ' . $e->getMessage());
+        }
+
+        redirect('kelola-absen-pegawai?tab=' . urlencode($returnTab) . '&tanggal=' . urlencode($returnDate));
+    }
+
+    /**
+     * Hapus / Reset Catatan Keterlambatan
+     */
+    public static function deleteCatatanTerlambat(): void
+    {
+        CSRF::validate();
+        $returnTab = $_POST['return_tab'] ?? 'dashboard';
+        $returnDate = $_POST['tanggal'] ?? date('Y-m-d');
+
+        try {
+            $pegawaiId = (int)($_POST['pegawai_id'] ?? 0);
+            $tanggal = trim((string)($_POST['tanggal'] ?? ''));
+
+            if (!$pegawaiId || empty($tanggal)) {
+                Flash::error('Data pegawai atau tanggal tidak valid.');
+                redirect('kelola-absen-pegawai?tab=' . urlencode($returnTab) . '&tanggal=' . urlencode($returnDate));
+            }
+
+            // Periksa hak akses unit
+            $effUnit = AbsenPegawaiModel::getEffectiveUserUnit();
+            if ($effUnit !== null) {
+                $pegUnit = AbsenPegawaiModel::getPegawaiUnit($pegawaiId);
+                if ($pegUnit && strcasecmp($pegUnit, $effUnit) !== 0 && stripos($pegUnit, $effUnit) === false) {
+                    Flash::error('Anda tidak memiliki hak akses untuk menghapus catatan pegawai unit ' . $pegUnit);
+                    redirect('kelola-absen-pegawai?tab=' . urlencode($returnTab) . '&tanggal=' . urlencode($returnDate));
+                }
+            }
+
+            $success = AbsenPegawaiModel::deleteCatatanTerlambat($pegawaiId, $tanggal);
+            if ($success) {
+                Flash::success('Catatan evaluasi & tindak lanjut berhasil direset.');
+            } else {
+                Flash::error('Gagal mereset catatan evaluasi.');
+            }
+        } catch (\Throwable $e) {
+            Flash::error('Terjadi kesalahan: ' . $e->getMessage());
+        }
+
+        redirect('kelola-absen-pegawai?tab=' . urlencode($returnTab) . '&tanggal=' . urlencode($returnDate));
+    }
 }

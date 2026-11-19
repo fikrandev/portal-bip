@@ -32,7 +32,7 @@ class AbsenPegawaiModel
         }
         self::$initialized = true;
 
-        $stampFile = BASE_PATH . '/storage/logs/.schema_absen_pegawai_v8.stamp';
+        $stampFile = BASE_PATH . '/storage/logs/.schema_absen_pegawai_v9.stamp';
         if (file_exists($stampFile)) {
             return;
         }
@@ -151,6 +151,12 @@ class AbsenPegawaiModel
                 'jam_masuk_batas'  => 'TIME NULL DEFAULT NULL AFTER `jam_masuk_mulai`',
                 'jam_pulang_mulai' => 'TIME NULL DEFAULT NULL AFTER `jam_masuk_batas`',
             ],
+            'absen_pegawai_log' => [
+                'evaluasi'      => 'TEXT NULL AFTER `keterangan`',
+                'tindak_lanjut' => 'TEXT NULL AFTER `evaluasi`',
+                'evaluasi_oleh' => 'VARCHAR(100) NULL AFTER `tindak_lanjut`',
+                'evaluasi_at'   => 'DATETIME NULL AFTER `evaluasi_oleh`',
+            ],
         ];
         foreach ($schemaColumns as $tableName => $columns) {
             foreach ($columns as $colName => $colDef) {
@@ -197,6 +203,10 @@ class AbsenPegawaiModel
                 `jarak_pulang_meter` DECIMAL(8, 2) NULL,
                 `radius_saat_absen` INT NOT NULL DEFAULT 10,
                 `keterangan` VARCHAR(255) NULL,
+                `evaluasi` TEXT NULL,
+                `tindak_lanjut` TEXT NULL,
+                `evaluasi_oleh` VARCHAR(100) NULL,
+                `evaluasi_at` DATETIME NULL,
                 `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
                 `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                 UNIQUE KEY `uniq_pegawai_tanggal` (`pegawai_id`, `tanggal`),
@@ -431,6 +441,10 @@ class AbsenPegawaiModel
                 apl.jarak_masuk_meter,
                 apl.lat_masuk,
                 apl.lng_masuk,
+                apl.evaluasi,
+                apl.tindak_lanjut,
+                apl.evaluasi_oleh,
+                apl.evaluasi_at,
                 COALESCE(l.jam_masuk_batas, u.jam_masuk_batas, '{$jamBatasFallback}') as batas_jam_masuk
             FROM `pegawai` p
             LEFT JOIN `pegawai_penugasan` pp ON pp.pegawai_id = p.id
@@ -507,7 +521,8 @@ class AbsenPegawaiModel
                     $menitTerlambat = max(1, (int)round((strtotime($jamMasuk) - strtotime($jamBatas)) / 60));
                 }
 
-                $gelarStr = !empty($r['gelar']) ? ', ' . trim($r['gelar']) : '';
+                $gelar = trim((string)($r['gelar'] ?? ''));
+                $gelarStr = ($gelar !== '' && stripos($r['nama'], $gelar) === false) ? ', ' . $gelar : '';
                 $daftarTerlambat[] = [
                     'id'                => (int)$r['id'],
                     'pegawai_id'        => (int)$r['id'],
@@ -525,7 +540,13 @@ class AbsenPegawaiModel
                     'jarak_masuk_meter' => (float)($r['jarak_masuk_meter'] ?? 0),
                     'lat_masuk'         => $r['lat_masuk'],
                     'lng_masuk'         => $r['lng_masuk'],
-                    'keterangan'        => $r['log_keterangan'] ?: "Terlambat {$menitTerlambat} Menit"
+                    'keterangan'        => $r['log_keterangan'] ?: "Terlambat {$menitTerlambat} Menit",
+                    'log_id'            => !empty($r['log_id']) ? (int)$r['log_id'] : null,
+                    'jam_pulang'        => $r['jam_pulang'] ? substr($r['jam_pulang'], 0, 8) : null,
+                    'evaluasi'          => $r['evaluasi'] ?? null,
+                    'tindak_lanjut'     => $r['tindak_lanjut'] ?? null,
+                    'evaluasi_oleh'     => $r['evaluasi_oleh'] ?? null,
+                    'evaluasi_at'       => $r['evaluasi_at'] ?? null,
                 ];
             } elseif ($logStatus === 'Hadir' || !empty($jamMasuk)) {
                 $hadirTepatWaktu++;
@@ -784,7 +805,8 @@ class AbsenPegawaiModel
             $totalAlpaSemua += $alpa;
             $sumPersen += $persen;
 
-            $gelarStr = !empty($p['gelar']) ? ', ' . trim($p['gelar']) : '';
+            $gelar = trim((string)($p['gelar'] ?? ''));
+            $gelarStr = ($gelar !== '' && stripos($p['nama'], $gelar) === false) ? ', ' . $gelar : '';
             $rows[] = [
                 'no'                    => $no++,
                 'pegawai_id'            => $pid,
@@ -2381,6 +2403,10 @@ class AbsenPegawaiModel
                 apl.jarak_masuk_meter,
                 apl.lat_masuk,
                 apl.lng_masuk,
+                apl.evaluasi,
+                apl.tindak_lanjut,
+                apl.evaluasi_oleh,
+                apl.evaluasi_at,
                 l.mode_lokasi as peg_mode,
                 l.nama_kantor as peg_kantor,
                 l.tanggal_mulai as peg_tgl_mulai,
@@ -2572,6 +2598,55 @@ class AbsenPegawaiModel
         self::init();
         self::db()->query(
             "DELETE FROM `absen_pegawai_log` WHERE `pegawai_id` = ? AND `tanggal` = ?",
+            [$pegawaiId, $tanggal]
+        );
+        return true;
+    }
+
+    /**
+     * Simpan Catatan Keterlambatan (Evaluasi & Tindak Lanjut)
+     */
+    public static function saveCatatanTerlambat(int $pegawaiId, string $tanggal, string $evaluasi, string $tindakLanjut, ?string $evaluator = null): bool
+    {
+        self::init();
+        if (!$pegawaiId || empty($tanggal)) {
+            return false;
+        }
+
+        $existing = self::db()->find(
+            "SELECT id FROM `absen_pegawai_log` WHERE `pegawai_id` = ? AND `tanggal` = ? LIMIT 1",
+            [$pegawaiId, $tanggal]
+        );
+
+        if ($existing) {
+            $sql = "UPDATE `absen_pegawai_log` SET 
+                        `evaluasi` = ?, 
+                        `tindak_lanjut` = ?, 
+                        `evaluasi_oleh` = ?, 
+                        `evaluasi_at` = NOW(),
+                        `updated_at` = NOW()
+                    WHERE `id` = ?";
+            self::db()->query($sql, [$evaluasi, $tindakLanjut, $evaluator, $existing['id']]);
+            return true;
+        } else {
+            // Jika belum ada log presensi, buat log baru dengan status Terlambat
+            $sql = "INSERT INTO `absen_pegawai_log` 
+                        (`pegawai_id`, `tanggal`, `status`, `evaluasi`, `tindak_lanjut`, `evaluasi_oleh`, `evaluasi_at`, `created_at`, `updated_at`)
+                    VALUES 
+                        (?, ?, 'Terlambat', ?, ?, ?, NOW(), NOW(), NOW())";
+            self::db()->query($sql, [$pegawaiId, $tanggal, $evaluasi, $tindakLanjut, $evaluator]);
+            return true;
+        }
+    }
+
+    /**
+     * Hapus / Reset Catatan Keterlambatan
+     */
+    public static function deleteCatatanTerlambat(int $pegawaiId, string $tanggal): bool
+    {
+        self::init();
+        self::db()->query(
+            "UPDATE `absen_pegawai_log` SET `evaluasi` = NULL, `tindak_lanjut` = NULL, `evaluasi_oleh` = NULL, `evaluasi_at` = NULL, `updated_at` = NOW() WHERE `pegawai_id` = ? AND `tanggal` = ?",
             [$pegawaiId, $tanggal]
         );
         return true;

@@ -99,6 +99,7 @@ class AutoMigrate
             '2026_11_18_000061_create_tasbih_digital_tables'              => 'migration061CreateTasbihDigitalTables',
             '2026_11_18_000062_sync_absen_pegawai_jam_harian_and_tasbih'  => 'migration062SyncAbsenPegawaiJamHarianAndTasbih',
             '2026_11_18_000063_sync_jurnal_staff_and_tasbih_tables'        => 'migration063SyncJurnalStaffAndTasbihTables',
+            '2026_11_19_000064_add_evaluasi_to_absen_pegawai_log'          => 'migration064AddEvaluasiToAbsenPegawaiLog',
         ];
     }
     /**
@@ -4782,6 +4783,27 @@ class AutoMigrate
             if (class_exists('JurnalStaffModel')) {
                 JurnalStaffModel::ensureTablesExist();
             }
+        }
+    }
+
+    /**
+     * Migration 064: Tambah kolom evaluasi, tindak_lanjut, evaluasi_oleh, evaluasi_at pada absen_pegawai_log
+     */
+    protected static function migration064AddEvaluasiToAbsenPegawaiLog(PDO $pdo): void
+    {
+        $cols = [
+            'evaluasi'      => 'TEXT NULL AFTER `keterangan`',
+            'tindak_lanjut' => 'TEXT NULL AFTER `evaluasi`',
+            'evaluasi_oleh' => 'VARCHAR(100) NULL AFTER `tindak_lanjut`',
+            'evaluasi_at'   => 'DATETIME NULL AFTER `evaluasi_oleh`',
+        ];
+        foreach ($cols as $colName => $colDef) {
+            try {
+                $check = $pdo->query("SHOW COLUMNS FROM `absen_pegawai_log` LIKE '{$colName}'")->fetchAll();
+                if (empty($check)) {
+                    $pdo->exec("ALTER TABLE `absen_pegawai_log` ADD COLUMN `{$colName}` {$colDef}");
+                }
+            } catch (Throwable $e) {}
         }
     }
 }
