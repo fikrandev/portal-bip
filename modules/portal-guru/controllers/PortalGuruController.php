@@ -1543,6 +1543,9 @@ class PortalGuruController
             if ($file && !empty($file['tmp_name']) && $file['error'] === UPLOAD_ERR_OK) {
                 $sharedFoto = JurnalStaffModel::uploadBuktiFile($file);
             }
+            if ($sharedFoto === null && !empty($input['foto_captured'])) {
+                $sharedFoto = JurnalStaffModel::saveBase64Bukti((string) $input['foto_captured']);
+            }
 
             // Support Multi-Jam Selection (e.g. jam_ids = [2, 3, 4] atau string "2,3,4")
             $jamIds = [];

@@ -965,6 +965,52 @@ class JurnalStaffModel
         return null;
     }
 
+    /**
+     * Helper simpan foto bukti dari data URL Base64 hasil kamera browser
+     */
+    public static function saveBase64Bukti(string $dataUrl): ?string
+    {
+        if (!preg_match('/^data:image\/(jpeg|jpg|png|webp);base64,(.+)$/is', trim($dataUrl), $matches)) {
+            return null;
+        }
+
+        $extMap = [
+            'jpeg' => 'jpg',
+            'jpg'  => 'jpg',
+            'png'  => 'png',
+            'webp' => 'webp',
+        ];
+        $ext = $extMap[strtolower($matches[1])] ?? 'jpg';
+
+        $binary = base64_decode($matches[2], true);
+        if ($binary === false || strlen($binary) === 0 || strlen($binary) > 6 * 1024 * 1024) {
+            return null;
+        }
+
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mime = finfo_buffer($finfo, $binary);
+        finfo_close($finfo);
+
+        $allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+        if (!in_array($mime, $allowedTypes, true)) {
+            return null;
+        }
+
+        $uploadDir = BASE_PATH . '/public/uploads/jurnal-staff/';
+        if (!is_dir($uploadDir)) {
+            @mkdir($uploadDir, 0755, true);
+        }
+
+        $filename = 'bukti_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+        $dest = $uploadDir . $filename;
+
+        if (file_put_contents($dest, $binary) !== false) {
+            return 'uploads/jurnal-staff/' . $filename;
+        }
+
+        return null;
+    }
+
     private static function getNamaHariIndo(string $englishDay): string
     {
         $map = [

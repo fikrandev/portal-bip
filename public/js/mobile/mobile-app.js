@@ -1061,6 +1061,9 @@ window.MobileRouter = (function() {
     const currentNorm = normalizeUrl(window.location.href);
 
     // Reset any stuck body scroll locks or stray modals before route transition
+    if (typeof window.closeStaffLiveCamera === 'function') {
+      window.closeStaffLiveCamera();
+    }
     document.body.classList.remove('overflow-hidden');
     document.body.style.overflow = '';
     const stuckModal = document.getElementById('journal-input-modal');
