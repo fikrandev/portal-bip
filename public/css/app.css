@@ -224,3 +224,11 @@ input[type="reset"],
     animation: portalPjaxFadeIn 150ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
     will-change: opacity, transform;
 }
+
+/* ── Defensive Form Control Fallback (Tailwind v4) ─── */
+input:is([type="text"], [type="date"], [type="time"], [type="number"], [type="email"], [type="password"], [type="search"], [type="tel"], [type="url"], :not([type])):is([class*="border-slate-"], [class*="border-gray-"], [class*="border-primary-"], [class*="border-indigo-"]):not([class~="border"]):not([class*="border-0"]):not([class*="border-2"]):not([class*="border-4"]):not([class*="border-8"]):not([class*="border-t"]):not([class*="border-r"]):not([class*="border-b"]):not([class*="border-l"]):not([class*="border-x"]):not([class*="border-y"]),
+select:is([class*="border-slate-"], [class*="border-gray-"], [class*="border-primary-"], [class*="border-indigo-"]):not([class~="border"]):not([class*="border-0"]):not([class*="border-2"]):not([class*="border-4"]):not([class*="border-8"]):not([class*="border-t"]):not([class*="border-r"]):not([class*="border-b"]):not([class*="border-l"]):not([class*="border-x"]):not([class*="border-y"]),
+textarea:is([class*="border-slate-"], [class*="border-gray-"], [class*="border-primary-"], [class*="border-indigo-"]):not([class~="border"]):not([class*="border-0"]):not([class*="border-2"]):not([class*="border-4"]):not([class*="border-8"]):not([class*="border-t"]):not([class*="border-r"]):not([class*="border-b"]):not([class*="border-l"]):not([class*="border-x"]):not([class*="border-y"]) {
+    border-style: solid;
+    border-width: 1px;
+}

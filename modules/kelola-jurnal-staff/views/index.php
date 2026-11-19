@@ -384,19 +384,19 @@ $todayYmd = date('Y-m-d');
                     <!-- Tanggal Mulai -->
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 mb-1">Tanggal Mulai</label>
-                        <input type="date" name="start_date" value="<?= htmlspecialchars($filterStartDate) ?>" class="w-full text-xs rounded-xl border-slate-200 focus:border-indigo-500 focus:ring focus:ring-indigo-200">
+                        <input type="date" name="start_date" value="<?= htmlspecialchars($filterStartDate) ?>" class="w-full px-3.5 py-2.5 text-xs font-medium text-slate-800 bg-slate-50/70 hover:bg-white focus:bg-white rounded-xl border border-slate-200 hover:border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none focus:outline-none transition-all placeholder:text-slate-400">
                     </div>
 
                     <!-- Tanggal Akhir -->
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 mb-1">Tanggal Akhir</label>
-                        <input type="date" name="end_date" value="<?= htmlspecialchars($filterEndDate) ?>" class="w-full text-xs rounded-xl border-slate-200 focus:border-indigo-500 focus:ring focus:ring-indigo-200">
+                        <input type="date" name="end_date" value="<?= htmlspecialchars($filterEndDate) ?>" class="w-full px-3.5 py-2.5 text-xs font-medium text-slate-800 bg-slate-50/70 hover:bg-white focus:bg-white rounded-xl border border-slate-200 hover:border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none focus:outline-none transition-all placeholder:text-slate-400">
                     </div>
 
                     <!-- Filter Jabatan / Divisi -->
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 mb-1">Jabatan / Divisi</label>
-                        <select name="jabatan" class="w-full text-xs rounded-xl border-slate-200 focus:border-indigo-500 focus:ring focus:ring-indigo-200">
+                        <select name="jabatan" class="w-full px-3.5 py-2.5 text-xs font-medium text-slate-800 bg-slate-50/70 hover:bg-white focus:bg-white rounded-xl border border-slate-200 hover:border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none focus:outline-none transition-all placeholder:text-slate-400">
                             <option value="">Semua Jabatan</option>
                             <?php foreach ($masterJabatanList as $mj): ?>
                                 <option value="<?= htmlspecialchars($mj['nama']) ?>" <?= $jabatan === $mj['nama'] ? 'selected' : '' ?>>
@@ -409,7 +409,7 @@ $todayYmd = date('Y-m-d');
                     <!-- Filter Staff -->
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 mb-1">Pegawai Staff</label>
-                        <select name="pegawai_id" class="w-full text-xs rounded-xl border-slate-200 focus:border-indigo-500 focus:ring focus:ring-indigo-200">
+                        <select name="pegawai_id" class="w-full px-3.5 py-2.5 text-xs font-medium text-slate-800 bg-slate-50/70 hover:bg-white focus:bg-white rounded-xl border border-slate-200 hover:border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none focus:outline-none transition-all placeholder:text-slate-400">
                             <option value="">Semua Pegawai Staff</option>
                             <?php foreach ($staffList as $stf): ?>
                                 <option value="<?= (int)$stf['id'] ?>" <?= $pegawaiId == $stf['id'] ? 'selected' : '' ?>>
@@ -422,7 +422,7 @@ $todayYmd = date('Y-m-d');
                     <!-- Filter Status -->
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 mb-1">Status Pelaksanaan</label>
-                        <select name="status" class="w-full text-xs rounded-xl border-slate-200 focus:border-indigo-500 focus:ring focus:ring-indigo-200">
+                        <select name="status" class="w-full px-3.5 py-2.5 text-xs font-medium text-slate-800 bg-slate-50/70 hover:bg-white focus:bg-white rounded-xl border border-slate-200 hover:border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none focus:outline-none transition-all placeholder:text-slate-400">
                             <option value="">Semua Status</option>
                             <option value="selesai" <?= $status === 'selesai' ? 'selected' : '' ?>>Selesai</option>
                             <option value="proses" <?= $status === 'proses' ? 'selected' : '' ?>>Proses</option>
@@ -438,8 +438,8 @@ $todayYmd = date('Y-m-d');
                                name="search" 
                                value="<?= htmlspecialchars($search) ?>" 
                                placeholder="Cari nama, aktivitas, uraian, kode..." 
-                               class="w-full text-xs pl-9 pr-4 py-2 rounded-xl border-slate-200 focus:border-indigo-500 focus:ring focus:ring-indigo-200">
-                        <svg class="w-4 h-4 text-slate-400 absolute left-3 top-2.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                               class="w-full pl-9 pr-4 py-2.5 text-xs font-medium text-slate-800 bg-slate-50/70 hover:bg-white focus:bg-white rounded-xl border border-slate-200 hover:border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none focus:outline-none transition-all placeholder:text-slate-400">
+                        <svg class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
                         </svg>
                     </div>
@@ -990,7 +990,7 @@ $todayYmd = date('Y-m-d');
                 <!-- Pilih Pegawai Staff -->
                 <div class="md:col-span-2">
                     <label class="block text-xs font-semibold text-slate-700 mb-1">Pegawai Staff / Pelaksana <span class="text-rose-500">*</span></label>
-                    <select name="pegawai_id" id="jurnal-pegawai-id" required onchange="handlePegawaiChange(this)" class="w-full text-xs rounded-xl border-slate-200 focus:border-indigo-500 focus:ring focus:ring-indigo-200">
+                    <select name="pegawai_id" id="jurnal-pegawai-id" required onchange="handlePegawaiChange(this)" class="w-full px-3.5 py-2.5 text-xs font-medium text-slate-800 bg-slate-50/70 hover:bg-white focus:bg-white rounded-xl border border-slate-200 hover:border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none focus:outline-none transition-all placeholder:text-slate-400">
                         <option value="">-- Pilih Pegawai Staff --</option>
                         <?php foreach ($staffList as $st): ?>
                             <option value="<?= (int)$st['id'] ?>" data-jabatan="<?= htmlspecialchars($st['jabatan']) ?>" data-unit="<?= htmlspecialchars($st['unit_tugas']) ?>">
@@ -1003,13 +1003,13 @@ $todayYmd = date('Y-m-d');
                 <!-- Tanggal -->
                 <div>
                     <label class="block text-xs font-semibold text-slate-700 mb-1">Tanggal Kegiatan <span class="text-rose-500">*</span></label>
-                    <input type="date" name="tanggal" id="jurnal-tanggal" value="<?= date('Y-m-d') ?>" required class="w-full text-xs rounded-xl border-slate-200 focus:border-indigo-500 focus:ring focus:ring-indigo-200">
+                    <input type="date" name="tanggal" id="jurnal-tanggal" value="<?= date('Y-m-d') ?>" required class="w-full px-3.5 py-2.5 text-xs font-medium text-slate-800 bg-slate-50/70 hover:bg-white focus:bg-white rounded-xl border border-slate-200 hover:border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none focus:outline-none transition-all placeholder:text-slate-400">
                 </div>
 
                 <!-- Jam Sesi (dari Pengaturan Jam) -->
                 <div>
                     <label class="block text-xs font-semibold text-slate-700 mb-1">Pilih Jam / Sesi Kerja <span class="text-rose-500">*</span></label>
-                    <select name="jam_id" id="jurnal-jam-id" onchange="handleJamChange(this)" class="w-full text-xs rounded-xl border-slate-200 focus:border-indigo-500 focus:ring focus:ring-indigo-200">
+                    <select name="jam_id" id="jurnal-jam-id" onchange="handleJamChange(this)" class="w-full px-3.5 py-2.5 text-xs font-medium text-slate-800 bg-slate-50/70 hover:bg-white focus:bg-white rounded-xl border border-slate-200 hover:border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none focus:outline-none transition-all placeholder:text-slate-400">
                         <option value="">-- Pilih Sesi Jam Kerja --</option>
                         <?php foreach ($activeJamOptions as $aj): 
                             $rentang = date('H.i', strtotime($aj['jam_mulai'])) . ' - ' . date('H.i', strtotime($aj['jam_selesai']));
@@ -1025,7 +1025,7 @@ $todayYmd = date('Y-m-d');
                 <!-- Opsi Tugas / Job Desk -->
                 <div class="md:col-span-2">
                     <label class="block text-xs font-semibold text-slate-700 mb-1">Pilih Tugas / Job Desk Divisi (Opsional)</label>
-                    <select name="tugas_id" id="jurnal-tugas-id" onchange="handleTugasChange(this)" class="w-full text-xs rounded-xl border-slate-200 focus:border-indigo-500 focus:ring focus:ring-indigo-200">
+                    <select name="tugas_id" id="jurnal-tugas-id" onchange="handleTugasChange(this)" class="w-full px-3.5 py-2.5 text-xs font-medium text-slate-800 bg-slate-50/70 hover:bg-white focus:bg-white rounded-xl border border-slate-200 hover:border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none focus:outline-none transition-all placeholder:text-slate-400">
                         <option value="">-- Ketik aktivitas kustom atau pilih tugas di bawah --</option>
                     </select>
                 </div>
@@ -1033,31 +1033,31 @@ $todayYmd = date('Y-m-d');
                 <!-- Nama Aktivitas / Pekerjaan -->
                 <div class="md:col-span-2">
                     <label class="block text-xs font-semibold text-slate-700 mb-1">Aktivitas / Nama Pekerjaan <span class="text-rose-500">*</span></label>
-                    <input type="text" name="aktivitas" id="jurnal-aktivitas" required placeholder="Contoh: Maintenance Jaringan & Server Lab Komputer" class="w-full text-xs rounded-xl border-slate-200 focus:border-indigo-500 focus:ring focus:ring-indigo-200">
+                    <input type="text" name="aktivitas" id="jurnal-aktivitas" required placeholder="Contoh: Maintenance Jaringan & Server Lab Komputer" class="w-full px-3.5 py-2.5 text-xs font-medium text-slate-800 bg-slate-50/70 hover:bg-white focus:bg-white rounded-xl border border-slate-200 hover:border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none focus:outline-none transition-all placeholder:text-slate-400">
                 </div>
 
                 <!-- Uraian Hasil Kerja -->
                 <div class="md:col-span-2">
                     <label class="block text-xs font-semibold text-slate-700 mb-1">Uraian Hasil Kerja <span class="text-rose-500">*</span></label>
-                    <textarea name="uraian_hasil" id="jurnal-uraian-hasil" rows="3" required placeholder="Jelaskan detail apa saja yang telah dikerjakan dan hasil yang dicapai..." class="w-full text-xs rounded-xl border-slate-200 focus:border-indigo-500 focus:ring focus:ring-indigo-200"></textarea>
+                    <textarea name="uraian_hasil" id="jurnal-uraian-hasil" rows="3" required placeholder="Jelaskan detail apa saja yang telah dikerjakan dan hasil yang dicapai..." class="w-full px-3.5 py-2.5 text-xs font-medium text-slate-800 bg-slate-50/70 hover:bg-white focus:bg-white rounded-xl border border-slate-200 hover:border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none focus:outline-none transition-all placeholder:text-slate-400"></textarea>
                 </div>
 
                 <!-- Kendala / Hambatan -->
                 <div class="md:col-span-2">
                     <label class="block text-xs font-semibold text-slate-700 mb-1">Kendala / Solusi (Opsional)</label>
-                    <textarea name="kendala" id="jurnal-kendala" rows="2" placeholder="Catat jika terdapat kendala, hambatan, atau tindak lanjut yang dibutuhkan..." class="w-full text-xs rounded-xl border-slate-200 focus:border-indigo-500 focus:ring focus:ring-indigo-200"></textarea>
+                    <textarea name="kendala" id="jurnal-kendala" rows="2" placeholder="Catat jika terdapat kendala, hambatan, atau tindak lanjut yang dibutuhkan..." class="w-full px-3.5 py-2.5 text-xs font-medium text-slate-800 bg-slate-50/70 hover:bg-white focus:bg-white rounded-xl border border-slate-200 hover:border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none focus:outline-none transition-all placeholder:text-slate-400"></textarea>
                 </div>
 
                 <!-- Foto Bukti -->
                 <div>
                     <label class="block text-xs font-semibold text-slate-700 mb-1">Foto Bukti Kegiatan (Opsional)</label>
-                    <input type="file" name="foto_bukti" id="jurnal-foto-bukti" accept="image/*" class="w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                    <input type="file" name="foto_bukti" id="jurnal-foto-bukti" accept="image/*" class="w-full px-3 py-2 text-xs text-slate-500 bg-slate-50/70 rounded-xl border border-dashed border-slate-300 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer">
                 </div>
 
                 <!-- Status -->
                 <div>
                     <label class="block text-xs font-semibold text-slate-700 mb-1">Status Pelaksanaan <span class="text-rose-500">*</span></label>
-                    <select name="status" id="jurnal-status" required class="w-full text-xs rounded-xl border-slate-200 focus:border-indigo-500 focus:ring focus:ring-indigo-200">
+                    <select name="status" id="jurnal-status" required class="w-full px-3.5 py-2.5 text-xs font-medium text-slate-800 bg-slate-50/70 hover:bg-white focus:bg-white rounded-xl border border-slate-200 hover:border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none focus:outline-none transition-all placeholder:text-slate-400">
                         <option value="selesai">Selesai</option>
                         <option value="proses">Dalam Proses</option>
                         <option value="tertunda">Tertunda</option>
@@ -1175,23 +1175,23 @@ $todayYmd = date('Y-m-d');
             <div class="grid grid-cols-2 gap-3">
                 <div>
                     <label class="block text-xs font-semibold text-slate-700 mb-1">Jam Mulai <span class="text-rose-500">*</span></label>
-                    <input type="time" name="jam_mulai" id="jam-mulai" required value="07:00" class="w-full text-xs rounded-xl border-slate-200 focus:border-indigo-500 focus:ring focus:ring-indigo-200">
+                    <input type="time" name="jam_mulai" id="jam-mulai" required value="07:00" class="w-full px-3.5 py-2.5 text-xs font-medium text-slate-800 bg-slate-50/70 hover:bg-white focus:bg-white rounded-xl border border-slate-200 hover:border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none focus:outline-none transition-all placeholder:text-slate-400">
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-700 mb-1">Jam Selesai <span class="text-rose-500">*</span></label>
-                    <input type="time" name="jam_selesai" id="jam-selesai" required value="08:00" class="w-full text-xs rounded-xl border-slate-200 focus:border-indigo-500 focus:ring focus:ring-indigo-200">
+                    <input type="time" name="jam_selesai" id="jam-selesai" required value="08:00" class="w-full px-3.5 py-2.5 text-xs font-medium text-slate-800 bg-slate-50/70 hover:bg-white focus:bg-white rounded-xl border border-slate-200 hover:border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none focus:outline-none transition-all placeholder:text-slate-400">
                 </div>
             </div>
 
             <div>
                 <label class="block text-xs font-semibold text-slate-700 mb-1">Nama Sesi Jam Kerja <span class="text-rose-500">*</span></label>
-                <input type="text" name="nama_sesi" id="jam-nama-sesi" required placeholder="Misal: Tilawah & Dzikir Pagi / Aktifitas Kerja Sesi 1" class="w-full text-xs rounded-xl border-slate-200 focus:border-indigo-500 focus:ring focus:ring-indigo-200">
+                <input type="text" name="nama_sesi" id="jam-nama-sesi" required placeholder="Misal: Tilawah & Dzikir Pagi / Aktifitas Kerja Sesi 1" class="w-full px-3.5 py-2.5 text-xs font-medium text-slate-800 bg-slate-50/70 hover:bg-white focus:bg-white rounded-xl border border-slate-200 hover:border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none focus:outline-none transition-all placeholder:text-slate-400">
             </div>
 
             <div class="grid grid-cols-2 gap-3">
                 <div>
                     <label class="block text-xs font-semibold text-slate-700 mb-1">Tipe Sesi <span class="text-rose-500">*</span></label>
-                    <select name="tipe" id="jam-tipe" required class="w-full text-xs rounded-xl border-slate-200 focus:border-indigo-500 focus:ring focus:ring-indigo-200">
+                    <select name="tipe" id="jam-tipe" required class="w-full px-3.5 py-2.5 text-xs font-medium text-slate-800 bg-slate-50/70 hover:bg-white focus:bg-white rounded-xl border border-slate-200 hover:border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none focus:outline-none transition-all placeholder:text-slate-400">
                         <option value="tilawah">Tilawah / Dzikir</option>
                         <option value="aktifitas" selected>Aktifitas Kerja</option>
                         <option value="istirahat">Istirahat / Ishoma</option>
@@ -1200,18 +1200,18 @@ $todayYmd = date('Y-m-d');
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-700 mb-1">Nomor Urutan</label>
-                    <input type="number" name="urutan" id="jam-urutan" value="1" min="1" class="w-full text-xs rounded-xl border-slate-200 focus:border-indigo-500 focus:ring focus:ring-indigo-200">
+                    <input type="number" name="urutan" id="jam-urutan" value="1" min="1" class="w-full px-3.5 py-2.5 text-xs font-medium text-slate-800 bg-slate-50/70 hover:bg-white focus:bg-white rounded-xl border border-slate-200 hover:border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none focus:outline-none transition-all placeholder:text-slate-400">
                 </div>
             </div>
 
             <div>
                 <label class="block text-xs font-semibold text-slate-700 mb-1">Keterangan / Catatan Sesi</label>
-                <textarea name="keterangan" id="jam-keterangan" rows="2" placeholder="Keterangan opsional untuk panduan sesi ini..." class="w-full text-xs rounded-xl border-slate-200 focus:border-indigo-500 focus:ring focus:ring-indigo-200"></textarea>
+                <textarea name="keterangan" id="jam-keterangan" rows="2" placeholder="Keterangan opsional untuk panduan sesi ini..." class="w-full px-3.5 py-2.5 text-xs font-medium text-slate-800 bg-slate-50/70 hover:bg-white focus:bg-white rounded-xl border border-slate-200 hover:border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none focus:outline-none transition-all placeholder:text-slate-400"></textarea>
             </div>
 
             <div>
                 <label class="block text-xs font-semibold text-slate-700 mb-1">Status Keaktifan</label>
-                <select name="is_active" id="jam-is-active" class="w-full text-xs rounded-xl border-slate-200 focus:border-indigo-500 focus:ring focus:ring-indigo-200">
+                <select name="is_active" id="jam-is-active" class="w-full px-3.5 py-2.5 text-xs font-medium text-slate-800 bg-slate-50/70 hover:bg-white focus:bg-white rounded-xl border border-slate-200 hover:border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none focus:outline-none transition-all placeholder:text-slate-400">
                     <option value="1">Aktif</option>
                     <option value="0">Nonaktif</option>
                 </select>
@@ -1252,7 +1252,7 @@ $todayYmd = date('Y-m-d');
             <!-- Pilih Jabatan Referensi -->
             <div>
                 <label class="block text-xs font-semibold text-slate-700 mb-1">Jabatan Referensi <span class="text-rose-500">*</span></label>
-                <select name="jabatan_id" id="tugas-jabatan-id" required class="w-full text-xs rounded-xl border-slate-200 focus:border-indigo-500 focus:ring focus:ring-indigo-200">
+                <select name="jabatan_id" id="tugas-jabatan-id" required class="w-full px-3.5 py-2.5 text-xs font-medium text-slate-800 bg-slate-50/70 hover:bg-white focus:bg-white rounded-xl border border-slate-200 hover:border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none focus:outline-none transition-all placeholder:text-slate-400">
                     <?php foreach ($masterJabatanList as $mj): ?>
                         <option value="<?= (int)$mj['id'] ?>" <?= $selectedJabatanId === (int)$mj['id'] ? 'selected' : '' ?>>
                             <?= htmlspecialchars($mj['nama']) ?>
@@ -1264,14 +1264,14 @@ $todayYmd = date('Y-m-d');
             <!-- Nama Tugas -->
             <div>
                 <label class="block text-xs font-semibold text-slate-700 mb-1">Nama Tugas / Job Desk <span class="text-rose-500">*</span></label>
-                <input type="text" name="nama_tugas" id="tugas-nama" required placeholder="Misal: Maintenance Server, Backup Database, Troubleshooting Jaringan..." class="w-full text-xs rounded-xl border-slate-200 focus:border-indigo-500 focus:ring focus:ring-indigo-200">
+                <input type="text" name="nama_tugas" id="tugas-nama" required placeholder="Misal: Maintenance Server, Backup Database, Troubleshooting Jaringan..." class="w-full px-3.5 py-2.5 text-xs font-medium text-slate-800 bg-slate-50/70 hover:bg-white focus:bg-white rounded-xl border border-slate-200 hover:border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none focus:outline-none transition-all placeholder:text-slate-400">
             </div>
 
             <!-- Kategori Tugas & Status -->
             <div class="grid grid-cols-2 gap-3">
                 <div>
                     <label class="block text-xs font-semibold text-slate-700 mb-1">Kategori Tugas <span class="text-rose-500">*</span></label>
-                    <select name="kategori_tugas" id="tugas-kategori" required class="w-full text-xs rounded-xl border-slate-200 focus:border-indigo-500 focus:ring focus:ring-indigo-200">
+                    <select name="kategori_tugas" id="tugas-kategori" required class="w-full px-3.5 py-2.5 text-xs font-medium text-slate-800 bg-slate-50/70 hover:bg-white focus:bg-white rounded-xl border border-slate-200 hover:border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none focus:outline-none transition-all placeholder:text-slate-400">
                         <option value="rutin">Rutin (Harian)</option>
                         <option value="berkala">Berkala (Mingguan/Bulanan)</option>
                         <option value="insidental">Insidental (Kondisional)</option>
@@ -1279,7 +1279,7 @@ $todayYmd = date('Y-m-d');
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-700 mb-1">Status Keaktifan</label>
-                    <select name="is_active" id="tugas-is-active" class="w-full text-xs rounded-xl border-slate-200 focus:border-indigo-500 focus:ring focus:ring-indigo-200">
+                    <select name="is_active" id="tugas-is-active" class="w-full px-3.5 py-2.5 text-xs font-medium text-slate-800 bg-slate-50/70 hover:bg-white focus:bg-white rounded-xl border border-slate-200 hover:border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none focus:outline-none transition-all placeholder:text-slate-400">
                         <option value="1">Aktif</option>
                         <option value="0">Nonaktif</option>
                     </select>
@@ -1289,7 +1289,7 @@ $todayYmd = date('Y-m-d');
             <!-- Deskripsi Tugas -->
             <div>
                 <label class="block text-xs font-semibold text-slate-700 mb-1">Deskripsi / Panduan Kerja</label>
-                <textarea name="deskripsi" id="tugas-deskripsi" rows="3" placeholder="Jelaskan detail petunjuk kerja tugas ini..." class="w-full text-xs rounded-xl border-slate-200 focus:border-indigo-500 focus:ring focus:ring-indigo-200"></textarea>
+                <textarea name="deskripsi" id="tugas-deskripsi" rows="3" placeholder="Jelaskan detail petunjuk kerja tugas ini..." class="w-full px-3.5 py-2.5 text-xs font-medium text-slate-800 bg-slate-50/70 hover:bg-white focus:bg-white rounded-xl border border-slate-200 hover:border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none focus:outline-none transition-all placeholder:text-slate-400"></textarea>
             </div>
 
             <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-2">
@@ -1327,17 +1327,17 @@ $todayYmd = date('Y-m-d');
 
             <div>
                 <label class="block text-xs font-semibold text-slate-700 mb-1">Periode Awal <span class="text-rose-500">*</span></label>
-                <input type="date" name="periode_awal" value="<?= htmlspecialchars($periodeConfig['periode_awal'] ?: date('Y-m-01')) ?>" required class="w-full text-xs rounded-xl border-slate-200 focus:border-indigo-500 focus:ring focus:ring-indigo-200">
+                <input type="date" name="periode_awal" value="<?= htmlspecialchars($periodeConfig['periode_awal'] ?: date('Y-m-01')) ?>" required class="w-full px-3.5 py-2.5 text-xs font-medium text-slate-800 bg-slate-50/70 hover:bg-white focus:bg-white rounded-xl border border-slate-200 hover:border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none focus:outline-none transition-all placeholder:text-slate-400">
             </div>
 
             <div>
                 <label class="block text-xs font-semibold text-slate-700 mb-1">Periode Akhir <span class="text-rose-500">*</span></label>
-                <input type="date" name="periode_akhir" value="<?= htmlspecialchars($periodeConfig['periode_akhir'] ?: date('Y-m-t')) ?>" required class="w-full text-xs rounded-xl border-slate-200 focus:border-indigo-500 focus:ring focus:ring-indigo-200">
+                <input type="date" name="periode_akhir" value="<?= htmlspecialchars($periodeConfig['periode_akhir'] ?: date('Y-m-t')) ?>" required class="w-full px-3.5 py-2.5 text-xs font-medium text-slate-800 bg-slate-50/70 hover:bg-white focus:bg-white rounded-xl border border-slate-200 hover:border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none focus:outline-none transition-all placeholder:text-slate-400">
             </div>
 
             <div>
                 <label class="block text-xs font-semibold text-slate-700 mb-1">Keterangan Periode</label>
-                <input type="text" name="keterangan" value="<?= htmlspecialchars($periodeConfig['keterangan'] ?? '') ?>" placeholder="Misal: Periode Rekap Bulan November 2026" class="w-full text-xs rounded-xl border-slate-200 focus:border-indigo-500 focus:ring focus:ring-indigo-200">
+                <input type="text" name="keterangan" value="<?= htmlspecialchars($periodeConfig['keterangan'] ?? '') ?>" placeholder="Misal: Periode Rekap Bulan November 2026" class="w-full px-3.5 py-2.5 text-xs font-medium text-slate-800 bg-slate-50/70 hover:bg-white focus:bg-white rounded-xl border border-slate-200 hover:border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none focus:outline-none transition-all placeholder:text-slate-400">
             </div>
 
             <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-2">
