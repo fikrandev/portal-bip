@@ -402,7 +402,13 @@ class JurnalStaffModel
         $pegawaiId = (int)($data['pegawai_id'] ?? 0);
         $pegawai = self::getStaffById($pegawaiId);
         if (!$pegawai) {
-            throw new Exception("Data pegawai tidak ditemukan.");
+            $pegawai = [
+                'id' => $pegawaiId,
+                'nama' => $data['nama_staff'] ?? 'Staff Support',
+                'jabatan' => $data['jabatan'] ?? 'Staff',
+                'unit_tugas' => $data['unit_tugas'] ?? 'Support System',
+                'foto' => null
+            ];
         }
 
         $tanggal = !empty($data['tanggal']) ? trim($data['tanggal']) : date('Y-m-d');
@@ -440,9 +446,10 @@ class JurnalStaffModel
         $kendala = !empty($data['kendala']) ? trim($data['kendala']) : null;
         $status = in_array($data['status'] ?? '', ['selesai', 'proses', 'tertunda'], true) ? $data['status'] : 'selesai';
 
-        // Kode jurnal unik: JSTF-YYYYMMDD-XXXX
-        $randStr = strtoupper(substr(bin2hex(random_bytes(3)), 0, 4));
-        $kodeJurnal = 'JSTF-' . date('Ymd', strtotime($tanggal)) . '-' . $randStr;
+        // Kode jurnal unik: JSTF-YYYYMMDD-XXXXXX
+        $randStr = strtoupper(substr(bin2hex(random_bytes(4)), 0, 6));
+        $jamSuffix = $jamId ? ('-J' . $jamId) : '';
+        $kodeJurnal = 'JSTF-' . date('Ymd', strtotime($tanggal)) . '-' . $randStr . $jamSuffix;
 
         // Upload foto jika ada
         $fotoBukti = !empty($data['foto_bukti']) ? $data['foto_bukti'] : null;
@@ -462,7 +469,7 @@ class JurnalStaffModel
         ", [
             $kodeJurnal,
             $pegawaiId,
-            $pegawai['nama'],
+            $pegawai['nama'] ?? 'Staff',
             $pegawai['jabatan'] ?: 'Staff',
             $pegawai['unit_tugas'] ?: 'Bina Insan Palu',
             $tanggal,
@@ -932,7 +939,33 @@ class JurnalStaffModel
             FROM pegawai
             WHERE id = ?
         ", [$id]);
-        return $res ?: null;
+        if ($res) {
+            return $res;
+        }
+
+        // Fallback jika ID adalah ID user dari tabel users (misal admin / akun login staf)
+        $user = $db->find("SELECT id, username, full_name, role, email FROM users WHERE id = ? LIMIT 1", [$id]);
+        if ($user) {
+            if (!empty($user['email'])) {
+                $p = $db->find("SELECT id, nama, niy, jabatan, unit_tugas, jenis_pegawai, foto FROM pegawai WHERE email = ? LIMIT 1", [$user['email']]);
+                if ($p) return $p;
+            }
+            if (!empty($user['full_name'])) {
+                $p = $db->find("SELECT id, nama, niy, jabatan, unit_tugas, jenis_pegawai, foto FROM pegawai WHERE nama = ? LIMIT 1", [$user['full_name']]);
+                if ($p) return $p;
+            }
+            return [
+                'id' => (int)$user['id'],
+                'nama' => !empty($user['full_name']) ? $user['full_name'] : ($user['username'] ?? 'Staff'),
+                'niy' => '-',
+                'jabatan' => ucfirst($user['role'] ?? 'Staff'),
+                'unit_tugas' => 'Support System',
+                'jenis_pegawai' => 'staff',
+                'foto' => null
+            ];
+        }
+
+        return null;
     }
 
     /**
@@ -940,25 +973,49 @@ class JurnalStaffModel
      */
     public static function uploadBuktiFile(array $file): ?string
     {
-        $allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
-        $finfo = finfo_open(FILEINFO_MIME_TYPE);
-        $mime = finfo_file($finfo, $file['tmp_name']);
-        finfo_close($finfo);
+        if (empty($file['tmp_name']) || !is_uploaded_file($file['tmp_name'])) {
+            return null;
+        }
 
-        if (!in_array($mime, $allowedTypes, true)) {
+        $allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+        $mime = null;
+        if (function_exists('finfo_open')) {
+            $finfo = @finfo_open(FILEINFO_MIME_TYPE);
+            if ($finfo) {
+                $mime = @finfo_file($finfo, $file['tmp_name']);
+                @finfo_close($finfo);
+            }
+        }
+        if (!$mime && function_exists('mime_content_type')) {
+            $mime = @mime_content_type($file['tmp_name']);
+        }
+        if (!$mime) {
+            $mime = strtolower((string)($file['type'] ?? ''));
+        }
+
+        $rawExt = pathinfo($file['name'] ?? '', PATHINFO_EXTENSION);
+        $ext = strtolower($rawExt ?: '');
+        if (!$ext) {
+            $ext = ($mime === 'image/png') ? 'png' : (($mime === 'image/webp') ? 'webp' : 'jpg');
+        }
+
+        $validMime = !empty($mime) && in_array($mime, $allowedTypes, true);
+        $validExt = in_array($ext, ['jpg', 'jpeg', 'png', 'webp'], true);
+        if (!$validMime && !$validExt) {
             return null;
         }
 
         $uploadDir = BASE_PATH . '/public/uploads/jurnal-staff/';
         if (!is_dir($uploadDir)) {
-            @mkdir($uploadDir, 0755, true);
+            @mkdir($uploadDir, 0777, true);
         }
+        @chmod($uploadDir, 0777);
 
-        $ext = pathinfo($file['name'], PATHINFO_EXTENSION) ?: 'jpg';
-        $filename = 'bukti_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.' . strtolower($ext);
+        $safeExt = in_array($ext, ['jpg', 'jpeg'], true) ? 'jpg' : ($ext === 'webp' ? 'webp' : 'png');
+        $filename = 'bukti_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.' . $safeExt;
         $dest = $uploadDir . $filename;
 
-        if (move_uploaded_file($file['tmp_name'], $dest)) {
+        if (@move_uploaded_file($file['tmp_name'], $dest)) {
             return 'uploads/jurnal-staff/' . $filename;
         }
 
@@ -970,41 +1027,37 @@ class JurnalStaffModel
      */
     public static function saveBase64Bukti(string $dataUrl): ?string
     {
-        if (!preg_match('/^data:image\/(jpeg|jpg|png|webp);base64,(.+)$/is', trim($dataUrl), $matches)) {
+        $dataUrl = trim($dataUrl);
+        if (empty($dataUrl) || strpos($dataUrl, 'base64,') === false) {
             return null;
         }
 
-        $extMap = [
-            'jpeg' => 'jpg',
-            'jpg'  => 'jpg',
-            'png'  => 'png',
-            'webp' => 'webp',
-        ];
-        $ext = $extMap[strtolower($matches[1])] ?? 'jpg';
+        $parts = explode('base64,', $dataUrl, 2);
+        $header = strtolower($parts[0] ?? '');
+        $base64 = trim($parts[1] ?? '');
 
-        $binary = base64_decode($matches[2], true);
-        if ($binary === false || strlen($binary) === 0 || strlen($binary) > 6 * 1024 * 1024) {
-            return null;
+        $ext = 'jpg';
+        if (strpos($header, 'png') !== false) {
+            $ext = 'png';
+        } elseif (strpos($header, 'webp') !== false) {
+            $ext = 'webp';
         }
 
-        $finfo = finfo_open(FILEINFO_MIME_TYPE);
-        $mime = finfo_buffer($finfo, $binary);
-        finfo_close($finfo);
-
-        $allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
-        if (!in_array($mime, $allowedTypes, true)) {
+        $binary = base64_decode($base64, true);
+        if ($binary === false || strlen($binary) === 0 || strlen($binary) > 10 * 1024 * 1024) {
             return null;
         }
 
         $uploadDir = BASE_PATH . '/public/uploads/jurnal-staff/';
         if (!is_dir($uploadDir)) {
-            @mkdir($uploadDir, 0755, true);
+            @mkdir($uploadDir, 0777, true);
         }
+        @chmod($uploadDir, 0777);
 
         $filename = 'bukti_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
         $dest = $uploadDir . $filename;
 
-        if (file_put_contents($dest, $binary) !== false) {
+        if (@file_put_contents($dest, $binary) !== false) {
             return 'uploads/jurnal-staff/' . $filename;
         }
 

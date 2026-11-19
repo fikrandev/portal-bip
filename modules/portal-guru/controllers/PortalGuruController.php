@@ -1638,6 +1638,7 @@ class PortalGuruController
             ]);
             exit;
         } catch (Throwable $e) {
+            error_log("Error simpanJurnalStaff: " . $e->getMessage() . " in " . $e->getFile() . ":" . $e->getLine());
             echo json_encode(['success' => false, 'message' => 'Gagal menyimpan: ' . $e->getMessage()]);
             exit;
         }

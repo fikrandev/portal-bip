@@ -515,8 +515,8 @@
                     </label>
 
                     <input type="hidden" name="foto_captured" id="inp_foto_captured" value="">
-                    <input type="file" name="foto_bukti" id="inp_foto_bukti" accept="image/*" onchange="handleFotoPreview(this)" class="hidden">
-                    <input type="file" id="inp_foto_camera_fallback" accept="image/*" capture="environment" onchange="handleFotoPreview(this)" class="hidden">
+                    <input type="file" name="foto_bukti" id="inp_foto_bukti" accept="image/*" onchange="handleFotoPreview(this, 'gallery')" class="hidden">
+                    <input type="file" id="inp_foto_camera_fallback" accept="image/*" capture="environment" onchange="handleFotoPreview(this, 'camera_device')" class="hidden">
 
                     <div class="grid grid-cols-5 gap-2">
                         <button type="button" onclick="openStaffLiveCamera()" id="btn-open-live-camera"
@@ -524,11 +524,11 @@
                             <i data-lucide="camera" class="w-4 h-4 shrink-0"></i>
                             <span class="text-xs font-bold truncate" id="btn-foto-text">Buka Kamera Langsung</span>
                         </button>
-                        <label for="inp_foto_bukti"
+                        <button type="button" onclick="openStaffGalleryPicker()" id="btn-open-gallery"
                                class="col-span-2 px-3 py-2.5 rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 hover:bg-slate-100 text-slate-600 flex items-center justify-center gap-1.5 cursor-pointer transition-all press-bounce">
                             <i data-lucide="image" class="w-4 h-4 shrink-0 text-slate-500"></i>
                             <span class="text-xs font-semibold truncate">Galeri / File</span>
-                        </label>
+                        </button>
                     </div>
 
                     <div id="preview-foto-container" class="hidden">
@@ -609,11 +609,36 @@
 
         <!-- Flash Effect Saat Jepret -->
         <div id="staff-cam-flash" class="pointer-events-none absolute inset-0 bg-white opacity-0 transition-opacity duration-150"></div>
+
+        <!-- Fallback/Error Panel jika Kamera Web diblokir browser -->
+        <div id="staff-cam-error-view" class="hidden absolute inset-0 bg-slate-950/95 flex flex-col items-center justify-center p-6 text-center z-30">
+            <div class="w-14 h-14 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center mb-3">
+                <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+            </div>
+            <h3 class="text-white font-bold text-base mb-1">Kamera Browser Terbatas</h3>
+            <p id="staff-cam-error-msg" class="text-slate-300 text-xs max-w-xs mb-4">
+                Browser belum mengizinkan akses kamera langsung atau memerlukan HTTPS. Buka kamera bawaan perangkat di bawah ini.
+            </p>
+            <div class="flex flex-col gap-2.5 w-full max-w-xs">
+                <button type="button" onclick="closeStaffLiveCamera(); document.getElementById('inp_foto_camera_fallback').click();"
+                        class="w-full py-3 px-4 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-lg active:scale-95 transition-all">
+                    📷 Buka Kamera Perangkat
+                </button>
+                <button type="button" onclick="closeStaffLiveCamera(); openStaffGalleryPicker();"
+                        class="w-full py-2.5 px-4 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-xs active:scale-95 transition-all">
+                    🖼️ Pilih dari Galeri
+                </button>
+                <button type="button" onclick="closeStaffLiveCamera();"
+                        class="w-full py-2 text-slate-400 hover:text-white text-xs">
+                    Tutup
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- Shutter Footer -->
     <div class="px-6 py-5 bg-black/90 border-t border-white/10 flex items-center justify-between safe-bottom shrink-0">
-        <button type="button" onclick="document.getElementById('inp_foto_bukti').click(); closeStaffLiveCamera();"
+        <button type="button" onclick="closeStaffLiveCamera(); openStaffGalleryPicker();"
                 class="w-20 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white/90 text-[11px] font-semibold text-center press-bounce transition-all">
             Galeri
         </button>
@@ -1104,23 +1129,41 @@
         });
     }
 
-    // Terapkan hasil foto (kamera browser / galeri terkompresi) ke preview & hidden input
-    function applyStaffCapturedDataUrl(dataUrl, displayName) {
-        const inpCaptured = document.getElementById('inp_foto_captured');
+    // Global variable penampung hasil foto kamera / upload
+    window.__staffCamStream = window.__staffCamStream || null;
+    window.__staffCamFacing = window.__staffCamFacing || 'environment';
+    window.__staffCamReqId = window.__staffCamReqId || 0;
+    window.__staffCapturedBlob = window.__staffCapturedBlob || null;
+    window.__staffCapturedFileName = window.__staffCapturedFileName || null;
+
+    // Helper pemicu pemilih galeri file
+    function openStaffGalleryPicker() {
         const inpBukti = document.getElementById('inp_foto_bukti');
-        const inpFallback = document.getElementById('inp_foto_camera_fallback');
+        if (inpBukti) inpBukti.click();
+    }
+    window.openStaffGalleryPicker = openStaffGalleryPicker;
+
+    // Terapkan hasil foto (kamera browser / galeri) ke preview UI
+    function applyStaffCapturedDataUrl(dataUrl, displayName, source) {
+        const inpCaptured = document.getElementById('inp_foto_captured');
         const previewContainer = document.getElementById('preview-foto-container');
         const imgPreview = document.getElementById('img-foto-preview');
         const btnText = document.getElementById('btn-foto-text');
         const lblName = document.getElementById('label-foto-captured-name');
 
-        if (inpCaptured) inpCaptured.value = dataUrl || '';
-        if (inpBukti) inpBukti.value = '';
-        if (inpFallback) inpFallback.value = '';
+        if (source === 'camera') {
+            if (inpCaptured) inpCaptured.value = dataUrl || '';
+            const inpBukti = document.getElementById('inp_foto_bukti');
+            if (inpBukti) inpBukti.value = '';
+        } else {
+            // Jika dari galeri / kamera native fallback, kosongkan string base64 berat
+            if (inpCaptured) inpCaptured.value = '';
+        }
+
         if (imgPreview) imgPreview.src = dataUrl || '';
         if (previewContainer) previewContainer.classList.remove('hidden');
         if (btnText) btnText.textContent = 'Ambil Ulang Kamera';
-        if (lblName) lblName.textContent = displayName || 'Foto kamera siap diupload';
+        if (lblName) lblName.textContent = displayName || 'Foto siap dilampirkan';
     }
 
     // Hapus pilihan foto bukti
@@ -1136,36 +1179,43 @@
         if (inpCaptured) inpCaptured.value = '';
         if (inpBukti) inpBukti.value = '';
         if (inpFallback) inpFallback.value = '';
+        window.__staffCapturedBlob = null;
+        window.__staffCapturedFileName = null;
+
         if (imgPreview) imgPreview.src = '';
         if (previewContainer) previewContainer.classList.add('hidden');
         if (btnText) btnText.textContent = 'Buka Kamera Langsung';
         if (lblName) lblName.textContent = 'Foto siap diupload';
     }
 
-    // Buka Kamera Browser Langsung (getUserMedia mirip Sarpras, fallback capture native jika diblokir)
-    window.__staffCamStream = window.__staffCamStream || null;
-    window.__staffCamFacing = window.__staffCamFacing || 'environment';
-    window.__staffCamReqId = window.__staffCamReqId || 0;
-
+    // Buka Kamera Browser Langsung (getUserMedia mirip Sarpras, dengan fallback kamera perangkat jika HTTPS/izin tidak ada)
     async function openStaffLiveCamera(requestedFacing) {
         ensureStaffModalMounted();
 
-        const facing = requestedFacing || window.__staffCamFacing || 'environment';
-        window.__staffCamFacing = facing;
+        const isSecure = window.isSecureContext || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+        const hasGetUserMedia = !!(navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === 'function');
 
-        if (!navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== 'function') {
-            if (typeof AndroidUI !== 'undefined') {
-                AndroidUI.toast('Browser belum mengizinkan kamera langsung, membuka kamera perangkat...', 'info');
-            }
+        // Jika koneksi tidak aman (HTTP biasa) atau browser tidak punya getUserMedia, langsung picu kamera bawaan HP secara sinkron
+        if (!isSecure || !hasGetUserMedia) {
             const fallbackInp = document.getElementById('inp_foto_camera_fallback');
-            if (fallbackInp) fallbackInp.click();
+            if (fallbackInp) {
+                fallbackInp.click();
+            } else {
+                openStaffGalleryPicker();
+            }
             return;
         }
 
         const camModal = document.getElementById('staff-camera-modal');
         const video = document.getElementById('staff-cam-video');
         const badge = document.getElementById('staff-cam-facing-badge');
+        const errorView = document.getElementById('staff-cam-error-view');
         if (!camModal || !video) return;
+
+        if (errorView) errorView.classList.add('hidden');
+
+        const facing = requestedFacing || window.__staffCamFacing || 'environment';
+        window.__staffCamFacing = facing;
 
         // Hentikan stream sebelumnya jika masih aktif
         if (window.__staffCamStream) {
@@ -1184,38 +1234,65 @@
 
         const reqId = ++window.__staffCamReqId;
 
+        let stream = null;
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({
+            // Tingkat 1: Resolusi ideal 720p (mirip Sarpras, ramah semua sensor HP)
+            stream = await navigator.mediaDevices.getUserMedia({
                 video: {
                     facingMode: { ideal: facing },
-                    width: { ideal: 1920 },
-                    height: { ideal: 1080 }
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
                 },
                 audio: false
             });
-
-            // Jika modal keburu ditutup / pindah kamera saat izin diproses, matikan stream lama
-            if (reqId !== window.__staffCamReqId || camModal.classList.contains('hidden')) {
-                stream.getTracks().forEach(t => t.stop());
-                return;
+        } catch (err1) {
+            console.warn('Live camera ideal constraints failed, trying facingMode only:', err1);
+            try {
+                // Tingkat 2: Tanpa batasan resolusi
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: facing },
+                    audio: false
+                });
+            } catch (err2) {
+                try {
+                    // Tingkat 3: Video paling dasar
+                    stream = await navigator.mediaDevices.getUserMedia({
+                        video: true,
+                        audio: false
+                    });
+                } catch (err3) {
+                    console.error('Live camera browser failed completely:', err3);
+                    if (reqId === window.__staffCamReqId && !camModal.classList.contains('hidden')) {
+                        if (errorView) {
+                            const isDenied = err3 && (err3.name === 'NotAllowedError' || err3.name === 'PermissionDeniedError');
+                            const errMsg = document.getElementById('staff-cam-error-msg');
+                            if (errMsg) {
+                                errMsg.textContent = isDenied
+                                    ? 'Izin kamera browser belum diberikan. Silakan buka kamera bawaan perangkat di bawah ini.'
+                                    : 'Kamera web tidak dapat diakses (' + (err3.message || 'Sedang digunakan aplikasi lain') + '). Silakan buka kamera bawaan perangkat di bawah ini.';
+                            }
+                            errorView.classList.remove('hidden');
+                        }
+                    }
+                    return;
+                }
             }
+        }
 
-            window.__staffCamStream = stream;
-            video.srcObject = stream;
-            await video.play().catch(() => {});
-        } catch (err) {
-            closeStaffLiveCamera();
-            const isDenied = err && (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError');
-            if (typeof AndroidUI !== 'undefined') {
-                AndroidUI.toast(
-                    isDenied
-                        ? 'Izin kamera diblokir browser. Membuka kamera/galeri cadangan...'
-                        : 'Kamera langsung tidak tersedia. Membuka kamera/galeri cadangan...',
-                    'warning'
-                );
-            }
-            const fallbackInp = document.getElementById('inp_foto_camera_fallback');
-            if (fallbackInp) fallbackInp.click();
+        if (reqId !== window.__staffCamReqId || camModal.classList.contains('hidden')) {
+            if (stream) stream.getTracks().forEach(t => t.stop());
+            return;
+        }
+
+        window.__staffCamStream = stream;
+        video.srcObject = stream;
+        video.setAttribute('playsinline', '');
+        video.setAttribute('muted', '');
+
+        try {
+            await video.play();
+        } catch (errPlay) {
+            console.warn('Video play warning:', errPlay);
         }
     }
 
@@ -1237,6 +1314,8 @@
             camModal.classList.add('hidden');
             camModal.classList.remove('flex');
         }
+        const errorView = document.getElementById('staff-cam-error-view');
+        if (errorView) errorView.classList.add('hidden');
     }
     window.closeStaffLiveCamera = closeStaffLiveCamera;
 
@@ -1247,9 +1326,9 @@
 
     function snapStaffPhoto() {
         const video = document.getElementById('staff-cam-video');
-        const canvas = document.getElementById('staff-cam-canvas');
+        const canvas = document.getElementById('staff-cam-canvas') || document.createElement('canvas');
         const flash = document.getElementById('staff-cam-flash');
-        if (!video || !canvas || !video.videoWidth || !video.videoHeight) {
+        if (!video || !video.videoWidth || !video.videoHeight) {
             if (typeof AndroidUI !== 'undefined') {
                 AndroidUI.toast('Kamera masih memuat gambar, tunggu sebentar...', 'warning');
             }
@@ -1267,14 +1346,29 @@
 
         const vw = video.videoWidth;
         const vh = video.videoHeight;
-        const maxDim = 1600;
-        const scale = Math.min(1, maxDim / Math.max(vw, vh));
-        const targetW = Math.max(1, Math.round(vw * scale));
-        const targetH = Math.max(1, Math.round(vh * scale));
+        const maxDim = 1280;
+        let targetW = vw;
+        let targetH = vh;
+        if (targetW > maxDim || targetH > maxDim) {
+            if (targetW > targetH) {
+                targetH = Math.round((targetH * maxDim) / targetW);
+                targetW = maxDim;
+            } else {
+                targetW = Math.round((targetW * maxDim) / targetH);
+                targetH = maxDim;
+            }
+        }
 
         canvas.width = targetW;
         canvas.height = targetH;
         const ctx = canvas.getContext('2d');
+
+        // Jika kamera depan, mirror agar hasil alami
+        if (window.__staffCamFacing === 'user') {
+            ctx.translate(targetW, 0);
+            ctx.scale(-1, 1);
+        }
+
         ctx.drawImage(video, 0, 0, targetW, targetH);
 
         const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
@@ -1282,56 +1376,45 @@
         const pad = n => String(n).padStart(2, '0');
         const fileName = `Foto_Kamera_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}.jpg`;
 
-        applyStaffCapturedDataUrl(dataUrl, fileName);
+        // Simpan juga sebagai Blob native untuk FormData multipart
+        try {
+            canvas.toBlob((blob) => {
+                window.__staffCapturedBlob = blob;
+                window.__staffCapturedFileName = fileName;
+            }, 'image/jpeg', 0.85);
+        } catch (e) {
+            window.__staffCapturedBlob = null;
+        }
+
+        applyStaffCapturedDataUrl(dataUrl, fileName, 'camera');
 
         setTimeout(() => {
             closeStaffLiveCamera();
-        }, 120);
+        }, 130);
 
         if (typeof AndroidUI !== 'undefined') {
             AndroidUI.toast('Foto berhasil diambil dari kamera!', 'success');
         }
     }
 
-    // Preview & Kompresi Foto Bukti saat pilih dari Galeri / Fallback Kamera
-    function handleFotoPreview(input) {
+    // Preview & Kompresi Foto Bukti saat pilih dari Galeri / Fallback Kamera Native
+    function handleFotoPreview(input, source) {
         const file = input && input.files && input.files[0];
         if (!file) return;
 
+        // Jika bersumber dari fallback kamera native HP
+        if (source === 'camera_device') {
+            window.__staffCapturedBlob = file;
+            window.__staffCapturedFileName = file.name;
+        } else {
+            // Galeri asli
+            window.__staffCapturedBlob = null;
+            window.__staffCapturedFileName = null;
+        }
+
         const reader = new FileReader();
         reader.onload = function(e) {
-            const rawResult = e.target.result;
-            const img = new Image();
-            img.onload = function() {
-                try {
-                    const maxDim = 1600;
-                    const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
-                    const w = Math.max(1, Math.round(img.width * scale));
-                    const h = Math.max(1, Math.round(img.height * scale));
-                    const canvas = document.getElementById('staff-cam-canvas') || document.createElement('canvas');
-                    canvas.width = w;
-                    canvas.height = h;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, w, h);
-                    const compressed = canvas.toDataURL('image/jpeg', 0.85);
-                    applyStaffCapturedDataUrl(compressed, file.name);
-                } catch (err) {
-                    applyStaffCapturedDataUrl(rawResult, file.name);
-                }
-            };
-            img.onerror = function() {
-                const previewContainer = document.getElementById('preview-foto-container');
-                const imgPreview = document.getElementById('img-foto-preview');
-                const btnText = document.getElementById('btn-foto-text');
-                const lblName = document.getElementById('label-foto-captured-name');
-                const inpCaptured = document.getElementById('inp_foto_captured');
-                if (inpCaptured) inpCaptured.value = '';
-                if (imgPreview) imgPreview.src = rawResult;
-                if (previewContainer) previewContainer.classList.remove('hidden');
-                if (btnText) btnText.textContent = 'Ambil Ulang Kamera';
-                if (lblName) lblName.textContent = file.name;
-            };
-            img.src = rawResult;
+            applyStaffCapturedDataUrl(e.target.result, file.name, source || 'gallery');
         };
         reader.readAsDataURL(file);
     }
@@ -1374,6 +1457,24 @@
         const jamIdsVal = document.getElementById('inp_jam_ids').value;
         if (jamIdsVal) {
             formData.set('jam_ids', jamIdsVal);
+        }
+
+        // Pengelolaan Foto Bukti:
+        // Prioritas 1: Blob dari Kamera Live Browser
+        if (window.__staffCapturedBlob) {
+            formData.set('foto_bukti', window.__staffCapturedBlob, window.__staffCapturedFileName || 'bukti_kamera.jpg');
+            formData.delete('foto_captured');
+        } else {
+            // Prioritas 2: File asli dari Galeri atau Kamera Native
+            const inpBukti = document.getElementById('inp_foto_bukti');
+            const inpFallback = document.getElementById('inp_foto_camera_fallback');
+            if (inpBukti && inpBukti.files && inpBukti.files[0]) {
+                formData.set('foto_bukti', inpBukti.files[0]);
+                formData.delete('foto_captured');
+            } else if (inpFallback && inpFallback.files && inpFallback.files[0]) {
+                formData.set('foto_bukti', inpFallback.files[0]);
+                formData.delete('foto_captured');
+            }
         }
 
         // State loading di tombol
