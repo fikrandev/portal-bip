@@ -12,38 +12,38 @@
 ?>
 
 <!-- Header with Back Button -->
-<div class="px-4 pt-3.5 pb-3 flex items-center justify-between bg-white border-b border-slate-100 sticky top-0 z-30 shadow-xs">
-    <div class="flex items-center gap-2.5">
-        <a href="<?= url('mobile') ?>" class="w-9 h-9 rounded-2xl bg-slate-100 text-slate-700 flex items-center justify-center press-bounce">
+<div class="px-3.5 sm:px-4 pt-3.5 pb-3 flex items-center justify-between bg-white border-b border-slate-100 sticky top-0 z-30 shadow-xs max-w-full overflow-hidden">
+    <div class="flex items-center gap-2.5 min-w-0 flex-1">
+        <a href="<?= url('mobile') ?>" class="w-9 h-9 rounded-2xl bg-slate-100 text-slate-700 flex items-center justify-center press-bounce shrink-0">
             <i data-lucide="arrow-left" class="w-5 h-5"></i>
         </a>
-        <div>
-            <h2 class="font-bold text-slate-900 text-base leading-tight flex items-center gap-1.5">
-                <span>Jurnal Kerja Staff</span>
-                <span class="text-xs">💼</span>
+        <div class="min-w-0 flex-1">
+            <h2 class="font-bold text-slate-900 text-sm sm:text-base leading-tight flex items-center gap-1.5 truncate">
+                <span class="truncate">Jurnal Kerja Staff</span>
+                <span class="text-xs shrink-0">💼</span>
             </h2>
-            <p class="text-[10px] text-slate-400 font-medium truncate max-w-[210px]">
+            <p class="text-[10px] text-slate-400 font-medium truncate">
                 <?= e($jabatanName) ?> &bull; Support System
             </p>
         </div>
     </div>
-    <div class="flex items-center gap-1.5">
+    <div class="flex items-center gap-1.5 shrink-0 ml-2">
         <a href="<?= url('mobile/rekap-absen') ?>" class="w-9 h-9 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center press-bounce shadow-xs" title="Rekap Kehadiran">
             <i data-lucide="calendar" class="w-4 h-4"></i>
         </a>
     </div>
 </div>
 
-<div class="p-4 space-y-4">
+<div class="p-3.5 sm:p-4 space-y-3.5 sm:space-y-4 max-w-full overflow-x-hidden">
 
     <!-- 1. Date Selector & Daily Progress Card -->
-    <div class="bg-primary-700 border border-primary-600 rounded-3xl p-4 text-white shadow-lg shadow-primary-700/20 space-y-3">
+    <div class="bg-primary-700 border border-primary-600 rounded-3xl p-3.5 sm:p-4 text-white shadow-lg shadow-primary-700/20 space-y-3 max-w-full overflow-hidden">
         <!-- Tanggal Bar -->
-        <div class="flex items-center justify-between gap-2">
-            <div>
+        <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="min-w-0">
                 <p class="text-[10px] uppercase font-bold tracking-wider text-primary-200">Tanggal Jurnal:</p>
-                <div class="flex items-center gap-1.5 mt-0.5">
-                    <span class="text-sm font-black text-white">
+                <div class="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                    <span class="text-xs sm:text-sm font-black text-white truncate">
                         <?php
                             $ts = strtotime($selectedDate);
                             $dayNames = ['Sunday' => 'Minggu', 'Monday' => 'Senin', 'Tuesday' => 'Selasa', 'Wednesday' => 'Rabu', 'Thursday' => 'Kamis', 'Friday' => 'Jumat', 'Saturday' => 'Sabtu'];
@@ -52,18 +52,18 @@
                         ?>
                     </span>
                     <?php if ($selectedDate === date('Y-m-d')): ?>
-                        <span class="px-2 py-0.2 rounded-full text-[9px] font-bold bg-white/20 text-white border border-white/30">Hari Ini</span>
+                        <span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-white/20 text-white border border-white/30 shrink-0">Hari Ini</span>
                     <?php endif; ?>
                 </div>
             </div>
 
             <!-- Quick Date Changer -->
-            <div class="flex items-center gap-1">
+            <div class="flex items-center gap-1 shrink-0">
                 <?php
                     $prevDate = date('Y-m-d', strtotime('-1 day', $ts));
                     $nextDate = date('Y-m-d', strtotime('+1 day', $ts));
                 ?>
-                <a href="<?= url('mobile/jurnal') ?>?tanggal=<?= $prevDate ?>" class="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center press-bounce text-xs" title="Hari Sebelumnya">
+                <a href="<?= url('mobile/jurnal') ?>?tanggal=<?= $prevDate ?>" class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center press-bounce text-xs" title="Hari Sebelumnya">
                     <i data-lucide="chevron-left" class="w-4 h-4"></i>
                 </a>
                 <?php if ($selectedDate !== date('Y-m-d')): ?>
@@ -71,10 +71,10 @@
                         Hari Ini
                     </a>
                 <?php endif; ?>
-                <a href="<?= url('mobile/jurnal') ?>?tanggal=<?= $nextDate ?>" class="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center press-bounce text-xs" title="Hari Berikutnya">
+                <a href="<?= url('mobile/jurnal') ?>?tanggal=<?= $nextDate ?>" class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center press-bounce text-xs" title="Hari Berikutnya">
                     <i data-lucide="chevron-right" class="w-4 h-4"></i>
                 </a>
-                <label class="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center press-bounce text-xs cursor-pointer relative" title="Pilih Tanggal">
+                <label class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center press-bounce text-xs cursor-pointer relative" title="Pilih Tanggal">
                     <i data-lucide="calendar-days" class="w-4 h-4"></i>
                     <input type="date" value="<?= e($selectedDate) ?>" onchange="location.href='<?= url('mobile/jurnal') ?>?tanggal=' + this.value" class="absolute inset-0 opacity-0 cursor-pointer">
                 </label>
@@ -83,9 +83,9 @@
 
         <!-- Progress Bar Pengisian -->
         <div class="bg-white/10 rounded-2xl p-2.5 backdrop-blur-xs border border-white/10 space-y-1.5">
-            <div class="flex items-center justify-between text-xs">
-                <span class="font-medium text-slate-200 text-[11px]">Progres Pengisian Sesi:</span>
-                <span class="font-black <?= $totalTerisi === $totalSesi && $totalSesi > 0 ? 'text-white' : 'text-primary-100' ?>">
+            <div class="flex items-center justify-between text-xs gap-1.5 flex-wrap">
+                <span class="font-medium text-slate-200 text-[10.5px]">Progres Pengisian Sesi:</span>
+                <span class="font-black text-[11px] <?= $totalTerisi === $totalSesi && $totalSesi > 0 ? 'text-white' : 'text-primary-100' ?>">
                     <?= $totalTerisi ?> / <?= $totalSesi ?> Sesi Terisi (<?= $persenTerisi ?>%)
                 </span>
             </div>
@@ -96,14 +96,14 @@
     </div>
 
     <!-- 2. Tab Switcher: Sesi Jam vs Riwayat Jurnal -->
-    <div class="flex p-1 bg-slate-200/70 rounded-2xl gap-1">
-        <button type="button" onclick="switchStaffTab('jam')" id="btn-tab-jam" class="flex-1 py-2 text-xs font-bold rounded-xl bg-white text-primary-700 shadow-sm transition-all flex items-center justify-center gap-1.5">
+    <div class="flex p-1 bg-slate-200/70 rounded-2xl gap-1 max-w-full">
+        <button type="button" onclick="switchStaffTab('jam')" id="btn-tab-jam" class="flex-1 py-2 text-xs font-bold rounded-xl bg-white text-primary-700 shadow-sm transition-all flex items-center justify-center gap-1.5 truncate">
             <span>🕒</span>
-            <span>Jadwal Jam Kerja</span>
+            <span class="truncate">Jadwal Jam Kerja</span>
         </button>
-        <button type="button" onclick="switchStaffTab('riwayat')" id="btn-tab-riwayat" class="flex-1 py-2 text-xs font-semibold rounded-xl text-slate-600 hover:text-slate-900 transition-all flex items-center justify-center gap-1.5">
+        <button type="button" onclick="switchStaffTab('riwayat')" id="btn-tab-riwayat" class="flex-1 py-2 text-xs font-semibold rounded-xl text-slate-600 hover:text-slate-900 transition-all flex items-center justify-center gap-1.5 truncate">
             <span>📋</span>
-            <span>Riwayat (<?= count($recentStaffJournals) ?>)</span>
+            <span class="truncate">Riwayat (<?= count($recentStaffJournals) ?>)</span>
         </button>
     </div>
 
@@ -161,7 +161,7 @@
                     
                     <div id="card-jam-<?= $jamId ?>"
                          onclick="toggleSelectJam(<?= $jamId ?>)"
-                         class="staff-jam-card group relative rounded-2xl p-2.5 border transition-all duration-200 cursor-pointer flex flex-col justify-between select-none press-bounce <?= $isFilled ? 'border-emerald-200 bg-emerald-50/25 hover:border-emerald-300' : 'border-slate-200/90 bg-white hover:border-primary-300 shadow-2xs' ?>"
+                         class="staff-jam-card group relative rounded-2xl p-2 sm:p-2.5 border transition-all duration-200 cursor-pointer flex flex-col justify-between select-none press-bounce min-w-0 overflow-hidden <?= $isFilled ? 'border-emerald-200 bg-emerald-50/25 hover:border-emerald-300' : 'border-slate-200/90 bg-white hover:border-primary-300 shadow-2xs' ?>"
                          data-jam-id="<?= $jamId ?>"
                          data-jam-rentang="<?= e($rentangStr) ?>"
                          data-jam-display="<?= e($rentangDisplay) ?> WITA"
@@ -177,21 +177,21 @@
                         
                         <!-- Top Bar: Sesi Badge + Checkbox Circle -->
                         <div class="flex items-center justify-between gap-1">
-                            <span class="text-[9px] font-black px-1.5 py-0.5 rounded-lg border <?= $badgeBg ?> leading-none flex items-center gap-0.5">
+                            <span class="text-[9px] font-black px-1.5 py-0.5 rounded-lg border <?= $badgeBg ?> leading-none flex items-center gap-0.5 shrink-0">
                                 <span><?= $iconEmoji ?></span>
                                 <span>S<?= $idx + 1 ?></span>
                             </span>
-                            <div class="jam-check-box w-5 h-5 rounded-full border border-slate-300 bg-white flex items-center justify-center text-[10px] font-black text-transparent transition-all shadow-2xs">
+                            <div class="jam-check-box w-5 h-5 rounded-full border border-slate-300 bg-white flex items-center justify-center text-[10px] font-black text-transparent transition-all shadow-2xs shrink-0">
                                 ✓
                             </div>
                         </div>
 
                         <!-- Jam & Nama Sesi -->
-                        <div class="my-2">
-                            <div class="text-[11px] font-black text-slate-900 tracking-tight leading-none">
+                        <div class="my-1.5 sm:my-2 min-w-0 overflow-hidden">
+                            <div class="text-[10px] sm:text-[11px] font-black text-slate-900 tracking-tight leading-none truncate">
                                 <?= e($rentangDisplay) ?>
                             </div>
-                            <p class="text-[9.5px] font-semibold text-slate-600 truncate mt-1 leading-tight" title="<?= e($jam['nama_sesi']) ?>">
+                            <p class="text-[9px] sm:text-[9.5px] font-semibold text-slate-600 truncate mt-1 leading-tight" title="<?= e($jam['nama_sesi']) ?>">
                                 <?= e($jam['nama_sesi']) ?>
                             </p>
                         </div>
@@ -327,7 +327,7 @@
 <!-- FLOATING ACTION BAR: MUNCUL SAAT MINIMAL 1 JAM TERPILIH   -->
 <!-- ======================================================== -->
 <div id="floating-jurnal-bar" 
-     class="fixed bottom-20 inset-x-4 sm:max-w-md sm:mx-auto z-40 transition-all duration-300 transform translate-y-32 opacity-0 pointer-events-none">
+     class="fixed bottom-20 left-0 right-0 max-w-md mx-auto px-3.5 sm:px-4 z-40 transition-all duration-300 transform translate-y-32 opacity-0 pointer-events-none">
     <div class="bg-slate-900/95 text-white backdrop-blur-md p-3 rounded-2xl shadow-2xl border border-white/10 flex items-center justify-between gap-2.5">
         
         <!-- Left: Counter & Summary Jam -->
@@ -569,7 +569,7 @@
 <!-- ======================================================== -->
 <!-- MODAL KAMERA LANGSUNG BROWSER (MIRIP KAMERA SARPRAS)    -->
 <!-- ======================================================== -->
-<div id="staff-camera-modal" class="hidden fixed inset-0 bg-black select-none flex-col" style="z-index: 10005;">
+<div id="staff-camera-modal" class="hidden fixed inset-0 bg-black select-none flex-col overflow-hidden" style="z-index: 10005; touch-action: none;">
     <!-- Header Kamera -->
     <div class="flex items-center justify-between px-4 py-3.5 bg-black/80 text-white border-b border-white/10 safe-top shrink-0">
         <div class="flex items-center gap-2.5 min-w-0">
@@ -660,6 +660,16 @@
 </div>
 
 <script>
+    // Bersihkan modal lama di document.body jika ada dari navigasi SPA sebelumnya
+    try {
+        const detachedModals = document.querySelectorAll('body > #modal-jurnal-staff, body > #staff-camera-modal');
+        detachedModals.forEach(el => {
+            if (document.querySelector('#mobile-main-view #' + el.id)) {
+                el.remove();
+            }
+        });
+    } catch (e) {}
+
     // State management multi-select jam
     let selectedJamMap = {};
 
@@ -1188,8 +1198,36 @@
         if (lblName) lblName.textContent = 'Foto siap diupload';
     }
 
+    // Hentikan dan lepaskan resource stream video & kamera WebRTC secara tuntas (Android/iOS/PC)
+    function stopStaffLiveCameraStream() {
+        window.__staffCamReqId = (window.__staffCamReqId || 0) + 1;
+        if (window.__staffCamStream) {
+            try {
+                window.__staffCamStream.getTracks().forEach(t => {
+                    try { t.stop(); } catch (e) {}
+                });
+            } catch (err) {}
+            window.__staffCamStream = null;
+        }
+        const video = document.getElementById('staff-cam-video');
+        if (video) {
+            if (video.srcObject && typeof video.srcObject.getTracks === 'function') {
+                try {
+                    video.srcObject.getTracks().forEach(t => {
+                        try { t.stop(); } catch (e) {}
+                    });
+                } catch (e) {}
+            }
+            try { video.pause(); } catch (err) {}
+            video.srcObject = null;
+            try { video.load(); } catch (err) {}
+        }
+    }
+    window.stopStaffLiveCameraStream = stopStaffLiveCameraStream;
+
     // Buka Kamera Browser Langsung (getUserMedia mirip Sarpras, dengan fallback kamera perangkat jika HTTPS/izin tidak ada)
     async function openStaffLiveCamera(requestedFacing) {
+        stopStaffLiveCameraStream();
         ensureStaffModalMounted();
 
         const isSecure = window.isSecureContext || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
@@ -1199,6 +1237,7 @@
         if (!isSecure || !hasGetUserMedia) {
             const fallbackInp = document.getElementById('inp_foto_camera_fallback');
             if (fallbackInp) {
+                fallbackInp.value = '';
                 fallbackInp.click();
             } else {
                 openStaffGalleryPicker();
@@ -1216,14 +1255,6 @@
 
         const facing = requestedFacing || window.__staffCamFacing || 'environment';
         window.__staffCamFacing = facing;
-
-        // Hentikan stream sebelumnya jika masih aktif
-        if (window.__staffCamStream) {
-            try {
-                window.__staffCamStream.getTracks().forEach(t => t.stop());
-            } catch (err) {}
-            window.__staffCamStream = null;
-        }
 
         if (badge) {
             badge.textContent = facing === 'user' ? 'Depan' : 'Belakang';
@@ -1297,18 +1328,7 @@
     }
 
     function closeStaffLiveCamera() {
-        window.__staffCamReqId = (window.__staffCamReqId || 0) + 1;
-        if (window.__staffCamStream) {
-            try {
-                window.__staffCamStream.getTracks().forEach(t => t.stop());
-            } catch (err) {}
-            window.__staffCamStream = null;
-        }
-        const video = document.getElementById('staff-cam-video');
-        if (video) {
-            try { video.pause(); } catch (err) {}
-            video.srcObject = null;
-        }
+        stopStaffLiveCameraStream();
         const camModal = document.getElementById('staff-camera-modal');
         if (camModal) {
             camModal.classList.add('hidden');
@@ -1504,13 +1524,10 @@
                     alert(json.message || 'Jurnal berhasil disimpan!');
                 }
                 closeModalJurnalStaff();
+                stopStaffLiveCameraStream();
                 setTimeout(() => {
-                    if (window.MobileRouter && typeof window.MobileRouter.reload === 'function') {
-                        window.MobileRouter.reload();
-                    } else {
-                        location.reload();
-                    }
-                }, 300);
+                    window.location.reload();
+                }, 350);
             } else {
                 const msg = (json && json.message) || 'Gagal menyimpan jurnal kerja.';
                 if (typeof AndroidUI !== 'undefined') {

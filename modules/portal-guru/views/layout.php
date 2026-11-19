@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="id" class="h-full bg-slate-100">
+<html lang="id" class="h-full bg-slate-100 overflow-x-hidden">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
@@ -195,7 +195,7 @@
         .border-blue-100 { border-color: #dbeafe !important; }
     </style>
 </head>
-<body class="h-full bg-slate-100 flex justify-center text-slate-800 antialiased selection:bg-primary-600 selection:text-white">
+<body class="h-full bg-slate-100 flex justify-center text-slate-800 antialiased selection:bg-primary-600 selection:text-white overflow-x-hidden">
 
     <!-- Top Slim SPA Progress Bar -->
     <div id="spa-progress-bar" aria-hidden="true"></div>
@@ -207,7 +207,7 @@
         <main id="mobile-main-view" 
               data-active-tab="<?= e($activeTab ?? 'beranda') ?>" 
               data-page-title="<?= e($pageTitle ?? 'Portal Guru') ?> — Portal BIP"
-              class="flex-1 pb-24 overflow-y-auto no-scrollbar">
+              class="flex-1 pb-24 overflow-y-auto overflow-x-hidden no-scrollbar w-full max-w-full">
             <?= $content ?? '' ?>
         </main>
 
