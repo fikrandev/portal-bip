@@ -1042,6 +1042,7 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
                                 <th class="py-3 px-3 text-center" title="Cuti">Cuti</th>
                                 <th class="py-3 px-3 text-center text-rose-700" title="Alpa">Alpa</th>
                                 <th class="py-3 px-4 text-center min-w-[120px]" title="Total Kehadiran (%)">Total Kehadiran (%)</th>
+                                <th class="py-3 px-3 text-center w-20">Aksi</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100 font-medium">
@@ -1050,7 +1051,7 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
                             if (empty($rRows)): 
                             ?>
                                 <tr>
-                                    <td colspan="13" class="py-12 text-center text-slate-400">
+                                    <td colspan="14" class="py-12 text-center text-slate-400">
                                         Tidak ada data pegawai yang sesuai dengan filter periode atau unit.
                                     </td>
                                 </tr>
@@ -1102,6 +1103,16 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
                                                 <span><?= number_format($pct, 1) ?>%</span>
                                             </div>
                                         </td>
+                                        <td class="py-3 px-3 text-center">
+                                            <a href="<?= url('kelola-absen-pegawai?tab=rekap&rekap_view=harian&tanggal=' . urlencode($targetDate) . '&search=' . urlencode($row['niy'] ?: $row['nama_polos'])) ?>"
+                                               class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[11px] font-bold bg-primary-50 text-primary-700 hover:bg-primary-600 hover:text-white border border-primary-200 transition-all shadow-xs"
+                                               title="Lihat & Ubah Log Presensi Harian Pegawai Ini">
+                                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                                                </svg>
+                                                <span>Log</span>
+                                            </a>
+                                        </td>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php endif; ?>
@@ -1118,6 +1129,7 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
                                 <td class="py-3.5 px-3 text-center"><?= number_format($pSum['total_cuti_semua'] ?? 0) ?></td>
                                 <td class="py-3.5 px-3 text-center text-rose-600"><?= number_format($pSum['total_alpa_semua'] ?? 0) ?></td>
                                 <td class="py-3.5 px-4 text-center text-primary-700"><?= number_format($pSum['rata_rata_kehadiran'] ?? 0, 1) ?>%</td>
+                                <td class="py-3.5 px-3 text-center text-slate-400">-</td>
                             </tr>
                         </tfoot>
                     </table>
@@ -1135,19 +1147,20 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
         <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <form method="GET" action="<?= url('kelola-absen-pegawai') ?>" class="flex flex-wrap items-center gap-2.5 flex-1">
                 <input type="hidden" name="tab" value="rekap">
+                <input type="hidden" name="rekap_view" value="harian">
 
                 <div class="flex items-center gap-2">
                     <span class="text-xs font-bold text-slate-700">Tanggal:</span>
-                    <input type="date" name="tanggal" value="<?= e($targetDate) ?>" onchange="this.form.submit()"
+                    <input type="date" name="tanggal" id="rekap_harian_filter_tanggal" value="<?= e($targetDate) ?>" onchange="this.form.submit()"
                            class="px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:bg-white focus:border-primary-500">
                 </div>
 
                 <div class="flex items-center gap-1.5">
-                    <button type="button" onclick="document.querySelector('input[name=tanggal]').value='<?= date('Y-m-d') ?>'; this.closest('form').submit();"
+                    <button type="button" onclick="document.getElementById('rekap_harian_filter_tanggal').value='<?= date('Y-m-d') ?>'; this.closest('form').submit();"
                             class="px-2.5 py-1.5 rounded-xl text-xs font-bold <?= $targetDate === date('Y-m-d') ? 'bg-primary-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' ?>">
                         Hari Ini
                     </button>
-                    <button type="button" onclick="document.querySelector('input[name=tanggal]').value='<?= date('Y-m-d', strtotime('-1 day')) ?>'; this.closest('form').submit();"
+                    <button type="button" onclick="document.getElementById('rekap_harian_filter_tanggal').value='<?= date('Y-m-d', strtotime('-1 day')) ?>'; this.closest('form').submit();"
                             class="px-2.5 py-1.5 rounded-xl text-xs font-bold <?= $targetDate === date('Y-m-d', strtotime('-1 day')) ? 'bg-primary-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' ?>">
                         Kemarin
                     </button>
@@ -1172,6 +1185,11 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
                     <option value="">Semua Status Kehadiran</option>
                     <option value="Hadir" <?= $filters['status'] === 'Hadir' ? 'selected' : '' ?>>Tepat Waktu (Hadir)</option>
                     <option value="Terlambat" <?= $filters['status'] === 'Terlambat' ? 'selected' : '' ?>>Terlambat</option>
+                    <option value="Izin" <?= $filters['status'] === 'Izin' ? 'selected' : '' ?>>Izin</option>
+                    <option value="Sakit" <?= $filters['status'] === 'Sakit' ? 'selected' : '' ?>>Sakit</option>
+                    <option value="Cuti" <?= $filters['status'] === 'Cuti' ? 'selected' : '' ?>>Cuti</option>
+                    <option value="Alpha" <?= ($filters['status'] === 'Alpha' || $filters['status'] === 'Alpa') ? 'selected' : '' ?>>Alpa</option>
+                    <option value="Dinas Luar" <?= $filters['status'] === 'Dinas Luar' ? 'selected' : '' ?>>Dinas Luar</option>
                     <option value="Belum" <?= $filters['status'] === 'Belum' ? 'selected' : '' ?>>Belum Check-in</option>
                 </select>
 
@@ -1210,7 +1228,9 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
             <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs">
                 <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Belum Check-in</span>
                 <div class="text-2xl font-extrabold text-slate-500 mt-1"><?= number_format($rekapData['stats']['totalBelum']) ?></div>
-                <p class="text-[11px] text-slate-400 mt-0.5">Belum absen hari ini</p>
+                <p class="text-[11px] text-slate-400 mt-0.5">
+                    <?= !empty($rekapData['stats']['totalIzinSakit']) ? '+' . $rekapData['stats']['totalIzinSakit'] . ' Izin/Sakit/Alpa' : 'Belum absen hari ini' ?>
+                </p>
             </div>
         </div>
 
@@ -1301,6 +1321,31 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
                                             <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-200">
                                                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                                                 Tepat Waktu
+                                            </span>
+                                        <?php elseif (in_array(strtolower($statusKehadiran), ['izin'], true)): ?>
+                                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-sky-100 text-sky-800 border border-sky-200">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-sky-500"></span>
+                                                Izin
+                                            </span>
+                                        <?php elseif (in_array(strtolower($statusKehadiran), ['sakit'], true)): ?>
+                                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-purple-100 text-purple-800 border border-purple-200">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
+                                                Sakit
+                                            </span>
+                                        <?php elseif (in_array(strtolower($statusKehadiran), ['cuti'], true)): ?>
+                                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-teal-100 text-teal-800 border border-teal-200">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-teal-500"></span>
+                                                Cuti
+                                            </span>
+                                        <?php elseif (in_array(strtolower($statusKehadiran), ['alpha', 'alpa'], true)): ?>
+                                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-rose-100 text-rose-800 border border-rose-200">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                                                Alpa
+                                            </span>
+                                        <?php elseif (in_array(strtolower($statusKehadiran), ['dinas luar', 'tugas luar'], true)): ?>
+                                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-indigo-100 text-indigo-800 border border-indigo-200">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+                                                Dinas Luar
                                             </span>
                                         <?php else: ?>
                                             <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-medium bg-slate-100 text-slate-400">
@@ -2168,7 +2213,7 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
             <!-- Status Kehadiran Dropdown -->
             <div>
                 <label class="block text-xs font-bold text-slate-700 mb-1">Status Kehadiran <span class="text-rose-500">*</span></label>
-                <select name="status" id="editlog_status" required
+                <select name="status" id="editlog_status" required onchange="handleEditLogStatusChange(this.value)"
                         class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-bold text-slate-800 outline-none focus:bg-white focus:border-primary-500">
                     <option value="Hadir">Hadir (Tepat Waktu)</option>
                     <option value="Terlambat">Hadir Terlambat</option>
@@ -2240,7 +2285,7 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
         <form id="formDeleteLogPresensi" method="POST" action="<?= url('kelola-absen-pegawai/log/delete') ?>" class="hidden">
             <?= CSRF::field() ?>
             <input type="hidden" name="return_tab" id="dellog_return_tab" value="rekap">
-            <input type="hidden" name="rekap_view" value="harian">
+            <input type="hidden" name="rekap_view" id="dellog_rekap_view" value="harian">
             <input type="hidden" name="pegawai_id" id="dellog_pegawai_id" value="">
             <input type="hidden" name="tanggal" id="dellog_tanggal" value="">
         </form>
@@ -3089,6 +3134,15 @@ function openModalEditLogPresensi(data) {
     document.getElementById('editlog_nama_kantor').value = data.nama_kantor || '';
     document.getElementById('editlog_keterangan').value = data.keterangan || '';
 
+    // Jika pegawai belum pernah check-in dan status Hadir/Terlambat, bantu isi default jam
+    if (!jamIn && st === 'Hadir') {
+        document.getElementById('editlog_jam_masuk').value = '07:15';
+        if (!jamOut) document.getElementById('editlog_jam_pulang').value = '15:00';
+    } else if (!jamIn && st === 'Terlambat') {
+        document.getElementById('editlog_jam_masuk').value = '07:45';
+        if (!jamOut) document.getElementById('editlog_jam_pulang').value = '15:00';
+    }
+
     const btnDel = document.getElementById('btn_delete_log');
     if (btnDel) {
         btnDel.style.display = data.has_log ? 'inline-block' : 'none';
@@ -3101,10 +3155,11 @@ function openModalEditLogPresensi(data) {
     }
 }
 
-function setEditLogStatusPreset(st) {
-    document.getElementById('editlog_status').value = st;
+function handleEditLogStatusChange(st) {
+    if (st.toLowerCase() === 'alpa') st = 'Alpha';
     const jamInp = document.getElementById('editlog_jam_masuk');
     const jamOut = document.getElementById('editlog_jam_pulang');
+    const ketInp = document.getElementById('editlog_keterangan');
     const batasJam = (currentEditLogData && currentEditLogData.batas_jam) ? currentEditLogData.batas_jam : '07:30';
 
     if (st === 'Hadir') {
@@ -3120,10 +3175,27 @@ function setEditLogStatusPreset(st) {
     } else if (['Izin', 'Sakit', 'Cuti', 'Alpha'].includes(st)) {
         jamInp.value = '';
         jamOut.value = '';
+        if (st === 'Izin' && (!ketInp.value || ketInp.value.startsWith('Terlambat'))) {
+            ketInp.value = 'Izin';
+        } else if (st === 'Sakit' && (!ketInp.value || ketInp.value.startsWith('Terlambat'))) {
+            ketInp.value = 'Sakit';
+        } else if (st === 'Cuti' && (!ketInp.value || ketInp.value.startsWith('Terlambat'))) {
+            ketInp.value = 'Cuti';
+        } else if (st === 'Alpha' && (!ketInp.value || ketInp.value.startsWith('Terlambat'))) {
+            ketInp.value = 'Alpa (Tanpa Keterangan)';
+        }
     } else if (st === 'Dinas Luar') {
         if (!jamInp.value) jamInp.value = '07:30';
         if (!jamOut.value) jamOut.value = '15:00';
+        if (!ketInp.value || ketInp.value.startsWith('Terlambat')) {
+            ketInp.value = 'Dinas Luar';
+        }
     }
+}
+
+function setEditLogStatusPreset(st) {
+    document.getElementById('editlog_status').value = st;
+    handleEditLogStatusChange(st);
 }
 
 function submitDeleteCurrentLog() {
@@ -3134,6 +3206,10 @@ function submitDeleteCurrentLog() {
     document.getElementById('dellog_pegawai_id').value = currentEditLogData.pegawai_id;
     document.getElementById('dellog_tanggal').value = currentEditLogData.tanggal;
     document.getElementById('dellog_return_tab').value = currentEditLogData.return_tab || 'rekap';
+    const delRekap = document.getElementById('dellog_rekap_view');
+    if (delRekap) {
+        delRekap.value = currentEditLogData.rekap_view || 'harian';
+    }
     document.getElementById('formDeleteLogPresensi').submit();
 }
 

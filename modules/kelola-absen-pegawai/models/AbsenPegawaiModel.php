@@ -2377,7 +2377,9 @@ class AbsenPegawaiModel
 
         if (!empty($filters['status'])) {
             if (in_array($filters['status'], ['Belum', 'Belum Absen'], true)) {
-                $where[] = "apl.jam_masuk IS NULL";
+                $where[] = "(apl.status IS NULL OR apl.status = '' OR apl.status = 'Belum') AND apl.jam_masuk IS NULL";
+            } elseif ($filters['status'] === 'Alpa' || $filters['status'] === 'Alpha') {
+                $where[] = "apl.status IN ('Alpa', 'Alpha')";
             } else {
                 $where[] = "apl.status = ?";
                 $params[] = $filters['status'];
@@ -2478,11 +2480,13 @@ class AbsenPegawaiModel
         $totalHadir = 0;
         $totalTerlambat = 0;
         $totalPulang = 0;
+        $totalIzinSakit = 0;
         $totalBelumAbsen = 0;
 
         foreach ($allStatsRows as $sr) {
+            $st = $sr['status'] ?? '';
             if (!empty($sr['jam_masuk'])) {
-                if ($sr['status'] === 'Terlambat') {
+                if ($st === 'Terlambat') {
                     $totalTerlambat++;
                 } else {
                     $totalHadir++;
@@ -2491,7 +2495,11 @@ class AbsenPegawaiModel
                     $totalPulang++;
                 }
             } else {
-                $totalBelumAbsen++;
+                if (in_array($st, ['Izin', 'Sakit', 'Cuti', 'Alpha', 'Alpa', 'Dinas Luar'], true)) {
+                    $totalIzinSakit++;
+                } else {
+                    $totalBelumAbsen++;
+                }
             }
         }
 
@@ -2508,6 +2516,7 @@ class AbsenPegawaiModel
                 'totalHadir' => $totalHadir,
                 'totalTerlambat' => $totalTerlambat,
                 'totalPulang' => $totalPulang,
+                'totalIzinSakit' => $totalIzinSakit,
                 'totalBelum' => $totalBelumAbsen,
                 'totalBelumAbsen' => $totalBelumAbsen,
                 'jamMasukBatas' => date('H:i', strtotime($jamBatas)) . ' WITA',
@@ -2556,9 +2565,13 @@ class AbsenPegawaiModel
         $jamMasuk = !empty($data['jam_masuk']) ? self::normalizeTimeStr($data['jam_masuk'], '07:15:00') : null;
         $jamPulang = !empty($data['jam_pulang']) ? self::normalizeTimeStr($data['jam_pulang'], '15:00:00') : null;
 
-        if (in_array($status, ['Izin', 'Sakit', 'Cuti', 'Alpha'], true) && empty($data['jam_masuk'])) {
+        if (in_array($status, ['Izin', 'Sakit', 'Cuti', 'Alpha'], true)) {
             $jamMasuk = null;
             $jamPulang = null;
+        } elseif ($status === 'Hadir' && empty($jamMasuk)) {
+            $jamMasuk = '07:15:00';
+        } elseif ($status === 'Terlambat' && empty($jamMasuk)) {
+            $jamMasuk = '07:45:00';
         }
 
         $namaKantor = !empty($data['nama_kantor_absen']) ? trim((string)$data['nama_kantor_absen']) : null;
@@ -2567,6 +2580,16 @@ class AbsenPegawaiModel
         if ($status === 'Terlambat' && empty($keterangan) && !empty($jamMasuk)) {
             $menit = max(1, (int)round((strtotime($jamMasuk) - strtotime('07:30:00')) / 60));
             $keterangan = "Terlambat {$menit} Menit";
+        } elseif ($status === 'Izin' && empty($keterangan)) {
+            $keterangan = 'Izin Tidak Masuk';
+        } elseif ($status === 'Sakit' && empty($keterangan)) {
+            $keterangan = 'Sakit';
+        } elseif ($status === 'Cuti' && empty($keterangan)) {
+            $keterangan = 'Cuti';
+        } elseif ($status === 'Alpha' && empty($keterangan)) {
+            $keterangan = 'Tanpa Keterangan (Alpa)';
+        } elseif ($status === 'Dinas Luar' && empty($keterangan)) {
+            $keterangan = 'Dinas Luar';
         }
 
         $existing = self::db()->find(
