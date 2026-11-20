@@ -37,9 +37,15 @@ class CutiModel
             if (!in_array('approver_jabatan_id', $colsHier, true)) {
                 $pdo->exec("ALTER TABLE `cuti_approval_hierarchy` ADD COLUMN `approver_jabatan_id` INT NULL AFTER `approver_role`");
             }
+            if (!in_array('tipe_step', $colsHier, true)) {
+                $pdo->exec("ALTER TABLE `cuti_approval_hierarchy` ADD COLUMN `tipe_step` VARCHAR(30) NOT NULL DEFAULT 'Verifikasi' AFTER `step_order`");
+            }
             $colsStep = $pdo->query("SHOW COLUMNS FROM `cuti_pengajuan_step`")->fetchAll(PDO::FETCH_COLUMN);
             if (!in_array('approver_jabatan_id', $colsStep, true)) {
                 $pdo->exec("ALTER TABLE `cuti_pengajuan_step` ADD COLUMN `approver_jabatan_id` INT NULL AFTER `approver_role`");
+            }
+            if (!in_array('tipe_step', $colsStep, true)) {
+                $pdo->exec("ALTER TABLE `cuti_pengajuan_step` ADD COLUMN `tipe_step` VARCHAR(30) NOT NULL DEFAULT 'Verifikasi' AFTER `step_order`");
             }
         } catch (Throwable $e) {}
     }
@@ -331,6 +337,7 @@ class CutiModel
                 'unit' => 'Semua',
                 'jenis_pegawai' => 'Guru',
                 'step_order' => 1,
+                'tipe_step' => 'Verifikasi',
                 'step_nama' => 'Verifikasi Kepala Sekolah / Unit',
                 'approver_role' => 'Kepala Sekolah',
                 'approver_jabatan_id' => 4,
@@ -340,8 +347,9 @@ class CutiModel
                 'unit' => 'Semua',
                 'jenis_pegawai' => 'Guru',
                 'step_order' => 2,
-                'step_nama' => 'Persetujuan Yayasan / Pimpinan',
-                'approver_role' => 'Yayasan / HRD / Pimpinan',
+                'tipe_step' => 'Approval',
+                'step_nama' => 'Approval Yayasan / Pimpinan',
+                'approver_role' => 'Ketua Yayasan',
                 'approver_jabatan_id' => null,
                 'keterangan' => 'Persetujuan akhir penerbitan izin cuti resmi dan pengurangan saldo cuti tahunan.'
             ],
@@ -350,8 +358,9 @@ class CutiModel
                 'unit' => 'Semua',
                 'jenis_pegawai' => 'Support System',
                 'step_order' => 1,
+                'tipe_step' => 'Verifikasi',
                 'step_nama' => 'Verifikasi Manajer / Kepala Divisi',
-                'approver_role' => 'Kepala Divisi Media dan IT / Manajer Divisi',
+                'approver_role' => 'Kepala Divisi Media dan IT',
                 'approver_jabatan_id' => 9,
                 'keterangan' => 'Pemeriksaan pelimpahan tugas operasional dan koordinasi tim kerja divisi.'
             ],
@@ -359,8 +368,9 @@ class CutiModel
                 'unit' => 'Semua',
                 'jenis_pegawai' => 'Support System',
                 'step_order' => 2,
-                'step_nama' => 'Persetujuan Direktur / HRD Yayasan',
-                'approver_role' => 'Direktur / HRD / Yayasan',
+                'tipe_step' => 'Approval',
+                'step_nama' => 'Approval HRD Yayasan',
+                'approver_role' => 'HRD',
                 'approver_jabatan_id' => null,
                 'keterangan' => 'Persetujuan final pengajuan cuti dan pemotongan saldo kuota cuti tahunan.'
             ]
@@ -369,12 +379,13 @@ class CutiModel
         foreach ($defaults as $d) {
             self::db()->query("
                 INSERT INTO `cuti_approval_hierarchy`
-                (`unit`, `jenis_pegawai`, `step_order`, `step_nama`, `approver_role`, `approver_jabatan_id`, `keterangan`, `is_active`)
-                VALUES (?, ?, ?, ?, ?, ?, ?, 1)
+                (`unit`, `jenis_pegawai`, `step_order`, `tipe_step`, `step_nama`, `approver_role`, `approver_jabatan_id`, `keterangan`, `is_active`)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
             ", [
                 $d['unit'],
                 $d['jenis_pegawai'],
                 $d['step_order'],
+                $d['tipe_step'] ?? 'Verifikasi',
                 $d['step_nama'],
                 $d['approver_role'],
                 $d['approver_jabatan_id'] ?? null,
@@ -494,11 +505,13 @@ class CutiModel
                 }
             }
 
+            $tipeStep = !empty($st['tipe_step']) ? trim((string)$st['tipe_step']) : (($order === $totalSteps) ? 'Approval' : 'Verifikasi');
+
             self::db()->query("
                 INSERT INTO `cuti_pengajuan_step`
-                (`pengajuan_id`, `step_order`, `step_nama`, `approver_role`, `approver_jabatan_id`, `approver_pegawai_id`, `status`, `approved_by_id`, `approved_by_name`, `approved_at`, `catatan`)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ", [$pengajuanId, $order, $nama, $role, $appJabId, $appPegId, $stepStatus, $approvedById, $approvedByName, $approvedAt, $catatan]);
+                (`pengajuan_id`, `step_order`, `tipe_step`, `step_nama`, `approver_role`, `approver_jabatan_id`, `approver_pegawai_id`, `status`, `approved_by_id`, `approved_by_name`, `approved_at`, `catatan`)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ", [$pengajuanId, $order, $tipeStep, $nama, $role, $appJabId, $appPegId, $stepStatus, $approvedById, $approvedByName, $approvedAt, $catatan]);
         }
     }
 
@@ -620,6 +633,7 @@ class CutiModel
         $unit = trim((string)($data['unit'] ?? 'Semua')) ?: 'Semua';
         $jenisPegawai = trim((string)($data['jenis_pegawai'] ?? 'Semua')) ?: 'Semua';
         $stepOrder = max(1, (int)($data['step_order'] ?? 1));
+        $tipeStep = (!empty($data['tipe_step']) && in_array($data['tipe_step'], ['Verifikasi', 'Approval'], true)) ? $data['tipe_step'] : 'Verifikasi';
         $stepNama = trim((string)($data['step_nama'] ?? ''));
         $approverRole = trim((string)($data['approver_role'] ?? '')) ?: null;
         $approverJabatanId = !empty($data['approver_jabatan_id']) ? (int)$data['approver_jabatan_id'] : null;
@@ -641,17 +655,17 @@ class CutiModel
         if ($id > 0) {
             self::db()->query("
                 UPDATE `cuti_approval_hierarchy`
-                SET `unit` = ?, `jenis_pegawai` = ?, `step_order` = ?, `step_nama` = ?,
+                SET `unit` = ?, `jenis_pegawai` = ?, `step_order` = ?, `tipe_step` = ?, `step_nama` = ?,
                     `approver_role` = ?, `approver_jabatan_id` = ?, `approver_pegawai_id` = ?, `keterangan` = ?, `is_active` = ?
                 WHERE `id` = ?
-            ", [$unit, $jenisPegawai, $stepOrder, $stepNama, $approverRole, $approverJabatanId, $approverPegawaiId, $keterangan, $isActive, $id]);
+            ", [$unit, $jenisPegawai, $stepOrder, $tipeStep, $stepNama, $approverRole, $approverJabatanId, $approverPegawaiId, $keterangan, $isActive, $id]);
             return $id;
         } else {
             self::db()->query("
                 INSERT INTO `cuti_approval_hierarchy`
-                (`unit`, `jenis_pegawai`, `step_order`, `step_nama`, `approver_role`, `approver_jabatan_id`, `approver_pegawai_id`, `keterangan`, `is_active`)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ", [$unit, $jenisPegawai, $stepOrder, $stepNama, $approverRole, $approverJabatanId, $approverPegawaiId, $keterangan, $isActive]);
+                (`unit`, `jenis_pegawai`, `step_order`, `tipe_step`, `step_nama`, `approver_role`, `approver_jabatan_id`, `approver_pegawai_id`, `keterangan`, `is_active`)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ", [$unit, $jenisPegawai, $stepOrder, $tipeStep, $stepNama, $approverRole, $approverJabatanId, $approverPegawaiId, $keterangan, $isActive]);
             return (int)self::db()->getConnection()->lastInsertId();
         }
     }
@@ -1795,9 +1809,11 @@ class CutiModel
         $ids = array_column($rows, 'id');
         $placeholders = implode(',', array_fill(0, count($ids), '?'));
         $allSteps = self::db()->findAll("
-            SELECT * FROM `cuti_pengajuan_step`
-            WHERE `pengajuan_id` IN ($placeholders)
-            ORDER BY `pengajuan_id` ASC, `step_order` ASC
+            SELECT s.*, mj.nama as master_jabatan_nama, mj.kategori as master_jabatan_kategori
+            FROM `cuti_pengajuan_step` s
+            LEFT JOIN `master_jabatan` mj ON mj.id = s.approver_jabatan_id
+            WHERE s.`pengajuan_id` IN ($placeholders)
+            ORDER BY s.`pengajuan_id` ASC, s.`step_order` ASC
         ", $ids);
 
         $stepsByPengajuan = [];

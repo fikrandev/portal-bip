@@ -522,13 +522,14 @@ $tambahPerBulan = (int)($cfgTahunan['tambah_per_bulan'] ?? 1);
                                                 $curStep = $cp['current_step'] ?? null;
                                                 $curStepOrder = $curStep ? (int)$curStep['step_order'] : 1;
                                                 $curStepNama = $curStep ? $curStep['step_nama'] : 'Persetujuan';
+                                                $curStepTipe = $curStep ? ($curStep['tipe_step'] ?? 'Verifikasi') : 'Verifikasi';
                                                 $totalSteps = (int)($cp['total_steps'] ?: 1);
                                                 $stepsJson = json_encode($cp['steps'] ?? []);
                                             ?>
                                                 <button type="button"
                                                     onclick="openModalApprove(<?= (int)$cp['id'] ?>, 'Disetujui', <?= htmlspecialchars(json_encode($namaPeg), ENT_QUOTES, 'UTF-8') ?>, <?= htmlspecialchars(json_encode($cp['nama_jenis']), ENT_QUOTES, 'UTF-8') ?>, <?= (int)$cp['jumlah_hari'] ?>, 'pengajuan', <?= $curStepOrder ?>, <?= htmlspecialchars(json_encode($curStepNama), ENT_QUOTES, 'UTF-8') ?>, <?= $totalSteps ?>, <?= htmlspecialchars($stepsJson, ENT_QUOTES, 'UTF-8') ?>)"
-                                                    class="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] cursor-pointer">
-                                                    Approve
+                                                    class="px-2.5 py-1.5 rounded-lg <?= $curStepTipe === 'Approval' ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-emerald-600 hover:bg-emerald-700' ?> text-white font-bold text-[11px] cursor-pointer">
+                                                    <?= $curStepTipe === 'Approval' ? 'Approve' : 'Verifikasi' ?>
                                                 </button>
                                                 <button type="button"
                                                     onclick="openModalApprove(<?= (int)$cp['id'] ?>, 'Ditolak', <?= htmlspecialchars(json_encode($namaPeg), ENT_QUOTES, 'UTF-8') ?>, <?= htmlspecialchars(json_encode($cp['nama_jenis']), ENT_QUOTES, 'UTF-8') ?>, <?= (int)$cp['jumlah_hari'] ?>, 'pengajuan', <?= $curStepOrder ?>, <?= htmlspecialchars(json_encode($curStepNama), ENT_QUOTES, 'UTF-8') ?>, <?= $totalSteps ?>, <?= htmlspecialchars($stepsJson, ENT_QUOTES, 'UTF-8') ?>)"
@@ -601,6 +602,24 @@ $tambahPerBulan = (int)($cfgTahunan['tambah_per_bulan'] ?? 1);
                                 $namaPeg = $cp['nama_pegawai'] . (!empty($cp['gelar']) ? ', ' . $cp['gelar'] : '');
                                 $potongTahunan = (int)$cp['potong_kuota_tahunan'] === 1;
                                 $saldoCukup = !$potongTahunan || ((int)$cp['saldo_saat_ini'] >= (int)$cp['jumlah_hari']);
+
+                                $curStep = $cp['current_step'] ?? null;
+                                $curStepOrder = $curStep ? (int)$curStep['step_order'] : 1;
+                                $curStepNama = $curStep ? $curStep['step_nama'] : 'Persetujuan';
+                                $curStepTipe = $curStep ? ($curStep['tipe_step'] ?? 'Verifikasi') : 'Verifikasi';
+                                $curJabId = $curStep ? (int)($curStep['approver_jabatan_id'] ?? 0) : 0;
+                                $curRole = $curStep ? trim((string)($curStep['approver_role'] ?? '')) : '';
+                                $totalSteps = (int)($cp['total_steps'] ?: 1);
+                                $stepsJson = json_encode($cp['steps'] ?? []);
+
+                                $isMyTurn = false;
+                                if (!empty($isUserAdmin)) {
+                                    $isMyTurn = true;
+                                } elseif ($curJabId > 0 && !empty($currentJabatanIds) && in_array($curJabId, $currentJabatanIds, true)) {
+                                    $isMyTurn = true;
+                                } elseif (!empty($currentJabatanNama) && !empty($curRole) && (stripos($currentJabatanNama, $curRole) !== false || stripos($curRole, $currentJabatanNama) !== false)) {
+                                    $isMyTurn = true;
+                                }
                             ?>
                                 <tr class="hover:bg-amber-50/30 transition-colors">
                                     <td class="py-3.5 px-4 font-mono font-bold text-primary-700">
@@ -608,10 +627,17 @@ $tambahPerBulan = (int)($cfgTahunan['tambah_per_bulan'] ?? 1);
                                         <div class="text-[10px] font-sans font-normal text-slate-400 mt-0.5">
                                             Diajukan: <?= date('d/m/Y H:i', strtotime($cp['created_at'])) ?>
                                         </div>
-                                        <?php if (!empty($cp['current_step'])): ?>
-                                            <div class="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-700 text-[10px] font-bold">
-                                                <span>⏳ Tahap <?= (int)$cp['current_step']['step_order'] ?>/<?= (int)($cp['total_steps'] ?: 1) ?>:</span>
-                                                <span class="truncate max-w-[125px]"><?= e($cp['current_step']['step_nama']) ?></span>
+                                        <?php if (!empty($curStep)): ?>
+                                            <div class="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-lg <?= $curStepTipe === 'Approval' ? 'bg-purple-50 border-purple-200 text-purple-700' : 'bg-indigo-50 border-indigo-200 text-indigo-700' ?> border text-[10px] font-bold">
+                                                <span>⏳ Tahap <?= $curStepOrder ?>/<?= $totalSteps ?> (<?= e($curStepTipe) ?>):</span>
+                                                <span class="truncate max-w-[125px]"><?= e($curStepNama) ?></span>
+                                            </div>
+                                        <?php endif; ?>
+                                        <?php if ($isMyTurn): ?>
+                                            <div class="mt-1">
+                                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-300 font-extrabold text-[10px]">
+                                                    ⭐ Giliran Anda (<?= e($currentJabatanNama ?: 'Penyetuju') ?>)
+                                                </span>
                                             </div>
                                         <?php endif; ?>
                                     </td>
@@ -658,19 +684,15 @@ $tambahPerBulan = (int)($cfgTahunan['tambah_per_bulan'] ?? 1);
                                         <?php endif; ?>
                                     </td>
                                     <td class="py-3.5 px-4 text-center">
-                                        <?php
-                                        $curStep = $cp['current_step'] ?? null;
-                                        $curStepOrder = $curStep ? (int)$curStep['step_order'] : 1;
-                                        $curStepNama = $curStep ? $curStep['step_nama'] : 'Persetujuan';
-                                        $totalSteps = (int)($cp['total_steps'] ?: 1);
-                                        $stepsJson = json_encode($cp['steps'] ?? []);
-                                        ?>
                                         <div class="flex items-center justify-center gap-2">
                                             <button type="button"
                                                 onclick="openModalApprove(<?= (int)$cp['id'] ?>, 'Disetujui', <?= htmlspecialchars(json_encode($namaPeg), ENT_QUOTES, 'UTF-8') ?>, <?= htmlspecialchars(json_encode($cp['nama_jenis']), ENT_QUOTES, 'UTF-8') ?>, <?= (int)$cp['jumlah_hari'] ?>, 'approve', <?= $curStepOrder ?>, <?= htmlspecialchars(json_encode($curStepNama), ENT_QUOTES, 'UTF-8') ?>, <?= $totalSteps ?>, <?= htmlspecialchars($stepsJson, ENT_QUOTES, 'UTF-8') ?>)"
-                                                class="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm cursor-pointer flex items-center gap-1">
-                                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg>
-                                                <span>Setujui</span>
+                                                class="px-3 py-2 rounded-xl <?= $curStepTipe === 'Approval' ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-emerald-600 hover:bg-emerald-700' ?> text-white font-bold text-xs shadow-sm cursor-pointer flex items-center gap-1.5 transition-all">
+                                                <?php if ($curStepTipe === 'Approval'): ?>
+                                                    <span>✍️ Setujui</span>
+                                                <?php else: ?>
+                                                    <span>🔍 Verifikasi</span>
+                                                <?php endif; ?>
                                             </button>
                                             <button type="button"
                                                 onclick="openModalApprove(<?= (int)$cp['id'] ?>, 'Ditolak', <?= htmlspecialchars(json_encode($namaPeg), ENT_QUOTES, 'UTF-8') ?>, <?= htmlspecialchars(json_encode($cp['nama_jenis']), ENT_QUOTES, 'UTF-8') ?>, <?= (int)$cp['jumlah_hari'] ?>, 'approve', <?= $curStepOrder ?>, <?= htmlspecialchars(json_encode($curStepNama), ENT_QUOTES, 'UTF-8') ?>, <?= $totalSteps ?>, <?= htmlspecialchars($stepsJson, ENT_QUOTES, 'UTF-8') ?>)"
@@ -1259,6 +1281,10 @@ $tambahPerBulan = (int)($cfgTahunan['tambah_per_bulan'] ?? 1);
                                         <span class="px-2.5 py-0.5 rounded-lg bg-sky-600 text-white font-black text-[10px] tracking-wide uppercase">
                                             Level <?= (int)$st['step_order'] ?>
                                         </span>
+                                        <?php $isTipeApp = ($st['tipe_step'] ?? '') === 'Approval'; ?>
+                                        <span class="px-2.5 py-0.5 rounded-lg font-extrabold text-[10px] <?= $isTipeApp ? 'bg-purple-100 text-purple-800 border border-purple-200' : 'bg-sky-100 text-sky-800 border border-sky-200' ?>">
+                                            <?= $isTipeApp ? '✍️ Approval' : '🔍 Verifikasi' ?>
+                                        </span>
                                         <span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-bold text-[10px]">
                                             Unit: <?= e($st['unit'] ?: 'Semua (Global)') ?>
                                         </span>
@@ -1414,6 +1440,10 @@ $tambahPerBulan = (int)($cfgTahunan['tambah_per_bulan'] ?? 1);
                                     <div class="flex items-center gap-2">
                                         <span class="px-2.5 py-0.5 rounded-lg bg-emerald-600 text-white font-black text-[10px] tracking-wide uppercase">
                                             Level <?= (int)$st['step_order'] ?>
+                                        </span>
+                                        <?php $isTipeApp = ($st['tipe_step'] ?? '') === 'Approval'; ?>
+                                        <span class="px-2.5 py-0.5 rounded-lg font-extrabold text-[10px] <?= $isTipeApp ? 'bg-purple-100 text-purple-800 border border-purple-200' : 'bg-emerald-100 text-emerald-800 border border-emerald-200' ?>">
+                                            <?= $isTipeApp ? '✍️ Approval' : '🔍 Verifikasi' ?>
                                         </span>
                                         <span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-bold text-[10px]">
                                             Unit: <?= e($st['unit'] ?: 'Semua (Global)') ?>
@@ -1595,7 +1625,11 @@ $tambahPerBulan = (int)($cfgTahunan['tambah_per_bulan'] ?? 1);
                                         </span>
                                     </td>
                                     <td class="py-3.5 px-4 font-bold text-slate-900">
-                                        <?= e($h['step_nama']) ?>
+                                        <div class="font-extrabold text-slate-900"><?= e($h['step_nama']) ?></div>
+                                        <?php $isTipeApp = ($h['tipe_step'] ?? '') === 'Approval'; ?>
+                                        <span class="inline-flex items-center gap-1 mt-0.5 px-2 py-0.2 rounded-md font-extrabold text-[9.5px] <?= $isTipeApp ? 'bg-purple-100 text-purple-800 border border-purple-200' : 'bg-sky-100 text-sky-800 border border-sky-200' ?>">
+                                            <?= $isTipeApp ? '✍️ Approval' : '🔍 Verifikasi' ?>
+                                        </span>
                                     </td>
                                     <td class="py-3.5 px-4">
                                         <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10.5px] font-bold <?= $h['jenis_pegawai'] === 'Guru' ? 'bg-sky-50 text-sky-700 border border-sky-200' : ($h['jenis_pegawai'] === 'Support System' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-700 border border-slate-200') ?>">
@@ -1815,6 +1849,10 @@ $tambahPerBulan = (int)($cfgTahunan['tambah_per_bulan'] ?? 1);
             <div id="approve_info_banner" class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs space-y-1">
                 <div>Pegawai: <strong id="approve_nama_pegawai" class="text-slate-900"></strong></div>
                 <div>Jenis Cuti: <strong id="approve_jenis_cuti" class="text-slate-900"></strong> (<span id="approve_jumlah_hari" class="font-bold"></span> Hari)</div>
+                <div class="pt-1.5 border-t border-slate-200/80 text-[11px] text-slate-500 flex items-center justify-between">
+                    <span>Pejabat Penyetuju (Akun Login):</span>
+                    <strong class="text-slate-900"><?= e(Auth::name()) ?><?= !empty($currentJabatanNama) ? ' (' . e($currentJabatanNama) . ')' : '' ?></strong>
+                </div>
             </div>
 
             <!-- Box Tahapan Approval Hierarki -->
@@ -2009,6 +2047,22 @@ $tambahPerBulan = (int)($cfgTahunan['tambah_per_bulan'] ?? 1);
                 </div>
             </div>
 
+            <!-- Pilihan Tipe Tahapan Level: Verifikasi vs Approval -->
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1.5">Tipe Tahapan Level <span class="text-rose-500">*</span></label>
+                <div class="grid grid-cols-2 gap-2.5" id="hierarki_tipe_step_container">
+                    <label id="label_tipe_verifikasi" class="flex items-center justify-center gap-2 p-2.5 rounded-xl border-2 border-sky-400 bg-sky-50 text-sky-900 font-extrabold text-xs cursor-pointer transition-all shadow-xs">
+                        <input type="radio" name="tipe_step" id="tipe_step_verifikasi" value="Verifikasi" checked onchange="onTipeStepRadioChange('Verifikasi')" class="hidden">
+                        <span>🔍 Verifikasi</span>
+                    </label>
+                    <label id="label_tipe_approval" class="flex items-center justify-center gap-2 p-2.5 rounded-xl border border-slate-200 bg-white text-slate-600 font-bold text-xs cursor-pointer transition-all hover:bg-slate-50">
+                        <input type="radio" name="tipe_step" id="tipe_step_approval" value="Approval" onchange="onTipeStepRadioChange('Approval')" class="hidden">
+                        <span>✍️ Approval (Persetujuan)</span>
+                    </label>
+                </div>
+                <p class="text-[10px] text-slate-400 mt-1">Pilih apakah tahapan ini berupa pemeriksaan kelengkapan (Verifikasi) atau keputusan persetujuan akhir (Approval).</p>
+            </div>
+
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1">Urutan Level <span class="text-rose-500">*</span></label>
@@ -2035,13 +2089,6 @@ $tambahPerBulan = (int)($cfgTahunan['tambah_per_bulan'] ?? 1);
                                 </option>
                             <?php endforeach; ?>
                         </optgroup>
-                        <optgroup label="🏛️ Pimpinan & Yayasan (Tingkat Puncak)">
-                            <option value="Yayasan / Pimpinan" data-id="" data-kategori="yayasan">👑 Yayasan / Pimpinan</option>
-                            <option value="Direktur Yayasan" data-id="" data-kategori="yayasan">👑 Direktur Yayasan</option>
-                            <option value="HRD / Kepegawaian" data-id="" data-kategori="yayasan">👥 HRD / Kepegawaian</option>
-                            <option value="Semua Admin" data-id="" data-kategori="yayasan">⚡ Semua Admin</option>
-                        </optgroup>
-                        <option value="__custom__">✏️ Jabatan Kustom Lainnya...</option>
                     </select>
                 </div>
             </div>
@@ -2297,11 +2344,20 @@ function openModalApprove(id, keputusan, namaPegawai, namaJenis, jumlahHari, ret
     }
 
     if (keputusan === 'Disetujui') {
-        title.textContent = totalSteps > 1 ? `Setujui Tahap ${stepOrder}: ${stepNama}` : 'Setujui (Approve) Pengajuan Cuti';
-        submitBtn.textContent = (totalSteps > 1 && stepOrder < totalSteps)
-            ? `Ya, Setujui Tahap ${stepOrder} & Lanjut`
-            : 'Ya, Setujui Final & Potong Saldo';
-        submitBtn.className = 'px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm cursor-pointer';
+        const isVerif = (stepNama || '').toLowerCase().includes('verifikasi');
+        if (isVerif) {
+            title.textContent = totalSteps > 1 ? `Verifikasi Tahap ${stepOrder}: ${stepNama}` : 'Verifikasi Pengajuan Cuti';
+            submitBtn.textContent = (totalSteps > 1 && stepOrder < totalSteps)
+                ? `Ya, Verifikasi Tahap ${stepOrder} & Lanjut`
+                : 'Ya, Verifikasi & Setujui Final';
+            submitBtn.className = 'px-5 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs shadow-sm cursor-pointer';
+        } else {
+            title.textContent = totalSteps > 1 ? `Setujui Tahap ${stepOrder}: ${stepNama}` : 'Setujui (Approve) Pengajuan Cuti';
+            submitBtn.textContent = (totalSteps > 1 && stepOrder < totalSteps)
+                ? `Ya, Setujui Tahap ${stepOrder} & Lanjut`
+                : 'Ya, Setujui Final & Potong Saldo';
+            submitBtn.className = 'px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm cursor-pointer';
+        }
 
         if (totalSteps > 1 && stepOrder < totalSteps) {
             bypassBtn.classList.remove('hidden');
@@ -2401,35 +2457,64 @@ function toggleTabelMaster() {
     }
 }
 
+function onTipeStepRadioChange(tipe) {
+    const lblVerif = document.getElementById('label_tipe_verifikasi');
+    const lblApp = document.getElementById('label_tipe_approval');
+    const radioVerif = document.getElementById('tipe_step_verifikasi');
+    const radioApp = document.getElementById('tipe_step_approval');
+
+    if (tipe === 'Approval') {
+        if (radioApp) radioApp.checked = true;
+        if (lblApp) {
+            lblApp.className = 'flex items-center justify-center gap-2 p-2.5 rounded-xl border-2 border-purple-500 bg-purple-50 text-purple-900 font-extrabold text-xs cursor-pointer transition-all shadow-xs';
+        }
+        if (lblVerif) {
+            lblVerif.className = 'flex items-center justify-center gap-2 p-2.5 rounded-xl border border-slate-200 bg-white text-slate-600 font-bold text-xs cursor-pointer transition-all hover:bg-slate-50';
+        }
+    } else {
+        if (radioVerif) radioVerif.checked = true;
+        if (lblVerif) {
+            lblVerif.className = 'flex items-center justify-center gap-2 p-2.5 rounded-xl border-2 border-sky-400 bg-sky-50 text-sky-900 font-extrabold text-xs cursor-pointer transition-all shadow-xs';
+        }
+        if (lblApp) {
+            lblApp.className = 'flex items-center justify-center gap-2 p-2.5 rounded-xl border border-slate-200 bg-white text-slate-600 font-bold text-xs cursor-pointer transition-all hover:bg-slate-50';
+        }
+    }
+
+    // Auto update nama tahapan jika jabatan sudah dipilih
+    const jabSelect = document.getElementById('hierarki_jabatan_select');
+    const stepNamaInput = document.getElementById('hierarki_step_nama');
+    if (jabSelect && jabSelect.value && stepNamaInput) {
+        stepNamaInput.value = (tipe === 'Approval' ? 'Approval ' : 'Verifikasi ') + jabSelect.value;
+    }
+}
+
+function setTipeStepRadio(tipe) {
+    onTipeStepRadioChange(tipe === 'Approval' ? 'Approval' : 'Verifikasi');
+}
+
 function onJabatanPresetChange(sel) {
     const val = sel.value;
     const opt = sel.selectedOptions[0];
     const roleInput = document.getElementById('hierarki_approver_role');
     const jabIdInput = document.getElementById('hierarki_approver_jabatan_id');
     const stepNamaInput = document.getElementById('hierarki_step_nama');
-    const customContainer = document.getElementById('hierarki_custom_role_container');
 
-    if (val === '__custom__') {
-        if (roleInput) {
-            roleInput.value = '';
-            roleInput.readOnly = false;
-            roleInput.focus();
-        }
-        if (jabIdInput) jabIdInput.value = '';
-        if (customContainer) customContainer.classList.remove('hidden');
-    } else if (val) {
+    // Ambil status radio tipe_step saat ini
+    const radioApp = document.getElementById('tipe_step_approval');
+    const activeTipe = (radioApp && radioApp.checked) ? 'Approval' : 'Verifikasi';
+
+    if (val) {
         const jId = opt ? (opt.dataset.id || '') : '';
         if (roleInput) {
             roleInput.value = val;
             roleInput.readOnly = true;
         }
         if (jabIdInput) jabIdInput.value = jId;
-        if (customContainer) customContainer.classList.remove('hidden');
 
-        // Otomatis sarankan nama tahapan jika masih kosong
-        if (stepNamaInput && (!stepNamaInput.value || stepNamaInput.value.startsWith('Verifikasi ') || stepNamaInput.value.startsWith('Persetujuan '))) {
-            const prefix = (val.toLowerCase().includes('yayasan') || val.toLowerCase().includes('direktur')) ? 'Persetujuan ' : 'Verifikasi ';
-            stepNamaInput.value = prefix + val;
+        // Otomatis sarankan nama tahapan sesuai tipe dan jabatan
+        if (stepNamaInput) {
+            stepNamaInput.value = (activeTipe === 'Approval' ? 'Approval ' : 'Verifikasi ') + val;
         }
     } else {
         if (roleInput) roleInput.value = '';
@@ -2442,14 +2527,14 @@ function onJenisPegawaiFormChange(sel) {
     const jabSelect = document.getElementById('hierarki_jabatan_select');
     if (!jabSelect) return;
 
-    // Filter optgroup visibility agar relevan
+    // Filter optgroup visibility agar relevan (Guru vs Support System)
     const optgroups = jabSelect.querySelectorAll('optgroup');
     optgroups.forEach(og => {
         const lbl = og.getAttribute('label') || '';
         if (jenis === 'Guru') {
-            og.style.display = (lbl.includes('Guru') || lbl.includes('Yayasan')) ? '' : 'none';
+            og.style.display = lbl.includes('Guru') ? '' : 'none';
         } else if (jenis === 'Support System') {
-            og.style.display = (lbl.includes('Support') || lbl.includes('Yayasan')) ? '' : 'none';
+            og.style.display = lbl.includes('Support') ? '' : 'none';
         } else {
             og.style.display = '';
         }
@@ -2467,6 +2552,10 @@ function openModalTambahHierarki(jenisPegawai = 'Guru', stepOrder = 1, unit = 'S
     document.getElementById('hierarki_keterangan').value = '';
     document.getElementById('hierarki_is_active').checked = true;
     document.getElementById('hierarki_modal_title').textContent = 'Tambah Level Approval Baru (' + (jenisPegawai || 'Guru') + ')';
+
+    // Default tipe: jika step 1 -> Verifikasi, jika step >= 2 -> Approval
+    const defaultTipe = (parseInt(stepOrder) > 1) ? 'Approval' : 'Verifikasi';
+    setTipeStepRadio(defaultTipe);
 
     const jenisSel = document.getElementById('hierarki_jenis_pegawai');
     if (jenisSel) onJenisPegawaiFormChange(jenisSel);
@@ -2491,6 +2580,9 @@ function openModalEditHierarki(data) {
     document.getElementById('hierarki_keterangan').value = data.keterangan || '';
     document.getElementById('hierarki_is_active').checked = parseInt(data.is_active) === 1;
     document.getElementById('hierarki_modal_title').textContent = 'Edit Level Persetujuan (' + (data.jenis_pegawai || 'Guru') + ')';
+
+    // Set tipe step radio (Verifikasi vs Approval)
+    setTipeStepRadio(data.tipe_step || 'Verifikasi');
 
     const jenisSel = document.getElementById('hierarki_jenis_pegawai');
     if (jenisSel) onJenisPegawaiFormChange(jenisSel);
@@ -2520,8 +2612,8 @@ function openModalEditHierarki(data) {
                 }
             }
         }
-        if (!found && data.approver_role) {
-            jabSelect.value = '__custom__';
+        if (!found) {
+            jabSelect.value = '';
             if (roleInput) roleInput.readOnly = false;
         } else {
             if (roleInput) roleInput.readOnly = true;

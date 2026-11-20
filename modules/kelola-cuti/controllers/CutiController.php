@@ -86,6 +86,47 @@ class CutiController
         $masterJabatanSupport = $db->findAll("SELECT id, nama, kategori FROM master_jabatan WHERE kategori = 'support_system' ORDER BY nama ASC");
         $allMasterJabatan = $db->findAll("SELECT id, nama, kategori FROM master_jabatan ORDER BY (kategori = 'guru') DESC, nama ASC");
 
+        // Resolve info akun login & jabatan untuk hak verifikasi/approval
+        $currentUser = Auth::user();
+        $linkedPegawai = Auth::findLinkedPegawai($currentUser);
+        $currentJabatanId = null;
+        $currentJabatanNama = Auth::jabatan();
+        $currentPegawaiId = $linkedPegawai['id'] ?? null;
+        $currentJabatanIds = [];
+
+        if ($linkedPegawai && !empty($linkedPegawai['id'])) {
+            $allAssign = $db->findAll("
+                SELECT pp.jabatan_id, mj.nama as jabatan_nama
+                FROM pegawai_penugasan pp
+                LEFT JOIN master_jabatan mj ON mj.id = pp.jabatan_id
+                WHERE pp.pegawai_id = ? AND pp.status = 'Aktif'
+                ORDER BY pp.id DESC
+            ", [(int)$linkedPegawai['id']]);
+            foreach ($allAssign as $asg) {
+                if (!empty($asg['jabatan_id'])) {
+                    $jid = (int)$asg['jabatan_id'];
+                    if (!in_array($jid, $currentJabatanIds, true)) {
+                        $currentJabatanIds[] = $jid;
+                    }
+                    if (!$currentJabatanId) {
+                        $currentJabatanId = $jid;
+                        if (!empty($asg['jabatan_nama'])) {
+                            $currentJabatanNama = $asg['jabatan_nama'];
+                        }
+                    }
+                }
+            }
+            if (empty($currentJabatanId) && !empty($linkedPegawai['jabatan'])) {
+                $jabRow = $db->find("SELECT id, nama FROM master_jabatan WHERE nama = ? LIMIT 1", [trim($linkedPegawai['jabatan'])]);
+                if ($jabRow) {
+                    $currentJabatanId = (int)$jabRow['id'];
+                    $currentJabatanNama = $jabRow['nama'];
+                    $currentJabatanIds[] = (int)$jabRow['id'];
+                }
+            }
+        }
+        $isUserAdmin = Auth::isSuperAdmin() || Auth::hasRole('admin');
+
         $pageTitle = 'Kelola Cuti Pegawai';
         $breadcrumbs = [
             ['label' => 'Kelola Cuti', 'url' => url('kelola-cuti')],
@@ -167,11 +208,15 @@ class CutiController
 
             $userId = Auth::id();
             $userName = Auth::name() ?: 'Admin';
+            $jabatanTitle = Auth::jabatan();
+            $approverDisplayName = (!empty($jabatanTitle) && $jabatanTitle !== 'Pegawai' && $jabatanTitle !== 'User')
+                ? ($userName . ' (' . $jabatanTitle . ')')
+                : $userName;
 
             if ($stepOrder !== null || $approveAll) {
-                CutiModel::approvePengajuanStep($pengajuanId, $stepOrder ?: 1, $keputusan, $catatan, $userId, $userName, $approveAll);
+                CutiModel::approvePengajuanStep($pengajuanId, $stepOrder ?: 1, $keputusan, $catatan, $userId, $approverDisplayName, $approveAll);
             } else {
-                CutiModel::approvePengajuan($pengajuanId, $keputusan, $catatan, $userId, $userName);
+                CutiModel::approvePengajuan($pengajuanId, $keputusan, $catatan, $userId, $approverDisplayName);
             }
 
             $label = match($keputusan) {
