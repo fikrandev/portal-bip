@@ -100,6 +100,7 @@ class AutoMigrate
             '2026_11_18_000062_sync_absen_pegawai_jam_harian_and_tasbih'  => 'migration062SyncAbsenPegawaiJamHarianAndTasbih',
             '2026_11_18_000063_sync_jurnal_staff_and_tasbih_tables'        => 'migration063SyncJurnalStaffAndTasbihTables',
             '2026_11_19_000064_add_evaluasi_to_absen_pegawai_log'          => 'migration064AddEvaluasiToAbsenPegawaiLog',
+            '2026_11_20_000065_sync_cuti_full_schema_and_approval_columns' => 'migration065SyncCutiFullSchemaAndApprovalColumns',
         ];
     }
     /**
@@ -4802,6 +4803,77 @@ class AutoMigrate
                 $check = $pdo->query("SHOW COLUMNS FROM `absen_pegawai_log` LIKE '{$colName}'")->fetchAll();
                 if (empty($check)) {
                     $pdo->exec("ALTER TABLE `absen_pegawai_log` ADD COLUMN `{$colName}` {$colDef}");
+                }
+            } catch (Throwable $e) {}
+        }
+    }
+
+    /**
+     * Migration 065: Sinkronisasi skema penuh modul Cuti Pegawai:
+     * - cuti_approval_hierarchy: approver_jabatan_id, tipe_step, approver_pegawai_id
+     * - cuti_pengajuan_step: approver_jabatan_id, tipe_step, approver_pegawai_id
+     * - cuti_pengajuan: tanggal_cuti_list, keterangan_tugas, file_lampiran_2
+     */
+    protected static function migration065SyncCutiFullSchemaAndApprovalColumns(PDO $pdo): void
+    {
+        if (file_exists(BASE_PATH . '/modules/kelola-cuti/models/CutiModel.php')) {
+            require_once BASE_PATH . '/modules/kelola-cuti/models/CutiModel.php';
+            if (class_exists('CutiModel')) {
+                CutiModel::init();
+                CutiModel::ensureApproverJabatanColumns();
+            }
+        }
+
+        $hierCols = [
+            'approver_jabatan_id' => ['INT NULL AFTER `approver_role`', 'INT NULL'],
+            'tipe_step'           => ["VARCHAR(30) NOT NULL DEFAULT 'Verifikasi' AFTER `step_order`", "VARCHAR(30) NOT NULL DEFAULT 'Verifikasi'"],
+            'approver_pegawai_id' => ['INT NULL AFTER `approver_jabatan_id`', 'INT NULL']
+        ];
+        foreach ($hierCols as $col => $defs) {
+            try {
+                $check = $pdo->query("SHOW COLUMNS FROM `cuti_approval_hierarchy` LIKE '{$col}'")->fetchAll();
+                if (empty($check)) {
+                    try {
+                        $pdo->exec("ALTER TABLE `cuti_approval_hierarchy` ADD COLUMN `{$col}` {$defs[0]}");
+                    } catch (Throwable $e1) {
+                        $pdo->exec("ALTER TABLE `cuti_approval_hierarchy` ADD COLUMN `{$col}` {$defs[1]}");
+                    }
+                }
+            } catch (Throwable $e) {}
+        }
+
+        $stepCols = [
+            'approver_jabatan_id' => ['INT NULL AFTER `approver_role`', 'INT NULL'],
+            'tipe_step'           => ["VARCHAR(30) NOT NULL DEFAULT 'Verifikasi' AFTER `step_order`", "VARCHAR(30) NOT NULL DEFAULT 'Verifikasi'"],
+            'approver_pegawai_id' => ['INT NULL AFTER `approver_jabatan_id`', 'INT NULL']
+        ];
+        foreach ($stepCols as $col => $defs) {
+            try {
+                $check = $pdo->query("SHOW COLUMNS FROM `cuti_pengajuan_step` LIKE '{$col}'")->fetchAll();
+                if (empty($check)) {
+                    try {
+                        $pdo->exec("ALTER TABLE `cuti_pengajuan_step` ADD COLUMN `{$col}` {$defs[0]}");
+                    } catch (Throwable $e2) {
+                        $pdo->exec("ALTER TABLE `cuti_pengajuan_step` ADD COLUMN `{$col}` {$defs[1]}");
+                    }
+                }
+            } catch (Throwable $e) {}
+        }
+
+        $pengajuanCols = [
+            'tanggal_cuti_list' => ['TEXT NULL AFTER `tanggal_selesai`', 'TEXT NULL'],
+            'keterangan_tugas'  => ['TEXT NULL AFTER `pelimpahan_tugas`', 'TEXT NULL'],
+            'file_lampiran_2'   => ['VARCHAR(255) NULL AFTER `file_lampiran`', 'VARCHAR(255) NULL']
+        ];
+        foreach ($pengajuanCols as $col => $defs) {
+            try {
+                $check = $pdo->query("SHOW COLUMNS FROM `cuti_pengajuan` LIKE '{$col}'")->fetchAll();
+                if (empty($check)) {
+                    try {
+                        $pdo->exec("ALTER TABLE `cuti_pengajuan` ADD COLUMN `{$col}` {$defs[0]}");
+                    } catch (Throwable $e3) {
+                        $pdo->exec("ALTER TABLE `cuti_pengajuan` ADD COLUMN `{$col}` {$defs[1]}");
+                    }
                 }
             } catch (Throwable $e) {}
         }

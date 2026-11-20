@@ -3408,71 +3408,84 @@ class PortalGuruController
         }
 
         // Pengelolaan Foto Bukti (Maksimal 2 Foto, Auto Convert <= 500KB)
-        $uploadDir = BASE_PATH . '/storage/uploads/cuti';
+        $uploadDir = BASE_PATH . '/public/uploads/cuti';
         if (!is_dir($uploadDir)) {
             @mkdir($uploadDir, 0777, true);
         }
+        @chmod($uploadDir, 0777);
 
         $processPhoto500KB = function($fileKey, $postDataKey, $idx) use ($uploadDir, $pegawaiId) {
             $savedRelativePath = null;
             $tmpPath = null;
+            $isTempCreated = false;
 
             if (!empty($_FILES[$fileKey]['name']) && $_FILES[$fileKey]['error'] === UPLOAD_ERR_OK) {
                 $tmpPath = $_FILES[$fileKey]['tmp_name'];
             } elseif (!empty($_POST[$postDataKey]) && strpos((string)$_POST[$postDataKey], 'data:image/') === 0) {
-                $parts = explode(',', $_POST[$postDataKey], 2);
+                $parts = explode(',', (string)$_POST[$postDataKey], 2);
                 if (count($parts) === 2) {
                     $decoded = base64_decode($parts[1]);
-                    if ($decoded !== false) {
+                    if ($decoded !== false && strlen($decoded) > 0) {
                         $tempFile = tempnam(sys_get_temp_dir(), 'cuti_img_');
                         file_put_contents($tempFile, $decoded);
                         $tmpPath = $tempFile;
+                        $isTempCreated = true;
                     }
                 }
             }
 
-            if ($tmpPath && file_exists($tmpPath)) {
-                $filename = 'cuti_' . $pegawaiId . '_' . date('Ymd_His') . '_' . $idx . '.jpg';
+            if ($tmpPath && file_exists($tmpPath) && filesize($tmpPath) > 0) {
+                $filename = 'cuti_' . $pegawaiId . '_' . date('Ymd_His') . '_' . $idx . '_' . substr(md5(uniqid()), 0, 6) . '.jpg';
                 $destination = $uploadDir . '/' . $filename;
                 $maxBytes = 500 * 1024; // 500 KB
 
-                if (function_exists('imagecreatefromstring') && @getimagesize($tmpPath)) {
-                    $raw = file_get_contents($tmpPath);
-                    $src = @imagecreatefromstring($raw);
-                    if ($src) {
-                        // Max dimension 1600px
-                        $w = imagesx($src);
-                        $h = imagesy($src);
-                        $maxDim = 1600;
-                        if ($w > $maxDim || $h > $maxDim) {
-                            if ($w > $h) {
-                                $newW = $maxDim;
-                                $newH = (int)round(($h * $maxDim) / $w);
-                            } else {
-                                $newH = $maxDim;
-                                $newW = (int)round(($w * $maxDim) / $h);
+                try {
+                    if (function_exists('imagecreatefromstring') && @getimagesize($tmpPath)) {
+                        $raw = @file_get_contents($tmpPath);
+                        $src = $raw ? @imagecreatefromstring($raw) : false;
+                        if ($src) {
+                            // Max dimension 1600px
+                            $w = imagesx($src);
+                            $h = imagesy($src);
+                            $maxDim = 1600;
+                            if ($w > $maxDim || $h > $maxDim) {
+                                if ($w > $h) {
+                                    $newW = $maxDim;
+                                    $newH = (int)round(($h * $maxDim) / $w);
+                                } else {
+                                    $newH = $maxDim;
+                                    $newW = (int)round(($w * $maxDim) / $h);
+                                }
+                                $dst = imagecreatetruecolor($newW, $newH);
+                                imagecopyresampled($dst, $src, 0, 0, 0, 0, $newW, $newH, $w, $h);
+                                imagedestroy($src);
+                                $src = $dst;
                             }
-                            $dst = imagecreatetruecolor($newW, $newH);
-                            imagecopyresampled($dst, $src, 0, 0, 0, 0, $newW, $newH, $w, $h);
-                            imagedestroy($src);
-                            $src = $dst;
-                        }
 
-                        $quality = 85;
-                        imagejpeg($src, $destination, $quality);
-                        while (file_exists($destination) && filesize($destination) > $maxBytes && $quality > 25) {
-                            $quality -= 10;
-                            imagejpeg($src, $destination, $quality);
+                            $quality = 85;
+                            @imagejpeg($src, $destination, $quality);
+                            while (file_exists($destination) && filesize($destination) > $maxBytes && $quality > 25) {
+                                $quality -= 10;
+                                @imagejpeg($src, $destination, $quality);
+                            }
+                            imagedestroy($src);
+                            if (file_exists($destination) && filesize($destination) > 0) {
+                                $savedRelativePath = 'uploads/cuti/' . $filename;
+                            }
                         }
-                        imagedestroy($src);
-                        $savedRelativePath = 'storage/uploads/cuti/' . $filename;
                     }
+
+                    if (!$savedRelativePath) {
+                        if (@copy($tmpPath, $destination) || @move_uploaded_file($tmpPath, $destination)) {
+                            $savedRelativePath = 'uploads/cuti/' . $filename;
+                        }
+                    }
+                } catch (Throwable $ePhoto) {
+                    error_log('Error processing cuti photo: ' . $ePhoto->getMessage());
                 }
 
-                if (!$savedRelativePath) {
-                    if (@copy($tmpPath, $destination) || @move_uploaded_file($tmpPath, $destination)) {
-                        $savedRelativePath = 'storage/uploads/cuti/' . $filename;
-                    }
+                if ($isTempCreated && file_exists($tmpPath)) {
+                    @unlink($tmpPath);
                 }
             }
             return $savedRelativePath;

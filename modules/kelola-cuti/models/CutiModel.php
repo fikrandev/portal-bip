@@ -33,20 +33,84 @@ class CutiModel
 
         try {
             $pdo = self::db()->getConnection();
-            $colsHier = $pdo->query("SHOW COLUMNS FROM `cuti_approval_hierarchy`")->fetchAll(PDO::FETCH_COLUMN);
-            if (!in_array('approver_jabatan_id', $colsHier, true)) {
-                $pdo->exec("ALTER TABLE `cuti_approval_hierarchy` ADD COLUMN `approver_jabatan_id` INT NULL AFTER `approver_role`");
-            }
-            if (!in_array('tipe_step', $colsHier, true)) {
-                $pdo->exec("ALTER TABLE `cuti_approval_hierarchy` ADD COLUMN `tipe_step` VARCHAR(30) NOT NULL DEFAULT 'Verifikasi' AFTER `step_order`");
-            }
-            $colsStep = $pdo->query("SHOW COLUMNS FROM `cuti_pengajuan_step`")->fetchAll(PDO::FETCH_COLUMN);
-            if (!in_array('approver_jabatan_id', $colsStep, true)) {
-                $pdo->exec("ALTER TABLE `cuti_pengajuan_step` ADD COLUMN `approver_jabatan_id` INT NULL AFTER `approver_role`");
-            }
-            if (!in_array('tipe_step', $colsStep, true)) {
-                $pdo->exec("ALTER TABLE `cuti_pengajuan_step` ADD COLUMN `tipe_step` VARCHAR(30) NOT NULL DEFAULT 'Verifikasi' AFTER `step_order`");
-            }
+
+            // 1. cuti_approval_hierarchy
+            try {
+                $colsHier = $pdo->query("SHOW COLUMNS FROM `cuti_approval_hierarchy`")->fetchAll(PDO::FETCH_COLUMN);
+                if (!in_array('approver_jabatan_id', $colsHier, true)) {
+                    try {
+                        $pdo->exec("ALTER TABLE `cuti_approval_hierarchy` ADD COLUMN `approver_jabatan_id` INT NULL AFTER `approver_role`");
+                    } catch (Throwable $e1) {
+                        $pdo->exec("ALTER TABLE `cuti_approval_hierarchy` ADD COLUMN `approver_jabatan_id` INT NULL");
+                    }
+                }
+                if (!in_array('tipe_step', $colsHier, true)) {
+                    try {
+                        $pdo->exec("ALTER TABLE `cuti_approval_hierarchy` ADD COLUMN `tipe_step` VARCHAR(30) NOT NULL DEFAULT 'Verifikasi' AFTER `step_order`");
+                    } catch (Throwable $e2) {
+                        $pdo->exec("ALTER TABLE `cuti_approval_hierarchy` ADD COLUMN `tipe_step` VARCHAR(30) NOT NULL DEFAULT 'Verifikasi'");
+                    }
+                }
+                if (!in_array('approver_pegawai_id', $colsHier, true)) {
+                    try {
+                        $pdo->exec("ALTER TABLE `cuti_approval_hierarchy` ADD COLUMN `approver_pegawai_id` INT NULL AFTER `approver_jabatan_id`");
+                    } catch (Throwable $e3) {
+                        $pdo->exec("ALTER TABLE `cuti_approval_hierarchy` ADD COLUMN `approver_pegawai_id` INT NULL");
+                    }
+                }
+            } catch (Throwable $eHier) {}
+
+            // 2. cuti_pengajuan_step
+            try {
+                $colsStep = $pdo->query("SHOW COLUMNS FROM `cuti_pengajuan_step`")->fetchAll(PDO::FETCH_COLUMN);
+                if (!in_array('approver_jabatan_id', $colsStep, true)) {
+                    try {
+                        $pdo->exec("ALTER TABLE `cuti_pengajuan_step` ADD COLUMN `approver_jabatan_id` INT NULL AFTER `approver_role`");
+                    } catch (Throwable $e4) {
+                        $pdo->exec("ALTER TABLE `cuti_pengajuan_step` ADD COLUMN `approver_jabatan_id` INT NULL");
+                    }
+                }
+                if (!in_array('tipe_step', $colsStep, true)) {
+                    try {
+                        $pdo->exec("ALTER TABLE `cuti_pengajuan_step` ADD COLUMN `tipe_step` VARCHAR(30) NOT NULL DEFAULT 'Verifikasi' AFTER `step_order`");
+                    } catch (Throwable $e5) {
+                        $pdo->exec("ALTER TABLE `cuti_pengajuan_step` ADD COLUMN `tipe_step` VARCHAR(30) NOT NULL DEFAULT 'Verifikasi'");
+                    }
+                }
+                if (!in_array('approver_pegawai_id', $colsStep, true)) {
+                    try {
+                        $pdo->exec("ALTER TABLE `cuti_pengajuan_step` ADD COLUMN `approver_pegawai_id` INT NULL AFTER `approver_jabatan_id`");
+                    } catch (Throwable $e6) {
+                        $pdo->exec("ALTER TABLE `cuti_pengajuan_step` ADD COLUMN `approver_pegawai_id` INT NULL");
+                    }
+                }
+            } catch (Throwable $eStep) {}
+
+            // 3. cuti_pengajuan
+            try {
+                $colsPengajuan = $pdo->query("SHOW COLUMNS FROM `cuti_pengajuan`")->fetchAll(PDO::FETCH_COLUMN);
+                if (!in_array('tanggal_cuti_list', $colsPengajuan, true)) {
+                    try {
+                        $pdo->exec("ALTER TABLE `cuti_pengajuan` ADD COLUMN `tanggal_cuti_list` TEXT NULL AFTER `tanggal_selesai`");
+                    } catch (Throwable $e7) {
+                        $pdo->exec("ALTER TABLE `cuti_pengajuan` ADD COLUMN `tanggal_cuti_list` TEXT NULL");
+                    }
+                }
+                if (!in_array('keterangan_tugas', $colsPengajuan, true)) {
+                    try {
+                        $pdo->exec("ALTER TABLE `cuti_pengajuan` ADD COLUMN `keterangan_tugas` TEXT NULL AFTER `pelimpahan_tugas`");
+                    } catch (Throwable $e8) {
+                        $pdo->exec("ALTER TABLE `cuti_pengajuan` ADD COLUMN `keterangan_tugas` TEXT NULL");
+                    }
+                }
+                if (!in_array('file_lampiran_2', $colsPengajuan, true)) {
+                    try {
+                        $pdo->exec("ALTER TABLE `cuti_pengajuan` ADD COLUMN `file_lampiran_2` VARCHAR(255) NULL AFTER `file_lampiran`");
+                    } catch (Throwable $e9) {
+                        $pdo->exec("ALTER TABLE `cuti_pengajuan` ADD COLUMN `file_lampiran_2` VARCHAR(255) NULL");
+                    }
+                }
+            } catch (Throwable $ePeng) {}
         } catch (Throwable $e) {}
     }
 
@@ -63,7 +127,7 @@ class CutiModel
         // Pastikan kolom baru langsung tersedia tanpa terhalang stamp lama
         self::ensureApproverJabatanColumns();
 
-        $stampFile = BASE_PATH . '/storage/logs/.schema_cuti_v7_' . date('Y_m_d') . '.stamp';
+        $stampFile = BASE_PATH . '/storage/logs/.schema_cuti_v8_' . date('Y_m_d') . '.stamp';
         if (file_exists($stampFile)) {
             return;
         }
@@ -507,11 +571,28 @@ class CutiModel
 
             $tipeStep = !empty($st['tipe_step']) ? trim((string)$st['tipe_step']) : (($order === $totalSteps) ? 'Approval' : 'Verifikasi');
 
-            self::db()->query("
-                INSERT INTO `cuti_pengajuan_step`
-                (`pengajuan_id`, `step_order`, `tipe_step`, `step_nama`, `approver_role`, `approver_jabatan_id`, `approver_pegawai_id`, `status`, `approved_by_id`, `approved_by_name`, `approved_at`, `catatan`)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ", [$pengajuanId, $order, $tipeStep, $nama, $role, $appJabId, $appPegId, $stepStatus, $approvedById, $approvedByName, $approvedAt, $catatan]);
+            try {
+                self::db()->query("
+                    INSERT INTO `cuti_pengajuan_step`
+                    (`pengajuan_id`, `step_order`, `tipe_step`, `step_nama`, `approver_role`, `approver_jabatan_id`, `approver_pegawai_id`, `status`, `approved_by_id`, `approved_by_name`, `approved_at`, `catatan`)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ", [$pengajuanId, $order, $tipeStep, $nama, $role, $appJabId, $appPegId, $stepStatus, $approvedById, $approvedByName, $approvedAt, $catatan]);
+            } catch (Throwable $eStepInsert) {
+                self::ensureApproverJabatanColumns();
+                try {
+                    self::db()->query("
+                        INSERT INTO `cuti_pengajuan_step`
+                        (`pengajuan_id`, `step_order`, `tipe_step`, `step_nama`, `approver_role`, `approver_jabatan_id`, `approver_pegawai_id`, `status`, `approved_by_id`, `approved_by_name`, `approved_at`, `catatan`)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ", [$pengajuanId, $order, $tipeStep, $nama, $role, $appJabId, $appPegId, $stepStatus, $approvedById, $approvedByName, $approvedAt, $catatan]);
+                } catch (Throwable $eStepInsert2) {
+                    self::db()->query("
+                        INSERT INTO `cuti_pengajuan_step`
+                        (`pengajuan_id`, `step_order`, `step_nama`, `approver_role`, `status`, `approved_by_id`, `approved_by_name`, `approved_at`, `catatan`)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ", [$pengajuanId, $order, $nama, $role, $stepStatus, $approvedById, $approvedByName, $approvedAt, $catatan]);
+                }
+            }
         }
     }
 
@@ -531,12 +612,16 @@ class CutiModel
                 ORDER BY s.`step_order` ASC, s.`id` ASC
             ", [$pengajuanId]);
         } catch (Throwable $e) {
-            return self::db()->findAll("
-                SELECT s.*, NULL as master_jabatan_nama, NULL as master_jabatan_kategori
-                FROM `cuti_pengajuan_step` s
-                WHERE s.`pengajuan_id` = ?
-                ORDER BY s.`step_order` ASC, s.`id` ASC
-            ", [$pengajuanId]);
+            try {
+                return self::db()->findAll("
+                    SELECT s.*, NULL as master_jabatan_nama, NULL as master_jabatan_kategori
+                    FROM `cuti_pengajuan_step` s
+                    WHERE s.`pengajuan_id` = ?
+                    ORDER BY s.`step_order` ASC, s.`id` ASC
+                ", [$pengajuanId]);
+            } catch (Throwable $e2) {
+                return [];
+            }
         }
     }
 
@@ -556,12 +641,16 @@ class CutiModel
                 ORDER BY s.`step_order` ASC LIMIT 1
             ", [$pengajuanId]) ?: null;
         } catch (Throwable $e) {
-            return self::db()->find("
-                SELECT s.*, NULL as master_jabatan_nama, NULL as master_jabatan_kategori
-                FROM `cuti_pengajuan_step` s
-                WHERE s.`pengajuan_id` = ? AND s.`status` = 'Pending'
-                ORDER BY s.`step_order` ASC LIMIT 1
-            ", [$pengajuanId]) ?: null;
+            try {
+                return self::db()->find("
+                    SELECT s.*, NULL as master_jabatan_nama, NULL as master_jabatan_kategori
+                    FROM `cuti_pengajuan_step` s
+                    WHERE s.`pengajuan_id` = ? AND s.`status` = 'Pending'
+                    ORDER BY s.`step_order` ASC LIMIT 1
+                ", [$pengajuanId]) ?: null;
+            } catch (Throwable $e2) {
+                return null;
+            }
         }
     }
 
@@ -603,7 +692,7 @@ class CutiModel
         } catch (Throwable $e) {
             // Jika kolom approver_jabatan_id belum sempat terbuat, buat sekarang dan query ulang
             try {
-                self::db()->getConnection()->exec("ALTER TABLE `cuti_approval_hierarchy` ADD COLUMN `approver_jabatan_id` INT NULL AFTER `approver_role`");
+                self::ensureApproverJabatanColumns();
                 return self::db()->findAll("
                     SELECT h.*, mj.nama as master_jabatan_nama, mj.kategori as master_jabatan_kategori
                     FROM `cuti_approval_hierarchy` h
@@ -613,12 +702,16 @@ class CutiModel
                 ", $params);
             } catch (Throwable $e2) {
                 // Fallback query tanpa relasi jika gagal alter
-                return self::db()->findAll("
-                    SELECT h.*, NULL as master_jabatan_nama, NULL as master_jabatan_kategori
-                    FROM `cuti_approval_hierarchy` h
-                    WHERE {$whereSql}
-                    ORDER BY h.unit ASC, h.jenis_pegawai ASC, h.step_order ASC, h.id ASC
-                ", $params);
+                try {
+                    return self::db()->findAll("
+                        SELECT h.*, NULL as master_jabatan_nama, NULL as master_jabatan_kategori
+                        FROM `cuti_approval_hierarchy` h
+                        WHERE {$whereSql}
+                        ORDER BY h.unit ASC, h.jenis_pegawai ASC, h.step_order ASC, h.id ASC
+                    ", $params);
+                } catch (Throwable $e3) {
+                    return [];
+                }
             }
         }
     }
@@ -1318,31 +1411,85 @@ class CutiModel
 
         $nomor = self::generateNomorPengajuan();
 
-        self::db()->query("
-            INSERT INTO `cuti_pengajuan` (
-                `nomor_pengajuan`, `pegawai_id`, `jenis_cuti_id`, `kategori_cuti`,
-                `tanggal_mulai`, `tanggal_selesai`, `tanggal_cuti_list`, `jumlah_hari`, `alasan`,
-                `pelimpahan_tugas`, `keterangan_tugas`, `alamat_selama_cuti`, `kontak_darurat`, `file_lampiran`, `file_lampiran_2`,
-                `status`, `created_by`
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', ?)
-        ", [
-            $nomor,
-            $pegawaiId,
-            $jenisCutiId,
-            $jenis['kategori'],
-            $tglMulai,
-            $tglSelesai,
-            $tanggalCutiList,
-            $hitungHari,
-            $alasan,
-            trim($data['pelimpahan_tugas'] ?? '') ?: null,
-            trim($data['keterangan_tugas'] ?? '') ?: null,
-            trim($data['alamat_selama_cuti'] ?? '') ?: null,
-            trim($data['kontak_darurat'] ?? '') ?: null,
-            $data['file_lampiran'] ?? null,
-            $data['file_lampiran_2'] ?? null,
-            $userId
-        ]);
+        try {
+            self::db()->query("
+                INSERT INTO `cuti_pengajuan` (
+                    `nomor_pengajuan`, `pegawai_id`, `jenis_cuti_id`, `kategori_cuti`,
+                    `tanggal_mulai`, `tanggal_selesai`, `tanggal_cuti_list`, `jumlah_hari`, `alasan`,
+                    `pelimpahan_tugas`, `keterangan_tugas`, `alamat_selama_cuti`, `kontak_darurat`, `file_lampiran`, `file_lampiran_2`,
+                    `status`, `created_by`
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', ?)
+            ", [
+                $nomor,
+                $pegawaiId,
+                $jenisCutiId,
+                $jenis['kategori'],
+                $tglMulai,
+                $tglSelesai,
+                $tanggalCutiList,
+                $hitungHari,
+                $alasan,
+                trim($data['pelimpahan_tugas'] ?? '') ?: null,
+                trim($data['keterangan_tugas'] ?? '') ?: null,
+                trim($data['alamat_selama_cuti'] ?? '') ?: null,
+                trim($data['kontak_darurat'] ?? '') ?: null,
+                $data['file_lampiran'] ?? null,
+                $data['file_lampiran_2'] ?? null,
+                $userId
+            ]);
+        } catch (Throwable $eInsert) {
+            self::ensureApproverJabatanColumns();
+            try {
+                self::db()->query("
+                    INSERT INTO `cuti_pengajuan` (
+                        `nomor_pengajuan`, `pegawai_id`, `jenis_cuti_id`, `kategori_cuti`,
+                        `tanggal_mulai`, `tanggal_selesai`, `tanggal_cuti_list`, `jumlah_hari`, `alasan`,
+                        `pelimpahan_tugas`, `keterangan_tugas`, `alamat_selama_cuti`, `kontak_darurat`, `file_lampiran`, `file_lampiran_2`,
+                        `status`, `created_by`
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', ?)
+                ", [
+                    $nomor,
+                    $pegawaiId,
+                    $jenisCutiId,
+                    $jenis['kategori'],
+                    $tglMulai,
+                    $tglSelesai,
+                    $tanggalCutiList,
+                    $hitungHari,
+                    $alasan,
+                    trim($data['pelimpahan_tugas'] ?? '') ?: null,
+                    trim($data['keterangan_tugas'] ?? '') ?: null,
+                    trim($data['alamat_selama_cuti'] ?? '') ?: null,
+                    trim($data['kontak_darurat'] ?? '') ?: null,
+                    $data['file_lampiran'] ?? null,
+                    $data['file_lampiran_2'] ?? null,
+                    $userId
+                ]);
+            } catch (Throwable $eInsert2) {
+                self::db()->query("
+                    INSERT INTO `cuti_pengajuan` (
+                        `nomor_pengajuan`, `pegawai_id`, `jenis_cuti_id`, `kategori_cuti`,
+                        `tanggal_mulai`, `tanggal_selesai`, `jumlah_hari`, `alasan`,
+                        `pelimpahan_tugas`, `alamat_selama_cuti`, `kontak_darurat`, `file_lampiran`,
+                        `status`, `created_by`
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', ?)
+                ", [
+                    $nomor,
+                    $pegawaiId,
+                    $jenisCutiId,
+                    $jenis['kategori'],
+                    $tglMulai,
+                    $tglSelesai,
+                    $hitungHari,
+                    $alasan,
+                    trim($data['pelimpahan_tugas'] ?? '') ?: null,
+                    trim($data['alamat_selama_cuti'] ?? '') ?: null,
+                    trim($data['kontak_darurat'] ?? '') ?: null,
+                    $data['file_lampiran'] ?? null,
+                    $userId
+                ]);
+            }
+        }
 
         $newId = (int)self::db()->getConnection()->lastInsertId();
 

@@ -1028,55 +1028,72 @@
         }
     }
 
-    // Kompresi Foto dengan Canvas (Target &le; 500 KB)
+    // Kompresi Foto dengan Canvas (Target <= 500 KB)
     function compressImageFile(file, maxBytes, callback) {
-        if (!file || !file.type.startsWith('image/')) {
+        if (!file || !file.type || !file.type.startsWith('image/')) {
             callback(file, null, file ? file.size : 0);
             return;
         }
 
         const reader = new FileReader();
+        reader.onerror = function() {
+            callback(file, null, file ? file.size : 0);
+        };
         reader.onload = function(e) {
+            const dataUrlFallback = e.target ? e.target.result : null;
             const img = new Image();
-            img.onload = function() {
-                const maxDim = 1600;
-                let w = img.width;
-                let h = img.height;
-                if (w > maxDim || h > maxDim) {
-                    if (w > h) {
-                        h = Math.round((h * maxDim) / w);
-                        w = maxDim;
-                    } else {
-                        w = Math.round((w * maxDim) / h);
-                        h = maxDim;
-                    }
-                }
-
-                const canvas = document.createElement('canvas');
-                canvas.width = w;
-                canvas.height = h;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, w, h);
-
-                let quality = 0.85;
-                function tryExport() {
-                    const dataUrl = canvas.toDataURL('image/jpeg', quality);
-                    canvas.toBlob(function(blob) {
-                        if (!blob) {
-                            callback(file, dataUrl, file.size);
-                            return;
-                        }
-                        if (blob.size > maxBytes && quality > 0.3) {
-                            quality -= 0.12;
-                            tryExport();
-                        } else {
-                            callback(blob, dataUrl, blob.size);
-                        }
-                    }, 'image/jpeg', quality);
-                }
-                tryExport();
+            img.onerror = function() {
+                callback(file, dataUrlFallback, file ? file.size : 0);
             };
-            img.src = e.target.result;
+            img.onload = function() {
+                try {
+                    const maxDim = 1600;
+                    let w = img.width;
+                    let h = img.height;
+                    if (w > maxDim || h > maxDim) {
+                        if (w > h) {
+                            h = Math.round((h * maxDim) / w);
+                            w = maxDim;
+                        } else {
+                            w = Math.round((w * maxDim) / h);
+                            h = maxDim;
+                        }
+                    }
+
+                    const canvas = document.createElement('canvas');
+                    canvas.width = w;
+                    canvas.height = h;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, w, h);
+
+                    let quality = 0.85;
+                    const dataUrl = canvas.toDataURL('image/jpeg', quality);
+
+                    if (typeof canvas.toBlob === 'function') {
+                        function tryExport() {
+                            canvas.toBlob(function(blob) {
+                                if (!blob) {
+                                    callback(file, dataUrl, file.size);
+                                    return;
+                                }
+                                if (blob.size > maxBytes && quality > 0.3) {
+                                    quality -= 0.12;
+                                    tryExport();
+                                } else {
+                                    callback(blob, dataUrl, blob.size);
+                                }
+                            }, 'image/jpeg', quality);
+                        }
+                        tryExport();
+                    } else {
+                        callback(file, dataUrl, file.size);
+                    }
+                } catch (errCanvas) {
+                    console.error('Canvas compress error:', errCanvas);
+                    callback(file, dataUrlFallback, file ? file.size : 0);
+                }
+            };
+            img.src = dataUrlFallback;
         };
         reader.readAsDataURL(file);
     }
@@ -1277,10 +1294,24 @@
         // Lampirkan Foto dari array cutiPhotos (Maksimal 2 Foto terkompresi <= 500KB)
         if (Array.isArray(window.cutiPhotos)) {
             if (window.cutiPhotos[0]) {
-                formData.append('foto_bukti_1', window.cutiPhotos[0].blob, window.cutiPhotos[0].name);
+                const p1 = window.cutiPhotos[0];
+                const p1Blob = (p1.blob instanceof Blob) ? p1.blob : ((p1.file instanceof Blob) ? p1.file : null);
+                if (p1Blob) {
+                    formData.append('foto_bukti_1', p1Blob, p1.name || 'bukti_1.jpg');
+                }
+                if (p1.dataUrl && typeof p1.dataUrl === 'string') {
+                    formData.append('foto_bukti_1_data', p1.dataUrl);
+                }
             }
             if (window.cutiPhotos[1]) {
-                formData.append('foto_bukti_2', window.cutiPhotos[1].blob, window.cutiPhotos[1].name);
+                const p2 = window.cutiPhotos[1];
+                const p2Blob = (p2.blob instanceof Blob) ? p2.blob : ((p2.file instanceof Blob) ? p2.file : null);
+                if (p2Blob) {
+                    formData.append('foto_bukti_2', p2Blob, p2.name || 'bukti_2.jpg');
+                }
+                if (p2.dataUrl && typeof p2.dataUrl === 'string') {
+                    formData.append('foto_bukti_2_data', p2.dataUrl);
+                }
             }
         }
 
