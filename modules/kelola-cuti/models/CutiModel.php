@@ -1521,6 +1521,85 @@ class CutiModel
     }
 
     /**
+     * Hapus permanen pengajuan cuti beserta berkas dan step-nya
+     */
+    public static function deletePengajuan(int $pengajuanId): bool
+    {
+        self::init();
+        $pdo = self::db()->getConnection();
+        $pdo->beginTransaction();
+
+        try {
+            $row = self::db()->find("SELECT * FROM `cuti_pengajuan` WHERE `id` = ?", [$pengajuanId]);
+            if (!$row) {
+                $pdo->rollBack();
+                return false;
+            }
+
+            // Kembalikan saldo jika status pengajuan sempat 'Disetujui' dan memotong saldo tahunan
+            if ($row['status'] === 'Disetujui' && (int)($row['potong_saldo'] ?? 0) > 0) {
+                $pegawaiId = (int)$row['pegawai_id'];
+                $potong = (int)$row['potong_saldo'];
+                $saldoRow = self::db()->find("SELECT * FROM `cuti_saldo_pegawai` WHERE `pegawai_id` = ?", [$pegawaiId]);
+                if ($saldoRow) {
+                    $saldoBaru = (int)$saldoRow['saldo_tahunan'] + $potong;
+                    $terpakaiBaru = max(0, (int)$saldoRow['total_terpakai_tahunan'] - $potong);
+                    self::db()->query("
+                        UPDATE `cuti_saldo_pegawai`
+                        SET `saldo_tahunan` = ?,
+                            `total_terpakai_tahunan` = ?,
+                            `updated_at` = NOW()
+                        WHERE `pegawai_id` = ?
+                    ", [$saldoBaru, $terpakaiBaru, $pegawaiId]);
+
+                    self::db()->query("
+                        INSERT INTO `cuti_log` (
+                            `pegawai_id`, `pengajuan_id`, `jenis_mutasi`, `tipe`,
+                            `perubahan`, `saldo_sebelum`, `saldo_sesudah`, `keterangan`
+                        ) VALUES (?, ?, 'Pengembalian Batal', 'masuk', ?, ?, ?, ?)
+                    ", [
+                        $pegawaiId,
+                        $pengajuanId,
+                        $potong,
+                        (int)$saldoRow['saldo_tahunan'],
+                        $saldoBaru,
+                        "Pengembalian saldo {$potong} hari karena pengajuan [{$row['nomor_pengajuan']}] dibatalkan/dihapus"
+                    ]);
+                }
+            }
+
+            // Hapus berkas lampiran jika ada
+            if (!empty($row['file_lampiran'])) {
+                $f1 = BASE_PATH . '/public/' . ltrim($row['file_lampiran'], '/');
+                if (file_exists($f1) && is_file($f1)) {
+                    @unlink($f1);
+                }
+            }
+            if (!empty($row['file_lampiran_2'])) {
+                $f2 = BASE_PATH . '/public/' . ltrim($row['file_lampiran_2'], '/');
+                if (file_exists($f2) && is_file($f2)) {
+                    @unlink($f2);
+                }
+            }
+
+            // Hapus child tables
+            self::db()->query("DELETE FROM `cuti_pengajuan_step` WHERE `pengajuan_id` = ?", [$pengajuanId]);
+            self::db()->query("DELETE FROM `cuti_log` WHERE `pengajuan_id` = ?", [$pengajuanId]);
+
+            // Hapus record pengajuan utama
+            self::db()->query("DELETE FROM `cuti_pengajuan` WHERE `id` = ?", [$pengajuanId]);
+
+            $pdo->commit();
+            return true;
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            throw $e;
+        }
+    }
+
+    /**
      * Proses Persetujuan / Penolakan Berdasarkan Step Hierarki Tertentu
      */
     public static function approvePengajuanStep(

@@ -3549,37 +3549,18 @@ class PortalGuruController
             exit;
         }
 
-        if (in_array($row['status'], ['Ditolak', 'Dibatalkan'], true)) {
-            echo json_encode(['success' => false, 'message' => 'Permohonan cuti ini sudah berstatus ' . $row['status'] . '.']);
+        if ($row['status'] !== 'Pending') {
+            echo json_encode(['success' => false, 'message' => 'Hanya permohonan yang berstatus Menunggu Persetujuan (Pending) yang dapat dibatalkan.']);
             exit;
         }
 
         try {
-            $userId = (int) ($teacher['user_id'] ?? 0);
-            $userName = $teacher['name'] ?? 'Pegawai';
-            $catatan = !empty($alasanBatal) ? ("Dibatalkan oleh pemohon: " . $alasanBatal) : "Dibatalkan sendiri oleh pemohon via Portal Mobile";
-
-            CutiModel::approvePengajuan(
-                $pengajuanId,
-                'Dibatalkan',
-                $catatan,
-                $userId,
-                $userName
-            );
-
-            // Update status tahapan approval step yang masih pending
-            try {
-                $db->query("
-                    UPDATE `cuti_pengajuan_step`
-                    SET `status` = 'Dilewati',
-                        `catatan` = ?
-                    WHERE `pengajuan_id` = ? AND `status` = 'Pending'
-                ", [$catatan, $pengajuanId]);
-            } catch (Throwable $e) {}
+            $nomor = $row['nomor_pengajuan'] ?: ('CT-' . $pengajuanId);
+            CutiModel::deletePengajuan($pengajuanId);
 
             echo json_encode([
                 'success' => true,
-                'message' => 'Permohonan cuti [' . ($row['nomor_pengajuan'] ?: ('CT-' . $pengajuanId)) . '] berhasil dibatalkan.'
+                'message' => 'Permohonan cuti [' . $nomor . '] berhasil dibatalkan dan datanya telah dihapus.'
             ]);
             exit;
         } catch (Throwable $e) {

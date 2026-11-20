@@ -102,126 +102,56 @@
                     </div>
                 </div>
             <?php else: ?>
-                <?php foreach ($records as $r): ?>
-                    <div class="bg-white rounded-3xl p-4 shadow-sm border border-slate-100 space-y-3">
+                <?php foreach ($records as $idx => $r): ?>
+                    <div onclick="bukaDetailCuti(<?= $idx ?>)"
+                         class="bg-white rounded-2xl p-3.5 shadow-xs border border-slate-100 hover:border-primary-200 transition-all press-bounce cursor-pointer flex items-center justify-between gap-3">
                         
-                        <!-- Header: Type & Status -->
-                        <div class="flex items-center justify-between gap-2">
-                            <div class="flex items-center gap-2.5 min-w-0">
-                                <div class="w-10 h-10 rounded-2xl bg-primary-50 text-primary-600 flex items-center justify-center text-lg font-bold shrink-0">
-                                    🏖️
-                                </div>
-                                <div class="min-w-0">
-                                    <h4 class="font-black text-slate-900 text-xs truncate leading-tight"><?= htmlspecialchars($r['type']) ?></h4>
-                                    <p class="text-[10px] text-slate-400 font-semibold mt-0.5"><?= htmlspecialchars($r['id']) ?> &bull; <?= $r['daysCount'] ?> Hari Kerja</p>
-                                </div>
+                        <!-- Sisi Kiri: Icon + Info Ringkas -->
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div class="w-10 h-10 rounded-2xl bg-primary-50 text-primary-600 flex items-center justify-center text-lg font-bold shrink-0">
+                                🏖️
                             </div>
+                            <div class="min-w-0">
+                                <div class="flex items-center gap-1.5 flex-wrap">
+                                    <h4 class="font-bold text-slate-900 text-xs truncate leading-tight"><?= htmlspecialchars($r['type']) ?></h4>
+                                    <span class="text-[10px] font-mono text-slate-400">#<?= htmlspecialchars($r['id']) ?></span>
+                                </div>
+                                
+                                <p class="text-[11px] font-semibold text-slate-700 mt-0.5 truncate flex items-center gap-1">
+                                    <span><?= htmlspecialchars($r['datesDisplay'] ?? ($r['startDate'] . ' s.d. ' . $r['endDate'])) ?></span>
+                                    <span class="text-slate-400">&bull;</span>
+                                    <span class="text-primary-700 font-bold"><?= $r['daysCount'] ?> hari</span>
+                                </p>
+                                <p class="text-[10px] text-slate-400 mt-0.5 truncate">
+                                    Diajukan: <?= htmlspecialchars($r['submittedAt']) ?>
+                                </p>
+                            </div>
+                        </div>
 
-                            <!-- Status Badge -->
+                        <!-- Sisi Kanan: Status Badge & Tombol Detail -->
+                        <div class="flex flex-col items-end justify-between gap-1.5 shrink-0">
                             <?php if ($r['status'] === 'Disetujui'): ?>
-                                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-primary-100 text-primary-800 shrink-0 flex items-center gap-1">
+                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-primary-100 text-primary-800 flex items-center gap-1">
                                     <i data-lucide="check-circle" class="w-3 h-3 text-primary-600"></i> Disetujui
                                 </span>
                             <?php elseif ($r['status'] === 'Pending'): ?>
-                                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 shrink-0 flex items-center gap-1">
-                                    <i data-lucide="clock" class="w-3 h-3 text-amber-600"></i> Diajukan
+                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 flex items-center gap-1">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> Diajukan
                                 </span>
                             <?php elseif ($r['status'] === 'Dibatalkan'): ?>
-                                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 shrink-0 flex items-center gap-1 border border-slate-200">
-                                    <svg class="w-3 h-3 text-slate-400" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 flex items-center gap-1 border border-slate-200">
                                     Dibatalkan
                                 </span>
                             <?php else: ?>
-                                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 shrink-0 flex items-center gap-1">
+                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 flex items-center gap-1">
                                     <i data-lucide="x-circle" class="w-3 h-3 text-rose-600"></i> <?= htmlspecialchars($r['status']) ?>
                                 </span>
                             <?php endif; ?>
+
+                            <span class="text-[10.5px] font-bold text-primary-700 flex items-center gap-0.5">
+                                Detail ❯
+                            </span>
                         </div>
-
-                        <!-- Details Box -->
-                        <div class="bg-slate-50 rounded-2xl p-3 border border-slate-100 space-y-2 text-xs">
-                            <div class="flex items-start justify-between gap-2 text-slate-700">
-                                <span class="text-slate-400 font-semibold text-[11px] shrink-0">Tanggal Cuti:</span>
-                                <div class="text-right min-w-0">
-                                    <span class="font-bold text-slate-800 text-xs block"><?= htmlspecialchars($r['datesDisplay'] ?? ($r['startDate'] . ' s.d. ' . $r['endDate'])) ?></span>
-                                    <?php if (!empty($r['datesList']) && count($r['datesList']) > 1): ?>
-                                        <div class="flex flex-wrap justify-end gap-1 mt-1">
-                                            <?php foreach ($r['datesList'] as $dl): ?>
-                                                <span class="px-1.5 py-0.5 rounded-md bg-white border border-slate-200 text-[10px] font-semibold text-slate-700">
-                                                    <?= date('d M', strtotime($dl)) ?>
-                                                </span>
-                                            <?php endforeach; ?>
-                                        </div>
-                                    <?php endif; ?>
-                                </div>
-                            </div>
-                            <div class="text-slate-700 pt-1 border-t border-slate-200/60">
-                                <span class="text-slate-400 font-semibold text-[11px] block mb-0.5">Keperluan / Alasan:</span>
-                                <p class="font-medium text-slate-800 leading-relaxed"><?= htmlspecialchars($r['reason']) ?></p>
-                            </div>
-                            <div class="flex items-center justify-between text-slate-700 pt-1 border-t border-slate-200/60">
-                                <span class="text-slate-400 font-semibold text-[11px]">Pengganti Tugas:</span>
-                                <span class="font-bold text-slate-800"><?= htmlspecialchars($r['substitute']) ?></span>
-                            </div>
-                            <?php if (!empty($r['keteranganTugas'])): ?>
-                                <div class="text-slate-700 pt-1 border-t border-slate-200/60">
-                                    <span class="text-slate-400 font-semibold text-[11px] block mb-0.5">Keterangan Tugas:</span>
-                                    <p class="font-medium text-slate-700 leading-relaxed text-[11px] bg-white p-2 rounded-xl border border-slate-200/70"><?= nl2br(htmlspecialchars($r['keteranganTugas'])) ?></p>
-                                </div>
-                            <?php endif; ?>
-                        </div>
-
-                        <!-- 3-Step Approval Timeline -->
-                        <?php if (!empty($r['timeline'])): ?>
-                            <div class="pt-1 px-1">
-                                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Proses Verifikasi</span>
-                                <div class="space-y-2">
-                                    <?php foreach ($r['timeline'] as $tIdx => $t): ?>
-                                        <div class="flex items-center gap-2 text-xs">
-                                            <div class="w-4 h-4 rounded-full <?= !empty($t['done']) ? 'bg-primary-500 text-white' : 'bg-slate-200 text-slate-400' ?> flex items-center justify-center text-[9px] font-bold shrink-0">
-                                                <?= !empty($t['done']) ? '✓' : '•' ?>
-                                            </div>
-                                            <div class="flex-1 flex items-center justify-between">
-                                                <span class="font-bold text-slate-800 text-[11px]"><?= htmlspecialchars($t['step']) ?></span>
-                                                <span class="text-[10px] text-slate-400"><?= htmlspecialchars($t['time']) ?></span>
-                                            </div>
-                                        </div>
-                                    <?php endforeach; ?>
-                                </div>
-                            </div>
-                        <?php endif; ?>
-
-                        <!-- Footer: Submission Info & Photos/Attachments -->
-                        <div class="text-[10px] text-slate-400 pt-1.5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-1.5">
-                            <span>Diajukan: <?= htmlspecialchars($r['submittedAt']) ?></span>
-                            <div class="flex items-center gap-2">
-                                <?php if (!empty($r['document'])): ?>
-                                    <a href="<?= url($r['document']) ?>" target="_blank" class="font-semibold text-primary-700 hover:underline flex items-center gap-1">
-                                        <i data-lucide="image" class="w-3 h-3"></i> Bukti 1
-                                    </a>
-                                <?php endif; ?>
-                                <?php if (!empty($r['document2'])): ?>
-                                    <a href="<?= url($r['document2']) ?>" target="_blank" class="font-semibold text-primary-700 hover:underline flex items-center gap-1">
-                                        <i data-lucide="image" class="w-3 h-3"></i> Bukti 2
-                                    </a>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-
-                        <!-- Tombol Batalkan Pengajuan (Hanya Muncul Jika Status Masih Pending) -->
-                        <?php if ($r['status'] === 'Pending' && !empty($r['raw_id'])): ?>
-                            <div class="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
-                                <span class="text-[10.5px] text-amber-700 font-semibold flex items-center gap-1">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
-                                    <span>Menunggu persetujuan</span>
-                                </span>
-                                <button type="button" onclick="bukaModalBatalCuti(<?= (int)$r['raw_id'] ?>, '<?= htmlspecialchars(addslashes($r['id'])) ?>', '<?= htmlspecialchars(addslashes($r['type'])) ?>')"
-                                    class="px-3 py-1.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-[11px] flex items-center gap-1.5 transition-all press-bounce cursor-pointer">
-                                    <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
-                                    <span>Batalkan Pengajuan</span>
-                                </button>
-                            </div>
-                        <?php endif; ?>
 
                     </div>
                 <?php endforeach; ?>
@@ -474,14 +404,132 @@
 </div>
 
 <!-- ======================================================== -->
-<!-- MODAL BOTTOM SHEET: BATALKAN PERMOHONAN CUTI              -->
+<!-- MODAL BOTTOM SHEET: DETAIL LENGKAP PERMOHONAN CUTI       -->
 <!-- ======================================================== -->
-<div id="modal-batal-cuti" class="hidden fixed inset-0 z-[10030] overflow-hidden select-none" style="touch-action: none; overscroll-behavior: none;">
+<div id="modal-detail-cuti" class="hidden fixed inset-0 z-[10025] overflow-hidden select-none" style="touch-action: none; overscroll-behavior: none;">
+    <!-- Backdrop Scrim -->
+    <div id="modal-detail-cuti-scrim" onclick="tutupDetailCuti()" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity duration-250 opacity-0 pointer-events-none"></div>
+
+    <!-- Sheet Wrapper -->
+    <div class="fixed inset-x-0 bottom-0 max-w-md mx-auto w-full pointer-events-none z-[10035]">
+        <div id="sheet-detail-cuti" style="touch-action: pan-y; overscroll-behavior: contain;"
+             class="bg-white rounded-t-[32px] shadow-2xl pointer-events-auto border-t border-slate-200/80 flex flex-col max-h-[88vh] w-full transform translate-y-full transition-transform duration-250 ease-out overflow-hidden text-xs">
+            
+            <!-- 1. Header Sheet -->
+            <div class="px-5 pt-3.5 pb-3 border-b border-slate-100 shrink-0 bg-white" style="touch-action: none;">
+                <div class="w-10 h-1.5 bg-slate-200 rounded-full mx-auto mb-2.5"></div>
+                <div class="flex items-center justify-between gap-2">
+                    <div class="min-w-0 pr-2">
+                        <h3 class="font-black text-slate-900 text-sm leading-tight flex items-center gap-1.5 truncate">
+                            <span>Detail Permohonan Cuti</span>
+                            <span>📋</span>
+                        </h3>
+                        <p id="det-nomor-tgl" class="text-[10.5px] text-slate-400 font-mono font-medium truncate mt-0.5">-</p>
+                    </div>
+                    <button type="button" onclick="tutupDetailCuti()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center press-bounce text-xs font-bold shrink-0">
+                        ✕
+                    </button>
+                </div>
+            </div>
+
+            <!-- 2. Body Scrollable -->
+            <div class="flex-1 min-h-0 overflow-y-auto p-4 sm:p-5 space-y-4 no-scrollbar select-text" style="touch-action: pan-y; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;">
+                
+                <!-- Status & Card Ringkasan -->
+                <div class="bg-slate-50/90 rounded-2xl p-3.5 border border-slate-200/80 space-y-2.5">
+                    <div class="flex items-center justify-between gap-2">
+                        <span id="det-jenis-cuti" class="font-black text-slate-900 text-sm">-</span>
+                        <div id="det-status-badge"></div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-200/70 text-slate-600">
+                        <div>
+                            <span class="text-[10px] text-slate-400 block font-semibold uppercase">Tanggal Cuti:</span>
+                            <span id="det-tanggal-cuti" class="font-bold text-slate-800 text-xs block">-</span>
+                            <span id="det-durasi-cuti" class="text-[10.5px] text-primary-700 font-bold block mt-0.5">-</span>
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-slate-400 block font-semibold uppercase">Diajukan Pada:</span>
+                            <span id="det-submitted-at" class="font-medium text-slate-700 text-xs block mt-0.5">-</span>
+                        </div>
+                    </div>
+
+                    <div id="det-container-dates-list" class="hidden pt-2 border-t border-slate-200/60">
+                        <span class="text-[10px] text-slate-400 block font-semibold mb-1">Daftar Tanggal Terpilih:</span>
+                        <div id="det-dates-chips" class="flex flex-wrap gap-1"></div>
+                    </div>
+                </div>
+
+                <!-- Keperluan / Alasan -->
+                <div class="space-y-1">
+                    <span class="text-slate-400 font-semibold text-[11px] block">Keperluan / Alasan Cuti:</span>
+                    <p id="det-alasan" class="font-medium text-slate-800 leading-relaxed bg-white p-3 rounded-2xl border border-slate-200/80 text-xs">-</p>
+                </div>
+
+                <!-- Rekan Pengganti & Keterangan Tugas -->
+                <div class="bg-slate-50/70 rounded-2xl p-3.5 border border-slate-200/80 space-y-2.5">
+                    <div>
+                        <span class="text-slate-400 font-semibold text-[11px] block mb-0.5">Pegawai / Guru Pengganti:</span>
+                        <p id="det-pengganti" class="font-bold text-slate-900 text-xs">-</p>
+                    </div>
+
+                    <div id="det-box-keterangan-tugas" class="pt-2 border-t border-slate-200/70">
+                        <span class="text-slate-400 font-semibold text-[11px] block mb-1">Keterangan Pelimpahan Tugas:</span>
+                        <p id="det-keterangan-tugas" class="font-medium text-slate-700 leading-relaxed bg-white p-2.5 rounded-xl border border-slate-200/80 text-xs whitespace-pre-line">-</p>
+                    </div>
+
+                    <div id="det-box-kontak" class="pt-2 border-t border-slate-200/70">
+                        <span class="text-slate-400 font-semibold text-[11px] block mb-0.5">Kontak Darurat:</span>
+                        <p id="det-kontak" class="font-medium text-slate-800 text-xs">-</p>
+                    </div>
+                </div>
+
+                <!-- Bagan Alur Persetujuan (Siapa Approve & Kapan Approve) -->
+                <div class="bg-white rounded-2xl p-3.5 border border-slate-200/80 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[11px] font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                            <span>Alur Persetujuan (Approval)</span>
+                        </span>
+                        <span id="det-timeline-count" class="text-[10px] text-slate-400 font-semibold"></span>
+                    </div>
+
+                    <div id="det-timeline-list" class="space-y-2.5">
+                        <!-- Populated dynamically via JS -->
+                    </div>
+                </div>
+
+                <!-- Foto Bukti / Dokumen Pendukung -->
+                <div id="det-box-lampiran" class="space-y-2 hidden">
+                    <span class="text-[11px] font-black text-slate-800 block">Foto Bukti / Dokumen Pendukung:</span>
+                    <div id="det-foto-grid" class="grid grid-cols-2 gap-2">
+                        <!-- Populated dynamically via JS -->
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- 3. Footer Action -->
+            <div class="px-5 py-3.5 pb-6 sm:pb-3.5 bg-white border-t border-slate-200 flex items-center justify-end gap-2.5 shrink-0 shadow-lg safe-bottom">
+                <button type="button" onclick="tutupDetailCuti()"
+                    class="py-2.5 px-4 rounded-2xl border border-slate-200 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-all press-bounce">
+                    Tutup
+                </button>
+                <div id="det-btn-batal-container"></div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- ======================================================== -->
+<!-- MODAL BOTTOM SHEET: BATALKAN & HAPUS PERMOHONAN CUTI      -->
+<!-- ======================================================== -->
+<div id="modal-batal-cuti" class="hidden fixed inset-0 z-[10040] overflow-hidden select-none" style="touch-action: none; overscroll-behavior: none;">
     <!-- Backdrop Scrim -->
     <div id="modal-batal-cuti-scrim" onclick="tutupModalBatalCuti()" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity duration-250 opacity-0 pointer-events-none"></div>
 
     <!-- Sheet Wrapper -->
-    <div class="fixed inset-x-0 bottom-0 max-w-md mx-auto w-full pointer-events-none z-[10040]">
+    <div class="fixed inset-x-0 bottom-0 max-w-md mx-auto w-full pointer-events-none z-[10050]">
         <div id="sheet-batal-cuti" style="touch-action: pan-y; overscroll-behavior: contain;"
              class="bg-white rounded-t-[32px] shadow-2xl pointer-events-auto border-t border-slate-200/80 p-5 sm:p-6 space-y-4 max-h-[85vh] w-full transform translate-y-full transition-transform duration-250 ease-out text-xs">
             
@@ -492,9 +540,9 @@
                     ⚠️
                 </div>
                 <div class="flex-1 min-w-0">
-                    <h3 class="text-sm sm:text-base font-black text-slate-900 leading-tight">Batalkan Permohonan Cuti?</h3>
+                    <h3 class="text-sm sm:text-base font-black text-slate-900 leading-tight">Batalkan &amp; Hapus Pengajuan?</h3>
                     <p class="text-[11px] text-slate-500 mt-1 leading-relaxed">
-                        Permohonan <strong id="batal_cuti_nomor" class="text-slate-900 font-mono font-bold"></strong> (<span id="batal_cuti_jenis" class="font-bold text-slate-800"></span>) akan ditarik dan dibatalkan dari proses verifikasi atasan.
+                        Permohonan <strong id="batal_cuti_nomor" class="text-slate-900 font-mono font-bold"></strong> (<span id="batal_cuti_jenis" class="font-bold text-slate-800"></span>) akan ditarik dan datanya dihapus permanen dari sistem.
                     </p>
                 </div>
             </div>
@@ -510,11 +558,11 @@
             <div class="grid grid-cols-2 gap-3 pt-2">
                 <button type="button" onclick="tutupModalBatalCuti()"
                     class="w-full py-3 px-4 rounded-2xl border border-slate-200 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-all press-bounce cursor-pointer text-center">
-                    Jangan Batalkan
+                    Kembali
                 </button>
                 <button type="button" onclick="kirimBatalkanCuti()" id="btn-konfirmasi-batal-cuti"
                     class="w-full py-3 px-4 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-md shadow-rose-600/25 transition-all press-bounce cursor-pointer text-center flex items-center justify-center gap-1.5">
-                    <span id="btn-text-batal">Ya, Batalkan</span>
+                    <span id="btn-text-batal">Ya, Batalkan &amp; Hapus</span>
                 </button>
             </div>
         </div>
@@ -1118,7 +1166,267 @@
     window.renderCutiPhotoPreviews = renderCutiPhotoPreviews;
     window.submitPermohonanCuti = submitPermohonanCuti;
 
-    // Handler Pembatalan Permohonan Cuti
+    // Simpan Data Riwayat Cuti untuk Interaktivitas Modal Detail
+    window.cutiRecords = <?= json_encode($records, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
+
+    // Helper escape HTML
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    // Modal Detail Permohonan Cuti
+    function mountDetailCutiModalElement() {
+        const el = document.getElementById('modal-detail-cuti');
+        if (el && el.parentElement !== document.body) {
+            document.body.appendChild(el);
+        }
+    }
+
+    function bukaDetailCuti(index) {
+        mountDetailCutiModalElement();
+        const r = window.cutiRecords && window.cutiRecords[index];
+        if (!r) return;
+
+        // Populate Data Header
+        const detNomorTgl = document.getElementById('det-nomor-tgl');
+        if (detNomorTgl) {
+            detNomorTgl.textContent = '#' + (r.id || '-') + ' • Diajukan ' + (r.submittedAt || '-');
+        }
+
+        const detJenis = document.getElementById('det-jenis-cuti');
+        if (detJenis) detJenis.textContent = r.type || 'Permohonan Cuti';
+
+        // Badge Status
+        const detStatusBadge = document.getElementById('det-status-badge');
+        if (detStatusBadge) {
+            let badgeHtml = '';
+            if (r.status === 'Disetujui') {
+                badgeHtml = '<span class="px-2.5 py-1 rounded-full text-[10.5px] font-bold bg-primary-100 text-primary-800 flex items-center gap-1"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-primary-600"></i> Disetujui</span>';
+            } else if (r.status === 'Pending') {
+                badgeHtml = '<span class="px-2.5 py-1 rounded-full text-[10.5px] font-bold bg-amber-100 text-amber-800 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> Diajukan</span>';
+            } else if (r.status === 'Dibatalkan') {
+                badgeHtml = '<span class="px-2.5 py-1 rounded-full text-[10.5px] font-bold bg-slate-100 text-slate-600 flex items-center gap-1 border border-slate-200">Dibatalkan</span>';
+            } else {
+                badgeHtml = `<span class="px-2.5 py-1 rounded-full text-[10.5px] font-bold bg-rose-100 text-rose-800 flex items-center gap-1"><i data-lucide="x-circle" class="w-3.5 h-3.5 text-rose-600"></i> ${escapeHtml(r.status)}</span>`;
+            }
+            detStatusBadge.innerHTML = badgeHtml;
+        }
+
+        // Tanggal & Durasi
+        const detTgl = document.getElementById('det-tanggal-cuti');
+        if (detTgl) detTgl.textContent = r.datesDisplay || (r.startDate + ' s.d. ' + r.endDate);
+
+        const detDurasi = document.getElementById('det-durasi-cuti');
+        if (detDurasi) detDurasi.textContent = (r.daysCount || 1) + ' Hari Kerja';
+
+        const detSubmitted = document.getElementById('det-submitted-at');
+        if (detSubmitted) detSubmitted.textContent = r.submittedAt || '-';
+
+        // Chips Tanggal
+        const datesBox = document.getElementById('det-container-dates-list');
+        const datesChips = document.getElementById('det-dates-chips');
+        if (datesBox && datesChips) {
+            if (Array.isArray(r.datesList) && r.datesList.length > 1) {
+                datesChips.innerHTML = r.datesList.map(d => {
+                    return `<span class="px-2 py-0.5 rounded-md bg-white border border-slate-200 text-[10px] font-semibold text-slate-700">${escapeHtml(d)}</span>`;
+                }).join('');
+                datesBox.classList.remove('hidden');
+            } else {
+                datesBox.classList.add('hidden');
+            }
+        }
+
+        // Alasan
+        const detAlasan = document.getElementById('det-alasan');
+        if (detAlasan) detAlasan.textContent = r.reason || '-';
+
+        // Pengganti & Tugas
+        const detPengganti = document.getElementById('det-pengganti');
+        if (detPengganti) detPengganti.textContent = r.substitute || '-';
+
+        const boxKeterangan = document.getElementById('det-box-keterangan-tugas');
+        const detKeterangan = document.getElementById('det-keterangan-tugas');
+        if (boxKeterangan && detKeterangan) {
+            if (r.keteranganTugas) {
+                detKeterangan.textContent = r.keteranganTugas;
+                boxKeterangan.classList.remove('hidden');
+            } else {
+                boxKeterangan.classList.add('hidden');
+            }
+        }
+
+        const boxKontak = document.getElementById('det-box-kontak');
+        const detKontak = document.getElementById('det-kontak');
+        if (boxKontak && detKontak) {
+            if (r.emergencyContact && r.emergencyContact !== '-') {
+                detKontak.textContent = r.emergencyContact;
+                boxKontak.classList.remove('hidden');
+            } else {
+                boxKontak.classList.add('hidden');
+            }
+        }
+
+        // Timeline Approval (Siapa Approve, Kapan Approve)
+        const timelineList = document.getElementById('det-timeline-list');
+        const timelineCount = document.getElementById('det-timeline-count');
+        if (timelineList) {
+            timelineList.innerHTML = '';
+            if (Array.isArray(r.timeline) && r.timeline.length > 0) {
+                if (timelineCount) timelineCount.textContent = r.timeline.length + ' Tahapan';
+                r.timeline.forEach((item, tIdx) => {
+                    let dotColor = 'bg-slate-200 text-slate-500';
+                    let iconChar = (tIdx + 1);
+                    let timeColor = 'text-slate-500';
+
+                    if (item.status === 'Disetujui' || item.done) {
+                        dotColor = 'bg-emerald-500 text-white';
+                        iconChar = '✓';
+                        timeColor = 'text-emerald-700 font-semibold';
+                    } else if (item.status === 'Ditolak') {
+                        dotColor = 'bg-rose-500 text-white';
+                        iconChar = '✕';
+                        timeColor = 'text-rose-700 font-semibold';
+                    } else if (item.status === 'Dilewati') {
+                        dotColor = 'bg-slate-300 text-slate-600';
+                        iconChar = '—';
+                        timeColor = 'text-slate-400';
+                    } else if (item.status === 'Pending') {
+                        dotColor = 'bg-amber-400 text-white animate-pulse';
+                        iconChar = '⏳';
+                        timeColor = 'text-amber-700 font-semibold';
+                    }
+
+                    const stepDiv = document.createElement('div');
+                    stepDiv.className = 'flex items-start gap-3 text-xs bg-slate-50/80 p-2.5 rounded-xl border border-slate-200/60';
+                    stepDiv.innerHTML = `
+                        <div class="w-6 h-6 rounded-full ${dotColor} flex items-center justify-center text-[10px] font-bold shrink-0 shadow-xs mt-0.5">
+                            ${iconChar}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between gap-1 flex-wrap">
+                                <span class="font-bold text-slate-800 text-xs">${escapeHtml(item.step)}</span>
+                            </div>
+                            <p class="text-[11px] ${timeColor} mt-0.5 leading-tight">${escapeHtml(item.time)}</p>
+                        </div>
+                    `;
+                    timelineList.appendChild(stepDiv);
+                });
+            } else {
+                if (timelineCount) timelineCount.textContent = '';
+                timelineList.innerHTML = '<p class="text-slate-400 text-xs italic">Belum ada tahapan alur verifikasi.</p>';
+            }
+        }
+
+        // Lampiran Foto
+        const boxLampiran = document.getElementById('det-box-lampiran');
+        const fotoGrid = document.getElementById('det-foto-grid');
+        if (boxLampiran && fotoGrid) {
+            fotoGrid.innerHTML = '';
+            let hasPhoto = false;
+
+            const addPhotoCard = (photoPath, label) => {
+                hasPhoto = true;
+                const fullUrl = photoPath.startsWith('http') ? photoPath : ('<?= url("") ?>' + '/' + photoPath.replace(/^\/+/, ''));
+                const card = document.createElement('a');
+                card.href = fullUrl;
+                card.target = '_blank';
+                card.className = 'group block relative rounded-2xl overflow-hidden border border-slate-200 bg-slate-100 hover:opacity-95 transition-all';
+                card.innerHTML = `
+                    <div class="aspect-4/3 w-full bg-slate-200 flex items-center justify-center overflow-hidden">
+                        <img src="${fullUrl}" alt="${escapeHtml(label)}" class="w-full h-full object-cover">
+                    </div>
+                    <div class="p-1.5 bg-white text-center">
+                        <span class="text-[10px] font-bold text-slate-700 block truncate">🔍 ${escapeHtml(label)}</span>
+                    </div>
+                `;
+                fotoGrid.appendChild(card);
+            };
+
+            if (r.document) addPhotoCard(r.document, 'Bukti 1');
+            if (r.document2) addPhotoCard(r.document2, 'Bukti 2');
+
+            if (hasPhoto) {
+                boxLampiran.classList.remove('hidden');
+            } else {
+                boxLampiran.classList.add('hidden');
+            }
+        }
+
+        // Tombol Batalkan di Footer Modal Detail (Hanya jika status Pending)
+        const btnBatalContainer = document.getElementById('det-btn-batal-container');
+        if (btnBatalContainer) {
+            btnBatalContainer.innerHTML = '';
+            if (r.status === 'Pending' && r.raw_id) {
+                const btnBatal = document.createElement('button');
+                btnBatal.type = 'button';
+                btnBatal.className = 'py-2.5 px-3.5 rounded-2xl bg-rose-50 hover:bg-rose-100 active:bg-rose-200 text-rose-600 font-bold text-xs flex items-center gap-1.5 border border-rose-200 transition-all press-bounce cursor-pointer';
+                btnBatal.innerHTML = `
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
+                    <span>Batalkan &amp; Hapus</span>
+                `;
+                btnBatal.onclick = () => {
+                    bukaModalBatalCuti(r.raw_id, r.id, r.type);
+                };
+                btnBatalContainer.appendChild(btnBatal);
+            }
+        }
+
+        // Tampilkan Modal Detail
+        const modal = document.getElementById('modal-detail-cuti');
+        const scrim = document.getElementById('modal-detail-cuti-scrim');
+        const sheet = document.getElementById('sheet-detail-cuti');
+        if (!modal || !scrim || !sheet) return;
+
+        const bNav = document.getElementById('mobile-bottom-nav');
+        if (bNav) bNav.style.display = 'none';
+
+        modal.classList.remove('hidden');
+        requestAnimationFrame(() => {
+            scrim.classList.remove('opacity-0', 'pointer-events-none');
+            scrim.classList.add('opacity-100', 'pointer-events-auto');
+            sheet.classList.remove('translate-y-full');
+            sheet.classList.add('translate-y-0');
+        });
+        document.body.classList.add('overflow-hidden');
+
+        if (window.lucide && typeof lucide.createIcons === 'function') {
+            lucide.createIcons();
+        }
+    }
+
+    function tutupDetailCuti() {
+        const modal = document.getElementById('modal-detail-cuti');
+        const scrim = document.getElementById('modal-detail-cuti-scrim');
+        const sheet = document.getElementById('sheet-detail-cuti');
+
+        if (!modal || !scrim || !sheet) return;
+        scrim.classList.remove('opacity-100', 'pointer-events-auto');
+        scrim.classList.add('opacity-0', 'pointer-events-none');
+        sheet.classList.remove('translate-y-0');
+        sheet.classList.add('translate-y-full');
+
+        // Kembalikan bottom navigation bar jika modal lain tidak terbuka
+        const modalPermohonan = document.getElementById('modal-permohonan-cuti');
+        const modalBatal = document.getElementById('modal-batal-cuti');
+        const isOtherOpen = (modalPermohonan && !modalPermohonan.classList.contains('hidden')) || (modalBatal && !modalBatal.classList.contains('hidden'));
+        if (!isOtherOpen) {
+            const bNav = document.getElementById('mobile-bottom-nav');
+            if (bNav) bNav.style.display = '';
+            document.body.classList.remove('overflow-hidden');
+        }
+
+        setTimeout(() => {
+            modal.classList.add('hidden');
+        }, 260);
+    }
+
+    // Handler Pembatalan Permohonan Cuti (Hapus Permanen Data)
     function mountBatalCutiModalElement() {
         const el = document.getElementById('modal-batal-cuti');
         if (el && el.parentElement !== document.body) {
@@ -1169,9 +1477,11 @@
         sheet.classList.remove('translate-y-0');
         sheet.classList.add('translate-y-full');
 
-        // Kembalikan bottom navigation bar jika modal utama pengajuan cuti juga tertutup
+        // Kembalikan bottom navigation bar jika modal lain juga tertutup
         const modalPermohonan = document.getElementById('modal-permohonan-cuti');
-        if (!modalPermohonan || modalPermohonan.classList.contains('hidden')) {
+        const modalDetail = document.getElementById('modal-detail-cuti');
+        const isOtherOpen = (modalPermohonan && !modalPermohonan.classList.contains('hidden')) || (modalDetail && !modalDetail.classList.contains('hidden'));
+        if (!isOtherOpen) {
             const bNav = document.getElementById('mobile-bottom-nav');
             if (bNav) bNav.style.display = '';
             document.body.classList.remove('overflow-hidden');
@@ -1195,7 +1505,7 @@
 
         try {
             if (btn) btn.disabled = true;
-            if (btnText) btnText.textContent = 'Membatalkan...';
+            if (btnText) btnText.textContent = 'Membatalkan & Menghapus...';
 
             const formData = new FormData();
             formData.append('pengajuan_id', rawId);
@@ -1210,10 +1520,11 @@
             const json = await res.json();
             if (json && json.success) {
                 tutupModalBatalCuti();
+                tutupDetailCuti();
                 if (typeof AndroidUI !== 'undefined' && typeof AndroidUI.toast === 'function') {
-                    AndroidUI.toast(json.message || 'Permohonan cuti berhasil dibatalkan.', 'success');
+                    AndroidUI.toast(json.message || 'Permohonan cuti berhasil dibatalkan dan dihapus.', 'success');
                 } else {
-                    alert(json.message || 'Permohonan cuti berhasil dibatalkan.');
+                    alert(json.message || 'Permohonan cuti berhasil dibatalkan dan datanya telah dihapus.');
                 }
                 setTimeout(() => {
                     window.location.reload();
@@ -1226,10 +1537,12 @@
             showCutiToast('Terjadi kesalahan jaringan saat membatalkan cuti.', 'error');
         } finally {
             if (btn) btn.disabled = false;
-            if (btnText) btnText.textContent = 'Ya, Batalkan';
+            if (btnText) btnText.textContent = 'Ya, Batalkan & Hapus';
         }
     }
 
+    window.bukaDetailCuti = bukaDetailCuti;
+    window.tutupDetailCuti = tutupDetailCuti;
     window.bukaModalBatalCuti = bukaModalBatalCuti;
     window.tutupModalBatalCuti = tutupModalBatalCuti;
     window.kirimBatalkanCuti = kirimBatalkanCuti;
