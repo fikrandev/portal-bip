@@ -1752,7 +1752,7 @@ $tambahPerBulan = (int)($cfgTahunan['tambah_per_bulan'] ?? 1);
             <!-- Pilih Jenis Cuti -->
             <div>
                 <label class="block text-xs font-bold text-slate-700 mb-1">Jenis Cuti <span class="text-rose-500">*</span></label>
-                <select name="jenis_cuti_id" id="ajukan_jenis_cuti_id" required
+                <select name="jenis_cuti_id" id="ajukan_jenis_cuti_id" required onchange="adminCheckSaldoLive()"
                         class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-xs font-bold text-slate-800 outline-none focus:border-primary-500">
                     <?php foreach ($jenisCutiAktif as $jc): ?>
                         <option value="<?= (int)$jc['id'] ?>"
@@ -1793,6 +1793,15 @@ $tambahPerBulan = (int)($cfgTahunan['tambah_per_bulan'] ?? 1);
                 <div class="flex items-center justify-between text-xs px-1 mt-1 font-semibold text-slate-500">
                     <span>Total Cuti: <b id="admin_text_total_hari_cuti" class="text-primary-700 font-extrabold">1 Hari Kerja</b></span>
                     <button type="button" onclick="adminClearSemuaTanggalCuti()" class="text-rose-500 hover:underline text-[11px] cursor-pointer">✕ Kosongkan</button>
+                </div>
+
+                <!-- LIVE WARNING: Saldo Pegawai Tidak Cukup (Web Admin) -->
+                <div id="admin_saldo_cuti_warning" class="hidden mt-2 p-3 rounded-xl bg-rose-50 border border-rose-300 text-rose-900 space-y-0.5">
+                    <div class="flex items-center gap-1.5 font-bold text-xs text-rose-700">
+                        <span>⚠️</span>
+                        <span id="admin_saldo_warning_title">Saldo Cuti Tidak Mencukupi!</span>
+                    </div>
+                    <p id="admin_saldo_warning_desc" class="text-[11px] text-rose-700 leading-snug"></p>
                 </div>
 
                 <!-- Hidden inputs passed on submit -->
@@ -1842,7 +1851,7 @@ $tambahPerBulan = (int)($cfgTahunan['tambah_per_bulan'] ?? 1);
                 <button type="button" onclick="closeModal('modalAjukanCuti')" class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer">
                     Batal
                 </button>
-                <button type="submit" class="px-5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-md cursor-pointer">
+                <button type="submit" id="admin_btn_submit_cuti" class="px-5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-md cursor-pointer">
                     Simpan Pengajuan Cuti
                 </button>
             </div>
@@ -2240,6 +2249,7 @@ function adminRenderCutiChips() {
     if (inMulai) inMulai.value = adminSelectedCutiDates[0];
     if (inSelesai) inSelesai.value = adminSelectedCutiDates[count - 1];
     if (inJumlah) inJumlah.value = count;
+    adminCheckSaldoLive();
 }
 
 function adminTambahTanggalCuti() {
@@ -2282,18 +2292,73 @@ function openModalAjukanCuti(pegawaiId = null) {
     modal.classList.add('flex');
 }
 
+function adminCheckSaldoLive() {
+    const selPegawai = document.getElementById('ajukan_pegawai_id');
+    const selJenis = document.getElementById('ajukan_jenis_cuti_id');
+    const warnBox = document.getElementById('admin_saldo_cuti_warning');
+    const warnDesc = document.getElementById('admin_saldo_warning_desc');
+    const submitBtn = document.getElementById('admin_btn_submit_cuti');
+
+    if (!selPegawai || !selJenis) return true;
+
+    const pegOpt = selPegawai.options[selPegawai.selectedIndex];
+    const saldo = pegOpt ? parseInt(pegOpt.getAttribute('data-saldo') || '0', 10) : 0;
+
+    const jcOpt = selJenis.options[selJenis.selectedIndex];
+    const potongTahunan = jcOpt ? parseInt(jcOpt.getAttribute('data-potong') || '0', 10) === 1 : false;
+    const kategori = jcOpt ? (jcOpt.getAttribute('data-kategori') || 'Tahunan') : 'Tahunan';
+    const kuotaKhusus = jcOpt ? parseInt(jcOpt.getAttribute('data-kuota') || '0', 10) : 0;
+    const selectedCount = Array.isArray(adminSelectedCutiDates) ? adminSelectedCutiDates.length : 0;
+
+    let isError = false;
+    let msg = '';
+
+    if (selPegawai.value && (potongTahunan || kategori === 'Tahunan')) {
+        if (selectedCount > saldo) {
+            isError = true;
+            msg = `Sisa saldo Cuti Tahunan pegawai ini hanya <b>${saldo} hari</b>, namun Anda memilih <b>${selectedCount} hari kerja</b> (melebihi ${selectedCount - saldo} hari). Kurangi tanggal yang dipilih agar tidak melebihi sisa kuota.`;
+        }
+    }
+
+    if (!isError && kuotaKhusus > 0 && selectedCount > kuotaKhusus) {
+        isError = true;
+        msg = `Batas maksimal hari untuk jenis cuti ini adalah <b>${kuotaKhusus} hari</b>, namun Anda memilih <b>${selectedCount} hari</b> (kelebihan ${selectedCount - kuotaKhusus} hari).`;
+    }
+
+    if (isError) {
+        if (warnBox) {
+            warnBox.classList.remove('hidden');
+            if (warnDesc) warnDesc.innerHTML = msg;
+        }
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        }
+        return false;
+    } else {
+        if (warnBox) warnBox.classList.add('hidden');
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+        return true;
+    }
+}
+
 function updateInfoSaldoPegawai() {
     const sel = document.getElementById('ajukan_pegawai_id');
     const box = document.getElementById('info_saldo_box');
     const angka = document.getElementById('info_saldo_angka');
     if (!sel || !sel.value) {
         if (box) box.classList.add('hidden');
+        adminCheckSaldoLive();
         return;
     }
     const opt = sel.options[sel.selectedIndex];
     const saldo = opt ? (opt.getAttribute('data-saldo') || '0') : '0';
     if (angka) angka.textContent = saldo + ' / <?= $maxAkumulasi ?> Hari';
     if (box) box.classList.remove('hidden');
+    adminCheckSaldoLive();
 }
 
 function hitungDurasiCuti() {

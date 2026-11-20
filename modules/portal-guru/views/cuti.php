@@ -202,21 +202,35 @@
                         Jenis Cuti <span class="text-rose-500">*</span>
                     </label>
                     <div class="relative">
-                        <select id="modal_jenis_cuti_id" name="jenis_cuti_id" required
+                        <select id="modal_jenis_cuti_id" name="jenis_cuti_id" required onchange="checkSaldoCutiLive()"
                                 class="w-full px-3.5 py-3 rounded-2xl border border-slate-200 bg-white font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-xs">
                             <?php if (!empty($daftarJenisCuti)): ?>
                                 <?php foreach ($daftarJenisCuti as $idx => $j): ?>
                                     <?php
                                         $kuotaStr = ((int)$j['kuota_hari'] > 0) ? (' (Maks ' . $j['kuota_hari'] . ' hari)') : '';
+                                        $isPotong = (int)($j['potong_kuota_tahunan'] ?? 0);
+                                        $kategori = $j['kategori'] ?? 'Tahunan';
+                                        $kuotaHari = (int)($j['kuota_hari'] ?? 0);
                                     ?>
-                                    <option value="<?= (int)$j['id'] ?>" <?= $idx === 0 ? 'selected' : '' ?>>
+                                    <option value="<?= (int)$j['id'] ?>"
+                                            data-potong="<?= $isPotong ?>"
+                                            data-kategori="<?= htmlspecialchars($kategori) ?>"
+                                            data-kuota="<?= $kuotaHari ?>"
+                                            data-nama="<?= htmlspecialchars($j['nama_jenis']) ?>"
+                                            <?= $idx === 0 ? 'selected' : '' ?>>
                                         <?= htmlspecialchars($j['nama_jenis']) ?><?= $kuotaStr ?>
                                     </option>
                                 <?php endforeach; ?>
                             <?php else: ?>
-                                <option value="1">Cuti Tahunan</option>
+                                <option value="1" data-potong="1" data-kategori="Tahunan" data-kuota="0" data-nama="Cuti Tahunan">Cuti Tahunan</option>
                             <?php endif; ?>
                         </select>
+                    </div>
+
+                    <!-- Badge Info Jenis Cuti & Saldo Tersedia -->
+                    <div id="info-jenis-cuti-badge" class="mt-1.5 p-2 rounded-xl bg-primary-50 border border-primary-200/80 text-[10.5px] flex items-center justify-between text-primary-900">
+                        <span>💼 Sisa Saldo Cuti Tahunan:</span>
+                        <strong class="font-extrabold text-primary-800"><?= (int)($quotas['tahunan']['remaining'] ?? 0) ?> Hari</strong>
                     </div>
                 </div>
 
@@ -282,6 +296,24 @@
                                     ✕ Bersihkan Pilihan
                                 </button>
                             </div>
+                        </div>
+
+                        <!-- LIVE VALIDATION ALERT BANNER: Saldo Cuti Tidak Cukup -->
+                        <div id="banner-saldo-cuti-warning" class="hidden p-3 rounded-2xl bg-rose-50 border border-rose-300 text-rose-900 space-y-1 shadow-2xs transition-all">
+                            <div class="flex items-center gap-1.5 font-black text-xs text-rose-700">
+                                <span class="text-sm">⚠️</span>
+                                <span id="banner-saldo-title">Saldo Cuti Tidak Mencukupi!</span>
+                            </div>
+                            <p id="banner-saldo-desc" class="text-[10.5px] text-rose-700 leading-relaxed font-normal"></p>
+                        </div>
+
+                        <!-- LIVE VALIDATION INFO BANNER: Saldo Cukup -->
+                        <div id="banner-saldo-cuti-ok" class="hidden p-2.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-[10.5px] font-semibold flex items-center justify-between transition-all shadow-2xs">
+                            <span class="flex items-center gap-1.5">
+                                <span class="text-emerald-600 font-black">✓</span>
+                                <span id="banner-saldo-ok-text">Saldo cuti mencukupi.</span>
+                            </span>
+                            <span id="banner-saldo-sisa-preview" class="font-bold text-emerald-900 bg-emerald-100 px-2 py-0.5 rounded-full text-[10px]"></span>
                         </div>
                     </div>
                 </div>
@@ -574,6 +606,7 @@
 <script>
     // State Kalender & Pilihan Tanggal
     window.selectedCutiDates = [];
+    window.saldoTahunan = <?= (int)($quotas['tahunan']['remaining'] ?? 0) ?>;
     const today = new Date();
     window.calYear = today.getFullYear();
     window.calMonth = today.getMonth(); // 0 - 11
@@ -589,6 +622,146 @@
         window.lucide.createIcons();
     }
     document.querySelectorAll('body > #modal-permohonan-cuti, body > #modal-detail-cuti, body > #modal-batal-cuti').forEach(el => el.remove());
+
+    // Validasi Real-Time Saldo Cuti & Tampilkan Peringatan Langsung di Form
+    function checkSaldoCutiLive() {
+        const sel = document.getElementById('modal_jenis_cuti_id');
+        const opt = sel ? sel.options[sel.selectedIndex] : null;
+        const bannerWarn = document.getElementById('banner-saldo-cuti-warning');
+        const titleWarn = document.getElementById('banner-saldo-title');
+        const descWarn = document.getElementById('banner-saldo-desc');
+        const bannerOk = document.getElementById('banner-saldo-cuti-ok');
+        const okText = document.getElementById('banner-saldo-ok-text');
+        const sisaPreview = document.getElementById('banner-saldo-sisa-preview');
+        const badgeTotal = document.getElementById('summary-total-hari');
+        const btnSubmit = document.getElementById('btn-submit-cuti');
+        const btnText = document.getElementById('btn-submit-text');
+        const infoBadge = document.getElementById('info-jenis-cuti-badge');
+
+        if (!sel || !opt) return true;
+
+        const potongTahunan = parseInt(opt.dataset.potong || '0', 10) === 1;
+        const kategori = opt.dataset.kategori || 'Tahunan';
+        const maxKuota = parseInt(opt.dataset.kuota || '0', 10);
+        const namaJenis = opt.dataset.nama || opt.textContent.trim() || 'Cuti';
+        const saldoTahunan = (typeof window.saldoTahunan === 'number') ? window.saldoTahunan : 0;
+        const selectedCount = Array.isArray(window.selectedCutiDates) ? window.selectedCutiDates.length : 0;
+
+        // Update Kartu Info Jenis Cuti di bawah dropdown
+        if (infoBadge) {
+            if (potongTahunan || kategori === 'Tahunan') {
+                infoBadge.className = 'mt-1.5 p-2 rounded-xl bg-primary-50 border border-primary-200/80 text-[10.5px] flex items-center justify-between text-primary-900';
+                infoBadge.innerHTML = `
+                    <span>💼 Sisa Saldo Cuti Tahunan:</span>
+                    <strong class="font-extrabold text-primary-800">${saldoTahunan} Hari Tersedia</strong>
+                `;
+            } else if (maxKuota > 0) {
+                infoBadge.className = 'mt-1.5 p-2 rounded-xl bg-purple-50 border border-purple-200 text-[10.5px] flex items-center justify-between text-purple-900';
+                infoBadge.innerHTML = `
+                    <span>⭐ Cuti Khusus (${namaJenis}):</span>
+                    <strong class="font-extrabold text-purple-800">Maksimal ${maxKuota} Hari</strong>
+                `;
+            } else {
+                infoBadge.className = 'mt-1.5 p-2 rounded-xl bg-slate-50 border border-slate-200 text-[10.5px] flex items-center justify-between text-slate-700';
+                infoBadge.innerHTML = `
+                    <span>ℹ️ Cuti Khusus (${namaJenis}):</span>
+                    <strong class="font-bold text-slate-800">Tidak Mengurangi Kuota Tahunan</strong>
+                `;
+            }
+        }
+
+        let isError = false;
+        let errTitle = '';
+        let errDesc = '';
+
+        // Validasi 1: Jika jenis cuti memotong saldo cuti tahunan
+        if (potongTahunan || kategori === 'Tahunan') {
+            if (selectedCount > saldoTahunan) {
+                isError = true;
+                errTitle = 'Saldo Cuti Tahunan Tidak Mencukupi! ⚠️';
+                if (saldoTahunan <= 0) {
+                    errDesc = `Saldo Cuti Tahunan Anda saat ini telah habis (0 hari), sedangkan Anda memilih <b>${selectedCount} hari kerja</b>. Anda tidak dapat mengajukan Cuti Tahunan. Silakan pilih jenis cuti lain yang sesuai atau hubungi kepegawaian.`;
+                } else {
+                    const kurang = selectedCount - saldoTahunan;
+                    errDesc = `Anda memilih <b>${selectedCount} hari kerja</b>, namun sisa saldo Cuti Tahunan Anda hanya <b>${saldoTahunan} hari</b> (melebihi ${kurang} hari). Silakan hapus/kurangi tanggal yang dipilih agar tidak melebihi sisa kuota.`;
+                }
+            }
+        }
+
+        // Validasi 2: Jika cuti khusus dengan batas kuota maksimal hari
+        if (!isError && maxKuota > 0 && selectedCount > maxKuota) {
+            isError = true;
+            const lebih = selectedCount - maxKuota;
+            errTitle = 'Melebihi Kuota Maksimal Hari! ⚠️';
+            errDesc = `Batas maksimal untuk <b>${namaJenis}</b> adalah <b>${maxKuota} hari</b>, namun Anda memilih <b>${selectedCount} hari kerja</b> (kelebihan ${lebih} hari). Silakan kurangi tanggal yang dipilih.`;
+        }
+
+        if (isError) {
+            // Tampilkan Banner Peringatan Merah di dalam form
+            if (bannerWarn) {
+                bannerWarn.classList.remove('hidden');
+                if (titleWarn) titleWarn.textContent = errTitle;
+                if (descWarn) descWarn.innerHTML = errDesc;
+            }
+            if (bannerOk) bannerOk.classList.add('hidden');
+
+            // Style Total Hari Berubah Merah
+            if (badgeTotal) {
+                badgeTotal.className = 'font-extrabold text-rose-700 bg-rose-100 border border-rose-300 px-2.5 py-0.5 rounded-full text-[10.5px] animate-pulse';
+                badgeTotal.textContent = `${selectedCount} Hari (Saldo Kurang!)`;
+            }
+
+            // Disable Tombol Submit dengan Keterangan Jelas
+            if (btnSubmit) {
+                btnSubmit.disabled = true;
+                btnSubmit.classList.add('opacity-50', 'cursor-not-allowed', 'pointer-events-none');
+                btnSubmit.classList.remove('bg-primary-600', 'hover:bg-primary-700', 'active:bg-primary-800');
+                btnSubmit.classList.add('bg-slate-400');
+            }
+            if (btnText) {
+                btnText.textContent = (potongTahunan || kategori === 'Tahunan') 
+                    ? `Saldo Tidak Cukup (${selectedCount} > ${saldoTahunan})`
+                    : `Melebihi Maksimal ${maxKuota} Hari`;
+            }
+            return false;
+        } else {
+            // Sembunyikan Banner Peringatan
+            if (bannerWarn) bannerWarn.classList.add('hidden');
+
+            // Style Total Hari Normal
+            if (badgeTotal) {
+                badgeTotal.className = 'font-extrabold text-primary-700 bg-primary-100 px-2.5 py-0.5 rounded-full text-[10.5px]';
+                badgeTotal.textContent = `${selectedCount} Hari Kerja Terpilih`;
+            }
+
+            if (selectedCount > 0) {
+                if (bannerOk) {
+                    bannerOk.classList.remove('hidden');
+                    if (potongTahunan || kategori === 'Tahunan') {
+                        const sisaAkhir = saldoTahunan - selectedCount;
+                        if (okText) okText.textContent = `Saldo mencukupi (${selectedCount} hari diajukan).`;
+                        if (sisaPreview) sisaPreview.textContent = `Sisa Nanti: ${sisaAkhir} Hari`;
+                    } else {
+                        if (okText) okText.textContent = `Durasi cuti sesuai ketentuan (${selectedCount} hari).`;
+                        if (sisaPreview) sisaPreview.textContent = `Sesuai Aturan`;
+                    }
+                }
+            } else {
+                if (bannerOk) bannerOk.classList.add('hidden');
+            }
+
+            // Aktifkan kembali Tombol Submit
+            if (btnSubmit) {
+                btnSubmit.disabled = false;
+                btnSubmit.classList.remove('opacity-50', 'cursor-not-allowed', 'pointer-events-none', 'bg-slate-400');
+                btnSubmit.classList.add('bg-primary-600', 'hover:bg-primary-700', 'active:bg-primary-800');
+            }
+            if (btnText) {
+                btnText.textContent = 'Simpan Permohonan Cuti';
+            }
+            return true;
+        }
+    }
 
     // Buka Modal Pengajuan Cuti
     function openModalPermohonanCuti() {
@@ -615,6 +788,7 @@
         renderCalendarButtons();
         renderSelectedChips();
         renderCutiPhotoPreviews();
+        checkSaldoCutiLive();
 
         modal.classList.remove('hidden');
         requestAnimationFrame(() => {
@@ -776,6 +950,7 @@
 
         if (count === 0) {
             container.innerHTML = `<span class="text-[11px] text-slate-400 italic py-1 px-1">Ketuk tombol tanggal di atas untuk memilih.</span>`;
+            checkSaldoCutiLive();
             return;
         }
 
@@ -794,6 +969,8 @@
                 </span>
             `;
         }).join('');
+
+        checkSaldoCutiLive();
     }
 
     // Bersihkan Semua Pilihan Tanggal
@@ -1054,6 +1231,15 @@
             return;
         }
 
+        if (!checkSaldoCutiLive()) {
+            showCutiToast('Saldo atau kuota cuti tidak mencukupi untuk durasi yang dipilih.', 'warning');
+            const bannerWarn = document.getElementById('banner-saldo-cuti-warning');
+            if (bannerWarn) {
+                bannerWarn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            return;
+        }
+
         if (!alasan) {
             const inputAlasan = document.getElementById('modal_alasan');
             if (inputAlasan) {
@@ -1178,6 +1364,7 @@
     window.removeCutiPhoto = removeCutiPhoto;
     window.renderCutiPhotoPreviews = renderCutiPhotoPreviews;
     window.submitPermohonanCuti = submitPermohonanCuti;
+    window.checkSaldoCutiLive = checkSaldoCutiLive;
 
     // Simpan Data Riwayat Cuti untuk Interaktivitas Modal Detail
     window.cutiRecords = <?= json_encode($records, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
