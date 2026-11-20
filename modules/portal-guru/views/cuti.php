@@ -404,7 +404,6 @@
         </form>
     </div>
 </div>
-</div>
 
 <!-- ======================================================== -->
 <!-- MODAL BOTTOM SHEET: DETAIL LENGKAP PERMOHONAN CUTI       -->
@@ -585,37 +584,17 @@
     const NAMA_BULAN = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
     const NAMA_HARI_SHORT = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
 
-    // Inisialisasi awal saat view dimuat
-    document.addEventListener('DOMContentLoaded', () => {
-        if (window.lucide && typeof lucide.createIcons === 'function') {
-            lucide.createIcons();
-        }
-    });
-
-    // Pastikan modal cuti terpasang langsung di document.body agar tidak tertutup elemen parent atau nav bawah
-    function mountCutiModalElement() {
-        const id = 'modal-permohonan-cuti';
-        const els = document.querySelectorAll('#' + id);
-        if (!els.length) return null;
-        let keeper = els[0];
-        for (let i = 0; i < els.length; i++) {
-            if (els[i].parentElement !== document.body) {
-                keeper = els[i];
-                break;
-            }
-        }
-        els.forEach(el => {
-            if (el !== keeper) el.remove();
-        });
-        if (keeper.parentElement !== document.body) {
-            document.body.appendChild(keeper);
-        }
-        return keeper;
+    // Inisialisasi awal icon Lucide dan bersihkan sisa modal usang di document.body
+    if (window.lucide && typeof window.lucide.createIcons === 'function') {
+        window.lucide.createIcons();
     }
+    document.querySelectorAll('body > #modal-permohonan-cuti, body > #modal-detail-cuti, body > #modal-batal-cuti').forEach(el => el.remove());
 
     // Buka Modal Pengajuan Cuti
     function openModalPermohonanCuti() {
-        mountCutiModalElement();
+        // Bersihkan sisa elemen modal lama di body jika ada
+        document.querySelectorAll('body > #modal-permohonan-cuti').forEach(el => el.remove());
+
         const modal = document.getElementById('modal-permohonan-cuti');
         const scrim = document.getElementById('modal-cuti-scrim');
         const sheet = document.getElementById('form-permohonan-cuti');
@@ -638,14 +617,16 @@
         renderCutiPhotoPreviews();
 
         modal.classList.remove('hidden');
-        void modal.offsetWidth;
-        if (scrim) {
-            scrim.classList.remove('opacity-0', 'pointer-events-none');
-            scrim.classList.add('opacity-100', 'pointer-events-auto');
-        }
-        if (sheet) {
-            sheet.classList.remove('translate-y-full');
-        }
+        requestAnimationFrame(() => {
+            if (scrim) {
+                scrim.classList.remove('opacity-0', 'pointer-events-none');
+                scrim.classList.add('opacity-100', 'pointer-events-auto');
+            }
+            if (sheet) {
+                sheet.classList.remove('translate-y-full');
+                sheet.classList.add('translate-y-0');
+            }
+        });
         document.body.classList.add('overflow-hidden');
     }
 
@@ -655,24 +636,30 @@
         const scrim = document.getElementById('modal-cuti-scrim');
         const sheet = document.getElementById('form-permohonan-cuti');
 
-        // Kembalikan bottom navigation bar
-        const bNav = document.getElementById('mobile-bottom-nav');
-        if (bNav) bNav.style.display = '';
+        // Kembalikan bottom navigation bar jika modal lain tidak terbuka
+        const modalDetail = document.getElementById('modal-detail-cuti');
+        const modalBatal = document.getElementById('modal-batal-cuti');
+        const isOtherOpen = (modalDetail && !modalDetail.classList.contains('hidden')) || (modalBatal && !modalBatal.classList.contains('hidden'));
+        if (!isOtherOpen) {
+            const bNav = document.getElementById('mobile-bottom-nav');
+            if (bNav) bNav.style.display = '';
+            document.body.classList.remove('overflow-hidden');
+        }
 
         if (scrim) {
             scrim.classList.remove('opacity-100', 'pointer-events-auto');
             scrim.classList.add('opacity-0', 'pointer-events-none');
         }
         if (sheet) {
+            sheet.classList.remove('translate-y-0');
             sheet.classList.add('translate-y-full');
         }
-        document.body.classList.remove('overflow-hidden');
 
         setTimeout(() => {
-            if (modal && sheet && sheet.classList.contains('translate-y-full')) {
+            if (modal) {
                 modal.classList.add('hidden');
             }
-        }, 250);
+        }, 260);
     }
 
     // Navigasi Bulan Kalender
@@ -1044,10 +1031,13 @@
         if (e && typeof e.preventDefault === 'function') {
             e.preventDefault();
         }
+        if (e && typeof e.stopPropagation === 'function') {
+            e.stopPropagation();
+        }
 
         const jenisId = document.getElementById('modal_jenis_cuti_id')?.value || '';
         const substitute = document.getElementById('modal_pelimpahan_tugas')?.value || '';
-        const keteranganTugas = (document.getElementById('modal_keterangan_tugas')?.value || '').trim();
+        let keteranganTugas = (document.getElementById('modal_keterangan_tugas')?.value || '').trim();
         const alasan = (document.getElementById('modal_alasan')?.value || '').trim();
         const kontak = (document.getElementById('modal_kontak_darurat')?.value || '').trim();
 
@@ -1064,16 +1054,22 @@
             return;
         }
 
-        if (!keteranganTugas) {
-            showCutiToast('Mohon isi keterangan tugas yang dilimpahkan kepada rekan pengganti.', 'warning');
-            document.getElementById('modal_keterangan_tugas')?.focus();
+        if (!alasan) {
+            const inputAlasan = document.getElementById('modal_alasan');
+            if (inputAlasan) {
+                inputAlasan.focus();
+                inputAlasan.classList.add('ring-2', 'ring-rose-500', 'border-rose-500');
+                inputAlasan.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                setTimeout(() => {
+                    inputAlasan.classList.remove('ring-2', 'ring-rose-500', 'border-rose-500');
+                }, 3000);
+            }
+            showCutiToast('Mohon isi alasan / keperluan cuti Anda.', 'warning');
             return;
         }
 
-        if (!alasan) {
-            showCutiToast('Mohon isi alasan / keperluan cuti.', 'warning');
-            document.getElementById('modal_alasan')?.focus();
-            return;
+        if (!keteranganTugas) {
+            keteranganTugas = 'Pelimpahan tugas dan koordinasi dengan ' + (substitute || 'rekan kerja / pengganti') + '.';
         }
 
         const sortedDates = [...window.selectedCutiDates].sort();
@@ -1102,8 +1098,13 @@
             }
         }
 
-        if (btnSubmit) btnSubmit.disabled = true;
-        if (btnText) btnText.textContent = 'Menyimpan Permohonan...';
+        if (btnSubmit) {
+            btnSubmit.disabled = true;
+            btnSubmit.classList.add('opacity-75', 'cursor-not-allowed');
+        }
+        if (btnText) {
+            btnText.innerHTML = '<span class="inline-block animate-spin mr-1.5">⏳</span>Menyimpan...';
+        }
 
         try {
             const res = await fetch('<?= url("mobile/cuti/submit") ?>', {
@@ -1120,12 +1121,16 @@
                 closeModalPermohonanCuti();
                 if (typeof AndroidUI !== 'undefined' && typeof AndroidUI.success === 'function') {
                     AndroidUI.success({
-                        title: 'Permohonan Cuti Terkirim! 🏖️✓',
+                        title: 'Permohonan Cuti Terkirim! 🏖️',
                         subtitle: 'Nomor: ' + (json.nomor_pengajuan || 'Tersimpan'),
                         message: json.message || 'Permohonan cuti Anda berhasil diajukan dan sedang menunggu verifikasi.',
                         buttonText: 'OK',
                         onClick: () => {
-                            window.location.reload();
+                            if (window.MobileApp && typeof window.MobileApp.navigate === 'function') {
+                                window.MobileApp.navigate('<?= url("mobile/cuti") ?>', { forceRefresh: true });
+                            } else {
+                                window.location.reload();
+                            }
                         }
                     });
                 } else {
@@ -1134,7 +1139,7 @@
                 }
             } else {
                 const msg = (json && json.message) || 'Gagal mengajukan cuti.';
-                if (typeof AndroidUI !== 'undefined') {
+                if (typeof AndroidUI !== 'undefined' && typeof AndroidUI.alert === 'function') {
                     AndroidUI.alert({
                         title: 'Gagal Mengajukan Cuti',
                         subtitle: 'Periksa Pengisian Form',
@@ -1143,15 +1148,20 @@
                         iconBg: 'bg-rose-100 text-rose-700'
                     });
                 } else {
-                    alert(msg);
+                    showCutiToast(msg, 'error');
                 }
             }
         } catch (err) {
             console.error('Submit cuti error:', err);
             showCutiToast('Terjadi kesalahan jaringan saat mengirim permohonan cuti.', 'error');
         } finally {
-            if (btnSubmit) btnSubmit.disabled = false;
-            if (btnText) btnText.textContent = 'Simpan Permohonan Cuti';
+            if (btnSubmit) {
+                btnSubmit.disabled = false;
+                btnSubmit.classList.remove('opacity-75', 'cursor-not-allowed');
+            }
+            if (btnText) {
+                btnText.textContent = 'Simpan Permohonan Cuti';
+            }
         }
     }
 
@@ -1184,15 +1194,10 @@
     }
 
     // Modal Detail Permohonan Cuti
-    function mountDetailCutiModalElement() {
-        const el = document.getElementById('modal-detail-cuti');
-        if (el && el.parentElement !== document.body) {
-            document.body.appendChild(el);
-        }
-    }
-
     function bukaDetailCuti(index) {
-        mountDetailCutiModalElement();
+        // Bersihkan sisa elemen modal lama di body jika ada
+        document.querySelectorAll('body > #modal-detail-cuti').forEach(el => el.remove());
+
         const r = window.cutiRecords && window.cutiRecords[index];
         if (!r) return;
 
@@ -1430,15 +1435,10 @@
     }
 
     // Handler Pembatalan Permohonan Cuti (Hapus Permanen Data)
-    function mountBatalCutiModalElement() {
-        const el = document.getElementById('modal-batal-cuti');
-        if (el && el.parentElement !== document.body) {
-            document.body.appendChild(el);
-        }
-    }
-
     function bukaModalBatalCuti(rawId, nomor, jenis) {
-        mountBatalCutiModalElement();
+        // Bersihkan sisa elemen modal lama di body jika ada
+        document.querySelectorAll('body > #modal-batal-cuti').forEach(el => el.remove());
+
         const inputId = document.getElementById('batal_cuti_raw_id');
         const txtNomor = document.getElementById('batal_cuti_nomor');
         const txtJenis = document.getElementById('batal_cuti_jenis');

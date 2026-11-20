@@ -49,7 +49,7 @@ const AndroidUI = (function() {
                 </div>
 
                 <!-- Android Snackbar / Toast Mount Point -->
-                <div id="android-ui-toast-wrapper" class="fixed bottom-20 sm:bottom-24 inset-x-4 max-w-md mx-auto pointer-events-none flex flex-col items-center gap-2 z-50"></div>
+                <div id="android-ui-toast-wrapper" class="fixed bottom-20 sm:bottom-24 inset-x-4 max-w-md mx-auto pointer-events-none flex flex-col items-center gap-2 z-[10050]"></div>
             `;
             document.body.appendChild(container);
 
