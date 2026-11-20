@@ -1558,4 +1558,14 @@
             }
         }
     }
+
+    // Auto-switch ke tab sesuai parameter URL (?tab=riwayat)
+    document.addEventListener('DOMContentLoaded', () => {
+        try {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('tab') === 'riwayat') {
+                switchStaffTab('riwayat');
+            }
+        } catch (e) {}
+    });
 </script>

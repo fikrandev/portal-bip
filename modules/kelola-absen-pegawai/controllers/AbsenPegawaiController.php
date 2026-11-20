@@ -6,6 +6,17 @@
 
 require_once BASE_PATH . '/modules/kelola-absen-pegawai/models/AbsenPegawaiModel.php';
 
+// Fallback Class Flash untuk memastikan tidak ada error jika core/Response belum termuat/terupdate
+if (!class_exists('Flash')) {
+    class Flash
+    {
+        public static function success(string $message): void { $_SESSION['flash_success'] = $message; }
+        public static function error(string $message): void { $_SESSION['flash_error'] = $message; }
+        public static function info(string $message): void { $_SESSION['flash_info'] = $message; }
+        public static function warning(string $message): void { $_SESSION['flash_warning'] = $message; }
+    }
+}
+
 class AbsenPegawaiController
 {
     /**

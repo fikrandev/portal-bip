@@ -131,6 +131,20 @@
             <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
         </a>
 
+        <?php if (!empty($profile['is_support']) || !empty($isSupport)): ?>
+        <a href="<?= url('mobile/jurnal?tab=riwayat') ?>" class="flex items-center justify-between p-3.5 hover:bg-slate-50 rounded-2xl transition-all press-bounce">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
+                    <i data-lucide="book-check" class="w-4 h-4"></i>
+                </div>
+                <div>
+                    <h4 class="font-bold text-xs text-slate-800">Riwayat Jurnal Kerja Staff</h4>
+                    <p class="text-[10px] text-slate-400">Log aktivitas & rincian tugas harian staff</p>
+                </div>
+            </div>
+            <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
+        </a>
+        <?php else: ?>
         <a href="<?= url('mobile/rekap-jurnal') ?>" class="flex items-center justify-between p-3.5 hover:bg-slate-50 rounded-2xl transition-all press-bounce">
             <div class="flex items-center gap-3">
                 <div class="w-9 h-9 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
@@ -143,6 +157,7 @@
             </div>
             <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
         </a>
+        <?php endif; ?>
 
         <button type="button" onclick="clearOfflineCache()" class="w-full flex items-center justify-between p-3.5 hover:bg-slate-50 rounded-2xl transition-all press-bounce text-left">
             <div class="flex items-center gap-3">

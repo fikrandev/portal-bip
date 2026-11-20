@@ -169,6 +169,10 @@ class AbsenPegawaiModel
             }
         }
 
+        try {
+            $pdo->exec("ALTER TABLE `absen_pegawai_log` MODIFY COLUMN `radius_saat_absen` INT NOT NULL DEFAULT 10");
+        } catch (Throwable $e) {}
+
         // 4. Tabel Jadwal Jam Kerja Khusus Per Hari (Per Pegawai)
         $pdo->exec("
             CREATE TABLE IF NOT EXISTS `absen_pegawai_jam_harian` (
@@ -2610,9 +2614,9 @@ class AbsenPegawaiModel
             return true;
         } else {
             $sql = "INSERT INTO `absen_pegawai_log` 
-                        (`pegawai_id`, `tanggal`, `jam_masuk`, `jam_pulang`, `status`, `nama_kantor_absen`, `keterangan`, `created_at`, `updated_at`)
+                        (`pegawai_id`, `tanggal`, `jam_masuk`, `jam_pulang`, `status`, `nama_kantor_absen`, `radius_saat_absen`, `keterangan`, `created_at`, `updated_at`)
                     VALUES 
-                        (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())";
+                        (?, ?, ?, ?, ?, ?, 10, ?, NOW(), NOW())";
             self::db()->query($sql, [$pegawaiId, $tanggal, $jamMasuk, $jamPulang, $status, $namaKantor, $keterangan]);
             return true;
         }
@@ -2659,9 +2663,9 @@ class AbsenPegawaiModel
         } else {
             // Jika belum ada log presensi, buat log baru dengan status Terlambat
             $sql = "INSERT INTO `absen_pegawai_log` 
-                        (`pegawai_id`, `tanggal`, `status`, `evaluasi`, `tindak_lanjut`, `evaluasi_oleh`, `evaluasi_at`, `created_at`, `updated_at`)
+                        (`pegawai_id`, `tanggal`, `status`, `radius_saat_absen`, `evaluasi`, `tindak_lanjut`, `evaluasi_oleh`, `evaluasi_at`, `created_at`, `updated_at`)
                     VALUES 
-                        (?, ?, 'Terlambat', ?, ?, ?, NOW(), NOW(), NOW())";
+                        (?, ?, 'Terlambat', 10, ?, ?, ?, NOW(), NOW(), NOW())";
             self::db()->query($sql, [$pegawaiId, $tanggal, $evaluasi, $tindakLanjut, $evaluator]);
             return true;
         }

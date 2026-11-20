@@ -331,6 +331,11 @@
                             <div class="w-10 h-10 rounded-xl bg-primary-600 text-white flex items-center justify-center shadow-sm shadow-primary-500/20 text-base font-bold">✨</div>
                             <span class="text-xs font-bold text-slate-800 text-center leading-tight">Tasbih</span>
                         </a>
+
+                        <a href="<?= url('mobile/jurnal?tab=riwayat') ?>" class="flex flex-col items-center gap-1.5 p-2.5 bg-primary-50/60 hover:bg-primary-50 rounded-2xl border border-primary-100 press-bounce">
+                            <div class="w-10 h-10 rounded-xl bg-primary-600 text-white flex items-center justify-center shadow-sm shadow-primary-500/20 text-base font-bold">📋</div>
+                            <span class="text-xs font-bold text-slate-800 text-center leading-tight">Riwayat Jurnal</span>
+                        </a>
                     </div>
                 `
             });

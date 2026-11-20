@@ -874,6 +874,12 @@ class PortalGuruController
         $pegawaiId = (int) ($teacher['pegawai_id'] ?: $teacher['user_id'] ?: 0);
         self::releaseSessionLock();
 
+        // Jika pegawai adalah Support System / Staff, arahkan langsung ke jurnal staff tab riwayat
+        if (!empty($teacher['is_support'])) {
+            header('Location: ' . url('mobile/jurnal?tab=riwayat'));
+            exit;
+        }
+
         require_once MODULES_PATH . '/kelola-jurnal-guru/models/JurnalGuruPengaturan.php';
         $jurnalConfig = JurnalGuruPengaturan::getPengaturan();
 
@@ -2124,10 +2130,12 @@ class PortalGuruController
         $teacher = self::getLoggedInTeacher();
         self::releaseSessionLock();
 
+        $isSupport = !empty($teacher['is_support']);
         self::render('profil', [
-            'pageTitle' => 'Profil Guru & Pengaturan PWA',
+            'pageTitle' => $isSupport ? 'Profil Pegawai & Pengaturan PWA' : 'Profil Guru & Pengaturan PWA',
             'activeTab' => 'profil',
-            'profile' => $teacher
+            'profile' => $teacher,
+            'isSupport' => $isSupport
         ]);
     }
 
