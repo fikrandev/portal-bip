@@ -155,26 +155,55 @@
         body {
             font-family: 'Inter', sans-serif;
             -webkit-tap-highlight-color: transparent;
-            overscroll-behavior-y: contain;
+            overscroll-behavior-y: auto;
             overscroll-behavior-x: none;
             overflow-x: hidden;
             width: 100%;
             max-width: 100vw;
             position: relative;
-            touch-action: pan-y pinch-zoom;
         }
         #mobile-main-view {
-            touch-action: pan-y;
             overscroll-behavior-x: none;
+            overscroll-behavior-y: auto;
             width: 100%;
             max-width: 100%;
             min-width: 0;
             overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
         }
         .safe-top { padding-top: var(--sat); }
         .safe-bottom { padding-bottom: var(--sab); }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Universal Pull To Refresh Indicator */
+        .ptr-indicator {
+            position: absolute;
+            top: -55px;
+            left: 50%;
+            transform: translateX(-50%) translateY(0);
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: #ffffff;
+            box-shadow: 0 4px 16px rgba(15, 23, 42, 0.16);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s cubic-bezier(0.2, 0.9, 0.3, 1), opacity 0.2s ease;
+            opacity: 0;
+            z-index: 50;
+            pointer-events: none;
+        }
+        .ptr-indicator.active {
+            opacity: 1;
+        }
+        .ptr-indicator.refreshing svg {
+            animation: ptr-spin 0.8s linear infinite;
+        }
+        @keyframes ptr-spin {
+            100% { transform: rotate(360deg); }
+        }
         
         /* Smooth bounce & active press */
         .press-bounce {
@@ -221,7 +250,14 @@
     <div id="spa-progress-bar" aria-hidden="true"></div>
 
     <!-- Mobile Shell Wrapper (Original Compact Size: max-w-md) -->
-    <div class="w-full max-w-md min-w-0 min-h-screen bg-[#f6f8fb] shadow-2xl flex flex-col relative overflow-x-hidden border-x border-slate-200/60 sm:my-4 sm:rounded-3xl sm:min-h-[860px]" style="touch-action: pan-y;">
+    <div class="w-full max-w-md min-w-0 min-h-screen bg-[#f6f8fb] shadow-2xl flex flex-col relative overflow-x-hidden border-x border-slate-200/60 sm:my-4 sm:rounded-3xl sm:min-h-[860px]">
+        
+        <!-- Pull to Refresh Floating Badge -->
+        <div id="ptr-indicator" class="ptr-indicator" aria-hidden="true">
+            <svg class="w-5 h-5 text-primary-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+            </svg>
+        </div>
         
         <!-- Main View Content -->
         <main id="mobile-main-view" 
@@ -484,6 +520,90 @@
         document.addEventListener('DOMContentLoaded', () => {
             if (window.lucide) window.lucide.createIcons();
         });
+
+        // ============================================================
+        // UNIVERSAL MOBILE PULL-TO-REFRESH (Tarik Layar untuk Refresh)
+        // ============================================================
+        (function initPullToRefresh() {
+            const mainView = document.getElementById('mobile-main-view');
+            const ptr = document.getElementById('ptr-indicator');
+            if (!mainView || !ptr) return;
+
+            let startY = 0;
+            let currentY = 0;
+            let isPulling = false;
+            let isRefreshing = false;
+            const threshold = 75;
+
+            // Target elemen yang bisa di-scroll: mainView atau window/document
+            function isAtTop() {
+                const scrollPos = Math.max(mainView.scrollTop || 0, window.scrollY || 0, document.documentElement.scrollTop || 0);
+                return scrollPos <= 0;
+            }
+
+            function isAnyModalOpen() {
+                return !!document.querySelector('.fixed:not(.hidden):not(#mobile-bottom-nav):not(#spa-progress-bar):not(#toast-container)');
+            }
+
+            mainView.addEventListener('touchstart', function(e) {
+                if (isRefreshing) return;
+                if (isAtTop() && !isAnyModalOpen()) {
+                    startY = e.touches[0].pageY;
+                    isPulling = true;
+                }
+            }, { passive: true });
+
+            mainView.addEventListener('touchmove', function(e) {
+                if (!isPulling || isRefreshing) return;
+                currentY = e.touches[0].pageY;
+                const diff = currentY - startY;
+
+                if (diff > 0 && isAtTop()) {
+                    const distance = Math.min(diff * 0.42, 65);
+                    const progress = Math.min(diff / threshold, 1);
+                    ptr.style.transform = `translateX(-50%) translateY(${distance}px)`;
+                    ptr.style.opacity = String(progress);
+                    ptr.classList.add('active');
+                } else {
+                    ptr.classList.remove('active');
+                    ptr.style.opacity = '0';
+                }
+            }, { passive: true });
+
+            mainView.addEventListener('touchend', function() {
+                if (!isPulling || isRefreshing) return;
+                const diff = currentY - startY;
+
+                if (diff >= threshold && isAtTop()) {
+                    isRefreshing = true;
+                    ptr.classList.add('refreshing');
+                    ptr.style.transform = 'translateX(-50%) translateY(55px)';
+                    ptr.style.opacity = '1';
+
+                    if (typeof AndroidUI !== 'undefined' && typeof AndroidUI.toast === 'function') {
+                        AndroidUI.toast('Memperbarui data...', 'info');
+                    }
+
+                    setTimeout(() => {
+                        try {
+                            const curUrl = new URL(window.location.href);
+                            curUrl.searchParams.set('_r', Date.now());
+                            window.location.href = curUrl.toString();
+                        } catch (e) {
+                            window.location.reload();
+                        }
+                    }, 300);
+                } else {
+                    ptr.classList.remove('active', 'refreshing');
+                    ptr.style.transform = 'translateX(-50%) translateY(-55px)';
+                    ptr.style.opacity = '0';
+                }
+
+                isPulling = false;
+                startY = 0;
+                currentY = 0;
+            }, { passive: true });
+        })();
     </script>
 
     <?php if (!empty($_SESSION['active_guru_token'])): ?>

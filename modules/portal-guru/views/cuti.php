@@ -87,7 +87,7 @@
     <div class="space-y-3 pt-1">
         <div class="flex items-center justify-between px-1 text-xs">
             <h3 class="font-bold text-slate-800 text-xs">Riwayat & Status Cuti</h3>
-            <span class="text-[10px] text-slate-400 font-semibold"><?= count($records) ?> Riwayat</span>
+            <span id="label-riwayat-counter" class="text-[10px] text-slate-400 font-semibold"><?= count($records) ?> Riwayat</span>
         </div>
 
         <div id="cuti-list-container" class="space-y-3">
@@ -1336,23 +1336,31 @@
 
             if (json && json.success) {
                 closeModalPermohonanCuti();
+
+                // 1. Langsung render dan tampilkan data pengajuan cuti baru seketika di list riwayat!
+                if (json.record) {
+                    tampilkanCutiBaruDiList(json.record);
+                }
+
+                // 2. Beri toast instan
+                if (typeof AndroidUI !== 'undefined' && typeof AndroidUI.toast === 'function') {
+                    AndroidUI.toast('Permohonan cuti berhasil diajukan! 🏖️', 'success');
+                } else {
+                    showCutiToast('Permohonan cuti berhasil diajukan! 🏖️', 'success');
+                }
+
+                // 3. Dialog konfirmasi sukses yang ramah & tidak memaksa reload
                 if (typeof AndroidUI !== 'undefined' && typeof AndroidUI.success === 'function') {
                     AndroidUI.success({
                         title: 'Permohonan Cuti Terkirim! 🏖️',
                         subtitle: 'Nomor: ' + (json.nomor_pengajuan || 'Tersimpan'),
                         message: json.message || 'Permohonan cuti Anda berhasil diajukan dan sedang menunggu verifikasi.',
-                        buttonText: 'OK',
+                        buttonText: 'Lihat Daftar',
                         onClick: () => {
-                            if (window.MobileApp && typeof window.MobileApp.navigate === 'function') {
-                                window.MobileApp.navigate('<?= url("mobile/cuti") ?>', { forceRefresh: true });
-                            } else {
-                                window.location.reload();
-                            }
+                            const firstCard = document.querySelector('#cuti-list-container > div');
+                            if (firstCard) firstCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         }
                     });
-                } else {
-                    alert(json.message || 'Permohonan cuti berhasil diajukan!');
-                    window.location.reload();
                 }
             } else {
                 const msg = (json && json.message) || 'Gagal mengajukan cuti.';
@@ -1382,6 +1390,99 @@
         }
     }
 
+    // Helper escape HTML
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    // Langsung render kartu cuti baru ke dalam list view tanpa perlu tunggu reload
+    function tampilkanCutiBaruDiList(rec) {
+        if (!rec) return;
+        if (!Array.isArray(window.cutiRecords)) window.cutiRecords = [];
+        
+        // Sisipkan record baru ke urutan pertama array (indeks 0)
+        window.cutiRecords.unshift(rec);
+
+        const container = document.getElementById('cuti-list-container');
+        const emptyState = document.getElementById('cuti-empty-state');
+        if (emptyState) {
+            emptyState.remove();
+        }
+
+        if (container) {
+            const card = document.createElement('div');
+            card.className = 'bg-white rounded-2xl p-3.5 shadow-md border-2 border-primary-500/50 bg-primary-50/20 hover:border-primary-300 transition-all press-bounce cursor-pointer flex items-center justify-between gap-3';
+            card.setAttribute('onclick', 'bukaDetailCuti(0)');
+            
+            card.innerHTML = `
+                <!-- Sisi Kiri: Icon + Info Ringkas -->
+                <div class="flex items-center gap-3 min-w-0">
+                    <div class="w-10 h-10 rounded-2xl bg-primary-100 text-primary-700 flex items-center justify-center text-lg font-bold shrink-0">
+                        🏖️
+                    </div>
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            <h4 class="font-bold text-slate-900 text-xs truncate leading-tight">${escapeHtml(rec.type)}</h4>
+                            <span class="text-[10px] font-mono text-slate-400">#${escapeHtml(rec.id)}</span>
+                            <span class="px-1.5 py-0.2 rounded-md bg-emerald-100 text-emerald-700 font-extrabold text-[9px] shadow-2xs">Baru</span>
+                        </div>
+                        
+                        <p class="text-[11px] font-semibold text-slate-700 mt-0.5 truncate flex items-center gap-1">
+                            <span>${escapeHtml(rec.datesDisplay || (rec.startDate + ' s.d. ' + rec.endDate))}</span>
+                            <span class="text-slate-400">&bull;</span>
+                            <span class="text-primary-700 font-bold">${rec.daysCount} hari</span>
+                        </p>
+                        <p class="text-[10px] text-slate-400 mt-0.5 truncate">
+                            Diajukan: Baru saja
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Sisi Kanan: Status Badge & Tombol Detail -->
+                <div class="flex flex-col items-end justify-between gap-1.5 shrink-0">
+                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> Diajukan
+                    </span>
+                    <span class="text-[10.5px] font-bold text-primary-700 flex items-center gap-0.5">
+                        Detail ❯
+                    </span>
+                </div>
+            `;
+
+            // Sisipkan di posisi pertama
+            container.insertBefore(card, container.firstChild);
+
+            // Re-index onclick semua kartu agar sinkron dengan window.cutiRecords
+            const cards = container.children;
+            for (let i = 0; i < cards.length; i++) {
+                cards[i].setAttribute('onclick', `bukaDetailCuti(${i})`);
+            }
+
+            // Update label counter jumlah riwayat
+            const counterBadge = document.getElementById('label-riwayat-counter');
+            if (counterBadge) {
+                counterBadge.textContent = `${window.cutiRecords.length} Riwayat`;
+            }
+
+            // Transisi highlight halus
+            setTimeout(() => {
+                card.classList.remove('border-primary-500/50', 'bg-primary-50/20', 'shadow-md');
+                card.classList.add('border-slate-100', 'shadow-xs');
+            }, 3500);
+
+            // Scroll container atau page ke kartu yang baru dibuat
+            setTimeout(() => {
+                card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 100);
+        }
+    }
+
     // Expose functions globally
     window.openModalPermohonanCuti = openModalPermohonanCuti;
     window.closeModalPermohonanCuti = closeModalPermohonanCuti;
@@ -1396,20 +1497,10 @@
     window.renderCutiPhotoPreviews = renderCutiPhotoPreviews;
     window.submitPermohonanCuti = submitPermohonanCuti;
     window.checkSaldoCutiLive = checkSaldoCutiLive;
+    window.tampilkanCutiBaruDiList = tampilkanCutiBaruDiList;
 
     // Simpan Data Riwayat Cuti untuk Interaktivitas Modal Detail
     window.cutiRecords = <?= json_encode($records, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
-
-    // Helper escape HTML
-    function escapeHtml(str) {
-        if (!str) return '';
-        return String(str)
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#039;');
-    }
 
     // Modal Detail Permohonan Cuti
     function bukaDetailCuti(index) {

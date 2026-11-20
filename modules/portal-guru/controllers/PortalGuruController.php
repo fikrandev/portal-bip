@@ -3515,12 +3515,74 @@ class PortalGuruController
             $userName = $teacher['name'] ?? 'Pegawai';
             $newId = CutiModel::createPengajuan($payload, $userId, $userName);
 
-            $newRow = Database::getInstance()->find("SELECT nomor_pengajuan FROM cuti_pengajuan WHERE id = ?", [$newId]);
+            $newRow = Database::getInstance()->find("
+                SELECT cp.*, cj.nama_jenis, cj.kode as jenis_kode, cj.kategori as jenis_kategori
+                FROM cuti_pengajuan cp
+                LEFT JOIN cuti_jenis cj ON cp.jenis_cuti_id = cj.id
+                WHERE cp.id = ?
+            ", [$newId]);
+
+            $nomorPengajuan = $newRow['nomor_pengajuan'] ?? ('CT-' . $newId);
+            $tglBuat = !empty($newRow['created_at']) ? date('d M Y, H:i WITA', strtotime($newRow['created_at'])) : date('d M Y, H:i WITA');
+
+            $timeline = [
+                ['step' => 'Pengajuan Diajukan', 'time' => $tglBuat, 'done' => true, 'status' => 'Disetujui']
+            ];
+            $realSteps = [];
+            try {
+                $realSteps = Database::getInstance()->findAll("
+                    SELECT * FROM `cuti_pengajuan_step`
+                    WHERE `pengajuan_id` = ?
+                    ORDER BY `step_order` ASC, `id` ASC
+                ", [$newId]);
+            } catch (Throwable $eSteps) {}
+
+            if (!empty($realSteps)) {
+                foreach ($realSteps as $st) {
+                    $label = $st['step_nama'] . (!empty($st['approver_role']) ? ' (' . $st['approver_role'] . ')' : '');
+                    $timeline[] = [
+                        'step' => $label,
+                        'time' => 'Menunggu',
+                        'done' => false,
+                        'status' => 'Pending'
+                    ];
+                }
+            } else {
+                $timeline[] = ['step' => 'Verifikasi Atasan / Kepala Unit', 'time' => 'Menunggu', 'done' => false, 'status' => 'Pending'];
+                $timeline[] = ['step' => 'Persetujuan Yayasan / Pimpinan', 'time' => 'Menunggu', 'done' => false, 'status' => 'Pending'];
+            }
+
+            $displayTanggal = CutiModel::formatTanggalCutiDisplay($newRow, 'd M Y');
+            $cutiDatesList = CutiModel::parseTanggalPilihan($newRow['tanggal_cuti_list'] ?? null);
+
+            $formattedRecord = [
+                'raw_id' => (int)$newRow['id'],
+                'id' => $nomorPengajuan,
+                'type' => $newRow['nama_jenis'] ?? ($newRow['kategori_cuti'] . ' Cuti'),
+                'startDate' => !empty($newRow['tanggal_mulai']) ? date('d M Y', strtotime($newRow['tanggal_mulai'])) : '-',
+                'endDate' => !empty($newRow['tanggal_selesai']) ? date('d M Y', strtotime($newRow['tanggal_selesai'])) : '-',
+                'datesDisplay' => $displayTanggal,
+                'datesList' => $cutiDatesList,
+                'daysCount' => (int)($newRow['jumlah_hari'] ?? 1),
+                'reason' => $newRow['alasan'] ?? '-',
+                'emergencyContact' => $newRow['kontak_darurat'] ?? '-',
+                'address' => $newRow['alamat_selama_cuti'] ?? '-',
+                'substitute' => $newRow['pelimpahan_tugas'] ?? '-',
+                'keteranganTugas' => $newRow['keterangan_tugas'] ?? null,
+                'document' => $newRow['file_lampiran'] ?? null,
+                'document2' => $newRow['file_lampiran_2'] ?? null,
+                'status' => 'Pending',
+                'statusBadge' => 'amber',
+                'submittedAt' => $tglBuat,
+                'timeline' => $timeline,
+                'catatan' => null,
+            ];
 
             echo json_encode([
                 'success' => true,
                 'message' => 'Permohonan cuti berhasil diajukan!',
-                'nomor_pengajuan' => $newRow['nomor_pengajuan'] ?? ('CT-' . $newId)
+                'nomor_pengajuan' => $nomorPengajuan,
+                'record' => $formattedRecord
             ]);
             exit;
         } catch (Throwable $e) {
