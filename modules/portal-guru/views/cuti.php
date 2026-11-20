@@ -126,6 +126,11 @@
                                 <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 shrink-0 flex items-center gap-1">
                                     <i data-lucide="clock" class="w-3 h-3 text-amber-600"></i> Diajukan
                                 </span>
+                            <?php elseif ($r['status'] === 'Dibatalkan'): ?>
+                                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 shrink-0 flex items-center gap-1 border border-slate-200">
+                                    <svg class="w-3 h-3 text-slate-400" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+                                    Dibatalkan
+                                </span>
                             <?php else: ?>
                                 <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 shrink-0 flex items-center gap-1">
                                     <i data-lucide="x-circle" class="w-3 h-3 text-rose-600"></i> <?= htmlspecialchars($r['status']) ?>
@@ -202,6 +207,21 @@
                                 <?php endif; ?>
                             </div>
                         </div>
+
+                        <!-- Tombol Batalkan Pengajuan (Hanya Muncul Jika Status Masih Pending) -->
+                        <?php if ($r['status'] === 'Pending' && !empty($r['raw_id'])): ?>
+                            <div class="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+                                <span class="text-[10.5px] text-amber-700 font-semibold flex items-center gap-1">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                                    <span>Menunggu persetujuan</span>
+                                </span>
+                                <button type="button" onclick="bukaModalBatalCuti(<?= (int)$r['raw_id'] ?>, '<?= htmlspecialchars(addslashes($r['id'])) ?>', '<?= htmlspecialchars(addslashes($r['type'])) ?>')"
+                                    class="px-3 py-1.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-[11px] flex items-center gap-1.5 transition-all press-bounce cursor-pointer">
+                                    <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
+                                    <span>Batalkan Pengajuan</span>
+                                </button>
+                            </div>
+                        <?php endif; ?>
 
                     </div>
                 <?php endforeach; ?>
@@ -450,6 +470,54 @@
             </div>
 
         </form>
+    </div>
+</div>
+
+<!-- ======================================================== -->
+<!-- MODAL BOTTOM SHEET: BATALKAN PERMOHONAN CUTI              -->
+<!-- ======================================================== -->
+<div id="modal-batal-cuti" class="hidden fixed inset-0 z-[10030] overflow-hidden select-none" style="touch-action: none; overscroll-behavior: none;">
+    <!-- Backdrop Scrim -->
+    <div id="modal-batal-cuti-scrim" onclick="tutupModalBatalCuti()" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity duration-250 opacity-0 pointer-events-none"></div>
+
+    <!-- Sheet Wrapper -->
+    <div class="fixed inset-x-0 bottom-0 max-w-md mx-auto w-full pointer-events-none z-[10040]">
+        <div id="sheet-batal-cuti" style="touch-action: pan-y; overscroll-behavior: contain;"
+             class="bg-white rounded-t-[32px] shadow-2xl pointer-events-auto border-t border-slate-200/80 p-5 sm:p-6 space-y-4 max-h-[85vh] w-full transform translate-y-full transition-transform duration-250 ease-out text-xs">
+            
+            <div class="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-1"></div>
+
+            <div class="flex items-start gap-3.5 pt-1">
+                <div class="w-12 h-12 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center text-2xl font-bold shrink-0 shadow-xs">
+                    ⚠️
+                </div>
+                <div class="flex-1 min-w-0">
+                    <h3 class="text-sm sm:text-base font-black text-slate-900 leading-tight">Batalkan Permohonan Cuti?</h3>
+                    <p class="text-[11px] text-slate-500 mt-1 leading-relaxed">
+                        Permohonan <strong id="batal_cuti_nomor" class="text-slate-900 font-mono font-bold"></strong> (<span id="batal_cuti_jenis" class="font-bold text-slate-800"></span>) akan ditarik dan dibatalkan dari proses verifikasi atasan.
+                    </p>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1.5">Alasan Pembatalan (Opsional):</label>
+                <textarea id="batal_cuti_alasan" rows="2" placeholder="Contoh: Ada perubahan jadwal tugas / urusan mendadak ditunda..."
+                    class="w-full px-3.5 py-2.5 rounded-2xl border border-slate-200 text-xs text-slate-800 bg-slate-50 focus:bg-white outline-none focus:border-rose-400 transition-all"></textarea>
+            </div>
+
+            <input type="hidden" id="batal_cuti_raw_id" value="">
+
+            <div class="grid grid-cols-2 gap-3 pt-2">
+                <button type="button" onclick="tutupModalBatalCuti()"
+                    class="w-full py-3 px-4 rounded-2xl border border-slate-200 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-all press-bounce cursor-pointer text-center">
+                    Jangan Batalkan
+                </button>
+                <button type="button" onclick="kirimBatalkanCuti()" id="btn-konfirmasi-batal-cuti"
+                    class="w-full py-3 px-4 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-md shadow-rose-600/25 transition-all press-bounce cursor-pointer text-center flex items-center justify-center gap-1.5">
+                    <span id="btn-text-batal">Ya, Batalkan</span>
+                </button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -1049,4 +1117,120 @@
     window.removeCutiPhoto = removeCutiPhoto;
     window.renderCutiPhotoPreviews = renderCutiPhotoPreviews;
     window.submitPermohonanCuti = submitPermohonanCuti;
+
+    // Handler Pembatalan Permohonan Cuti
+    function mountBatalCutiModalElement() {
+        const el = document.getElementById('modal-batal-cuti');
+        if (el && el.parentElement !== document.body) {
+            document.body.appendChild(el);
+        }
+    }
+
+    function bukaModalBatalCuti(rawId, nomor, jenis) {
+        mountBatalCutiModalElement();
+        const inputId = document.getElementById('batal_cuti_raw_id');
+        const txtNomor = document.getElementById('batal_cuti_nomor');
+        const txtJenis = document.getElementById('batal_cuti_jenis');
+        const txtAlasan = document.getElementById('batal_cuti_alasan');
+
+        if (inputId) inputId.value = rawId;
+        if (txtNomor) txtNomor.textContent = nomor || ('#' + rawId);
+        if (txtJenis) txtJenis.textContent = jenis || 'Cuti';
+        if (txtAlasan) txtAlasan.value = '';
+
+        const modal = document.getElementById('modal-batal-cuti');
+        const scrim = document.getElementById('modal-batal-cuti-scrim');
+        const sheet = document.getElementById('sheet-batal-cuti');
+
+        if (!modal || !scrim || !sheet) return;
+
+        // Sembunyikan bottom navigation bar agar tidak menutupi tombol konfirmasi
+        const bNav = document.getElementById('mobile-bottom-nav');
+        if (bNav) bNav.style.display = 'none';
+
+        modal.classList.remove('hidden');
+        requestAnimationFrame(() => {
+            scrim.classList.remove('opacity-0', 'pointer-events-none');
+            scrim.classList.add('opacity-100', 'pointer-events-auto');
+            sheet.classList.remove('translate-y-full');
+            sheet.classList.add('translate-y-0');
+        });
+        document.body.classList.add('overflow-hidden');
+    }
+
+    function tutupModalBatalCuti() {
+        const modal = document.getElementById('modal-batal-cuti');
+        const scrim = document.getElementById('modal-batal-cuti-scrim');
+        const sheet = document.getElementById('sheet-batal-cuti');
+
+        if (!modal || !scrim || !sheet) return;
+        scrim.classList.remove('opacity-100', 'pointer-events-auto');
+        scrim.classList.add('opacity-0', 'pointer-events-none');
+        sheet.classList.remove('translate-y-0');
+        sheet.classList.add('translate-y-full');
+
+        // Kembalikan bottom navigation bar jika modal utama pengajuan cuti juga tertutup
+        const modalPermohonan = document.getElementById('modal-permohonan-cuti');
+        if (!modalPermohonan || modalPermohonan.classList.contains('hidden')) {
+            const bNav = document.getElementById('mobile-bottom-nav');
+            if (bNav) bNav.style.display = '';
+            document.body.classList.remove('overflow-hidden');
+        }
+
+        setTimeout(() => {
+            modal.classList.add('hidden');
+        }, 260);
+    }
+
+    async function kirimBatalkanCuti() {
+        const rawId = document.getElementById('batal_cuti_raw_id')?.value;
+        const alasan = (document.getElementById('batal_cuti_alasan')?.value || '').trim();
+        const btn = document.getElementById('btn-konfirmasi-batal-cuti');
+        const btnText = document.getElementById('btn-text-batal');
+
+        if (!rawId) {
+            showCutiToast('ID Pengajuan cuti tidak valid.', 'error');
+            return;
+        }
+
+        try {
+            if (btn) btn.disabled = true;
+            if (btnText) btnText.textContent = 'Membatalkan...';
+
+            const formData = new FormData();
+            formData.append('pengajuan_id', rawId);
+            formData.append('alasan_batal', alasan);
+
+            const res = await fetch('<?= url("mobile/cuti/cancel") ?>', {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+
+            const json = await res.json();
+            if (json && json.success) {
+                tutupModalBatalCuti();
+                if (typeof AndroidUI !== 'undefined' && typeof AndroidUI.toast === 'function') {
+                    AndroidUI.toast(json.message || 'Permohonan cuti berhasil dibatalkan.', 'success');
+                } else {
+                    alert(json.message || 'Permohonan cuti berhasil dibatalkan.');
+                }
+                setTimeout(() => {
+                    window.location.reload();
+                }, 400);
+            } else {
+                showCutiToast((json && json.message) || 'Gagal membatalkan permohonan cuti.', 'error');
+            }
+        } catch (err) {
+            console.error('Cancel cuti error:', err);
+            showCutiToast('Terjadi kesalahan jaringan saat membatalkan cuti.', 'error');
+        } finally {
+            if (btn) btn.disabled = false;
+            if (btnText) btnText.textContent = 'Ya, Batalkan';
+        }
+    }
+
+    window.bukaModalBatalCuti = bukaModalBatalCuti;
+    window.tutupModalBatalCuti = tutupModalBatalCuti;
+    window.kirimBatalkanCuti = kirimBatalkanCuti;
 </script>

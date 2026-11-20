@@ -1018,6 +1018,7 @@ $router->get('/mobile/izin', [PortalGuruController::class, 'izin'], [[PortalGuru
 $router->post('/mobile/izin/submit', [PortalGuruController::class, 'submitIzin'], [[PortalGuruAuthController::class, 'authRequired']]);
 $router->get('/mobile/cuti', [PortalGuruController::class, 'cuti'], [[PortalGuruAuthController::class, 'authRequired']]);
 $router->post('/mobile/cuti/submit', [PortalGuruController::class, 'submitCuti'], [[PortalGuruAuthController::class, 'authRequired']]);
+$router->post('/mobile/cuti/cancel', [PortalGuruController::class, 'cancelCuti'], [[PortalGuruAuthController::class, 'authRequired']]);
 
 // ==============================================================================
 // MOBILE SARPRAS PWA ROUTES

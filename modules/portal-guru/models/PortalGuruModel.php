@@ -454,6 +454,7 @@ class PortalGuruModel
             $cutiDatesList = CutiModel::parseTanggalPilihan($r['tanggal_cuti_list'] ?? null);
 
             $records[] = [
+                'raw_id' => (int)$r['id'],
                 'id' => $r['nomor_pengajuan'] ?: ('CT-' . str_pad((string)$r['id'], 4, '0', STR_PAD_LEFT)),
                 'type' => $r['nama_jenis'] ?? ($r['kategori_cuti'] . ' Cuti'),
                 'startDate' => !empty($r['tanggal_mulai']) ? date('d M Y', strtotime($r['tanggal_mulai'])) : '-',

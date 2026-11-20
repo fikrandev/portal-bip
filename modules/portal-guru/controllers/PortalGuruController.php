@@ -3515,4 +3515,76 @@ class PortalGuruController
             exit;
         }
     }
+
+    /**
+     * API: Batalkan Permohonan Cuti oleh Pegawai (Portal Mobile)
+     */
+    public static function cancelCuti(): void
+    {
+        $teacher = self::getLoggedInTeacher();
+        self::releaseSessionLock();
+        header('Content-Type: application/json; charset=utf-8');
+
+        $pegawaiId = (int) ($teacher['pegawai_id'] ?: $teacher['id']);
+        if ($pegawaiId <= 0) {
+            echo json_encode(['success' => false, 'message' => 'Identitas pegawai tidak ditemukan.']);
+            exit;
+        }
+
+        $pengajuanId = (int) ($_POST['pengajuan_id'] ?? 0);
+        $alasanBatal = trim($_POST['alasan_batal'] ?? '');
+
+        if ($pengajuanId <= 0) {
+            echo json_encode(['success' => false, 'message' => 'ID Pengajuan cuti tidak valid.']);
+            exit;
+        }
+
+        require_once BASE_PATH . '/modules/kelola-cuti/models/CutiModel.php';
+        CutiModel::init();
+
+        $db = Database::getInstance();
+        $row = $db->find("SELECT * FROM cuti_pengajuan WHERE id = ? AND pegawai_id = ?", [$pengajuanId, $pegawaiId]);
+        if (!$row) {
+            echo json_encode(['success' => false, 'message' => 'Permohonan cuti tidak ditemukan atau bukan milik akun Anda.']);
+            exit;
+        }
+
+        if (in_array($row['status'], ['Ditolak', 'Dibatalkan'], true)) {
+            echo json_encode(['success' => false, 'message' => 'Permohonan cuti ini sudah berstatus ' . $row['status'] . '.']);
+            exit;
+        }
+
+        try {
+            $userId = (int) ($teacher['user_id'] ?? 0);
+            $userName = $teacher['name'] ?? 'Pegawai';
+            $catatan = !empty($alasanBatal) ? ("Dibatalkan oleh pemohon: " . $alasanBatal) : "Dibatalkan sendiri oleh pemohon via Portal Mobile";
+
+            CutiModel::approvePengajuan(
+                $pengajuanId,
+                'Dibatalkan',
+                $catatan,
+                $userId,
+                $userName
+            );
+
+            // Update status tahapan approval step yang masih pending
+            try {
+                $db->query("
+                    UPDATE `cuti_pengajuan_step`
+                    SET `status` = 'Dilewati',
+                        `catatan` = ?
+                    WHERE `pengajuan_id` = ? AND `status` = 'Pending'
+                ", [$catatan, $pengajuanId]);
+            } catch (Throwable $e) {}
+
+            echo json_encode([
+                'success' => true,
+                'message' => 'Permohonan cuti [' . ($row['nomor_pengajuan'] ?: ('CT-' . $pengajuanId)) . '] berhasil dibatalkan.'
+            ]);
+            exit;
+        } catch (Throwable $e) {
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            exit;
+        }
+    }
 }
