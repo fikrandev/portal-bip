@@ -172,18 +172,18 @@
     <div class="fixed inset-x-0 bottom-0 max-w-md mx-auto w-full pointer-events-none z-[10020]">
         <form id="form-permohonan-cuti" novalidate onsubmit="submitPermohonanCuti(event); return false;" enctype="multipart/form-data"
               style="touch-action: pan-y; overscroll-behavior: contain;"
-              class="bg-white rounded-t-[32px] shadow-2xl pointer-events-auto border-t border-slate-200/80 flex flex-col max-h-[90vh] w-full transform translate-y-full transition-transform duration-250 ease-out overflow-hidden text-xs">
+              class="bg-white rounded-t-[32px] shadow-2xl pointer-events-auto border-t border-slate-200/80 flex flex-col max-h-[88vh] w-full transform translate-y-full transition-transform duration-250 ease-out overflow-hidden text-xs">
 
             <!-- 1. FIXED HEADER (shrink-0) -->
             <div class="px-5 pt-3.5 pb-3 border-b border-slate-100 shrink-0 bg-white" style="touch-action: none;">
-                <div class="w-10 h-1.5 bg-slate-200 rounded-full mx-auto mb-2.5"></div>
+                <div class="w-10 h-1.5 bg-slate-200 rounded-full mx-auto mb-3"></div>
                 <div class="flex items-center justify-between gap-2">
                     <div class="min-w-0 pr-2">
-                        <h3 class="font-black text-slate-900 text-sm leading-tight flex items-center gap-1.5 truncate">
+                        <h3 class="font-extrabold text-slate-900 text-sm leading-tight flex items-center gap-1.5 truncate">
                             <span>Form Pengajuan Cuti</span>
                             <span class="text-xs">🏖️</span>
                         </h3>
-                        <p class="text-[10px] text-slate-400 font-medium truncate mt-0.5">
+                        <p class="text-[11px] text-primary-700 font-bold mt-0.5 truncate">
                             Pilih tanggal cuti &amp; tentukan rekan pengganti
                         </p>
                     </div>
@@ -194,180 +194,182 @@
             </div>
 
             <!-- 2. SCROLLABLE MIDDLE BODY (flex-1 min-h-0 overflow-y-auto) -->
-            <div class="cuti-modal-scroll flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 sm:p-5 space-y-4 no-scrollbar select-text" style="touch-action: pan-y; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;">
+            <div class="cuti-modal-scroll flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 sm:p-5 space-y-3.5 no-scrollbar select-text" style="touch-action: pan-y; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;">
 
                 <!-- 1. Jenis Cuti -->
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">
+                <div class="space-y-1">
+                    <label class="block text-xs font-bold text-slate-800">
                         Jenis Cuti <span class="text-rose-500">*</span>
                     </label>
-                    <select id="modal_jenis_cuti_id" name="jenis_cuti_id" required class="w-full px-3.5 py-2.5 text-xs bg-slate-50 rounded-2xl border border-slate-200 font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-inner">
-                        <?php if (!empty($daftarJenisCuti)): ?>
-                            <?php foreach ($daftarJenisCuti as $idx => $j): ?>
-                                <?php
-                                    $kuotaStr = ((int)$j['kuota_hari'] > 0) ? (' (Maks ' . $j['kuota_hari'] . ' hari)') : '';
-                                ?>
-                                <option value="<?= (int)$j['id'] ?>" <?= $idx === 0 ? 'selected' : '' ?>>
-                                    <?= htmlspecialchars($j['nama_jenis']) ?><?= $kuotaStr ?>
-                                </option>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <option value="1">Cuti Tahunan</option>
-                        <?php endif; ?>
-                    </select>
+                    <div class="relative">
+                        <select id="modal_jenis_cuti_id" name="jenis_cuti_id" required
+                                class="w-full px-3.5 py-3 rounded-2xl border border-slate-200 bg-white font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-xs">
+                            <?php if (!empty($daftarJenisCuti)): ?>
+                                <?php foreach ($daftarJenisCuti as $idx => $j): ?>
+                                    <?php
+                                        $kuotaStr = ((int)$j['kuota_hari'] > 0) ? (' (Maks ' . $j['kuota_hari'] . ' hari)') : '';
+                                    ?>
+                                    <option value="<?= (int)$j['id'] ?>" <?= $idx === 0 ? 'selected' : '' ?>>
+                                        <?= htmlspecialchars($j['nama_jenis']) ?><?= $kuotaStr ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <option value="1">Cuti Tahunan</option>
+                            <?php endif; ?>
+                        </select>
+                    </div>
                 </div>
 
                 <!-- 2. Pemilihan Tanggal Cuti: Kalender Tombol-Tombol Per Bulan -->
-                <div class="bg-slate-50/80 rounded-2xl p-3 border border-slate-200/80 space-y-2.5">
-                    <div class="flex items-center justify-between gap-1">
-                        <div>
-                            <label class="block text-xs font-black text-slate-800 leading-tight">
-                                Pilih Tanggal Cuti <span class="text-rose-500">*</span>
-                            </label>
-                            <p class="text-[10px] text-slate-400 font-medium">Klik tombol tanggal untuk memilih (bisa acak / lewati libur)</p>
-                        </div>
-                        <button type="button" onclick="openRangePickerCuti()" class="px-2.5 py-1 rounded-xl bg-white border border-primary-200 text-primary-700 font-bold text-[10.5px] hover:bg-primary-50 press-bounce shrink-0 shadow-2xs">
+                <div class="space-y-1.5">
+                    <div class="flex items-center justify-between">
+                        <label class="block text-xs font-bold text-slate-800">
+                            Pilih Tanggal Cuti <span class="text-rose-500">*</span>
+                        </label>
+                        <button type="button" onclick="openRangePickerCuti()" class="px-2.5 py-1 rounded-xl bg-primary-50 border border-primary-200 text-primary-700 font-bold text-[10.5px] hover:bg-primary-100 press-bounce shrink-0 shadow-2xs">
                             + Rentang Hari
                         </button>
                     </div>
 
-                    <!-- Bulan Bar & Navigasi -->
-                    <div class="flex items-center justify-between bg-white rounded-xl p-1.5 border border-slate-200/80 shadow-2xs">
-                        <button type="button" onclick="navCalMonth(-1)" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center font-bold text-xs press-bounce transition-all">
-                            ❮
-                        </button>
-                        <div class="flex items-center gap-1.5">
-                            <span id="cal-month-title" class="text-xs font-black text-slate-900 tracking-tight">November 2026</span>
-                            <button type="button" onclick="jumpCalToday()" class="px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-primary-50 text-primary-700 border border-primary-200 press-bounce">
-                                Bulan Ini
+                    <div class="p-3.5 rounded-2xl bg-white border border-slate-200 space-y-2.5">
+                        <p class="text-[10px] text-slate-400 font-normal">Klik tombol tanggal untuk memilih (bisa pilih acak / lewati hari libur):</p>
+
+                        <!-- Bulan Bar & Navigasi -->
+                        <div class="flex items-center justify-between bg-slate-50/70 rounded-xl p-1.5 border border-slate-200/80 shadow-2xs">
+                            <button type="button" onclick="navCalMonth(-1)" class="w-7 h-7 rounded-lg bg-white hover:bg-slate-100 text-slate-700 flex items-center justify-center font-bold text-xs press-bounce transition-all border border-slate-200/60 shadow-2xs">
+                                ❮
+                            </button>
+                            <div class="flex items-center gap-1.5">
+                                <span id="cal-month-title" class="text-xs font-black text-slate-900 tracking-tight">November 2026</span>
+                                <button type="button" onclick="jumpCalToday()" class="px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-primary-50 text-primary-700 border border-primary-200 press-bounce">
+                                    Bulan Ini
+                                </button>
+                            </div>
+                            <button type="button" onclick="navCalMonth(1)" class="w-7 h-7 rounded-lg bg-white hover:bg-slate-100 text-slate-700 flex items-center justify-center font-bold text-xs press-bounce transition-all border border-slate-200/60 shadow-2xs">
+                                ❯
                             </button>
                         </div>
-                        <button type="button" onclick="navCalMonth(1)" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center font-bold text-xs press-bounce transition-all">
-                            ❯
-                        </button>
-                    </div>
 
-                    <!-- Header 7 Nama Hari -->
-                    <div class="grid grid-cols-7 gap-1 text-center font-bold text-[9.5px] text-slate-400 uppercase tracking-wider py-0.5">
-                        <span class="text-rose-500">Min</span>
-                        <span>Sen</span>
-                        <span>Sel</span>
-                        <span>Rab</span>
-                        <span>Kam</span>
-                        <span>Jum</span>
-                        <span>Sab</span>
-                    </div>
-
-                    <!-- Grid Tombol-Tombol Tanggal -->
-                    <div id="grid-cal-buttons" class="grid grid-cols-7 gap-1 sm:gap-1.5">
-                        <!-- Populated dynamically via renderCalendarButtons() -->
-                    </div>
-
-                    <!-- Ringkasan Tanggal Terpilih & Tombol Reset -->
-                    <div class="pt-2 border-t border-slate-200/80 space-y-1.5">
-                        <div class="flex items-center justify-between text-xs font-bold">
-                            <span class="text-slate-600 text-[11px]">Total Hari Cuti:</span>
-                            <span id="summary-total-hari" class="text-primary-700 font-black text-xs bg-primary-50 px-2 py-0.5 rounded-lg border border-primary-200">
-                                0 Hari Kerja Terpilih
-                            </span>
+                        <!-- Header 7 Nama Hari -->
+                        <div class="grid grid-cols-7 gap-1 text-center font-bold text-[9.5px] text-slate-400 uppercase tracking-wider py-0.5">
+                            <span class="text-rose-500">Min</span>
+                            <span>Sen</span>
+                            <span>Sel</span>
+                            <span>Rab</span>
+                            <span>Kam</span>
+                            <span>Jum</span>
+                            <span>Sab</span>
                         </div>
-                        <div id="container-chips-cuti" class="flex flex-wrap gap-1 min-h-[32px] p-1.5 bg-white rounded-xl border border-slate-200/70">
-                            <!-- Populated dynamically via renderSelectedChips() -->
+
+                        <!-- Grid Tombol-Tombol Tanggal -->
+                        <div id="grid-cal-buttons" class="grid grid-cols-7 gap-1 sm:gap-1.5">
+                            <!-- Populated dynamically via renderCalendarButtons() -->
                         </div>
-                        <div class="flex justify-end">
-                            <button type="button" onclick="clearSemuaTanggalCuti()" class="text-[10px] font-bold text-rose-500 hover:text-rose-700 hover:underline">
-                                ✕ Bersihkan Pilihan
-                            </button>
+
+                        <!-- Ringkasan Tanggal Terpilih & Tombol Reset -->
+                        <div class="pt-2 border-t border-slate-100 space-y-1.5">
+                            <div class="flex items-center justify-between text-xs font-bold">
+                                <span class="text-slate-600 font-medium text-[11px]">Total Hari Cuti:</span>
+                                <span id="summary-total-hari" class="font-extrabold text-primary-700 bg-primary-100 px-2.5 py-0.5 rounded-full text-[10.5px]">
+                                    0 Hari Kerja Terpilih
+                                </span>
+                            </div>
+                            <div id="container-chips-cuti" class="flex flex-wrap gap-1 min-h-[32px] p-2 bg-slate-50/50 rounded-xl border border-slate-200/80">
+                                <!-- Populated dynamically via renderSelectedChips() -->
+                            </div>
+                            <div class="flex justify-end">
+                                <button type="button" onclick="clearSemuaTanggalCuti()" class="text-[10px] font-bold text-rose-500 hover:text-rose-700 hover:underline">
+                                    ✕ Bersihkan Pilihan
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- 3. Dropdown Rekan Pengganti (Sesuai Unit & Jenis Pegawai) -->
-                <div>
-                    <div class="flex items-center justify-between mb-1">
-                        <label class="block text-xs font-bold text-slate-700">
+                <div class="space-y-1">
+                    <div class="flex items-center justify-between">
+                        <label class="block text-xs font-bold text-slate-800">
                             <?= !empty($isSupport) ? 'Pegawai Pengganti (Staff / Support System)' : 'Guru Pengganti' ?> <span class="text-rose-500">*</span>
                         </label>
-                        <span class="text-[10px] text-primary-700 font-bold bg-primary-50 px-2 py-0.5 rounded-full border border-primary-200 truncate max-w-[170px]">
-                            Unit: <?= e($userUnit ?: 'Semua') ?> &bull; <?= !empty($isSupport) ? 'Support System' : 'Guru' ?>
+                        <span class="text-[10px] text-primary-700 font-bold bg-primary-50 px-2 py-0.5 rounded-full border border-primary-100 truncate max-w-[170px]">
+                            Unit: <?= e($userUnit ?: 'Semua') ?> &bull; <?= !empty($isSupport) ? 'Support' : 'Guru' ?>
                         </span>
                     </div>
-                    <select id="modal_pelimpahan_tugas" name="pelimpahan_tugas" required class="w-full px-3.5 py-2.5 text-xs bg-slate-50 rounded-2xl border border-slate-200 font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-inner">
-                        <?php if (!empty($isSupport)): ?>
-                            <option value="Rekan Kerja / Tim Divisi">Rekan Kerja / Tim Divisi</option>
-                        <?php else: ?>
-                            <option value="Guru Piket dan Tim Bidang Unit">Guru Piket dan Tim Bidang Unit</option>
-                        <?php endif; ?>
+                    <div class="relative">
+                        <select id="modal_pelimpahan_tugas" name="pelimpahan_tugas" required
+                                class="w-full px-3.5 py-3 rounded-2xl border border-slate-200 bg-white font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-xs">
+                            <?php if (!empty($isSupport)): ?>
+                                <option value="Rekan Kerja / Tim Divisi">Rekan Kerja / Tim Divisi</option>
+                            <?php else: ?>
+                                <option value="Guru Piket dan Tim Bidang Unit">Guru Piket dan Tim Bidang Unit</option>
+                            <?php endif; ?>
 
-                        <?php if (!empty($substituteList)): ?>
-                            <?php foreach ($substituteList as $sub): ?>
-                                <?php
-                                    $namaLengkap = trim($sub['nama'] . (!empty($sub['gelar']) ? (', ' . $sub['gelar']) : ''));
-                                    $jabatanUnit = trim(($sub['jabatan'] ?? (!empty($isSupport) ? 'Staff' : 'Guru')) . (!empty($sub['unit_tugas']) ? (' • ' . $sub['unit_tugas']) : ''));
-                                ?>
-                                <option value="<?= htmlspecialchars($namaLengkap) ?>">
-                                    <?= htmlspecialchars($namaLengkap . ' (' . $jabatanUnit . ')') ?>
-                                </option>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                    </select>
-                    <p class="text-[10px] text-slate-400 font-medium mt-1">
+                            <?php if (!empty($substituteList)): ?>
+                                <?php foreach ($substituteList as $sub): ?>
+                                    <?php
+                                        $namaLengkap = trim($sub['nama'] . (!empty($sub['gelar']) ? (', ' . $sub['gelar']) : ''));
+                                        $jabatanUnit = trim(($sub['jabatan'] ?? (!empty($isSupport) ? 'Staff' : 'Guru')) . (!empty($sub['unit_tugas']) ? (' • ' . $sub['unit_tugas']) : ''));
+                                    ?>
+                                    <option value="<?= htmlspecialchars($namaLengkap) ?>">
+                                        <?= htmlspecialchars($namaLengkap . ' (' . $jabatanUnit . ')') ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </select>
+                    </div>
+                    <p class="text-[10px] text-slate-400 font-normal">
                         Daftar pengganti otomatis disaring khusus untuk sesama <strong><?= !empty($isSupport) ? 'Staff / Support System' : 'Guru' ?></strong>.
                     </p>
                 </div>
 
                 <!-- 4. Keterangan Tugas yang Dilimpahkan -->
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">
+                <div class="space-y-1">
+                    <label class="block text-xs font-bold text-slate-800">
                         Keterangan Tugas yang Dilimpahkan <span class="text-rose-500">*</span>
                     </label>
                     <textarea id="modal_keterangan_tugas" name="keterangan_tugas" rows="2" required
                               placeholder="Tuliskan rincian materi/tugas harian yang didelegasikan kepada rekan pengganti selama Anda cuti..."
-                              class="w-full px-3.5 py-2 text-xs bg-slate-50 rounded-2xl border border-slate-200 font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-inner resize-none"></textarea>
+                              class="w-full px-3.5 py-2.5 rounded-2xl border border-slate-200 bg-white font-normal text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-xs leading-relaxed"></textarea>
                 </div>
 
                 <!-- 5. Alasan / Keperluan Cuti -->
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">
+                <div class="space-y-1">
+                    <label class="block text-xs font-bold text-slate-800">
                         Alasan / Keperluan Cuti <span class="text-rose-500">*</span>
                     </label>
                     <textarea id="modal_alasan" name="alasan" rows="2" required
                               placeholder="Jelaskan alasan dan keperluan cuti secara jelas dan rinci..."
-                              class="w-full px-3.5 py-2 text-xs bg-slate-50 rounded-2xl border border-slate-200 font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-inner resize-none"></textarea>
+                              class="w-full px-3.5 py-2.5 rounded-2xl border border-slate-200 bg-white font-normal text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-xs leading-relaxed"></textarea>
                 </div>
 
-                <!-- 6. Nomor Kontak Darurat (Alamat Selama Cuti Ditiadakan) -->
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">
+                <!-- 6. Nomor Kontak Darurat -->
+                <div class="space-y-1">
+                    <label class="block text-xs font-bold text-slate-700">
                         Nomor Kontak Darurat <span class="text-slate-400 font-normal">(Opsional - No. HP / WhatsApp Keluarga)</span>
                     </label>
                     <input type="text" id="modal_kontak_darurat" name="kontak_darurat" placeholder="Contoh: 0812-4455-6677 (Keluarga)"
-                           class="w-full px-3.5 py-2 text-xs bg-slate-50 rounded-2xl border border-slate-200 font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-inner">
+                           class="w-full px-3.5 py-2.5 rounded-2xl border border-slate-200 bg-white font-normal text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-xs">
                 </div>
 
-                <!-- 7. Bukti Dokumen / Foto Pendukung (Maksimal 2 Foto, 1 Tempat Upload Sarpras-Style) -->
+                <!-- 7. Bukti Dokumen / Foto Pendukung (Maksimal 2 Foto) -->
                 <div class="space-y-2 pt-1">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <label class="block text-xs font-bold text-slate-800">
-                                Foto Bukti / Dokumen Pendukung
-                            </label>
-                            <p class="text-[10px] text-slate-400">Surat dokter, undangan, atau berkas bukti (Maks 2 foto)</p>
-                        </div>
-                        <span id="label-foto-counter" class="text-[10px] font-bold text-primary-700 bg-primary-50 px-2.5 py-1 rounded-full border border-primary-200 shrink-0">
+                    <label class="block text-xs font-bold text-slate-700 flex items-center justify-between">
+                        <span>Foto Bukti / Dokumen Pendukung <span class="text-slate-400 font-normal">(Maks 2 Foto)</span></span>
+                        <span id="label-foto-counter" class="text-[10px] font-bold text-primary-700 bg-primary-50 px-2 py-0.5 rounded-full border border-primary-100">
                             0 / 2 Foto
                         </span>
-                    </div>
+                    </label>
 
-                    <!-- Single Upload Actions Box (Bisa Kamera / Galeri, otomatis dinonaktifkan jika sdh 2 foto) -->
-                    <div id="container-cuti-photo-actions" class="grid grid-cols-2 gap-2">
-                        <button type="button" onclick="triggerCutiPhotoInput('camera')" class="py-2.5 px-3 rounded-2xl bg-white border border-slate-200/90 hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center justify-center gap-2 shadow-2xs press-bounce transition-all">
-                            <span class="text-sm">📷</span>
-                            <span>Ambil Kamera</span>
+                    <!-- Single Upload Actions Box (Model Jurnal Staff: Kamera & Galeri) -->
+                    <div id="container-cuti-photo-actions" class="grid grid-cols-5 gap-2">
+                        <button type="button" onclick="triggerCutiPhotoInput('camera')" class="col-span-3 px-3 py-2.5 rounded-2xl bg-primary-50 hover:bg-primary-100 border border-primary-200/80 text-primary-700 flex items-center justify-center gap-2 transition-all press-bounce">
+                            <i data-lucide="camera" class="w-4 h-4 shrink-0"></i>
+                            <span class="text-xs font-bold truncate">Ambil Kamera</span>
                         </button>
-                        <button type="button" onclick="triggerCutiPhotoInput('gallery')" class="py-2.5 px-3 rounded-2xl bg-white border border-slate-200/90 hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center justify-center gap-2 shadow-2xs press-bounce transition-all">
-                            <span class="text-sm">🖼️</span>
-                            <span>Pilih Galeri</span>
+                        <button type="button" onclick="triggerCutiPhotoInput('gallery')" class="col-span-2 px-3 py-2.5 rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 hover:bg-slate-100 text-slate-600 flex items-center justify-center gap-1.5 cursor-pointer transition-all press-bounce">
+                            <i data-lucide="image" class="w-4 h-4 shrink-0 text-slate-500"></i>
+                            <span class="text-xs font-semibold truncate">Galeri / File</span>
                         </button>
                     </div>
 
@@ -381,7 +383,7 @@
                     </div>
 
                     <!-- Max Reached Banner (Muncul jika sudah 2 foto) -->
-                    <div id="banner-max-photos" class="hidden p-2.5 rounded-xl bg-slate-100 text-slate-600 text-[10.5px] font-semibold text-center border border-slate-200/80">
+                    <div id="banner-max-photos" class="hidden p-2.5 rounded-2xl bg-slate-100 text-slate-600 text-[10.5px] font-semibold text-center border border-slate-200/80">
                         ✓ Maksimal 2 foto bukti telah dipilih. Hapus salah satu jika ingin mengganti.
                     </div>
                 </div>
@@ -389,11 +391,11 @@
             </div>
 
             <!-- 3. FIXED FOOTER ACTION BUTTONS (shrink-0) -->
-            <div class="px-5 py-3.5 pb-6 sm:pb-3.5 bg-white border-t border-slate-200 flex items-center gap-2.5 shrink-0 z-30 shadow-[0_-4px_16px_rgba(0,0,0,0.06)] safe-bottom">
-                <button type="button" onclick="closeModalPermohonanCuti()" class="w-1/3 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs text-center press-bounce transition-all">
+            <div class="shrink-0 px-5 py-3.5 bg-white border-t border-slate-100 flex items-center gap-2.5 safe-bottom">
+                <button type="button" onclick="closeModalPermohonanCuti()" id="btn-cancel-modal" class="w-1/3 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs press-bounce transition-all">
                     Batal
                 </button>
-                <button type="button" onclick="submitPermohonanCuti(event)" id="btn-submit-cuti" class="w-2/3 py-3 rounded-2xl bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white font-bold text-xs text-center shadow-lg shadow-primary-600/30 press-bounce flex items-center justify-center gap-1.5 transition-all cursor-pointer">
+                <button type="button" onclick="submitPermohonanCuti(event)" id="btn-submit-cuti" class="w-2/3 py-3 rounded-2xl bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white font-bold text-xs shadow-md shadow-primary-600/25 press-bounce flex items-center justify-center gap-2 transition-all cursor-pointer">
                     <span>💾</span>
                     <span id="btn-submit-text">Simpan Permohonan Cuti</span>
                 </button>
@@ -401,6 +403,7 @@
 
         </form>
     </div>
+</div>
 </div>
 
 <!-- ======================================================== -->
