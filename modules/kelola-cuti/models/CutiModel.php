@@ -49,6 +49,16 @@ class CutiModel
             if (!in_array('file_lampiran_2', $cols, true)) {
                 $pdo->exec("ALTER TABLE `cuti_pengajuan` ADD COLUMN `file_lampiran_2` VARCHAR(255) NULL AFTER `file_lampiran`");
             }
+
+            // Kolom approver_jabatan_id untuk relasi langsung ke master_jabatan pengaturan
+            $colsHier = $pdo->query("SHOW COLUMNS FROM `cuti_approval_hierarchy`")->fetchAll(PDO::FETCH_COLUMN);
+            if (!in_array('approver_jabatan_id', $colsHier, true)) {
+                $pdo->exec("ALTER TABLE `cuti_approval_hierarchy` ADD COLUMN `approver_jabatan_id` INT NULL AFTER `approver_role`");
+            }
+            $colsStep = $pdo->query("SHOW COLUMNS FROM `cuti_pengajuan_step`")->fetchAll(PDO::FETCH_COLUMN);
+            if (!in_array('approver_jabatan_id', $colsStep, true)) {
+                $pdo->exec("ALTER TABLE `cuti_pengajuan_step` ADD COLUMN `approver_jabatan_id` INT NULL AFTER `approver_role`");
+            }
         } catch (Throwable $e) {}
 
         // 1. Tabel Master Jenis Cuti
@@ -305,7 +315,8 @@ class CutiModel
                 'jenis_pegawai' => 'Guru',
                 'step_order' => 1,
                 'step_nama' => 'Verifikasi Kepala Sekolah / Unit',
-                'approver_role' => 'Kepala Sekolah / Atasan Langsung',
+                'approver_role' => 'Kepala Sekolah',
+                'approver_jabatan_id' => 4,
                 'keterangan' => 'Verifikasi ketersediaan guru pengganti di kelas dan kelengkapan dokumen pendukung.'
             ],
             [
@@ -314,6 +325,7 @@ class CutiModel
                 'step_order' => 2,
                 'step_nama' => 'Persetujuan Yayasan / Pimpinan',
                 'approver_role' => 'Yayasan / HRD / Pimpinan',
+                'approver_jabatan_id' => null,
                 'keterangan' => 'Persetujuan akhir penerbitan izin cuti resmi dan pengurangan saldo cuti tahunan.'
             ],
             // Alur Approval untuk Pegawai Support System / Staff (Default)
@@ -322,7 +334,8 @@ class CutiModel
                 'jenis_pegawai' => 'Support System',
                 'step_order' => 1,
                 'step_nama' => 'Verifikasi Manajer / Kepala Divisi',
-                'approver_role' => 'Kepala Bagian / Manajer Divisi',
+                'approver_role' => 'Kepala Divisi Media dan IT / Manajer Divisi',
+                'approver_jabatan_id' => 9,
                 'keterangan' => 'Pemeriksaan pelimpahan tugas operasional dan koordinasi tim kerja divisi.'
             ],
             [
@@ -331,6 +344,7 @@ class CutiModel
                 'step_order' => 2,
                 'step_nama' => 'Persetujuan Direktur / HRD Yayasan',
                 'approver_role' => 'Direktur / HRD / Yayasan',
+                'approver_jabatan_id' => null,
                 'keterangan' => 'Persetujuan final pengajuan cuti dan pemotongan saldo kuota cuti tahunan.'
             ]
         ];
@@ -338,14 +352,15 @@ class CutiModel
         foreach ($defaults as $d) {
             self::db()->query("
                 INSERT INTO `cuti_approval_hierarchy`
-                (`unit`, `jenis_pegawai`, `step_order`, `step_nama`, `approver_role`, `keterangan`, `is_active`)
-                VALUES (?, ?, ?, ?, ?, ?, 1)
+                (`unit`, `jenis_pegawai`, `step_order`, `step_nama`, `approver_role`, `approver_jabatan_id`, `keterangan`, `is_active`)
+                VALUES (?, ?, ?, ?, ?, ?, ?, 1)
             ", [
                 $d['unit'],
                 $d['jenis_pegawai'],
                 $d['step_order'],
                 $d['step_nama'],
                 $d['approver_role'],
+                $d['approver_jabatan_id'] ?? null,
                 $d['keterangan']
             ]);
         }
@@ -436,6 +451,7 @@ class CutiModel
             $order = (int)($st['step_order'] ?? ($idx + 1));
             $nama = $st['step_nama'];
             $role = $st['approver_role'] ?? null;
+            $appJabId = !empty($st['approver_jabatan_id']) ? (int)$st['approver_jabatan_id'] : null;
             $appPegId = !empty($st['approver_pegawai_id']) ? (int)$st['approver_pegawai_id'] : null;
 
             $stepStatus = 'Pending';
@@ -463,9 +479,9 @@ class CutiModel
 
             self::db()->query("
                 INSERT INTO `cuti_pengajuan_step`
-                (`pengajuan_id`, `step_order`, `step_nama`, `approver_role`, `approver_pegawai_id`, `status`, `approved_by_id`, `approved_by_name`, `approved_at`, `catatan`)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ", [$pengajuanId, $order, $nama, $role, $appPegId, $stepStatus, $approvedById, $approvedByName, $approvedAt, $catatan]);
+                (`pengajuan_id`, `step_order`, `step_nama`, `approver_role`, `approver_jabatan_id`, `approver_pegawai_id`, `status`, `approved_by_id`, `approved_by_name`, `approved_at`, `catatan`)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ", [$pengajuanId, $order, $nama, $role, $appJabId, $appPegId, $stepStatus, $approvedById, $approvedByName, $approvedAt, $catatan]);
         }
     }
 
@@ -476,9 +492,11 @@ class CutiModel
     {
         self::init();
         return self::db()->findAll("
-            SELECT * FROM `cuti_pengajuan_step`
-            WHERE `pengajuan_id` = ?
-            ORDER BY `step_order` ASC, `id` ASC
+            SELECT s.*, mj.nama as master_jabatan_nama, mj.kategori as master_jabatan_kategori
+            FROM `cuti_pengajuan_step` s
+            LEFT JOIN `master_jabatan` mj ON mj.id = s.approver_jabatan_id
+            WHERE s.`pengajuan_id` = ?
+            ORDER BY s.`step_order` ASC, s.`id` ASC
         ", [$pengajuanId]);
     }
 
@@ -489,9 +507,11 @@ class CutiModel
     {
         self::init();
         return self::db()->find("
-            SELECT * FROM `cuti_pengajuan_step`
-            WHERE `pengajuan_id` = ? AND `status` = 'Pending'
-            ORDER BY `step_order` ASC LIMIT 1
+            SELECT s.*, mj.nama as master_jabatan_nama, mj.kategori as master_jabatan_kategori
+            FROM `cuti_pengajuan_step` s
+            LEFT JOIN `master_jabatan` mj ON mj.id = s.approver_jabatan_id
+            WHERE s.`pengajuan_id` = ? AND s.`status` = 'Pending'
+            ORDER BY s.`step_order` ASC LIMIT 1
         ", [$pengajuanId]) ?: null;
     }
 
@@ -505,23 +525,25 @@ class CutiModel
         $params = [];
 
         if (!empty($filters['unit'])) {
-            $where[] = "unit = ?";
+            $where[] = "h.unit = ?";
             $params[] = $filters['unit'];
         }
         if (!empty($filters['jenis_pegawai'])) {
-            $where[] = "jenis_pegawai = ?";
+            $where[] = "h.jenis_pegawai = ?";
             $params[] = $filters['jenis_pegawai'];
         }
         if (isset($filters['is_active']) && $filters['is_active'] !== '') {
-            $where[] = "is_active = ?";
+            $where[] = "h.is_active = ?";
             $params[] = (int)$filters['is_active'];
         }
 
         $whereSql = implode(' AND ', $where);
         return self::db()->findAll("
-            SELECT * FROM `cuti_approval_hierarchy`
+            SELECT h.*, mj.nama as master_jabatan_nama, mj.kategori as master_jabatan_kategori
+            FROM `cuti_approval_hierarchy` h
+            LEFT JOIN `master_jabatan` mj ON mj.id = h.approver_jabatan_id
             WHERE {$whereSql}
-            ORDER BY unit ASC, jenis_pegawai ASC, step_order ASC, id ASC
+            ORDER BY h.unit ASC, h.jenis_pegawai ASC, h.step_order ASC, h.id ASC
         ", $params);
     }
 
@@ -537,9 +559,17 @@ class CutiModel
         $stepOrder = max(1, (int)($data['step_order'] ?? 1));
         $stepNama = trim((string)($data['step_nama'] ?? ''));
         $approverRole = trim((string)($data['approver_role'] ?? '')) ?: null;
+        $approverJabatanId = !empty($data['approver_jabatan_id']) ? (int)$data['approver_jabatan_id'] : null;
         $approverPegawaiId = !empty($data['approver_pegawai_id']) ? (int)$data['approver_pegawai_id'] : null;
         $keterangan = trim((string)($data['keterangan'] ?? '')) ?: null;
         $isActive = isset($data['is_active']) ? (int)$data['is_active'] : 1;
+
+        if ($approverJabatanId && empty($approverRole)) {
+            $jab = self::db()->find("SELECT nama FROM `master_jabatan` WHERE `id` = ?", [$approverJabatanId]);
+            if ($jab) {
+                $approverRole = $jab['nama'];
+            }
+        }
 
         if (empty($stepNama)) {
             throw new Exception('Nama tahapan approval wajib diisi.');
@@ -549,16 +579,16 @@ class CutiModel
             self::db()->query("
                 UPDATE `cuti_approval_hierarchy`
                 SET `unit` = ?, `jenis_pegawai` = ?, `step_order` = ?, `step_nama` = ?,
-                    `approver_role` = ?, `approver_pegawai_id` = ?, `keterangan` = ?, `is_active` = ?
+                    `approver_role` = ?, `approver_jabatan_id` = ?, `approver_pegawai_id` = ?, `keterangan` = ?, `is_active` = ?
                 WHERE `id` = ?
-            ", [$unit, $jenisPegawai, $stepOrder, $stepNama, $approverRole, $approverPegawaiId, $keterangan, $isActive, $id]);
+            ", [$unit, $jenisPegawai, $stepOrder, $stepNama, $approverRole, $approverJabatanId, $approverPegawaiId, $keterangan, $isActive, $id]);
             return $id;
         } else {
             self::db()->query("
                 INSERT INTO `cuti_approval_hierarchy`
-                (`unit`, `jenis_pegawai`, `step_order`, `step_nama`, `approver_role`, `approver_pegawai_id`, `keterangan`, `is_active`)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            ", [$unit, $jenisPegawai, $stepOrder, $stepNama, $approverRole, $approverPegawaiId, $keterangan, $isActive]);
+                (`unit`, `jenis_pegawai`, `step_order`, `step_nama`, `approver_role`, `approver_jabatan_id`, `approver_pegawai_id`, `keterangan`, `is_active`)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ", [$unit, $jenisPegawai, $stepOrder, $stepNama, $approverRole, $approverJabatanId, $approverPegawaiId, $keterangan, $isActive]);
             return (int)self::db()->getConnection()->lastInsertId();
         }
     }

@@ -81,6 +81,11 @@ class CutiController
         $jbCond = Auth::unitSqlCondition('unit_tugas', $jbParams);
         $jabatanList = $db->findAll("SELECT DISTINCT jabatan FROM `pegawai` WHERE is_active = 1 AND jabatan IS NOT NULL AND jabatan != '' AND ({$jbCond}) ORDER BY jabatan ASC", $jbParams);
 
+        // Master Jabatan dari Pengaturan Sistem (Dipisahkan Guru & Support System)
+        $masterJabatanGuru = $db->findAll("SELECT id, nama, kategori FROM master_jabatan WHERE kategori = 'guru' OR kategori IS NULL ORDER BY nama ASC");
+        $masterJabatanSupport = $db->findAll("SELECT id, nama, kategori FROM master_jabatan WHERE kategori = 'support_system' ORDER BY nama ASC");
+        $allMasterJabatan = $db->findAll("SELECT id, nama, kategori FROM master_jabatan ORDER BY (kategori = 'guru') DESC, nama ASC");
+
         $pageTitle = 'Kelola Cuti Pegawai';
         $breadcrumbs = [
             ['label' => 'Kelola Cuti', 'url' => url('kelola-cuti')],

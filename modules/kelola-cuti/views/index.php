@@ -1124,14 +1124,29 @@ $tambahPerBulan = (int)($cfgTahunan['tambah_per_bulan'] ?? 1);
             </div>
         </div>
 
-        <!-- Filter Card -->
+        <!-- Control & Filter Bar Bagan -->
         <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-wrap items-center justify-between gap-4">
-            <form method="GET" action="<?= url('kelola-cuti') ?>" class="flex flex-wrap items-center gap-3">
-                <input type="hidden" name="tab" value="hierarki">
-                
-                <div class="flex items-center gap-2">
-                    <label class="text-xs font-bold text-slate-600">Unit Sekolah:</label>
-                    <select name="unit_hierarki" onchange="this.form.submit()" class="px-3 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50 font-semibold text-slate-800 focus:bg-white outline-none focus:border-indigo-500">
+            <div class="flex flex-wrap items-center gap-3">
+                <!-- Bagan View Switcher Tabs -->
+                <div class="inline-flex items-center p-1 bg-slate-100 rounded-xl text-xs font-bold">
+                    <button type="button" onclick="switchBaganView('all')" id="btn-bagan-all" class="px-3 py-1.5 rounded-lg bg-white text-indigo-700 shadow-xs transition-all cursor-pointer">
+                        🌟 Semua Bagan
+                    </button>
+                    <button type="button" onclick="switchBaganView('guru')" id="btn-bagan-guru" class="px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition-all cursor-pointer">
+                        🎓 Bagan Guru
+                    </button>
+                    <button type="button" onclick="switchBaganView('support')" id="btn-bagan-support" class="px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition-all cursor-pointer">
+                        🏢 Bagan Support System
+                    </button>
+                    <button type="button" onclick="switchBaganView('table')" id="btn-bagan-table" class="px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition-all cursor-pointer">
+                        📋 Format Tabel
+                    </button>
+                </div>
+
+                <!-- Filter Form -->
+                <form method="GET" action="<?= url('kelola-cuti') ?>" class="flex flex-wrap items-center gap-2.5">
+                    <input type="hidden" name="tab" value="hierarki">
+                    <select name="unit_hierarki" onchange="this.form.submit()" class="px-3 py-1.5 text-xs rounded-xl border border-slate-200 bg-slate-50 font-bold text-slate-800 focus:bg-white outline-none focus:border-indigo-500">
                         <option value="">Semua Unit (Global)</option>
                         <?php foreach ($unitTugasList as $ut): ?>
                             <option value="<?= e($ut['unit_tugas']) ?>" <?= ($hierarkiFilters['unit'] === $ut['unit_tugas']) ? 'selected' : '' ?>>
@@ -1139,81 +1154,389 @@ $tambahPerBulan = (int)($cfgTahunan['tambah_per_bulan'] ?? 1);
                             </option>
                         <?php endforeach; ?>
                     </select>
-                </div>
 
-                <div class="flex items-center gap-2">
-                    <label class="text-xs font-bold text-slate-600">Jenis Pegawai:</label>
-                    <select name="jenis_hierarki" onchange="this.form.submit()" class="px-3 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50 font-semibold text-slate-800 focus:bg-white outline-none focus:border-indigo-500">
+                    <select name="jenis_hierarki" onchange="this.form.submit()" class="px-3 py-1.5 text-xs rounded-xl border border-slate-200 bg-slate-50 font-bold text-slate-800 focus:bg-white outline-none focus:border-indigo-500">
                         <option value="">Semua Jenis Pegawai</option>
                         <option value="Guru" <?= ($hierarkiFilters['jenis_pegawai'] === 'Guru') ? 'selected' : '' ?>>Guru</option>
                         <option value="Support System" <?= ($hierarkiFilters['jenis_pegawai'] === 'Support System') ? 'selected' : '' ?>>Support System / Staff</option>
                     </select>
-                </div>
 
-                <?php if (!empty($hierarkiFilters['unit']) || !empty($hierarkiFilters['jenis_pegawai'])): ?>
-                    <a href="<?= url('kelola-cuti?tab=hierarki') ?>" class="text-xs font-bold text-rose-600 hover:underline">
-                        ✕ Reset Filter
-                    </a>
-                <?php endif; ?>
-            </form>
+                    <?php if (!empty($hierarkiFilters['unit']) || !empty($hierarkiFilters['jenis_pegawai'])): ?>
+                        <a href="<?= url('kelola-cuti?tab=hierarki') ?>" class="text-xs font-bold text-rose-600 hover:underline">
+                            ✕ Reset Filter
+                        </a>
+                    <?php endif; ?>
+                </form>
+            </div>
 
             <span class="text-xs text-slate-500 font-medium">
                 Ditemukan: <strong><?= count($hierarkiList) ?></strong> Tahapan Aktif
             </span>
         </div>
 
-        <!-- Diagram Visual Alur Approval Per Kelompok -->
         <?php
-        $groupedHierarki = [];
+        // Pisahkan hierarki berdasarkan jenis pegawai
+        $stepsGuru = [];
+        $stepsSupport = [];
+        $stepsLainnya = [];
+
         foreach ($hierarkiList as $h) {
-            $gKey = ($h['unit'] ?: 'Semua Unit') . ' &bull; ' . ($h['jenis_pegawai'] ?: 'Semua Pegawai');
-            $groupedHierarki[$gKey][] = $h;
+            if ($h['jenis_pegawai'] === 'Guru') {
+                $stepsGuru[] = $h;
+            } elseif ($h['jenis_pegawai'] === 'Support System') {
+                $stepsSupport[] = $h;
+            } else {
+                $stepsLainnya[] = $h;
+            }
         }
         ?>
 
-        <?php if (!empty($groupedHierarki)): ?>
-            <div class="space-y-4">
-                <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider px-1">Visualisasi Alur Berjalan (Workflow Chain)</h4>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <?php foreach ($groupedHierarki as $groupLabel => $stepsInGroup): ?>
-                        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-5 space-y-4">
-                            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-                                <div class="flex items-center gap-2">
-                                    <span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span>
-                                    <h5 class="font-extrabold text-slate-900 text-xs sm:text-sm"><?= $groupLabel ?></h5>
+        <!-- ═════════════════════════════════════════════════════════════════
+             BAGAN HIERARKI VISUAL (ORGANIZATIONAL TREE / FLOWCHART)
+             ═════════════════════════════════════════════════════════════════ -->
+        <div id="section-bagan-wrapper" class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+            
+            <!-- 🎓 BAGAN 1: HIERARKI PERSETUJUAN CUTI — PEGAWAI GURU -->
+            <div id="container-bagan-guru" class="bagan-view-card bg-gradient-to-b from-sky-50/70 via-white to-slate-50/60 rounded-3xl border border-sky-200 shadow-sm p-5 sm:p-6 space-y-5">
+                <!-- Header Bagan Guru -->
+                <div class="flex items-start justify-between gap-3 pb-4 border-b border-sky-100">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-sky-600 to-indigo-700 text-white flex items-center justify-center font-black text-2xl shadow-md shadow-sky-500/25 shrink-0">
+                            🎓
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h3 class="text-base sm:text-lg font-black text-slate-900 tracking-tight">Bagan Approval — Pegawai Guru</h3>
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-sky-100 text-sky-800 border border-sky-200 uppercase tracking-wider">Guru & Pendidik</span>
+                            </div>
+                            <p class="text-xs text-slate-500 mt-0.5">Alur persetujuan bertingkat bagi Guru Mapel, Wali Kelas, dan Tenaga Pengajar.</p>
+                        </div>
+                    </div>
+                    <span class="px-2.5 py-1 rounded-xl bg-sky-100/80 text-sky-800 font-extrabold text-xs shrink-0">
+                        <?= count($stepsGuru) ?> Level Persetujuan
+                    </span>
+                </div>
+
+                <!-- Flow Vertikal Bagan Guru -->
+                <div class="flex flex-col items-center space-y-0 py-1">
+                    
+                    <!-- Node Awal: Permohonan Guru -->
+                    <div class="w-full bg-white rounded-2xl border-2 border-dashed border-sky-300 p-4 shadow-xs flex items-center gap-3.5">
+                        <div class="w-10 h-10 rounded-xl bg-sky-100 text-sky-700 flex items-center justify-center text-xl font-bold shrink-0">
+                            🧑‍🏫
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between">
+                                <span class="text-[10px] font-black uppercase tracking-wider text-sky-600 bg-sky-50 px-2 py-0.5 rounded">Titik Awal Alur</span>
+                                <span class="text-[10px] text-slate-400 font-semibold">Portal Guru</span>
+                            </div>
+                            <h5 class="text-xs font-black text-slate-800 mt-0.5">Guru Mengajukan Permohonan Cuti</h5>
+                            <p class="text-[11px] text-slate-500">Memilih tanggal cuti (multi-hari), guru pengganti di kelas, & berkas pendukung.</p>
+                        </div>
+                    </div>
+
+                    <!-- Connector Down Line -->
+                    <div class="flex flex-col items-center py-1">
+                        <div class="w-0.5 h-6 bg-sky-300"></div>
+                        <div class="w-6 h-6 rounded-full bg-sky-100 border border-sky-300 text-sky-700 flex items-center justify-center text-[10px] font-black shadow-xs">
+                            ▼
+                        </div>
+                        <div class="w-0.5 h-6 bg-sky-300"></div>
+                    </div>
+
+                    <!-- Loop Steps Guru -->
+                    <?php if (empty($stepsGuru)): ?>
+                        <div class="w-full bg-white rounded-2xl border border-dashed border-slate-300 p-6 text-center text-slate-400 space-y-2">
+                            <p class="font-bold text-slate-700 text-xs">Belum ada tahapan persetujuan untuk Guru.</p>
+                            <p class="text-[11px]">Klik tombol "+ Tambah Level Guru" di bawah untuk mengatur alur.</p>
+                        </div>
+                    <?php else: ?>
+                        <?php foreach ($stepsGuru as $gIdx => $st): ?>
+                            <!-- Card Step Node Guru -->
+                            <div class="w-full bg-white rounded-2xl border border-slate-200/90 hover:border-sky-400 p-4 sm:p-5 shadow-xs transition-all relative">
+                                <div class="flex items-center justify-between pb-2.5 mb-2.5 border-b border-slate-100">
+                                    <div class="flex items-center gap-2">
+                                        <span class="px-2.5 py-0.5 rounded-lg bg-sky-600 text-white font-black text-[10px] tracking-wide uppercase">
+                                            Level <?= (int)$st['step_order'] ?>
+                                        </span>
+                                        <span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-bold text-[10px]">
+                                            Unit: <?= e($st['unit'] ?: 'Semua (Global)') ?>
+                                        </span>
+                                    </div>
+                                    <?php if ((int)$st['is_active'] === 1): ?>
+                                        <span class="px-2 py-0.5 rounded-full text-[9.5px] font-black bg-emerald-100 text-emerald-800">Aktif</span>
+                                    <?php else: ?>
+                                        <span class="px-2 py-0.5 rounded-full text-[9.5px] font-black bg-slate-100 text-slate-500">Nonaktif</span>
+                                    <?php endif; ?>
                                 </div>
-                                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
-                                    <?= count($stepsInGroup) ?> Tahap Approval
-                                </span>
+
+                                <div class="flex items-start gap-3.5">
+                                    <div class="w-11 h-11 rounded-2xl bg-sky-50 text-sky-600 border border-sky-200 flex items-center justify-center text-xl font-bold shrink-0">
+                                        <?= ((int)$st['step_order'] === 1) ? '🏫' : '🏛️' ?>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <h4 class="text-xs sm:text-sm font-extrabold text-slate-900 leading-tight">
+                                            <?= e($st['step_nama']) ?>
+                                        </h4>
+                                        <div class="mt-2 flex flex-wrap items-center gap-1.5">
+                                            <span class="text-[10.5px] text-slate-500 font-medium">Jabatan Penyetuju:</span>
+                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-sky-50 text-sky-900 border border-sky-200 text-xs font-extrabold">
+                                                <span>🏷️</span> <?= e($st['approver_role'] ?: 'Kepala Sekolah') ?>
+                                                <?php if (!empty($st['approver_jabatan_id']) || !empty($st['master_jabatan_nama'])): ?>
+                                                    <span class="text-[9.5px] font-bold text-sky-600 bg-sky-100 px-1.5 py-0.2 rounded-md">Dari Pengaturan</span>
+                                                <?php endif; ?>
+                                            </span>
+                                        </div>
+                                        <?php if (!empty($st['keterangan'])): ?>
+                                            <p class="text-[11px] text-slate-600 mt-2 bg-slate-50 p-2.5 rounded-xl border border-slate-100 italic leading-relaxed">
+                                                "<?= e($st['keterangan']) ?>"
+                                            </p>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+
+                                <!-- Action Buttons -->
+                                <div class="mt-3.5 pt-2.5 border-t border-slate-100 flex items-center justify-between">
+                                    <button type="button" onclick="openModalTambahHierarki('Guru', <?= (int)$st['step_order'] + 1 ?>, '<?= e($st['unit']) ?>')"
+                                        class="text-[11px] font-bold text-sky-600 hover:text-sky-800 flex items-center gap-1 cursor-pointer">
+                                        <span>+ Sisipkan Level</span>
+                                    </button>
+                                    <div class="flex items-center gap-1.5">
+                                        <button type="button" onclick="openModalEditHierarki(<?= htmlspecialchars(json_encode($st), ENT_QUOTES, 'UTF-8') ?>)"
+                                            class="px-2.5 py-1 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-700 font-bold text-[11px] cursor-pointer">
+                                            Edit
+                                        </button>
+                                        <form method="POST" action="<?= url('kelola-cuti/hierarki/delete') ?>" onsubmit="return confirm('Hapus tahapan Level <?= (int)$st['step_order'] ?> untuk Guru ini?');" class="inline">
+                                            <?= CSRF::field() ?>
+                                            <input type="hidden" name="id" value="<?= (int)$st['id'] ?>">
+                                            <button type="submit" class="px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-[11px] cursor-pointer">
+                                                Hapus
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
                             </div>
 
-                            <!-- Flow Steps Diagram Horizontal -->
-                            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 overflow-x-auto py-1">
-                                <?php foreach ($stepsInGroup as $sIdx => $st): ?>
-                                    <div class="flex-1 min-w-[170px] p-3 rounded-xl bg-slate-50 border border-slate-200/90 hover:border-indigo-400 transition-all flex flex-col justify-between">
-                                        <div>
-                                            <div class="flex items-center justify-between mb-1">
-                                                <span class="w-5 h-5 rounded-full bg-indigo-600 text-white font-black text-[10px] flex items-center justify-center">
-                                                    <?= (int)$st['step_order'] ?>
-                                                </span>
-                                                <span class="text-[9.5px] font-bold text-slate-400">Step <?= (int)$st['step_order'] ?></span>
-                                            </div>
-                                            <div class="font-bold text-slate-900 text-xs leading-tight mb-1"><?= e($st['step_nama']) ?></div>
-                                            <div class="text-[10px] text-indigo-600 font-semibold bg-indigo-50/80 px-1.5 py-0.5 rounded inline-block truncate max-w-full">
-                                                <?= e($st['approver_role'] ?: 'Admin / Penyetuju') ?>
-                                            </div>
-                                        </div>
-                                        <div class="mt-2.5 pt-2 border-t border-slate-200/60 flex items-center justify-end gap-1.5">
-                                            <button type="button" onclick="openModalEditHierarki(<?= htmlspecialchars(json_encode($st), ENT_QUOTES, 'UTF-8') ?>)" class="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 hover:underline">
-                                                Edit
-                                            </button>
-                                        </div>
-                                    </div>
+                            <!-- Connector Down Line to Next Step or Finish -->
+                            <div class="flex flex-col items-center py-1">
+                                <div class="w-0.5 h-6 bg-sky-300"></div>
+                                <div class="w-6 h-6 rounded-full bg-sky-100 border border-sky-300 text-sky-700 flex items-center justify-center text-[10px] font-black shadow-xs">
+                                    ▼
+                                </div>
+                                <div class="w-0.5 h-6 bg-sky-300"></div>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
 
-                                    <?php if ($sIdx < count($stepsInGroup) - 1): ?>
-                                        <div class="hidden sm:flex text-slate-300 font-black text-sm px-0.5">➔</div>
+                    <!-- Node Akhir: Izin Cuti Diterbitkan -->
+                    <div class="w-full bg-gradient-to-r from-emerald-600 to-teal-700 rounded-2xl p-4 text-white shadow-md shadow-emerald-600/20 flex items-center gap-3.5">
+                        <div class="w-10 h-10 rounded-xl bg-white/20 text-white flex items-center justify-center text-xl font-bold shrink-0">
+                            ✓
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between">
+                                <span class="text-[10px] font-black uppercase tracking-wider text-emerald-200 bg-white/10 px-2 py-0.5 rounded">Tahap Akhir (Selesai)</span>
+                                <span class="text-[10px] text-emerald-100 font-bold">Resmi Terbit</span>
+                            </div>
+                            <h5 class="text-xs font-black mt-0.5">Cuti Guru Disetujui & Diterbitkan</h5>
+                            <p class="text-[11px] text-emerald-100">Surat izin cuti resmi terbit otomatis & kuota saldo cuti tahunan langsung terpotong sistem.</p>
+                        </div>
+                    </div>
+
+                    <!-- Tombol Tambah Level Baru Guru -->
+                    <button type="button" onclick="openModalTambahHierarki('Guru', <?= count($stepsGuru) + 1 ?>)"
+                        class="w-full mt-4 py-3 px-4 rounded-2xl border-2 border-dashed border-sky-300 hover:border-sky-500 bg-sky-50/50 hover:bg-sky-50 text-sky-700 font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                        <span>+ Tambah Level Persetujuan Guru Baru</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 🏢 BAGAN 2: HIERARKI PERSETUJUAN CUTI — PEGAWAI SUPPORT SYSTEM -->
+            <div id="container-bagan-support" class="bagan-view-card bg-gradient-to-b from-emerald-50/70 via-white to-slate-50/60 rounded-3xl border border-emerald-200 shadow-sm p-5 sm:p-6 space-y-5">
+                <!-- Header Bagan Support System -->
+                <div class="flex items-start justify-between gap-3 pb-4 border-b border-emerald-100">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-700 text-white flex items-center justify-center font-black text-2xl shadow-md shadow-emerald-500/25 shrink-0">
+                            🏢
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h3 class="text-base sm:text-lg font-black text-slate-900 tracking-tight">Bagan Approval — Support System</h3>
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-200 uppercase tracking-wider">Staff / Operasional</span>
+                            </div>
+                            <p class="text-xs text-slate-500 mt-0.5">Alur persetujuan bagi Karyawan, Divisi Media & IT, Bisnis, Sosial, dan Operasional.</p>
+                        </div>
+                    </div>
+                    <span class="px-2.5 py-1 rounded-xl bg-emerald-100/80 text-emerald-800 font-extrabold text-xs shrink-0">
+                        <?= count($stepsSupport) ?> Level Persetujuan
+                    </span>
+                </div>
+
+                <!-- Flow Vertikal Bagan Support System -->
+                <div class="flex flex-col items-center space-y-0 py-1">
+                    
+                    <!-- Node Awal: Permohonan Staff -->
+                    <div class="w-full bg-white rounded-2xl border-2 border-dashed border-emerald-300 p-4 shadow-xs flex items-center gap-3.5">
+                        <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-xl font-bold shrink-0">
+                            💼
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between">
+                                <span class="text-[10px] font-black uppercase tracking-wider text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">Titik Awal Alur</span>
+                                <span class="text-[10px] text-slate-400 font-semibold">Portal Staff</span>
+                            </div>
+                            <h5 class="text-xs font-black text-slate-800 mt-0.5">Pegawai Support System Mengajukan Cuti</h5>
+                            <p class="text-[11px] text-slate-500">Memilih tanggal cuti, koordinasi pelimpahan tugas divisi, & berkas keterangan.</p>
+                        </div>
+                    </div>
+
+                    <!-- Connector Down Line -->
+                    <div class="flex flex-col items-center py-1">
+                        <div class="w-0.5 h-6 bg-emerald-300"></div>
+                        <div class="w-6 h-6 rounded-full bg-emerald-100 border border-emerald-300 text-emerald-700 flex items-center justify-center text-[10px] font-black shadow-xs">
+                            ▼
+                        </div>
+                        <div class="w-0.5 h-6 bg-emerald-300"></div>
+                    </div>
+
+                    <!-- Loop Steps Support System -->
+                    <?php if (empty($stepsSupport)): ?>
+                        <div class="w-full bg-white rounded-2xl border border-dashed border-slate-300 p-6 text-center text-slate-400 space-y-2">
+                            <p class="font-bold text-slate-700 text-xs">Belum ada tahapan persetujuan untuk Support System.</p>
+                            <p class="text-[11px]">Klik tombol "+ Tambah Level Support System" di bawah untuk mengatur alur.</p>
+                        </div>
+                    <?php else: ?>
+                        <?php foreach ($stepsSupport as $sIdx => $st): ?>
+                            <!-- Card Step Node Support System -->
+                            <div class="w-full bg-white rounded-2xl border border-slate-200/90 hover:border-emerald-400 p-4 sm:p-5 shadow-xs transition-all relative">
+                                <div class="flex items-center justify-between pb-2.5 mb-2.5 border-b border-slate-100">
+                                    <div class="flex items-center gap-2">
+                                        <span class="px-2.5 py-0.5 rounded-lg bg-emerald-600 text-white font-black text-[10px] tracking-wide uppercase">
+                                            Level <?= (int)$st['step_order'] ?>
+                                        </span>
+                                        <span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-bold text-[10px]">
+                                            Unit: <?= e($st['unit'] ?: 'Semua (Global)') ?>
+                                        </span>
+                                    </div>
+                                    <?php if ((int)$st['is_active'] === 1): ?>
+                                        <span class="px-2 py-0.5 rounded-full text-[9.5px] font-black bg-emerald-100 text-emerald-800">Aktif</span>
+                                    <?php else: ?>
+                                        <span class="px-2 py-0.5 rounded-full text-[9.5px] font-black bg-slate-100 text-slate-500">Nonaktif</span>
                                     <?php endif; ?>
-                                <?php endforeach; ?>
+                                </div>
+
+                                <div class="flex items-start gap-3.5">
+                                    <div class="w-11 h-11 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center text-xl font-bold shrink-0">
+                                        <?= ((int)$st['step_order'] === 1) ? '💼' : '👑' ?>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <h4 class="text-xs sm:text-sm font-extrabold text-slate-900 leading-tight">
+                                            <?= e($st['step_nama']) ?>
+                                        </h4>
+                                        <div class="mt-2 flex flex-wrap items-center gap-1.5">
+                                            <span class="text-[10.5px] text-slate-500 font-medium">Jabatan Penyetuju:</span>
+                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-50 text-emerald-900 border border-emerald-200 text-xs font-extrabold">
+                                                <span>🏷️</span> <?= e($st['approver_role'] ?: 'Manajer Divisi') ?>
+                                                <?php if (!empty($st['approver_jabatan_id']) || !empty($st['master_jabatan_nama'])): ?>
+                                                    <span class="text-[9.5px] font-bold text-emerald-600 bg-emerald-100 px-1.5 py-0.2 rounded-md">Dari Pengaturan</span>
+                                                <?php endif; ?>
+                                            </span>
+                                        </div>
+                                        <?php if (!empty($st['keterangan'])): ?>
+                                            <p class="text-[11px] text-slate-600 mt-2 bg-slate-50 p-2.5 rounded-xl border border-slate-100 italic leading-relaxed">
+                                                "<?= e($st['keterangan']) ?>"
+                                            </p>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+
+                                <!-- Action Buttons -->
+                                <div class="mt-3.5 pt-2.5 border-t border-slate-100 flex items-center justify-between">
+                                    <button type="button" onclick="openModalTambahHierarki('Support System', <?= (int)$st['step_order'] + 1 ?>, '<?= e($st['unit']) ?>')"
+                                        class="text-[11px] font-bold text-emerald-600 hover:text-emerald-800 flex items-center gap-1 cursor-pointer">
+                                        <span>+ Sisipkan Level</span>
+                                    </button>
+                                    <div class="flex items-center gap-1.5">
+                                        <button type="button" onclick="openModalEditHierarki(<?= htmlspecialchars(json_encode($st), ENT_QUOTES, 'UTF-8') ?>)"
+                                            class="px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-[11px] cursor-pointer">
+                                            Edit
+                                        </button>
+                                        <form method="POST" action="<?= url('kelola-cuti/hierarki/delete') ?>" onsubmit="return confirm('Hapus tahapan Level <?= (int)$st['step_order'] ?> untuk Support System ini?');" class="inline">
+                                            <?= CSRF::field() ?>
+                                            <input type="hidden" name="id" value="<?= (int)$st['id'] ?>">
+                                            <button type="submit" class="px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-[11px] cursor-pointer">
+                                                Hapus
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Connector Down Line to Next Step or Finish -->
+                            <div class="flex flex-col items-center py-1">
+                                <div class="w-0.5 h-6 bg-emerald-300"></div>
+                                <div class="w-6 h-6 rounded-full bg-emerald-100 border border-emerald-300 text-emerald-700 flex items-center justify-center text-[10px] font-black shadow-xs">
+                                    ▼
+                                </div>
+                                <div class="w-0.5 h-6 bg-emerald-300"></div>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+
+                    <!-- Node Akhir: Izin Cuti Diterbitkan -->
+                    <div class="w-full bg-gradient-to-r from-emerald-600 to-teal-700 rounded-2xl p-4 text-white shadow-md shadow-emerald-600/20 flex items-center gap-3.5">
+                        <div class="w-10 h-10 rounded-xl bg-white/20 text-white flex items-center justify-center text-xl font-bold shrink-0">
+                            ✓
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between">
+                                <span class="text-[10px] font-black uppercase tracking-wider text-emerald-200 bg-white/10 px-2 py-0.5 rounded">Tahap Akhir (Selesai)</span>
+                                <span class="text-[10px] text-emerald-100 font-bold">Resmi Terbit</span>
+                            </div>
+                            <h5 class="text-xs font-black mt-0.5">Cuti Support System Disetujui & Diterbitkan</h5>
+                            <p class="text-[11px] text-emerald-100">Surat izin cuti resmi terbit otomatis & kuota saldo cuti tahunan langsung terpotong sistem.</p>
+                        </div>
+                    </div>
+
+                    <!-- Tombol Tambah Level Baru Support System -->
+                    <button type="button" onclick="openModalTambahHierarki('Support System', <?= count($stepsSupport) + 1 ?>)"
+                        class="w-full mt-4 py-3 px-4 rounded-2xl border-2 border-dashed border-emerald-300 hover:border-emerald-500 bg-emerald-50/50 hover:bg-emerald-50 text-emerald-700 font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                        <span>+ Tambah Level Persetujuan Support System Baru</span>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+        <?php if (!empty($stepsLainnya)): ?>
+            <!-- Bagan Alur Global / Semua Pegawai (Jika Ada) -->
+            <div id="container-bagan-lainnya" class="bg-white rounded-3xl border border-slate-200 p-5 sm:p-6 space-y-4">
+                <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span>
+                        <h4 class="font-black text-slate-900 text-sm">Alur Global / Semua Pegawai (Aturan Umum)</h4>
+                    </div>
+                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
+                        <?= count($stepsLainnya) ?> Tahapan
+                    </span>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    <?php foreach ($stepsLainnya as $sl): ?>
+                        <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex flex-col justify-between">
+                            <div>
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="px-2 py-0.5 rounded bg-indigo-600 text-white font-black text-[10px]">Level <?= (int)$sl['step_order'] ?></span>
+                                    <span class="text-[10px] text-slate-400 font-semibold"><?= e($sl['unit']) ?></span>
+                                </div>
+                                <div class="font-bold text-slate-900 text-xs mt-1"><?= e($sl['step_nama']) ?></div>
+                                <div class="text-[10.5px] text-indigo-700 font-bold mt-1">Jabatan: <?= e($sl['approver_role']) ?></div>
+                            </div>
+                            <div class="mt-3 pt-2 border-t border-slate-200 flex items-center justify-end gap-1.5">
+                                <button type="button" onclick="openModalEditHierarki(<?= htmlspecialchars(json_encode($sl), ENT_QUOTES, 'UTF-8') ?>)" class="text-[10.5px] font-bold text-indigo-600 hover:underline">
+                                    Edit
+                                </button>
                             </div>
                         </div>
                     <?php endforeach; ?>
@@ -1221,25 +1544,36 @@ $tambahPerBulan = (int)($cfgTahunan['tambah_per_bulan'] ?? 1);
             </div>
         <?php endif; ?>
 
-        <!-- Tabel Detail Master Tahapan Approval -->
-        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
-            <div class="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between">
+        <!-- ═════════════════════════════════════════════════════════════════
+             TABEL DETAIL MASTER TAHAPAN APPROVAL (COLLAPSIBLE / TOGGLEABLE)
+             ═════════════════════════════════════════════════════════════════ -->
+        <div id="container-tabel-master" class="bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden mt-2">
+            <div class="p-4 sm:p-5 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3 bg-slate-50/50">
                 <div>
-                    <h4 class="font-bold text-slate-900 text-sm">Tabel Master Tahapan Hierarki Approval</h4>
-                    <p class="text-xs text-slate-500">Kelola urutan dan pihak yang berwenang menyetujui di setiap langkah</p>
+                    <h4 class="font-extrabold text-slate-900 text-sm flex items-center gap-2">
+                        <span>📋</span>
+                        <span>Tabel Master Tahapan Hierarki Approval</span>
+                    </h4>
+                    <p class="text-xs text-slate-500 mt-0.5">Daftar lengkap konfigurasi tahapan approval beserta jabatan penyetuju dari pengaturan</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="toggleTabelMaster()" id="btn-toggle-tabel"
+                        class="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer">
+                        <span id="label-toggle-tabel">Sembunyikan Tabel</span>
+                    </button>
                 </div>
             </div>
 
-            <div class="overflow-x-auto">
+            <div id="tabel-master-body" class="overflow-x-auto">
                 <table class="w-full text-xs text-left">
                     <thead class="bg-slate-50 text-slate-500 uppercase tracking-wider font-bold border-b border-slate-200/80">
                         <tr>
                             <th class="py-3.5 px-4 text-center w-16">Urutan</th>
                             <th class="py-3.5 px-4">Nama Tahapan Approval</th>
-                            <th class="py-3.5 px-4">Unit Sekolah</th>
                             <th class="py-3.5 px-4">Jenis Pegawai</th>
-                            <th class="py-3.5 px-4">Role / Jabatan Penyetuju</th>
-                            <th class="py-3.5 px-4">Keterangan</th>
+                            <th class="py-3.5 px-4">Unit Sekolah</th>
+                            <th class="py-3.5 px-4">Jabatan Penyetuju (Dari Pengaturan)</th>
+                            <th class="py-3.5 px-4">Panduan / SOP</th>
                             <th class="py-3.5 px-4 text-center w-24">Status</th>
                             <th class="py-3.5 px-4 text-center w-28">Aksi</th>
                         </tr>
@@ -1256,7 +1590,7 @@ $tambahPerBulan = (int)($cfgTahunan['tambah_per_bulan'] ?? 1);
                             <?php foreach ($hierarkiList as $h): ?>
                                 <tr class="hover:bg-slate-50/80 transition-colors">
                                     <td class="py-3.5 px-4 text-center">
-                                        <span class="w-7 h-7 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-700 font-extrabold text-xs inline-flex items-center justify-center">
+                                        <span class="w-7 h-7 rounded-xl <?= $h['jenis_pegawai'] === 'Guru' ? 'bg-sky-50 border-sky-200 text-sky-700' : 'bg-emerald-50 border-emerald-200 text-emerald-700' ?> border font-extrabold text-xs inline-flex items-center justify-center">
                                             <?= (int)$h['step_order'] ?>
                                         </span>
                                     </td>
@@ -1264,17 +1598,23 @@ $tambahPerBulan = (int)($cfgTahunan['tambah_per_bulan'] ?? 1);
                                         <?= e($h['step_nama']) ?>
                                     </td>
                                     <td class="py-3.5 px-4">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10.5px] font-bold <?= $h['jenis_pegawai'] === 'Guru' ? 'bg-sky-50 text-sky-700 border border-sky-200' : ($h['jenis_pegawai'] === 'Support System' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-700 border border-slate-200') ?>">
+                                            <?= $h['jenis_pegawai'] === 'Guru' ? '🎓 Guru' : ($h['jenis_pegawai'] === 'Support System' ? '🏢 Support System' : 'Semua') ?>
+                                        </span>
+                                    </td>
+                                    <td class="py-3.5 px-4">
                                         <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10.5px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
                                             <?= e($h['unit'] ?: 'Semua Unit') ?>
                                         </span>
                                     </td>
                                     <td class="py-3.5 px-4">
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10.5px] font-bold <?= $h['jenis_pegawai'] === 'Guru' ? 'bg-sky-50 text-sky-700 border border-sky-200' : ($h['jenis_pegawai'] === 'Support System' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-700 border border-slate-200') ?>">
-                                            <?= e($h['jenis_pegawai'] ?: 'Semua') ?>
-                                        </span>
-                                    </td>
-                                    <td class="py-3.5 px-4 font-semibold text-indigo-800">
-                                        <?= e($h['approver_role'] ?: 'Semua Admin') ?>
+                                        <div class="inline-flex items-center gap-1 font-bold text-slate-900">
+                                            <span>🏷️</span>
+                                            <span><?= e($h['approver_role'] ?: 'Admin') ?></span>
+                                            <?php if (!empty($h['approver_jabatan_id']) || !empty($h['master_jabatan_nama'])): ?>
+                                                <span class="text-[9px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded">Master Jabatan</span>
+                                            <?php endif; ?>
+                                        </div>
                                     </td>
                                     <td class="py-3.5 px-4 text-slate-500 max-w-xs text-[11px]">
                                         <?= e($h['keterangan'] ?: '-') ?>
@@ -1633,12 +1973,12 @@ $tambahPerBulan = (int)($cfgTahunan['tambah_per_bulan'] ?? 1);
 <!-- ═════════════════════════════════════════════════════════════════════════
      MODAL 5: TAMBAH / EDIT STEP HIERARKI APPROVAL (CUSTOM WORKFLOW)
      ═════════════════════════════════════════════════════════════════════════ -->
-<div id="modalHierarkiStep" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
-    <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100">
-        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+<div id="modalHierarkiStep" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 my-8">
+        <div class="flex items-center justify-between pb-3.5 border-b border-slate-100">
             <div>
-                <h3 id="hierarki_modal_title" class="text-base font-extrabold text-slate-900">Tambah Tahapan Approval</h3>
-                <p class="text-xs text-slate-500">Konfigurasi urutan langkah dan pihak yang berhak menyetujui</p>
+                <h3 id="hierarki_modal_title" class="text-base font-extrabold text-slate-900">Tambah Level Approval</h3>
+                <p class="text-xs text-slate-500">Konfigurasi urutan langkah dan pihak penyetuju dari Master Jabatan</p>
             </div>
             <button type="button" onclick="closeModal('modalHierarkiStep')" class="p-1.5 rounded-full text-slate-400 hover:text-slate-600">✕</button>
         </div>
@@ -1646,51 +1986,84 @@ $tambahPerBulan = (int)($cfgTahunan['tambah_per_bulan'] ?? 1);
         <form method="POST" action="<?= url('kelola-cuti/hierarki/store') ?>" class="space-y-4 mt-4">
             <?= CSRF::field() ?>
             <input type="hidden" name="id" id="hierarki_id" value="">
+            <input type="hidden" name="approver_jabatan_id" id="hierarki_approver_jabatan_id" value="">
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Jenis Pegawai <span class="text-rose-500">*</span></label>
+                    <select name="jenis_pegawai" id="hierarki_jenis_pegawai" required onchange="onJenisPegawaiFormChange(this)"
+                        class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 bg-slate-50 focus:bg-white outline-none focus:border-indigo-500">
+                        <option value="Guru">🎓 Pegawai Guru (Pendidik)</option>
+                        <option value="Support System">🏢 Support System / Staff</option>
+                        <option value="Semua">Semua (Guru & Staff)</option>
+                    </select>
+                </div>
+                <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1">Unit Sekolah <span class="text-rose-500">*</span></label>
-                    <select name="unit" id="hierarki_unit" required class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 bg-slate-50 focus:bg-white outline-none focus:border-indigo-500">
+                    <select name="unit" id="hierarki_unit" required class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 bg-slate-50 focus:bg-white outline-none focus:border-indigo-500">
                         <option value="Semua">Semua Unit (Global)</option>
                         <?php foreach ($unitTugasList as $ut): ?>
                             <option value="<?= e($ut['unit_tugas']) ?>"><?= e($ut['unit_tugas']) ?></option>
                         <?php endforeach; ?>
                     </select>
                 </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Jenis Pegawai <span class="text-rose-500">*</span></label>
-                    <select name="jenis_pegawai" id="hierarki_jenis_pegawai" required class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 bg-slate-50 focus:bg-white outline-none focus:border-indigo-500">
-                        <option value="Semua">Semua (Guru & Staff)</option>
-                        <option value="Guru">Guru</option>
-                        <option value="Support System">Support System / Staff</option>
-                    </select>
-                </div>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Urutan Tahap <span class="text-rose-500">*</span></label>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Urutan Level <span class="text-rose-500">*</span></label>
                     <input type="number" name="step_order" id="hierarki_step_order" min="1" max="10" required value="1"
-                           class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-extrabold text-slate-800 outline-none focus:border-indigo-500 text-center">
-                    <p class="text-[10px] text-slate-400 mt-0.5">Langkah ke: 1, 2, 3...</p>
+                           class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs font-extrabold text-slate-800 outline-none focus:border-indigo-500 text-center">
+                    <p class="text-[10px] text-slate-400 mt-0.5">Tingkat ke: 1, 2, 3...</p>
                 </div>
                 <div class="sm:col-span-2">
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Nama Tahapan <span class="text-rose-500">*</span></label>
-                    <input type="text" name="step_nama" id="hierarki_step_nama" required placeholder="Contoh: Verifikasi Kepala Sekolah"
-                           class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 outline-none focus:border-indigo-500">
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Pilih Jabatan Penyetuju (Dari Pengaturan) <span class="text-rose-500">*</span></label>
+                    <select id="hierarki_jabatan_select" onchange="onJabatanPresetChange(this)"
+                        class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 bg-slate-50 focus:bg-white outline-none focus:border-indigo-500">
+                        <option value="">-- Pilih Jabatan Pengaturan --</option>
+                        <optgroup label="📋 Jabatan Guru (Pengaturan Master)">
+                            <?php foreach ($masterJabatanGuru as $jg): ?>
+                                <option value="<?= e($jg['nama']) ?>" data-id="<?= (int)$jg['id'] ?>" data-kategori="guru">
+                                    🎓 <?= e($jg['nama']) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </optgroup>
+                        <optgroup label="💼 Jabatan Support System (Pengaturan Master)">
+                            <?php foreach ($masterJabatanSupport as $js): ?>
+                                <option value="<?= e($js['nama']) ?>" data-id="<?= (int)$js['id'] ?>" data-kategori="support_system">
+                                    🏢 <?= e($js['nama']) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </optgroup>
+                        <optgroup label="🏛️ Pimpinan & Yayasan (Tingkat Puncak)">
+                            <option value="Yayasan / Pimpinan" data-id="" data-kategori="yayasan">👑 Yayasan / Pimpinan</option>
+                            <option value="Direktur Yayasan" data-id="" data-kategori="yayasan">👑 Direktur Yayasan</option>
+                            <option value="HRD / Kepegawaian" data-id="" data-kategori="yayasan">👥 HRD / Kepegawaian</option>
+                            <option value="Semua Admin" data-id="" data-kategori="yayasan">⚡ Semua Admin</option>
+                        </optgroup>
+                        <option value="__custom__">✏️ Jabatan Kustom Lainnya...</option>
+                    </select>
                 </div>
             </div>
 
+            <!-- Nama Tahapan & Input Role -->
             <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Role / Jabatan Penyetuju <span class="text-rose-500">*</span></label>
-                <input type="text" name="approver_role" id="hierarki_approver_role" required placeholder="Contoh: Kepala Sekolah / Yayasan / HRD / Manajer Divisi"
-                       class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 outline-none focus:border-indigo-500">
-                <p class="text-[10px] text-slate-400 mt-0.5">Label jabatan/peran yang berhak menyetujui langkah ini.</p>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Nama Tahapan Approval <span class="text-rose-500">*</span></label>
+                <input type="text" name="step_nama" id="hierarki_step_nama" required placeholder="Contoh: Verifikasi Kepala Sekolah / Unit"
+                       class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 outline-none focus:border-indigo-500">
+            </div>
+
+            <!-- Teks Role Penyetuju -->
+            <div id="hierarki_custom_role_container">
+                <label class="block text-xs font-bold text-slate-700 mb-1">Label Jabatan / Pihak Penyetuju <span class="text-rose-500">*</span></label>
+                <input type="text" name="approver_role" id="hierarki_approver_role" required placeholder="Contoh: Kepala Sekolah / Manajer Divisi / Yayasan"
+                       class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 bg-slate-50 outline-none focus:border-indigo-500">
+                <p class="text-[10px] text-slate-400 mt-0.5">Teks jabatan penyetuju yang berwenang (terisi otomatis dari dropdown jabatan).</p>
             </div>
 
             <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Keterangan / Deskripsi Tugas</label>
-                <textarea name="keterangan" id="hierarki_keterangan" rows="2" placeholder="Catatan panduan untuk approver..."
+                <label class="block text-xs font-bold text-slate-700 mb-1">Keterangan / Panduan Verifikasi</label>
+                <textarea name="keterangan" id="hierarki_keterangan" rows="2" placeholder="Catatan panduan / SOP untuk pejabat penyetuju..."
                           class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs text-slate-800 outline-none focus:border-indigo-500"></textarea>
             </div>
 
@@ -1699,7 +2072,7 @@ $tambahPerBulan = (int)($cfgTahunan['tambah_per_bulan'] ?? 1);
                 <label for="hierarki_is_active" class="text-xs font-bold text-slate-700 cursor-pointer">Tahapan ini Aktif</label>
             </div>
 
-            <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+            <div class="flex items-center justify-end gap-2 pt-3.5 border-t border-slate-100">
                 <button type="button" onclick="closeModal('modalHierarkiStep')" class="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-bold text-xs cursor-pointer">
                     Batal
                 </button>
@@ -1952,16 +2325,154 @@ function openModalApprove(id, keputusan, namaPegawai, namaJenis, jumlahHari, ret
     modal.classList.add('flex');
 }
 
-function openModalTambahHierarki() {
+function switchBaganView(mode) {
+    const colGuru = document.getElementById('container-bagan-guru');
+    const colSupport = document.getElementById('container-bagan-support');
+    const colLainnya = document.getElementById('container-bagan-lainnya');
+    const tblMaster = document.getElementById('container-tabel-master');
+    const secWrapper = document.getElementById('section-bagan-wrapper');
+
+    const btnAll = document.getElementById('btn-bagan-all');
+    const btnGuru = document.getElementById('btn-bagan-guru');
+    const btnSupport = document.getElementById('btn-bagan-support');
+    const btnTable = document.getElementById('btn-bagan-table');
+
+    [btnAll, btnGuru, btnSupport, btnTable].forEach(b => {
+        if (!b) return;
+        b.className = 'px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition-all cursor-pointer';
+    });
+
+    const activeBtnClass = 'px-3 py-1.5 rounded-lg bg-white text-indigo-700 shadow-xs transition-all cursor-pointer';
+
+    if (mode === 'all') {
+        if (btnAll) btnAll.className = activeBtnClass;
+        if (secWrapper) {
+            secWrapper.classList.remove('hidden');
+            secWrapper.className = 'grid grid-cols-1 lg:grid-cols-2 gap-6 items-start';
+        }
+        if (colGuru) colGuru.classList.remove('hidden');
+        if (colSupport) colSupport.classList.remove('hidden');
+        if (colLainnya) colLainnya.classList.remove('hidden');
+        if (tblMaster) tblMaster.classList.remove('hidden');
+    } else if (mode === 'guru') {
+        if (btnGuru) btnGuru.className = activeBtnClass;
+        if (secWrapper) {
+            secWrapper.classList.remove('hidden');
+            secWrapper.className = 'grid grid-cols-1 gap-6 items-start';
+        }
+        if (colGuru) colGuru.classList.remove('hidden');
+        if (colSupport) colSupport.classList.add('hidden');
+        if (colLainnya) colLainnya.classList.add('hidden');
+        if (tblMaster) tblMaster.classList.add('hidden');
+    } else if (mode === 'support') {
+        if (btnSupport) btnSupport.className = activeBtnClass;
+        if (secWrapper) {
+            secWrapper.classList.remove('hidden');
+            secWrapper.className = 'grid grid-cols-1 gap-6 items-start';
+        }
+        if (colGuru) colGuru.classList.add('hidden');
+        if (colSupport) colSupport.classList.remove('hidden');
+        if (colLainnya) colLainnya.classList.add('hidden');
+        if (tblMaster) tblMaster.classList.add('hidden');
+    } else if (mode === 'table') {
+        if (btnTable) btnTable.className = activeBtnClass;
+        if (secWrapper) secWrapper.classList.add('hidden');
+        if (colLainnya) colLainnya.classList.add('hidden');
+        if (tblMaster) {
+            tblMaster.classList.remove('hidden');
+            const tbBody = document.getElementById('tabel-master-body');
+            if (tbBody) tbBody.classList.remove('hidden');
+            const lbl = document.getElementById('label-toggle-tabel');
+            if (lbl) lbl.textContent = 'Sembunyikan Tabel';
+        }
+    }
+}
+
+function toggleTabelMaster() {
+    const tbBody = document.getElementById('tabel-master-body');
+    const lbl = document.getElementById('label-toggle-tabel');
+    if (!tbBody) return;
+    if (tbBody.classList.contains('hidden')) {
+        tbBody.classList.remove('hidden');
+        if (lbl) lbl.textContent = 'Sembunyikan Tabel';
+    } else {
+        tbBody.classList.add('hidden');
+        if (lbl) lbl.textContent = 'Buka Tabel Master';
+    }
+}
+
+function onJabatanPresetChange(sel) {
+    const val = sel.value;
+    const opt = sel.selectedOptions[0];
+    const roleInput = document.getElementById('hierarki_approver_role');
+    const jabIdInput = document.getElementById('hierarki_approver_jabatan_id');
+    const stepNamaInput = document.getElementById('hierarki_step_nama');
+    const customContainer = document.getElementById('hierarki_custom_role_container');
+
+    if (val === '__custom__') {
+        if (roleInput) {
+            roleInput.value = '';
+            roleInput.readOnly = false;
+            roleInput.focus();
+        }
+        if (jabIdInput) jabIdInput.value = '';
+        if (customContainer) customContainer.classList.remove('hidden');
+    } else if (val) {
+        const jId = opt ? (opt.dataset.id || '') : '';
+        if (roleInput) {
+            roleInput.value = val;
+            roleInput.readOnly = true;
+        }
+        if (jabIdInput) jabIdInput.value = jId;
+        if (customContainer) customContainer.classList.remove('hidden');
+
+        // Otomatis sarankan nama tahapan jika masih kosong
+        if (stepNamaInput && (!stepNamaInput.value || stepNamaInput.value.startsWith('Verifikasi ') || stepNamaInput.value.startsWith('Persetujuan '))) {
+            const prefix = (val.toLowerCase().includes('yayasan') || val.toLowerCase().includes('direktur')) ? 'Persetujuan ' : 'Verifikasi ';
+            stepNamaInput.value = prefix + val;
+        }
+    } else {
+        if (roleInput) roleInput.value = '';
+        if (jabIdInput) jabIdInput.value = '';
+    }
+}
+
+function onJenisPegawaiFormChange(sel) {
+    const jenis = sel.value;
+    const jabSelect = document.getElementById('hierarki_jabatan_select');
+    if (!jabSelect) return;
+
+    // Filter optgroup visibility agar relevan
+    const optgroups = jabSelect.querySelectorAll('optgroup');
+    optgroups.forEach(og => {
+        const lbl = og.getAttribute('label') || '';
+        if (jenis === 'Guru') {
+            og.style.display = (lbl.includes('Guru') || lbl.includes('Yayasan')) ? '' : 'none';
+        } else if (jenis === 'Support System') {
+            og.style.display = (lbl.includes('Support') || lbl.includes('Yayasan')) ? '' : 'none';
+        } else {
+            og.style.display = '';
+        }
+    });
+}
+
+function openModalTambahHierarki(jenisPegawai = 'Guru', stepOrder = 1, unit = 'Semua') {
     document.getElementById('hierarki_id').value = '';
-    document.getElementById('hierarki_unit').value = 'Semua';
-    document.getElementById('hierarki_jenis_pegawai').value = 'Semua';
-    document.getElementById('hierarki_step_order').value = '1';
+    document.getElementById('hierarki_unit').value = unit || 'Semua';
+    document.getElementById('hierarki_jenis_pegawai').value = jenisPegawai || 'Guru';
+    document.getElementById('hierarki_step_order').value = stepOrder || '1';
     document.getElementById('hierarki_step_nama').value = '';
     document.getElementById('hierarki_approver_role').value = '';
+    document.getElementById('hierarki_approver_jabatan_id').value = '';
     document.getElementById('hierarki_keterangan').value = '';
     document.getElementById('hierarki_is_active').checked = true;
-    document.getElementById('hierarki_modal_title').textContent = 'Tambah Tahapan Approval Baru';
+    document.getElementById('hierarki_modal_title').textContent = 'Tambah Level Approval Baru (' + (jenisPegawai || 'Guru') + ')';
+
+    const jenisSel = document.getElementById('hierarki_jenis_pegawai');
+    if (jenisSel) onJenisPegawaiFormChange(jenisSel);
+
+    const jabSelect = document.getElementById('hierarki_jabatan_select');
+    if (jabSelect) jabSelect.value = '';
 
     const modal = document.getElementById('modalHierarkiStep');
     modal.classList.remove('hidden');
@@ -1972,13 +2483,50 @@ function openModalEditHierarki(data) {
     if (!data) return;
     document.getElementById('hierarki_id').value = data.id || '';
     document.getElementById('hierarki_unit').value = data.unit || 'Semua';
-    document.getElementById('hierarki_jenis_pegawai').value = data.jenis_pegawai || 'Semua';
+    document.getElementById('hierarki_jenis_pegawai').value = data.jenis_pegawai || 'Guru';
     document.getElementById('hierarki_step_order').value = data.step_order || '1';
     document.getElementById('hierarki_step_nama').value = data.step_nama || '';
     document.getElementById('hierarki_approver_role').value = data.approver_role || '';
+    document.getElementById('hierarki_approver_jabatan_id').value = data.approver_jabatan_id || '';
     document.getElementById('hierarki_keterangan').value = data.keterangan || '';
     document.getElementById('hierarki_is_active').checked = parseInt(data.is_active) === 1;
-    document.getElementById('hierarki_modal_title').textContent = 'Edit Tahapan Approval';
+    document.getElementById('hierarki_modal_title').textContent = 'Edit Level Persetujuan (' + (data.jenis_pegawai || 'Guru') + ')';
+
+    const jenisSel = document.getElementById('hierarki_jenis_pegawai');
+    if (jenisSel) onJenisPegawaiFormChange(jenisSel);
+
+    // Cocokkan dropdown preset
+    const jabSelect = document.getElementById('hierarki_jabatan_select');
+    const roleInput = document.getElementById('hierarki_approver_role');
+    if (jabSelect) {
+        let found = false;
+        // Cek by data-id
+        if (data.approver_jabatan_id) {
+            for (let i = 0; i < jabSelect.options.length; i++) {
+                if (jabSelect.options[i].dataset.id == data.approver_jabatan_id) {
+                    jabSelect.selectedIndex = i;
+                    found = true;
+                    break;
+                }
+            }
+        }
+        // Cek by value/nama role
+        if (!found && data.approver_role) {
+            for (let i = 0; i < jabSelect.options.length; i++) {
+                if (jabSelect.options[i].value === data.approver_role) {
+                    jabSelect.selectedIndex = i;
+                    found = true;
+                    break;
+                }
+            }
+        }
+        if (!found && data.approver_role) {
+            jabSelect.value = '__custom__';
+            if (roleInput) roleInput.readOnly = false;
+        } else {
+            if (roleInput) roleInput.readOnly = true;
+        }
+    }
 
     const modal = document.getElementById('modalHierarkiStep');
     modal.classList.remove('hidden');
