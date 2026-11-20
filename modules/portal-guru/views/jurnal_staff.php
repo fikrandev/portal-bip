@@ -34,16 +34,16 @@
     </div>
 </div>
 
-<div class="p-3.5 sm:p-4 space-y-3.5 sm:space-y-4 max-w-full overflow-x-hidden">
+<div class="p-3.5 sm:p-4 space-y-3.5 sm:space-y-4 max-w-full overflow-x-hidden min-w-0">
 
     <!-- 1. Date Selector & Daily Progress Card -->
-    <div class="bg-primary-700 border border-primary-600 rounded-3xl p-3.5 sm:p-4 text-white shadow-lg shadow-primary-700/20 space-y-3 max-w-full overflow-hidden">
+    <div class="bg-primary-700 border border-primary-600 rounded-3xl p-3.5 sm:p-4 text-white shadow-lg shadow-primary-700/20 space-y-3 max-w-full overflow-hidden min-w-0">
         <!-- Tanggal Bar -->
-        <div class="flex flex-wrap items-center justify-between gap-2">
+        <div class="flex flex-wrap items-center justify-between gap-2 min-w-0">
             <div class="min-w-0">
                 <p class="text-[10px] uppercase font-bold tracking-wider text-primary-200">Tanggal Jurnal:</p>
-                <div class="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                    <span class="text-xs sm:text-sm font-black text-white truncate">
+                <div class="flex items-center gap-1.5 mt-0.5 flex-wrap min-w-0">
+                    <span class="text-xs sm:text-sm font-black text-white truncate max-w-[160px] sm:max-w-none">
                         <?php
                             $ts = strtotime($selectedDate);
                             $dayNames = ['Sunday' => 'Minggu', 'Monday' => 'Senin', 'Tuesday' => 'Selasa', 'Wednesday' => 'Rabu', 'Thursday' => 'Kamis', 'Friday' => 'Jumat', 'Saturday' => 'Sabtu'];
@@ -96,7 +96,7 @@
     </div>
 
     <!-- 2. Tab Switcher: Sesi Jam vs Riwayat Jurnal -->
-    <div class="flex p-1 bg-slate-200/70 rounded-2xl gap-1 max-w-full">
+    <div class="flex p-1 bg-slate-200/70 rounded-2xl gap-1 max-w-full min-w-0">
         <button type="button" onclick="switchStaffTab('jam')" id="btn-tab-jam" class="flex-1 py-2 text-xs font-bold rounded-xl bg-white text-primary-700 shadow-sm transition-all flex items-center justify-center gap-1.5 truncate">
             <span>🕒</span>
             <span class="truncate">Jadwal Jam Kerja</span>
@@ -110,7 +110,7 @@
     <!-- ======================================================== -->
     <!-- SECTION 1: DAFTAR SLOT JAM KERJA (GRID 3 KOLOM)          -->
     <!-- ======================================================== -->
-    <div id="section-staff-jam" class="space-y-3 pb-24">
+    <div id="section-staff-jam" class="space-y-3 pb-24 max-w-full overflow-x-hidden min-w-0">
         
         <div class="flex items-center justify-between px-1">
             <div>
@@ -131,7 +131,7 @@
         </div>
 
         <?php if (!empty($jamList)): ?>
-            <div class="grid grid-cols-3 gap-2 sm:gap-2.5" id="grid-jam-staff">
+            <div class="grid grid-cols-3 gap-2 sm:gap-2.5 max-w-full min-w-0" id="grid-jam-staff">
                 <?php foreach ($jamList as $idx => $jam): ?>
                     <?php
                         $jamId = (int)$jam['id'];
@@ -237,7 +237,7 @@
     <!-- ======================================================== -->
     <!-- SECTION 2: RIWAYAT JURNAL STAFF (TAB 2)                  -->
     <!-- ======================================================== -->
-    <div id="section-staff-riwayat" class="hidden space-y-3">
+    <div id="section-staff-riwayat" class="hidden space-y-3 max-w-full overflow-x-hidden min-w-0">
         <div class="flex items-center justify-between px-1">
             <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                 30 Jurnal Terakhir Anda:
@@ -327,7 +327,7 @@
 <!-- FLOATING ACTION BAR: MUNCUL SAAT MINIMAL 1 JAM TERPILIH   -->
 <!-- ======================================================== -->
 <div id="floating-jurnal-bar" 
-     class="fixed bottom-20 left-0 right-0 max-w-md mx-auto px-3.5 sm:px-4 z-40 transition-all duration-300 transform translate-y-32 opacity-0 pointer-events-none">
+     class="fixed bottom-20 left-0 right-0 max-w-md w-full mx-auto px-3.5 sm:px-4 z-40 transition-all duration-300 transform translate-y-32 opacity-0 pointer-events-none overflow-hidden">
     <div class="bg-slate-900/95 text-white backdrop-blur-md p-3 rounded-2xl shadow-2xl border border-white/10 flex items-center justify-between gap-2.5">
         
         <!-- Left: Counter & Summary Jam -->

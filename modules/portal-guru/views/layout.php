@@ -146,10 +146,30 @@
             --sat: env(safe-area-inset-top, 0px);
             --sab: env(safe-area-inset-bottom, 0px);
         }
+        html {
+            overflow-x: hidden;
+            width: 100%;
+            max-width: 100vw;
+            overscroll-behavior-x: none;
+        }
         body {
             font-family: 'Inter', sans-serif;
             -webkit-tap-highlight-color: transparent;
             overscroll-behavior-y: contain;
+            overscroll-behavior-x: none;
+            overflow-x: hidden;
+            width: 100%;
+            max-width: 100vw;
+            position: relative;
+            touch-action: pan-y pinch-zoom;
+        }
+        #mobile-main-view {
+            touch-action: pan-y;
+            overscroll-behavior-x: none;
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
+            overflow-x: hidden;
         }
         .safe-top { padding-top: var(--sat); }
         .safe-bottom { padding-bottom: var(--sab); }
@@ -201,7 +221,7 @@
     <div id="spa-progress-bar" aria-hidden="true"></div>
 
     <!-- Mobile Shell Wrapper (Original Compact Size: max-w-md) -->
-    <div class="w-full max-w-md min-h-screen bg-[#f6f8fb] shadow-2xl flex flex-col relative overflow-x-hidden border-x border-slate-200/60 sm:my-4 sm:rounded-3xl sm:min-h-[860px]">
+    <div class="w-full max-w-md min-w-0 min-h-screen bg-[#f6f8fb] shadow-2xl flex flex-col relative overflow-x-hidden border-x border-slate-200/60 sm:my-4 sm:rounded-3xl sm:min-h-[860px]" style="touch-action: pan-y;">
         
         <!-- Main View Content -->
         <main id="mobile-main-view" 

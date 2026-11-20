@@ -6,17 +6,17 @@
 ?>
 
 <!-- Header with Back Button -->
-<div class="px-5 pt-4 pb-3 flex items-center justify-between bg-white border-b border-slate-100 sticky top-0 z-30">
-    <div class="flex items-center gap-2.5">
-        <a href="<?= url('mobile') ?>" class="w-9 h-9 rounded-2xl bg-slate-100 text-slate-700 flex items-center justify-center press-bounce">
+<div class="px-3.5 sm:px-4 pt-3.5 pb-3 flex items-center justify-between bg-white border-b border-slate-100 sticky top-0 z-30 shadow-xs max-w-full overflow-hidden">
+    <div class="flex items-center gap-2.5 min-w-0 flex-1">
+        <a href="<?= url('mobile') ?>" class="w-9 h-9 rounded-2xl bg-slate-100 text-slate-700 flex items-center justify-center press-bounce shrink-0">
             <i data-lucide="arrow-left" class="w-5 h-5"></i>
         </a>
-        <div>
-            <h2 class="font-bold text-slate-800 text-base leading-tight">Jurnal Mengajar</h2>
-            <p class="text-[10px] text-slate-400 font-medium">Sinkron dengan Jadwal KBM</p>
+        <div class="min-w-0 flex-1">
+            <h2 class="font-bold text-slate-800 text-sm sm:text-base leading-tight truncate">Jurnal Mengajar</h2>
+            <p class="text-[10px] text-slate-400 font-medium truncate">Sinkron dengan Jadwal KBM</p>
         </div>
     </div>
-    <div class="flex items-center gap-1.5">
+    <div class="flex items-center gap-1.5 shrink-0 ml-2">
         <a href="<?= url('mobile/rekap-jurnal') ?>" class="w-9 h-9 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center press-bounce shadow-xs" title="Rekap Jurnal PIC & Monitoring KBM">
             <i data-lucide="bar-chart-2" class="w-4 h-4"></i>
         </a>
@@ -26,28 +26,28 @@
     </div>
 </div>
 
-<div class="p-4 space-y-4">
+<div class="p-3.5 sm:p-4 space-y-3.5 sm:space-y-4 max-w-full overflow-x-hidden min-w-0">
 
     <!-- Tab Switcher: Jadwal & Isi Jurnal vs Riwayat vs Rekap PIC -->
-    <div class="flex p-1 bg-slate-200/70 rounded-2xl gap-1">
-        <button type="button" onclick="switchMainTab('jadwal')" id="btn-tab-jadwal" class="flex-1 py-2 text-xs font-bold rounded-xl bg-white text-primary-600 shadow-sm transition-all">
+    <div class="flex p-1 bg-slate-200/70 rounded-2xl gap-1 max-w-full min-w-0">
+        <button type="button" onclick="switchMainTab('jadwal')" id="btn-tab-jadwal" class="flex-1 py-2 text-xs font-bold rounded-xl bg-white text-primary-600 shadow-sm transition-all truncate">
             📅 Jadwal
         </button>
-        <button type="button" onclick="switchMainTab('history')" id="btn-tab-history" class="flex-1 py-2 text-xs font-semibold rounded-xl text-slate-600 hover:text-slate-900 transition-all">
+        <button type="button" onclick="switchMainTab('history')" id="btn-tab-history" class="flex-1 py-2 text-xs font-semibold rounded-xl text-slate-600 hover:text-slate-900 transition-all truncate">
             📋 Riwayat (<?= count($recentJournals) ?>)
         </button>
-        <a href="<?= url('mobile/rekap-jurnal') ?>" class="flex-1 py-2 text-xs font-bold rounded-xl text-purple-700 bg-purple-50/80 hover:bg-purple-100 flex items-center justify-center gap-1 transition-all">
-            <span>📊 Rekap PIC</span>
+        <a href="<?= url('mobile/rekap-jurnal') ?>" class="flex-1 py-2 text-xs font-bold rounded-xl text-purple-700 bg-purple-50/80 hover:bg-purple-100 flex items-center justify-center gap-1 transition-all truncate">
+            <span>📊 Rekap</span>
         </a>
     </div>
 
     <!-- ======================================================== -->
     <!-- SECTION 1: JADWAL & INPUT JURNAL                         -->
     <!-- ======================================================== -->
-    <div id="section-jadwal" class="space-y-3.5">
+    <div id="section-jadwal" class="space-y-3.5 max-w-full overflow-x-hidden min-w-0">
         
         <!-- Day Selector Pill Horizontal Scroll -->
-        <div class="overflow-x-auto pb-1 scrollbar-none flex items-center gap-1.5 text-xs">
+        <div class="max-w-full overflow-x-auto pb-1 scrollbar-none flex items-center gap-1.5 text-xs" style="touch-action: pan-x; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch;">
             <?php 
                 $dayList = ['Hari Ini' => $todayName, 'Senin' => 'Senin', 'Selasa' => 'Selasa', 'Rabu' => 'Rabu', 'Kamis' => 'Kamis', 'Jumat' => 'Jumat', 'Sabtu' => 'Sabtu'];
             ?>
@@ -62,25 +62,25 @@
         </div>
 
         <!-- Banner Info Tanggal -->
-        <div class="flex items-center justify-between px-3.5 py-2.5 bg-gradient-to-r from-primary-50 to-sky-50 rounded-2xl border border-primary-100 text-xs">
-            <span class="font-bold text-primary-900 flex items-center gap-1.5">
-                <i data-lucide="calendar" class="w-4 h-4 text-primary-600"></i>
+        <div class="flex items-center justify-between px-3.5 py-2.5 bg-gradient-to-r from-primary-50 to-sky-50 rounded-2xl border border-primary-100 text-xs max-w-full overflow-hidden">
+            <span class="font-bold text-primary-900 flex items-center gap-1.5 truncate">
+                <i data-lucide="calendar" class="w-4 h-4 text-primary-600 shrink-0"></i>
                 <span id="current-selected-day-label"><?= e($todayName) ?></span>, <?= e($todayDate) ?>
             </span>
-            <span class="text-[10px] font-bold text-primary-700 bg-white px-2 py-0.5 rounded-full border border-primary-200 shadow-xs" id="schedule-counter-badge">
+            <span class="text-[10px] font-bold text-primary-700 bg-white px-2 py-0.5 rounded-full border border-primary-200 shadow-xs shrink-0" id="schedule-counter-badge">
                 <?= count($todaySchedule) ?> Jam KBM
             </span>
         </div>
 
         <!-- Schedule Cards Container -->
-        <div id="schedule-list-container" class="space-y-3">
+        <div id="schedule-list-container" class="space-y-3 max-w-full overflow-x-hidden min-w-0">
             <?php if (!empty($allSchedules)): ?>
                 <?php foreach ($allSchedules as $sch): ?>
                 <?php 
                     $isToday = ($sch['hari'] === $todayName);
                     $displayClass = $isToday ? 'block' : 'hidden';
                 ?>
-                <div class="schedule-item-card bg-white rounded-3xl p-4 shadow-sm border <?= $sch['has_jurnal'] ? 'border-emerald-200 bg-emerald-50/20' : 'border-slate-100' ?> space-y-3 <?= $displayClass ?>"
+                <div class="schedule-item-card bg-white rounded-3xl p-3.5 sm:p-4 shadow-sm border <?= $sch['has_jurnal'] ? 'border-emerald-200 bg-emerald-50/20' : 'border-slate-100' ?> space-y-3 max-w-full overflow-hidden min-w-0 <?= $displayClass ?>"
                      data-day="<?= e($sch['hari']) ?>"
                      data-id="<?= e($sch['id']) ?>"
                      data-kelas="<?= e($sch['class']) ?>"
@@ -219,10 +219,10 @@
     <!-- ======================================================== -->
     <!-- SECTION 2: RIWAYAT JURNAL MENGAJAR                       -->
     <!-- ======================================================== -->
-    <div id="section-history" class="hidden space-y-3">
+    <div id="section-history" class="hidden space-y-3 max-w-full overflow-x-hidden min-w-0">
         <?php if (!empty($recentJournals)): ?>
             <?php foreach ($recentJournals as $j): ?>
-            <div class="bg-white rounded-3xl p-4 shadow-sm border border-slate-100 space-y-2.5">
+            <div class="bg-white rounded-3xl p-3.5 sm:p-4 shadow-sm border border-slate-100 space-y-2.5 max-w-full overflow-hidden min-w-0">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-2">
                         <span class="px-2.5 py-1 rounded-xl text-[10px] font-black bg-primary-100 text-primary-800">
@@ -257,7 +257,7 @@
             </div>
             <?php endforeach; ?>
         <?php else: ?>
-            <div class="bg-white rounded-3xl p-8 text-center border border-slate-100 space-y-2">
+            <div class="bg-white rounded-3xl p-8 text-center border border-slate-100 space-y-2 max-w-full">
                 <i data-lucide="book-open" class="w-10 h-10 text-slate-300 mx-auto"></i>
                 <h4 class="font-bold text-slate-800 text-sm">Belum Ada Riwayat Jurnal</h4>
                 <p class="text-xs text-slate-400">Jurnal yang Anda isi akan otomatis tersimpan dan direkap di sini.</p>
@@ -270,7 +270,7 @@
 <!-- ======================================================== -->
 <!-- MODAL BOTTOM SHEET: FORM ISI / EDIT JURNAL              -->
 <!-- ======================================================== -->
-<div id="journal-input-modal" class="hidden fixed inset-0 z-[9999] overflow-hidden select-none">
+<div id="journal-input-modal" class="hidden fixed inset-0 z-[9999] overflow-hidden select-none" style="touch-action: none; overscroll-behavior: none;">
     <!-- Backdrop Scrim (Interaktif hanya saat modal aktif) -->
     <div id="journal-input-scrim" onclick="closeJournalModal()" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity duration-300 opacity-0 pointer-events-none"></div>
 
@@ -280,6 +280,7 @@
         <!-- Sheet Container & Native Form: Encapsulates header, scrolling body, and sticky footer -->
         <form id="form-isi-jurnal" 
               onsubmit="handleJournalSave(event)" 
+              style="touch-action: pan-y; overscroll-behavior: contain;"
               class="bg-white rounded-t-[32px] shadow-2xl pointer-events-auto border-t border-slate-200/80 flex flex-col h-[85vh] max-h-[700px] w-full transform translate-y-full transition-transform duration-300 ease-out overflow-hidden">
             
             <?= CSRF::field() ?>
