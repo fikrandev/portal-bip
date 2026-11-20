@@ -21,6 +21,30 @@ class CutiModel
     }
 
     /**
+     * Pastikan kolom approver_jabatan_id selalu tersedia di tabel hierarki & step (Unconditional Auto-Migration)
+     */
+    public static function ensureApproverJabatanColumns(): void
+    {
+        static $checked = false;
+        if ($checked) {
+            return;
+        }
+        $checked = true;
+
+        try {
+            $pdo = self::db()->getConnection();
+            $colsHier = $pdo->query("SHOW COLUMNS FROM `cuti_approval_hierarchy`")->fetchAll(PDO::FETCH_COLUMN);
+            if (!in_array('approver_jabatan_id', $colsHier, true)) {
+                $pdo->exec("ALTER TABLE `cuti_approval_hierarchy` ADD COLUMN `approver_jabatan_id` INT NULL AFTER `approver_role`");
+            }
+            $colsStep = $pdo->query("SHOW COLUMNS FROM `cuti_pengajuan_step`")->fetchAll(PDO::FETCH_COLUMN);
+            if (!in_array('approver_jabatan_id', $colsStep, true)) {
+                $pdo->exec("ALTER TABLE `cuti_pengajuan_step` ADD COLUMN `approver_jabatan_id` INT NULL AFTER `approver_role`");
+            }
+        } catch (Throwable $e) {}
+    }
+
+    /**
      * Pastikan tabel-tabel cuti sudah tersedia dan tersinkronisasi dengan data pegawai
      */
     public static function init(): void
@@ -30,7 +54,10 @@ class CutiModel
         }
         self::$tablesInitialized = true;
 
-        $stampFile = BASE_PATH . '/storage/logs/.schema_cuti_v6_' . date('Y_m_d') . '.stamp';
+        // Pastikan kolom baru langsung tersedia tanpa terhalang stamp lama
+        self::ensureApproverJabatanColumns();
+
+        $stampFile = BASE_PATH . '/storage/logs/.schema_cuti_v7_' . date('Y_m_d') . '.stamp';
         if (file_exists($stampFile)) {
             return;
         }
@@ -48,16 +75,6 @@ class CutiModel
             }
             if (!in_array('file_lampiran_2', $cols, true)) {
                 $pdo->exec("ALTER TABLE `cuti_pengajuan` ADD COLUMN `file_lampiran_2` VARCHAR(255) NULL AFTER `file_lampiran`");
-            }
-
-            // Kolom approver_jabatan_id untuk relasi langsung ke master_jabatan pengaturan
-            $colsHier = $pdo->query("SHOW COLUMNS FROM `cuti_approval_hierarchy`")->fetchAll(PDO::FETCH_COLUMN);
-            if (!in_array('approver_jabatan_id', $colsHier, true)) {
-                $pdo->exec("ALTER TABLE `cuti_approval_hierarchy` ADD COLUMN `approver_jabatan_id` INT NULL AFTER `approver_role`");
-            }
-            $colsStep = $pdo->query("SHOW COLUMNS FROM `cuti_pengajuan_step`")->fetchAll(PDO::FETCH_COLUMN);
-            if (!in_array('approver_jabatan_id', $colsStep, true)) {
-                $pdo->exec("ALTER TABLE `cuti_pengajuan_step` ADD COLUMN `approver_jabatan_id` INT NULL AFTER `approver_role`");
             }
         } catch (Throwable $e) {}
 
@@ -491,13 +508,23 @@ class CutiModel
     public static function getPengajuanSteps(int $pengajuanId): array
     {
         self::init();
-        return self::db()->findAll("
-            SELECT s.*, mj.nama as master_jabatan_nama, mj.kategori as master_jabatan_kategori
-            FROM `cuti_pengajuan_step` s
-            LEFT JOIN `master_jabatan` mj ON mj.id = s.approver_jabatan_id
-            WHERE s.`pengajuan_id` = ?
-            ORDER BY s.`step_order` ASC, s.`id` ASC
-        ", [$pengajuanId]);
+        self::ensureApproverJabatanColumns();
+        try {
+            return self::db()->findAll("
+                SELECT s.*, mj.nama as master_jabatan_nama, mj.kategori as master_jabatan_kategori
+                FROM `cuti_pengajuan_step` s
+                LEFT JOIN `master_jabatan` mj ON mj.id = s.approver_jabatan_id
+                WHERE s.`pengajuan_id` = ?
+                ORDER BY s.`step_order` ASC, s.`id` ASC
+            ", [$pengajuanId]);
+        } catch (Throwable $e) {
+            return self::db()->findAll("
+                SELECT s.*, NULL as master_jabatan_nama, NULL as master_jabatan_kategori
+                FROM `cuti_pengajuan_step` s
+                WHERE s.`pengajuan_id` = ?
+                ORDER BY s.`step_order` ASC, s.`id` ASC
+            ", [$pengajuanId]);
+        }
     }
 
     /**
@@ -506,13 +533,23 @@ class CutiModel
     public static function getCurrentPendingStep(int $pengajuanId): ?array
     {
         self::init();
-        return self::db()->find("
-            SELECT s.*, mj.nama as master_jabatan_nama, mj.kategori as master_jabatan_kategori
-            FROM `cuti_pengajuan_step` s
-            LEFT JOIN `master_jabatan` mj ON mj.id = s.approver_jabatan_id
-            WHERE s.`pengajuan_id` = ? AND s.`status` = 'Pending'
-            ORDER BY s.`step_order` ASC LIMIT 1
-        ", [$pengajuanId]) ?: null;
+        self::ensureApproverJabatanColumns();
+        try {
+            return self::db()->find("
+                SELECT s.*, mj.nama as master_jabatan_nama, mj.kategori as master_jabatan_kategori
+                FROM `cuti_pengajuan_step` s
+                LEFT JOIN `master_jabatan` mj ON mj.id = s.approver_jabatan_id
+                WHERE s.`pengajuan_id` = ? AND s.`status` = 'Pending'
+                ORDER BY s.`step_order` ASC LIMIT 1
+            ", [$pengajuanId]) ?: null;
+        } catch (Throwable $e) {
+            return self::db()->find("
+                SELECT s.*, NULL as master_jabatan_nama, NULL as master_jabatan_kategori
+                FROM `cuti_pengajuan_step` s
+                WHERE s.`pengajuan_id` = ? AND s.`status` = 'Pending'
+                ORDER BY s.`step_order` ASC LIMIT 1
+            ", [$pengajuanId]) ?: null;
+        }
     }
 
     /**
@@ -521,6 +558,8 @@ class CutiModel
     public static function getAllHierarki(array $filters = []): array
     {
         self::init();
+        self::ensureApproverJabatanColumns();
+
         $where = ["1=1"];
         $params = [];
 
@@ -538,13 +577,37 @@ class CutiModel
         }
 
         $whereSql = implode(' AND ', $where);
-        return self::db()->findAll("
-            SELECT h.*, mj.nama as master_jabatan_nama, mj.kategori as master_jabatan_kategori
-            FROM `cuti_approval_hierarchy` h
-            LEFT JOIN `master_jabatan` mj ON mj.id = h.approver_jabatan_id
-            WHERE {$whereSql}
-            ORDER BY h.unit ASC, h.jenis_pegawai ASC, h.step_order ASC, h.id ASC
-        ", $params);
+
+        // Coba query lengkap dengan JOIN master_jabatan
+        try {
+            return self::db()->findAll("
+                SELECT h.*, mj.nama as master_jabatan_nama, mj.kategori as master_jabatan_kategori
+                FROM `cuti_approval_hierarchy` h
+                LEFT JOIN `master_jabatan` mj ON mj.id = h.approver_jabatan_id
+                WHERE {$whereSql}
+                ORDER BY h.unit ASC, h.jenis_pegawai ASC, h.step_order ASC, h.id ASC
+            ", $params);
+        } catch (Throwable $e) {
+            // Jika kolom approver_jabatan_id belum sempat terbuat, buat sekarang dan query ulang
+            try {
+                self::db()->getConnection()->exec("ALTER TABLE `cuti_approval_hierarchy` ADD COLUMN `approver_jabatan_id` INT NULL AFTER `approver_role`");
+                return self::db()->findAll("
+                    SELECT h.*, mj.nama as master_jabatan_nama, mj.kategori as master_jabatan_kategori
+                    FROM `cuti_approval_hierarchy` h
+                    LEFT JOIN `master_jabatan` mj ON mj.id = h.approver_jabatan_id
+                    WHERE {$whereSql}
+                    ORDER BY h.unit ASC, h.jenis_pegawai ASC, h.step_order ASC, h.id ASC
+                ", $params);
+            } catch (Throwable $e2) {
+                // Fallback query tanpa relasi jika gagal alter
+                return self::db()->findAll("
+                    SELECT h.*, NULL as master_jabatan_nama, NULL as master_jabatan_kategori
+                    FROM `cuti_approval_hierarchy` h
+                    WHERE {$whereSql}
+                    ORDER BY h.unit ASC, h.jenis_pegawai ASC, h.step_order ASC, h.id ASC
+                ", $params);
+            }
+        }
     }
 
     /**
