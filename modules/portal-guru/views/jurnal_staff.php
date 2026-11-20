@@ -36,14 +36,76 @@
 
 <div class="p-3.5 sm:p-4 space-y-3.5 sm:space-y-4 max-w-full overflow-x-hidden min-w-0">
 
-    <!-- 1. Date Selector & Daily Progress Card -->
-    <div class="bg-primary-700 border border-primary-600 rounded-3xl p-3.5 sm:p-4 text-white shadow-lg shadow-primary-700/20 space-y-3 max-w-full overflow-hidden min-w-0">
+    <!-- 0. Progres Ketuntasan Jurnal Berdasarkan Periode (Mirip Rekap Absen) -->
+    <div class="relative overflow-hidden bg-gradient-to-br from-primary-700 via-primary-800 to-indigo-900 rounded-3xl p-4 text-white shadow-xl shadow-primary-900/20 border border-primary-500/30">
+        <!-- Background Glow Accent -->
+        <div class="absolute -right-8 -top-8 w-32 h-32 bg-primary-400/20 rounded-full blur-2xl pointer-events-none"></div>
+        <div class="absolute -left-8 -bottom-8 w-32 h-32 bg-indigo-400/20 rounded-full blur-2xl pointer-events-none"></div>
+
+        <div class="relative z-10 space-y-3">
+            <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2">
+                    <span class="w-7 h-7 rounded-xl bg-white/15 flex items-center justify-center text-xs">📊</span>
+                    <div>
+                        <span class="text-[10px] uppercase font-bold tracking-wider text-primary-200">Progres Jurnal Periode</span>
+                        <p class="text-[11px] font-bold text-white/90">
+                            <?= date('d M', strtotime($periodeAwal)) ?> - <?= date('d M Y', strtotime($periodeAkhir)) ?>
+                        </p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black <?= $persenJurnalPeriode >= 100 ? 'bg-emerald-400 text-emerald-950 shadow-xs' : 'bg-white/20 text-white' ?>">
+                        <?= $persenJurnalPeriode >= 100 ? '✅ 100% Tuntas' : $persenJurnalPeriode . '%' ?>
+                    </span>
+                </div>
+            </div>
+
+            <!-- Big Percentage & Progress Bar -->
+            <div class="space-y-1.5 pt-1">
+                <div class="flex items-end justify-between">
+                    <div>
+                        <span class="text-2xl sm:text-3xl font-black text-white tracking-tight leading-none">
+                            <?= $persenJurnalPeriode ?>%
+                        </span>
+                        <span class="text-[11px] text-primary-200 font-semibold ml-1">Keterisian Periode</span>
+                    </div>
+                    <span class="text-[11px] font-bold text-primary-100">
+                        <?= $sesiTerisiPeriode ?> / <?= $targetSesiPeriode ?> Sesi
+                    </span>
+                </div>
+                <div class="w-full h-2.5 rounded-full bg-white/20 overflow-hidden p-0.5 backdrop-blur-xs">
+                    <div class="h-full rounded-full <?= $persenJurnalPeriode >= 100 ? 'bg-gradient-to-r from-emerald-300 to-emerald-400' : 'bg-gradient-to-r from-sky-300 to-white' ?> transition-all duration-700 shadow-sm" style="width: <?= min(100, $persenJurnalPeriode) ?>%"></div>
+                </div>
+            </div>
+
+            <!-- 2 Mini Stats Badges -->
+            <div class="grid grid-cols-2 gap-2 pt-1 border-t border-white/10 text-[10.5px]">
+                <div class="bg-white/10 rounded-xl p-2 flex items-center gap-2">
+                    <span class="text-base">📅</span>
+                    <div class="min-w-0">
+                        <p class="text-[9px] text-primary-200 font-semibold leading-tight">Hari Kerja Aktif</p>
+                        <p class="font-extrabold text-white truncate"><?= $hariTerisiPeriode ?> / <?= $totalHariKerjaPeriode ?> Hari</p>
+                    </div>
+                </div>
+                <div class="bg-white/10 rounded-xl p-2 flex items-center gap-2">
+                    <span class="text-base">🎯</span>
+                    <div class="min-w-0">
+                        <p class="text-[9px] text-primary-200 font-semibold leading-tight">Status Periode</p>
+                        <p class="font-extrabold text-white truncate"><?= $persenJurnalPeriode >= 100 ? 'Sempurna' : ($persenJurnalPeriode >= 80 ? 'Optimal' : 'Perlu Diisi') ?></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 1. Date Selector & Daily Status Card -->
+    <div class="bg-white border border-slate-200/80 rounded-3xl p-3.5 sm:p-4 text-slate-800 shadow-sm space-y-3 max-w-full overflow-hidden min-w-0">
         <!-- Tanggal Bar -->
         <div class="flex flex-wrap items-center justify-between gap-2 min-w-0">
             <div class="min-w-0">
-                <p class="text-[10px] uppercase font-bold tracking-wider text-primary-200">Tanggal Jurnal:</p>
+                <p class="text-[10px] uppercase font-bold tracking-wider text-slate-400">Tanggal Jurnal:</p>
                 <div class="flex items-center gap-1.5 mt-0.5 flex-wrap min-w-0">
-                    <span class="text-xs sm:text-sm font-black text-white truncate max-w-[160px] sm:max-w-none">
+                    <span class="text-xs sm:text-sm font-black text-slate-900 truncate max-w-[160px] sm:max-w-none">
                         <?php
                             $ts = strtotime($selectedDate);
                             $dayNames = ['Sunday' => 'Minggu', 'Monday' => 'Senin', 'Tuesday' => 'Selasa', 'Wednesday' => 'Rabu', 'Thursday' => 'Kamis', 'Friday' => 'Jumat', 'Saturday' => 'Sabtu'];
@@ -51,8 +113,12 @@
                             echo e($namaHari . ', ' . date('d M Y', $ts));
                         ?>
                     </span>
-                    <?php if ($selectedDate === date('Y-m-d')): ?>
-                        <span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-white/20 text-white border border-white/30 shrink-0">Hari Ini</span>
+                    <?php if ($isToday): ?>
+                        <span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 shrink-0">🟢 Hari Ini (Bisa Diisi)</span>
+                    <?php elseif ($isPastDate): ?>
+                        <span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-800 border border-amber-200 shrink-0">🔒 Tanggal Lampau (Terkunci)</span>
+                    <?php else: ?>
+                        <span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-slate-100 text-slate-600 border border-slate-200 shrink-0">⏳ Mendatang (Terkunci)</span>
                     <?php endif; ?>
                 </div>
             </div>
@@ -63,34 +129,43 @@
                     $prevDate = date('Y-m-d', strtotime('-1 day', $ts));
                     $nextDate = date('Y-m-d', strtotime('+1 day', $ts));
                 ?>
-                <a href="<?= url('mobile/jurnal') ?>?tanggal=<?= $prevDate ?>" class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center press-bounce text-xs" title="Hari Sebelumnya">
+                <a href="<?= url('mobile/jurnal') ?>?tanggal=<?= $prevDate ?>" class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center press-bounce text-xs" title="Hari Sebelumnya">
                     <i data-lucide="chevron-left" class="w-4 h-4"></i>
                 </a>
-                <?php if ($selectedDate !== date('Y-m-d')): ?>
-                    <a href="<?= url('mobile/jurnal') ?>" class="px-2 py-1 rounded-xl bg-primary-600 text-white text-[10px] font-bold press-bounce">
+                <?php if (!$isToday): ?>
+                    <a href="<?= url('mobile/jurnal') ?>" class="px-2.5 py-1 rounded-xl bg-primary-600 text-white text-[10px] font-bold press-bounce shadow-xs">
                         Hari Ini
                     </a>
                 <?php endif; ?>
-                <a href="<?= url('mobile/jurnal') ?>?tanggal=<?= $nextDate ?>" class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center press-bounce text-xs" title="Hari Berikutnya">
+                <a href="<?= url('mobile/jurnal') ?>?tanggal=<?= $nextDate ?>" class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center press-bounce text-xs" title="Hari Berikutnya">
                     <i data-lucide="chevron-right" class="w-4 h-4"></i>
                 </a>
-                <label class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center press-bounce text-xs cursor-pointer relative" title="Pilih Tanggal">
+                <label class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center press-bounce text-xs cursor-pointer relative" title="Pilih Tanggal">
                     <i data-lucide="calendar-days" class="w-4 h-4"></i>
                     <input type="date" value="<?= e($selectedDate) ?>" onchange="location.href='<?= url('mobile/jurnal') ?>?tanggal=' + this.value" class="absolute inset-0 opacity-0 cursor-pointer">
                 </label>
             </div>
         </div>
 
-        <!-- Progress Bar Pengisian -->
-        <div class="bg-white/10 rounded-2xl p-2.5 backdrop-blur-xs border border-white/10 space-y-1.5">
+        <?php if (!$isToday): ?>
+            <div class="p-2.5 rounded-2xl bg-amber-50/90 border border-amber-200 text-amber-900 text-xs flex items-start gap-2">
+                <span class="text-sm shrink-0">🔒</span>
+                <p class="text-[11px] leading-relaxed">
+                    <strong>Perhatian:</strong> Pengisian dan pengeditan jurnal kerja hanya diizinkan pada <strong>Hari Ini</strong>. Jurnal tanggal lampau tidak dapat diubah (hanya dapat dilihat rinciannya).
+                </p>
+            </div>
+        <?php endif; ?>
+
+        <!-- Progress Bar Pengisian Harian -->
+        <div class="bg-slate-50 rounded-2xl p-2.5 border border-slate-100 space-y-1.5">
             <div class="flex items-center justify-between text-xs gap-1.5 flex-wrap">
-                <span class="font-medium text-slate-200 text-[10.5px]">Progres Pengisian Sesi:</span>
-                <span class="font-black text-[11px] <?= $totalTerisi === $totalSesi && $totalSesi > 0 ? 'text-white' : 'text-primary-100' ?>">
+                <span class="font-medium text-slate-500 text-[10.5px]">Sesi Pada Tanggal Ini:</span>
+                <span class="font-black text-[11px] <?= $totalTerisi === $totalSesi && $totalSesi > 0 ? 'text-emerald-700' : 'text-slate-800' ?>">
                     <?= $totalTerisi ?> / <?= $totalSesi ?> Sesi Terisi (<?= $persenTerisi ?>%)
                 </span>
             </div>
-            <div class="w-full h-2 rounded-full bg-white/25 overflow-hidden">
-                <div class="h-full rounded-full bg-white transition-all duration-500" style="width: <?= min(100, $persenTerisi) ?>%"></div>
+            <div class="w-full h-2 rounded-full bg-slate-200 overflow-hidden">
+                <div class="h-full rounded-full <?= $persenTerisi >= 100 ? 'bg-emerald-500' : 'bg-primary-600' ?> transition-all duration-500" style="width: <?= min(100, $persenTerisi) ?>%"></div>
             </div>
         </div>
     </div>
@@ -117,16 +192,22 @@
                 <span class="text-[11px] font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1">
                     <span>Pilih Jam Kerja:</span>
                 </span>
-                <p class="text-[10px] text-slate-400 font-medium">Bisa klik beberapa jam sekaligus</p>
+                <p class="text-[10px] text-slate-400 font-medium"><?= $isToday ? 'Bisa klik beberapa jam sekaligus' : 'Mode Terkunci (Hanya Lihat Rincian)' ?></p>
             </div>
             
             <div class="flex items-center gap-1 text-[10px]">
-                <button type="button" onclick="selectAllJam()" class="px-2.5 py-1 rounded-xl bg-primary-50 text-primary-700 font-bold hover:bg-primary-100 transition-all press-bounce border border-primary-100">
-                    Pilih Semua
-                </button>
-                <button type="button" onclick="clearSelectedJam()" class="px-2.5 py-1 rounded-xl bg-slate-100 text-slate-600 font-bold hover:bg-slate-200 transition-all press-bounce border border-slate-200">
-                    Reset
-                </button>
+                <?php if ($isToday): ?>
+                    <button type="button" onclick="selectAllJam()" class="px-2.5 py-1 rounded-xl bg-primary-50 text-primary-700 font-bold hover:bg-primary-100 transition-all press-bounce border border-primary-100">
+                        Pilih Semua
+                    </button>
+                    <button type="button" onclick="clearSelectedJam()" class="px-2.5 py-1 rounded-xl bg-slate-100 text-slate-600 font-bold hover:bg-slate-200 transition-all press-bounce border border-slate-200">
+                        Reset
+                    </button>
+                <?php else: ?>
+                    <span class="px-2.5 py-1 rounded-xl bg-amber-50 text-amber-800 border border-amber-200 font-bold text-[9.5px] flex items-center gap-1">
+                        <span>🔒</span> Terkunci
+                    </span>
+                <?php endif; ?>
             </div>
         </div>
 
@@ -160,8 +241,8 @@
                     ?>
                     
                     <div id="card-jam-<?= $jamId ?>"
-                         onclick="toggleSelectJam(<?= $jamId ?>)"
-                         class="staff-jam-card group relative rounded-2xl p-2 sm:p-2.5 border transition-all duration-200 cursor-pointer flex flex-col justify-between select-none press-bounce min-w-0 overflow-hidden <?= $isFilled ? 'border-emerald-200 bg-emerald-50/25 hover:border-emerald-300' : 'border-slate-200/90 bg-white hover:border-primary-300 shadow-2xs' ?>"
+                         onclick="<?= $isToday ? 'toggleSelectJam(' . $jamId . ')' : ($isFilled ? 'openStaffReadOnlyFromCard(' . $jamId . ')' : 'showStaffLockedNotice()') ?>"
+                         class="staff-jam-card group relative rounded-2xl p-2 sm:p-2.5 border transition-all duration-200 cursor-pointer flex flex-col justify-between select-none press-bounce min-w-0 overflow-hidden <?= $isFilled ? 'border-emerald-200 bg-emerald-50/25 hover:border-emerald-300' : 'border-slate-200/90 bg-white hover:border-primary-300 shadow-2xs' ?> <?= !$isToday ? 'opacity-90' : '' ?>"
                          data-jam-id="<?= $jamId ?>"
                          data-jam-rentang="<?= e($rentangStr) ?>"
                          data-jam-display="<?= e($rentangDisplay) ?> WITA"
@@ -288,26 +369,51 @@
 
                         <div class="pt-1.5 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-400">
                             <span class="font-mono"><?= e($rj['kode_jurnal']) ?></span>
-                            <button type="button" 
-                                    onclick="openModalJurnalStaff(<?= htmlspecialchars(json_encode([
-                                        'jam_id' => (int)($rj['jam_id'] ?? 0),
-                                        'jam_rentang' => (string)$rj['jam_rentang'],
-                                        'jam_display' => (string)$rj['jam_rentang'] . ' WITA',
-                                        'nama_sesi' => 'Sesi ' . $rj['jam_rentang'],
-                                        'tipe' => 'aktifitas',
-                                        'is_filled' => true,
-                                        'jurnal_id' => (int)$rj['id'],
-                                        'tugas_id' => (int)($rj['tugas_id'] ?? 0),
-                                        'aktivitas' => (string)$rj['aktivitas'],
-                                        'uraian_hasil' => (string)$rj['uraian_hasil'],
-                                        'kendala' => (string)($rj['kendala'] ?? ''),
-                                        'status' => (string)$rj['status'],
-                                        'foto_bukti' => (string)($rj['foto_bukti'] ?? ''),
-                                        'tanggal' => (string)$rj['tanggal']
-                                    ]), ENT_QUOTES, 'UTF-8') ?>)" 
-                                    class="text-primary-600 font-bold hover:underline flex items-center gap-0.5">
-                                <span>✏️</span> Edit Jurnal Ini
-                            </button>
+                            <?php if ($rj['tanggal'] === $todayDate): ?>
+                                <button type="button" 
+                                        onclick="openModalJurnalStaff(<?= htmlspecialchars(json_encode([
+                                            'jam_id' => (int)($rj['jam_id'] ?? 0),
+                                            'jam_rentang' => (string)$rj['jam_rentang'],
+                                            'jam_display' => (string)$rj['jam_rentang'] . ' WITA',
+                                            'nama_sesi' => 'Sesi ' . $rj['jam_rentang'],
+                                            'tipe' => 'aktifitas',
+                                            'is_filled' => true,
+                                            'jurnal_id' => (int)$rj['id'],
+                                            'tugas_id' => (int)($rj['tugas_id'] ?? 0),
+                                            'aktivitas' => (string)$rj['aktivitas'],
+                                            'uraian_hasil' => (string)$rj['uraian_hasil'],
+                                            'kendala' => (string)($rj['kendala'] ?? ''),
+                                            'status' => (string)$rj['status'],
+                                            'foto_bukti' => (string)($rj['foto_bukti'] ?? ''),
+                                            'tanggal' => (string)$rj['tanggal'],
+                                            'is_readonly' => false
+                                        ]), ENT_QUOTES, 'UTF-8') ?>)" 
+                                        class="text-primary-600 font-bold hover:underline flex items-center gap-0.5">
+                                    <span>✏️</span> Edit Jurnal Ini
+                                </button>
+                            <?php else: ?>
+                                <button type="button" 
+                                        onclick="openModalJurnalStaff(<?= htmlspecialchars(json_encode([
+                                            'jam_id' => (int)($rj['jam_id'] ?? 0),
+                                            'jam_rentang' => (string)$rj['jam_rentang'],
+                                            'jam_display' => (string)$rj['jam_rentang'] . ' WITA',
+                                            'nama_sesi' => 'Sesi ' . $rj['jam_rentang'],
+                                            'tipe' => 'aktifitas',
+                                            'is_filled' => true,
+                                            'jurnal_id' => (int)$rj['id'],
+                                            'tugas_id' => (int)($rj['tugas_id'] ?? 0),
+                                            'aktivitas' => (string)$rj['aktivitas'],
+                                            'uraian_hasil' => (string)$rj['uraian_hasil'],
+                                            'kendala' => (string)($rj['kendala'] ?? ''),
+                                            'status' => (string)$rj['status'],
+                                            'foto_bukti' => (string)($rj['foto_bukti'] ?? ''),
+                                            'tanggal' => (string)$rj['tanggal'],
+                                            'is_readonly' => true
+                                        ]), ENT_QUOTES, 'UTF-8') ?>)" 
+                                        class="text-slate-500 hover:text-slate-800 font-bold hover:underline flex items-center gap-0.5">
+                                    <span>👁️</span> Lihat Rincian (Terkunci)
+                                </button>
+                            <?php endif; ?>
                         </div>
                     </div>
                 <?php endforeach; ?>
@@ -428,6 +534,17 @@
                     </div>
                 </div>
 
+                <!-- Readonly Banner jika mode lihat rincian -->
+                <div id="modal-readonly-banner" class="hidden p-3 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs font-semibold flex items-start gap-2.5">
+                    <span class="text-base shrink-0">🔒</span>
+                    <div class="space-y-0.5">
+                        <p class="font-bold">Mode Baca Saja (Terkunci)</p>
+                        <p class="text-[11px] text-amber-800 leading-snug" id="modal-readonly-text">
+                            Jurnal ini berada pada tanggal lampau dan telah dikunci. Pengisian dan perubahan hanya diizinkan pada hari ini.
+                        </p>
+                    </div>
+                </div>
+
                 <!-- 1. Dropdown Pilihan Tugas / Job Desk Sesuai Jabatan Penugasan -->
                 <div class="space-y-1">
                     <label class="block text-xs font-bold text-slate-800">
@@ -518,7 +635,7 @@
                     <input type="file" name="foto_bukti" id="inp_foto_bukti" accept="image/*" onchange="handleFotoPreview(this, 'gallery')" class="hidden">
                     <input type="file" id="inp_foto_camera_fallback" accept="image/*" capture="environment" onchange="handleFotoPreview(this, 'camera_device')" class="hidden">
 
-                    <div class="grid grid-cols-5 gap-2">
+                    <div class="grid grid-cols-5 gap-2" id="container-upload-buttons">
                         <button type="button" onclick="openStaffLiveCamera()" id="btn-open-live-camera"
                                 class="col-span-3 px-3 py-2.5 rounded-2xl bg-primary-50 hover:bg-primary-100 border border-primary-200/80 text-primary-700 flex items-center justify-center gap-2 transition-all press-bounce">
                             <i data-lucide="camera" class="w-4 h-4 shrink-0"></i>
@@ -553,7 +670,7 @@
 
             <!-- 3. FIXED STICKY FOOTER (shrink-0) -->
             <div class="shrink-0 px-5 py-3.5 bg-white border-t border-slate-100 flex items-center gap-2.5 safe-bottom">
-                <button type="button" onclick="closeModalJurnalStaff()" class="w-1/3 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs press-bounce transition-all">
+                <button type="button" onclick="closeModalJurnalStaff()" id="btn-cancel-modal" class="w-1/3 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs press-bounce transition-all">
                     Batal
                 </button>
                 <button type="submit" id="btn-submit-jurnal-staff" class="w-2/3 py-3 rounded-2xl bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white font-bold text-xs shadow-md shadow-primary-600/25 press-bounce flex items-center justify-center gap-2 transition-all">
@@ -726,8 +843,44 @@
         }
     }
 
+    // Tampilkan notifikasi jika mencoba memilih jam di tanggal selain hari ini
+    function showStaffLockedNotice() {
+        if (typeof AndroidUI !== 'undefined' && typeof AndroidUI.toast === 'function') {
+            AndroidUI.toast('Jurnal kerja hanya dapat diisi pada hari ini (Hari berjalan). Tanggal kemarin/lampau telah dikunci.', 'warning');
+        } else {
+            alert('Jurnal kerja hanya dapat diisi pada hari ini (Hari berjalan). Tanggal kemarin/lampau telah dikunci.');
+        }
+    }
+
+    // Buka rincian jurnal mode baca saja dari kartu
+    function openStaffReadOnlyFromCard(jamId) {
+        const card = document.getElementById('card-jam-' + jamId);
+        if (!card) return;
+        const d = card.dataset;
+        openModalJurnalStaff({
+            jam_id: parseInt(d.jamId) || jamId,
+            jam_rentang: d.jamRentang,
+            jam_display: d.jamDisplay,
+            nama_sesi: d.namaSesi,
+            is_filled: true,
+            jurnal_id: parseInt(d.jurnalId) || 0,
+            tugas_id: parseInt(d.tugasId) || 0,
+            aktivitas: d.aktivitas || '',
+            uraian_hasil: d.uraian || '',
+            kendala: d.kendala || '',
+            status: d.status || 'selesai',
+            foto_bukti: d.foto || '',
+            tanggal: '<?= e($selectedDate) ?>',
+            is_readonly: true
+        });
+    }
+
     // Pilih seluruh jam
     function selectAllJam() {
+        if ('<?= $isToday ? '1' : '0' ?>' !== '1') {
+            showStaffLockedNotice();
+            return;
+        }
         const cards = document.querySelectorAll('.staff-jam-card');
         cards.forEach(card => {
             const jamId = parseInt(card.dataset.jamId);
@@ -1004,6 +1157,48 @@
         });
         updateStatusPillStyle();
 
+        // Penyesuaian Mode Baca Saja (Read-Only) jika tanggal lampau / terkunci
+        const isReadOnly = Boolean(data.is_readonly);
+        const readonlyBanner = document.getElementById('modal-readonly-banner');
+        const containerUpload = document.getElementById('container-upload-buttons');
+        const btnSubmit = document.getElementById('btn-submit-jurnal-staff');
+        const btnCancel = document.getElementById('btn-cancel-modal');
+        const btnClearFoto = document.getElementById('btn-clear-foto');
+        const labelFotoInfo = document.getElementById('label-foto-info');
+
+        if (isReadOnly) {
+            if (readonlyBanner) readonlyBanner.classList.remove('hidden');
+            if (containerUpload) containerUpload.classList.add('hidden');
+            if (btnSubmit) btnSubmit.classList.add('hidden');
+            if (btnClearFoto) btnClearFoto.classList.add('hidden');
+            if (labelFotoInfo) labelFotoInfo.textContent = 'Bukti Tersimpan';
+            if (btnCancel) {
+                btnCancel.className = 'w-full py-3 rounded-2xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs press-bounce transition-all';
+                btnCancel.textContent = 'Tutup Rincian';
+            }
+            selectTugas.disabled = true;
+            inpCustom.disabled = true;
+            inpUraian.disabled = true;
+            inpKendala.disabled = true;
+            statusRadios.forEach(r => r.disabled = true);
+            document.getElementById('modal-title-text').innerHTML = `<span>Rincian Jurnal Staff</span> <span class="text-xs">🔒</span>`;
+        } else {
+            if (readonlyBanner) readonlyBanner.classList.add('hidden');
+            if (containerUpload) containerUpload.classList.remove('hidden');
+            if (btnSubmit) btnSubmit.classList.remove('hidden');
+            if (btnClearFoto) btnClearFoto.classList.remove('hidden');
+            if (labelFotoInfo) labelFotoInfo.textContent = 'Kamera Langsung / Galeri';
+            if (btnCancel) {
+                btnCancel.className = 'w-1/3 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs press-bounce transition-all';
+                btnCancel.textContent = 'Batal';
+            }
+            selectTugas.disabled = false;
+            inpCustom.disabled = false;
+            inpUraian.disabled = false;
+            inpKendala.disabled = false;
+            statusRadios.forEach(r => r.disabled = false);
+        }
+
         // Tampilkan modal bottom sheet dengan transisi halus
         modal.classList.remove('hidden');
         void modal.offsetWidth;
@@ -1080,6 +1275,18 @@
         const modal = document.getElementById('modal-jurnal-staff');
         const scrim = document.getElementById('modal-jurnal-staff-scrim');
         const sheet = document.getElementById('form-jurnal-staff');
+
+        // Reset status disabled form elements
+        const selectTugas = document.getElementById('modal_select_tugas');
+        const inpCustom = document.getElementById('inp_aktivitas_custom');
+        const inpUraian = document.getElementById('inp_uraian_hasil');
+        const inpKendala = document.getElementById('inp_kendala');
+        const statusRadios = document.querySelectorAll('.status-radio');
+        if (selectTugas) selectTugas.disabled = false;
+        if (inpCustom) inpCustom.disabled = false;
+        if (inpUraian) inpUraian.disabled = false;
+        if (inpKendala) inpKendala.disabled = false;
+        if (statusRadios) statusRadios.forEach(r => r.disabled = false);
 
         if (scrim) {
             scrim.classList.remove('opacity-100', 'pointer-events-auto');
@@ -1442,6 +1649,17 @@
     // Submit AJAX Form Jurnal Staff
     async function submitJurnalStaff(e) {
         e.preventDefault();
+
+        // Validasi penguncian tanggal: hanya boleh simpan jurnal hari ini
+        if ('<?= $isToday ? '1' : '0' ?>' !== '1') {
+            if (typeof AndroidUI !== 'undefined') {
+                AndroidUI.toast('Jurnal kerja hanya dapat diisi atau diubah pada hari ini.', 'warning');
+            } else {
+                alert('Jurnal kerja hanya dapat diisi atau diubah pada hari ini.');
+            }
+            return;
+        }
+
         const form = document.getElementById('form-jurnal-staff');
         const btnSubmit = document.getElementById('btn-submit-jurnal-staff');
         const btnText = document.getElementById('btn-submit-text');

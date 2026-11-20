@@ -1449,6 +1449,59 @@ class PortalGuruController
         $totalBelum = max(0, $totalSesi - $totalTerisi);
         $persenTerisi = $totalSesi > 0 ? round(($totalTerisi / $totalSesi) * 100) : 0;
 
+        // ── 1. Hitung Progres Ketuntasan Jurnal Staff Berdasarkan Periode (seperti Rekap Absen) ──
+        require_once MODULES_PATH . '/kelola-absen-pegawai/models/AbsenPegawaiModel.php';
+        $absenGlobal = AbsenPegawaiModel::getPengaturanGlobal();
+        $staffPeriodeCfg = JurnalStaffModel::getPengaturanPeriode();
+
+        $periodeAwal = !empty($staffPeriodeCfg['periode_awal']) ? $staffPeriodeCfg['periode_awal'] : ($absenGlobal['periode_awal'] ?: date('Y-m-01'));
+        $periodeAkhir = !empty($staffPeriodeCfg['periode_akhir']) ? $staffPeriodeCfg['periode_akhir'] : ($absenGlobal['periode_akhir'] ?: date('Y-m-t'));
+
+        $today = date('Y-m-d');
+        $evalEnd = (strtotime($periodeAkhir) > strtotime($today)) ? $today : $periodeAkhir;
+        $evalStart = $periodeAwal;
+        if (strtotime($evalStart) > strtotime($evalEnd)) {
+            $evalStart = $evalEnd;
+        }
+
+        // Hitung total hari kerja (Senin - Sabtu) dari evalStart sampai evalEnd
+        $totalHariKerjaPeriode = 0;
+        $curTs = strtotime($evalStart);
+        $endTs = strtotime($evalEnd);
+        while ($curTs <= $endTs) {
+            $dayOfWeek = (int)date('N', $curTs);
+            if ($dayOfWeek !== 7) { // 1=Senin..6=Sabtu (Minggu libur)
+                $totalHariKerjaPeriode++;
+            }
+            $curTs = strtotime('+1 day', $curTs);
+        }
+        if ($totalHariKerjaPeriode <= 0) {
+            $totalHariKerjaPeriode = 1;
+        }
+
+        $totalSesiPerHari = count($jamList);
+        if ($totalSesiPerHari <= 0) {
+            $totalSesiPerHari = 8;
+        }
+
+        $targetSesiPeriode = $totalHariKerjaPeriode * $totalSesiPerHari;
+
+        $jurnalPeriodeStats = $db->find("
+            SELECT 
+                COUNT(*) as total_sesi_terisi,
+                COUNT(DISTINCT tanggal) as total_hari_terisi
+            FROM jurnal_staff
+            WHERE pegawai_id = ? AND tanggal BETWEEN ? AND ?
+        ", [$pegawaiId, $evalStart, $evalEnd]);
+
+        $sesiTerisiPeriode = (int) ($jurnalPeriodeStats['total_sesi_terisi'] ?? 0);
+        $hariTerisiPeriode = (int) ($jurnalPeriodeStats['total_hari_terisi'] ?? 0);
+
+        // Persentase progres jurnal periode (cap maks 100%)
+        $persenJurnalPeriode = $targetSesiPeriode > 0 
+            ? min(100, round(($sesiTerisiPeriode / $targetSesiPeriode) * 100, 1)) 
+            : 0;
+
         self::render('jurnal_staff', [
             'pageTitle' => 'Jurnal Kerja Staff',
             'activeTab' => 'jurnal',
@@ -1468,7 +1521,17 @@ class PortalGuruController
             'totalTerisi' => $totalTerisi,
             'totalBelum' => $totalBelum,
             'persenTerisi' => $persenTerisi,
-            'todayDate' => date('Y-m-d')
+            'todayDate' => $today,
+            'periodeAwal' => $periodeAwal,
+            'periodeAkhir' => $periodeAkhir,
+            'persenJurnalPeriode' => $persenJurnalPeriode,
+            'sesiTerisiPeriode' => $sesiTerisiPeriode,
+            'targetSesiPeriode' => $targetSesiPeriode,
+            'hariTerisiPeriode' => $hariTerisiPeriode,
+            'totalHariKerjaPeriode' => $totalHariKerjaPeriode,
+            'isToday' => ($selectedDate === $today),
+            'isPastDate' => (strtotime($selectedDate) < strtotime($today)),
+            'isFutureDate' => (strtotime($selectedDate) > strtotime($today))
         ]);
     }
 
@@ -1499,6 +1562,28 @@ class PortalGuruController
         $jamId = !empty($input['jam_id']) ? (int) $input['jam_id'] : null;
         $jamRentang = trim($input['jam_rentang'] ?? '');
         $tanggal = !empty($input['tanggal']) ? trim($input['tanggal']) : date('Y-m-d');
+
+        // Aturan: Jurnal hanya dapat diisi atau diubah pada HARI INI (hari berjalan)
+        $today = date('Y-m-d');
+        if ($tanggal !== $today) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Jurnal kerja hanya dapat diisi atau diperbarui pada hari ini (' . date('d/m/Y') . '). Jurnal tanggal kemarin atau hari lainnya telah dikunci dan tidak dapat diubah.'
+            ]);
+            exit;
+        }
+
+        $db = Database::getInstance();
+        if ($jurnalId) {
+            $existCheck = $db->find("SELECT tanggal FROM jurnal_staff WHERE id = ? AND pegawai_id = ? LIMIT 1", [$jurnalId, $pegawaiId]);
+            if ($existCheck && $existCheck['tanggal'] !== $today) {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Jurnal tanggal lampau (' . date('d/m/Y', strtotime($existCheck['tanggal'])) . ') telah dikunci dan tidak dapat diubah lagi.'
+                ]);
+                exit;
+            }
+        }
         
         $rawTugasId = trim($input['tugas_id'] ?? '');
         $tugasId = ($rawTugasId !== '' && $rawTugasId !== 'custom' && is_numeric($rawTugasId)) ? (int) $rawTugasId : null;
@@ -1672,6 +1757,15 @@ class PortalGuruController
         $existing = JurnalStaffModel::getJurnalById($id);
         if (!$existing || (int) $existing['pegawai_id'] !== $pegawaiId) {
             echo json_encode(['success' => false, 'message' => 'Data jurnal tidak ditemukan atau Anda tidak memiliki akses.']);
+            exit;
+        }
+
+        // Aturan: Hanya jurnal hari ini yang dapat dihapus, tanggal lampau dikunci
+        if ($existing['tanggal'] !== date('Y-m-d')) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Jurnal tanggal lampau (' . date('d/m/Y', strtotime($existing['tanggal'])) . ') telah dikunci dan tidak dapat dihapus.'
+            ]);
             exit;
         }
 
