@@ -3149,25 +3149,74 @@ class PortalGuruController
         } catch (Throwable $e) {
         }
 
-        // Ambil daftar rekan guru aktif untuk pelimpahan tugas
-        $teachersList = [];
+        // Ambil data unit dan jenis pegawai pemohon
+        $pegawaiRow = null;
+        if ($pegawaiId > 0) {
+            try {
+                $pegawaiRow = Database::getInstance()->find("SELECT * FROM pegawai WHERE id = ? LIMIT 1", [$pegawaiId]);
+            } catch (Throwable $e) {}
+        }
+        $myUnit = trim((string)($pegawaiRow['unit_tugas'] ?? ($teacher['unit_tugas'] ?? '')));
+        $myJenis = trim((string)($pegawaiRow['jenis_pegawai'] ?? ($teacher['jenis_pegawai'] ?? '')));
+        $isSupport = !empty($teacher['is_support']);
+
+        // Ambil daftar rekan pengganti sesuai dengan unit dan jenis pegawai
+        $substituteList = [];
         try {
-            $teachersList = Database::getInstance()->findAll("SELECT id, nama, gelar FROM pegawai WHERE is_active = 1 ORDER BY nama ASC");
+            $db = Database::getInstance();
+            $params = [];
+            $where = ["is_active = 1"];
+            if ($pegawaiId > 0) {
+                $where[] = "id != ?";
+                $params[] = $pegawaiId;
+            }
+
+            // Filter Unit: jika user memiliki unit_tugas (SDIT, SMPIT, SMAIT, dsb)
+            if (!empty($myUnit)) {
+                $where[] = "(unit_tugas = ? OR unit_tugas LIKE ?)";
+                $params[] = $myUnit;
+                $params[] = '%' . $myUnit . '%';
+            }
+
+            // Filter Jenis Pegawai: Guru vs Support System / Tenaga Kependidikan
+            if ($isSupport || (strcasecmp($myJenis, 'Guru') !== 0 && !empty($myJenis) && strcasecmp($myJenis, 'Support System') === 0)) {
+                $where[] = "(jenis_pegawai = 'Support System' OR (jenis_pegawai IS NOT NULL AND jenis_pegawai != 'Guru') OR jabatan LIKE '%Staff%' OR jabatan LIKE '%Staf%' OR jabatan LIKE '%IT%' OR jabatan LIKE '%TU%' OR jabatan LIKE '%Sarpras%')";
+            } else {
+                $where[] = "(jenis_pegawai = 'Guru' OR jenis_pegawai IS NULL OR jabatan LIKE '%Guru%' OR jabatan LIKE '%Wali%' OR jabatan LIKE '%Pengajar%')";
+            }
+
+            $sql = "SELECT id, nama, gelar, jabatan, unit_tugas, jenis_pegawai FROM pegawai WHERE " . implode(' AND ', $where) . " ORDER BY nama ASC";
+            $substituteList = $db->findAll($sql, $params);
+
+            // Fallback 1: Jika kosong, cari rekan unit yang sama tanpa batasan jenis
+            if (empty($substituteList) && !empty($myUnit)) {
+                $substituteList = $db->findAll("SELECT id, nama, gelar, jabatan, unit_tugas, jenis_pegawai FROM pegawai WHERE is_active = 1 AND id != ? AND (unit_tugas = ? OR unit_tugas LIKE ?) ORDER BY nama ASC", [$pegawaiId, $myUnit, '%' . $myUnit . '%']);
+            }
+
+            // Fallback 2: Jika masih kosong, ambil semua rekan aktif
+            if (empty($substituteList)) {
+                $substituteList = $db->findAll("SELECT id, nama, gelar, jabatan, unit_tugas, jenis_pegawai FROM pegawai WHERE is_active = 1 AND id != ? ORDER BY nama ASC", [$pegawaiId]);
+            }
         } catch (Throwable $e) {
+            $substituteList = [];
         }
 
         self::render('cuti', [
-            'pageTitle' => 'Pengajuan Cuti Guru',
+            'pageTitle' => 'Pengajuan Cuti Pegawai',
             'activeTab' => 'cuti',
             'quotas' => $leavesData['quotas'],
             'records' => $leavesData['records'],
             'daftarJenisCuti' => $daftarJenisCuti,
-            'teachersList' => $teachersList
+            'substituteList' => $substituteList,
+            'teachersList' => $substituteList,
+            'userUnit' => $myUnit,
+            'userJenis' => $myJenis ?: ($isSupport ? 'Support System' : 'Guru'),
+            'isSupport' => $isSupport
         ]);
     }
 
     /**
-     * API: Submit Permohonan Cuti Guru (Real DB)
+     * API: Submit Permohonan Cuti Pegawai (Real DB)
      */
     public static function submitCuti(): void
     {
@@ -3182,6 +3231,7 @@ class PortalGuruController
         }
 
         require_once BASE_PATH . '/modules/kelola-cuti/models/CutiModel.php';
+        CutiModel::init();
 
         $jenisCutiId = (int) ($_POST['jenis_cuti_id'] ?? 0);
         $tanggalPilihan = $_POST['tanggal_pilihan'] ?? ($_POST['tanggal_cuti_list'] ?? null);
@@ -3196,30 +3246,89 @@ class PortalGuruController
 
         $alasan = trim($_POST['alasan'] ?? '');
         $pelimpahanTugas = trim($_POST['pelimpahan_tugas'] ?? '');
+        $keteranganTugas = trim($_POST['keterangan_tugas'] ?? '');
         $alamatSelamaCuti = trim($_POST['alamat_selama_cuti'] ?? '');
         $kontakDarurat = trim($_POST['kontak_darurat'] ?? '');
 
         if ($jenisCutiId <= 0 || empty($tanggalMulai) || empty($alasan)) {
-            echo json_encode(['success' => false, 'message' => 'Jenis cuti, tanggal cuti, dan alasan wajib diisi lengkap.']);
+            echo json_encode(['success' => false, 'message' => 'Jenis cuti, tanggal cuti, dan alasan permohonan wajib diisi lengkap.']);
             exit;
         }
 
-        // Upload file jika ada
-        $lampiran = null;
-        if (!empty($_FILES['lampiran']['name']) && $_FILES['lampiran']['error'] === UPLOAD_ERR_OK) {
-            $uploadDir = BASE_PATH . '/storage/uploads/cuti';
-            if (!is_dir($uploadDir)) {
-                @mkdir($uploadDir, 0777, true);
-            }
-            $ext = strtolower(pathinfo($_FILES['lampiran']['name'], PATHINFO_EXTENSION));
-            $allowedExts = ['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx'];
-            if (in_array($ext, $allowedExts)) {
-                $filename = 'cuti_' . $pegawaiId . '_' . date('Ymd_His') . '.' . $ext;
-                if (move_uploaded_file($_FILES['lampiran']['tmp_name'], $uploadDir . '/' . $filename)) {
-                    $lampiran = 'storage/uploads/cuti/' . $filename;
+        // Pengelolaan Foto Bukti (Maksimal 2 Foto, Auto Convert <= 500KB)
+        $uploadDir = BASE_PATH . '/storage/uploads/cuti';
+        if (!is_dir($uploadDir)) {
+            @mkdir($uploadDir, 0777, true);
+        }
+
+        $processPhoto500KB = function($fileKey, $postDataKey, $idx) use ($uploadDir, $pegawaiId) {
+            $savedRelativePath = null;
+            $tmpPath = null;
+
+            if (!empty($_FILES[$fileKey]['name']) && $_FILES[$fileKey]['error'] === UPLOAD_ERR_OK) {
+                $tmpPath = $_FILES[$fileKey]['tmp_name'];
+            } elseif (!empty($_POST[$postDataKey]) && strpos((string)$_POST[$postDataKey], 'data:image/') === 0) {
+                $parts = explode(',', $_POST[$postDataKey], 2);
+                if (count($parts) === 2) {
+                    $decoded = base64_decode($parts[1]);
+                    if ($decoded !== false) {
+                        $tempFile = tempnam(sys_get_temp_dir(), 'cuti_img_');
+                        file_put_contents($tempFile, $decoded);
+                        $tmpPath = $tempFile;
+                    }
                 }
             }
-        }
+
+            if ($tmpPath && file_exists($tmpPath)) {
+                $filename = 'cuti_' . $pegawaiId . '_' . date('Ymd_His') . '_' . $idx . '.jpg';
+                $destination = $uploadDir . '/' . $filename;
+                $maxBytes = 500 * 1024; // 500 KB
+
+                if (function_exists('imagecreatefromstring') && @getimagesize($tmpPath)) {
+                    $raw = file_get_contents($tmpPath);
+                    $src = @imagecreatefromstring($raw);
+                    if ($src) {
+                        // Max dimension 1600px
+                        $w = imagesx($src);
+                        $h = imagesy($src);
+                        $maxDim = 1600;
+                        if ($w > $maxDim || $h > $maxDim) {
+                            if ($w > $h) {
+                                $newW = $maxDim;
+                                $newH = (int)round(($h * $maxDim) / $w);
+                            } else {
+                                $newH = $maxDim;
+                                $newW = (int)round(($w * $maxDim) / $h);
+                            }
+                            $dst = imagecreatetruecolor($newW, $newH);
+                            imagecopyresampled($dst, $src, 0, 0, 0, 0, $newW, $newH, $w, $h);
+                            imagedestroy($src);
+                            $src = $dst;
+                        }
+
+                        $quality = 85;
+                        imagejpeg($src, $destination, $quality);
+                        while (file_exists($destination) && filesize($destination) > $maxBytes && $quality > 25) {
+                            $quality -= 10;
+                            imagejpeg($src, $destination, $quality);
+                        }
+                        imagedestroy($src);
+                        $savedRelativePath = 'storage/uploads/cuti/' . $filename;
+                    }
+                }
+
+                if (!$savedRelativePath) {
+                    if (@copy($tmpPath, $destination) || @move_uploaded_file($tmpPath, $destination)) {
+                        $savedRelativePath = 'storage/uploads/cuti/' . $filename;
+                    }
+                }
+            }
+            return $savedRelativePath;
+        };
+
+        $lampiran1 = $processPhoto500KB('foto_bukti_1', 'foto_bukti_1_data', 1) 
+                  ?? ($processPhoto500KB('lampiran', '', 1) ?? null);
+        $lampiran2 = $processPhoto500KB('foto_bukti_2', 'foto_bukti_2_data', 2);
 
         try {
             $payload = [
@@ -3230,9 +3339,11 @@ class PortalGuruController
                 'tanggal_selesai' => $tanggalSelesai,
                 'alasan' => $alasan,
                 'pelimpahan_tugas' => $pelimpahanTugas,
+                'keterangan_tugas' => $keteranganTugas,
                 'alamat_selama_cuti' => $alamatSelamaCuti,
                 'kontak_darurat' => $kontakDarurat,
-                'file_lampiran' => $lampiran
+                'file_lampiran' => $lampiran1,
+                'file_lampiran_2' => $lampiran2
             ];
 
             $userId = (int) ($teacher['user_id'] ?? 0);

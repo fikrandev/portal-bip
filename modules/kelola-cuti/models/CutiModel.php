@@ -30,18 +30,24 @@ class CutiModel
         }
         self::$tablesInitialized = true;
 
-        $stampFile = BASE_PATH . '/storage/logs/.schema_cuti_v3_' . date('Y_m_d') . '.stamp';
+        $stampFile = BASE_PATH . '/storage/logs/.schema_cuti_v4_' . date('Y_m_d') . '.stamp';
         if (file_exists($stampFile)) {
             return;
         }
 
         $pdo = self::db()->getConnection();
 
-        // Pastikan kolom tanggal_cuti_list tersedia pada cuti_pengajuan
+        // Pastikan kolom tanggal_cuti_list, keterangan_tugas, dan file_lampiran_2 tersedia pada cuti_pengajuan
         try {
-            $colExists = $pdo->query("SHOW COLUMNS FROM `cuti_pengajuan` LIKE 'tanggal_cuti_list'")->fetch();
-            if (!$colExists) {
+            $cols = $pdo->query("SHOW COLUMNS FROM `cuti_pengajuan`")->fetchAll(PDO::FETCH_COLUMN);
+            if (!in_array('tanggal_cuti_list', $cols, true)) {
                 $pdo->exec("ALTER TABLE `cuti_pengajuan` ADD COLUMN `tanggal_cuti_list` TEXT NULL AFTER `tanggal_selesai`");
+            }
+            if (!in_array('keterangan_tugas', $cols, true)) {
+                $pdo->exec("ALTER TABLE `cuti_pengajuan` ADD COLUMN `keterangan_tugas` TEXT NULL AFTER `pelimpahan_tugas`");
+            }
+            if (!in_array('file_lampiran_2', $cols, true)) {
+                $pdo->exec("ALTER TABLE `cuti_pengajuan` ADD COLUMN `file_lampiran_2` VARCHAR(255) NULL AFTER `file_lampiran`");
             }
         } catch (Throwable $e) {}
 
@@ -874,9 +880,9 @@ class CutiModel
             INSERT INTO `cuti_pengajuan` (
                 `nomor_pengajuan`, `pegawai_id`, `jenis_cuti_id`, `kategori_cuti`,
                 `tanggal_mulai`, `tanggal_selesai`, `tanggal_cuti_list`, `jumlah_hari`, `alasan`,
-                `pelimpahan_tugas`, `alamat_selama_cuti`, `kontak_darurat`, `file_lampiran`,
+                `pelimpahan_tugas`, `keterangan_tugas`, `alamat_selama_cuti`, `kontak_darurat`, `file_lampiran`, `file_lampiran_2`,
                 `status`, `created_by`
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', ?)
         ", [
             $nomor,
             $pegawaiId,
@@ -888,9 +894,11 @@ class CutiModel
             $hitungHari,
             $alasan,
             trim($data['pelimpahan_tugas'] ?? '') ?: null,
+            trim($data['keterangan_tugas'] ?? '') ?: null,
             trim($data['alamat_selama_cuti'] ?? '') ?: null,
             trim($data['kontak_darurat'] ?? '') ?: null,
             $data['file_lampiran'] ?? null,
+            $data['file_lampiran_2'] ?? null,
             $userId
         ]);
 
