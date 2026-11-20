@@ -707,6 +707,7 @@ $router->get('/kelola-quran-pegawai', [QuranPegawaiController::class, 'index'], 
 $router->get('/kelola-cuti', [CutiController::class, 'index'], [Middleware::permissionRequired('cuti.pengajuan.view')]);
 $router->post('/kelola-cuti/pengajuan/store', [CutiController::class, 'storePengajuan'], [Middleware::permissionRequired('cuti.pengajuan.create')]);
 $router->post('/kelola-cuti/pengajuan/approve', [CutiController::class, 'approve'], [Middleware::permissionRequired('cuti.approve')]);
+$router->post('/kelola-cuti/pengajuan/delete', [CutiController::class, 'deletePengajuan'], [Middleware::permissionRequired('cuti.approve')]);
 $router->post('/kelola-cuti/jenis/store', [CutiController::class, 'storeJenisCuti'], [Middleware::permissionRequired('cuti.master.update')]);
 $router->post('/kelola-cuti/jenis/delete', [CutiController::class, 'deleteJenisCuti'], [Middleware::permissionRequired('cuti.master.update')]);
 $router->post('/kelola-cuti/saldo/adjust', [CutiController::class, 'adjustSaldo'], [Middleware::permissionRequired('cuti.master.update')]);

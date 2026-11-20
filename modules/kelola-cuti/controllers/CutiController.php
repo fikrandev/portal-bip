@@ -233,6 +233,31 @@ class CutiController
     }
 
     /**
+     * Hapus Permanen Pengajuan Cuti (Khususnya yang sudah Dibatalkan / Bersihkan Database)
+     */
+    public static function deletePengajuan(): void
+    {
+        CSRF::validate();
+        $returnTab = $_POST['return_tab'] ?? 'riwayat';
+
+        try {
+            $id = (int)($_POST['id'] ?? 0);
+            if ($id <= 0) {
+                throw new Exception('ID permohonan cuti tidak valid.');
+            }
+
+            $success = CutiModel::deletePengajuan($id);
+            if (!$success) {
+                throw new Exception('Data pengajuan cuti tidak ditemukan atau sudah dihapus sebelumnya.');
+            }
+
+            Response::redirect(url('kelola-cuti?tab=' . urlencode($returnTab)), 'Data pengajuan cuti yang dibatalkan beserta lampirannya berhasil dihapus permanen dari database.', 'success');
+        } catch (Throwable $e) {
+            Response::redirect(url('kelola-cuti?tab=' . urlencode($returnTab)), $e->getMessage(), 'error');
+        }
+    }
+
+    /**
      * Simpan / Update 1 Step Hierarki Approval Custom
      */
     public static function storeHierarki(): void
