@@ -3255,49 +3255,99 @@ class PortalGuruController
         $pegawaiRow = null;
         if ($pegawaiId > 0) {
             try {
-                $pegawaiRow = Database::getInstance()->find("SELECT * FROM pegawai WHERE id = ? LIMIT 1", [$pegawaiId]);
+                $pegawaiRow = Database::getInstance()->find("
+                    SELECT p.*, mj.kategori as penugasan_kategori 
+                    FROM pegawai p 
+                    LEFT JOIN pegawai_penugasan pp ON pp.pegawai_id = p.id AND pp.status = 'Aktif'
+                    LEFT JOIN master_jabatan mj ON mj.id = pp.jabatan_id
+                    WHERE p.id = ? 
+                    LIMIT 1
+                ", [$pegawaiId]);
             } catch (Throwable $e) {}
         }
         $myUnit = trim((string)($pegawaiRow['unit_tugas'] ?? ($teacher['unit_tugas'] ?? '')));
-        $myJenis = trim((string)($pegawaiRow['jenis_pegawai'] ?? ($teacher['jenis_pegawai'] ?? '')));
         $isSupport = !empty($teacher['is_support']);
+        if (!$isSupport && !empty($pegawaiRow['penugasan_kategori'])) {
+            $isSupport = ($pegawaiRow['penugasan_kategori'] === 'support_system');
+        }
+        $myJenis = $isSupport ? 'Support System' : 'Guru';
 
-        // Ambil daftar rekan pengganti sesuai dengan unit dan jenis pegawai
+        // Ambil daftar rekan pengganti ketat sesuai dengan jenis pegawai (Guru -> Guru, Staff/Support System -> Staff/Support System)
         $substituteList = [];
         try {
             $db = Database::getInstance();
+
+            // Kondisi ketat jenis pegawai:
+            $jenisCondition = $isSupport
+                ? "(
+                    mj.kategori = 'support_system' 
+                    OR p.jenis_pegawai = 'Support System'
+                    OR (
+                        COALESCE(mj.kategori, '') != 'guru' 
+                        AND COALESCE(p.jenis_pegawai, '') != 'Guru'
+                        AND (
+                            p.jabatan LIKE '%IT%' OR p.jabatan LIKE '%Media%' OR p.jabatan LIKE '%Sarpras%'
+                            OR p.jabatan LIKE '%Tata Usaha%' OR p.jabatan LIKE '%TU%' OR p.jabatan LIKE '%Tendik%'
+                            OR p.jabatan LIKE '%Staff%' OR p.jabatan LIKE '%Staf%' OR p.jabatan LIKE '%Keamanan%'
+                            OR p.jabatan LIKE '%Satpam%' OR p.jabatan LIKE '%Kebersihan%' OR p.jabatan LIKE '%Sosial%'
+                            OR p.jabatan LIKE '%Divisi%' OR p.jabatan LIKE '%Manajer%' OR p.jabatan LIKE '%Admin%'
+                        )
+                    )
+                )"
+                : "(
+                    mj.kategori = 'guru' 
+                    OR p.jenis_pegawai = 'Guru'
+                    OR (
+                        COALESCE(mj.kategori, '') != 'support_system' 
+                        AND COALESCE(p.jenis_pegawai, '') != 'Support System'
+                        AND (
+                            p.jabatan LIKE '%Guru%' OR p.jabatan LIKE '%Wali%' OR p.jabatan LIKE '%Pengajar%'
+                            OR p.jabatan LIKE '%Waka%' OR p.jabatan LIKE '%Kepala Sekolah%' OR p.jabatan LIKE '%Kepsek%'
+                            OR p.jabatan IS NULL
+                        )
+                    )
+                )";
+
+            // 1. Prioritas Utama: Rekan dengan jenis yang SAMA dan unit yang SAMA
+            $where = ["p.is_active = 1", $jenisCondition];
             $params = [];
-            $where = ["is_active = 1"];
             if ($pegawaiId > 0) {
-                $where[] = "id != ?";
+                $where[] = "p.id != ?";
                 $params[] = $pegawaiId;
             }
-
-            // Filter Unit: jika user memiliki unit_tugas (SDIT, SMPIT, SMAIT, dsb)
             if (!empty($myUnit)) {
-                $where[] = "(unit_tugas = ? OR unit_tugas LIKE ?)";
+                $where[] = "(p.unit_tugas = ? OR p.unit_tugas LIKE ?)";
                 $params[] = $myUnit;
                 $params[] = '%' . $myUnit . '%';
             }
 
-            // Filter Jenis Pegawai: Guru vs Support System / Tenaga Kependidikan
-            if ($isSupport || (strcasecmp($myJenis, 'Guru') !== 0 && !empty($myJenis) && strcasecmp($myJenis, 'Support System') === 0)) {
-                $where[] = "(jenis_pegawai = 'Support System' OR (jenis_pegawai IS NOT NULL AND jenis_pegawai != 'Guru') OR jabatan LIKE '%Staff%' OR jabatan LIKE '%Staf%' OR jabatan LIKE '%IT%' OR jabatan LIKE '%TU%' OR jabatan LIKE '%Sarpras%')";
-            } else {
-                $where[] = "(jenis_pegawai = 'Guru' OR jenis_pegawai IS NULL OR jabatan LIKE '%Guru%' OR jabatan LIKE '%Wali%' OR jabatan LIKE '%Pengajar%')";
-            }
-
-            $sql = "SELECT id, nama, gelar, jabatan, unit_tugas, jenis_pegawai FROM pegawai WHERE " . implode(' AND ', $where) . " ORDER BY nama ASC";
+            $sql = "
+                SELECT DISTINCT p.id, p.nama, p.gelar, p.jabatan, p.unit_tugas, p.jenis_pegawai, mj.kategori as penugasan_kategori
+                FROM pegawai p
+                LEFT JOIN pegawai_penugasan pp ON pp.pegawai_id = p.id AND pp.status = 'Aktif'
+                LEFT JOIN master_jabatan mj ON mj.id = pp.jabatan_id
+                WHERE " . implode(' AND ', $where) . "
+                ORDER BY p.nama ASC
+            ";
             $substituteList = $db->findAll($sql, $params);
 
-            // Fallback 1: Jika kosong, cari rekan unit yang sama tanpa batasan jenis
-            if (empty($substituteList) && !empty($myUnit)) {
-                $substituteList = $db->findAll("SELECT id, nama, gelar, jabatan, unit_tugas, jenis_pegawai FROM pegawai WHERE is_active = 1 AND id != ? AND (unit_tugas = ? OR unit_tugas LIKE ?) ORDER BY nama ASC", [$pegawaiId, $myUnit, '%' . $myUnit . '%']);
-            }
-
-            // Fallback 2: Jika masih kosong, ambil semua rekan aktif
+            // 2. Fallback: Jika rekan jenis sama di unit kosong, ambil rekan dengan jenis yang SAMA di seluruh unit (TIDAK BOLEH lintas jenis)
             if (empty($substituteList)) {
-                $substituteList = $db->findAll("SELECT id, nama, gelar, jabatan, unit_tugas, jenis_pegawai FROM pegawai WHERE is_active = 1 AND id != ? ORDER BY nama ASC", [$pegawaiId]);
+                $fallbackWhere = ["p.is_active = 1", $jenisCondition];
+                $fallbackParams = [];
+                if ($pegawaiId > 0) {
+                    $fallbackWhere[] = "p.id != ?";
+                    $fallbackParams[] = $pegawaiId;
+                }
+                $sqlFallback = "
+                    SELECT DISTINCT p.id, p.nama, p.gelar, p.jabatan, p.unit_tugas, p.jenis_pegawai, mj.kategori as penugasan_kategori
+                    FROM pegawai p
+                    LEFT JOIN pegawai_penugasan pp ON pp.pegawai_id = p.id AND pp.status = 'Aktif'
+                    LEFT JOIN master_jabatan mj ON mj.id = pp.jabatan_id
+                    WHERE " . implode(' AND ', $fallbackWhere) . "
+                    ORDER BY p.nama ASC
+                ";
+                $substituteList = $db->findAll($sqlFallback, $fallbackParams);
             }
         } catch (Throwable $e) {
             $substituteList = [];
@@ -3312,7 +3362,7 @@ class PortalGuruController
             'substituteList' => $substituteList,
             'teachersList' => $substituteList,
             'userUnit' => $myUnit,
-            'userJenis' => $myJenis ?: ($isSupport ? 'Support System' : 'Guru'),
+            'userJenis' => $myJenis,
             'isSupport' => $isSupport
         ]);
     }

@@ -214,12 +214,12 @@
 <!-- ======================================================== -->
 <!-- MODAL BOTTOM SHEET: PENGAJUAN PERMOHONAN CUTI RESMI      -->
 <!-- ======================================================== -->
-<div id="modal-permohonan-cuti" class="hidden fixed inset-0 z-[9999] overflow-hidden select-none" style="touch-action: none; overscroll-behavior: none;">
+<div id="modal-permohonan-cuti" class="hidden fixed inset-0 z-[10010] overflow-hidden select-none" style="touch-action: none; overscroll-behavior: none;">
     <!-- Backdrop Scrim -->
     <div id="modal-cuti-scrim" onclick="closeModalPermohonanCuti()" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity duration-250 opacity-0 pointer-events-none"></div>
 
     <!-- Sheet Wrapper -->
-    <div class="fixed inset-x-0 bottom-0 max-w-md mx-auto w-full pointer-events-none z-10">
+    <div class="fixed inset-x-0 bottom-0 max-w-md mx-auto w-full pointer-events-none z-[10020]">
         <form id="form-permohonan-cuti" onsubmit="submitPermohonanCuti(event)" enctype="multipart/form-data"
               style="touch-action: pan-y; overscroll-behavior: contain;"
               class="bg-white rounded-t-[32px] shadow-2xl pointer-events-auto border-t border-slate-200/80 flex flex-col max-h-[90vh] w-full transform translate-y-full transition-transform duration-250 ease-out overflow-hidden text-xs">
@@ -336,19 +336,24 @@
                 <div>
                     <div class="flex items-center justify-between mb-1">
                         <label class="block text-xs font-bold text-slate-700">
-                            Guru / Pegawai Pengganti <span class="text-rose-500">*</span>
+                            <?= !empty($isSupport) ? 'Pegawai Pengganti (Staff / Support System)' : 'Guru Pengganti' ?> <span class="text-rose-500">*</span>
                         </label>
                         <span class="text-[10px] text-primary-700 font-bold bg-primary-50 px-2 py-0.5 rounded-full border border-primary-200 truncate max-w-[170px]">
-                            Unit: <?= e($userUnit ?: 'Semua') ?> &bull; <?= e($userJenis ?: 'Pegawai') ?>
+                            Unit: <?= e($userUnit ?: 'Semua') ?> &bull; <?= !empty($isSupport) ? 'Support System' : 'Guru' ?>
                         </span>
                     </div>
                     <select id="modal_pelimpahan_tugas" name="pelimpahan_tugas" required class="w-full px-3.5 py-2.5 text-xs bg-slate-50 rounded-2xl border border-slate-200 font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-inner">
-                        <option value="Guru Piket dan Tim Bidang Unit">Guru Piket dan Tim Bidang Unit</option>
+                        <?php if (!empty($isSupport)): ?>
+                            <option value="Rekan Kerja / Tim Divisi">Rekan Kerja / Tim Divisi</option>
+                        <?php else: ?>
+                            <option value="Guru Piket dan Tim Bidang Unit">Guru Piket dan Tim Bidang Unit</option>
+                        <?php endif; ?>
+
                         <?php if (!empty($substituteList)): ?>
                             <?php foreach ($substituteList as $sub): ?>
                                 <?php
                                     $namaLengkap = trim($sub['nama'] . (!empty($sub['gelar']) ? (', ' . $sub['gelar']) : ''));
-                                    $jabatanUnit = trim(($sub['jabatan'] ?? 'Pegawai') . (!empty($sub['unit_tugas']) ? (' • ' . $sub['unit_tugas']) : ''));
+                                    $jabatanUnit = trim(($sub['jabatan'] ?? (!empty($isSupport) ? 'Staff' : 'Guru')) . (!empty($sub['unit_tugas']) ? (' • ' . $sub['unit_tugas']) : ''));
                                 ?>
                                 <option value="<?= htmlspecialchars($namaLengkap) ?>">
                                     <?= htmlspecialchars($namaLengkap . ' (' . $jabatanUnit . ')') ?>
@@ -356,7 +361,9 @@
                             <?php endforeach; ?>
                         <?php endif; ?>
                     </select>
-                    <p class="text-[10px] text-slate-400 font-medium mt-1">Daftar pengganti otomatis disaring sesuai unit tugas dan jenis tugas Anda.</p>
+                    <p class="text-[10px] text-slate-400 font-medium mt-1">
+                        Daftar pengganti otomatis disaring khusus untuk sesama <strong><?= !empty($isSupport) ? 'Staff / Support System' : 'Guru' ?></strong>.
+                    </p>
                 </div>
 
                 <!-- 4. Keterangan Tugas yang Dilimpahkan -->
@@ -379,118 +386,66 @@
                               class="w-full px-3.5 py-2 text-xs bg-slate-50 rounded-2xl border border-slate-200 font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-inner resize-none"></textarea>
                 </div>
 
-                <!-- 6. Kontak Darurat & Alamat Selama Cuti -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">Nomor Kontak Darurat</label>
-                        <input type="text" id="modal_kontak_darurat" name="kontak_darurat" placeholder="Contoh: 0812-4455-6677 (Keluarga)"
-                               class="w-full px-3.5 py-2 text-xs bg-slate-50 rounded-2xl border border-slate-200 font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-inner">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">Alamat Selama Cuti</label>
-                        <input type="text" id="modal_alamat_selama_cuti" name="alamat_selama_cuti" placeholder="Contoh: Jl. Merpati No. 12, Kota Palu"
-                               class="w-full px-3.5 py-2 text-xs bg-slate-50 rounded-2xl border border-slate-200 font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-inner">
-                    </div>
+                <!-- 6. Nomor Kontak Darurat (Alamat Selama Cuti Ditiadakan) -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">
+                        Nomor Kontak Darurat <span class="text-slate-400 font-normal">(Opsional - No. HP / WhatsApp Keluarga)</span>
+                    </label>
+                    <input type="text" id="modal_kontak_darurat" name="kontak_darurat" placeholder="Contoh: 0812-4455-6677 (Keluarga)"
+                           class="w-full px-3.5 py-2 text-xs bg-slate-50 rounded-2xl border border-slate-200 font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-inner">
                 </div>
 
-                <!-- 7. Bukti Lampiran (Maksimal 2 Foto, Auto Convert <= 500KB) -->
+                <!-- 7. Bukti Dokumen / Foto Pendukung (Maksimal 2 Foto, 1 Tempat Upload Sarpras-Style) -->
                 <div class="space-y-2 pt-1">
                     <div class="flex items-center justify-between">
-                        <label class="block text-xs font-bold text-slate-800">
-                            Bukti Dokumen / Foto Pendukung
-                        </label>
-                        <span class="text-[10px] font-semibold text-primary-700 bg-primary-50 px-2 py-0.5 rounded-full border border-primary-200">
-                            Maks 2 Foto &bull; Auto Convert 500KB
+                        <div>
+                            <label class="block text-xs font-bold text-slate-800">
+                                Foto Bukti / Dokumen Pendukung
+                            </label>
+                            <p class="text-[10px] text-slate-400">Surat dokter, undangan, atau berkas bukti (Maks 2 foto)</p>
+                        </div>
+                        <span id="label-foto-counter" class="text-[10px] font-bold text-primary-700 bg-primary-50 px-2.5 py-1 rounded-full border border-primary-200 shrink-0">
+                            0 / 2 Foto
                         </span>
                     </div>
 
-                    <!-- Slot Foto 1 -->
-                    <div class="bg-slate-50 rounded-2xl p-2.5 border border-slate-200/80 space-y-2">
-                        <div class="flex items-center justify-between">
-                            <span class="text-[11px] font-bold text-slate-700">Foto Bukti 1 (Surat Dokter / Undangan / Bukti)</span>
-                            <span id="photo-size-badge-1" class="hidden text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
-                                ✓ &le; 500 KB
-                            </span>
-                        </div>
-
-                        <!-- Buttons Upload/Kamera Foto 1 -->
-                        <div id="photo-upload-actions-1" class="grid grid-cols-2 gap-2">
-                            <button type="button" onclick="triggerCameraInput(1)" class="py-2 px-3 rounded-xl bg-white border border-slate-200 text-slate-700 font-bold text-[11px] hover:bg-slate-100 flex items-center justify-center gap-1.5 shadow-2xs press-bounce">
-                                <span>📷</span> <span>Ambil Foto</span>
-                            </button>
-                            <button type="button" onclick="triggerGalleryInput(1)" class="py-2 px-3 rounded-xl bg-white border border-slate-200 text-slate-700 font-bold text-[11px] hover:bg-slate-100 flex items-center justify-center gap-1.5 shadow-2xs press-bounce">
-                                <span>🖼️</span> <span>Pilih Galeri</span>
-                            </button>
-                        </div>
-
-                        <!-- Preview Foto 1 -->
-                        <div id="photo-preview-card-1" class="hidden flex items-center justify-between gap-2.5 p-2 bg-white rounded-xl border border-emerald-200">
-                            <div class="flex items-center gap-2.5 min-w-0">
-                                <img id="photo-thumb-1" src="" alt="Bukti 1" class="w-12 h-12 rounded-lg object-cover border border-slate-200 shrink-0">
-                                <div class="min-w-0">
-                                    <p id="photo-name-1" class="text-[11px] font-bold text-slate-800 truncate">Foto_Bukti_1.jpg</p>
-                                    <p id="photo-info-1" class="text-[10px] text-emerald-700 font-semibold mt-0.5">Terkonversi ke &le; 500 KB</p>
-                                </div>
-                            </div>
-                            <button type="button" onclick="removePhoto(1)" class="px-2 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 text-[10px] font-bold press-bounce shrink-0" title="Hapus Foto">
-                                ✕ Hapus
-                            </button>
-                        </div>
-
-                        <!-- Hidden Inputs Foto 1 -->
-                        <input type="file" id="inp_file_gallery_1" accept="image/*" class="hidden" onchange="handlePhotoSelected(this, 1)">
-                        <input type="file" id="inp_file_camera_1" accept="image/*" capture="environment" class="hidden" onchange="handlePhotoSelected(this, 1)">
+                    <!-- Single Upload Actions Box (Bisa Kamera / Galeri, otomatis dinonaktifkan jika sdh 2 foto) -->
+                    <div id="container-cuti-photo-actions" class="grid grid-cols-2 gap-2">
+                        <button type="button" onclick="triggerCutiPhotoInput('camera')" class="py-2.5 px-3 rounded-2xl bg-white border border-slate-200/90 hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center justify-center gap-2 shadow-2xs press-bounce transition-all">
+                            <span class="text-sm">📷</span>
+                            <span>Ambil Kamera</span>
+                        </button>
+                        <button type="button" onclick="triggerCutiPhotoInput('gallery')" class="py-2.5 px-3 rounded-2xl bg-white border border-slate-200/90 hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center justify-center gap-2 shadow-2xs press-bounce transition-all">
+                            <span class="text-sm">🖼️</span>
+                            <span>Pilih Galeri</span>
+                        </button>
                     </div>
 
-                    <!-- Slot Foto 2 -->
-                    <div class="bg-slate-50 rounded-2xl p-2.5 border border-slate-200/80 space-y-2">
-                        <div class="flex items-center justify-between">
-                            <span class="text-[11px] font-bold text-slate-700">Foto Bukti 2 (Tambahan / Opsional)</span>
-                            <span id="photo-size-badge-2" class="hidden text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
-                                ✓ &le; 500 KB
-                            </span>
-                        </div>
+                    <!-- Hidden Inputs -->
+                    <input type="file" id="inp_cuti_camera" accept="image/*" capture="environment" class="hidden" onchange="handleCutiFilesSelected(this.files)">
+                    <input type="file" id="inp_cuti_gallery" accept="image/*" multiple class="hidden" onchange="handleCutiFilesSelected(this.files)">
 
-                        <!-- Buttons Upload/Kamera Foto 2 -->
-                        <div id="photo-upload-actions-2" class="grid grid-cols-2 gap-2">
-                            <button type="button" onclick="triggerCameraInput(2)" class="py-2 px-3 rounded-xl bg-white border border-slate-200 text-slate-700 font-bold text-[11px] hover:bg-slate-100 flex items-center justify-center gap-1.5 shadow-2xs press-bounce">
-                                <span>📷</span> <span>Ambil Foto</span>
-                            </button>
-                            <button type="button" onclick="triggerGalleryInput(2)" class="py-2 px-3 rounded-xl bg-white border border-slate-200 text-slate-700 font-bold text-[11px] hover:bg-slate-100 flex items-center justify-center gap-1.5 shadow-2xs press-bounce">
-                                <span>🖼️</span> <span>Pilih Galeri</span>
-                            </button>
-                        </div>
+                    <!-- Preview Gallery Grid (Tempat Foto yang Sudah Dipilih) -->
+                    <div id="container-cuti-photo-previews" class="hidden grid grid-cols-2 gap-2.5 pt-1">
+                        <!-- Populated dynamically via renderCutiPhotoPreviews() -->
+                    </div>
 
-                        <!-- Preview Foto 2 -->
-                        <div id="photo-preview-card-2" class="hidden flex items-center justify-between gap-2.5 p-2 bg-white rounded-xl border border-emerald-200">
-                            <div class="flex items-center gap-2.5 min-w-0">
-                                <img id="photo-thumb-2" src="" alt="Bukti 2" class="w-12 h-12 rounded-lg object-cover border border-slate-200 shrink-0">
-                                <div class="min-w-0">
-                                    <p id="photo-name-2" class="text-[11px] font-bold text-slate-800 truncate">Foto_Bukti_2.jpg</p>
-                                    <p id="photo-info-2" class="text-[10px] text-emerald-700 font-semibold mt-0.5">Terkonversi ke &le; 500 KB</p>
-                                </div>
-                            </div>
-                            <button type="button" onclick="removePhoto(2)" class="px-2 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 text-[10px] font-bold press-bounce shrink-0" title="Hapus Foto">
-                                ✕ Hapus
-                            </button>
-                        </div>
-
-                        <!-- Hidden Inputs Foto 2 -->
-                        <input type="file" id="inp_file_gallery_2" accept="image/*" class="hidden" onchange="handlePhotoSelected(this, 2)">
-                        <input type="file" id="inp_file_camera_2" accept="image/*" capture="environment" class="hidden" onchange="handlePhotoSelected(this, 2)">
+                    <!-- Max Reached Banner (Muncul jika sudah 2 foto) -->
+                    <div id="banner-max-photos" class="hidden p-2.5 rounded-xl bg-slate-100 text-slate-600 text-[10.5px] font-semibold text-center border border-slate-200/80">
+                        ✓ Maksimal 2 foto bukti telah dipilih. Hapus salah satu jika ingin mengganti.
                     </div>
                 </div>
 
             </div>
 
             <!-- 3. FIXED FOOTER ACTION BUTTONS (shrink-0) -->
-            <div class="px-5 py-3.5 bg-white border-t border-slate-100 flex items-center gap-2 shrink-0 safe-bottom">
-                <button type="button" onclick="closeModalPermohonanCuti()" class="flex-1 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs text-center press-bounce transition-all">
+            <div class="px-5 py-3.5 pb-6 sm:pb-3.5 bg-white border-t border-slate-200 flex items-center gap-2.5 shrink-0 z-30 shadow-[0_-4px_16px_rgba(0,0,0,0.06)] safe-bottom">
+                <button type="button" onclick="closeModalPermohonanCuti()" class="w-1/3 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs text-center press-bounce transition-all">
                     Batal
                 </button>
-                <button type="submit" id="btn-submit-cuti" class="flex-1 py-3 rounded-2xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs text-center shadow-md shadow-primary-600/30 press-bounce flex items-center justify-center gap-1.5 transition-all">
-                    <span>🏖️</span>
-                    <span id="btn-submit-text">Kirim Permohonan Cuti</span>
+                <button type="submit" id="btn-submit-cuti" class="w-2/3 py-3 rounded-2xl bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white font-bold text-xs text-center shadow-lg shadow-primary-600/30 press-bounce flex items-center justify-center gap-1.5 transition-all">
+                    <span>💾</span>
+                    <span id="btn-submit-text">Simpan Permohonan Cuti</span>
                 </button>
             </div>
 
@@ -505,9 +460,8 @@
     window.calYear = today.getFullYear();
     window.calMonth = today.getMonth(); // 0 - 11
 
-    // State Bukti Foto Terkompresi (Blob & DataUrl)
-    window.__cutiPhotoBlob1 = null;
-    window.__cutiPhotoBlob2 = null;
+    // State Bukti Foto Terkompresi (Array objek foto)
+    window.cutiPhotos = [];
 
     const NAMA_BULAN = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
     const NAMA_HARI_SHORT = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
@@ -519,12 +473,38 @@
         }
     });
 
+    // Pastikan modal cuti terpasang langsung di document.body agar tidak tertutup elemen parent atau nav bawah
+    function mountCutiModalElement() {
+        const id = 'modal-permohonan-cuti';
+        const els = document.querySelectorAll('#' + id);
+        if (!els.length) return null;
+        let keeper = els[0];
+        for (let i = 0; i < els.length; i++) {
+            if (els[i].parentElement !== document.body) {
+                keeper = els[i];
+                break;
+            }
+        }
+        els.forEach(el => {
+            if (el !== keeper) el.remove();
+        });
+        if (keeper.parentElement !== document.body) {
+            document.body.appendChild(keeper);
+        }
+        return keeper;
+    }
+
     // Buka Modal Pengajuan Cuti
     function openModalPermohonanCuti() {
+        mountCutiModalElement();
         const modal = document.getElementById('modal-permohonan-cuti');
         const scrim = document.getElementById('modal-cuti-scrim');
         const sheet = document.getElementById('form-permohonan-cuti');
         if (!modal) return;
+
+        // Sembunyikan bottom navigation bar agar tidak menutupi tombol simpan
+        const bNav = document.getElementById('mobile-bottom-nav');
+        if (bNav) bNav.style.display = 'none';
 
         // Default set minimal 1 hari jika belum ada
         if (!window.selectedCutiDates || window.selectedCutiDates.length === 0) {
@@ -536,6 +516,7 @@
 
         renderCalendarButtons();
         renderSelectedChips();
+        renderCutiPhotoPreviews();
 
         modal.classList.remove('hidden');
         void modal.offsetWidth;
@@ -554,6 +535,10 @@
         const modal = document.getElementById('modal-permohonan-cuti');
         const scrim = document.getElementById('modal-cuti-scrim');
         const sheet = document.getElementById('form-permohonan-cuti');
+
+        // Kembalikan bottom navigation bar
+        const bNav = document.getElementById('mobile-bottom-nav');
+        if (bNav) bNav.style.display = '';
 
         if (scrim) {
             scrim.classList.remove('opacity-100', 'pointer-events-auto');
@@ -813,62 +798,115 @@
         reader.readAsDataURL(file);
     }
 
-    // Handler saat foto dipilih dari kamera / galeri
-    function handlePhotoSelected(input, slot) {
-        const file = input && input.files && input.files[0];
-        if (!file) return;
-
-        const maxBytes = 500 * 1024; // 500 KB
-
-        compressImageFile(file, maxBytes, (compressedBlob, dataUrl, size) => {
-            if (slot === 1) {
-                window.__cutiPhotoBlob1 = compressedBlob;
+    // Trigger Input Foto (Kamera atau Galeri, maksimal 2 foto)
+    function triggerCutiPhotoInput(type) {
+        if (!Array.isArray(window.cutiPhotos)) window.cutiPhotos = [];
+        if (window.cutiPhotos.length >= 2) {
+            if (typeof AndroidUI !== 'undefined') {
+                AndroidUI.toast('Maksimal lampiran adalah 2 foto.', 'warning');
             } else {
-                window.__cutiPhotoBlob2 = compressedBlob;
+                alert('Maksimal lampiran adalah 2 foto.');
             }
-
-            const sizeKB = Math.round(size / 1024);
-
-            // Tampilkan kartu preview
-            const previewCard = document.getElementById(`photo-preview-card-${slot}`);
-            const uploadActions = document.getElementById(`photo-upload-actions-${slot}`);
-            const thumb = document.getElementById(`photo-thumb-${slot}`);
-            const nameEl = document.getElementById(`photo-name-${slot}`);
-            const infoEl = document.getElementById(`photo-info-${slot}`);
-            const badge = document.getElementById(`photo-size-badge-${slot}`);
-
-            if (thumb && dataUrl) thumb.src = dataUrl;
-            if (nameEl) nameEl.textContent = file.name || `Foto_Bukti_${slot}.jpg`;
-            if (infoEl) infoEl.textContent = `✓ Terkompresi: ${sizeKB} KB (Maks 500 KB)`;
-            if (badge) {
-                badge.textContent = `✓ ${sizeKB} KB`;
-                badge.classList.remove('hidden');
-            }
-
-            if (previewCard) previewCard.classList.remove('hidden');
-            if (uploadActions) uploadActions.classList.add('hidden');
-        });
-    }
-
-    // Hapus Foto
-    function removePhoto(slot) {
-        if (slot === 1) {
-            window.__cutiPhotoBlob1 = null;
-        } else {
-            window.__cutiPhotoBlob2 = null;
+            return;
         }
 
-        const previewCard = document.getElementById(`photo-preview-card-${slot}`);
-        const uploadActions = document.getElementById(`photo-upload-actions-${slot}`);
-        const badge = document.getElementById(`photo-size-badge-${slot}`);
-        const inpGal = document.getElementById(`inp_file_gallery_${slot}`);
-        const inpCam = document.getElementById(`inp_file_camera_${slot}`);
+        const inp = (type === 'camera') 
+            ? document.getElementById('inp_cuti_camera') 
+            : document.getElementById('inp_cuti_gallery');
+        if (inp) {
+            inp.value = '';
+            inp.click();
+        }
+    }
 
-        if (inpGal) inpGal.value = '';
-        if (inpCam) inpCam.value = '';
-        if (badge) badge.classList.add('hidden');
-        if (previewCard) previewCard.classList.add('hidden');
-        if (uploadActions) uploadActions.classList.remove('hidden');
+    // Handler saat file foto dipilih dari kamera atau galeri
+    function handleCutiFilesSelected(fileList) {
+        if (!fileList || fileList.length === 0) return;
+        if (!Array.isArray(window.cutiPhotos)) window.cutiPhotos = [];
+
+        const files = Array.from(fileList);
+        const maxBytes = 500 * 1024; // 500 KB
+
+        for (let i = 0; i < files.length; i++) {
+            if (window.cutiPhotos.length >= 2) break;
+            const file = files[i];
+            compressImageFile(file, maxBytes, (compressedBlob, dataUrl, size) => {
+                if (window.cutiPhotos.length >= 2) return;
+                window.cutiPhotos.push({
+                    id: Date.now() + Math.random(),
+                    file: file,
+                    blob: compressedBlob,
+                    dataUrl: dataUrl,
+                    name: file.name || `bukti_cuti_${window.cutiPhotos.length + 1}.jpg`,
+                    size: size
+                });
+                renderCutiPhotoPreviews();
+            });
+        }
+    }
+
+    // Hapus Foto Terpilih
+    function removeCutiPhoto(index) {
+        if (!Array.isArray(window.cutiPhotos)) window.cutiPhotos = [];
+        if (index >= 0 && index < window.cutiPhotos.length) {
+            window.cutiPhotos.splice(index, 1);
+            renderCutiPhotoPreviews();
+        }
+    }
+
+    // Render Preview Foto (Mirip Sarpras Multi-Foto Preview)
+    function renderCutiPhotoPreviews() {
+        const previewContainer = document.getElementById('container-cuti-photo-previews');
+        const actionsBox = document.getElementById('container-cuti-photo-actions');
+        const maxBanner = document.getElementById('banner-max-photos');
+        const counterBadge = document.getElementById('label-foto-counter');
+
+        if (!Array.isArray(window.cutiPhotos)) window.cutiPhotos = [];
+        const count = window.cutiPhotos.length;
+
+        if (counterBadge) counterBadge.textContent = `${count} / 2 Foto`;
+
+        if (count === 0) {
+            if (previewContainer) {
+                previewContainer.innerHTML = '';
+                previewContainer.classList.add('hidden');
+            }
+            if (actionsBox) actionsBox.classList.remove('hidden');
+            if (maxBanner) maxBanner.classList.add('hidden');
+            return;
+        }
+
+        if (previewContainer) {
+            previewContainer.classList.remove('hidden');
+            previewContainer.innerHTML = window.cutiPhotos.map((photo, idx) => {
+                const sizeKB = Math.round(photo.size / 1024);
+                return `
+                    <div class="relative rounded-2xl overflow-hidden border border-slate-200 bg-white shadow-2xs p-2 flex flex-col justify-between space-y-1.5">
+                        <div class="relative w-full h-24 rounded-xl overflow-hidden bg-slate-100">
+                            <img src="${photo.dataUrl}" alt="Bukti ${idx + 1}" class="w-full h-full object-cover">
+                            <span class="absolute top-1.5 left-1.5 px-2 py-0.5 rounded-md bg-slate-900/75 text-white text-[9px] font-bold">
+                                Foto ${idx + 1}
+                            </span>
+                            <button type="button" onclick="removeCutiPhoto(${idx})" class="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-rose-600 text-white flex items-center justify-center text-xs font-bold shadow-md press-bounce" title="Hapus Foto">
+                                ✕
+                            </button>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-[10px] font-bold text-slate-800 truncate leading-tight">${photo.name}</p>
+                            <p class="text-[9px] font-semibold text-emerald-700 mt-0.5">✓ &le; 500 KB (${sizeKB} KB)</p>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        if (count >= 2) {
+            if (actionsBox) actionsBox.classList.add('hidden');
+            if (maxBanner) maxBanner.classList.remove('hidden');
+        } else {
+            if (actionsBox) actionsBox.classList.remove('hidden');
+            if (maxBanner) maxBanner.classList.add('hidden');
+        }
     }
 
     // Submit Permohonan Cuti
@@ -880,29 +918,32 @@
         const keteranganTugas = document.getElementById('modal_keterangan_tugas')?.value.trim();
         const alasan = document.getElementById('modal_alasan')?.value.trim();
         const kontak = document.getElementById('modal_kontak_darurat')?.value.trim() || '';
-        const alamat = document.getElementById('modal_alamat_selama_cuti')?.value.trim() || '';
 
         const btnSubmit = document.getElementById('btn-submit-cuti');
         const btnText = document.getElementById('btn-submit-text');
 
         if (!jenisId) {
-            alert('Mohon pilih jenis cuti terlebih dahulu.');
+            if (typeof AndroidUI !== 'undefined') AndroidUI.toast('Mohon pilih jenis cuti terlebih dahulu.', 'warning');
+            else alert('Mohon pilih jenis cuti terlebih dahulu.');
             return;
         }
 
         if (!window.selectedCutiDates || window.selectedCutiDates.length === 0) {
-            alert('Silakan pilih minimal 1 tanggal cuti dengan mengklik tombol tanggal.');
+            if (typeof AndroidUI !== 'undefined') AndroidUI.toast('Silakan pilih minimal 1 tanggal cuti dengan mengklik tombol tanggal.', 'warning');
+            else alert('Silakan pilih minimal 1 tanggal cuti dengan mengklik tombol tanggal.');
             return;
         }
 
         if (!keteranganTugas) {
-            alert('Mohon isi keterangan tugas yang dilimpahkan kepada rekan pengganti.');
+            if (typeof AndroidUI !== 'undefined') AndroidUI.toast('Mohon isi keterangan tugas yang dilimpahkan kepada rekan pengganti.', 'warning');
+            else alert('Mohon isi keterangan tugas yang dilimpahkan kepada rekan pengganti.');
             document.getElementById('modal_keterangan_tugas')?.focus();
             return;
         }
 
         if (!alasan) {
-            alert('Mohon isi alasan / keperluan cuti.');
+            if (typeof AndroidUI !== 'undefined') AndroidUI.toast('Mohon isi alasan / keperluan cuti.', 'warning');
+            else alert('Mohon isi alasan / keperluan cuti.');
             document.getElementById('modal_alasan')?.focus();
             return;
         }
@@ -921,20 +962,20 @@
         formData.append('keterangan_tugas', keteranganTugas);
         formData.append('alasan', alasan);
         formData.append('kontak_darurat', kontak);
-        formData.append('alamat_selama_cuti', alamat);
+        formData.append('alamat_selama_cuti', '');
 
-        // Lampirkan Foto 1 (Blob terkompresi <= 500KB)
-        if (window.__cutiPhotoBlob1) {
-            formData.append('foto_bukti_1', window.__cutiPhotoBlob1, 'bukti_cuti_1.jpg');
-        }
-
-        // Lampirkan Foto 2 (Blob terkompresi <= 500KB)
-        if (window.__cutiPhotoBlob2) {
-            formData.append('foto_bukti_2', window.__cutiPhotoBlob2, 'bukti_cuti_2.jpg');
+        // Lampirkan Foto dari array cutiPhotos (Maksimal 2 Foto terkompresi <= 500KB)
+        if (Array.isArray(window.cutiPhotos)) {
+            if (window.cutiPhotos[0]) {
+                formData.append('foto_bukti_1', window.cutiPhotos[0].blob, window.cutiPhotos[0].name);
+            }
+            if (window.cutiPhotos[1]) {
+                formData.append('foto_bukti_2', window.cutiPhotos[1].blob, window.cutiPhotos[1].name);
+            }
         }
 
         if (btnSubmit) btnSubmit.disabled = true;
-        if (btnText) btnText.textContent = 'Mengirim Permohonan...';
+        if (btnText) btnText.textContent = 'Menyimpan Permohonan...';
 
         try {
             const res = await fetch('<?= url("mobile/cuti/submit") ?>', {
@@ -964,14 +1005,26 @@
                     window.location.reload();
                 }
             } else {
-                alert((json && json.message) || 'Gagal mengajukan cuti.');
+                const msg = (json && json.message) || 'Gagal mengajukan cuti.';
+                if (typeof AndroidUI !== 'undefined') {
+                    AndroidUI.alert({
+                        title: 'Gagal Mengajukan Cuti',
+                        subtitle: 'Periksa Pengisian Form',
+                        message: msg,
+                        icon: '⚠️',
+                        iconBg: 'bg-rose-100 text-rose-700'
+                    });
+                } else {
+                    alert(msg);
+                }
             }
         } catch (err) {
             console.error('Submit cuti error:', err);
-            alert('Terjadi kesalahan jaringan saat mengirim permohonan cuti.');
+            if (typeof AndroidUI !== 'undefined') AndroidUI.toast('Terjadi kesalahan jaringan saat mengirim permohonan cuti.', 'danger');
+            else alert('Terjadi kesalahan jaringan saat mengirim permohonan cuti.');
         } finally {
             if (btnSubmit) btnSubmit.disabled = false;
-            if (btnText) btnText.textContent = 'Kirim Permohonan Cuti';
+            if (btnText) btnText.textContent = 'Simpan Permohonan Cuti';
         }
     }
 
@@ -983,9 +1036,9 @@
     window.toggleTanggalCuti = toggleTanggalCuti;
     window.clearSemuaTanggalCuti = clearSemuaTanggalCuti;
     window.openRangePickerCuti = openRangePickerCuti;
-    window.triggerCameraInput = triggerCameraInput;
-    window.triggerGalleryInput = triggerGalleryInput;
-    window.handlePhotoSelected = handlePhotoSelected;
-    window.removePhoto = removePhoto;
+    window.triggerCutiPhotoInput = triggerCutiPhotoInput;
+    window.handleCutiFilesSelected = handleCutiFilesSelected;
+    window.removeCutiPhoto = removeCutiPhoto;
+    window.renderCutiPhotoPreviews = renderCutiPhotoPreviews;
     window.submitPermohonanCuti = submitPermohonanCuti;
 </script>
