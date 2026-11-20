@@ -30,7 +30,7 @@ class CutiModel
         }
         self::$tablesInitialized = true;
 
-        $stampFile = BASE_PATH . '/storage/logs/.schema_cuti_v4_' . date('Y_m_d') . '.stamp';
+        $stampFile = BASE_PATH . '/storage/logs/.schema_cuti_v6_' . date('Y_m_d') . '.stamp';
         if (file_exists($stampFile)) {
             return;
         }
@@ -140,8 +140,49 @@ class CutiModel
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
         ");
 
+        // 5. Tabel Hierarki Approval Cuti yang Bisa Di-Custom
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `cuti_approval_hierarchy` (
+                `id` INT AUTO_INCREMENT PRIMARY KEY,
+                `unit` VARCHAR(50) NOT NULL DEFAULT 'Semua' COMMENT 'SD, SMP, SMA, Yayasan, Semua',
+                `jenis_pegawai` VARCHAR(50) NOT NULL DEFAULT 'Semua' COMMENT 'Guru, Support System, Semua',
+                `step_order` INT NOT NULL DEFAULT 1,
+                `step_nama` VARCHAR(120) NOT NULL,
+                `approver_role` VARCHAR(100) NULL COMMENT 'Role/Jabatan: Kepala Sekolah, Manajer, Yayasan, HRD, dll',
+                `approver_pegawai_id` INT NULL COMMENT 'Spesifik pegawai (opsional)',
+                `keterangan` TEXT NULL,
+                `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+                `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+                `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                INDEX `idx_hier_scope` (`unit`, `jenis_pegawai`, `step_order`),
+                INDEX `idx_hier_active` (`is_active`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
+
+        // 6. Tabel Tahapan Approval Riil Per Pengajuan Cuti (Tracking Multi-Step)
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `cuti_pengajuan_step` (
+                `id` INT AUTO_INCREMENT PRIMARY KEY,
+                `pengajuan_id` INT NOT NULL,
+                `step_order` INT NOT NULL DEFAULT 1,
+                `step_nama` VARCHAR(120) NOT NULL,
+                `approver_role` VARCHAR(100) NULL,
+                `approver_pegawai_id` INT NULL,
+                `status` ENUM('Pending', 'Disetujui', 'Ditolak', 'Dilewati') NOT NULL DEFAULT 'Pending',
+                `approved_by_id` INT NULL,
+                `approved_by_name` VARCHAR(150) NULL,
+                `approved_at` DATETIME NULL,
+                `catatan` TEXT NULL,
+                `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+                INDEX `idx_step_pengajuan` (`pengajuan_id`),
+                INDEX `idx_step_status` (`status`, `step_order`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
+
         self::seedDefaultJenisCuti();
+        self::seedDefaultHierarki();
         self::syncAllPegawaiSaldo();
+        self::backfillUnsteppedPengajuan();
 
         if (!is_dir(dirname($stampFile))) {
             @mkdir(dirname($stampFile), 0755, true);
@@ -245,6 +286,300 @@ class CutiModel
                 $d['keterangan']
             ]);
         }
+    }
+
+    /**
+     * Seed Data Awal Alur Hierarki Approval Cuti jika masih kosong
+     */
+    private static function seedDefaultHierarki(): void
+    {
+        $cnt = (int)(self::db()->find("SELECT COUNT(*) as c FROM `cuti_approval_hierarchy`")['c'] ?? 0);
+        if ($cnt > 0) {
+            return;
+        }
+
+        $defaults = [
+            // Alur Approval untuk Pegawai Guru (Default)
+            [
+                'unit' => 'Semua',
+                'jenis_pegawai' => 'Guru',
+                'step_order' => 1,
+                'step_nama' => 'Verifikasi Kepala Sekolah / Unit',
+                'approver_role' => 'Kepala Sekolah / Atasan Langsung',
+                'keterangan' => 'Verifikasi ketersediaan guru pengganti di kelas dan kelengkapan dokumen pendukung.'
+            ],
+            [
+                'unit' => 'Semua',
+                'jenis_pegawai' => 'Guru',
+                'step_order' => 2,
+                'step_nama' => 'Persetujuan Yayasan / Pimpinan',
+                'approver_role' => 'Yayasan / HRD / Pimpinan',
+                'keterangan' => 'Persetujuan akhir penerbitan izin cuti resmi dan pengurangan saldo cuti tahunan.'
+            ],
+            // Alur Approval untuk Pegawai Support System / Staff (Default)
+            [
+                'unit' => 'Semua',
+                'jenis_pegawai' => 'Support System',
+                'step_order' => 1,
+                'step_nama' => 'Verifikasi Manajer / Kepala Divisi',
+                'approver_role' => 'Kepala Bagian / Manajer Divisi',
+                'keterangan' => 'Pemeriksaan pelimpahan tugas operasional dan koordinasi tim kerja divisi.'
+            ],
+            [
+                'unit' => 'Semua',
+                'jenis_pegawai' => 'Support System',
+                'step_order' => 2,
+                'step_nama' => 'Persetujuan Direktur / HRD Yayasan',
+                'approver_role' => 'Direktur / HRD / Yayasan',
+                'keterangan' => 'Persetujuan final pengajuan cuti dan pemotongan saldo kuota cuti tahunan.'
+            ]
+        ];
+
+        foreach ($defaults as $d) {
+            self::db()->query("
+                INSERT INTO `cuti_approval_hierarchy`
+                (`unit`, `jenis_pegawai`, `step_order`, `step_nama`, `approver_role`, `keterangan`, `is_active`)
+                VALUES (?, ?, ?, ?, ?, ?, 1)
+            ", [
+                $d['unit'],
+                $d['jenis_pegawai'],
+                $d['step_order'],
+                $d['step_nama'],
+                $d['approver_role'],
+                $d['keterangan']
+            ]);
+        }
+    }
+
+    /**
+     * Backfill pengajuan cuti yang belum memiliki step di cuti_pengajuan_step
+     */
+    private static function backfillUnsteppedPengajuan(): void
+    {
+        try {
+            $unstepped = self::db()->findAll("
+                SELECT cp.id, cp.pegawai_id, cp.status, cp.approved_by, cp.approved_by_name, cp.approved_at, cp.catatan_approval
+                FROM `cuti_pengajuan` cp
+                LEFT JOIN `cuti_pengajuan_step` s ON s.pengajuan_id = cp.id
+                WHERE s.id IS NULL
+            ");
+            foreach ($unstepped as $un) {
+                self::generatePengajuanSteps((int)$un['id'], (int)$un['pegawai_id'], $un['status'], $un);
+            }
+        } catch (Throwable $e) {}
+    }
+
+    /**
+     * Generate step approval untuk sebuah pengajuan cuti berdasarkan alur hierarki custom aktif
+     */
+    public static function generatePengajuanSteps(int $pengajuanId, int $pegawaiId, string $initialStatus = 'Pending', array $overrideInfo = []): void
+    {
+        self::init();
+
+        // Cari data pegawai (unit tugas & jenis pegawai)
+        $pegawai = self::db()->find("
+            SELECT p.unit_tugas, mj.kategori as penugasan_kategori 
+            FROM `pegawai` p
+            LEFT JOIN `pegawai_penugasan` pp ON pp.pegawai_id = p.id AND pp.status = 'Aktif'
+            LEFT JOIN `master_jabatan` mj ON mj.id = pp.jabatan_id
+            WHERE p.id = ? LIMIT 1
+        ", [$pegawaiId]);
+
+        $unit = trim((string)($pegawai['unit_tugas'] ?? ''));
+        $isSupport = (!empty($pegawai['penugasan_kategori']) && $pegawai['penugasan_kategori'] === 'support_system');
+        $jenis = $isSupport ? 'Support System' : 'Guru';
+
+        // Cari hierarki yang paling spesifik (Unit + Jenis Pegawai)
+        $steps = [];
+        if (!empty($unit)) {
+            $steps = self::db()->findAll("
+                SELECT * FROM `cuti_approval_hierarchy`
+                WHERE is_active = 1 AND unit = ? AND jenis_pegawai = ?
+                ORDER BY step_order ASC
+            ", [$unit, $jenis]);
+
+            if (empty($steps)) {
+                $steps = self::db()->findAll("
+                    SELECT * FROM `cuti_approval_hierarchy`
+                    WHERE is_active = 1 AND unit = ? AND jenis_pegawai = 'Semua'
+                    ORDER BY step_order ASC
+                ", [$unit]);
+            }
+        }
+
+        if (empty($steps)) {
+            $steps = self::db()->findAll("
+                SELECT * FROM `cuti_approval_hierarchy`
+                WHERE is_active = 1 AND unit = 'Semua' AND jenis_pegawai = ?
+                ORDER BY step_order ASC
+            ", [$jenis]);
+        }
+
+        if (empty($steps)) {
+            $steps = self::db()->findAll("
+                SELECT * FROM `cuti_approval_hierarchy`
+                WHERE is_active = 1 AND unit = 'Semua' AND jenis_pegawai = 'Semua'
+                ORDER BY step_order ASC
+            ");
+        }
+
+        // Fallback jika database hierarki belum ada rule sama sekali
+        if (empty($steps)) {
+            $steps = [
+                ['step_order' => 1, 'step_nama' => 'Verifikasi Atasan / Kepala Unit', 'approver_role' => 'Kepala Sekolah / Atasan'],
+                ['step_order' => 2, 'step_nama' => 'Persetujuan Yayasan / Pimpinan', 'approver_role' => 'Yayasan / Pimpinan']
+            ];
+        }
+
+        $totalSteps = count($steps);
+        foreach ($steps as $idx => $st) {
+            $order = (int)($st['step_order'] ?? ($idx + 1));
+            $nama = $st['step_nama'];
+            $role = $st['approver_role'] ?? null;
+            $appPegId = !empty($st['approver_pegawai_id']) ? (int)$st['approver_pegawai_id'] : null;
+
+            $stepStatus = 'Pending';
+            $approvedById = null;
+            $approvedByName = null;
+            $approvedAt = null;
+            $catatan = null;
+
+            if ($initialStatus === 'Disetujui') {
+                $stepStatus = 'Disetujui';
+                $approvedById = $overrideInfo['approved_by'] ?? null;
+                $approvedByName = $overrideInfo['approved_by_name'] ?? 'Penyetuju';
+                $approvedAt = $overrideInfo['approved_at'] ?? date('Y-m-d H:i:s');
+                $catatan = $overrideInfo['catatan_approval'] ?? 'Disetujui';
+            } elseif ($initialStatus === 'Ditolak') {
+                // Tandai step terakhir sebagai ditolak
+                if ($idx === $totalSteps - 1 || $totalSteps === 1) {
+                    $stepStatus = 'Ditolak';
+                    $approvedById = $overrideInfo['approved_by'] ?? null;
+                    $approvedByName = $overrideInfo['approved_by_name'] ?? 'Penyetuju';
+                    $approvedAt = $overrideInfo['approved_at'] ?? date('Y-m-d H:i:s');
+                    $catatan = $overrideInfo['catatan_approval'] ?? 'Ditolak';
+                }
+            }
+
+            self::db()->query("
+                INSERT INTO `cuti_pengajuan_step`
+                (`pengajuan_id`, `step_order`, `step_nama`, `approver_role`, `approver_pegawai_id`, `status`, `approved_by_id`, `approved_by_name`, `approved_at`, `catatan`)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ", [$pengajuanId, $order, $nama, $role, $appPegId, $stepStatus, $approvedById, $approvedByName, $approvedAt, $catatan]);
+        }
+    }
+
+    /**
+     * Ambil seluruh riwayat tahapan approval untuk 1 pengajuan cuti
+     */
+    public static function getPengajuanSteps(int $pengajuanId): array
+    {
+        self::init();
+        return self::db()->findAll("
+            SELECT * FROM `cuti_pengajuan_step`
+            WHERE `pengajuan_id` = ?
+            ORDER BY `step_order` ASC, `id` ASC
+        ", [$pengajuanId]);
+    }
+
+    /**
+     * Ambil step pending aktif saat ini untuk pengajuan cuti
+     */
+    public static function getCurrentPendingStep(int $pengajuanId): ?array
+    {
+        self::init();
+        return self::db()->find("
+            SELECT * FROM `cuti_pengajuan_step`
+            WHERE `pengajuan_id` = ? AND `status` = 'Pending'
+            ORDER BY `step_order` ASC LIMIT 1
+        ", [$pengajuanId]) ?: null;
+    }
+
+    /**
+     * Ambil seluruh data konfigurasi Hierarki Approval Custom
+     */
+    public static function getAllHierarki(array $filters = []): array
+    {
+        self::init();
+        $where = ["1=1"];
+        $params = [];
+
+        if (!empty($filters['unit'])) {
+            $where[] = "unit = ?";
+            $params[] = $filters['unit'];
+        }
+        if (!empty($filters['jenis_pegawai'])) {
+            $where[] = "jenis_pegawai = ?";
+            $params[] = $filters['jenis_pegawai'];
+        }
+        if (isset($filters['is_active']) && $filters['is_active'] !== '') {
+            $where[] = "is_active = ?";
+            $params[] = (int)$filters['is_active'];
+        }
+
+        $whereSql = implode(' AND ', $where);
+        return self::db()->findAll("
+            SELECT * FROM `cuti_approval_hierarchy`
+            WHERE {$whereSql}
+            ORDER BY unit ASC, jenis_pegawai ASC, step_order ASC, id ASC
+        ", $params);
+    }
+
+    /**
+     * Simpan / Update 1 Step Hierarki Approval
+     */
+    public static function saveHierarkiStep(array $data): int
+    {
+        self::init();
+        $id = (int)($data['id'] ?? 0);
+        $unit = trim((string)($data['unit'] ?? 'Semua')) ?: 'Semua';
+        $jenisPegawai = trim((string)($data['jenis_pegawai'] ?? 'Semua')) ?: 'Semua';
+        $stepOrder = max(1, (int)($data['step_order'] ?? 1));
+        $stepNama = trim((string)($data['step_nama'] ?? ''));
+        $approverRole = trim((string)($data['approver_role'] ?? '')) ?: null;
+        $approverPegawaiId = !empty($data['approver_pegawai_id']) ? (int)$data['approver_pegawai_id'] : null;
+        $keterangan = trim((string)($data['keterangan'] ?? '')) ?: null;
+        $isActive = isset($data['is_active']) ? (int)$data['is_active'] : 1;
+
+        if (empty($stepNama)) {
+            throw new Exception('Nama tahapan approval wajib diisi.');
+        }
+
+        if ($id > 0) {
+            self::db()->query("
+                UPDATE `cuti_approval_hierarchy`
+                SET `unit` = ?, `jenis_pegawai` = ?, `step_order` = ?, `step_nama` = ?,
+                    `approver_role` = ?, `approver_pegawai_id` = ?, `keterangan` = ?, `is_active` = ?
+                WHERE `id` = ?
+            ", [$unit, $jenisPegawai, $stepOrder, $stepNama, $approverRole, $approverPegawaiId, $keterangan, $isActive, $id]);
+            return $id;
+        } else {
+            self::db()->query("
+                INSERT INTO `cuti_approval_hierarchy`
+                (`unit`, `jenis_pegawai`, `step_order`, `step_nama`, `approver_role`, `approver_pegawai_id`, `keterangan`, `is_active`)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ", [$unit, $jenisPegawai, $stepOrder, $stepNama, $approverRole, $approverPegawaiId, $keterangan, $isActive]);
+            return (int)self::db()->getConnection()->lastInsertId();
+        }
+    }
+
+    /**
+     * Hapus 1 Step Hierarki Approval
+     */
+    public static function deleteHierarkiStep(int $id): bool
+    {
+        self::init();
+        return (bool)self::db()->query("DELETE FROM `cuti_approval_hierarchy` WHERE `id` = ?", [$id]);
+    }
+
+    /**
+     * Reset Hierarki Approval ke Template Default
+     */
+    public static function resetHierarkiDefault(): void
+    {
+        self::init();
+        self::db()->query("DELETE FROM `cuti_approval_hierarchy`");
+        self::seedDefaultHierarki();
     }
 
     /**
@@ -904,6 +1239,9 @@ class CutiModel
 
         $newId = (int)self::db()->getConnection()->lastInsertId();
 
+        // Bangkitkan tahapan approval berdasarkan alur hierarki custom aktif
+        self::generatePengajuanSteps($newId, $pegawaiId);
+
         // Jika admin memilih "Langsung Setujui (Auto-Approve)"
         if (!empty($data['langsung_approve'])) {
             self::approvePengajuan($newId, 'Disetujui', 'Disetujui langsung saat input pengajuan oleh ' . $userName, $userId, $userName);
@@ -1090,6 +1428,118 @@ class CutiModel
     }
 
     /**
+     * Proses Persetujuan / Penolakan Berdasarkan Step Hierarki Tertentu
+     */
+    public static function approvePengajuanStep(
+        int $pengajuanId,
+        int $stepOrder,
+        string $keputusan,
+        string $catatan = '',
+        ?int $approverId = null,
+        string $approverName = 'Admin',
+        bool $approveAll = false
+    ): void {
+        self::init();
+
+        $pengajuan = self::db()->find("
+            SELECT cp.*, j.nama_jenis, p.nama as nama_pegawai
+            FROM `cuti_pengajuan` cp
+            JOIN `cuti_jenis` j ON j.id = cp.jenis_cuti_id
+            JOIN `pegawai` p ON p.id = cp.pegawai_id
+            WHERE cp.id = ?
+        ", [$pengajuanId]);
+
+        if (!$pengajuan) {
+            throw new Exception('Data pengajuan cuti tidak ditemukan.');
+        }
+
+        if ($approveAll) {
+            // Setujui seluruh tahapan sekaligus (Bypass Langsung)
+            self::db()->query("
+                UPDATE `cuti_pengajuan_step`
+                SET `status` = 'Disetujui',
+                    `approved_by_id` = ?,
+                    `approved_by_name` = ?,
+                    `approved_at` = NOW(),
+                    `catatan` = ?
+                WHERE `pengajuan_id` = ? AND `status` = 'Pending'
+            ", [$approverId, $approverName, $catatan ?: 'Disetujui Langsung Seluruh Tahapan (Bypass)', $pengajuanId]);
+
+            self::approvePengajuan($pengajuanId, 'Disetujui', $catatan ?: 'Disetujui Langsung Seluruh Tahapan', $approverId, $approverName);
+            return;
+        }
+
+        if ($keputusan === 'Ditolak') {
+            // Tandai step ini Ditolak
+            self::db()->query("
+                UPDATE `cuti_pengajuan_step`
+                SET `status` = 'Ditolak',
+                    `approved_by_id` = ?,
+                    `approved_by_name` = ?,
+                    `approved_at` = NOW(),
+                    `catatan` = ?
+                WHERE `pengajuan_id` = ? AND `step_order` = ?
+            ", [$approverId, $approverName, $catatan ?: 'Ditolak', $pengajuanId, $stepOrder]);
+
+            // Status utama pengajuan menjadi Ditolak
+            self::approvePengajuan($pengajuanId, 'Ditolak', $catatan ?: "Ditolak pada tahap {$stepOrder} oleh {$approverName}", $approverId, $approverName);
+            return;
+        }
+
+        if ($keputusan === 'Disetujui') {
+            // Ambil info nama step
+            $currentStepRow = self::db()->find("
+                SELECT * FROM `cuti_pengajuan_step`
+                WHERE `pengajuan_id` = ? AND `step_order` = ?
+            ", [$pengajuanId, $stepOrder]);
+            $stepNama = $currentStepRow['step_nama'] ?? ('Tahap ' . $stepOrder);
+
+            // Setujui step ini
+            self::db()->query("
+                UPDATE `cuti_pengajuan_step`
+                SET `status` = 'Disetujui',
+                    `approved_by_id` = ?,
+                    `approved_by_name` = ?,
+                    `approved_at` = NOW(),
+                    `catatan` = ?
+                WHERE `pengajuan_id` = ? AND `step_order` = ?
+            ", [$approverId, $approverName, $catatan ?: 'Disetujui', $pengajuanId, $stepOrder]);
+
+            // Cek apakah masih ada step Pending berikutnya
+            $remaining = (int)(self::db()->find("
+                SELECT COUNT(*) as c 
+                FROM `cuti_pengajuan_step` 
+                WHERE `pengajuan_id` = ? AND `status` = 'Pending'
+            ", [$pengajuanId])['c'] ?? 0);
+
+            if ($remaining > 0) {
+                // Masih ada tahapan selanjutnya
+                $nextStep = self::db()->find("
+                    SELECT * FROM `cuti_pengajuan_step` 
+                    WHERE `pengajuan_id` = ? AND `status` = 'Pending'
+                    ORDER BY `step_order` ASC LIMIT 1
+                ", [$pengajuanId]);
+                $nextNama = $nextStep ? $nextStep['step_nama'] : 'berikutnya';
+
+                self::db()->query("
+                    UPDATE `cuti_pengajuan`
+                    SET `catatan_approval` = ?
+                    WHERE `id` = ?
+                ", ["Tahap {$stepOrder} ({$stepNama}) disetujui oleh {$approverName}. Menunggu: {$nextNama}.", $pengajuanId]);
+            } else {
+                // Semua tahapan dalam hierarki telah selesai disetujui!
+                self::approvePengajuan(
+                    $pengajuanId,
+                    'Disetujui',
+                    $catatan ?: "Seluruh tahapan persetujuan selesai (Disetujui terakhir oleh {$approverName})",
+                    $approverId,
+                    $approverName
+                );
+            }
+        }
+    }
+
+    /**
      * Ambil daftar Pengajuan Cuti (bisa difilter untuk tab Pengajuan, tab Data Approve, maupun tab Riwayat Approve)
      */
     public static function getPengajuanList(array $filters = []): array
@@ -1151,7 +1601,7 @@ class CutiModel
             ? 'cp.approved_at DESC, cp.id DESC'
             : 'cp.id DESC';
 
-        return self::db()->findAll("
+        $rows = self::db()->findAll("
             SELECT 
                 cp.*,
                 p.nama as nama_pegawai, p.gelar, p.niy, p.unit_tugas, p.jabatan, p.foto, p.no_wa,
@@ -1164,6 +1614,43 @@ class CutiModel
             WHERE {$whereSql}
             ORDER BY {$orderBy}
         ", $params);
+
+        if (empty($rows)) {
+            return [];
+        }
+
+        // Lampirkan informasi tahapan hierarki approval untuk setiap pengajuan secara optimal
+        $ids = array_column($rows, 'id');
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $allSteps = self::db()->findAll("
+            SELECT * FROM `cuti_pengajuan_step`
+            WHERE `pengajuan_id` IN ($placeholders)
+            ORDER BY `pengajuan_id` ASC, `step_order` ASC
+        ", $ids);
+
+        $stepsByPengajuan = [];
+        foreach ($allSteps as $st) {
+            $stepsByPengajuan[(int)$st['pengajuan_id']][] = $st;
+        }
+
+        foreach ($rows as &$r) {
+            $pId = (int)$r['id'];
+            $r['steps'] = $stepsByPengajuan[$pId] ?? [];
+            $r['total_steps'] = count($r['steps']);
+            $r['completed_steps'] = 0;
+            $r['current_step'] = null;
+
+            foreach ($r['steps'] as $sItem) {
+                if ($sItem['status'] === 'Disetujui') {
+                    $r['completed_steps']++;
+                } elseif ($sItem['status'] === 'Pending' && $r['current_step'] === null) {
+                    $r['current_step'] = $sItem;
+                }
+            }
+        }
+        unset($r);
+
+        return $rows;
     }
 
     /**

@@ -220,7 +220,7 @@
 
     <!-- Sheet Wrapper -->
     <div class="fixed inset-x-0 bottom-0 max-w-md mx-auto w-full pointer-events-none z-[10020]">
-        <form id="form-permohonan-cuti" onsubmit="submitPermohonanCuti(event)" enctype="multipart/form-data"
+        <form id="form-permohonan-cuti" novalidate onsubmit="submitPermohonanCuti(event); return false;" enctype="multipart/form-data"
               style="touch-action: pan-y; overscroll-behavior: contain;"
               class="bg-white rounded-t-[32px] shadow-2xl pointer-events-auto border-t border-slate-200/80 flex flex-col max-h-[90vh] w-full transform translate-y-full transition-transform duration-250 ease-out overflow-hidden text-xs">
 
@@ -443,7 +443,7 @@
                 <button type="button" onclick="closeModalPermohonanCuti()" class="w-1/3 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs text-center press-bounce transition-all">
                     Batal
                 </button>
-                <button type="submit" id="btn-submit-cuti" class="w-2/3 py-3 rounded-2xl bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white font-bold text-xs text-center shadow-lg shadow-primary-600/30 press-bounce flex items-center justify-center gap-1.5 transition-all">
+                <button type="button" onclick="submitPermohonanCuti(event)" id="btn-submit-cuti" class="w-2/3 py-3 rounded-2xl bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white font-bold text-xs text-center shadow-lg shadow-primary-600/30 press-bounce flex items-center justify-center gap-1.5 transition-all cursor-pointer">
                     <span>💾</span>
                     <span id="btn-submit-text">Simpan Permohonan Cuti</span>
                 </button>
@@ -909,41 +909,50 @@
         }
     }
 
+    // Helper Notifikasi Toast Material Safe
+    function showCutiToast(msg, type = 'warning') {
+        if (window.AndroidUI && typeof window.AndroidUI.toast === 'function') {
+            window.AndroidUI.toast(msg, type);
+        } else if (typeof window.showToast === 'function') {
+            window.showToast(msg, type);
+        } else {
+            alert(msg);
+        }
+    }
+
     // Submit Permohonan Cuti
     async function submitPermohonanCuti(e) {
-        e.preventDefault();
+        if (e && typeof e.preventDefault === 'function') {
+            e.preventDefault();
+        }
 
-        const jenisId = document.getElementById('modal_jenis_cuti_id')?.value;
+        const jenisId = document.getElementById('modal_jenis_cuti_id')?.value || '';
         const substitute = document.getElementById('modal_pelimpahan_tugas')?.value || '';
-        const keteranganTugas = document.getElementById('modal_keterangan_tugas')?.value.trim();
-        const alasan = document.getElementById('modal_alasan')?.value.trim();
-        const kontak = document.getElementById('modal_kontak_darurat')?.value.trim() || '';
+        const keteranganTugas = (document.getElementById('modal_keterangan_tugas')?.value || '').trim();
+        const alasan = (document.getElementById('modal_alasan')?.value || '').trim();
+        const kontak = (document.getElementById('modal_kontak_darurat')?.value || '').trim();
 
         const btnSubmit = document.getElementById('btn-submit-cuti');
         const btnText = document.getElementById('btn-submit-text');
 
         if (!jenisId) {
-            if (typeof AndroidUI !== 'undefined') AndroidUI.toast('Mohon pilih jenis cuti terlebih dahulu.', 'warning');
-            else alert('Mohon pilih jenis cuti terlebih dahulu.');
+            showCutiToast('Mohon pilih jenis cuti terlebih dahulu.', 'warning');
             return;
         }
 
         if (!window.selectedCutiDates || window.selectedCutiDates.length === 0) {
-            if (typeof AndroidUI !== 'undefined') AndroidUI.toast('Silakan pilih minimal 1 tanggal cuti dengan mengklik tombol tanggal.', 'warning');
-            else alert('Silakan pilih minimal 1 tanggal cuti dengan mengklik tombol tanggal.');
+            showCutiToast('Silakan pilih minimal 1 tanggal cuti dengan mengklik tombol tanggal.', 'warning');
             return;
         }
 
         if (!keteranganTugas) {
-            if (typeof AndroidUI !== 'undefined') AndroidUI.toast('Mohon isi keterangan tugas yang dilimpahkan kepada rekan pengganti.', 'warning');
-            else alert('Mohon isi keterangan tugas yang dilimpahkan kepada rekan pengganti.');
+            showCutiToast('Mohon isi keterangan tugas yang dilimpahkan kepada rekan pengganti.', 'warning');
             document.getElementById('modal_keterangan_tugas')?.focus();
             return;
         }
 
         if (!alasan) {
-            if (typeof AndroidUI !== 'undefined') AndroidUI.toast('Mohon isi alasan / keperluan cuti.', 'warning');
-            else alert('Mohon isi alasan / keperluan cuti.');
+            showCutiToast('Mohon isi alasan / keperluan cuti.', 'warning');
             document.getElementById('modal_alasan')?.focus();
             return;
         }
@@ -1020,8 +1029,7 @@
             }
         } catch (err) {
             console.error('Submit cuti error:', err);
-            if (typeof AndroidUI !== 'undefined') AndroidUI.toast('Terjadi kesalahan jaringan saat mengirim permohonan cuti.', 'danger');
-            else alert('Terjadi kesalahan jaringan saat mengirim permohonan cuti.');
+            showCutiToast('Terjadi kesalahan jaringan saat mengirim permohonan cuti.', 'error');
         } finally {
             if (btnSubmit) btnSubmit.disabled = false;
             if (btnText) btnText.textContent = 'Simpan Permohonan Cuti';

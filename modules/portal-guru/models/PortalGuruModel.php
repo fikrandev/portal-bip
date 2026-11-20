@@ -405,11 +405,50 @@ class PortalGuruModel
 
             $tglBuat = !empty($r['created_at']) ? date('d M Y, H:i', strtotime($r['created_at'])) : '-';
 
+            // Timeline verifikasi riil dinamis dari tahapan cuti_pengajuan_step
             $timeline = [
-                ['step' => 'Pengajuan Diajukan', 'time' => $tglBuat, 'done' => true],
-                ['step' => 'Verifikasi Wakasek SDM', 'time' => in_array($status, ['Disetujui', 'Ditolak']) ? (!empty($r['verified_at']) ? date('d M Y, H:i', strtotime($r['verified_at'])) : 'Selesai') : 'Menunggu', 'done' => in_array($status, ['Disetujui', 'Ditolak'])],
-                ['step' => 'Persetujuan Kepala Sekolah', 'time' => ($status === 'Disetujui') ? (!empty($r['approved_at']) ? date('d M Y, H:i', strtotime($r['approved_at'])) : 'Disetujui') : ($status === 'Ditolak' ? 'Ditolak' : 'Menunggu'), 'done' => ($status === 'Disetujui')]
+                ['step' => 'Pengajuan Diajukan', 'time' => $tglBuat, 'done' => true, 'status' => 'Disetujui']
             ];
+            $realSteps = [];
+            try {
+                $realSteps = $db->findAll("
+                    SELECT * FROM `cuti_pengajuan_step`
+                    WHERE `pengajuan_id` = ?
+                    ORDER BY `step_order` ASC, `id` ASC
+                ", [$r['id']]);
+            } catch (Throwable $e) {}
+
+            if (!empty($realSteps)) {
+                foreach ($realSteps as $st) {
+                    $done = ($st['status'] === 'Disetujui');
+                    $timeStr = 'Menunggu';
+                    if ($st['status'] === 'Disetujui') {
+                        $timeStr = !empty($st['approved_at']) ? date('d M Y, H:i', strtotime($st['approved_at'])) : 'Disetujui';
+                        if (!empty($st['approved_by_name'])) {
+                            $timeStr .= ' (' . $st['approved_by_name'] . ')';
+                        }
+                    } elseif ($st['status'] === 'Ditolak') {
+                        $timeStr = 'Ditolak' . (!empty($st['approved_by_name']) ? ' (' . $st['approved_by_name'] . ')' : '');
+                    } elseif ($st['status'] === 'Dilewati') {
+                        $timeStr = 'Dilewati';
+                    }
+
+                    $label = $st['step_nama'];
+                    if (!empty($st['approver_role'])) {
+                        $label .= ' (' . $st['approver_role'] . ')';
+                    }
+
+                    $timeline[] = [
+                        'step' => $label,
+                        'time' => $timeStr,
+                        'done' => $done,
+                        'status' => $st['status']
+                    ];
+                }
+            } else {
+                $timeline[] = ['step' => 'Verifikasi Atasan / Kepala Unit', 'time' => in_array($status, ['Disetujui', 'Ditolak']) ? 'Selesai' : 'Menunggu', 'done' => in_array($status, ['Disetujui', 'Ditolak']), 'status' => $status];
+                $timeline[] = ['step' => 'Persetujuan Yayasan / Pimpinan', 'time' => ($status === 'Disetujui') ? 'Disetujui' : ($status === 'Ditolak' ? 'Ditolak' : 'Menunggu'), 'done' => ($status === 'Disetujui'), 'status' => $status];
+            }
 
             $displayTanggal = CutiModel::formatTanggalCutiDisplay($r, 'd M Y');
             $cutiDatesList = CutiModel::parseTanggalPilihan($r['tanggal_cuti_list'] ?? null);

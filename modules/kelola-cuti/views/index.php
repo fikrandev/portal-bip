@@ -153,6 +153,7 @@ $tambahPerBulan = (int)($cfgTahunan['tambah_per_bulan'] ?? 1);
                 'riwayat'   => ['label' => 'Riwayat Approve', 'badge' => count($riwayatList), 'badgeClass' => 'bg-emerald-100 text-emerald-700'],
                 'log'       => ['label' => 'Log Pengurangan Cuti', 'badge' => count($logList), 'badgeClass' => 'bg-rose-100 text-rose-700'],
                 'jenis'     => ['label' => 'Jenis Cuti (Tahunan & Khusus)', 'badge' => count($jenisCutiList), 'badgeClass' => 'bg-purple-100 text-purple-700'],
+                'hierarki'  => ['label' => 'Hierarki Approval', 'badge' => count($hierarkiList), 'badgeClass' => 'bg-indigo-100 text-indigo-700'],
             ];
             foreach ($tabsConfig as $tKey => $tCfg):
                 $isAct = ($activeTab === $tKey);
@@ -509,17 +510,28 @@ $tambahPerBulan = (int)($cfgTahunan['tambah_per_bulan'] ?? 1);
                                         <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold border <?= $statusBadge ?>">
                                             <?= e($cp['status']) ?>
                                         </span>
+                                        <?php if ($cp['status'] === 'Pending' && !empty($cp['current_step'])): ?>
+                                            <div class="mt-1 text-[9.5px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200 truncate max-w-[130px] mx-auto" title="<?= e($cp['current_step']['step_nama']) ?>">
+                                                Step <?= (int)$cp['current_step']['step_order'] ?>: <?= e($cp['current_step']['step_nama']) ?>
+                                            </div>
+                                        <?php endif; ?>
                                     </td>
                                     <td class="py-3.5 px-4 text-center">
                                         <div class="flex items-center justify-center gap-1.5">
-                                            <?php if ($cp['status'] === 'Pending'): ?>
+                                            <?php if ($cp['status'] === 'Pending'): 
+                                                $curStep = $cp['current_step'] ?? null;
+                                                $curStepOrder = $curStep ? (int)$curStep['step_order'] : 1;
+                                                $curStepNama = $curStep ? $curStep['step_nama'] : 'Persetujuan';
+                                                $totalSteps = (int)($cp['total_steps'] ?: 1);
+                                                $stepsJson = json_encode($cp['steps'] ?? []);
+                                            ?>
                                                 <button type="button"
-                                                    onclick="openModalApprove(<?= (int)$cp['id'] ?>, 'Disetujui', <?= htmlspecialchars(json_encode($namaPeg), ENT_QUOTES, 'UTF-8') ?>, <?= htmlspecialchars(json_encode($cp['nama_jenis']), ENT_QUOTES, 'UTF-8') ?>, <?= (int)$cp['jumlah_hari'] ?>, 'pengajuan')"
+                                                    onclick="openModalApprove(<?= (int)$cp['id'] ?>, 'Disetujui', <?= htmlspecialchars(json_encode($namaPeg), ENT_QUOTES, 'UTF-8') ?>, <?= htmlspecialchars(json_encode($cp['nama_jenis']), ENT_QUOTES, 'UTF-8') ?>, <?= (int)$cp['jumlah_hari'] ?>, 'pengajuan', <?= $curStepOrder ?>, <?= htmlspecialchars(json_encode($curStepNama), ENT_QUOTES, 'UTF-8') ?>, <?= $totalSteps ?>, <?= htmlspecialchars($stepsJson, ENT_QUOTES, 'UTF-8') ?>)"
                                                     class="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] cursor-pointer">
                                                     Approve
                                                 </button>
                                                 <button type="button"
-                                                    onclick="openModalApprove(<?= (int)$cp['id'] ?>, 'Ditolak', <?= htmlspecialchars(json_encode($namaPeg), ENT_QUOTES, 'UTF-8') ?>, <?= htmlspecialchars(json_encode($cp['nama_jenis']), ENT_QUOTES, 'UTF-8') ?>, <?= (int)$cp['jumlah_hari'] ?>, 'pengajuan')"
+                                                    onclick="openModalApprove(<?= (int)$cp['id'] ?>, 'Ditolak', <?= htmlspecialchars(json_encode($namaPeg), ENT_QUOTES, 'UTF-8') ?>, <?= htmlspecialchars(json_encode($cp['nama_jenis']), ENT_QUOTES, 'UTF-8') ?>, <?= (int)$cp['jumlah_hari'] ?>, 'pengajuan', <?= $curStepOrder ?>, <?= htmlspecialchars(json_encode($curStepNama), ENT_QUOTES, 'UTF-8') ?>, <?= $totalSteps ?>, <?= htmlspecialchars($stepsJson, ENT_QUOTES, 'UTF-8') ?>)"
                                                     class="px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-[11px] cursor-pointer">
                                                     Tolak
                                                 </button>
@@ -596,6 +608,12 @@ $tambahPerBulan = (int)($cfgTahunan['tambah_per_bulan'] ?? 1);
                                         <div class="text-[10px] font-sans font-normal text-slate-400 mt-0.5">
                                             Diajukan: <?= date('d/m/Y H:i', strtotime($cp['created_at'])) ?>
                                         </div>
+                                        <?php if (!empty($cp['current_step'])): ?>
+                                            <div class="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-700 text-[10px] font-bold">
+                                                <span>⏳ Tahap <?= (int)$cp['current_step']['step_order'] ?>/<?= (int)($cp['total_steps'] ?: 1) ?>:</span>
+                                                <span class="truncate max-w-[125px]"><?= e($cp['current_step']['step_nama']) ?></span>
+                                            </div>
+                                        <?php endif; ?>
                                     </td>
                                     <td class="py-3.5 px-4">
                                         <div class="font-bold text-slate-800"><?= e($namaPeg) ?></div>
@@ -640,15 +658,22 @@ $tambahPerBulan = (int)($cfgTahunan['tambah_per_bulan'] ?? 1);
                                         <?php endif; ?>
                                     </td>
                                     <td class="py-3.5 px-4 text-center">
+                                        <?php
+                                        $curStep = $cp['current_step'] ?? null;
+                                        $curStepOrder = $curStep ? (int)$curStep['step_order'] : 1;
+                                        $curStepNama = $curStep ? $curStep['step_nama'] : 'Persetujuan';
+                                        $totalSteps = (int)($cp['total_steps'] ?: 1);
+                                        $stepsJson = json_encode($cp['steps'] ?? []);
+                                        ?>
                                         <div class="flex items-center justify-center gap-2">
                                             <button type="button"
-                                                onclick="openModalApprove(<?= (int)$cp['id'] ?>, 'Disetujui', <?= htmlspecialchars(json_encode($namaPeg), ENT_QUOTES, 'UTF-8') ?>, <?= htmlspecialchars(json_encode($cp['nama_jenis']), ENT_QUOTES, 'UTF-8') ?>, <?= (int)$cp['jumlah_hari'] ?>, 'approve')"
+                                                onclick="openModalApprove(<?= (int)$cp['id'] ?>, 'Disetujui', <?= htmlspecialchars(json_encode($namaPeg), ENT_QUOTES, 'UTF-8') ?>, <?= htmlspecialchars(json_encode($cp['nama_jenis']), ENT_QUOTES, 'UTF-8') ?>, <?= (int)$cp['jumlah_hari'] ?>, 'approve', <?= $curStepOrder ?>, <?= htmlspecialchars(json_encode($curStepNama), ENT_QUOTES, 'UTF-8') ?>, <?= $totalSteps ?>, <?= htmlspecialchars($stepsJson, ENT_QUOTES, 'UTF-8') ?>)"
                                                 class="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm cursor-pointer flex items-center gap-1">
                                                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg>
                                                 <span>Setujui</span>
                                             </button>
                                             <button type="button"
-                                                onclick="openModalApprove(<?= (int)$cp['id'] ?>, 'Ditolak', <?= htmlspecialchars(json_encode($namaPeg), ENT_QUOTES, 'UTF-8') ?>, <?= htmlspecialchars(json_encode($cp['nama_jenis']), ENT_QUOTES, 'UTF-8') ?>, <?= (int)$cp['jumlah_hari'] ?>, 'approve')"
+                                                onclick="openModalApprove(<?= (int)$cp['id'] ?>, 'Ditolak', <?= htmlspecialchars(json_encode($namaPeg), ENT_QUOTES, 'UTF-8') ?>, <?= htmlspecialchars(json_encode($cp['nama_jenis']), ENT_QUOTES, 'UTF-8') ?>, <?= (int)$cp['jumlah_hari'] ?>, 'approve', <?= $curStepOrder ?>, <?= htmlspecialchars(json_encode($curStepNama), ENT_QUOTES, 'UTF-8') ?>, <?= $totalSteps ?>, <?= htmlspecialchars($stepsJson, ENT_QUOTES, 'UTF-8') ?>)"
                                                 class="px-3 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 font-bold text-xs cursor-pointer flex items-center gap-1">
                                                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
                                                 <span>Tolak</span>
@@ -1066,6 +1091,227 @@ $tambahPerBulan = (int)($cfgTahunan['tambah_per_bulan'] ?? 1);
         </div>
     </div>
 
+    <!-- ═════════════════════════════════════════════════════════════════════
+         TAB 7: HIERARKI APPROVAL (CUSTOM WORKFLOW PERSETUJUAN CUTI)
+         ═════════════════════════════════════════════════════════════════════ -->
+    <div id="cuti-panel-hierarki" class="cuti-tab-panel space-y-5 <?= $activeTab === 'hierarki' ? '' : 'hidden' ?>">
+        
+        <!-- Header Banner -->
+        <div class="bg-gradient-to-r from-indigo-950 via-indigo-900 to-purple-950 rounded-3xl p-6 sm:p-7 text-white shadow-xl border border-indigo-800/80 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+            <div class="max-w-2xl">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 text-xs font-semibold mb-2.5">
+                    <span>⚙️ Custom Approval Workflow</span>
+                </div>
+                <h2 class="text-xl sm:text-2xl font-extrabold tracking-tight text-white mb-1.5">
+                    Hierarki & Alur Persetujuan Cuti Pegawai
+                </h2>
+                <p class="text-indigo-200/90 text-xs sm:text-sm leading-relaxed">
+                    Kustomisasi tahapan persetujuan cuti (Multi-Step Approval) sesuai kebijakan sekolah. Setiap pengajuan cuti pegawai akan diproses bertingkat sesuai unit dan jenis pegawai yang Anda konfigurasikan di bawah ini.
+                </p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2.5 shrink-0">
+                <button type="button" onclick="openModalTambahHierarki()"
+                    class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold text-xs shadow-lg shadow-emerald-500/25 transition-all transform hover:-translate-y-0.5 cursor-pointer">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                    <span>+ Tambah Tahapan Approval</span>
+                </button>
+                <form method="POST" action="<?= url('kelola-cuti/hierarki/reset') ?>" onsubmit="return confirm('Apakah Anda yakin ingin me-reset hierarki approval ke template standar 2-tahap?');" class="inline">
+                    <?= CSRF::field() ?>
+                    <button type="submit" class="inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-2xl bg-white/10 hover:bg-rose-500/20 border border-white/20 text-indigo-200 hover:text-rose-200 font-semibold text-xs transition-all cursor-pointer">
+                        <span>↺ Reset Default</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Filter Card -->
+        <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-wrap items-center justify-between gap-4">
+            <form method="GET" action="<?= url('kelola-cuti') ?>" class="flex flex-wrap items-center gap-3">
+                <input type="hidden" name="tab" value="hierarki">
+                
+                <div class="flex items-center gap-2">
+                    <label class="text-xs font-bold text-slate-600">Unit Sekolah:</label>
+                    <select name="unit_hierarki" onchange="this.form.submit()" class="px-3 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50 font-semibold text-slate-800 focus:bg-white outline-none focus:border-indigo-500">
+                        <option value="">Semua Unit (Global)</option>
+                        <?php foreach ($unitTugasList as $ut): ?>
+                            <option value="<?= e($ut['unit_tugas']) ?>" <?= ($hierarkiFilters['unit'] === $ut['unit_tugas']) ? 'selected' : '' ?>>
+                                <?= e($ut['unit_tugas']) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <label class="text-xs font-bold text-slate-600">Jenis Pegawai:</label>
+                    <select name="jenis_hierarki" onchange="this.form.submit()" class="px-3 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50 font-semibold text-slate-800 focus:bg-white outline-none focus:border-indigo-500">
+                        <option value="">Semua Jenis Pegawai</option>
+                        <option value="Guru" <?= ($hierarkiFilters['jenis_pegawai'] === 'Guru') ? 'selected' : '' ?>>Guru</option>
+                        <option value="Support System" <?= ($hierarkiFilters['jenis_pegawai'] === 'Support System') ? 'selected' : '' ?>>Support System / Staff</option>
+                    </select>
+                </div>
+
+                <?php if (!empty($hierarkiFilters['unit']) || !empty($hierarkiFilters['jenis_pegawai'])): ?>
+                    <a href="<?= url('kelola-cuti?tab=hierarki') ?>" class="text-xs font-bold text-rose-600 hover:underline">
+                        ✕ Reset Filter
+                    </a>
+                <?php endif; ?>
+            </form>
+
+            <span class="text-xs text-slate-500 font-medium">
+                Ditemukan: <strong><?= count($hierarkiList) ?></strong> Tahapan Aktif
+            </span>
+        </div>
+
+        <!-- Diagram Visual Alur Approval Per Kelompok -->
+        <?php
+        $groupedHierarki = [];
+        foreach ($hierarkiList as $h) {
+            $gKey = ($h['unit'] ?: 'Semua Unit') . ' &bull; ' . ($h['jenis_pegawai'] ?: 'Semua Pegawai');
+            $groupedHierarki[$gKey][] = $h;
+        }
+        ?>
+
+        <?php if (!empty($groupedHierarki)): ?>
+            <div class="space-y-4">
+                <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider px-1">Visualisasi Alur Berjalan (Workflow Chain)</h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <?php foreach ($groupedHierarki as $groupLabel => $stepsInGroup): ?>
+                        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-5 space-y-4">
+                            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span>
+                                    <h5 class="font-extrabold text-slate-900 text-xs sm:text-sm"><?= $groupLabel ?></h5>
+                                </div>
+                                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                    <?= count($stepsInGroup) ?> Tahap Approval
+                                </span>
+                            </div>
+
+                            <!-- Flow Steps Diagram Horizontal -->
+                            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 overflow-x-auto py-1">
+                                <?php foreach ($stepsInGroup as $sIdx => $st): ?>
+                                    <div class="flex-1 min-w-[170px] p-3 rounded-xl bg-slate-50 border border-slate-200/90 hover:border-indigo-400 transition-all flex flex-col justify-between">
+                                        <div>
+                                            <div class="flex items-center justify-between mb-1">
+                                                <span class="w-5 h-5 rounded-full bg-indigo-600 text-white font-black text-[10px] flex items-center justify-center">
+                                                    <?= (int)$st['step_order'] ?>
+                                                </span>
+                                                <span class="text-[9.5px] font-bold text-slate-400">Step <?= (int)$st['step_order'] ?></span>
+                                            </div>
+                                            <div class="font-bold text-slate-900 text-xs leading-tight mb-1"><?= e($st['step_nama']) ?></div>
+                                            <div class="text-[10px] text-indigo-600 font-semibold bg-indigo-50/80 px-1.5 py-0.5 rounded inline-block truncate max-w-full">
+                                                <?= e($st['approver_role'] ?: 'Admin / Penyetuju') ?>
+                                            </div>
+                                        </div>
+                                        <div class="mt-2.5 pt-2 border-t border-slate-200/60 flex items-center justify-end gap-1.5">
+                                            <button type="button" onclick="openModalEditHierarki(<?= htmlspecialchars(json_encode($st), ENT_QUOTES, 'UTF-8') ?>)" class="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 hover:underline">
+                                                Edit
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <?php if ($sIdx < count($stepsInGroup) - 1): ?>
+                                        <div class="hidden sm:flex text-slate-300 font-black text-sm px-0.5">➔</div>
+                                    <?php endif; ?>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+        <?php endif; ?>
+
+        <!-- Tabel Detail Master Tahapan Approval -->
+        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+            <div class="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between">
+                <div>
+                    <h4 class="font-bold text-slate-900 text-sm">Tabel Master Tahapan Hierarki Approval</h4>
+                    <p class="text-xs text-slate-500">Kelola urutan dan pihak yang berwenang menyetujui di setiap langkah</p>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-xs text-left">
+                    <thead class="bg-slate-50 text-slate-500 uppercase tracking-wider font-bold border-b border-slate-200/80">
+                        <tr>
+                            <th class="py-3.5 px-4 text-center w-16">Urutan</th>
+                            <th class="py-3.5 px-4">Nama Tahapan Approval</th>
+                            <th class="py-3.5 px-4">Unit Sekolah</th>
+                            <th class="py-3.5 px-4">Jenis Pegawai</th>
+                            <th class="py-3.5 px-4">Role / Jabatan Penyetuju</th>
+                            <th class="py-3.5 px-4">Keterangan</th>
+                            <th class="py-3.5 px-4 text-center w-24">Status</th>
+                            <th class="py-3.5 px-4 text-center w-28">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        <?php if (empty($hierarkiList)): ?>
+                            <tr>
+                                <td colspan="8" class="py-12 text-center text-slate-400">
+                                    <p class="font-bold text-slate-700">Belum ada aturan hierarki approval.</p>
+                                    <p class="text-xs mt-1">Klik "+ Tambah Tahapan Approval" atau "Reset Default" untuk memulai.</p>
+                                </td>
+                            </tr>
+                        <?php else: ?>
+                            <?php foreach ($hierarkiList as $h): ?>
+                                <tr class="hover:bg-slate-50/80 transition-colors">
+                                    <td class="py-3.5 px-4 text-center">
+                                        <span class="w-7 h-7 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-700 font-extrabold text-xs inline-flex items-center justify-center">
+                                            <?= (int)$h['step_order'] ?>
+                                        </span>
+                                    </td>
+                                    <td class="py-3.5 px-4 font-bold text-slate-900">
+                                        <?= e($h['step_nama']) ?>
+                                    </td>
+                                    <td class="py-3.5 px-4">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10.5px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                                            <?= e($h['unit'] ?: 'Semua Unit') ?>
+                                        </span>
+                                    </td>
+                                    <td class="py-3.5 px-4">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10.5px] font-bold <?= $h['jenis_pegawai'] === 'Guru' ? 'bg-sky-50 text-sky-700 border border-sky-200' : ($h['jenis_pegawai'] === 'Support System' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-700 border border-slate-200') ?>">
+                                            <?= e($h['jenis_pegawai'] ?: 'Semua') ?>
+                                        </span>
+                                    </td>
+                                    <td class="py-3.5 px-4 font-semibold text-indigo-800">
+                                        <?= e($h['approver_role'] ?: 'Semua Admin') ?>
+                                    </td>
+                                    <td class="py-3.5 px-4 text-slate-500 max-w-xs text-[11px]">
+                                        <?= e($h['keterangan'] ?: '-') ?>
+                                    </td>
+                                    <td class="py-3.5 px-4 text-center">
+                                        <?php if ((int)$h['is_active'] === 1): ?>
+                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">Aktif</span>
+                                        <?php else: ?>
+                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-500 border border-slate-200">Nonaktif</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td class="py-3.5 px-4 text-center">
+                                        <div class="flex items-center justify-center gap-1.5">
+                                            <button type="button"
+                                                onclick="openModalEditHierarki(<?= htmlspecialchars(json_encode($h), ENT_QUOTES, 'UTF-8') ?>)"
+                                                class="px-2.5 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-[11px] cursor-pointer">
+                                                Edit
+                                            </button>
+                                            <form method="POST" action="<?= url('kelola-cuti/hierarki/delete') ?>" onsubmit="return confirm('Hapus tahapan ini?');" class="inline">
+                                                <?= CSRF::field() ?>
+                                                <input type="hidden" name="id" value="<?= (int)$h['id'] ?>">
+                                                <button type="submit" class="px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-[11px] cursor-pointer">
+                                                    Hapus
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
 </div>
 
 <!-- ═════════════════════════════════════════════════════════════════════════
@@ -1223,10 +1469,23 @@ $tambahPerBulan = (int)($cfgTahunan['tambah_per_bulan'] ?? 1);
             <input type="hidden" name="pengajuan_id" id="approve_pengajuan_id">
             <input type="hidden" name="keputusan" id="approve_keputusan">
             <input type="hidden" name="return_tab" id="approve_return_tab" value="approve">
+            <input type="hidden" name="step_order" id="approve_step_order" value="">
+            <input type="hidden" name="approve_all" id="approve_all_flag" value="">
 
             <div id="approve_info_banner" class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs space-y-1">
                 <div>Pegawai: <strong id="approve_nama_pegawai" class="text-slate-900"></strong></div>
                 <div>Jenis Cuti: <strong id="approve_jenis_cuti" class="text-slate-900"></strong> (<span id="approve_jumlah_hari" class="font-bold"></span> Hari)</div>
+            </div>
+
+            <!-- Box Tahapan Approval Hierarki -->
+            <div id="approve_step_box" class="hidden p-3.5 rounded-2xl bg-indigo-50 border border-indigo-200 text-xs space-y-2">
+                <div class="flex items-center justify-between">
+                    <span class="font-extrabold text-indigo-950 flex items-center gap-1.5">
+                        <span>⏳</span> <span id="approve_step_badge">Tahap 1 / 2</span>
+                    </span>
+                    <span id="approve_step_title" class="text-[11px] font-bold text-indigo-700"></span>
+                </div>
+                <div id="approve_steps_chain" class="space-y-1 pt-1.5 border-t border-indigo-200/70"></div>
             </div>
 
             <div>
@@ -1235,11 +1494,14 @@ $tambahPerBulan = (int)($cfgTahunan['tambah_per_bulan'] ?? 1);
                           class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs text-slate-800 outline-none focus:border-primary-500"></textarea>
             </div>
 
-            <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-                <button type="button" onclick="closeModal('modalApproveCuti')" class="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-bold text-xs cursor-pointer">
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                <button type="button" onclick="closeModal('modalApproveCuti')" class="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-bold text-xs cursor-pointer order-last sm:order-first">
                     Batal
                 </button>
-                <button type="submit" id="approve_submit_btn" class="px-5 py-2 rounded-xl bg-emerald-600 text-white font-bold text-xs shadow-sm cursor-pointer">
+                <button type="submit" id="approve_bypass_btn" onclick="document.getElementById('approve_all_flag').value = '1';" class="hidden px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow-sm cursor-pointer">
+                    ⚡ Setujui Final Seluruh Tahapan
+                </button>
+                <button type="submit" id="approve_submit_btn" onclick="document.getElementById('approve_all_flag').value = '';" class="px-5 py-2 rounded-xl bg-emerald-600 text-white font-bold text-xs shadow-sm cursor-pointer">
                     Konfirmasi
                 </button>
             </div>
@@ -1362,6 +1624,87 @@ $tambahPerBulan = (int)($cfgTahunan['tambah_per_bulan'] ?? 1);
                 </button>
                 <button type="submit" class="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-sm cursor-pointer">
                     Simpan Jenis Cuti
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ═════════════════════════════════════════════════════════════════════════
+     MODAL 5: TAMBAH / EDIT STEP HIERARKI APPROVAL (CUSTOM WORKFLOW)
+     ═════════════════════════════════════════════════════════════════════════ -->
+<div id="modalHierarkiStep" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div>
+                <h3 id="hierarki_modal_title" class="text-base font-extrabold text-slate-900">Tambah Tahapan Approval</h3>
+                <p class="text-xs text-slate-500">Konfigurasi urutan langkah dan pihak yang berhak menyetujui</p>
+            </div>
+            <button type="button" onclick="closeModal('modalHierarkiStep')" class="p-1.5 rounded-full text-slate-400 hover:text-slate-600">✕</button>
+        </div>
+
+        <form method="POST" action="<?= url('kelola-cuti/hierarki/store') ?>" class="space-y-4 mt-4">
+            <?= CSRF::field() ?>
+            <input type="hidden" name="id" id="hierarki_id" value="">
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Unit Sekolah <span class="text-rose-500">*</span></label>
+                    <select name="unit" id="hierarki_unit" required class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 bg-slate-50 focus:bg-white outline-none focus:border-indigo-500">
+                        <option value="Semua">Semua Unit (Global)</option>
+                        <?php foreach ($unitTugasList as $ut): ?>
+                            <option value="<?= e($ut['unit_tugas']) ?>"><?= e($ut['unit_tugas']) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Jenis Pegawai <span class="text-rose-500">*</span></label>
+                    <select name="jenis_pegawai" id="hierarki_jenis_pegawai" required class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 bg-slate-50 focus:bg-white outline-none focus:border-indigo-500">
+                        <option value="Semua">Semua (Guru & Staff)</option>
+                        <option value="Guru">Guru</option>
+                        <option value="Support System">Support System / Staff</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Urutan Tahap <span class="text-rose-500">*</span></label>
+                    <input type="number" name="step_order" id="hierarki_step_order" min="1" max="10" required value="1"
+                           class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-extrabold text-slate-800 outline-none focus:border-indigo-500 text-center">
+                    <p class="text-[10px] text-slate-400 mt-0.5">Langkah ke: 1, 2, 3...</p>
+                </div>
+                <div class="sm:col-span-2">
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Nama Tahapan <span class="text-rose-500">*</span></label>
+                    <input type="text" name="step_nama" id="hierarki_step_nama" required placeholder="Contoh: Verifikasi Kepala Sekolah"
+                           class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 outline-none focus:border-indigo-500">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Role / Jabatan Penyetuju <span class="text-rose-500">*</span></label>
+                <input type="text" name="approver_role" id="hierarki_approver_role" required placeholder="Contoh: Kepala Sekolah / Yayasan / HRD / Manajer Divisi"
+                       class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 outline-none focus:border-indigo-500">
+                <p class="text-[10px] text-slate-400 mt-0.5">Label jabatan/peran yang berhak menyetujui langkah ini.</p>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Keterangan / Deskripsi Tugas</label>
+                <textarea name="keterangan" id="hierarki_keterangan" rows="2" placeholder="Catatan panduan untuk approver..."
+                          class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs text-slate-800 outline-none focus:border-indigo-500"></textarea>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <input type="checkbox" name="is_active" id="hierarki_is_active" value="1" checked class="w-4 h-4 rounded text-indigo-600">
+                <label for="hierarki_is_active" class="text-xs font-bold text-slate-700 cursor-pointer">Tahapan ini Aktif</label>
+            </div>
+
+            <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                <button type="button" onclick="closeModal('modalHierarkiStep')" class="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-bold text-xs cursor-pointer">
+                    Batal
+                </button>
+                <button type="submit" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-sm cursor-pointer">
+                    Simpan Tahapan
                 </button>
             </div>
         </form>
@@ -1525,7 +1868,7 @@ function hitungDurasiCuti() {
     }
 }
 
-function openModalApprove(id, keputusan, namaPegawai, namaJenis, jumlahHari, returnTab) {
+function openModalApprove(id, keputusan, namaPegawai, namaJenis, jumlahHari, returnTab, stepOrder = 1, stepNama = '', totalSteps = 1, steps = []) {
     document.getElementById('approve_pengajuan_id').value = id;
     document.getElementById('approve_keputusan').value = keputusan;
     document.getElementById('approve_return_tab').value = returnTab || 'approve';
@@ -1533,23 +1876,111 @@ function openModalApprove(id, keputusan, namaPegawai, namaJenis, jumlahHari, ret
     document.getElementById('approve_jenis_cuti').textContent = namaJenis;
     document.getElementById('approve_jumlah_hari').textContent = jumlahHari;
 
+    document.getElementById('approve_step_order').value = stepOrder || '1';
+    document.getElementById('approve_all_flag').value = '';
+
+    const stepBox = document.getElementById('approve_step_box');
+    const stepBadge = document.getElementById('approve_step_badge');
+    const stepTitle = document.getElementById('approve_step_title');
+    const stepsChain = document.getElementById('approve_steps_chain');
+    const bypassBtn = document.getElementById('approve_bypass_btn');
+    const submitBtn = document.getElementById('approve_submit_btn');
     const title = document.getElementById('approve_modal_title');
-    const btn = document.getElementById('approve_submit_btn');
+
+    if (totalSteps > 1 && stepNama) {
+        stepBox.classList.remove('hidden');
+        stepBadge.textContent = `Tahap ${stepOrder} dari ${totalSteps}`;
+        stepTitle.textContent = stepNama;
+
+        // Render rantai tahapan approval
+        let chainHtml = '';
+        if (Array.isArray(steps) && steps.length > 0) {
+            chainHtml = steps.map(s => {
+                const isCurrent = parseInt(s.step_order) === parseInt(stepOrder);
+                const isDone = s.status === 'Disetujui';
+                const isRejected = s.status === 'Ditolak';
+
+                let icon = '⚪';
+                let textColor = 'text-slate-500';
+                if (isDone) { icon = '✓'; textColor = 'text-emerald-700 font-bold'; }
+                else if (isRejected) { icon = '✕'; textColor = 'text-rose-700 font-bold'; }
+                else if (isCurrent) { icon = '⏳'; textColor = 'text-indigo-900 font-black'; }
+
+                let approverNote = '';
+                if (s.approved_by_name) approverNote = ` — disetujui oleh ${s.approved_by_name}`;
+
+                return `<div class="flex items-center justify-between text-[11px] py-0.5 ${textColor}">
+                    <div class="flex items-center gap-1.5 truncate">
+                        <span class="w-4 text-center shrink-0">${icon}</span>
+                        <span class="truncate">Step ${s.step_order}: ${s.step_nama} (${s.approver_role || 'Penyetuju'})${approverNote}</span>
+                    </div>
+                    <span class="text-[10px] uppercase font-bold shrink-0 ml-1">${s.status}</span>
+                </div>`;
+            }).join('');
+        }
+        stepsChain.innerHTML = chainHtml;
+    } else {
+        stepBox.classList.add('hidden');
+    }
+
     if (keputusan === 'Disetujui') {
-        title.textContent = 'Setujui (Approve) Pengajuan Cuti';
-        btn.textContent = 'Ya, Setujui & Potong Saldo';
-        btn.className = 'px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm cursor-pointer';
+        title.textContent = totalSteps > 1 ? `Setujui Tahap ${stepOrder}: ${stepNama}` : 'Setujui (Approve) Pengajuan Cuti';
+        submitBtn.textContent = (totalSteps > 1 && stepOrder < totalSteps)
+            ? `Ya, Setujui Tahap ${stepOrder} & Lanjut`
+            : 'Ya, Setujui Final & Potong Saldo';
+        submitBtn.className = 'px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm cursor-pointer';
+
+        if (totalSteps > 1 && stepOrder < totalSteps) {
+            bypassBtn.classList.remove('hidden');
+        } else {
+            bypassBtn.classList.add('hidden');
+        }
     } else if (keputusan === 'Ditolak') {
         title.textContent = 'Tolak Pengajuan Cuti';
-        btn.textContent = 'Ya, Tolak Pengajuan';
-        btn.className = 'px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-sm cursor-pointer';
+        submitBtn.textContent = 'Ya, Tolak Pengajuan';
+        submitBtn.className = 'px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-sm cursor-pointer';
+        bypassBtn.classList.add('hidden');
     } else {
         title.textContent = 'Batalkan Cuti & Kembalikan Saldo';
-        btn.textContent = 'Ya, Batalkan Cuti';
-        btn.className = 'px-5 py-2 rounded-xl bg-slate-700 hover:bg-slate-800 text-white font-bold text-xs shadow-sm cursor-pointer';
+        submitBtn.textContent = 'Ya, Batalkan Cuti';
+        submitBtn.className = 'px-5 py-2 rounded-xl bg-slate-700 hover:bg-slate-800 text-white font-bold text-xs shadow-sm cursor-pointer';
+        bypassBtn.classList.add('hidden');
     }
 
     const modal = document.getElementById('modalApproveCuti');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
+
+function openModalTambahHierarki() {
+    document.getElementById('hierarki_id').value = '';
+    document.getElementById('hierarki_unit').value = 'Semua';
+    document.getElementById('hierarki_jenis_pegawai').value = 'Semua';
+    document.getElementById('hierarki_step_order').value = '1';
+    document.getElementById('hierarki_step_nama').value = '';
+    document.getElementById('hierarki_approver_role').value = '';
+    document.getElementById('hierarki_keterangan').value = '';
+    document.getElementById('hierarki_is_active').checked = true;
+    document.getElementById('hierarki_modal_title').textContent = 'Tambah Tahapan Approval Baru';
+
+    const modal = document.getElementById('modalHierarkiStep');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
+
+function openModalEditHierarki(data) {
+    if (!data) return;
+    document.getElementById('hierarki_id').value = data.id || '';
+    document.getElementById('hierarki_unit').value = data.unit || 'Semua';
+    document.getElementById('hierarki_jenis_pegawai').value = data.jenis_pegawai || 'Semua';
+    document.getElementById('hierarki_step_order').value = data.step_order || '1';
+    document.getElementById('hierarki_step_nama').value = data.step_nama || '';
+    document.getElementById('hierarki_approver_role').value = data.approver_role || '';
+    document.getElementById('hierarki_keterangan').value = data.keterangan || '';
+    document.getElementById('hierarki_is_active').checked = parseInt(data.is_active) === 1;
+    document.getElementById('hierarki_modal_title').textContent = 'Edit Tahapan Approval';
+
+    const modal = document.getElementById('modalHierarkiStep');
     modal.classList.remove('hidden');
     modal.classList.add('flex');
 }

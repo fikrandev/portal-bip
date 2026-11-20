@@ -16,7 +16,7 @@ class CutiController
         CutiModel::init();
 
         $activeTab = $_GET['tab'] ?? 'pegawai';
-        $allowedTabs = ['pegawai', 'pengajuan', 'approve', 'riwayat', 'log', 'jenis'];
+        $allowedTabs = ['pegawai', 'pengajuan', 'approve', 'riwayat', 'log', 'jenis', 'hierarki'];
         if (!in_array($activeTab, $allowedTabs, true)) {
             $activeTab = 'pegawai';
         }
@@ -65,6 +65,13 @@ class CutiController
         ];
         $logList = CutiModel::getLogList($logFilters);
 
+        // Hierarki Approval Custom Workflow
+        $hierarkiFilters = [
+            'unit' => trim($_GET['unit_hierarki'] ?? ''),
+            'jenis_pegawai' => trim($_GET['jenis_hierarki'] ?? '')
+        ];
+        $hierarkiList = CutiModel::getAllHierarki($hierarkiFilters);
+
         // Dropdown Filter Unit & Jabatan (respects jenjang restriction)
         $db = Database::getInstance();
         $utParams = [];
@@ -83,6 +90,7 @@ class CutiController
                 'riwayat'   => 'Riwayat Approve Cuti',
                 'log'       => 'Log Pengurangan & Mutasi Cuti',
                 'jenis'     => 'Jenis Cuti (Tahunan & Khusus)',
+                'hierarki'  => 'Hierarki Approval (Custom Workflow)',
                 default     => 'Data Cuti Pegawai'
             }]
         ];
@@ -138,7 +146,7 @@ class CutiController
     }
 
     /**
-     * Proses Approve / Tolak / Batalkan Pengajuan Cuti
+     * Proses Approve / Tolak / Batalkan Pengajuan Cuti (Mendukung Multi-Step Approval)
      */
     public static function approve(): void
     {
@@ -149,14 +157,20 @@ class CutiController
             $pengajuanId = (int)($_POST['pengajuan_id'] ?? 0);
             $keputusan = trim($_POST['keputusan'] ?? '');
             $catatan = trim($_POST['catatan_approval'] ?? '');
+            $stepOrder = !empty($_POST['step_order']) ? (int)$_POST['step_order'] : null;
+            $approveAll = !empty($_POST['approve_all']);
 
             $userId = Auth::id();
             $userName = Auth::name() ?: 'Admin';
 
-            CutiModel::approvePengajuan($pengajuanId, $keputusan, $catatan, $userId, $userName);
+            if ($stepOrder !== null || $approveAll) {
+                CutiModel::approvePengajuanStep($pengajuanId, $stepOrder ?: 1, $keputusan, $catatan, $userId, $userName, $approveAll);
+            } else {
+                CutiModel::approvePengajuan($pengajuanId, $keputusan, $catatan, $userId, $userName);
+            }
 
             $label = match($keputusan) {
-                'Disetujui' => 'Pengajuan cuti berhasil DISETUJUI dan tercatat di Log Pengurangan Cuti.',
+                'Disetujui' => $approveAll ? 'Pengajuan cuti berhasil DISETUJUI FINAL untuk seluruh tahapan dan saldo telah dipotong.' : 'Tahapan persetujuan cuti berhasil diproses.',
                 'Ditolak'   => 'Pengajuan cuti telah DITOLAK.',
                 'Dibatalkan'=> 'Pengajuan cuti telah DIBATALKAN dan saldo telah dikembalikan.',
                 default     => 'Status pengajuan cuti berhasil diperbarui.'
@@ -165,6 +179,49 @@ class CutiController
             Response::redirect(url('kelola-cuti?tab=' . urlencode($returnTab)), $label, 'success');
         } catch (Throwable $e) {
             Response::redirect(url('kelola-cuti?tab=' . urlencode($returnTab)), $e->getMessage(), 'error');
+        }
+    }
+
+    /**
+     * Simpan / Update 1 Step Hierarki Approval Custom
+     */
+    public static function storeHierarki(): void
+    {
+        CSRF::validate();
+        try {
+            CutiModel::saveHierarkiStep($_POST);
+            Response::redirect(url('kelola-cuti?tab=hierarki'), 'Pengaturan tahapan hierarki approval berhasil disimpan.', 'success');
+        } catch (Throwable $e) {
+            Response::redirect(url('kelola-cuti?tab=hierarki'), $e->getMessage(), 'error');
+        }
+    }
+
+    /**
+     * Hapus 1 Step Hierarki Approval
+     */
+    public static function deleteHierarki(): void
+    {
+        CSRF::validate();
+        try {
+            $id = (int)($_POST['id'] ?? 0);
+            CutiModel::deleteHierarkiStep($id);
+            Response::redirect(url('kelola-cuti?tab=hierarki'), 'Tahapan hierarki approval berhasil dihapus.', 'success');
+        } catch (Throwable $e) {
+            Response::redirect(url('kelola-cuti?tab=hierarki'), $e->getMessage(), 'error');
+        }
+    }
+
+    /**
+     * Reset Hierarki Approval ke Template Standar
+     */
+    public static function resetHierarki(): void
+    {
+        CSRF::validate();
+        try {
+            CutiModel::resetHierarkiDefault();
+            Response::redirect(url('kelola-cuti?tab=hierarki'), 'Alur hierarki approval telah di-reset ke template standar sistem.', 'success');
+        } catch (Throwable $e) {
+            Response::redirect(url('kelola-cuti?tab=hierarki'), $e->getMessage(), 'error');
         }
     }
 

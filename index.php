@@ -711,6 +711,9 @@ $router->post('/kelola-cuti/jenis/store', [CutiController::class, 'storeJenisCut
 $router->post('/kelola-cuti/jenis/delete', [CutiController::class, 'deleteJenisCuti'], [Middleware::permissionRequired('cuti.master.update')]);
 $router->post('/kelola-cuti/saldo/adjust', [CutiController::class, 'adjustSaldo'], [Middleware::permissionRequired('cuti.master.update')]);
 $router->post('/kelola-cuti/tambah-bulanan', [CutiController::class, 'triggerTambahBulanan'], [Middleware::permissionRequired('cuti.master.update')]);
+$router->post('/kelola-cuti/hierarki/store', [CutiController::class, 'storeHierarki'], [Middleware::permissionRequired('cuti.master.update')]);
+$router->post('/kelola-cuti/hierarki/delete', [CutiController::class, 'deleteHierarki'], [Middleware::permissionRequired('cuti.master.update')]);
+$router->post('/kelola-cuti/hierarki/reset', [CutiController::class, 'resetHierarki'], [Middleware::permissionRequired('cuti.master.update')]);
 $router->get('/kelola-cuti/cetak/{id}', [CutiController::class, 'cetakSurat'], [Middleware::permissionRequired('cuti.pengajuan.view')]);
 $router->get('/kelola-cuti/export', [CutiController::class, 'exportCsv'], [Middleware::permissionRequired('cuti.export')]);
 $router->get('/kelola-kpi', [KpiController::class, 'index'], [Middleware::permissionRequired('kpi.view')]);
