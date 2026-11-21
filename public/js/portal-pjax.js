@@ -9,9 +9,9 @@
 
     if (!$) return;
 
-    var PREFETCH_TTL_MS = 5000;
-    var BACK_CACHE_TTL_MS = 30000;
-    var MAX_CACHE_ENTRIES = 15;
+    var PREFETCH_TTL_MS = 15000;
+    var BACK_CACHE_TTL_MS = 300000;
+    var MAX_CACHE_ENTRIES = 25;
 
     var prefetchCache = new Map();
     var backCache = new Map();
@@ -855,8 +855,6 @@
             }
         }
 
-        var modalStartedAt = showDataLoadingModal(targetUrl, options);
-
         if (cached) {
             var finalCachedUrl = cached.finalUrl || targetUrl;
             if (options.pushState !== false) {
@@ -865,9 +863,11 @@
             return hydrateParsedPage(cached, {
                 scrollToTop: options.scrollToTop !== false,
                 clearSearch: prevPath !== nextPath,
-                modalStartedAt: modalStartedAt
+                modalStartedAt: 0
             });
         }
+
+        var modalStartedAt = showDataLoadingModal(targetUrl, options);
 
         startProgressBar();
         var reqPromise = fetchPageViaJQuery(targetUrl);

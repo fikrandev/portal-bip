@@ -581,7 +581,7 @@ class PortalGuruController
         }
 
         $sql = "
-            SELECT jp.*, COALESCE(jp.jumlah_jp, 2) as jp_alokasi
+            SELECT jp.*, 2 as jp_alokasi
             FROM jadwal_pelajaran jp
             WHERE {$where}
             ORDER BY FIELD(jp.hari, 'Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'), jp.jam_ke ASC, jp.jam_mulai ASC

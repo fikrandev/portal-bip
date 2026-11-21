@@ -806,8 +806,8 @@ window.syncBerandaAttendanceUI = syncBerandaAttendanceUI;
 window.MobileRouter = (function() {
   const pageCache = new Map();       // url -> { html, title, activeTab, timestamp }
   const inFlight = new Map();        // url -> Promise
-  const CACHE_TTL_FRESH = 12000;     // 12s fresh (no background refetch needed)
-  const CACHE_TTL_MAX   = 120000;    // 2m max stale-while-revalidate
+  const CACHE_TTL_FRESH = 30000;     // 30s fresh (no background refetch needed)
+  const CACHE_TTL_MAX   = 600000;    // 10m max stale-while-revalidate (instant back navigation)
   let progressTimer = null;
   let activeNavigationUrl = null;
   let isNavigating = false;
@@ -1098,11 +1098,7 @@ window.MobileRouter = (function() {
     const cached = !options.forceReload ? pageCache.get(norm) : null;
     const now = Date.now();
 
-    if (window.AndroidUI && typeof window.AndroidUI.showCenterLoading === 'function') {
-      window.AndroidUI.showCenterLoading('Memuat data...', 5000);
-    }
-
-    // Case 1: Instant 0ms Swap from Cache (Stale-While-Revalidate)
+    // Case 1: Instant 0ms Swap from Cache (Stale-While-Revalidate, Tanpa Modal Loading)
     if (cached && (now - cached.timestamp) < CACHE_TTL_MAX) {
       if (pushState) {
         window.history.pushState({ spaUrl: targetUrl }, cached.title || '', targetUrl);
@@ -1116,13 +1112,23 @@ window.MobileRouter = (function() {
       return Promise.resolve();
     }
 
-    // Case 2: Fetch from Network (or await in-flight prefetch)
+    // Case 2: Fetch from Network (Tampilkan progress bar & delayed loading jika > 300ms)
     isNavigating = true;
     startProgressBar();
+
+    let loadingTimer = null;
+    if (window.AndroidUI && typeof window.AndroidUI.showCenterLoading === 'function') {
+      loadingTimer = setTimeout(() => {
+        if (isNavigating && activeNavigationUrl === norm) {
+          window.AndroidUI.showCenterLoading('Memuat data...', 5000);
+        }
+      }, 300);
+    }
 
     return fetchAndCache(targetUrl)
       .then(parsed => {
         isNavigating = false;
+        if (loadingTimer) clearTimeout(loadingTimer);
         finishProgressBar();
         if (activeNavigationUrl !== norm || !parsed) {
           if (window.AndroidUI && typeof window.AndroidUI.hideCenterLoading === 'function') {
@@ -1137,6 +1143,7 @@ window.MobileRouter = (function() {
       })
       .catch(() => {
         isNavigating = false;
+        if (loadingTimer) clearTimeout(loadingTimer);
         finishProgressBar();
         if (window.AndroidUI && typeof window.AndroidUI.hideCenterLoading === 'function') {
           window.AndroidUI.hideCenterLoading();
