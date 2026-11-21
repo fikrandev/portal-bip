@@ -3,13 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="theme-color" content="#2563eb">
+    <meta name="theme-color" content="#0284c7">
+    <meta name="application-name" content="Sarpras Mobile">
+    <meta name="apple-mobile-web-app-title" content="Sarpras Mobile">
     <title><?= htmlspecialchars($pageTitle ?? 'Login Sarpras') ?></title>
     
-    <!-- Favicon -->
-    <?= function_exists('renderFaviconTags') ? renderFaviconTags() : '' ?>
-    
+    <!-- PWA Manifest & App Icons -->
     <link rel="manifest" href="<?= url('mobile-sarpras/manifest.json') ?>">
+    <link rel="apple-touch-icon" sizes="180x180" href="<?= url('pwa-sarpras-icon.png?size=180') ?>">
+    <link rel="icon" type="image/png" sizes="192x192" href="<?= url('pwa-sarpras-icon.png?size=192') ?>">
+    <link rel="icon" type="image/png" sizes="512x512" href="<?= url('pwa-sarpras-icon.png?size=512') ?>">
+    <link rel="shortcut icon" href="<?= url('pwa-sarpras-icon.png?size=192') ?>">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -34,18 +38,8 @@
     <div class="w-full max-w-sm bg-white rounded-3xl shadow-xl p-8 relative z-10 overflow-hidden">
         <!-- Logo -->
         <div class="flex justify-center mb-5">
-            <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center shadow-inner">
-                <?php 
-                    $logoUrl = '';
-                    if (defined('SYS_APP_LOGO') && SYS_APP_LOGO) {
-                        $logoUrl = url(ltrim(SYS_APP_LOGO, '/'));
-                    }
-                ?>
-                <?php if ($logoUrl): ?>
-                    <img src="<?= $logoUrl ?>" alt="Logo" class="w-10 h-10 object-contain">
-                <?php else: ?>
-                    <i data-lucide="layout-dashboard" class="w-8 h-8"></i>
-                <?php endif; ?>
+            <div class="w-16 h-16 bg-sky-50 rounded-2xl flex items-center justify-center shadow-inner border border-sky-100 p-2">
+                <img src="<?= url('pwa-sarpras-icon.png?size=192') ?>" alt="Logo Sarpras" class="w-full h-full object-contain rounded-xl">
             </div>
         </div>
 
@@ -120,15 +114,15 @@
 
             <!-- Tombol Install PWA di Halaman Login -->
             <div id="login-pwa-install-wrapper" class="mt-4 pt-4 border-t border-slate-100 text-center hidden">
-                <button type="button" id="btn-login-install" class="w-full py-2.5 px-4 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 font-bold rounded-xl text-xs flex items-center justify-center gap-2 transition-all active:scale-95">
-                    <i data-lucide="download" class="w-4 h-4 text-blue-600"></i> Pasang Aplikasi di Layar Utama HP
+                <button type="button" id="btn-login-install" class="w-full py-2.5 px-4 bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 font-bold rounded-xl text-xs flex items-center justify-center gap-2 transition-all active:scale-95">
+                    <i data-lucide="download" class="w-4 h-4 text-sky-600"></i> Pasang Sarpras Mobile di Layar Utama HP
                 </button>
             </div>
         </form>
     </div>
     
     <!-- Background Decoration -->
-    <div class="fixed top-0 left-0 w-full h-1/2 bg-blue-600 rounded-b-[4rem] z-0"></div>
+    <div class="fixed top-0 left-0 w-full h-1/2 bg-gradient-to-br from-sky-600 to-sky-800 rounded-b-[4rem] z-0"></div>
 
     <script>
         lucide.createIcons();

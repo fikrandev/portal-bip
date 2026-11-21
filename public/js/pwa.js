@@ -32,28 +32,17 @@ if ('serviceWorker' in navigator) {
     const swPath = baseUrl ? `${baseUrl}/sw.js` : '/sw.js';
     const scopePath = baseUrl ? `${baseUrl}/mobile/` : '/mobile/';
 
-    // Clean up any legacy unpartitioned root-scoped service worker or conflicting sarpras worker
+    // Clean up ONLY legacy unpartitioned root-scoped service worker (protecting both /mobile/ and /mobile-sarpras/)
     navigator.serviceWorker.getRegistrations().then((regs) => {
       regs.forEach((reg) => {
         const originRoot = window.location.origin + '/';
         const appRoot = (baseUrl ? baseUrl : window.location.origin) + '/';
-        const script = (reg.active && reg.active.scriptURL) ? reg.active.scriptURL : '';
         const scope = reg.scope || '';
-        if (script.includes('sw-sarpras') || ((scope === originRoot || scope === appRoot) && !scope.includes('/mobile/') && !scope.includes('/mobile-sarpras/'))) {
-          reg.unregister().then(() => console.log('[PWA Portal BIP] Cleaned legacy/conflicting SW:', script, scope));
+        if ((scope === originRoot || scope === appRoot) && !scope.includes('/mobile/') && !scope.includes('/mobile-sarpras/')) {
+          reg.unregister().then(() => console.log('[PWA Portal BIP] Cleaned legacy root SW:', scope));
         }
       });
     }).catch(() => {});
-
-    if ('caches' in window) {
-      caches.keys().then((keys) => {
-        keys.forEach((k) => {
-          if (k.includes('sarpras')) {
-            caches.delete(k);
-          }
-        });
-      }).catch(() => {});
-    }
 
     navigator.serviceWorker.register(swPath, { scope: scopePath })
       .then((registration) => {

@@ -80,17 +80,20 @@ endif;
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="theme-color" content="#2563eb">
+    <meta name="theme-color" content="#0284c7">
+    <meta name="application-name" content="Sarpras Mobile">
+    <meta name="apple-mobile-web-app-title" content="Sarpras Mobile">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title><?= e($pageTitle ?? 'Sarpras Mobile') ?></title>
     
-    <!-- Favicon -->
-    <?= function_exists('renderFaviconTags') ? renderFaviconTags() : '' ?>
-    
+    <!-- PWA Manifest & App Icons -->
     <link rel="manifest" href="<?= url('mobile-sarpras/manifest.json') ?>">
-    <link rel="apple-touch-icon" href="<?= url('pwa-icon.png') ?>?s=192">
+    <link rel="apple-touch-icon" sizes="180x180" href="<?= url('pwa-sarpras-icon.png?size=180') ?>">
+    <link rel="icon" type="image/png" sizes="192x192" href="<?= url('pwa-sarpras-icon.png?size=192') ?>">
+    <link rel="icon" type="image/png" sizes="512x512" href="<?= url('pwa-sarpras-icon.png?size=512') ?>">
+    <link rel="shortcut icon" href="<?= url('pwa-sarpras-icon.png?size=192') ?>">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -253,21 +256,12 @@ endif;
     <div id="mobile-toast-container"></div>
 
     <!-- Splash Screen Loader -->
-    <div id="mobile-splash-loader" class="fixed inset-0 z-[9999] bg-blue-600 flex flex-col items-center justify-center transition-opacity duration-500">
-        <div class="relative w-16 h-16 mb-6 flex items-center justify-center bg-white rounded-2xl shadow-xl p-3 animate-bounce">
-            <?php 
-                $logoUrl = '';
-                if (defined('SYS_APP_LOGO') && SYS_APP_LOGO) {
-                    $logoUrl = url(ltrim(SYS_APP_LOGO, '/'));
-                }
-            ?>
-            <?php if ($logoUrl): ?>
-                <img src="<?= $logoUrl ?>" alt="Logo" class="w-full h-full object-contain">
-            <?php else: ?>
-                <i data-lucide="layout-dashboard" class="w-12 h-12 text-blue-600"></i>
-            <?php endif; ?>
+    <div id="mobile-splash-loader" class="fixed inset-0 z-[9999] bg-gradient-to-br from-sky-600 via-sky-700 to-slate-900 flex flex-col items-center justify-center transition-opacity duration-500">
+        <div class="relative w-18 h-18 mb-5 flex items-center justify-center bg-white rounded-3xl shadow-2xl p-2.5 animate-bounce">
+            <img src="<?= url('pwa-sarpras-icon.png?size=192') ?>" alt="Logo Sarpras" class="w-full h-full object-contain rounded-2xl">
         </div>
-        <h2 class="text-white font-bold text-xl tracking-wide mb-2"><?= e($pageTitle ?? 'Sarpras Mobile') ?></h2>
+        <h2 class="text-white font-bold text-xl tracking-wide mb-1"><?= e($pageTitle ?? 'Sarpras Mobile') ?></h2>
+        <p class="text-xs text-sky-100 font-medium mb-3">Manajemen Aset &amp; QR Scanner</p>
         <div class="flex items-center gap-1.5">
             <div class="w-2 h-2 bg-white rounded-full animate-ping" style="animation-delay: 0s;"></div>
             <div class="w-2 h-2 bg-white rounded-full animate-ping" style="animation-delay: 0.2s;"></div>
@@ -276,16 +270,16 @@ endif;
     </div>
     
     <!-- PWA Install Banner Floating (Auto-triggered when prompt is available) -->
-    <div id="pwa-install-banner" class="pwa-install-banner pwa-install-trigger">
+    <div id="pwa-install-banner" class="pwa-install-banner pwa-install-trigger" style="background: linear-gradient(135deg, #0369a1, #0284c7); box-shadow: 0 10px 40px rgba(2, 132, 199, 0.4);">
         <div class="flex items-center gap-3 text-white">
             <div class="w-11 h-11 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                <i data-lucide="download" class="w-6 h-6"></i>
+                <i data-lucide="package" class="w-6 h-6"></i>
             </div>
             <div class="flex-1 min-w-0">
                 <p class="font-bold text-sm">Install Sarpras Mobile</p>
-                <p id="pwa-install-desc" class="text-xs text-white/80">Pasang ke Layar Utama HP Anda</p>
+                <p id="pwa-install-desc" class="text-xs text-white/90">Aplikasi Khusus Inventaris &amp; Scanner QR</p>
             </div>
-            <button type="button" onclick="triggerPwaInstall()" class="px-4 py-2 bg-white text-blue-600 font-bold text-xs rounded-xl shadow active:scale-95 transition-transform shrink-0">
+            <button type="button" onclick="triggerPwaInstall()" class="px-4 py-2 bg-white text-sky-700 font-bold text-xs rounded-xl shadow active:scale-95 transition-transform shrink-0">
                 Install
             </button>
             <button type="button" onclick="dismissPwaBanner()" class="p-1 text-white/70 hover:text-white shrink-0">
@@ -299,12 +293,12 @@ endif;
         <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl space-y-4 transform translate-y-8 transition-transform duration-200">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-3">
-                    <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center font-bold shadow-sm">
-                        <i data-lucide="download" class="w-6 h-6"></i>
+                    <div class="w-12 h-12 bg-sky-50 text-sky-600 rounded-2xl flex items-center justify-center font-bold shadow-sm">
+                        <i data-lucide="package" class="w-6 h-6"></i>
                     </div>
                     <div>
                         <h3 class="font-bold text-slate-800 text-base">Install Sarpras Mobile</h3>
-                        <p class="text-xs text-slate-500">Aplikasi PWA Resmi Portal BIP</p>
+                        <p class="text-xs text-slate-500">Aplikasi Khusus Manajemen Aset &amp; QR</p>
                     </div>
                 </div>
                 <button type="button" onclick="closePwaModal()" class="p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition">
@@ -313,8 +307,8 @@ endif;
             </div>
 
             <div id="pwa-native-action" class="hidden">
-                <button type="button" onclick="executeNativeInstall()" class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2 transition-all active:scale-[0.98]">
-                    <i data-lucide="download" class="w-5 h-5"></i> Install Sekarang (1-Klik)
+                <button type="button" onclick="executeNativeInstall()" class="w-full py-3.5 bg-sky-600 hover:bg-sky-700 text-white font-bold rounded-2xl shadow-lg shadow-sky-500/25 flex items-center justify-center gap-2 transition-all active:scale-[0.98]">
+                    <i data-lucide="download" class="w-5 h-5"></i> Pasang Aplikasi Sarpras Sekarang
                 </button>
             </div>
 

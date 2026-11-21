@@ -5,8 +5,8 @@
     RewriteEngine On
     # RewriteBase is intentionally omitted so it adapts automatically to root or any subfolder
 
-    # Route manifest.json, pwa-icon.png, favicon.ico, and service workers dynamically to index.php
-    RewriteRule ^(manifest\.json|pwa-icon\.png|favicon\.ico|sw-sarpras\.js|sw\.js)$ index.php [QSA,L]
+    # Route manifest.json, manifest-sarpras.json, pwa-icon.png, pwa-sarpras-icon.png, favicon.ico, and service workers dynamically to index.php
+    RewriteRule ^(manifest\.json|manifest-sarpras\.json|pwa-icon\.png|pwa-sarpras-icon\.png|favicon\.ico|sw-sarpras\.js|sw\.js)$ index.php [QSA,L]
 
     # Route direct /uploads requests to public/uploads
     RewriteRule ^uploads/(.*)$ public/uploads/$1 [L]

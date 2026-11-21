@@ -1,9 +1,9 @@
 {
-  "id": "portal-bip-app",
-  "name": "Portal BIP",
+  "id": "portal-bip-guru-mobile",
+  "name": "Portal BIP Mobile",
   "short_name": "Portal BIP",
   "description": "Aplikasi Resmi Portal BIP untuk Presensi Geolokasi GPS, Jurnal Mengajar, Izin, Cuti, dan Layanan Akademik.",
-  "start_url": "mobile?utm_source=pwa",
+  "start_url": "mobile/?utm_source=pwa_portal",
   "scope": "mobile/",
   "display": "standalone",
   "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
@@ -92,6 +92,6 @@
     }
   ],
   "launch_handler": {
-    "client_mode": ["navigate-existing", "auto"]
+    "client_mode": "auto"
   }
 }

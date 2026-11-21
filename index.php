@@ -1070,52 +1070,132 @@ $router->post('/mobile-sarpras/pengajuan/store', [MobileSarprasController::class
 
 $router->post('/mobile-sarpras/action/subscribe-push', [MobileSarprasController::class, 'subscribePush'], [[MobileSarprasAuthController::class, 'authRequired']]);
 
-$router->get('/mobile-sarpras/manifest.json', function() {
+$sarprasManifestHandler = function() {
     header('Content-Type: application/manifest+json; charset=utf-8');
     header('Access-Control-Allow-Origin: *');
     header('Cache-Control: no-cache, no-store, must-revalidate');
     
+    $sarprasIconVer = file_exists(PUBLIC_PATH . '/images/pwa/sarpras-icon-192.png') 
+        ? filemtime(PUBLIC_PATH . '/images/pwa/sarpras-icon-192.png') 
+        : '1';
+
     $manifest = [
-        'name' => (defined('SYS_APP_NAME') && SYS_APP_NAME ? SYS_APP_NAME : 'Portal BIP') . ' - Sarpras Mobile',
+        'name' => 'Sarpras Mobile BIP',
         'short_name' => 'Sarpras Mobile',
-        'description' => 'Aplikasi Manajemen Sarana dan Prasarana Mobile',
-        'id' => 'mobile-sarpras-bip-app',
-        'start_url' => url('mobile-sarpras?utm_source=pwa'),
+        'description' => 'Aplikasi Manajemen Sarana dan Prasarana, Inventaris Aset & QR Scanner',
+        'id' => 'portal-bip-sarpras-mobile',
+        'start_url' => url('mobile-sarpras/') . '?utm_source=pwa_sarpras',
         'scope' => url('mobile-sarpras/'),
         'display' => 'standalone',
+        'display_override' => ['window-controls-overlay', 'standalone', 'minimal-ui'],
         'orientation' => 'portrait-primary',
         'background_color' => '#f8fafc',
-        'theme_color' => '#2563eb',
+        'theme_color' => '#0284c7',
         'lang' => 'id',
         'dir' => 'ltr',
+        'categories' => ['business', 'productivity', 'utilities'],
+        'prefer_related_applications' => false,
         'icons' => [
             [
-                'src' => url('pwa-icon.png?s=192'),
+                'src' => url('pwa-sarpras-icon.png?size=192&v=' . $sarprasIconVer),
                 'sizes' => '192x192',
                 'type' => 'image/png',
                 'purpose' => 'any'
             ],
             [
-                'src' => url('pwa-icon.png?s=192&maskable=1'),
+                'src' => url('pwa-sarpras-icon.png?size=192&maskable=1&v=' . $sarprasIconVer),
                 'sizes' => '192x192',
                 'type' => 'image/png',
                 'purpose' => 'maskable'
             ],
             [
-                'src' => url('pwa-icon.png?s=512'),
+                'src' => url('pwa-sarpras-icon.png?size=512&v=' . $sarprasIconVer),
                 'sizes' => '512x512',
                 'type' => 'image/png',
                 'purpose' => 'any'
             ],
             [
-                'src' => url('pwa-icon.png?s=512&maskable=1'),
+                'src' => url('pwa-sarpras-icon.png?size=512&maskable=1&v=' . $sarprasIconVer),
                 'sizes' => '512x512',
                 'type' => 'image/png',
                 'purpose' => 'maskable'
+            ],
+            [
+                'src' => url('pwa-sarpras-icon.png?size=180&v=' . $sarprasIconVer),
+                'sizes' => '180x180',
+                'type' => 'image/png'
             ]
+        ],
+        'shortcuts' => [
+            [
+                'name' => 'Scan QR Barang',
+                'short_name' => 'Scan QR',
+                'description' => 'Pindai barcode/QR label aset inventaris',
+                'url' => url('mobile-sarpras/scan'),
+                'icons' => [[ 'src' => url('pwa-sarpras-icon.png?size=192&v=' . $sarprasIconVer), 'sizes' => '192x192', 'type' => 'image/png' ]]
+            ],
+            [
+                'name' => 'Daftar Inventaris',
+                'short_name' => 'Inventaris',
+                'description' => 'Cari dan kelola data aset barang',
+                'url' => url('mobile-sarpras/inventaris'),
+                'icons' => [[ 'src' => url('pwa-sarpras-icon.png?size=192&v=' . $sarprasIconVer), 'sizes' => '192x192', 'type' => 'image/png' ]]
+            ],
+            [
+                'name' => 'Lapor Perbaikan',
+                'short_name' => 'Perbaikan',
+                'description' => 'Input laporan kerusakan sarpras baru',
+                'url' => url('mobile-sarpras/maintenance/tambah'),
+                'icons' => [[ 'src' => url('pwa-sarpras-icon.png?size=192&v=' . $sarprasIconVer), 'sizes' => '192x192', 'type' => 'image/png' ]]
+            ],
+            [
+                'name' => 'Peminjaman Aset',
+                'short_name' => 'Pinjam',
+                'description' => 'Catat peminjaman barang inventaris',
+                'url' => url('mobile-sarpras/peminjaman/tambah'),
+                'icons' => [[ 'src' => url('pwa-sarpras-icon.png?size=192&v=' . $sarprasIconVer), 'sizes' => '192x192', 'type' => 'image/png' ]]
+            ]
+        ],
+        'launch_handler' => [
+            'client_mode' => 'auto'
         ]
     ];
-    echo json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+    echo json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+    exit;
+};
+$router->get('/mobile-sarpras/manifest.json', $sarprasManifestHandler);
+$router->get('/manifest-sarpras.json', $sarprasManifestHandler);
+
+// -- Dedicated Sarpras Mobile PWA Icon Route --
+$router->get('/pwa-sarpras-icon.png', function() {
+    $size = isset($_GET['size']) ? (int)$_GET['size'] : (isset($_GET['s']) ? (int)$_GET['s'] : 192);
+    $isMaskable = !empty($_GET['maskable']);
+
+    if ($size === 180) {
+        $iconPath = PUBLIC_PATH . '/images/pwa/sarpras-apple-touch-icon.png';
+    } elseif ($isMaskable) {
+        $iconPath = ($size >= 512) 
+            ? PUBLIC_PATH . '/images/pwa/sarpras-icon-maskable-512.png'
+            : PUBLIC_PATH . '/images/pwa/sarpras-icon-maskable-192.png';
+    } else {
+        $iconPath = ($size >= 512) 
+            ? PUBLIC_PATH . '/images/pwa/sarpras-icon-512.png'
+            : PUBLIC_PATH . '/images/pwa/sarpras-icon-192.png';
+    }
+
+    if (!file_exists($iconPath)) {
+        $iconPath = PUBLIC_PATH . '/images/pwa/sarpras-icon-192.png';
+    }
+
+    if (file_exists($iconPath)) {
+        header('Content-Type: image/png');
+        header('Cache-Control: public, max-age=86400');
+        header('Last-Modified: ' . gmdate('D, d M Y H:i:s', filemtime($iconPath)) . ' GMT');
+        readfile($iconPath);
+        exit;
+    }
+
+    http_response_code(404);
     exit;
 });
 
@@ -1263,12 +1343,13 @@ $portalGuruManifestHandler = function() {
         $content = file_get_contents($manifestPath);
         $manifest = json_decode($content, true);
         if (is_array($manifest)) {
-            $manifest['name'] = 'Portal BIP';
+            $manifest['id'] = 'portal-bip-guru-mobile';
+            $manifest['name'] = 'Portal BIP Mobile';
             $manifest['short_name'] = 'Portal BIP';
             $manifest['description'] = 'Aplikasi Resmi Portal BIP untuk Presensi GPS, Jurnal Mengajar, Izin, Cuti, dan Layanan Akademik.';
-            $manifest['start_url'] = url('mobile?utm_source=pwa');
+            $manifest['start_url'] = url('mobile/') . '?utm_source=pwa_portal';
             $manifest['scope'] = url('mobile/');
-            $manifest['id'] = 'portal-bip-app';
+            $manifest['launch_handler'] = ['client_mode' => 'auto'];
 
             // Check icon timestamp from settings for instant cache-busting
             $customIconPath = '';
@@ -1347,13 +1428,19 @@ $router->get('/sw-sarpras.js', function() {
     header('Content-Type: application/javascript; charset=utf-8');
     header('Service-Worker-Allowed: /');
     header('Cache-Control: no-cache, no-store, must-revalidate');
+    if (file_exists(PUBLIC_PATH . '/sw-sarpras.js')) {
+        readfile(PUBLIC_PATH . '/sw-sarpras.js');
+        exit;
+    }
     echo <<<'JS'
-const CACHE_NAME='sarpras-pwa-v6';
+const CACHE_NAME='sarpras-pwa-v8';
 self.addEventListener('install',e=>{self.skipWaiting();});
-self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(n=>Promise.all(n.filter(n=>n!==CACHE_NAME).map(n=>caches.delete(n)))).then(()=>self.clients.claim()));});
+self.addEventListener('activate',e=>{
+    e.waitUntil(caches.keys().then(n=>Promise.all(n.filter(name=>name.startsWith('sarpras-') && name!==CACHE_NAME).map(name=>caches.delete(name)))).then(()=>self.clients.claim()));
+});
 self.addEventListener('fetch',e=>{
     if(e.request.method!=='GET'||!e.request.url.startsWith('http'))return;
-    if(!e.request.url.includes('/mobile-sarpras'))return;
+    if(!e.request.url.includes('/mobile-sarpras') && !e.request.url.includes('sarpras-icon'))return;
     e.respondWith(fetch(e.request).then(r=>{if(r&&r.status===200){const c=r.clone();caches.open(CACHE_NAME).then(cache=>cache.put(e.request,c));}return r;}).catch(()=>caches.match(e.request)));
 });
 JS;

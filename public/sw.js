@@ -3,7 +3,7 @@
  * Enables PWA offline capabilities, pre-caching, WebAPK installation compliance, and background sync.
  */
 
-const CACHE_NAME = 'portal-bip-pwa-v7';
+const CACHE_NAME = 'portal-bip-pwa-v10';
 const STATIC_ASSETS = [
   './mobile/manifest.json',
   './manifest.json',
@@ -34,15 +34,15 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// Activate Event - Clean up obsolete caches
+// Activate Event - Clean up obsolete caches (strictly scoped to Portal BIP only)
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames
-          .filter((name) => name !== CACHE_NAME)
+          .filter((name) => name.startsWith('portal-bip-pwa-') && name !== CACHE_NAME)
           .map((name) => {
-            console.log('[SW] Clearing outdated cache:', name);
+            console.log('[SW Portal BIP] Clearing outdated portal cache:', name);
             return caches.delete(name);
           })
       );
@@ -59,8 +59,8 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Never intercept requests for Sarpras Mobile or live API endpoints
-  if (request.url.includes('/mobile-sarpras') || request.url.includes('/api/')) {
+  // Never intercept requests for Sarpras Mobile, Sarpras icons, SW, or live API endpoints
+  if (request.url.includes('/mobile-sarpras') || request.url.includes('sarpras-') || request.url.includes('sw-sarpras') || request.url.includes('/api/')) {
     return;
   }
 

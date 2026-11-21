@@ -15,28 +15,18 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <script>
         window.APP_BASE_URL = '<?= rtrim(BASE_URL, "/") ?>';
-        // Auto-cleanup any rogue Sarpras or root service worker immediately
+        // Auto-cleanup ONLY rogue root service workers (protecting both /mobile/ and /mobile-sarpras/)
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.getRegistrations().then(function(regs) {
                 regs.forEach(function(reg) {
-                    var script = (reg.active && reg.active.scriptURL) ? reg.active.scriptURL : '';
                     var scope = reg.scope || '';
-                    if (script.indexOf('sw-sarpras') !== -1 || (!scope.includes('/mobile/') && !scope.includes('/mobile-sarpras/'))) {
+                    if (!scope.includes('/mobile/') && !scope.includes('/mobile-sarpras/')) {
                         reg.unregister().then(function() {
-                            console.log('[PWA Cleanup] Unregistered rogue SW:', script, scope);
+                            console.log('[PWA Cleanup] Unregistered rogue root SW:', scope);
                         });
                     }
                 });
             }).catch(function() {});
-            if ('caches' in window) {
-                caches.keys().then(function(keys) {
-                    keys.forEach(function(k) {
-                        if (k.indexOf('sarpras') !== -1) {
-                            caches.delete(k);
-                        }
-                    });
-                }).catch(function() {});
-            }
         }
     </script>
     <?php

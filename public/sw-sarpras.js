@@ -3,7 +3,7 @@
  * Enables PWA offline capabilities, pre-caching, and background sync.
  */
 
-const CACHE_NAME = 'sarpras-mobile-pwa-v2';
+const CACHE_NAME = 'sarpras-mobile-pwa-v8';
 const OFFLINE_URL = './mobile-sarpras';
 
 // Install Event - Pre-cache critical core shell
@@ -19,15 +19,15 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// Activate Event - Clean up obsolete caches
+// Activate Event - Clean up obsolete caches (strictly scoped to Sarpras only)
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames
-          .filter((name) => name !== CACHE_NAME)
+          .filter((name) => name.startsWith('sarpras-') && name !== CACHE_NAME)
           .map((name) => {
-            console.log('[SW-Sarpras] Clearing outdated cache:', name);
+            console.log('[SW-Sarpras] Clearing outdated sarpras cache:', name);
             return caches.delete(name);
           })
       );
@@ -40,7 +40,7 @@ self.addEventListener('fetch', (event) => {
   const request = event.request;
   
   // Skip non-GET requests, cross-origin schemes, and any requests outside /mobile-sarpras/
-  if (request.method !== 'GET' || !request.url.startsWith('http') || !request.url.includes('/mobile-sarpras')) {
+  if (request.method !== 'GET' || !request.url.startsWith('http') || (!request.url.includes('/mobile-sarpras') && !request.url.includes('sarpras-icon'))) {
     return;
   }
 

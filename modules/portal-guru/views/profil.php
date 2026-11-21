@@ -172,6 +172,19 @@
             <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
         </button>
 
+        <a href="<?= url('mobile-sarpras') ?>" target="_blank" rel="noopener" class="flex items-center justify-between p-3.5 hover:bg-slate-50 rounded-2xl transition-all press-bounce">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center">
+                    <i data-lucide="package" class="w-4 h-4"></i>
+                </div>
+                <div>
+                    <h4 class="font-bold text-xs text-slate-800">Buka Sarpras Mobile</h4>
+                    <p class="text-[10px] text-slate-400">Aplikasi inventaris aset, QR scan & perbaikan</p>
+                </div>
+            </div>
+            <i data-lucide="external-link" class="w-4 h-4 text-slate-400"></i>
+        </a>
+
         <a href="<?= url('dashboard') ?>" class="flex items-center justify-between p-3.5 hover:bg-slate-50 rounded-2xl transition-all press-bounce">
             <div class="flex items-center gap-3">
                 <div class="w-9 h-9 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">

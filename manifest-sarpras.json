@@ -1,57 +1,81 @@
 {
-  "id": "mobile-sarpras-bip-app",
-  "name": "Portal BIP - Mobile Sarpras",
-  "short_name": "Sarpras",
-  "description": "Aplikasi Manajemen Sarana dan Prasarana",
-  "start_url": "mobile-sarpras",
-  "scope": "./",
+  "id": "portal-bip-sarpras-mobile",
+  "name": "Sarpras Mobile BIP",
+  "short_name": "Sarpras Mobile",
+  "description": "Aplikasi Manajemen Sarana dan Prasarana, Inventaris Aset & QR Scanner",
+  "start_url": "mobile-sarpras/?utm_source=pwa_sarpras",
+  "scope": "mobile-sarpras/",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "orientation": "portrait-primary",
   "background_color": "#f8fafc",
-  "theme_color": "#2563eb",
+  "theme_color": "#0284c7",
   "lang": "id",
   "dir": "ltr",
+  "categories": ["business", "productivity", "utilities"],
   "prefer_related_applications": false,
   "icons": [
     {
-      "src": "public/images/pwa/icon-192.png",
+      "src": "public/images/pwa/sarpras-icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "public/images/pwa/icon-maskable-192.png",
+      "src": "public/images/pwa/sarpras-icon-maskable-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "public/images/pwa/icon-512.png",
+      "src": "public/images/pwa/sarpras-icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "public/images/pwa/icon-maskable-512.png",
+      "src": "public/images/pwa/sarpras-icon-maskable-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    },
+    {
+      "src": "public/images/pwa/sarpras-apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
     }
   ],
-  "screenshots": [
+  "shortcuts": [
     {
-      "src": "public/images/pwa/screenshot-mobile.jpg",
-      "sizes": "1080x1920",
-      "type": "image/jpeg",
-      "form_factor": "narrow",
-      "label": "Dashboard Mobile Sarpras"
+      "name": "Scan QR Barang",
+      "short_name": "Scan QR",
+      "description": "Pindai QR code aset inventaris",
+      "url": "mobile-sarpras/scan",
+      "icons": [{ "src": "public/images/pwa/sarpras-icon-192.png", "sizes": "192x192" }]
     },
     {
-      "src": "public/images/pwa/screenshot-wide.jpg",
-      "sizes": "1920x1080",
-      "type": "image/jpeg",
-      "form_factor": "wide",
-      "label": "Manajemen Inventaris Sarpras"
+      "name": "Daftar Inventaris",
+      "short_name": "Inventaris",
+      "description": "Lihat dan kelola inventaris barang",
+      "url": "mobile-sarpras/inventaris",
+      "icons": [{ "src": "public/images/pwa/sarpras-icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Lapor Perbaikan",
+      "short_name": "Perbaikan",
+      "description": "Ajukan perbaikan sarpras",
+      "url": "mobile-sarpras/maintenance/tambah",
+      "icons": [{ "src": "public/images/pwa/sarpras-icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Peminjaman Aset",
+      "short_name": "Pinjam",
+      "description": "Peminjaman barang dan inventaris",
+      "url": "mobile-sarpras/peminjaman/tambah",
+      "icons": [{ "src": "public/images/pwa/sarpras-icon-192.png", "sizes": "192x192" }]
     }
-  ]
+  ],
+  "launch_handler": {
+    "client_mode": "auto"
+  }
 }
