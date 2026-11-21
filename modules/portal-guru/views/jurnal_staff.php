@@ -433,7 +433,8 @@
 <!-- FLOATING ACTION BAR: MUNCUL SAAT MINIMAL 1 JAM TERPILIH   -->
 <!-- ======================================================== -->
 <div id="floating-jurnal-bar" 
-     class="fixed bottom-20 left-0 right-0 max-w-md w-full mx-auto px-3.5 sm:px-4 z-40 transition-all duration-300 transform translate-y-32 opacity-0 pointer-events-none overflow-hidden">
+     style="bottom: calc(5.25rem + env(safe-area-inset-bottom, 0px));"
+     class="fixed left-0 right-0 max-w-md w-full mx-auto px-3.5 sm:px-4 z-40 transition-all duration-300 transform translate-y-32 opacity-0 pointer-events-none overflow-hidden">
     <div class="bg-slate-900/95 text-white backdrop-blur-md p-3 rounded-2xl shadow-2xl border border-white/10 flex items-center justify-between gap-2.5">
         
         <!-- Left: Counter & Summary Jam -->

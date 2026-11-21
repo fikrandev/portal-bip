@@ -12,7 +12,7 @@
     <meta name="apple-mobile-web-app-title" content="Portal BIP">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <script>
         window.APP_BASE_URL = '<?= rtrim(BASE_URL, "/") ?>';
         // Auto-cleanup any rogue Sarpras or root service worker immediately
@@ -145,15 +145,19 @@
         :root {
             --sat: env(safe-area-inset-top, 0px);
             --sab: env(safe-area-inset-bottom, 0px);
+            --sal: env(safe-area-inset-left, 0px);
+            --sar: env(safe-area-inset-right, 0px);
         }
         html {
             overflow-x: hidden;
             width: 100%;
             max-width: 100vw;
             overscroll-behavior-x: none;
+            -webkit-text-size-adjust: 100%;
+            touch-action: manipulation;
         }
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             -webkit-tap-highlight-color: transparent;
             overscroll-behavior-y: auto;
             overscroll-behavior-x: none;
@@ -161,7 +165,51 @@
             width: 100%;
             max-width: 100vw;
             position: relative;
+            min-height: 100%;
+            min-height: -webkit-fill-available;
+            min-height: 100dvh;
         }
+
+        /* ── iPhone / iOS Auto-Zoom Prevention (Crucial: font-size >= 16px) ── */
+        @supports (-webkit-touch-callout: none) {
+            input, select, textarea {
+                font-size: 16px !important;
+            }
+        }
+        @media screen and (max-width: 768px) {
+            input:not([type="checkbox"]):not([type="radio"]), select, textarea {
+                font-size: 16px !important;
+            }
+        }
+
+        /* ── iPhone Form Control Native Reset & Tap Highlights ── */
+        button, input[type="button"], input[type="submit"], [role="button"], a {
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+        button, input, select, textarea {
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ── iPhone Notch & Dynamic Island Safe-Top for Sticky Headers ── */
+        .sticky.top-0,
+        [class*="sticky"][class*="top-0"] {
+            top: 0 !important;
+            padding-top: calc(0.875rem + env(safe-area-inset-top, 0px)) !important;
+        }
+        .safe-top {
+            padding-top: calc(1rem + env(safe-area-inset-top, 0px)) !important;
+        }
+
+        /* ── iPhone Home Indicator Safe-Bottom ── */
+        .safe-bottom {
+            padding-bottom: calc(0.65rem + env(safe-area-inset-bottom, 0px)) !important;
+        }
+        .safe-x {
+            padding-left: env(safe-area-inset-left, 0px);
+            padding-right: env(safe-area-inset-right, 0px);
+        }
+
         #mobile-main-view {
             overscroll-behavior-x: none;
             overscroll-behavior-y: auto;
@@ -170,9 +218,15 @@
             min-width: 0;
             overflow-x: hidden;
             -webkit-overflow-scrolling: touch;
+            padding-bottom: calc(6.5rem + env(safe-area-inset-bottom, 0px)) !important;
         }
-        .safe-top { padding-top: var(--sat); }
-        .safe-bottom { padding-bottom: var(--sab); }
+
+        #mobile-bottom-nav {
+            padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px)) !important;
+            padding-left: calc(0.5rem + env(safe-area-inset-left, 0px));
+            padding-right: calc(0.5rem + env(safe-area-inset-right, 0px));
+        }
+
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 

@@ -232,3 +232,26 @@ textarea:is([class*="border-slate-"], [class*="border-gray-"], [class*="border-p
     border-style: solid;
     border-width: 1px;
 }
+
+/* ── 8. iPhone & iOS Device Optimizations ──────────── */
+:root {
+    --sat: env(safe-area-inset-top, 0px);
+    --sab: env(safe-area-inset-bottom, 0px);
+    --sal: env(safe-area-inset-left, 0px);
+    --sar: env(safe-area-inset-right, 0px);
+}
+
+@supports (-webkit-touch-callout: none) {
+    /* Prevent iOS auto-zoom on input focus */
+    input:not([type="checkbox"]):not([type="radio"]), select, textarea {
+        font-size: 16px !important;
+    }
+}
+
+@media screen and (max-width: 768px) {
+    /* Prevent iOS Safari 300ms tap delay and double-tap zoom on buttons */
+    a, button, [role="button"], input[type="submit"], input[type="button"] {
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+    }
+}

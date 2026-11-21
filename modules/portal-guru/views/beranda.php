@@ -17,7 +17,7 @@ if ($hourNow < 11) {
 ?>
 
 <!-- Header Section: Greeting, Avatar & Notification Bell -->
-<div class="px-5 pt-4 pb-3.5 flex items-center justify-between">
+<div class="px-5 pt-4 pb-3.5 flex items-center justify-between safe-top">
     <div class="min-w-0 pr-2">
         <div class="flex items-center gap-1.5 mb-0.5">
             <span class="text-xs text-slate-500 font-medium"><?= $greetingText ?></span>

@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#1d4ed8">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <title><?= htmlspecialchars($pageTitle ?? 'Portal BIP') ?></title>
     <meta name="application-name" content="Portal BIP">
     <meta name="apple-mobile-web-app-title" content="Portal BIP">
@@ -76,19 +79,41 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     
     <style>
+        html, body {
+            min-height: 100%;
+            min-height: -webkit-fill-available;
+            min-height: 100dvh;
+            -webkit-text-size-adjust: 100%;
+            touch-action: manipulation;
+        }
         body { 
-            font-family: 'Plus Jakarta Sans', sans-serif; 
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
             -webkit-tap-highlight-color: transparent; 
+            padding-top: calc(1.5rem + env(safe-area-inset-top, 0px));
+            padding-bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
+        }
+        /* Mencegah iOS Safari auto-zoom saat fokus pada input */
+        @supports (-webkit-touch-callout: none) {
+            input, select, textarea {
+                font-size: 16px !important;
+            }
+        }
+        @media screen and (max-width: 768px) {
+            input, select, textarea {
+                font-size: 16px !important;
+            }
         }
         .press-bounce {
             transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+            -webkit-touch-callout: none;
+            user-select: none;
         }
         .press-bounce:active {
             transform: scale(0.96);
         }
     </style>
 </head>
-<body class="h-full flex flex-col items-center justify-center bg-slate-100 relative p-4 selection:bg-primary-600 selection:text-white">
+<body class="min-h-[100dvh] min-h-screen flex flex-col items-center justify-center bg-slate-100 relative p-4 selection:bg-primary-600 selection:text-white">
 
     <!-- Top Blue Wave Decoration -->
     <div class="fixed top-0 left-0 w-full h-[38vh] bg-gradient-to-br from-primary-800 via-primary-700 to-indigo-800 rounded-b-[3.5rem] shadow-lg z-0"></div>
@@ -185,6 +210,9 @@
                            required
                            autofocus
                            autocomplete="username"
+                           autocapitalize="none"
+                           autocorrect="off"
+                           spellcheck="false"
                            class="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 placeholder:text-slate-400 outline-none focus:bg-white focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all text-xs font-semibold">
                 </div>
             </div>
