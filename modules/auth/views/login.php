@@ -79,4 +79,19 @@ function togglePassword() {
         iconEyeOff.classList.add('hidden');
     }
 }
+
+// Keepalive heartbeat setiap 3 menit agar sesi & CSRF token tidak kedaluwarsa saat presentasi lama
+setInterval(function() {
+    fetch('<?= url("login?ping=1") ?>')
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+            if (data && data.csrf) {
+                var csrfInputs = document.querySelectorAll('input[name="_csrf_token"], input[name="csrf_token"]');
+                csrfInputs.forEach(function(inp) {
+                    inp.value = data.csrf;
+                });
+            }
+        })
+        .catch(function() {});
+}, 180000);
 </script>

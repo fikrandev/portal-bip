@@ -269,11 +269,30 @@
         function handleFormSubmit(form) {
             const btn = document.getElementById('btn-login-submit');
             if (btn) {
-                btn.disabled = true;
-                btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span>Memverifikasi...</span>`;
-                lucide.createIcons();
+                // Tunda penonaktifan tombol 50ms agar dispatch POST oleh browser mobile tidak terbatalkan
+                setTimeout(function() {
+                    btn.disabled = true;
+                    btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span>Memverifikasi...</span>`;
+                    lucide.createIcons();
+                }, 50);
             }
         }
+
+        // Keepalive heartbeat setiap 3 menit agar sesi & token CSRF tidak expired saat presentasi berlangsung lama
+        setInterval(function() {
+            var pingUrl = (window.APP_BASE_URL || '') + '/mobile/login?ping=1';
+            fetch(pingUrl)
+                .then(function(res) { return res.json(); })
+                .then(function(data) {
+                    if (data && data.csrf) {
+                        var csrfInputs = document.querySelectorAll('input[name="_csrf_token"], input[name="csrf_token"]');
+                        csrfInputs.forEach(function(inp) {
+                            inp.value = data.csrf;
+                        });
+                    }
+                })
+                .catch(function() {});
+        }, 180000);
 
         // ============================================================
         // AUTO-RESTORE PERSISTENT SESSION (Login Sekali untuk Selamanya)

@@ -258,6 +258,13 @@ class PortalGuruAuthController
      */
     public static function showLogin(): void
     {
+        // Support periodic keepalive ping to prevent session & CSRF expiry while waiting during presentations
+        if (isset($_GET['ping'])) {
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode(['status' => 'ok', 'csrf' => CSRF::token()]);
+            exit;
+        }
+
         // Jika user sengaja meminta ganti akun atau logout
         if (isset($_GET['switch'])) {
             self::clearRememberCookie();
@@ -280,7 +287,10 @@ class PortalGuruAuthController
     public static function login(): void
     {
         if (!CSRF::validate()) {
-            $_SESSION['flash_error'] = 'Token keamanan tidak valid. Silakan coba lagi.';
+            if (session_status() === PHP_SESSION_NONE) {
+                session_start();
+            }
+            $_SESSION['flash_error'] = 'Sesi form login telah kedaluwarsa. Silakan coba klik Masuk sekali lagi.';
             header('Location: ' . BASE_URL . '/mobile/login');
             exit;
         }
@@ -298,9 +308,18 @@ class PortalGuruAuthController
         }
         self::clearRememberCookie();
 
-        // Bersihkan sesi lama terlebih dahulu
-        Auth::logout();
+        // Bersihkan state login sebelumnya tanpa menghancurkan sesi PHP aktif
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
         unset(
+            $_SESSION['user_id'],
+            $_SESSION['user_uuid'],
+            $_SESSION['user_name'],
+            $_SESSION['user_username'],
+            $_SESSION['user_roles'],
+            $_SESSION['user_jenjang'],
+            $_SESSION['user_allowed_jenjangs'],
             $_SESSION['portal_guru_preview_id'],
             $_SESSION['portal_guru_pegawai_id'],
             $_SESSION['portal_guru_cache_uid'],
@@ -365,6 +384,7 @@ class PortalGuruAuthController
                     }
                     if ($userRecord) {
                         Auth::loginUsingId((int)$userRecord['id']);
+                        Auth::clearFailedAttempts($username);
                         $result = ['success' => true];
                     }
                 }

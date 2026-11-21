@@ -54,8 +54,14 @@ class Auth
             ];
         }
 
-        // Regenerate session ID to prevent session fixation
-        session_regenerate_id(true);
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+
+        // Regenerate session ID safely to prevent session fixation
+        if (session_status() === PHP_SESSION_ACTIVE && !headers_sent()) {
+            @session_regenerate_id(true);
+        }
 
         // Store user in session
         $_SESSION['user_id'] = $user['id'];
@@ -64,7 +70,7 @@ class Auth
         $_SESSION['user_username'] = $user['username'];
         $_SESSION['user_roles'] = $user['role_slugs'] ? explode(',', $user['role_slugs']) : [];
         $_SESSION['login_time'] = time();
-        $_SESSION['ip_address'] = $_SERVER['REMOTE_ADDR'] ?? '';
+        $_SESSION['ip_address'] = self::getClientIp();
 
         // Resolve and store effective allowed jenjang
         self::resolveAndStoreJenjang($user);
@@ -123,8 +129,10 @@ class Auth
             session_start();
         }
 
-        // Regenerate session ID
-        session_regenerate_id(true);
+        // Regenerate session ID safely
+        if (session_status() === PHP_SESSION_ACTIVE && !headers_sent()) {
+            @session_regenerate_id(true);
+        }
 
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['user_uuid'] = $user['uuid'];
@@ -132,7 +140,13 @@ class Auth
         $_SESSION['user_username'] = $user['username'];
         $_SESSION['user_roles'] = $user['role_slugs'] ? explode(',', $user['role_slugs']) : [];
         $_SESSION['login_time'] = time();
-        $_SESSION['ip_address'] = $_SERVER['REMOTE_ADDR'] ?? '';
+        $_SESSION['ip_address'] = self::getClientIp();
+
+        // Clear failed attempts for this user on successful login
+        self::clearFailedAttempts($user['username']);
+        if (!empty($user['email'])) {
+            self::clearFailedAttempts($user['email']);
+        }
 
         // Resolve and store effective allowed jenjang
         self::resolveAndStoreJenjang($user);
@@ -510,9 +524,50 @@ class Auth
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
             $checked = true;
             @file_put_contents($stampFile, (string)time());
+
+            // Bersihkan histori percobaan login lama (> 1 jam) agar tabel tetap efisien
+            try {
+                $oldLimit = date('Y-m-d H:i:s', time() - 3600);
+                $db->delete('login_attempts', 'attempted_at < ?', [$oldLimit]);
+            } catch (Throwable $eClean) {}
         } catch (Throwable $e) {
             // Proceed gracefully if DB table creation is not permitted
         }
+    }
+
+    /**
+     * Dapatkan IP asli client dengan dukungan Cloudflare, Proxy, dan Header X-Forwarded-For
+     */
+    public static function getClientIp(): string
+    {
+        // 1. Cloudflare connecting IP
+        if (!empty($_SERVER['HTTP_CF_CONNECTING_IP'])) {
+            $cfIp = trim($_SERVER['HTTP_CF_CONNECTING_IP']);
+            if (filter_var($cfIp, FILTER_VALIDATE_IP)) {
+                return $cfIp;
+            }
+        }
+
+        // 2. X-Forwarded-For (ambil IP pertama/asli client)
+        if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+            $parts = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
+            foreach ($parts as $part) {
+                $candidate = trim($part);
+                if (filter_var($candidate, FILTER_VALIDATE_IP)) {
+                    return $candidate;
+                }
+            }
+        }
+
+        // 3. X-Real-IP
+        if (!empty($_SERVER['HTTP_X_REAL_IP'])) {
+            $realIp = trim($_SERVER['HTTP_X_REAL_IP']);
+            if (filter_var($realIp, FILTER_VALIDATE_IP)) {
+                return $realIp;
+            }
+        }
+
+        return $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
     }
 
     /**
@@ -521,7 +576,7 @@ class Auth
     private static function recordFailedAttempt(string $username): void
     {
         self::ensureAttemptsTable();
-        $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+        $ip = self::getClientIp();
 
         try {
             $db = Database::getInstance();
@@ -535,7 +590,7 @@ class Auth
             if (!isset($_SESSION['login_attempts'])) {
                 $_SESSION['login_attempts'] = [];
             }
-            $key = md5($username . $ip);
+            $key = md5($username . '_' . $ip);
             if (!isset($_SESSION['login_attempts'][$key])) {
                 $_SESSION['login_attempts'][$key] = [
                     'count' => 0,
@@ -548,31 +603,57 @@ class Auth
     }
 
     /**
-     * Check if login is locked out
+     * Check if login is locked out.
+     * 
+     * PENTING: Lockout kegagalan login dipisah secara tegas:
+     * 1. Per Akun (Username): Mengunci akun tertentu jika salah >= MAX_LOGIN_ATTEMPTS (5x).
+     *    Akun guru lain di jaringan Wi-Fi/IP yang sama TETAP BISA LOGIN normal!
+     * 2. Per IP Address (Anti-DDoS/Brute Force Bot): Menggunakan ambang batas tinggi MAX_IP_LOGIN_ATTEMPTS (60x)
+     *    sehingga saat presentasi di mana 50 guru memakai 1 Wi-Fi, tidak akan saling mengunci satu sama lain.
      */
-    private static function isLockedOut(string $username): bool
+    public static function isLockedOut(string $username): bool
     {
         self::ensureAttemptsTable();
-        $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+        $ip = self::getClientIp();
         $lockoutSince = date('Y-m-d H:i:s', time() - (LOCKOUT_DURATION * 60));
+        $maxAttempts = defined('MAX_LOGIN_ATTEMPTS') ? (int)MAX_LOGIN_ATTEMPTS : 5;
+        $maxIpAttempts = defined('MAX_IP_LOGIN_ATTEMPTS') ? (int)MAX_IP_LOGIN_ATTEMPTS : 60;
 
         try {
             $db = Database::getInstance();
-            $row = $db->find(
-                "SELECT COUNT(*) as attempts FROM `login_attempts` 
-                 WHERE (ip_address = ? OR username = ?) AND attempted_at >= ?",
-                [$ip, $username, $lockoutSince]
-            );
-            $attempts = (int)($row['attempts'] ?? 0);
-            if ($attempts >= MAX_LOGIN_ATTEMPTS) {
-                return true;
+
+            // 1. Cek lockout per username (Proteksi Akun Spesifik)
+            if (!empty($username)) {
+                $userRow = $db->find(
+                    "SELECT COUNT(*) as attempts FROM `login_attempts` 
+                     WHERE `username` = ? AND `attempted_at` >= ?",
+                    [$username, $lockoutSince]
+                );
+                $userAttempts = (int)($userRow['attempts'] ?? 0);
+                if ($userAttempts >= $maxAttempts) {
+                    return true;
+                }
+            }
+
+            // 2. Cek lockout per IP (Proteksi Global Flooding / Bot Attack)
+            // Ambang batas tinggi (60x) agar lingkungan kantor/sekolah/presentasi tetap aman
+            if (!empty($ip) && $ip !== '0.0.0.0' && $ip !== '127.0.0.1' && $ip !== '::1') {
+                $ipRow = $db->find(
+                    "SELECT COUNT(*) as attempts FROM `login_attempts` 
+                     WHERE `ip_address` = ? AND `attempted_at` >= ?",
+                    [$ip, $lockoutSince]
+                );
+                $ipAttempts = (int)($ipRow['attempts'] ?? 0);
+                if ($ipAttempts >= $maxIpAttempts) {
+                    return true;
+                }
             }
         } catch (Throwable $e) {
             // Fallback to session check if database check fails
-            $key = md5($username . $ip);
+            $key = md5($username . '_' . $ip);
             if (isset($_SESSION['login_attempts'][$key])) {
                 $sessionAttempts = $_SESSION['login_attempts'][$key];
-                if ($sessionAttempts['count'] >= MAX_LOGIN_ATTEMPTS) {
+                if ($sessionAttempts['count'] >= $maxAttempts) {
                     $lockoutEnd = $sessionAttempts['last_attempt'] + (LOCKOUT_DURATION * 60);
                     if (time() < $lockoutEnd) {
                         return true;
@@ -586,25 +667,27 @@ class Auth
     }
 
     /**
-     * Clear failed login attempts
+     * Clear failed login attempts for a specific user
      */
-    private static function clearFailedAttempts(string $username): void
+    public static function clearFailedAttempts(string $username): void
     {
         self::ensureAttemptsTable();
-        $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+        $ip = self::getClientIp();
 
         try {
             $db = Database::getInstance();
-            $db->delete('login_attempts', 'ip_address = ? OR username = ?', [$ip, $username]);
+            if (!empty($username)) {
+                $db->delete('login_attempts', 'username = ?', [$username]);
+            }
             
-            // Periodically clean up records older than 1 day to keep table lean
-            $oldThreshold = date('Y-m-d H:i:s', time() - 86400);
+            // Bersihkan juga riwayat attempts yang sudah kedaluwarsa (> 1 jam)
+            $oldThreshold = date('Y-m-d H:i:s', time() - 3600);
             $db->delete('login_attempts', 'attempted_at < ?', [$oldThreshold]);
         } catch (Throwable $e) {
             // Fallback
         }
 
-        $key = md5($username . $ip);
+        $key = md5($username . '_' . $ip);
         unset($_SESSION['login_attempts'][$key]);
     }
 

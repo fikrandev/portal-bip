@@ -44,6 +44,7 @@ define('LOG_PATH', STORAGE_PATH . '/logs');
 // ── Security ─────────────────────────────────────────
 define('CSRF_TOKEN_NAME', '_csrf_token');
 define('MAX_LOGIN_ATTEMPTS', 5);
+define('MAX_IP_LOGIN_ATTEMPTS', 60); // Ambang batas per-IP agar 1 jaringan Wi-Fi/sekolah tidak memblokir massal audiens
 define('LOCKOUT_DURATION', 15); // minutes
 define('PASSWORD_MIN_LENGTH', 8);
 

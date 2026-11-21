@@ -11,6 +11,12 @@ class AuthController
      */
     public static function showLogin(): void
     {
+        if (isset($_GET['ping'])) {
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode(['status' => 'ok', 'csrf' => CSRF::token()]);
+            exit;
+        }
+
         $pageTitle = 'Masuk';
         $pageDescription = 'Masuk ke Portal BIP';
         
