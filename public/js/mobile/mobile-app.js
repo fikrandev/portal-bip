@@ -1005,7 +1005,7 @@ window.MobileRouter = (function() {
         newScript.src = oldScript.src;
       } else {
         // Transform top-level let/const to var so repeated SPA visits never throw SyntaxError redeclaration
-        const safeCode = oldScript.textContent.replace(/^(\s{0,4})(let|const)\s+/gm, '$1var ');
+        const safeCode = oldScript.textContent.replace(/^(\s{0,12})(let|const)\s+/gm, '$1var ');
         newScript.textContent = `try {\n${safeCode}\n} catch (err) { console.warn('[SPA View Script]', err); }`;
       }
       oldScript.parentNode.replaceChild(newScript, oldScript);
@@ -1049,6 +1049,9 @@ window.MobileRouter = (function() {
     renderAttendancePageUI();
     if (typeof window.fetchServerAttendanceState === 'function') {
       window.fetchServerAttendanceState();
+    }
+    if (typeof window.initQuranPage === 'function' && document.getElementById('surah-list-container')) {
+      try { window.initQuranPage(); } catch(e) {}
     }
     if (window.AndroidUI && typeof window.AndroidUI.hideCenterLoading === 'function') {
       window.AndroidUI.hideCenterLoading();

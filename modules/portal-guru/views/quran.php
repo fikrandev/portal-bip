@@ -419,44 +419,46 @@
 <audio id="global-quran-audio" preload="none"></audio>
 
 <script>
-    const APP_BASE_URL = '<?= url("") ?>';
-    const CURRENT_USER_ID = <?= (int)($currentUserId ?? Auth::id() ?? 0) ?>;
-    const CURRENT_GURU_ID = <?= (int)($teacherPegawaiId ?? 0) ?>;
-    const SERVER_BOOKMARKS = <?= json_encode($userBookmarks ?? null) ?>;
-    const USER_STORAGE_PREFIX = 'portal_guru_' + (CURRENT_USER_ID ? ('u' + CURRENT_USER_ID) : (CURRENT_GURU_ID ? ('g' + CURRENT_GURU_ID) : 'guest')) + '_';
-    const KEY_TILAWAH = USER_STORAGE_PREFIX + 'last_read';
-    const KEY_HAFALAN = USER_STORAGE_PREFIX + 'hafalan_bookmark';
-    const KEY_HAFALAN_STATUSES = USER_STORAGE_PREFIX + 'hafalan_statuses';
-    const DEFAULT_TILAWAH = { nomor: 1, nama: 'Al-Fatihah', ayat: 1, page: 1, mode: 'ayat', time: 'QS. Al-Fatihah: 1' };
-    const DEFAULT_HAFALAN = { nomor: 1, nama: 'Al-Fatihah', ayat: 1, page: 1, mode: 'hafalan', time: 'QS. Al-Fatihah: 1' };
+    var APP_BASE_URL = window.APP_BASE_URL || '<?= url("") ?>';
+    var CURRENT_USER_ID = <?= (int)($currentUserId ?? Auth::id() ?? 0) ?>;
+    var CURRENT_GURU_ID = <?= (int)($teacherPegawaiId ?? 0) ?>;
+    var SERVER_BOOKMARKS = <?= json_encode($userBookmarks ?? null) ?>;
+    var USER_STORAGE_PREFIX = 'portal_guru_' + (CURRENT_USER_ID ? ('u' + CURRENT_USER_ID) : (CURRENT_GURU_ID ? ('g' + CURRENT_GURU_ID) : 'guest')) + '_';
+    var KEY_TILAWAH = USER_STORAGE_PREFIX + 'last_read';
+    var KEY_HAFALAN = USER_STORAGE_PREFIX + 'hafalan_bookmark';
+    var KEY_HAFALAN_STATUSES = USER_STORAGE_PREFIX + 'hafalan_statuses';
+    var DEFAULT_TILAWAH = { nomor: 1, nama: 'Al-Fatihah', ayat: 1, page: 1, mode: 'ayat', time: 'QS. Al-Fatihah: 1' };
+    var DEFAULT_HAFALAN = { nomor: 1, nama: 'Al-Fatihah', ayat: 1, page: 1, mode: 'hafalan', time: 'QS. Al-Fatihah: 1' };
 
-    // State Store
-    let allSurahs = [];
-    let currentSurahNumber = 1;
-    let currentSurahData = null;
-    let arabicFontSize = 24; // px
-    let showTranslation = true;
-    let showLatin = true;
-    let isPlayingAudio = false;
+    // Persistent State Store across SPA page transitions
+    window._cachedSurahs = window._cachedSurahs || null;
+    var allSurahs = window._cachedSurahs || [];
+    var currentSurahNumber = 1;
+    var currentSurahData = null;
+    var arabicFontSize = 24; // px
+    var showTranslation = true;
+    var showLatin = true;
+    var isPlayingAudio = false;
 
     // Reader Mode State: 'ayat' | 'mushaf' | 'hafalan'
-    let currentReaderMode = 'ayat';
-    let currentHafalanFilter = 'normal'; // 'normal' | 'blur' | 'blind' | 'clue'
+    var currentReaderMode = 'ayat';
+    var currentHafalanFilter = 'normal'; // 'normal' | 'blur' | 'blind' | 'clue'
 
     // Mushaf Madinah Page State (Pages 1 to 604)
-    let currentMushafPage = 1;
-    let cachedPagesData = {};
+    var currentMushafPage = 1;
+    window.cachedPagesData = window.cachedPagesData || {};
+    var cachedPagesData = window.cachedPagesData;
 
     // Tikrar Looping State
-    let tikrarQueue = [];
-    let tikrarCurrentIndex = 0;
-    let tikrarCurrentRepeat = 1;
-    let tikrarTargetRepeats = 3;
-    let tikrarDelaySeconds = 2;
-    let isTikrarActive = false;
+    var tikrarQueue = [];
+    var tikrarCurrentIndex = 0;
+    var tikrarCurrentRepeat = 1;
+    var tikrarTargetRepeats = 3;
+    var tikrarDelaySeconds = 2;
+    var isTikrarActive = false;
 
     // ── SURAH TO MUSHAF PAGE MAP (114 SURAHS) ────────────────
-    const SURAH_PAGE_MAP = {
+    var SURAH_PAGE_MAP = window.SURAH_PAGE_MAP || {
         1: 1, 2: 2, 3: 50, 4: 77, 5: 106, 6: 128, 7: 151, 8: 177, 9: 187, 10: 208,
         11: 221, 12: 235, 13: 249, 14: 255, 15: 262, 16: 267, 17: 282, 18: 293, 19: 305, 20: 312,
         21: 322, 22: 332, 23: 342, 24: 350, 25: 359, 26: 367, 27: 377, 28: 385, 29: 396, 30: 404,
@@ -470,13 +472,15 @@
         101: 600, 102: 600, 103: 601, 104: 601, 105: 601, 106: 602, 107: 602, 108: 602, 109: 603, 110: 603,
         111: 603, 112: 604, 113: 604, 114: 604
     };
+    window.SURAH_PAGE_MAP = SURAH_PAGE_MAP;
 
     // ── JUZ TO MUSHAF PAGE MAP (30 JUZ) ──────────────────────
-    const JUZ_PAGE_MAP = {
+    var JUZ_PAGE_MAP = window.JUZ_PAGE_MAP || {
         1: 1, 2: 22, 3: 42, 4: 62, 5: 82, 6: 102, 7: 121, 8: 142, 9: 162, 10: 182,
         11: 201, 12: 222, 13: 242, 14: 262, 15: 282, 16: 302, 17: 322, 18: 342, 19: 362, 20: 382,
         21: 402, 22: 422, 23: 442, 24: 462, 25: 482, 26: 502, 27: 522, 28: 542, 29: 562, 30: 582
     };
+    window.JUZ_PAGE_MAP = JUZ_PAGE_MAP;
 
     window.PORTAL_IBADAH_CTX = {
         date: '<?= date('Y-m-d') ?>',
@@ -486,10 +490,10 @@
     };
 
     // ── 2-MINUTE READING TIMER STATE ──────────────────────────
-    let readingSeconds = 0;
-    let readingTimerInterval = null;
-    const TARGET_SECONDS = 120; // 2 minutes (120 seconds)
-    let isTilawahCompleted = false;
+    var readingSeconds = 0;
+    var readingTimerInterval = null;
+    var TARGET_SECONDS = 120; // 2 minutes (120 seconds)
+    var isTilawahCompleted = false;
 
     function initReadingTimer() {
         // Cek apakah Tilawah HARI INI sudah selesai di database
@@ -600,25 +604,57 @@
     async function loadSurahCatalog() {
         const container = document.getElementById('surah-list-container');
         
-        // Tier 1: Try Local Server Proxy
+        // 1. Instant Cache from Global Memory (0 ms!)
+        if (window._cachedSurahs && Array.isArray(window._cachedSurahs) && window._cachedSurahs.length > 0) {
+            allSurahs = window._cachedSurahs;
+            renderSurahList(allSurahs);
+            return;
+        }
+
+        // 2. Instant Cache from LocalStorage (0 ms!)
         try {
-            const res = await fetch(`${APP_BASE_URL}/api/quran/surat`);
+            const localCached = localStorage.getItem('portal_quran_surah_list_cache');
+            if (localCached) {
+                const parsed = JSON.parse(localCached);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    window._cachedSurahs = parsed;
+                    allSurahs = parsed;
+                    renderSurahList(allSurahs);
+                    return;
+                }
+            }
+        } catch (e) {}
+
+        // 3. Fetch from Server API Proxy (with 4-second timeout)
+        const abortCtrl = new AbortController();
+        const fetchTimer = setTimeout(() => abortCtrl.abort(), 4000);
+
+        try {
+            const res = await fetch(`${APP_BASE_URL}/api/quran/surat`, { signal: abortCtrl.signal });
+            clearTimeout(fetchTimer);
             const json = await res.json();
             if (json && json.data && json.data.length > 0) {
+                window._cachedSurahs = json.data;
                 allSurahs = json.data;
+                try { localStorage.setItem('portal_quran_surah_list_cache', JSON.stringify(json.data)); } catch (e) {}
                 renderSurahList(allSurahs);
                 return;
             }
         } catch (e) {
-            console.warn('Local API failed, trying public endpoint...', e);
+            console.warn('Local API failed/timeout, trying public endpoint...', e);
         }
 
-        // Tier 2: Try Direct EQuran API
+        // 4. Try Direct EQuran API as fallback (with 4-second timeout)
+        const abortCtrl2 = new AbortController();
+        const fetchTimer2 = setTimeout(() => abortCtrl2.abort(), 4000);
         try {
-            const res = await fetch('https://equran.id/api/v2/surat');
+            const res = await fetch('https://equran.id/api/v2/surat', { signal: abortCtrl2.signal });
+            clearTimeout(fetchTimer2);
             const json = await res.json();
-            if (json && json.data) {
+            if (json && json.data && json.data.length > 0) {
+                window._cachedSurahs = json.data;
                 allSurahs = json.data;
+                try { localStorage.setItem('portal_quran_surah_list_cache', JSON.stringify(json.data)); } catch (e) {}
                 renderSurahList(allSurahs);
                 return;
             }
@@ -626,9 +662,10 @@
             console.warn('Direct EQuran API failed, using fallback catalog...', e);
         }
 
-        // Tier 3: Built-in Catalog Index
+        // 5. Built-in Catalog Index (NEVER STUCK!)
         renderFallbackSurahList();
     }
+    window.loadSurahCatalog = loadSurahCatalog;
 
     function renderSurahList(surahs) {
         const container = document.getElementById('surah-list-container');
@@ -2027,13 +2064,15 @@
             { nomor: 113, nama: 'الفلق', namaLatin: 'Al-Falaq', arti: 'Waktu Subuh', jumlahAyat: 5, tempatTurun: 'Mekah' },
             { nomor: 114, nama: 'الناس', namaLatin: 'An-Nas', arti: 'Manusia', jumlahAyat: 6, tempatTurun: 'Mekah' }
         ];
+        window._cachedSurahs = fallback;
         allSurahs = fallback;
         renderSurahList(fallback);
     }
+    window.renderFallbackSurahList = renderFallbackSurahList;
 
     // Touch Swipe Gesture for Page Turning on Mobile
-    let touchStartX = 0;
-    let touchEndX = 0;
+    var touchStartX = 0;
+    var touchEndX = 0;
     function initQuranPage() {
         loadSurahCatalog();
         initReadingTimer();
@@ -2041,7 +2080,8 @@
         updateLastHafalanCard();
 
         const mushafCard = document.getElementById('mushaf-page-card');
-        if (mushafCard) {
+        if (mushafCard && !mushafCard._swipeBound) {
+            mushafCard._swipeBound = true;
             mushafCard.addEventListener('touchstart', e => {
                 touchStartX = e.changedTouches[0].screenX;
             }, { passive: true });
@@ -2052,6 +2092,7 @@
             }, { passive: true });
         }
     }
+    window.initQuranPage = initQuranPage;
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', initQuranPage);
