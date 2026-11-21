@@ -2364,13 +2364,18 @@ class PortalGuruController
         $teacher = self::getLoggedInTeacher();
         self::releaseSessionLock();
         $guruIdForIbadah = (int) ($teacher['pegawai_id'] ?: $teacher['user_id'] ?: 0);
+        $userId = (int) Auth::id();
         $teacherGender = $teacher['gender'] ?? 'P';
+
+        $userBookmarks = self::getUserQuranBookmarks($guruIdForIbadah, $userId);
 
         self::render('quran', [
             'pageTitle' => 'Al-Qur\'an Digital',
             'activeTab' => 'quran',
             'teacherGender' => $teacherGender,
             'teacherPegawaiId' => $guruIdForIbadah,
+            'currentUserId' => $userId,
+            'userBookmarks' => $userBookmarks,
             'todayIbadahState' => self::getTodayIbadahState($guruIdForIbadah, $teacherGender),
         ]);
     }
@@ -3070,6 +3075,174 @@ class PortalGuruController
         }
 
         Response::json(['code' => 500, 'message' => "Gagal memuat data halaman $page"]);
+    }
+
+    /**
+     * Dapatkan bookmark Al-Qur'an (Tilawah & Hafalan) untuk user/guru tertentu.
+     * Default penandaan pertama jika belum ditandai adalah AL-FATIAH (Surah 1, Ayat 1, Halaman 1).
+     */
+    public static function getUserQuranBookmarks(?int $guruId, ?int $userId): array
+    {
+        $defaultTilawah = [
+            'nomor' => 1,
+            'nama'  => 'Al-Fatihah',
+            'ayat'  => 1,
+            'page'  => 1,
+            'mode'  => 'ayat',
+            'time'  => 'Al-Fatihah (Ayat 1)',
+            'is_default' => true
+        ];
+        $defaultHafalan = [
+            'nomor' => 1,
+            'nama'  => 'Al-Fatihah',
+            'ayat'  => 1,
+            'page'  => 1,
+            'mode'  => 'hafalan',
+            'time'  => 'Al-Fatihah (Ayat 1)',
+            'is_default' => true
+        ];
+
+        if (!$guruId && !$userId) {
+            return [
+                'tilawah' => $defaultTilawah,
+                'hafalan' => $defaultHafalan
+            ];
+        }
+
+        try {
+            $db = Database::getInstance();
+            $rows = $db->findAll(
+                "SELECT * FROM `quran_bookmark_guru` WHERE (guru_id = ? OR (user_id IS NOT NULL AND user_id = ?))",
+                [(int)$guruId, (int)$userId]
+            );
+
+            $tilawah = null;
+            $hafalan = null;
+
+            foreach ($rows as $r) {
+                $bm = [
+                    'nomor' => (int)$r['surah_nomor'],
+                    'nama'  => $r['surah_nama'],
+                    'ayat'  => (int)$r['ayat_nomor'],
+                    'page'  => (int)($r['halaman'] ?? 1),
+                    'mode'  => $r['mode'] ?? 'ayat',
+                    'time'  => $r['ditandai_pada'] ?? ''
+                ];
+                if ($r['tipe'] === 'hafalan') {
+                    $hafalan = $bm;
+                } else {
+                    $tilawah = $bm;
+                }
+            }
+
+            return [
+                'tilawah' => $tilawah ?: $defaultTilawah,
+                'hafalan' => $hafalan ?: $defaultHafalan
+            ];
+        } catch (Throwable $e) {
+            return [
+                'tilawah' => $defaultTilawah,
+                'hafalan' => $defaultHafalan
+            ];
+        }
+    }
+
+    /**
+     * API: Ambil bookmark Al-Qur'an aktif user yang sedang login
+     */
+    public static function apiGetQuranBookmark(): void
+    {
+        self::releaseSessionLock();
+        header('Content-Type: application/json; charset=utf-8');
+
+        $teacher = self::getLoggedInTeacher();
+        $guruId = (int)($teacher['pegawai_id'] ?: $teacher['user_id'] ?: 0);
+        $userId = (int)Auth::id();
+
+        $bookmarks = self::getUserQuranBookmarks($guruId, $userId);
+
+        echo json_encode([
+            'success' => true,
+            'guru_id' => $guruId,
+            'user_id' => $userId,
+            'tilawah' => $bookmarks['tilawah'],
+            'hafalan' => $bookmarks['hafalan']
+        ]);
+        exit;
+    }
+
+    /**
+     * API: Simpan bookmark Al-Qur'an (Tilawah atau Hafalan) untuk user/guru yang sedang login
+     */
+    public static function apiSaveQuranBookmark(): void
+    {
+        header('Content-Type: application/json; charset=utf-8');
+
+        $teacher = self::getLoggedInTeacher();
+        $guruId = (int)($teacher['pegawai_id'] ?: $teacher['user_id'] ?: 0);
+        $userId = (int)Auth::id();
+
+        if ($guruId <= 0 && $userId <= 0) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'message' => 'Sesi berakhir, silakan login kembali.']);
+            exit;
+        }
+
+        $inputRaw = file_get_contents('php://input');
+        $input = json_decode($inputRaw, true) ?: $_POST;
+
+        $tipe = ($input['tipe'] ?? 'tilawah') === 'hafalan' ? 'hafalan' : 'tilawah';
+        $surahNomor = max(1, min(114, (int)($input['surah_nomor'] ?? ($input['nomor'] ?? 1))));
+        $surahNama = trim($input['surah_nama'] ?? ($input['nama'] ?? 'Al-Fatihah'));
+        $ayatNomor = max(1, (int)($input['ayat_nomor'] ?? ($input['ayat'] ?? 1)));
+        $halaman = max(1, min(604, (int)($input['halaman'] ?? ($input['page'] ?? 1))));
+        $mode = in_array($input['mode'] ?? '', ['ayat', 'mushaf', 'hafalan'], true) ? $input['mode'] : 'ayat';
+        $timeStr = $input['time'] ?? date('d M Y, H:i');
+
+        $db = Database::getInstance();
+        $pdo = $db->getConnection();
+
+        try {
+            // Pastikan kolom dan tabel sudah termigrasi
+            AutoMigrate::run();
+
+            $stmt = $pdo->prepare("
+                INSERT INTO `quran_bookmark_guru` 
+                    (`guru_id`, `user_id`, `tipe`, `surah_nomor`, `surah_nama`, `ayat_nomor`, `halaman`, `mode`, `ditandai_pada`, `created_at`)
+                VALUES 
+                    (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+                ON DUPLICATE KEY UPDATE 
+                    `user_id` = VALUES(`user_id`),
+                    `surah_nomor` = VALUES(`surah_nomor`),
+                    `surah_nama` = VALUES(`surah_nama`),
+                    `ayat_nomor` = VALUES(`ayat_nomor`),
+                    `halaman` = VALUES(`halaman`),
+                    `mode` = VALUES(`mode`),
+                    `ditandai_pada` = VALUES(`ditandai_pada`),
+                    `created_at` = NOW()
+            ");
+            $stmt->execute([
+                $guruId, $userId, $tipe, $surahNomor, $surahNama, $ayatNomor, $halaman, $mode, $timeStr
+            ]);
+
+            echo json_encode([
+                'success' => true,
+                'message' => 'Bookmark berhasil disimpan ke database',
+                'bookmark' => [
+                    'tipe'  => $tipe,
+                    'nomor' => $surahNomor,
+                    'nama'  => $surahNama,
+                    'ayat'  => $ayatNomor,
+                    'page'  => $halaman,
+                    'mode'  => $mode,
+                    'time'  => $timeStr
+                ]
+            ]);
+        } catch (Throwable $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Gagal menyimpan bookmark: ' . $e->getMessage()]);
+        }
+        exit;
     }
 
     /**

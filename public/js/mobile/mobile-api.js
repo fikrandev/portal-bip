@@ -297,26 +297,56 @@ window.MobileAPI = (function() {
 
     // ── 5. AL-QUR'AN & BOOKMARK ──────────────────────────────
     const Quran = {
-        getBookmark() {
-            return Storage.get('quran_last_read') || JSON.parse(localStorage.getItem('portal_guru_last_read') || 'null');
+        getBookmark(userId = null) {
+            const key = userId ? `portal_guru_u${userId}_last_read` : 'portal_guru_last_read';
+            const raw = localStorage.getItem(key) || Storage.get('quran_last_read') || localStorage.getItem('portal_guru_last_read');
+            if (raw) {
+                try {
+                    return typeof raw === 'string' ? JSON.parse(raw) : raw;
+                } catch (e) {}
+            }
+            return {
+                nomor: 1,
+                nama: 'Al-Fatihah',
+                ayat: 1,
+                page: 1,
+                mode: 'ayat',
+                time: 'QS. Al-Fatihah: 1'
+            };
         },
 
-        setBookmark(surahNomor, surahNama, ayatNomor) {
+        setBookmark(surahNomor, surahNama, ayatNomor, userId = null) {
+            const timeStr = new Date().toLocaleDateString('id-ID', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
             const bookmark = {
-                nomor: surahNomor,
-                nama: surahNama,
-                ayat: ayatNomor,
-                time: new Date().toLocaleDateString('id-ID', {
-                    day: 'numeric',
-                    month: 'short',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                })
+                tipe: 'tilawah',
+                nomor: surahNomor || 1,
+                nama: surahNama || 'Al-Fatihah',
+                ayat: ayatNomor || 1,
+                page: 1,
+                mode: 'ayat',
+                time: timeStr
             };
+            const key = userId ? `portal_guru_u${userId}_last_read` : 'portal_guru_last_read';
             Storage.set('quran_last_read', bookmark);
-            localStorage.setItem('portal_guru_last_read', JSON.stringify(bookmark));
+            localStorage.setItem(key, JSON.stringify(bookmark));
             Events.emit('quran:bookmarked', bookmark);
+
+            // Sync ke API server jika tersedia
+            try {
+                const base = window.APP_BASE_URL || '';
+                fetch(base + '/api/quran/bookmark', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(bookmark)
+                }).catch(() => {});
+            } catch (e) {}
+
             return bookmark;
         }
     };

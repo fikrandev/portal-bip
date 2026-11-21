@@ -101,6 +101,7 @@ class AutoMigrate
             '2026_11_18_000063_sync_jurnal_staff_and_tasbih_tables'        => 'migration063SyncJurnalStaffAndTasbihTables',
             '2026_11_19_000064_add_evaluasi_to_absen_pegawai_log'          => 'migration064AddEvaluasiToAbsenPegawaiLog',
             '2026_11_20_000065_sync_cuti_full_schema_and_approval_columns' => 'migration065SyncCutiFullSchemaAndApprovalColumns',
+            '2026_11_21_000066_sync_quran_bookmark_guru_multiuser'         => 'migration066SyncQuranBookmarkGuruMultiuser',
         ];
     }
     /**
@@ -4877,6 +4878,53 @@ class AutoMigrate
                 }
             } catch (Throwable $e) {}
         }
+    }
+
+    /**
+     * 066. Sync Quran Bookmark Guru Multiuser
+     * Mendukung bookmark Al-Qur'an terisolasi per guru/user (Tilawah & Hafalan),
+     * kolom tipe, halaman, mode, dan user_id.
+     */
+    protected static function migration066SyncQuranBookmarkGuruMultiuser(PDO $pdo): void
+    {
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `quran_bookmark_guru` (
+                `id` int(11) NOT NULL AUTO_INCREMENT,
+                `guru_id` int(11) NOT NULL,
+                `user_id` int(11) DEFAULT NULL,
+                `tipe` enum('tilawah','hafalan') NOT NULL DEFAULT 'tilawah',
+                `surah_nomor` int(11) NOT NULL DEFAULT 1,
+                `surah_nama` varchar(100) NOT NULL DEFAULT 'Al-Fatihah',
+                `ayat_nomor` int(11) NOT NULL DEFAULT 1,
+                `halaman` int(11) NOT NULL DEFAULT 1,
+                `mode` varchar(20) NOT NULL DEFAULT 'ayat',
+                `ditandai_pada` varchar(100) DEFAULT NULL,
+                `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `uk_guru_tipe` (`guru_id`, `tipe`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
+
+        self::addColumnIfNotExists($pdo, 'quran_bookmark_guru', 'user_id', 'int(11) DEFAULT NULL', 'guru_id');
+        self::addColumnIfNotExists($pdo, 'quran_bookmark_guru', 'tipe', "enum('tilawah','hafalan') NOT NULL DEFAULT 'tilawah'", 'user_id');
+        self::addColumnIfNotExists($pdo, 'quran_bookmark_guru', 'halaman', 'int(11) NOT NULL DEFAULT 1', 'ayat_nomor');
+        self::addColumnIfNotExists($pdo, 'quran_bookmark_guru', 'mode', "varchar(20) NOT NULL DEFAULT 'ayat'", 'halaman');
+
+        // Pastikan unique index tidak mengunci 1 guru hanya untuk 1 tipe saja
+        try {
+            $stmt = $pdo->query("SHOW INDEX FROM `quran_bookmark_guru` WHERE Key_name IN ('unique_bookmark_guru', 'uk_pegawai_bookmark')");
+            if ($stmt && $stmt->fetch()) {
+                @$pdo->exec("ALTER TABLE `quran_bookmark_guru` DROP INDEX `unique_bookmark_guru`");
+                @$pdo->exec("ALTER TABLE `quran_bookmark_guru` DROP INDEX `uk_pegawai_bookmark`");
+            }
+        } catch (Throwable $e) {}
+
+        try {
+            $stmt = $pdo->query("SHOW INDEX FROM `quran_bookmark_guru` WHERE Key_name = 'uk_guru_tipe'");
+            if (!$stmt || !$stmt->fetch()) {
+                @$pdo->exec("ALTER TABLE `quran_bookmark_guru` ADD UNIQUE KEY `uk_guru_tipe` (`guru_id`, `tipe`)");
+            }
+        } catch (Throwable $e) {}
     }
 }
 

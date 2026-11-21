@@ -1466,6 +1466,10 @@ $router->any('/auto-migrate', function() {
 $router->get('/api/quran/surat', [PortalGuruController::class, 'apiSuratList']);
 $router->get('/api/quran/surat/{nomor}', [PortalGuruController::class, 'apiSuratDetail']);
 $router->get('/api/quran/page/{page}', [PortalGuruController::class, 'apiPageDetail']);
+$router->get('/api/quran/bookmark', [PortalGuruController::class, 'apiGetQuranBookmark']);
+$router->post('/api/quran/bookmark', [PortalGuruController::class, 'apiSaveQuranBookmark']);
+$router->get('/mobile/api/quran/bookmark', [PortalGuruController::class, 'apiGetQuranBookmark']);
+$router->post('/mobile/api/quran/bookmark', [PortalGuruController::class, 'apiSaveQuranBookmark']);
 $router->get('/api/modules', function() {
     Middleware::authRequired();
     $modules = RBAC::getAccessibleModules();

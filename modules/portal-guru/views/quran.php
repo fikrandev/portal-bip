@@ -85,6 +85,12 @@
         </div>
 
         <!-- Dual Bookmark Banners (Tilawah & Hafalan) -->
+        <?php
+            $initialTilawah = $userBookmarks['tilawah'] ?? ['nomor' => 1, 'nama' => 'Al-Fatihah', 'ayat' => 1, 'page' => 1, 'time' => 'QS. Al-Fatihah: 1'];
+            $initialHafalan = $userBookmarks['hafalan'] ?? ['nomor' => 1, 'nama' => 'Al-Fatihah', 'ayat' => 1, 'page' => 1, 'time' => 'QS. Al-Fatihah: 1'];
+            $initialTilawahText = ($initialTilawah['page'] ? "Halaman {$initialTilawah['page']} • " : '') . "QS. {$initialTilawah['nama']}: Ayat {$initialTilawah['ayat']}";
+            $initialHafalanText = "QS. {$initialHafalan['nama']}: Ayat {$initialHafalan['ayat']}";
+        ?>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             <!-- 1. Terakhir Dibaca (Tilawah) -->
             <div id="last-read-card" onclick="resumeLastRead()" class="bg-gradient-to-r from-primary-50 to-indigo-50 p-3 rounded-2xl border border-primary-100/80 flex items-center justify-between cursor-pointer press-bounce shadow-xs">
@@ -94,7 +100,7 @@
                     </div>
                     <div class="min-w-0">
                         <p class="text-[10px] font-bold text-primary-800 uppercase tracking-wider">Terakhir Dibaca (Tilawah)</p>
-                        <p id="last-read-text" class="text-xs font-black text-slate-800 leading-tight truncate">Halaman 293 • QS. Al-Kahfi: 1</p>
+                        <p id="last-read-text" class="text-xs font-black text-slate-800 leading-tight truncate"><?= htmlspecialchars($initialTilawahText) ?></p>
                     </div>
                 </div>
                 <span class="text-xs font-bold text-primary-600 flex items-center gap-0.5 shrink-0">
@@ -110,7 +116,7 @@
                     </div>
                     <div class="min-w-0">
                         <p class="text-[10px] font-bold text-primary-800 uppercase tracking-wider">Target Hafalan (Tahfidz)</p>
-                        <p id="last-hafalan-text" class="text-xs font-black text-slate-800 leading-tight truncate">QS. Al-Mulk: Ayat 1</p>
+                        <p id="last-hafalan-text" class="text-xs font-black text-slate-800 leading-tight truncate"><?= htmlspecialchars($initialHafalanText) ?></p>
                     </div>
                 </div>
                 <span class="text-xs font-bold text-primary-600 flex items-center gap-0.5 shrink-0">
@@ -414,6 +420,15 @@
 
 <script>
     const APP_BASE_URL = '<?= url("") ?>';
+    const CURRENT_USER_ID = <?= (int)($currentUserId ?? Auth::id() ?? 0) ?>;
+    const CURRENT_GURU_ID = <?= (int)($teacherPegawaiId ?? 0) ?>;
+    const SERVER_BOOKMARKS = <?= json_encode($userBookmarks ?? null) ?>;
+    const USER_STORAGE_PREFIX = 'portal_guru_' + (CURRENT_USER_ID ? ('u' + CURRENT_USER_ID) : (CURRENT_GURU_ID ? ('g' + CURRENT_GURU_ID) : 'guest')) + '_';
+    const KEY_TILAWAH = USER_STORAGE_PREFIX + 'last_read';
+    const KEY_HAFALAN = USER_STORAGE_PREFIX + 'hafalan_bookmark';
+    const KEY_HAFALAN_STATUSES = USER_STORAGE_PREFIX + 'hafalan_statuses';
+    const DEFAULT_TILAWAH = { nomor: 1, nama: 'Al-Fatihah', ayat: 1, page: 1, mode: 'ayat', time: 'QS. Al-Fatihah: 1' };
+    const DEFAULT_HAFALAN = { nomor: 1, nama: 'Al-Fatihah', ayat: 1, page: 1, mode: 'hafalan', time: 'QS. Al-Fatihah: 1' };
 
     // State Store
     let allSurahs = [];
@@ -1423,7 +1438,7 @@
     }
 
     function getAllHafalanData() {
-        const raw = localStorage.getItem('portal_guru_hafalan_statuses');
+        const raw = localStorage.getItem(KEY_HAFALAN_STATUSES) || localStorage.getItem('portal_guru_hafalan_statuses');
         if (raw) {
             try { return JSON.parse(raw); } catch (e) {}
         }
@@ -1446,7 +1461,7 @@
             data[key] = status;
         }
 
-        localStorage.setItem('portal_guru_hafalan_statuses', JSON.stringify(data));
+        localStorage.setItem(KEY_HAFALAN_STATUSES, JSON.stringify(data));
 
         if (currentSurahData) {
             renderModeAyat(currentSurahData);
@@ -1476,7 +1491,7 @@
                 currentSurahData.ayat.forEach(a => {
                     data[getHafalanStorageKey(currentSurahData.nomor, a.nomorAyat)] = 'mutqin';
                 });
-                localStorage.setItem('portal_guru_hafalan_statuses', JSON.stringify(data));
+                localStorage.setItem(KEY_HAFALAN_STATUSES, JSON.stringify(data));
 
                 renderModeAyat(currentSurahData);
                 renderModeHafalan(currentSurahData);
@@ -1742,6 +1757,21 @@
     }
 
     // ── BOOKMARK & PERSISTENCE HELPERS ──────────────────────
+    async function syncBookmarkToServer(data) {
+        try {
+            await fetch(APP_BASE_URL + '/api/quran/bookmark', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify(data)
+            });
+        } catch (err) {
+            console.warn('[Quran] Gagal sync bookmark ke server:', err);
+        }
+    }
+
     function setAyatBookmark(surahNomor, surahNama, ayatNomor, pageNum = null) {
         const timeStr = new Date().toLocaleDateString('id-ID', {
             day: 'numeric',
@@ -1754,6 +1784,7 @@
         const bookmarkPage = pageNum || SURAH_PAGE_MAP[surahNomor] || 1;
 
         const bookmarkData = {
+            tipe: 'tilawah',
             nomor: surahNomor,
             nama: surahNama,
             ayat: ayatNomor,
@@ -1762,7 +1793,8 @@
             time: timeStr
         };
 
-        localStorage.setItem('portal_guru_last_read', JSON.stringify(bookmarkData));
+        localStorage.setItem(KEY_TILAWAH, JSON.stringify(bookmarkData));
+        syncBookmarkToServer(bookmarkData);
         updateLastReadCard();
 
         if (currentSurahData) {
@@ -1785,14 +1817,20 @@
             minute: '2-digit'
         });
 
+        const bookmarkPage = SURAH_PAGE_MAP[surahNomor] || 1;
+
         const bookmarkData = {
+            tipe: 'hafalan',
             nomor: surahNomor,
             nama: surahNama,
             ayat: ayatNomor,
+            page: bookmarkPage,
+            mode: 'hafalan',
             time: timeStr
         };
 
-        localStorage.setItem('portal_guru_hafalan_bookmark', JSON.stringify(bookmarkData));
+        localStorage.setItem(KEY_HAFALAN, JSON.stringify(bookmarkData));
+        syncBookmarkToServer(bookmarkData);
         updateLastHafalanCard();
 
         if (currentSurahData) {
@@ -1804,19 +1842,25 @@
     }
 
     function getSavedBookmark() {
-        const raw = localStorage.getItem('portal_guru_last_read');
+        const raw = localStorage.getItem(KEY_TILAWAH) || localStorage.getItem('portal_guru_last_read');
         if (raw) {
             try { return JSON.parse(raw); } catch (e) {}
         }
-        return null;
+        if (SERVER_BOOKMARKS && SERVER_BOOKMARKS.tilawah && SERVER_BOOKMARKS.tilawah.nomor) {
+            return SERVER_BOOKMARKS.tilawah;
+        }
+        return DEFAULT_TILAWAH;
     }
 
     function getSavedHafalanBookmark() {
-        const raw = localStorage.getItem('portal_guru_hafalan_bookmark');
+        const raw = localStorage.getItem(KEY_HAFALAN) || localStorage.getItem('portal_guru_hafalan_bookmark');
         if (raw) {
             try { return JSON.parse(raw); } catch (e) {}
         }
-        return null;
+        if (SERVER_BOOKMARKS && SERVER_BOOKMARKS.hafalan && SERVER_BOOKMARKS.hafalan.nomor) {
+            return SERVER_BOOKMARKS.hafalan;
+        }
+        return DEFAULT_HAFALAN;
     }
 
     function updateLastReadCard() {
@@ -1824,10 +1868,10 @@
         const text = document.getElementById('last-read-text');
 
         if (lr && text) {
-            const pageStr = lr.page ? `Hal. ${lr.page} • ` : '';
+            const pageStr = lr.page ? `Halaman ${lr.page} • ` : '';
             text.innerHTML = `${pageStr}QS. ${lr.nama}: Ayat ${lr.ayat} <span class="text-[9px] font-normal text-primary-500 block">• ${lr.time || 'Hari ini'}</span>`;
         } else if (text) {
-            text.textContent = 'Halaman 293 • QS. Al-Kahfi: 1';
+            text.textContent = 'Halaman 1 • QS. Al-Fatihah: 1';
         }
     }
 
@@ -1838,7 +1882,7 @@
         if (hb && text) {
             text.innerHTML = `QS. ${hb.nama}: Ayat ${hb.ayat} <span class="text-[9px] font-normal text-primary-600 block">• ${hb.time || 'Hari ini'}</span>`;
         } else if (text) {
-            text.textContent = 'QS. Al-Mulk: Ayat 1';
+            text.textContent = 'QS. Al-Fatihah: Ayat 1';
         }
     }
 
@@ -1852,7 +1896,7 @@
                 openSurahReader(lr.nomor, lr.ayat || 1, lr.mode || 'ayat');
             }
         } else {
-            openSurahReader(18, 1, 'mushaf'); // Default Al-Kahfi
+            openSurahReader(1, 1, 'ayat'); // Default Al-Fatihah
         }
     }
 
@@ -1861,7 +1905,7 @@
         if (hb && hb.nomor) {
             openSurahReader(hb.nomor, hb.ayat || 1, 'hafalan');
         } else {
-            openSurahReader(67, 1, 'hafalan'); // Default Al-Mulk
+            openSurahReader(1, 1, 'hafalan'); // Default Al-Fatihah
         }
     }
 
