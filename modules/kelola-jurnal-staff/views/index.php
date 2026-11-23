@@ -1586,8 +1586,8 @@ $todayYmd = date('Y-m-d');
 <!-- MODAL 1: INPUT JURNAL STAFF (BARU / MANUAL) -->
 <!-- ========================================================================= -->
 <div id="modal-input-jurnal" class="fixed inset-0 z-50 hidden overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="relative bg-white rounded-3xl max-w-2xl w-full shadow-2xl border border-slate-100 overflow-hidden my-8">
-        <div class="p-6 border-b border-slate-100 flex items-center justify-between bg-primary-50/50">
+    <div class="relative bg-white rounded-3xl max-w-2xl w-full shadow-2xl border border-slate-100 overflow-visible my-8">
+        <div class="p-6 border-b border-slate-100 flex items-center justify-between bg-primary-50/50 rounded-t-3xl">
             <div>
                 <h3 id="modal-jurnal-title" class="text-lg font-bold text-slate-800">Input Catatan Jurnal Staff</h3>
                 <p class="text-xs text-slate-500">Rekam aktivitas kerja staf support system & divisi</p>
@@ -1642,7 +1642,10 @@ $todayYmd = date('Y-m-d');
                 <!-- Opsi Tugas / Job Desk -->
                 <div class="md:col-span-2">
                     <label class="block text-xs font-semibold text-slate-700 mb-1">Pilih Tugas / Job Desk Divisi (Opsional)</label>
-                    <select name="tugas_id" id="jurnal-tugas-id" onchange="handleTugasChange(this)" class="w-full px-3.5 py-2.5 text-xs font-medium text-slate-800 bg-slate-50/70 hover:bg-white focus:bg-white rounded-xl border border-slate-200 hover:border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none focus:outline-none transition-all placeholder:text-slate-400">
+                    <select name="tugas_id" id="jurnal-tugas-id" onchange="handleTugasChange(this)"
+                            class="searchable-select w-full text-xs"
+                            data-placeholder="-- Ketik aktivitas kustom atau pilih tugas di bawah --"
+                            data-search-placeholder="Cari nama tugas / job desk...">
                         <option value="">-- Ketik aktivitas kustom atau pilih tugas di bawah --</option>
                     </select>
                 </div>
@@ -2033,14 +2036,19 @@ function switchStaffTab(tabName) {
  * Handle Pegawai Change di Modal Input Jurnal:
  * Mengambil referensi tugas berdasarkan jabatan pegawai via API
  */
-function handlePegawaiChange(selectEl) {
-    const opt = selectEl.options[selectEl.selectedIndex];
+function handlePegawaiChange(selectEl, preselectTugasId = null) {
+    const opt = selectEl && selectEl.options ? selectEl.options[selectEl.selectedIndex] : null;
+    const tugasSelect = document.getElementById('jurnal-tugas-id');
+    if (!tugasSelect) return;
+
+    tugasSelect.innerHTML = '<option value="">-- Ketik aktivitas kustom atau pilih tugas di bawah --</option>';
+    if (window.SearchableSelect && typeof window.SearchableSelect.refresh === 'function') {
+        window.SearchableSelect.refresh(tugasSelect);
+    }
+
     if (!opt) return;
 
     const jabatanName = opt.getAttribute('data-jabatan') || '';
-    const tugasSelect = document.getElementById('jurnal-tugas-id');
-    tugasSelect.innerHTML = '<option value="">-- Ketik aktivitas kustom atau pilih tugas di bawah --</option>';
-
     if (!jabatanName) return;
 
     // Cari jabatan_id dari dropdown tugas-jabatan-id jika ada
@@ -2063,10 +2071,22 @@ function handlePegawaiChange(selectEl) {
                     resp.data.forEach(t => {
                         const newOpt = document.createElement('option');
                         newOpt.value = t.id;
-                        newOpt.textContent = t.nama_tugas + ' (' + t.kategori_tugas.toUpperCase() + ')';
+                        newOpt.textContent = t.nama_tugas;
                         newOpt.setAttribute('data-nama', t.nama_tugas);
+                        if (t.kategori_tugas) {
+                            newOpt.setAttribute('data-badge', String(t.kategori_tugas).toUpperCase());
+                        }
+                        if (t.deskripsi) {
+                            newOpt.setAttribute('data-subtext', t.deskripsi);
+                        }
                         tugasSelect.appendChild(newOpt);
                     });
+                    if (preselectTugasId) {
+                        tugasSelect.value = String(preselectTugasId);
+                    }
+                    if (window.SearchableSelect && typeof window.SearchableSelect.refresh === 'function') {
+                        window.SearchableSelect.refresh(tugasSelect);
+                    }
                 }
             })
             .catch(err => console.error(err));
@@ -2096,10 +2116,20 @@ function openModalInputJurnal() {
     document.getElementById('modal-jurnal-title').textContent = 'Input Catatan Jurnal Staff';
     document.getElementById('form-jurnal').action = '<?= url("kelola-jurnal-staff/jurnal/store") ?>';
     document.getElementById('form-jurnal').reset();
+    const tugasSelect = document.getElementById('jurnal-tugas-id');
+    if (tugasSelect) {
+        tugasSelect.innerHTML = '<option value="">-- Ketik aktivitas kustom atau pilih tugas di bawah --</option>';
+        if (window.SearchableSelect && typeof window.SearchableSelect.refresh === 'function') {
+            window.SearchableSelect.refresh(tugasSelect);
+        }
+    }
     document.getElementById('modal-input-jurnal').classList.remove('hidden');
 }
 
 function closeModalInputJurnal() {
+    if (window.SearchableSelect && typeof window.SearchableSelect.closeAll === 'function') {
+        window.SearchableSelect.closeAll();
+    }
     document.getElementById('modal-input-jurnal').classList.add('hidden');
 }
 
@@ -2107,7 +2137,8 @@ function editJurnal(data) {
     document.getElementById('modal-jurnal-title').textContent = 'Edit Catatan Jurnal Staff (' + data.kode_jurnal + ')';
     document.getElementById('form-jurnal').action = '<?= url("kelola-jurnal-staff/jurnal/update") ?>/' + data.id;
     
-    document.getElementById('jurnal-pegawai-id').value = data.pegawai_id || '';
+    const pegawaiSelect = document.getElementById('jurnal-pegawai-id');
+    pegawaiSelect.value = data.pegawai_id || '';
     document.getElementById('jurnal-tanggal').value = data.tanggal || '';
     document.getElementById('jurnal-jam-id').value = data.jam_id || '';
     document.getElementById('jurnal-jam-rentang').value = data.jam_rentang || '';
@@ -2115,6 +2146,8 @@ function editJurnal(data) {
     document.getElementById('jurnal-uraian-hasil').value = data.uraian_hasil || '';
     document.getElementById('jurnal-kendala').value = data.kendala || '';
     document.getElementById('jurnal-status').value = data.status || 'selesai';
+
+    handlePegawaiChange(pegawaiSelect, data.tugas_id || null);
 
     document.getElementById('modal-input-jurnal').classList.remove('hidden');
 }

@@ -552,14 +552,20 @@
                         Pilih Tugas / Job Desk <span class="text-rose-500">*</span>
                     </label>
                     <div class="relative">
-                        <select id="modal_select_tugas" name="tugas_id" onchange="handleSelectTugasChange(this)" required
-                                class="w-full px-3.5 py-3 rounded-2xl border border-slate-200 bg-white font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-xs">
+                        <select id="modal_select_tugas" name="tugas_id" onchange="handleSelectTugasChange(this)"
+                                class="searchable-select w-full px-3.5 py-3 rounded-2xl border border-slate-200 bg-white font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
+                                data-placeholder="-- Pilih Tugas Dari Daftar --"
+                                data-search-placeholder="Cari nama tugas / job desk...">
                             <option value="">-- Pilih Tugas Dari Daftar --</option>
 
                             <?php if (!empty($tugasJabatan)): ?>
                                 <optgroup label="⭐ Tugas Jabatan (<?= e($jabatanName) ?>)">
                                     <?php foreach ($tugasJabatan as $tj): ?>
-                                        <option value="<?= (int)$tj['id'] ?>" data-nama="<?= e($tj['nama_tugas']) ?>" data-deskripsi="<?= e($tj['deskripsi'] ?? '') ?>">
+                                        <option value="<?= (int)$tj['id'] ?>"
+                                                data-nama="<?= e($tj['nama_tugas']) ?>"
+                                                data-deskripsi="<?= e($tj['deskripsi'] ?? '') ?>"
+                                                data-subtext="<?= e($tj['deskripsi'] ?? '') ?>"
+                                                <?= !empty($tj['kategori_tugas']) ? 'data-badge="' . e(strtoupper($tj['kategori_tugas'])) . '"' : '' ?>>
                                             <?= e($tj['nama_tugas']) ?>
                                         </option>
                                     <?php endforeach; ?>
@@ -567,7 +573,10 @@
                             <?php endif; ?>
 
                             <optgroup label="✍️ Input Mandiri">
-                                <option value="custom">[+ Tulis Tugas Sendiri / Aktivitas Lainnya]</option>
+                                <option value="custom"
+                                        data-always-show="true"
+                                        data-badge="MANUAL"
+                                        data-subtext="Tulis nama tugas / aktivitas di luar daftar job desk">[+ Tulis Tugas Sendiri / Aktivitas Lainnya]</option>
                             </optgroup>
                         </select>
                     </div>
@@ -1200,6 +1209,10 @@
             statusRadios.forEach(r => r.disabled = false);
         }
 
+        if (window.SearchableSelect && typeof window.SearchableSelect.refresh === 'function') {
+            window.SearchableSelect.refresh(selectTugas);
+        }
+
         // Tampilkan modal bottom sheet dengan transisi halus
         modal.classList.remove('hidden');
         void modal.offsetWidth;
@@ -1238,7 +1251,9 @@
                 startY = e.touches && e.touches[0] ? e.touches[0].clientY : 0;
             }, { passive: true });
             modal.addEventListener('touchmove', (e) => {
-                const scroller = e.target.closest ? e.target.closest('.staff-modal-scroll') : null;
+                const scroller = e.target.closest
+                    ? (e.target.closest('.searchable-select-options') || e.target.closest('.staff-modal-scroll'))
+                    : null;
                 if (!scroller) {
                     e.preventDefault();
                     return;
@@ -1273,6 +1288,9 @@
         if (typeof closeStaffLiveCamera === 'function') {
             closeStaffLiveCamera();
         }
+        if (window.SearchableSelect && typeof window.SearchableSelect.closeAll === 'function') {
+            window.SearchableSelect.closeAll();
+        }
         const modal = document.getElementById('modal-jurnal-staff');
         const scrim = document.getElementById('modal-jurnal-staff-scrim');
         const sheet = document.getElementById('form-jurnal-staff');
@@ -1284,6 +1302,9 @@
         const inpKendala = document.getElementById('inp_kendala');
         const statusRadios = document.querySelectorAll('.status-radio');
         if (selectTugas) selectTugas.disabled = false;
+        if (selectTugas && window.SearchableSelect && typeof window.SearchableSelect.refresh === 'function') {
+            window.SearchableSelect.refresh(selectTugas);
+        }
         if (inpCustom) inpCustom.disabled = false;
         if (inpUraian) inpUraian.disabled = false;
         if (inpKendala) inpKendala.disabled = false;
@@ -1684,7 +1705,17 @@
             namaAktivitas = opt.dataset.nama || opt.text;
         } else {
             if (typeof AndroidUI !== 'undefined') AndroidUI.toast('Silakan pilih tugas terlebih dahulu.', 'warning');
-            selectTugas.focus();
+            const wrapper = selectTugas ? selectTugas.nextElementSibling : null;
+            const triggerBtn = wrapper && wrapper.classList.contains('searchable-select-wrapper')
+                ? wrapper.querySelector('.searchable-select-trigger')
+                : null;
+            if (triggerBtn) {
+                triggerBtn.focus();
+                triggerBtn.classList.add('border-rose-400', 'ring-2', 'ring-rose-500/20');
+                setTimeout(() => triggerBtn.classList.remove('border-rose-400', 'ring-2', 'ring-rose-500/20'), 2000);
+            } else if (selectTugas) {
+                selectTugas.focus();
+            }
             return;
         }
 

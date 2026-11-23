@@ -1042,6 +1042,9 @@ window.MobileRouter = (function() {
     if (window.lucide) {
       window.lucide.createIcons();
     }
+    if (window.SearchableSelect && typeof window.SearchableSelect.init === 'function') {
+      window.SearchableSelect.init(mainEl);
+    }
     if (window.initLazyImages) {
       window.initLazyImages();
     }
@@ -1081,6 +1084,9 @@ window.MobileRouter = (function() {
     // Close any open Bottom Sheet immediately
     if (window.AndroidUI && typeof window.AndroidUI.closeBottomSheet === 'function') {
       window.AndroidUI.closeBottomSheet();
+    }
+    if (window.SearchableSelect && typeof window.SearchableSelect.closeAll === 'function') {
+      window.SearchableSelect.closeAll();
     }
 
     // Instant visual feedback on Bottom Nav if target matches a tab

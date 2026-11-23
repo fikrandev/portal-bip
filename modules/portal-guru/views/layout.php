@@ -383,6 +383,7 @@
     <script src="<?= asset('js/mobile/mobile-api.js') ?>?v=<?= file_exists(BASE_PATH . '/public/js/mobile/mobile-api.js') ? filemtime(BASE_PATH . '/public/js/mobile/mobile-api.js') : 3 ?>"></script>
     <script src="<?= asset('js/mobile/lazy-load.js') ?>?v=2"></script>
     <script src="<?= asset('js/pwa.js') ?>?v=3"></script>
+    <script src="<?= asset('js/searchable-select.js') ?>?v=<?= file_exists(BASE_PATH . '/public/js/searchable-select.js') ? filemtime(BASE_PATH . '/public/js/searchable-select.js') : 1 ?>"></script>
     <script src="<?= asset('js/mobile/mobile-app.js') ?>?v=<?= file_exists(BASE_PATH . '/public/js/mobile/mobile-app.js') ? filemtime(BASE_PATH . '/public/js/mobile/mobile-app.js') : 3 ?>"></script>
 
     <script>

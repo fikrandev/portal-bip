@@ -69,6 +69,22 @@
         }
     }
 
+    function closeAllDropdowns() {
+        document.querySelectorAll('.searchable-select-dropdown').forEach(function(d) {
+            var wrap = d.parentNode;
+            if (wrap && typeof wrap._closeDropdown === 'function') {
+                wrap._closeDropdown();
+            } else {
+                d.classList.add('hidden');
+                var chevronSvg = wrap ? wrap.querySelector('.searchable-select-trigger svg') : null;
+                if (chevronSvg) chevronSvg.style.transform = 'rotate(0deg)';
+                if (wrap) wrap.style.zIndex = '';
+                var parentRow = wrap ? wrap.closest('.repeater-row, tr') : null;
+                if (parentRow) parentRow.style.zIndex = '';
+            }
+        });
+    }
+
     function buildSearchableSelect(select) {
         // Hide original select (keep for form submission)
         select.style.display = 'none';
@@ -169,6 +185,9 @@
         // Options List Container
         var optionsList = document.createElement('div');
         optionsList.className = 'searchable-select-options max-h-56 overflow-y-auto custom-scrollbar p-1.5 space-y-0.5 text-xs';
+        optionsList.style.webkitOverflowScrolling = 'touch';
+        optionsList.style.overscrollBehavior = 'contain';
+        optionsList.style.touchAction = 'pan-y';
 
         // Empty state
         var emptyState = document.createElement('div');
@@ -191,6 +210,8 @@
             var filter = (filterText || '').toLowerCase().trim();
             var activeUnit = (select.getAttribute('data-active-unit') || '').toUpperCase().trim();
             var visibleCount = 0;
+            var matchedRegularCount = 0;
+            var lastGroupLabel = null;
 
             Array.from(select.options).forEach(function(opt) {
                 var val = opt.value;
@@ -200,11 +221,13 @@
                 var image = opt.getAttribute('data-image');
                 var subtext = opt.getAttribute('data-subtext');
                 var badge = opt.getAttribute('data-badge');
+                var deskripsi = opt.getAttribute('data-deskripsi') || '';
+                var alwaysShow = opt.getAttribute('data-always-show') === 'true';
                 var unit = (opt.getAttribute('data-unit') || '').toUpperCase().trim();
                 var isSelected = opt.selected;
 
-                // Unit Filter Matching
-                if (activeUnit && activeUnit !== 'SEMUA' && activeUnit !== 'SEMUA UNIT' && activeUnit !== 'YAYASAN' && val !== '') {
+                // Unit Filter Matching (skip when alwaysShow is true)
+                if (!alwaysShow && activeUnit && activeUnit !== 'SEMUA' && activeUnit !== 'SEMUA UNIT' && activeUnit !== 'YAYASAN' && val !== '') {
                     if (unit && unit !== 'SEMUA' && unit !== 'SEMUA UNIT' && unit !== 'UMUM') {
                         if (unit !== activeUnit && !unit.includes(activeUnit) && !activeUnit.includes(unit)) {
                             return;
@@ -213,12 +236,30 @@
                 }
 
                 // Text search filter
-                var fullSearch = (text + ' ' + (subtext || '') + ' ' + (badge || '') + ' ' + (unit || '')).toLowerCase();
-                if (filter && !fullSearch.includes(filter)) {
+                var fullSearch = (text + ' ' + (subtext || '') + ' ' + (badge || '') + ' ' + (unit || '') + ' ' + deskripsi).toLowerCase();
+                if (filter && !alwaysShow && (!val || !fullSearch.includes(filter))) {
                     return;
                 }
 
                 visibleCount++;
+                if (!alwaysShow) {
+                    matchedRegularCount++;
+                }
+
+                // Render optgroup header when transitioning groups
+                var parentEl = opt.parentElement;
+                if (parentEl && parentEl.tagName === 'OPTGROUP') {
+                    var groupLabel = parentEl.getAttribute('label') || '';
+                    if (groupLabel && groupLabel !== lastGroupLabel) {
+                        var groupHeader = document.createElement('div');
+                        groupHeader.className = 'searchable-optgroup-label px-2.5 pt-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 select-none';
+                        groupHeader.textContent = groupLabel;
+                        optionsList.appendChild(groupHeader);
+                        lastGroupLabel = groupLabel;
+                    }
+                } else {
+                    lastGroupLabel = null;
+                }
 
                 var item = document.createElement('div');
                 item.className = 'searchable-option px-2.5 py-2 rounded-xl cursor-pointer flex items-center justify-between gap-2.5 transition-colors ' + 
@@ -315,6 +356,13 @@
                 optionsList.appendChild(item);
             });
 
+            if (filter && matchedRegularCount === 0 && visibleCount > 0) {
+                var noMatchNotice = document.createElement('div');
+                noMatchNotice.className = 'px-3 py-2 text-[11px] text-slate-400 text-center border-b border-slate-100 mb-1';
+                noMatchNotice.textContent = 'Tidak ditemukan di daftar — pilih opsi di bawah';
+                optionsList.insertBefore(noMatchNotice, optionsList.firstChild);
+            }
+
             if (visibleCount === 0) {
                 emptyState.classList.remove('hidden');
             } else {
@@ -322,8 +370,24 @@
             }
         }
 
+        function syncDisabledState() {
+            var isDisabled = !!select.disabled;
+            trigger.disabled = isDisabled;
+            if (isDisabled) {
+                if (!dropdown.classList.contains('hidden')) {
+                    closeDropdown();
+                }
+                trigger.classList.remove('bg-white', 'hover:border-primary-400', 'cursor-pointer');
+                trigger.classList.add('bg-slate-100', 'text-slate-500', 'cursor-not-allowed', 'opacity-75');
+            } else {
+                trigger.classList.remove('bg-slate-100', 'text-slate-500', 'cursor-not-allowed', 'opacity-75');
+                trigger.classList.add('bg-white', 'hover:border-primary-400', 'cursor-pointer');
+            }
+        }
+
         // Update trigger display
         function updateTrigger() {
+            syncDisabledState();
             triggerContent.innerHTML = '';
 
             if (isMultiple) {
@@ -414,15 +478,21 @@
         }
 
         function openDropdown() {
+            if (select.disabled) return;
+
             // Close other open dropdowns
             document.querySelectorAll('.searchable-select-dropdown').forEach(function(d) {
                 if (d !== dropdown) {
-                    d.classList.add('hidden');
-                    var otherChevron = d.parentNode.querySelector('.searchable-select-trigger svg');
-                    if (otherChevron) otherChevron.style.transform = 'rotate(0deg)';
-                    d.parentNode.style.zIndex = '';
-                    var otherRow = d.closest('.repeater-row, tr');
-                    if (otherRow) otherRow.style.zIndex = '';
+                    if (d.parentNode && typeof d.parentNode._closeDropdown === 'function') {
+                        d.parentNode._closeDropdown();
+                    } else {
+                        d.classList.add('hidden');
+                        var otherChevron = d.parentNode.querySelector('.searchable-select-trigger svg');
+                        if (otherChevron) otherChevron.style.transform = 'rotate(0deg)';
+                        d.parentNode.style.zIndex = '';
+                        var otherRow = d.closest('.repeater-row, tr');
+                        if (otherRow) otherRow.style.zIndex = '';
+                    }
                 }
             });
 
@@ -431,20 +501,26 @@
             if (parentRow) parentRow.style.zIndex = '100';
 
             dropdown.classList.remove('hidden');
-            chevron.querySelector('svg').style.transform = 'rotate(180deg)';
+            var openChevSvg = chevron.querySelector('svg');
+            if (openChevSvg) openChevSvg.style.transform = 'rotate(180deg)';
             trigger.classList.add('border-primary-500', 'ring-2', 'ring-primary-500/20');
             searchInput.value = '';
             clearSearchBtn.classList.add('hidden');
             renderOptions('');
 
             setTimeout(function() {
-                searchInput.focus();
+                try {
+                    searchInput.focus({ preventScroll: true });
+                } catch (err) {
+                    searchInput.focus();
+                }
             }, 50);
         }
 
         function closeDropdown() {
             dropdown.classList.add('hidden');
-            chevron.querySelector('svg').style.transform = 'rotate(0deg)';
+            var closeChevSvg = chevron.querySelector('svg');
+            if (closeChevSvg) closeChevSvg.style.transform = 'rotate(0deg)';
             trigger.classList.remove('border-primary-500', 'ring-2', 'ring-primary-500/20');
             wrapper.style.zIndex = '';
             var parentRow = wrapper.closest('.repeater-row, tr');
@@ -452,6 +528,7 @@
         }
 
         function toggleDropdown() {
+            if (select.disabled) return;
             if (dropdown.classList.contains('hidden')) {
                 openDropdown();
             } else {
@@ -462,12 +539,18 @@
         // Attach internal helpers to wrapper
         wrapper._renderOptions = renderOptions;
         wrapper._updateTrigger = updateTrigger;
+        wrapper._syncDisabled = syncDisabledState;
+        wrapper._closeDropdown = closeDropdown;
 
         // Event Listeners
         trigger.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
             toggleDropdown();
+        });
+
+        searchInput.addEventListener('click', function(e) {
+            e.stopPropagation();
         });
 
         searchInput.addEventListener('input', function() {
@@ -485,7 +568,11 @@
             searchInput.value = '';
             clearSearchBtn.classList.add('hidden');
             renderOptions('');
-            searchInput.focus();
+            try {
+                searchInput.focus({ preventScroll: true });
+            } catch (err) {
+                searchInput.focus();
+            }
         });
 
         // Click outside to close
@@ -532,7 +619,8 @@
         refresh: refreshSearchableSelect,
         destroy: destroySearchableSelect,
         setValue: setValue,
-        filterByUnit: filterByUnit
+        filterByUnit: filterByUnit,
+        closeAll: closeAllDropdowns
     };
 
     // Auto initialize on DOMContentLoaded
