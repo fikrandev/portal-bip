@@ -1396,7 +1396,7 @@ class JurnalStaffModel
         }
 
         // 3. Bangun daftar tanggal dalam rentang periode (maks 62 hari agar matriks tetap responsif)
-        $liburMap = AbsenPegawaiModel::getLiburMapInRange($startDate, $endDate);
+        $liburMap = AbsenPegawaiModel::getLiburMap($startDate, $endDate);
         $allDates = [];
         $matrixDates = [];
         $curTs = strtotime($startDate);
@@ -1410,7 +1410,7 @@ class JurnalStaffModel
             $dStr = date('Y-m-d', $curTs);
             $w = (int)date('w', $curTs);
             $isSunday = ($w === 0);
-            $liburInfo = AbsenPegawaiModel::getLiburInfoForDate($dStr, $liburMap);
+            $liburInfo = $liburMap[$dStr] ?? ($isSunday ? ['nama_libur' => 'Hari Minggu', 'jenis' => 'mingguan'] : null);
             $isHoliday = ($liburInfo !== null);
             $isFuture = ($dStr > $today);
             $isToday = ($dStr === $today);
