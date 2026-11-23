@@ -158,30 +158,26 @@
     80% { stroke: #8b5cf6; }
 }
 
-/* ── 5. Instant SPA View Transitions (GPU Accelerated 60fps) ── */
+/* ── 5. Instant SPA View Transitions (Opacity-Only so fixed modals stay centered on viewport) ── */
 #mobile-main-view {
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
+    position: relative;
 }
 
 .spa-page-enter {
-    animation: spaPageEnter 0.18s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    animation: spaPageEnter 0.18s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .spa-page-leave {
     opacity: 0.55;
-    transform: scale(0.992);
-    transition: opacity 0.1s ease-out, transform 0.1s ease-out;
+    transition: opacity 0.1s ease-out;
 }
 
 @keyframes spaPageEnter {
     0% {
         opacity: 0.01;
-        transform: translate3d(0, 7px, 0);
     }
     100% {
         opacity: 1;
-        transform: none;
     }
 }
 

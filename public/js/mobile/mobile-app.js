@@ -1025,11 +1025,26 @@ window.MobileRouter = (function() {
       updateBottomNavTab(parsedData.activeTab);
     }
 
-    // 2. Inject Content & Trigger GPU Smooth Enter Animation
+    // 2. Inject Content & Trigger Smooth Opacity Enter Animation (cleanup immediately so fixed modals stay viewport-centered)
+    if (mainEl._spaEnterTimer) {
+      clearTimeout(mainEl._spaEnterTimer);
+      mainEl._spaEnterTimer = null;
+    }
     mainEl.classList.remove('spa-page-leave', 'spa-page-enter');
     mainEl.innerHTML = parsedData.html;
     void mainEl.offsetWidth; // Force quick reflow for animation restart
     mainEl.classList.add('spa-page-enter');
+    mainEl.addEventListener('animationend', function() {
+      mainEl.classList.remove('spa-page-enter');
+      if (mainEl._spaEnterTimer) {
+        clearTimeout(mainEl._spaEnterTimer);
+        mainEl._spaEnterTimer = null;
+      }
+    }, { once: true });
+    mainEl._spaEnterTimer = setTimeout(() => {
+      mainEl.classList.remove('spa-page-enter');
+      mainEl._spaEnterTimer = null;
+    }, 240);
 
     if (scrollToTop) {
       mainEl.scrollTop = 0;

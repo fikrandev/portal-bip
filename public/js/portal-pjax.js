@@ -680,11 +680,28 @@
             $('#global-search').val('');
         }
 
-        // 6. Swap main content with fast GPU enter animation
+        // 6. Swap main content with opacity-only transition (clean up class immediately so fixed modals center on viewport)
         var $main = $('#main-content');
-        $main.removeClass('portal-pjax-enter').html(parsed.mainHtml || '');
-        void $main[0].offsetWidth;
-        $main.addClass('portal-pjax-enter');
+        var mainEl = $main[0];
+        if (mainEl && mainEl._pjaxEnterTimer) {
+            clearTimeout(mainEl._pjaxEnterTimer);
+            mainEl._pjaxEnterTimer = null;
+        }
+        $main.off('animationend.pjaxEnter').removeClass('portal-pjax-enter').html(parsed.mainHtml || '');
+        if (mainEl) void mainEl.offsetWidth;
+        $main.addClass('portal-pjax-enter').one('animationend.pjaxEnter', function() {
+            $main.removeClass('portal-pjax-enter');
+            if (mainEl && mainEl._pjaxEnterTimer) {
+                clearTimeout(mainEl._pjaxEnterTimer);
+                mainEl._pjaxEnterTimer = null;
+            }
+        });
+        if (mainEl) {
+            mainEl._pjaxEnterTimer = setTimeout(function() {
+                $main.removeClass('portal-pjax-enter');
+                mainEl._pjaxEnterTimer = null;
+            }, 220);
+        }
 
         $('#portal-extra-js').html(parsed.extraHtml || '');
 

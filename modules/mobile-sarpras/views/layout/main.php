@@ -223,10 +223,10 @@ endif;
         #spa-progress-bar.is-loading { opacity: 1; width: 78%; }
         #spa-progress-bar.is-finishing { opacity: 1; width: 100%; }
         @keyframes sarprasFadeIn {
-            from { opacity: 0.72; transform: translateY(4px); }
-            to { opacity: 1; transform: translateY(0); }
+            from { opacity: 0.78; }
+            to { opacity: 1; }
         }
-        .sarpras-pjax-enter { animation: sarprasFadeIn 140ms ease-out forwards; }
+        .sarpras-pjax-enter { animation: sarprasFadeIn 140ms ease-out; }
     </style>
 </head>
 <body class="h-full flex flex-col overflow-hidden bg-slate-50 relative">

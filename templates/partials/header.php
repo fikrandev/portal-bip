@@ -58,7 +58,7 @@
     </style>
     
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="<?= asset('css/app.css') ?>">
+    <link rel="stylesheet" href="<?= asset('css/app.css') ?>?v=<?= file_exists(PUBLIC_PATH . '/css/app.css') ? filemtime(PUBLIC_PATH . '/css/app.css') : '1.2' ?>">
     
     <?php if (isset($extraCss)): ?>
         <?= $extraCss ?>

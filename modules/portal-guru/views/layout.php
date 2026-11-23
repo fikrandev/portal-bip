@@ -100,10 +100,10 @@
     </script>
     
     <!-- Core App CSS & Utilities -->
-    <link rel="stylesheet" href="<?= asset('css/app.css') ?>">
+    <link rel="stylesheet" href="<?= asset('css/app.css') ?>?v=<?= file_exists(BASE_PATH . '/public/css/app.css') ? filemtime(BASE_PATH . '/public/css/app.css') : '1.2' ?>">
 
     <!-- Smooth Animations CSS -->
-    <link rel="stylesheet" href="<?= asset('css/mobile/app-animations.css') ?>?v=2">
+    <link rel="stylesheet" href="<?= asset('css/mobile/app-animations.css') ?>?v=<?= file_exists(BASE_PATH . '/public/css/mobile/app-animations.css') ? filemtime(BASE_PATH . '/public/css/mobile/app-animations.css') : '3' ?>">
 
     <!-- Leaflet Map CSS & Deferred JS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />

@@ -308,9 +308,26 @@
         }
 
         var $content = $('#sarpras-pjax-content');
-        $content.removeClass('sarpras-pjax-enter').html(parsed.contentHtml);
-        void $content[0].offsetWidth;
-        $content.addClass('sarpras-pjax-enter');
+        var contentEl = $content[0];
+        if (contentEl && contentEl._sarprasEnterTimer) {
+            clearTimeout(contentEl._sarprasEnterTimer);
+            contentEl._sarprasEnterTimer = null;
+        }
+        $content.off('animationend.sarprasEnter').removeClass('sarpras-pjax-enter').html(parsed.contentHtml);
+        if (contentEl) void contentEl.offsetWidth;
+        $content.addClass('sarpras-pjax-enter').one('animationend.sarprasEnter', function() {
+            $content.removeClass('sarpras-pjax-enter');
+            if (contentEl && contentEl._sarprasEnterTimer) {
+                clearTimeout(contentEl._sarprasEnterTimer);
+                contentEl._sarprasEnterTimer = null;
+            }
+        });
+        if (contentEl) {
+            contentEl._sarprasEnterTimer = setTimeout(function() {
+                $content.removeClass('sarpras-pjax-enter');
+                contentEl._sarprasEnterTimer = null;
+            }, 200);
+        }
 
         if (options.scrollToTop !== false) {
             var mainEl = document.getElementById('main-content');
