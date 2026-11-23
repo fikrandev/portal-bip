@@ -3694,10 +3694,13 @@ SVG;
         $groupId = $activeGroup['id'] ?? null;
 
         $filters = [
-            'group_id'         => $groupId,
-            'jenjang'          => trim($_GET['jenjang'] ?? ''),
-            'status_observasi' => trim($_GET['status_observasi'] ?? ''),
-            'search'           => trim($_GET['search'] ?? '')
+            'group_id'            => $groupId,
+            'jenjang'             => trim($_GET['jenjang'] ?? ''),
+            'status_kelulusan'    => 'Lulus / Diterima',
+            'status_observasi'    => trim($_GET['status_observasi'] ?? ''),
+            'status_wa_observasi' => trim($_GET['status_wa_observasi'] ?? ''),
+            'status_group'        => trim($_GET['status_group'] ?? ''),
+            'search'              => trim($_GET['search'] ?? '')
         ];
 
         $items = SpmbModel::getDaftarHasilObservasiAwal($filters, 10000, 0);
@@ -3773,10 +3776,12 @@ SVG;
         $search = trim($_GET['search'] ?? '');
 
         $filters = [
-            'group_id'         => $groupId,
-            'jenjang'          => $jenjang,
-            'status_observasi' => $statusObservasi,
-            'search'           => $search
+            'group_id'            => $groupId,
+            'jenjang'             => $jenjang,
+            'status_kelulusan'    => 'Lulus / Diterima',
+            'status_observasi'    => $statusObservasi,
+            'status_wa_observasi' => trim($_GET['status_wa_observasi'] ?? ''),
+            'search'              => $search
         ];
 
         $items = SpmbModel::getRekapObservasiAwal($filters);

@@ -3278,6 +3278,7 @@ class SpmbModel
      */
     public static function countDaftarHasilObservasiAwal(array $filters = []): int
     {
+        self::ensureObservasiWaColumns();
         $conditions = [];
         $params = [];
 
@@ -3350,6 +3351,7 @@ class SpmbModel
      */
     public static function getObservasiStats(?int $groupId = null): array
     {
+        self::ensureObservasiWaColumns();
         $params = [];
         $conditions = ["p.status_kelulusan = 'Lulus / Diterima'"];
         if (!empty($groupId)) {
@@ -3712,6 +3714,7 @@ class SpmbModel
      */
     public static function getRekapObservasiAwal(array $filters = []): array
     {
+        self::ensureObservasiWaColumns();
         $conditions = [];
         $params = [];
 
