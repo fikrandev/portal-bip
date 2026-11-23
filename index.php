@@ -260,6 +260,9 @@ $router->post('/spmb/observasi/{token}/submit', [SpmbController::class, 'observa
 $router->get('/spmb/observasi/{token}/join-group', [SpmbController::class, 'observasiAwalPublicJoinGroup']);
 $router->post('/spmb/observasi/{token}/join-group', [SpmbController::class, 'observasiAwalPublicJoinGroup']);
 
+// -- Token-Protected Cron Webhook: Pengingat WA Jurnal Staff (09:00, 13:00, 17:00 WITA) --
+$router->any('/cron/jurnal-staff-reminder', [JurnalStaffAdminController::class, 'cronReminder']);
+
 // -- Dashboard (requires auth) --
 $router->get('/', function() {
     Response::redirect(url('dashboard'));
@@ -596,6 +599,13 @@ $router->post('/kelola-jurnal-staff/tugas/delete/{id}', [JurnalStaffAdminControl
 $router->post('/kelola-jurnal-staff/tugas/toggle/{id}', [JurnalStaffAdminController::class, 'toggleTugas'], [Middleware::permissionRequired('jurnal_staff.manage')]);
 
 $router->post('/kelola-jurnal-staff/pengaturan-periode', [JurnalStaffAdminController::class, 'savePengaturanPeriode'], [Middleware::permissionRequired('jurnal_staff.manage')]);
+
+$router->post('/kelola-jurnal-staff/pengingat/save', [JurnalStaffAdminController::class, 'savePengingatSettings'], [Middleware::permissionRequired('jurnal_staff.manage')]);
+$router->post('/kelola-jurnal-staff/pengingat/run', [JurnalStaffAdminController::class, 'runPengingatNow'], [Middleware::permissionRequired('jurnal_staff.manage')]);
+$router->post('/kelola-jurnal-staff/pengingat/send-single', [JurnalStaffAdminController::class, 'sendSinglePengingat'], [Middleware::permissionRequired('jurnal_staff.manage')]);
+$router->post('/kelola-jurnal-staff/pengingat/test', [JurnalStaffAdminController::class, 'testPengingatWa'], [Middleware::permissionRequired('jurnal_staff.manage')]);
+$router->post('/kelola-jurnal-staff/pengingat/regenerate-key', [JurnalStaffAdminController::class, 'regenerateCronKey'], [Middleware::permissionRequired('jurnal_staff.manage')]);
+$router->get('/kelola-jurnal-staff/pengingat/preview', [JurnalStaffAdminController::class, 'apiPreviewPengingat'], [Middleware::permissionRequired('jurnal_staff.view')]);
 
 // Base Routes Modul Tambahan Lainnya
 $router->get('/kelola-nilai', [NilaiController::class, 'index'], [[Middleware::class, 'authRequired']]);

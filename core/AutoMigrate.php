@@ -102,6 +102,7 @@ class AutoMigrate
             '2026_11_19_000064_add_evaluasi_to_absen_pegawai_log'          => 'migration064AddEvaluasiToAbsenPegawaiLog',
             '2026_11_20_000065_sync_cuti_full_schema_and_approval_columns' => 'migration065SyncCutiFullSchemaAndApprovalColumns',
             '2026_11_21_000066_sync_quran_bookmark_guru_multiuser'         => 'migration066SyncQuranBookmarkGuruMultiuser',
+            '2026_11_23_000067_create_jurnal_staff_wa_reminder_log'        => 'migration067CreateJurnalStaffWaReminderLog',
         ];
     }
     /**
@@ -4925,6 +4926,58 @@ class AutoMigrate
                 @$pdo->exec("ALTER TABLE `quran_bookmark_guru` ADD UNIQUE KEY `uk_guru_tipe` (`guru_id`, `tipe`)");
             }
         } catch (Throwable $e) {}
+    }
+
+    /**
+     * 067. Tabel Log & Settings Pengingat WA Otomatis Jurnal Staff
+     */
+    protected static function migration067CreateJurnalStaffWaReminderLog(PDO $pdo): void
+    {
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `jurnal_staff_wa_log` (
+                `id` INT(11) NOT NULL AUTO_INCREMENT,
+                `pegawai_id` INT(11) NOT NULL,
+                `nama_staff` VARCHAR(150) NOT NULL,
+                `no_wa` VARCHAR(35) NOT NULL,
+                `tanggal` DATE NOT NULL,
+                `slot_waktu` VARCHAR(10) NOT NULL,
+                `kategori` ENUM('belum_isi', 'sebagian') NOT NULL,
+                `jam_belum_list` TEXT DEFAULT NULL,
+                `pesan` TEXT NOT NULL,
+                `status` ENUM('success', 'failed', 'skipped') NOT NULL DEFAULT 'success',
+                `error_message` TEXT DEFAULT NULL,
+                `wa_log_id` INT(11) DEFAULT NULL,
+                `trigger_source` VARCHAR(30) NOT NULL DEFAULT 'cron',
+                `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (`id`),
+                KEY `idx_tgl_slot` (`tanggal`, `slot_waktu`),
+                KEY `idx_pegawai_tgl_slot` (`pegawai_id`, `tanggal`, `slot_waktu`, `status`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
+
+        if (self::hasTable($pdo, 'settings')) {
+            $tplEmpty = "Assalamu'alaikum {nama}\nKamu belum isi jurnal hari ini, jangan lupa diisi ya.\n\nLink isi jurnal:\n{link_jurnal}\n\n_Pesan by Portal BIP_";
+            $tplPartial = "Assalamu'alaikum {nama}\nKamu belum isi jurnal di jam:\n{list_jam}\n\nLink isi jurnal:\n{link_jurnal}\n\n_Pesan by Portal BIP_";
+            $defaults = [
+                'jurnal_staff_wa_enabled'           => '1',
+                'jurnal_staff_wa_schedules'         => '09:00,13:00,17:00',
+                'jurnal_staff_wa_active_days'       => '1,2,3,4,5,6',
+                'jurnal_staff_wa_base_url'          => '',
+                'jurnal_staff_wa_cron_key'          => bin2hex(random_bytes(16)),
+                'jurnal_staff_wa_exclude_istirahat' => '0',
+                'jurnal_staff_wa_skip_cuti_izin'    => '1',
+                'jurnal_staff_wa_tpl_empty'         => $tplEmpty,
+                'jurnal_staff_wa_tpl_partial'       => $tplPartial,
+            ];
+            $stmtCheck = $pdo->prepare("SELECT 1 FROM `settings` WHERE `setting_key` = ? LIMIT 1");
+            $stmtInsert = $pdo->prepare("INSERT INTO `settings` (`setting_key`, `setting_value`) VALUES (?, ?)");
+            foreach ($defaults as $k => $v) {
+                $stmtCheck->execute([$k]);
+                if (!$stmtCheck->fetch()) {
+                    $stmtInsert->execute([$k, $v]);
+                }
+            }
+        }
     }
 }
 

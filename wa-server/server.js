@@ -10,6 +10,8 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
+const http = require('http');
+const https = require('https');
 const QRCode = require('qrcode');
 const pino = require('pino');
 const {
@@ -22,6 +24,12 @@ const {
 const app = express();
 const PORT = process.env.PORT || 8001;
 const AUTH_DIR = path.join(__dirname, 'auth_info_baileys');
+const SCHEDULER_CONFIG_PATH = path.join(__dirname, 'scheduler-config.json');
+
+// Built-in Reminder Scheduler State
+const lastTriggeredSlots = new Set();
+let schedulerLastResult = null;
+let schedulerIntervalHandle = null;
 
 // Middleware
 app.use(cors());
@@ -363,6 +371,184 @@ app.get('/api/health', (req, res) => {
     });
 });
 
+// =============================================================================
+// AUTO-SCHEDULER PENGINGAT WA JURNAL STAFF (WITA / Asia/Makassar)
+// =============================================================================
+
+function getWitaDateParts() {
+    const now = new Date();
+    const fmt = new Intl.DateTimeFormat('en-GB', {
+        timeZone: 'Asia/Makassar',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        weekday: 'short',
+        hourCycle: 'h23'
+    });
+    const parts = {};
+    for (const p of fmt.formatToParts(now)) {
+        parts[p.type] = p.value;
+    }
+    const hh = parts.hour === '24' ? '00' : parts.hour;
+    const weekdayMap = { Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6, Sun: 7 };
+    return {
+        date: `${parts.year}-${parts.month}-${parts.day}`,
+        time: `${hh}:${parts.minute}`,
+        isoDay: weekdayMap[parts.weekday] || 1
+    };
+}
+
+function loadSchedulerConfig() {
+    if (!fs.existsSync(SCHEDULER_CONFIG_PATH)) {
+        return null;
+    }
+    try {
+        const raw = fs.readFileSync(SCHEDULER_CONFIG_PATH, 'utf8');
+        const parsed = JSON.parse(raw);
+        return parsed && typeof parsed === 'object' ? parsed : null;
+    } catch (e) {
+        console.error('[Scheduler Jurnal Staff] Gagal membaca scheduler-config.json:', e.message);
+        return null;
+    }
+}
+
+function triggerCronEndpoint(baseEndpointUrl, cronKey, slotLabel) {
+    return new Promise((resolve) => {
+        try {
+            const urlObj = new URL(baseEndpointUrl);
+            urlObj.searchParams.set('key', cronKey || '');
+            urlObj.searchParams.set('slot', slotLabel);
+            urlObj.searchParams.set('source', 'wa_server');
+
+            const isHttps = urlObj.protocol === 'https:';
+            const client = isHttps ? https : http;
+            const reqOptions = {
+                hostname: urlObj.hostname,
+                port: urlObj.port || (isHttps ? 443 : 80),
+                path: urlObj.pathname + urlObj.search,
+                method: 'GET',
+                timeout: 180000
+            };
+            if (isHttps) {
+                reqOptions.rejectUnauthorized = false;
+            }
+
+            const req = client.request(reqOptions, (res) => {
+                let body = '';
+                res.on('data', (chunk) => { body += chunk; });
+                res.on('end', () => {
+                    let parsed = null;
+                    try { parsed = JSON.parse(body); } catch (e) {}
+                    const result = {
+                        triggered_at: new Date().toISOString(),
+                        slot: slotLabel,
+                        http_code: res.statusCode,
+                        response: parsed || body.slice(0, 500)
+                    };
+                    schedulerLastResult = result;
+                    console.log(`[Scheduler Jurnal Staff] Slot ${slotLabel} selesai (HTTP ${res.statusCode}):`, parsed ? (parsed.message || parsed.reason || 'OK') : body.slice(0, 180));
+                    resolve(result);
+                });
+            });
+
+            req.on('timeout', () => {
+                req.destroy(new Error('Request timeout (180s)'));
+            });
+
+            req.on('error', (err) => {
+                schedulerLastResult = {
+                    triggered_at: new Date().toISOString(),
+                    slot: slotLabel,
+                    http_code: 0,
+                    error: err.message
+                };
+                console.error(`[Scheduler Jurnal Staff] Error memanggil endpoint slot ${slotLabel}:`, err.message);
+                resolve(schedulerLastResult);
+            });
+
+            req.end();
+        } catch (err) {
+            schedulerLastResult = {
+                triggered_at: new Date().toISOString(),
+                slot: slotLabel,
+                http_code: 0,
+                error: err.message
+            };
+            console.error(`[Scheduler Jurnal Staff] URL tidak valid:`, err.message);
+            resolve(schedulerLastResult);
+        }
+    });
+}
+
+function startReminderScheduler() {
+    if (schedulerIntervalHandle) {
+        clearInterval(schedulerIntervalHandle);
+    }
+
+    const tick = () => {
+        if (connectionStatus !== 'connected') {
+            return;
+        }
+        const cfg = loadSchedulerConfig();
+        if (!cfg || !cfg.enabled || !cfg.cron_endpoint || !cfg.cron_key) {
+            return;
+        }
+
+        const wita = getWitaDateParts();
+        const activeDays = Array.isArray(cfg.active_days) ? cfg.active_days.map(Number) : [1, 2, 3, 4, 5, 6];
+        const schedules = Array.isArray(cfg.schedules) ? cfg.schedules.map((s) => String(s).trim()) : [];
+
+        if (!activeDays.includes(wita.isoDay)) {
+            return;
+        }
+        if (!schedules.includes(wita.time)) {
+            return;
+        }
+
+        const slotKey = `${wita.date}_${wita.time}`;
+        if (lastTriggeredSlots.has(slotKey)) {
+            return;
+        }
+
+        // Bersihkan cache slot lama agar memori tetap ringan
+        if (lastTriggeredSlots.size > 30) {
+            for (const existingKey of lastTriggeredSlots) {
+                if (!existingKey.startsWith(wita.date + '_')) {
+                    lastTriggeredSlots.delete(existingKey);
+                }
+            }
+        }
+
+        lastTriggeredSlots.add(slotKey);
+        console.log(`[Scheduler Jurnal Staff] Memicu pengingat otomatis WA untuk slot ${wita.time} WITA (${wita.date})...`);
+        triggerCronEndpoint(cfg.cron_endpoint, cfg.cron_key, wita.time);
+    };
+
+    schedulerIntervalHandle = setInterval(tick, 30000);
+    setTimeout(tick, 5000);
+}
+
+/**
+ * GET /api/scheduler-status
+ * Cek status auto-scheduler pengingat Jurnal Staff pada wa-server
+ */
+app.get('/api/scheduler-status', (req, res) => {
+    const cfg = loadSchedulerConfig();
+    res.json({
+        success: true,
+        wita_now: getWitaDateParts(),
+        wa_connected: connectionStatus === 'connected',
+        config_loaded: Boolean(cfg),
+        enabled: cfg ? Boolean(cfg.enabled) : false,
+        schedules: cfg ? (cfg.schedules || []) : [],
+        active_days: cfg ? (cfg.active_days || []) : [],
+        cron_endpoint: cfg ? (cfg.cron_endpoint || null) : null,
+        last_result: schedulerLastResult
+    });
+});
+
 // Jalankan HTTP Server
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`========================================================`);
@@ -371,4 +557,5 @@ app.listen(PORT, '0.0.0.0', () => {
     console.log(` URL : http://127.0.0.1:${PORT}`);
     console.log(`========================================================`);
     connectToWhatsApp();
+    startReminderScheduler();
 });

@@ -11,3 +11,4 @@ public/uploads/spmb/berkas/*
 storage/logs/*.log
 storage/logs/.*.stamp
 storage/logs/*.stamp
+wa-server/scheduler-config.json

@@ -400,6 +400,10 @@ $connectedPhone = $connection['phone'] ?? null;
                         <span class="text-emerald-400">✔</span>
                         <span><strong>Modul Ibadah &amp; Nilai:</strong> Laporan berkala amaliah yaumiyah dan informasi penting.</span>
                     </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-emerald-400">✔</span>
+                        <span><strong>Modul Jurnal Staff:</strong> Pengingat otomatis jam 09:00, 13:00 &amp; 17:00 WITA ke staff yang belum mengisi jurnal. <a href="<?= url('kelola-jurnal-staff?tab=pengingat') ?>" class="underline text-emerald-300 hover:text-emerald-200 font-semibold ml-1">Atur Pengingat &rarr;</a></span>
+                    </div>
                 </div>
             </div>
 

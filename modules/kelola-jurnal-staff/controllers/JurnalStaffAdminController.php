@@ -10,19 +10,22 @@
  */
 
 require_once MODULES_PATH . '/kelola-jurnal-staff/models/JurnalStaffModel.php';
+require_once MODULES_PATH . '/kelola-jurnal-staff/services/JurnalStaffReminderService.php';
 
 class JurnalStaffAdminController
 {
     /**
-     * Halaman Utama Modul (4 Tab Terpadu)
+     * Halaman Utama Modul (5 Tab Terpadu)
      */
     public static function index(): void
     {
         JurnalStaffModel::ensureTablesExist();
+        JurnalStaffReminderService::ensureTablesExist();
+        JurnalStaffReminderService::syncWaServerConfig();
 
         // 1. Parameter Tab Aktif
         $activeTab = trim($_GET['tab'] ?? 'dashboard');
-        if (!in_array($activeTab, ['dashboard', 'data', 'jam', 'tugas'], true)) {
+        if (!in_array($activeTab, ['dashboard', 'data', 'jam', 'tugas', 'pengingat'], true)) {
             $activeTab = 'dashboard';
         }
 
@@ -89,6 +92,24 @@ class JurnalStaffAdminController
         // Data referensi untuk dropdown modal
         $staffList = JurnalStaffModel::getStaffList();
         $activeJamOptions = JurnalStaffModel::getJamList(true);
+
+        // 7. Tab 5: Pengingat WA Otomatis Jurnal Staff
+        $reminderSettings = JurnalStaffReminderService::getSettings();
+        $previewSlot = trim($_GET['preview_slot'] ?? '');
+        if ($previewSlot === '') {
+            $nowHi = date('H:i');
+            $schedules = $reminderSettings['schedules_array'];
+            if ($nowHi < '09:30') {
+                $previewSlot = $schedules[0] ?? '09:00';
+            } elseif ($nowHi < '13:30') {
+                $previewSlot = $schedules[1] ?? ($schedules[0] ?? '13:00');
+            } else {
+                $previewSlot = end($schedules) ?: '17:00';
+            }
+        }
+        $reminderEval = JurnalStaffReminderService::evaluateAllStaffForDate(date('Y-m-d'), $previewSlot, $reminderSettings);
+        $reminderLogs = JurnalStaffReminderService::getRecentLogs(30);
+        $waConnection = WaGateway::checkConnection();
 
         $pageTitle = 'Kelola Jurnal Staff (Support System)';
         $breadcrumbs = [
@@ -415,6 +436,233 @@ class JurnalStaffAdminController
                 'success' => true,
                 'data'    => $jurnal
             ]);
+        } catch (Throwable $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        }
+        exit;
+    }
+
+    /**
+     * =========================================================================
+     * PENGINGAT WA OTOMATIS JURNAL STAFF (CRON + MANUAL)
+     * =========================================================================
+     */
+
+    /**
+     * Endpoint Publik Token-Protected untuk Cron / wa-server Auto Scheduler
+     * URL: /cron/jurnal-staff-reminder?key=SECRET&slot=09:00
+     */
+    public static function cronReminder(): void
+    {
+        header('Content-Type: application/json; charset=utf-8');
+        JurnalStaffReminderService::ensureTablesExist();
+        $settings = JurnalStaffReminderService::getSettings();
+
+        $submittedKey = trim((string)($_GET['key'] ?? ($_POST['key'] ?? ($_SERVER['HTTP_X_CRON_KEY'] ?? ''))));
+        $expectedKey = trim((string)($settings['jurnal_staff_wa_cron_key'] ?? ''));
+
+        if ($expectedKey === '' || $submittedKey === '' || !hash_equals($expectedKey, $submittedKey)) {
+            http_response_code(403);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Akses ditolak: Cron key tidak valid.'
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        $slot = trim((string)($_GET['slot'] ?? ($_POST['slot'] ?? '')));
+        $date = trim((string)($_GET['date'] ?? ($_POST['date'] ?? '')));
+        $source = trim((string)($_GET['source'] ?? ($_POST['source'] ?? 'cron')));
+        $force = !empty($_GET['force']) || !empty($_POST['force']);
+        $dryRun = !empty($_GET['dry_run']) || !empty($_POST['dry_run']);
+
+        $result = JurnalStaffReminderService::runScheduledDispatch(
+            $slot !== '' ? $slot : null,
+            $date !== '' ? $date : null,
+            $source !== '' ? $source : 'cron',
+            $force,
+            $dryRun
+        );
+
+        echo json_encode($result, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        exit;
+    }
+
+    /**
+     * Simpan Pengaturan Pengingat WA Jurnal Staff
+     */
+    public static function savePengingatSettings(): void
+    {
+        if (!CSRF::validate()) {
+            Response::redirect(url('kelola-jurnal-staff?tab=pengingat'), 'Token keamanan tidak valid.', 'error');
+            return;
+        }
+
+        try {
+            JurnalStaffReminderService::saveSettings($_POST);
+            Response::redirect(
+                url('kelola-jurnal-staff?tab=pengingat'),
+                'Pengaturan pengingat WA otomatis Jurnal Staff berhasil disimpan & disinkronkan.',
+                'success'
+            );
+        } catch (Throwable $e) {
+            Response::redirect(
+                url('kelola-jurnal-staff?tab=pengingat'),
+                'Gagal menyimpan pengaturan: ' . $e->getMessage(),
+                'error'
+            );
+        }
+    }
+
+    /**
+     * Trigger Kirim Pengingat Sekarang (Bulk untuk seluruh staff yang belum lengkap)
+     */
+    public static function runPengingatNow(): void
+    {
+        $isAjax = !empty($_POST['ajax']) || (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest');
+
+        if (!CSRF::check()) {
+            if ($isAjax) {
+                header('Content-Type: application/json; charset=utf-8');
+                http_response_code(419);
+                echo json_encode(['success' => false, 'message' => 'Token keamanan tidak valid. Silakan muat ulang halaman.']);
+                exit;
+            }
+            Response::redirect(url('kelola-jurnal-staff?tab=pengingat'), 'Token keamanan tidak valid.', 'error');
+            return;
+        }
+
+        $slot = trim((string)($_POST['slot'] ?? ''));
+        $force = !empty($_POST['force']);
+
+        try {
+            $res = JurnalStaffReminderService::runScheduledDispatch(
+                $slot !== '' ? $slot : null,
+                date('Y-m-d'),
+                'manual',
+                $force,
+                false
+            );
+
+            if ($isAjax) {
+                header('Content-Type: application/json; charset=utf-8');
+                echo json_encode($res, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+
+            $type = !empty($res['success']) ? 'success' : 'error';
+            Response::redirect(url('kelola-jurnal-staff?tab=pengingat&preview_slot=' . urlencode($slot)), $res['message'] ?? 'Proses selesai.', $type);
+        } catch (Throwable $e) {
+            if ($isAjax) {
+                header('Content-Type: application/json; charset=utf-8');
+                http_response_code(500);
+                echo json_encode(['success' => false, 'message' => 'Gagal menjalankan pengingat: ' . $e->getMessage()]);
+                exit;
+            }
+            Response::redirect(url('kelola-jurnal-staff?tab=pengingat'), 'Gagal: ' . $e->getMessage(), 'error');
+        }
+    }
+
+    /**
+     * Kirim Pengingat Manual untuk 1 Orang Staff (AJAX)
+     */
+    public static function sendSinglePengingat(): void
+    {
+        header('Content-Type: application/json; charset=utf-8');
+
+        if (!CSRF::check()) {
+            http_response_code(419);
+            echo json_encode(['success' => false, 'message' => 'Token keamanan tidak valid. Silakan refresh halaman.']);
+            exit;
+        }
+
+        $pegawaiId = (int)($_POST['pegawai_id'] ?? 0);
+        $slot = trim((string)($_POST['slot'] ?? ''));
+
+        if ($pegawaiId <= 0) {
+            echo json_encode(['success' => false, 'message' => 'ID pegawai tidak valid.']);
+            exit;
+        }
+
+        try {
+            $res = JurnalStaffReminderService::sendSingleStaffReminder($pegawaiId, $slot !== '' ? $slot : null, date('Y-m-d'));
+            echo json_encode($res, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        } catch (Throwable $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        }
+        exit;
+    }
+
+    /**
+     * Uji Coba Kirim Pesan Pengingat (Kondisi Belum Isi / Sebagian)
+     */
+    public static function testPengingatWa(): void
+    {
+        header('Content-Type: application/json; charset=utf-8');
+
+        if (!CSRF::check()) {
+            http_response_code(419);
+            echo json_encode(['success' => false, 'message' => 'Token keamanan tidak valid. Silakan refresh halaman.']);
+            exit;
+        }
+
+        $targetPhone = trim((string)($_POST['target_phone'] ?? ''));
+        $kategori = trim((string)($_POST['kategori'] ?? 'belum_isi'));
+        $sampleName = trim((string)($_POST['sample_name'] ?? 'Rekan Staff'));
+
+        if ($targetPhone === '') {
+            echo json_encode(['success' => false, 'message' => 'Nomor WhatsApp uji coba wajib diisi.']);
+            exit;
+        }
+
+        try {
+            $res = JurnalStaffReminderService::sendTestPreview($targetPhone, $kategori, $sampleName);
+            echo json_encode($res, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        } catch (Throwable $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        }
+        exit;
+    }
+
+    /**
+     * Buat Ulang Cron Key Endpoint Pengingat WA
+     */
+    public static function regenerateCronKey(): void
+    {
+        if (!CSRF::validate()) {
+            Response::redirect(url('kelola-jurnal-staff?tab=pengingat'), 'Token keamanan tidak valid.', 'error');
+            return;
+        }
+
+        try {
+            JurnalStaffReminderService::regenerateCronKey();
+            Response::redirect(url('kelola-jurnal-staff?tab=pengingat'), 'Cron secret key baru berhasil dibuat & disinkronkan.', 'success');
+        } catch (Throwable $e) {
+            Response::redirect(url('kelola-jurnal-staff?tab=pengingat'), 'Gagal membuat ulang key: ' . $e->getMessage(), 'error');
+        }
+    }
+
+    /**
+     * API Live Preview Evaluasi Pengingat WA per Slot & Tanggal
+     */
+    public static function apiPreviewPengingat(): void
+    {
+        header('Content-Type: application/json; charset=utf-8');
+        $slot = trim((string)($_GET['slot'] ?? '17:00'));
+        $date = trim((string)($_GET['date'] ?? date('Y-m-d')));
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+            $date = date('Y-m-d');
+        }
+
+        try {
+            $eval = JurnalStaffReminderService::evaluateAllStaffForDate($date, $slot);
+            echo json_encode([
+                'success' => true,
+                'data'    => $eval,
+            ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         } catch (Throwable $e) {
             http_response_code(500);
             echo json_encode(['success' => false, 'message' => $e->getMessage()]);
