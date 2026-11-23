@@ -21,9 +21,13 @@ class JurnalStaffReminderService
     public const DEFAULT_ACTIVE_DAYS = '1,2,3,4,5,6'; // Senin - Sabtu
     public const TIMEZONE = 'Asia/Makassar';
 
-    public const DEFAULT_TPL_EMPTY = "Assalamu'alaikum {nama}\nKamu belum isi jurnal hari ini, jangan lupa diisi ya.\n\nLink isi jurnal:\n{link_jurnal}\n\n_Pesan by Portal BIP_";
+    public const LEGACY_TPL_EMPTY = "Assalamu'alaikum {nama}\nKamu belum isi jurnal hari ini, jangan lupa diisi ya.\n\nLink isi jurnal:\n{link_jurnal}\n\n_Pesan by Portal BIP_";
 
-    public const DEFAULT_TPL_PARTIAL = "Assalamu'alaikum {nama}\nKamu belum isi jurnal di jam:\n{list_jam}\n\nLink isi jurnal:\n{link_jurnal}\n\n_Pesan by Portal BIP_";
+    public const LEGACY_TPL_PARTIAL = "Assalamu'alaikum {nama}\nKamu belum isi jurnal di jam:\n{list_jam}\n\nLink isi jurnal:\n{link_jurnal}\n\n_Pesan by Portal BIP_";
+
+    public const DEFAULT_TPL_EMPTY = "Assalamu'alaikum *{nama}*, _{jabatan}_ 👋\n\n📋 *Pengingat Jurnal Kerja Staff*\n🗓️ {tanggal}\n\nSaat ini Anda *belum mengisi jurnal kerja* hari ini. Berikut seluruh jam yang belum diisi:\n{list_jam}\n\n🔗 *Link Isi Jurnal:*\n{link_jurnal}\n\n🤲 _{doa_motivasi}_\n\n✨ _Pesan otomatis by Portal BIP_";
+
+    public const DEFAULT_TPL_PARTIAL = "Assalamu'alaikum *{nama}*, _{jabatan}_ 👋\n\n📋 *Pengingat Jurnal Kerja Staff*\n🗓️ {tanggal}\n\nTerima kasih sudah mulai mengisi jurnal hari ini! 🙏 Berikut seluruh jam yang masih belum diisi:\n{list_jam}\n\n🔗 *Link Isi Jurnal:*\n{link_jurnal}\n\n🤲 _{doa_motivasi}_\n\n✨ _Pesan otomatis by Portal BIP_";
 
     private static bool $tablesEnsured = false;
 
@@ -99,6 +103,7 @@ class JurnalStaffReminderService
             'jurnal_staff_wa_cron_key'          => bin2hex(random_bytes(16)),
             'jurnal_staff_wa_exclude_istirahat' => '0',
             'jurnal_staff_wa_skip_cuti_izin'    => '1',
+            'jurnal_staff_wa_excluded_ids'      => '',
             'jurnal_staff_wa_tpl_empty'         => self::DEFAULT_TPL_EMPTY,
             'jurnal_staff_wa_tpl_partial'       => self::DEFAULT_TPL_PARTIAL,
         ];
@@ -119,10 +124,12 @@ class JurnalStaffReminderService
             'jurnal_staff_wa_cron_key'          => '',
             'jurnal_staff_wa_exclude_istirahat' => '0',
             'jurnal_staff_wa_skip_cuti_izin'    => '1',
+            'jurnal_staff_wa_excluded_ids'      => '',
             'jurnal_staff_wa_tpl_empty'         => self::DEFAULT_TPL_EMPTY,
             'jurnal_staff_wa_tpl_partial'       => self::DEFAULT_TPL_PARTIAL,
         ];
 
+        $db = null;
         try {
             $db = Database::getInstance();
             $rows = $db->findAll("SELECT setting_key, setting_value FROM settings WHERE setting_key LIKE 'jurnal_staff_wa_%'");
@@ -153,12 +160,27 @@ class JurnalStaffReminderService
         $settings['jurnal_staff_wa_schedules'] = implode(',', $settings['schedules_array']);
 
         $settings['active_days_array'] = self::parseActiveDaysString($settings['jurnal_staff_wa_active_days']);
+        $settings['excluded_ids_array'] = self::parseIdListString((string)($settings['jurnal_staff_wa_excluded_ids'] ?? ''));
 
-        if (trim($settings['jurnal_staff_wa_tpl_empty']) === '') {
+        $normTpl = static fn(string $s): string => str_replace("\r\n", "\n", trim($s));
+        $curEmptyNorm = $normTpl((string)($settings['jurnal_staff_wa_tpl_empty'] ?? ''));
+        if ($curEmptyNorm === '' || $curEmptyNorm === $normTpl(self::LEGACY_TPL_EMPTY)) {
             $settings['jurnal_staff_wa_tpl_empty'] = self::DEFAULT_TPL_EMPTY;
+            if ($db !== null && $curEmptyNorm !== '') {
+                try {
+                    self::upsertSetting($db, 'jurnal_staff_wa_tpl_empty', self::DEFAULT_TPL_EMPTY);
+                } catch (\Throwable $e) {}
+            }
         }
-        if (trim($settings['jurnal_staff_wa_tpl_partial']) === '') {
+
+        $curPartialNorm = $normTpl((string)($settings['jurnal_staff_wa_tpl_partial'] ?? ''));
+        if ($curPartialNorm === '' || $curPartialNorm === $normTpl(self::LEGACY_TPL_PARTIAL)) {
             $settings['jurnal_staff_wa_tpl_partial'] = self::DEFAULT_TPL_PARTIAL;
+            if ($db !== null && $curPartialNorm !== '') {
+                try {
+                    self::upsertSetting($db, 'jurnal_staff_wa_tpl_partial', self::DEFAULT_TPL_PARTIAL);
+                } catch (\Throwable $e) {}
+            }
         }
 
         $effectiveBaseUrl = trim($settings['jurnal_staff_wa_base_url']);
@@ -224,6 +246,70 @@ class JurnalStaffReminderService
             return [1, 2, 3, 4, 5, 6];
         }
         return $days;
+    }
+
+    /**
+     * Parse string daftar ID pegawai "1,2,3" menjadi array int unik terurut
+     */
+    public static function parseIdListString(string $raw): array
+    {
+        $parts = preg_split('/[\s,;]+/', trim($raw), -1, PREG_SPLIT_NO_EMPTY);
+        $ids = [];
+        foreach ($parts as $p) {
+            if (is_numeric($p)) {
+                $id = (int)$p;
+                if ($id > 0) {
+                    $ids[] = $id;
+                }
+            }
+        }
+        $ids = array_values(array_unique($ids));
+        sort($ids);
+        return $ids;
+    }
+
+    /**
+     * Simpan daftar penerima notifikasi WA (menyimpan selisih staff yang tidak dicentang ke settings)
+     */
+    public static function saveRecipientPreferences(array $enabledPegawaiIds): array
+    {
+        self::ensureTablesExist();
+        $db = Database::getInstance();
+
+        $enabledMap = [];
+        foreach ($enabledPegawaiIds as $rawId) {
+            if (is_numeric($rawId)) {
+                $id = (int)$rawId;
+                if ($id > 0) {
+                    $enabledMap[$id] = true;
+                }
+            }
+        }
+
+        $staffList = self::getTargetSupportStaff();
+        $excludedIds = [];
+        foreach ($staffList as $staff) {
+            $pid = (int)$staff['id'];
+            if ($pid > 0 && !isset($enabledMap[$pid])) {
+                $excludedIds[] = $pid;
+            }
+        }
+        sort($excludedIds);
+
+        self::upsertSetting($db, 'jurnal_staff_wa_excluded_ids', implode(',', $excludedIds));
+
+        $totalStaff = count($staffList);
+        $excludedCount = count($excludedIds);
+        $enabledCount = max(0, $totalStaff - $excludedCount);
+
+        return [
+            'success'        => true,
+            'total_staff'    => $totalStaff,
+            'enabled_count'  => $enabledCount,
+            'excluded_count' => $excludedCount,
+            'excluded_ids'   => $excludedIds,
+            'message'        => "Daftar penerima berhasil disimpan: {$enabledCount} dari {$totalStaff} staff aktif menerima notifikasi WA.",
+        ];
     }
 
     /**
@@ -709,8 +795,16 @@ class JurnalStaffReminderService
             }
         }
 
+        $excludedLookup = array_flip($settings['excluded_ids_array'] ?? []);
+        $requiredJamIdMap = [];
+        foreach ($requiredJams as $rj) {
+            $requiredJamIdMap[(int)$rj['id']] = true;
+        }
+
         $summary = [
             'total_staff'    => count($staffList),
+            'enabled_wa'     => 0,
+            'nonaktif_wa'    => 0,
             'needs_reminder' => 0,
             'belum_isi'      => 0,
             'sebagian'       => 0,
@@ -723,29 +817,40 @@ class JurnalStaffReminderService
         $items = [];
         foreach ($staffList as $staff) {
             $pid = (int)$staff['id'];
+            $waEnabled = !isset($excludedLookup[$pid]);
             $staffFilled = $filledByStaff[$pid] ?? ['jam_ids' => [], 'rentangs' => [], 'row_count' => 0];
             $filledTodayCount = (int)$staffFilled['row_count'];
 
-            $missingJams = [];
+            $allMissingJams = [];
+            $missingRequiredJams = [];
             $filledRequiredCount = 0;
 
-            foreach ($requiredJams as $rj) {
-                $rjId = (int)$rj['id'];
-                $rjNorm = substr((string)$rj['jam_mulai'], 0, 5) . '-' . substr((string)$rj['jam_selesai'], 0, 5);
-                $isFilled = isset($staffFilled['jam_ids'][$rjId]) || isset($staffFilled['rentangs'][$rjNorm]);
+            foreach ($allActiveJams as $aj) {
+                $ajId = (int)$aj['id'];
+                $ajNorm = substr((string)$aj['jam_mulai'], 0, 5) . '-' . substr((string)$aj['jam_selesai'], 0, 5);
+                $isFilled = isset($staffFilled['jam_ids'][$ajId]) || isset($staffFilled['rentangs'][$ajNorm]);
+                $isRequired = isset($requiredJamIdMap[$ajId]);
 
                 if ($isFilled) {
-                    $filledRequiredCount++;
+                    if ($isRequired) {
+                        $filledRequiredCount++;
+                    }
                 } else {
-                    $disp = str_replace(':', '.', substr((string)$rj['jam_mulai'], 0, 5))
+                    $disp = str_replace(':', '.', substr((string)$aj['jam_mulai'], 0, 5))
                           . ' - '
-                          . str_replace(':', '.', substr((string)$rj['jam_selesai'], 0, 5));
-                    $missingJams[] = [
-                        'id'          => $rjId,
-                        'rentang'     => $disp,
-                        'nama_sesi'   => trim((string)$rj['nama_sesi']),
-                        'label'       => $disp . ($rj['nama_sesi'] ? ' (' . trim((string)$rj['nama_sesi']) . ')' : ''),
+                          . str_replace(':', '.', substr((string)$aj['jam_selesai'], 0, 5));
+                    $namaSesi = trim((string)$aj['nama_sesi']);
+                    $mjItem = [
+                        'id'         => $ajId,
+                        'rentang'    => $disp,
+                        'nama_sesi'  => $namaSesi,
+                        'label'      => $disp . ($namaSesi !== '' ? ' (' . $namaSesi . ')' : ''),
+                        'is_overdue' => $isRequired,
                     ];
+                    $allMissingJams[] = $mjItem;
+                    if ($isRequired) {
+                        $missingRequiredJams[] = $mjItem;
+                    }
                 }
             }
 
@@ -756,13 +861,16 @@ class JurnalStaffReminderService
             $needsReminder = false;
             $category = 'lengkap';
 
-            if ($skipCutiIzin && $excusedReason !== null) {
+            if (!$waEnabled) {
+                $category = 'nonaktif_wa';
+                $summary['nonaktif_wa']++;
+            } elseif ($skipCutiIzin && $excusedReason !== null) {
                 $category = 'cuti_izin';
                 $summary['cuti_izin']++;
             } elseif ($isHoliday) {
                 $category = 'libur';
                 $summary['lengkap']++;
-            } elseif (empty($requiredJams) || count($missingJams) === 0) {
+            } elseif (empty($requiredJams) || count($missingRequiredJams) === 0) {
                 $category = 'lengkap';
                 $summary['lengkap']++;
             } elseif ($filledTodayCount === 0) {
@@ -777,15 +885,18 @@ class JurnalStaffReminderService
                 $summary['needs_reminder']++;
             }
 
-            if (!$staff['has_valid_wa']) {
-                $summary['no_wa']++;
+            if ($waEnabled) {
+                $summary['enabled_wa']++;
+                if (!$staff['has_valid_wa']) {
+                    $summary['no_wa']++;
+                }
             }
             if ($alreadySentForSlot) {
                 $summary['already_sent']++;
             }
 
             $previewMessage = $needsReminder
-                ? self::renderMessage($category, $staff, $missingJams, $date, $slotTime, $settings)
+                ? self::renderMessage($category, $staff, $allMissingJams, $date, $slotTime, $settings)
                 : '';
 
             $items[] = [
@@ -794,6 +905,7 @@ class JurnalStaffReminderService
                 'niy'                   => $staff['niy'],
                 'jabatan'               => $staff['jabatan'],
                 'unit_tugas'            => $staff['unit_tugas'],
+                'wa_enabled'            => $waEnabled,
                 'no_wa_raw'             => $staff['no_wa_raw'],
                 'no_wa_formatted'       => $staff['no_wa_formatted'],
                 'has_valid_wa'          => $staff['has_valid_wa'],
@@ -801,7 +913,8 @@ class JurnalStaffReminderService
                 'total_active_jams'     => count($allActiveJams),
                 'required_count'        => count($requiredJams),
                 'filled_required_count' => $filledRequiredCount,
-                'missing_jams'          => $missingJams,
+                'missing_jams'          => $allMissingJams,
+                'missing_required_jams' => $missingRequiredJams,
                 'excused_reason'        => $excusedReason,
                 'category'              => $category,
                 'needs_reminder'        => $needsReminder,
@@ -825,6 +938,78 @@ class JurnalStaffReminderService
     }
 
     /**
+     * Daftar doa & motivasi kerja harian (diacak tiap hari untuk penutup pesan pengingat)
+     */
+    public static function getMotivationQuotes(): array
+    {
+        return [
+            'Ya Allah, berkahilah ikhtiar kerja kami hari ini, mudahkan setiap urusan, dan jadikan lelah kami bernilai ibadah. Aamiin.',
+            'Bismillah, setiap amanah yang ditunaikan dengan ikhlas akan menjadi pemberat timbangan amal kebaikan. Semangat berkhidmat!',
+            'Semoga Allah melimpahkan kesehatan, kelapangan hati, serta keberkahan rezeki atas setiap tugas yang Anda selesaikan hari ini.',
+            'Kerja tuntas dan penuh amanah adalah cermin akhlak mulia. Terus tebarkan manfaat di lingkungan pendidikan Islam!',
+            'Ya Allah, anugerahkanlah kami ilmu yang bermanfaat, rezeki yang thayyib, dan amal kerja yang Engkau terima hari ini.',
+            'Langkah kecil yang dikerjakan dengan istiqomah jauh lebih mulia di sisi Allah. Tetap semangat melayani dengan hati terbaik!',
+            'Hasbunallahu wa ni\'mal wakil. Semoga setiap tantangan kerja hari ini diganti Allah dengan solusi dan kemudahan terbaik.',
+            'Niatkan setiap pekerjaan untuk mencari ridho Allah SWT, niscaya rasa lelah berubah menjadi pahala dan ketenangan jiwa.',
+            'Ya Allah, mudahkanlah lisan, pikiran, dan tangan kami dalam menuntaskan amanah hari ini dengan sebaik-baik hasil.',
+            'Disiplin dalam tugas adalah bentuk syukur atas kepercayaan yang Allah titipkan. Selamat melanjutkan aktivitas dengan penuh berkah!',
+            'Semoga Allah menjaga keikhlasan hati kita, menjauhkan dari rasa malas, dan memberkahi setiap detik waktu kerja hari ini.',
+            'Sebaik-baik manusia adalah yang paling bermanfaat bagi sesama. Terima kasih telah menjadi bagian dari kebaikan hari ini!',
+            'Ya Allah, cukupkanlah kami dengan rezeki yang halal dan berkah, serta teguhkan langkah kami dalam kebaikan dan amanah.',
+            'Setiap catatan kerja yang rapi hari ini adalah wujud pertanggungjawaban kita di dunia dan di hadapan Allah kelak.',
+            'Awali dengan Bismillah, kerjakan dengan sungguh-sungguh, dan akhiri dengan Alhamdulillah. Semoga urusan hari ini lancar!',
+            'Semoga Allah memberikan kekuatan fisik, ketenangan pikiran, dan kebahagiaan bagi Anda serta keluarga hari ini.',
+            'Tidak ada kerja keras yang sia-sia bila diniatkan karena Allah. Tetap jaga semangat dan kekompakan tim!',
+            'Ya Allah, lapangkanlah dada kami, mudahkanlah urusan kami, dan berkahilah setiap hasil keringat kerja kami.',
+            'Amanah yang kecil bila dijaga dengan jujur akan mengantarkan pada keberkahan yang besar. Selamat beraktivitas kembali!',
+            'Semoga hari ini dipenuhi kemudahan, kerja sama yang hangat, dan catatan amal shalih yang terus mengalir pahalanya.',
+            'Allahumma inni as\'aluka \'ilman nafi\'an, wa rizqan thayyiban, wa \'amalan mutaqabbalan. Semangat berkarya hari ini!',
+            'Bekerja di lembaga pendidikan adalah ladang jariyah. Setiap dukungan Anda sangat berarti bagi lahirnya generasi rabbani.',
+            'Semoga Allah melindungi kita dari keluh kesah dan menganugerahkan semangat baru hingga tuntas seluruh amanah hari ini.',
+            'Ketulusan dalam bekerja menghadirkan ketenangan hati, dan ketelitian melahirkan keberkahan hasil. Tetap semangat!',
+            'Ya Allah, bimbinglah kami agar selalu jujur, disiplin, dan bertanggung jawab dalam setiap tugas yang kami emban.',
+            'Jadikan waktu kerja hari ini sebagai ladang syukur. Semoga Allah membalas setiap kebaikan Anda dengan berlipat pahala.',
+            'Meski tugas terasa padat, pertolongan Allah selalu dekat bagi hamba-Nya yang bersungguh-sungguh. Semangat selalu!',
+            'Semoga Allah menurunkan ketenangan di tempat kerja kita, melancarkan komunikasi tim, dan memberkahi seluruh keluarga besar BIP.',
+            'Pekerjaan yang diniatkan ibadah tak akan pernah terasa hampa. Mari tuntaskan sisa tugas hari ini dengan senyuman terbaik!',
+            'Ya Allah, jadikanlah hari ini lebih baik dan lebih berkah daripada hari kemarin bagi kami semua. Aamiin ya Rabbal \'Alamin.',
+            'Istiqomah merawat hal-hal baik, termasuk tertib mengisi jurnal, adalah kunci kemajuan bersama. Barakallahu fiikum!',
+        ];
+    }
+
+    /**
+     * Pilih doa & motivasi kerja acak per hari (berbeda setiap hari, konsisten di hari yang sama saat dikirim)
+     */
+    public static function getDailyMotivationQuote(string $date, int $pegawaiId = 0, ?int $randomSeed = null): string
+    {
+        $quotes = self::getMotivationQuotes();
+        $count = count($quotes);
+        if ($count === 0) {
+            return 'Semoga Allah memberkahi setiap amanah dan ikhtiar kerja kita hari ini.';
+        }
+
+        if ($randomSeed !== null) {
+            return $quotes[abs($randomSeed) % $count];
+        }
+
+        $computeIdx = static function (string $d, int $pid) use ($count): int {
+            $hex = substr(hash('sha256', 'PORTAL_BIP_DOA_V1|' . $d . '|' . $pid), 0, 8);
+            return (int)(hexdec($hex) % $count);
+        };
+
+        $idx = $computeIdx($date, $pegawaiId);
+        $ts = strtotime($date);
+        if ($ts !== false && $count > 1) {
+            $prevDate = date('Y-m-d', strtotime('-1 day', $ts));
+            if ($computeIdx($prevDate, $pegawaiId) === $idx) {
+                $idx = ($idx + 1) % $count;
+            }
+        }
+
+        return $quotes[$idx];
+    }
+
+    /**
      * Render pesan WhatsApp sesuai kondisi ('belum_isi' vs 'sebagian')
      */
     public static function renderMessage(
@@ -833,7 +1018,8 @@ class JurnalStaffReminderService
         array $missingJams,
         string $date,
         string $slotTime,
-        array $settings
+        array $settings,
+        ?int $quoteRandomSeed = null
     ): string {
         $template = ($category === 'sebagian')
             ? (string)($settings['jurnal_staff_wa_tpl_partial'] ?? self::DEFAULT_TPL_PARTIAL)
@@ -846,27 +1032,45 @@ class JurnalStaffReminderService
         $listLines = [];
         foreach ($missingJams as $mj) {
             if (is_array($mj)) {
-                $listLines[] = '• ' . ($mj['label'] ?? ($mj['rentang'] ?? ''));
+                $rentang = trim((string)($mj['rentang'] ?? ''));
+                $namaSesi = trim((string)($mj['nama_sesi'] ?? ''));
+                if ($rentang !== '' && $namaSesi !== '') {
+                    $listLines[] = '⏰ ' . $rentang . ' — ' . $namaSesi;
+                } elseif ($rentang !== '') {
+                    $listLines[] = '⏰ ' . $rentang;
+                } else {
+                    $listLines[] = '⏰ ' . trim((string)($mj['label'] ?? ''));
+                }
             } else {
-                $listLines[] = '• ' . (string)$mj;
+                $listLines[] = '⏰ ' . trim((string)$mj);
             }
         }
-        $listJamStr = !empty($listLines) ? implode("\n", $listLines) : '-';
+        $listJamStr = !empty($listLines) ? implode("\n", $listLines) : '⏰ -';
 
         $nama = trim((string)($staff['nama'] ?? 'Rekan Staff'));
+        $jabatan = trim((string)($staff['jabatan'] ?? ''));
+        if ($jabatan === '') {
+            $jabatan = 'Staff Support System';
+        }
+
         $linkJurnal = trim((string)($settings['jurnal_link'] ?? ''));
         if ($linkJurnal === '') {
             $base = defined('BASE_URL') ? rtrim((string)BASE_URL, '/') : 'http://localhost/portal-bip';
             $linkJurnal = $base . '/mobile/jurnal';
         }
 
+        $pegawaiId = (int)($staff['id'] ?? $staff['pegawai_id'] ?? 0);
+        $doaMotivasi = self::getDailyMotivationQuote($date, $pegawaiId, $quoteRandomSeed);
+
         $tanggalIndo = self::formatTanggalIndo($date);
         $jamPengingat = ($slotTime === 'all' || $slotTime === 'semua' || $slotTime === '') ? date('H:i') : $slotTime;
 
         $replacements = [
             '{nama}'          => $nama,
+            '{jabatan}'       => $jabatan,
             '{list_jam}'      => $listJamStr,
             '{link_jurnal}'   => $linkJurnal,
+            '{doa_motivasi}'  => $doaMotivasi,
             '{tanggal}'       => $tanggalIndo,
             '{jam_pengingat}' => $jamPengingat,
         ];
@@ -1115,6 +1319,7 @@ class JurnalStaffReminderService
             'failed'               => $failedCount,
             'skipped_lengkap'      => $eval['summary']['lengkap'],
             'skipped_cuti_izin'    => $eval['summary']['cuti_izin'],
+            'skipped_nonaktif_wa'  => $eval['summary']['nonaktif_wa'] ?? 0,
             'skipped_already_sent' => $skippedAlreadySent,
             'skipped_no_wa'        => $skippedNoWa,
             'message'              => $dryRun
@@ -1153,9 +1358,15 @@ class JurnalStaffReminderService
         }
 
         if (!$target['needs_reminder']) {
-            $reason = $target['category'] === 'cuti_izin'
-                ? "Staff {$target['nama']} sedang dalam status {$target['excused_reason']}."
-                : "Jurnal kerja {$target['nama']} untuk slot {$effectiveSlot} sudah terisi lengkap.";
+            if ($target['category'] === 'nonaktif_wa') {
+                $reason = "Staff {$target['nama']} tidak dicentang sebagai penerima notifikasi WA. Centang & simpan di daftar penerima terlebih dahulu.";
+            } elseif ($target['category'] === 'cuti_izin') {
+                $reason = "Staff {$target['nama']} sedang dalam status {$target['excused_reason']}.";
+            } elseif ($target['category'] === 'libur') {
+                $reason = "Hari ini (" . self::formatTanggalIndo($date) . ") merupakan hari libur.";
+            } else {
+                $reason = "Jurnal kerja {$target['nama']} untuk slot {$effectiveSlot} sudah terisi lengkap.";
+            }
             return [
                 'success' => false,
                 'message' => $reason
@@ -1212,41 +1423,65 @@ class JurnalStaffReminderService
     /**
      * Kirim pesan uji coba (contoh kondisi belum isi sama sekali atau sebagian)
      */
-    public static function sendTestPreview(string $targetPhone, string $kategori = 'belum_isi', string $sampleName = 'Rekan Staff'): array
-    {
+    public static function sendTestPreview(
+        string $targetPhone,
+        string $kategori = 'belum_isi',
+        string $sampleName = 'Rekan Staff',
+        string $sampleJabatan = 'Staff IT & Media'
+    ): array {
         self::ensureTablesExist();
         $settings = self::getSettings();
         $cleanKategori = ($kategori === 'sebagian') ? 'sebagian' : 'belum_isi';
 
-        $sampleMissing = [];
+        $excludeIstirahat = ($settings['jurnal_staff_wa_exclude_istirahat'] === '1');
+        $jams = self::getRequiredJamSlotsForCutoff('all', $excludeIstirahat);
+        if (empty($jams)) {
+            $jams = [
+                ['jam_mulai' => '07:00:00', 'jam_selesai' => '08:00:00', 'nama_sesi' => 'Tilawah & Dzikir Pagi'],
+                ['jam_mulai' => '08:00:00', 'jam_selesai' => '09:00:00', 'nama_sesi' => 'Aktifitas Kerja Sesi 1'],
+                ['jam_mulai' => '09:00:00', 'jam_selesai' => '10:00:00', 'nama_sesi' => 'Aktifitas Kerja Sesi 2'],
+                ['jam_mulai' => '10:00:00', 'jam_selesai' => '12:00:00', 'nama_sesi' => 'Aktifitas Kerja Sesi 3'],
+                ['jam_mulai' => '13:00:00', 'jam_selesai' => '15:00:00', 'nama_sesi' => 'Aktifitas Kerja Sesi 4'],
+                ['jam_mulai' => '15:00:00', 'jam_selesai' => '16:30:00', 'nama_sesi' => 'Evaluasi & Penutup'],
+            ];
+        }
+
         if ($cleanKategori === 'sebagian') {
-            $jams = self::getRequiredJamSlotsForCutoff('13:00', $settings['jurnal_staff_wa_exclude_istirahat'] === '1');
-            $sampleSlice = array_slice($jams, 1, 2);
-            if (empty($sampleSlice)) {
-                $sampleSlice = [
-                    ['jam_mulai' => '09:00:00', 'jam_selesai' => '10:00:00', 'nama_sesi' => 'Aktifitas Kerja Sesi 2'],
-                    ['jam_mulai' => '10:00:00', 'jam_selesai' => '11:00:00', 'nama_sesi' => 'Aktifitas Kerja Sesi 3'],
-                ];
+            if (count($jams) > 2) {
+                $selectedJams = array_slice($jams, 2);
+            } elseif (count($jams) > 1) {
+                $selectedJams = array_slice($jams, 1);
+            } else {
+                $selectedJams = $jams;
             }
-            foreach ($sampleSlice as $sj) {
-                $disp = str_replace(':', '.', substr((string)$sj['jam_mulai'], 0, 5))
-                      . ' - '
-                      . str_replace(':', '.', substr((string)$sj['jam_selesai'], 0, 5));
-                $sampleMissing[] = [
-                    'rentang'   => $disp,
-                    'nama_sesi' => $sj['nama_sesi'],
-                    'label'     => $disp . ' (' . $sj['nama_sesi'] . ')',
-                ];
-            }
+        } else {
+            $selectedJams = $jams;
+        }
+
+        $sampleMissing = [];
+        foreach ($selectedJams as $sj) {
+            $disp = str_replace(':', '.', substr((string)$sj['jam_mulai'], 0, 5))
+                  . ' - '
+                  . str_replace(':', '.', substr((string)$sj['jam_selesai'], 0, 5));
+            $namaSesi = trim((string)($sj['nama_sesi'] ?? ''));
+            $sampleMissing[] = [
+                'rentang'   => $disp,
+                'nama_sesi' => $namaSesi,
+                'label'     => $disp . ($namaSesi !== '' ? ' (' . $namaSesi . ')' : ''),
+            ];
         }
 
         $pesan = self::renderMessage(
             $cleanKategori,
-            ['nama' => trim($sampleName) ?: 'Rekan Staff'],
+            [
+                'nama'    => trim($sampleName) ?: 'Rekan Staff',
+                'jabatan' => trim($sampleJabatan) ?: 'Staff IT & Media',
+            ],
             $sampleMissing,
             date('Y-m-d'),
             date('H:i'),
-            $settings
+            $settings,
+            random_int(1, 999999)
         );
 
         $res = WaGateway::send($targetPhone, $pesan, [

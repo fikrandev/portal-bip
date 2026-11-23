@@ -605,6 +605,7 @@ $router->post('/kelola-jurnal-staff/pengingat/run', [JurnalStaffAdminController:
 $router->post('/kelola-jurnal-staff/pengingat/send-single', [JurnalStaffAdminController::class, 'sendSinglePengingat'], [Middleware::permissionRequired('jurnal_staff.manage')]);
 $router->post('/kelola-jurnal-staff/pengingat/test', [JurnalStaffAdminController::class, 'testPengingatWa'], [Middleware::permissionRequired('jurnal_staff.manage')]);
 $router->post('/kelola-jurnal-staff/pengingat/regenerate-key', [JurnalStaffAdminController::class, 'regenerateCronKey'], [Middleware::permissionRequired('jurnal_staff.manage')]);
+$router->post('/kelola-jurnal-staff/pengingat/recipients', [JurnalStaffAdminController::class, 'savePengingatRecipients'], [Middleware::permissionRequired('jurnal_staff.manage')]);
 $router->get('/kelola-jurnal-staff/pengingat/preview', [JurnalStaffAdminController::class, 'apiPreviewPengingat'], [Middleware::permissionRequired('jurnal_staff.view')]);
 
 // Base Routes Modul Tambahan Lainnya

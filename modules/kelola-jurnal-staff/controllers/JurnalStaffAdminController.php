@@ -620,6 +620,7 @@ class JurnalStaffAdminController
         $targetPhone = trim((string)($_POST['target_phone'] ?? ''));
         $kategori = trim((string)($_POST['kategori'] ?? 'belum_isi'));
         $sampleName = trim((string)($_POST['sample_name'] ?? 'Rekan Staff'));
+        $sampleJabatan = trim((string)($_POST['sample_jabatan'] ?? 'Staff IT & Media'));
 
         if ($targetPhone === '') {
             echo json_encode(['success' => false, 'message' => 'Nomor WhatsApp uji coba wajib diisi.']);
@@ -627,13 +628,63 @@ class JurnalStaffAdminController
         }
 
         try {
-            $res = JurnalStaffReminderService::sendTestPreview($targetPhone, $kategori, $sampleName);
+            $res = JurnalStaffReminderService::sendTestPreview($targetPhone, $kategori, $sampleName, $sampleJabatan);
             echo json_encode($res, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         } catch (Throwable $e) {
             http_response_code(500);
             echo json_encode(['success' => false, 'message' => $e->getMessage()]);
         }
         exit;
+    }
+
+    /**
+     * Simpan Daftar Staff Penerima Notifikasi WA Jurnal Staff (Checklist)
+     */
+    public static function savePengingatRecipients(): void
+    {
+        $isAjax = !empty($_POST['ajax']) || (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest');
+
+        if (!CSRF::check()) {
+            if ($isAjax) {
+                header('Content-Type: application/json; charset=utf-8');
+                http_response_code(419);
+                echo json_encode(['success' => false, 'message' => 'Token keamanan tidak valid. Silakan muat ulang halaman.']);
+                exit;
+            }
+            Response::redirect(url('kelola-jurnal-staff?tab=pengingat'), 'Token keamanan tidak valid.', 'error');
+            return;
+        }
+
+        $rawEnabled = $_POST['enabled_ids'] ?? [];
+        if (!is_array($rawEnabled)) {
+            $rawEnabled = [$rawEnabled];
+        }
+
+        try {
+            $res = JurnalStaffReminderService::saveRecipientPreferences($rawEnabled);
+            if ($isAjax) {
+                header('Content-Type: application/json; charset=utf-8');
+                echo json_encode($res, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+            Response::redirect(
+                url('kelola-jurnal-staff?tab=pengingat'),
+                $res['message'] ?? 'Daftar penerima notifikasi WA berhasil disimpan.',
+                'success'
+            );
+        } catch (Throwable $e) {
+            if ($isAjax) {
+                header('Content-Type: application/json; charset=utf-8');
+                http_response_code(500);
+                echo json_encode(['success' => false, 'message' => 'Gagal menyimpan daftar penerima: ' . $e->getMessage()]);
+                exit;
+            }
+            Response::redirect(
+                url('kelola-jurnal-staff?tab=pengingat'),
+                'Gagal menyimpan daftar penerima: ' . $e->getMessage(),
+                'error'
+            );
+        }
     }
 
     /**

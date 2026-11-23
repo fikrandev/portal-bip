@@ -104,6 +104,7 @@ class AutoMigrate
             '2026_11_21_000066_sync_quran_bookmark_guru_multiuser'         => 'migration066SyncQuranBookmarkGuruMultiuser',
             '2026_11_23_000067_create_jurnal_staff_wa_reminder_log'        => 'migration067CreateJurnalStaffWaReminderLog',
             '2026_11_23_000068_create_absen_pegawai_libur'                 => 'migration068CreateAbsenPegawaiLibur',
+            '2026_11_23_000069_upgrade_jurnal_staff_wa_templates_and_recipients' => 'migration069UpgradeJurnalStaffWaTemplatesAndRecipients',
         ];
     }
     /**
@@ -5001,6 +5002,62 @@ class AutoMigrate
                 KEY `idx_absen_libur_jenis` (`jenis`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
         ");
+    }
+
+    /**
+     * 069. Upgrade Template Pengingat WA Jurnal Staff (Icon, Seluruh Jam, Jabatan, Doa/Motivasi) & Daftar Penerima
+     */
+    protected static function migration069UpgradeJurnalStaffWaTemplatesAndRecipients(PDO $pdo): void
+    {
+        if (!self::hasTable($pdo, 'settings')) {
+            return;
+        }
+
+        $serviceFile = BASE_PATH . '/modules/kelola-jurnal-staff/services/JurnalStaffReminderService.php';
+        if (file_exists($serviceFile)) {
+            require_once $serviceFile;
+        }
+
+        $legacyEmpty = class_exists('JurnalStaffReminderService')
+            ? JurnalStaffReminderService::LEGACY_TPL_EMPTY
+            : "Assalamu'alaikum {nama}\nKamu belum isi jurnal hari ini, jangan lupa diisi ya.\n\nLink isi jurnal:\n{link_jurnal}\n\n_Pesan by Portal BIP_";
+        $legacyPartial = class_exists('JurnalStaffReminderService')
+            ? JurnalStaffReminderService::LEGACY_TPL_PARTIAL
+            : "Assalamu'alaikum {nama}\nKamu belum isi jurnal di jam:\n{list_jam}\n\nLink isi jurnal:\n{link_jurnal}\n\n_Pesan by Portal BIP_";
+
+        $newEmpty = class_exists('JurnalStaffReminderService')
+            ? JurnalStaffReminderService::DEFAULT_TPL_EMPTY
+            : "Assalamu'alaikum *{nama}*, _{jabatan}_ 👋\n\n📋 *Pengingat Jurnal Kerja Staff*\n🗓️ {tanggal}\n\nSaat ini Anda *belum mengisi jurnal kerja* hari ini. Berikut seluruh jam yang belum diisi:\n{list_jam}\n\n🔗 *Link Isi Jurnal:*\n{link_jurnal}\n\n🤲 _{doa_motivasi}_\n\n✨ _Pesan otomatis by Portal BIP_";
+        $newPartial = class_exists('JurnalStaffReminderService')
+            ? JurnalStaffReminderService::DEFAULT_TPL_PARTIAL
+            : "Assalamu'alaikum *{nama}*, _{jabatan}_ 👋\n\n📋 *Pengingat Jurnal Kerja Staff*\n🗓️ {tanggal}\n\nTerima kasih sudah mulai mengisi jurnal hari ini! 🙏 Berikut seluruh jam yang masih belum diisi:\n{list_jam}\n\n🔗 *Link Isi Jurnal:*\n{link_jurnal}\n\n🤲 _{doa_motivasi}_\n\n✨ _Pesan otomatis by Portal BIP_";
+
+        $stmtCheck = $pdo->prepare("SELECT `setting_value` FROM `settings` WHERE `setting_key` = ? LIMIT 1");
+        $stmtInsert = $pdo->prepare("INSERT INTO `settings` (`setting_key`, `setting_value`) VALUES (?, ?)");
+        $stmtUpdate = $pdo->prepare("UPDATE `settings` SET `setting_value` = ? WHERE `setting_key` = ?");
+
+        $stmtCheck->execute(['jurnal_staff_wa_excluded_ids']);
+        if (!$stmtCheck->fetch()) {
+            $stmtInsert->execute(['jurnal_staff_wa_excluded_ids', '']);
+        }
+
+        $norm = static fn(string $v): string => str_replace("\r\n", "\n", trim($v));
+
+        foreach ([
+            'jurnal_staff_wa_tpl_empty'   => [$norm($legacyEmpty), $newEmpty],
+            'jurnal_staff_wa_tpl_partial' => [$norm($legacyPartial), $newPartial],
+        ] as $key => [$oldNorm, $replacement]) {
+            $stmtCheck->execute([$key]);
+            $row = $stmtCheck->fetch(PDO::FETCH_ASSOC);
+            if (!$row) {
+                $stmtInsert->execute([$key, $replacement]);
+            } else {
+                $curNorm = $norm((string)($row['setting_value'] ?? ''));
+                if ($curNorm === '' || $curNorm === $oldNorm) {
+                    $stmtUpdate->execute([$replacement, $key]);
+                }
+            }
+        }
     }
 }
 

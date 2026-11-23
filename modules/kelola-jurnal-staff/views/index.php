@@ -1122,9 +1122,11 @@ $todayYmd = date('Y-m-d');
 
         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
             <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
-                <p class="text-[11px] font-bold text-slate-400 uppercase">Total Staff</p>
-                <h4 class="text-2xl font-black text-slate-800 mt-1"><?= (int)($remSummary['total_staff'] ?? 0) ?></h4>
-                <p class="text-[10px] text-slate-400 mt-0.5">Support System</p>
+                <p class="text-[11px] font-bold text-slate-400 uppercase">Penerima WA</p>
+                <h4 class="text-2xl font-black text-slate-800 mt-1">
+                    <?= (int)($remSummary['enabled_wa'] ?? 0) ?><span class="text-sm font-bold text-slate-400"> / <?= (int)($remSummary['total_staff'] ?? 0) ?></span>
+                </h4>
+                <p class="text-[10px] text-slate-400 mt-0.5"><?= (int)($remSummary['nonaktif_wa'] ?? 0) ?> staff dinonaktifkan</p>
             </div>
             <div class="bg-white rounded-2xl p-4 border border-rose-100 shadow-sm">
                 <p class="text-[11px] font-bold text-rose-500 uppercase">Belum Isi Total</p>
@@ -1149,21 +1151,33 @@ $todayYmd = date('Y-m-d');
             <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
                 <p class="text-[11px] font-bold text-slate-500 uppercase">Tanpa No. WA</p>
                 <h4 class="text-2xl font-black text-slate-700 mt-1"><?= (int)($remSummary['no_wa'] ?? 0) ?></h4>
-                <p class="text-[10px] text-slate-400 mt-0.5">Perlu lengkapi data</p>
+                <p class="text-[10px] text-slate-400 mt-0.5">Penerima perlu lengkapi WA</p>
             </div>
         </div>
 
-        <!-- Monitoring Table -->
+        <!-- Monitoring Table & Checklist Penerima WA -->
+        <?php
+            $jabatanOpts = [];
+            foreach ($remItems as $rit) {
+                $jb = trim((string)($rit['jabatan'] ?? ''));
+                if ($jb !== '') {
+                    $jabatanOpts[$jb] = true;
+                }
+            }
+            $jabatanFilterList = array_keys($jabatanOpts);
+            sort($jabatanFilterList);
+        ?>
         <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
             <div class="p-5 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
                 <div>
                     <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
                         <span>📋</span>
-                        <span>Monitoring Pengisian &amp; Preview Pesan Hari Ini (<?= e(JurnalStaffReminderService::formatTanggalIndo($remEval['date'])) ?>)</span>
+                        <span>Monitoring Pengisian &amp; Daftar Penerima WA (<?= e(JurnalStaffReminderService::formatTanggalIndo($remEval['date'])) ?>)</span>
                     </h3>
                     <p class="text-xs text-slate-500 mt-0.5">
-                        Menilai kelengkapan <?= count($remEval['required_jams']) ?> sesi jam wajib hingga cutoff
-                        <strong class="text-slate-700"><?= $currentPreviewSlot === 'all' ? 'Seluruh Sesi Hari Ini' : 'Jam ' . e($currentPreviewSlot) . ' WITA' ?></strong>.
+                        Centang staff yang menerima pengingat WA otomatis. Evaluasi wajib hingga cutoff
+                        <strong class="text-slate-700"><?= $currentPreviewSlot === 'all' ? 'Seluruh Sesi Hari Ini' : 'Jam ' . e($currentPreviewSlot) . ' WITA' ?></strong>,
+                        dan pesan menampilkan seluruh jam yang belum diisi.
                     </p>
                 </div>
 
@@ -1182,14 +1196,63 @@ $todayYmd = date('Y-m-d');
                 </div>
             </div>
 
+            <!-- Filter & Aksi Checklist Penerima WA -->
+            <div class="px-5 py-3 bg-slate-50/70 border-b border-slate-100 flex flex-col xl:flex-row xl:items-center justify-between gap-3">
+                <div class="flex flex-wrap items-center gap-2">
+                    <div class="relative">
+                        <input type="text" id="filter-wa-staff-search" oninput="filterWaStaffTable()"
+                               placeholder="Cari nama / jabatan..."
+                               class="w-48 sm:w-56 pl-3 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-xl focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none">
+                    </div>
+                    <select id="filter-wa-jabatan" onchange="filterWaStaffTable()"
+                            class="px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-xl focus:border-emerald-500 outline-none">
+                        <option value="">Semua Jabatan / Tim</option>
+                        <?php foreach ($jabatanFilterList as $jbName): ?>
+                            <option value="<?= e($jbName) ?>"><?= e($jbName) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    <span id="wa-recipient-counter" class="px-2.5 py-1 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-bold">
+                        Aktif WA: <?= (int)($remSummary['enabled_wa'] ?? 0) ?> / <?= (int)($remSummary['total_staff'] ?? 0) ?> Staff
+                    </span>
+                    <span id="wa-recipient-dirty" class="hidden px-2 py-0.5 rounded-lg bg-amber-100 text-amber-800 border border-amber-300 text-[10px] font-bold">
+                        Belum disimpan
+                    </span>
+                </div>
+
+                <?php if ($canManageReminder): ?>
+                <div class="flex flex-wrap items-center gap-1.5">
+                    <button type="button" onclick="toggleVisibleWaRecipients(true)"
+                            class="px-2.5 py-1.5 rounded-xl bg-white hover:bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-bold transition-colors">
+                        ✓ Centang Tampil
+                    </button>
+                    <button type="button" onclick="toggleVisibleWaRecipients(false)"
+                            class="px-2.5 py-1.5 rounded-xl bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 text-[11px] font-bold transition-colors">
+                        ✕ Batal Tampil
+                    </button>
+                    <button type="button" id="btn-save-wa-recipients" onclick="saveWaRecipients()"
+                            class="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold shadow-xs transition-all">
+                        💾 Simpan Daftar Penerima
+                    </button>
+                </div>
+                <?php endif; ?>
+            </div>
+
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse">
                     <thead>
                         <tr class="bg-slate-50/80 border-b border-slate-100 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                            <th class="py-3 px-3 w-14 text-center">
+                                <label class="inline-flex items-center justify-center gap-1 cursor-pointer select-none" title="Centang / Batal semua yang tampil">
+                                    <input type="checkbox" id="chk-wa-all"
+                                           <?= $canManageReminder ? 'onchange="toggleVisibleWaRecipients(this.checked)"' : 'disabled' ?>
+                                           class="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                                    <span>WA</span>
+                                </label>
+                            </th>
                             <th class="py-3 px-4">Staff &amp; Jabatan</th>
                             <th class="py-3 px-4">No. WhatsApp</th>
                             <th class="py-3 px-4 text-center">Progres</th>
-                            <th class="py-3 px-4">Jam Belum Diisi</th>
+                            <th class="py-3 px-4">Seluruh Jam Belum Diisi</th>
                             <th class="py-3 px-4 text-center">Kondisi</th>
                             <th class="py-3 px-4">WA Hari Ini</th>
                             <th class="py-3 px-4 text-right">Aksi</th>
@@ -1198,7 +1261,7 @@ $todayYmd = date('Y-m-d');
                     <tbody class="divide-y divide-slate-100 text-xs">
                         <?php if (empty($remItems)): ?>
                             <tr>
-                                <td colspan="7" class="py-10 text-center text-slate-400">
+                                <td colspan="8" class="py-10 text-center text-slate-400">
                                     Belum ada pegawai aktif yang terdeteksi sebagai kategori Support System.
                                 </td>
                             </tr>
@@ -1207,19 +1270,22 @@ $todayYmd = date('Y-m-d');
                                 <?php
                                     $cat = $it['category'];
                                     $catBadge = match($cat) {
-                                        'belum_isi' => 'bg-rose-50 text-rose-700 border-rose-200',
-                                        'sebagian'  => 'bg-amber-50 text-amber-800 border-amber-200',
-                                        'cuti_izin' => 'bg-sky-50 text-sky-700 border-sky-200',
-                                        'libur'     => 'bg-sky-50 text-sky-700 border-sky-200',
-                                        default     => 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                                        'belum_isi'   => 'bg-rose-50 text-rose-700 border-rose-200',
+                                        'sebagian'    => 'bg-amber-50 text-amber-800 border-amber-200',
+                                        'cuti_izin'   => 'bg-sky-50 text-sky-700 border-sky-200',
+                                        'libur'       => 'bg-sky-50 text-sky-700 border-sky-200',
+                                        'nonaktif_wa' => 'bg-slate-100 text-slate-600 border-slate-200',
+                                        default       => 'bg-emerald-50 text-emerald-700 border-emerald-200',
                                     };
                                     $catLabel = match($cat) {
-                                        'belum_isi' => '✕ Belum Isi',
-                                        'sebagian'  => '⚠ Sebagian',
-                                        'cuti_izin' => '🏖 ' . ($it['excused_reason'] ?: 'Cuti/Izin'),
-                                        'libur'     => '🏖️ Hari Libur',
-                                        default     => '✓ Lengkap',
+                                        'belum_isi'   => '✕ Belum Isi',
+                                        'sebagian'    => '⚠ Sebagian',
+                                        'cuti_izin'   => '🏖 ' . ($it['excused_reason'] ?: 'Cuti/Izin'),
+                                        'libur'       => '🏖️ Hari Libur',
+                                        'nonaktif_wa' => '🔕 Nonaktif WA',
+                                        default       => '✓ Lengkap',
                                     };
+                                    $waEnabledRow = !isset($it['wa_enabled']) || !empty($it['wa_enabled']);
                                     $itemPayload = [
                                         'pegawai_id' => $it['pegawai_id'],
                                         'nama'       => $it['nama'],
@@ -1229,7 +1295,17 @@ $todayYmd = date('Y-m-d');
                                         'pesan'      => $it['preview_message'],
                                     ];
                                 ?>
-                                <tr class="hover:bg-slate-50/70 transition-colors align-top">
+                                <tr data-wa-row="1"
+                                    data-nama="<?= e(strtolower($it['nama'])) ?>"
+                                    data-jabatan="<?= e($it['jabatan']) ?>"
+                                    class="hover:bg-slate-50/70 transition-colors align-top <?= $waEnabledRow ? '' : 'bg-slate-50/80 opacity-75' ?>">
+                                    <td class="py-3.5 px-3 text-center">
+                                        <input type="checkbox"
+                                               class="chk-wa-recipient w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                                               value="<?= (int)$it['pegawai_id'] ?>"
+                                               <?= $waEnabledRow ? 'checked' : '' ?>
+                                               <?= $canManageReminder ? 'onchange="onWaRecipientCheckChange()"' : 'disabled' ?>>
+                                    </td>
                                     <td class="py-3.5 px-4">
                                         <div class="font-bold text-slate-800"><?= e($it['nama']) ?></div>
                                         <div class="text-[11px] text-slate-500"><?= e($it['jabatan']) ?> &bull; <?= e($it['unit_tugas']) ?></div>
@@ -1245,23 +1321,20 @@ $todayYmd = date('Y-m-d');
                                     </td>
                                     <td class="py-3.5 px-4 text-center whitespace-nowrap">
                                         <span class="font-extrabold text-slate-800"><?= (int)$it['filled_required_count'] ?> / <?= (int)$it['required_count'] ?></span>
-                                        <div class="text-[10px] text-slate-400"><?= (int)$it['filled_today_count'] ?> total sesi</div>
+                                        <div class="text-[10px] text-slate-400"><?= (int)$it['filled_today_count'] ?> / <?= (int)$it['total_active_jams'] ?> sesi hari ini</div>
                                     </td>
-                                    <td class="py-3.5 px-4 max-w-xs">
-                                        <?php if (empty($it['missing_jams']) || $cat === 'cuti_izin' || $cat === 'libur'): ?>
+                                    <td class="py-3.5 px-4 max-w-sm">
+                                        <?php if (empty($it['missing_jams']) || in_array($cat, ['cuti_izin', 'libur', 'nonaktif_wa'], true)): ?>
                                             <span class="text-[11px] text-slate-400 italic">-</span>
                                         <?php else: ?>
                                             <div class="flex flex-wrap gap-1">
-                                                <?php foreach (array_slice($it['missing_jams'], 0, 4) as $mj): ?>
-                                                    <span class="px-2 py-0.5 rounded-lg text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                                                <?php foreach ($it['missing_jams'] as $mj): ?>
+                                                    <?php $isOverdue = !empty($mj['is_overdue']); ?>
+                                                    <span title="<?= e($mj['nama_sesi'] ?? '') ?>"
+                                                          class="px-2 py-0.5 rounded-lg text-[10px] font-semibold border <?= $isOverdue ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-slate-100 text-slate-600 border-slate-200' ?>">
                                                         <?= e($mj['rentang']) ?>
                                                     </span>
                                                 <?php endforeach; ?>
-                                                <?php if (count($it['missing_jams']) > 4): ?>
-                                                    <span class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-slate-200 text-slate-700">
-                                                        +<?= count($it['missing_jams']) - 4 ?> lagi
-                                                    </span>
-                                                <?php endif; ?>
                                             </div>
                                         <?php endif; ?>
                                     </td>
@@ -1301,7 +1374,9 @@ $todayYmd = date('Y-m-d');
                                                 <?php endif; ?>
                                             </div>
                                         <?php else: ?>
-                                            <span class="text-[11px] text-slate-400 font-medium">Tidak perlu</span>
+                                            <span class="text-[11px] text-slate-400 font-medium">
+                                                <?= $cat === 'nonaktif_wa' ? 'Dikecualikan' : 'Tidak perlu' ?>
+                                            </span>
                                         <?php endif; ?>
                                     </td>
                                 </tr>
@@ -1410,20 +1485,23 @@ $todayYmd = date('Y-m-d');
                             </button>
                         </div>
                         <div class="flex flex-wrap gap-1.5 text-[11px]">
-                            <?php foreach (['{nama}', '{list_jam}', '{link_jurnal}', '{tanggal}', '{jam_pengingat}'] as $varChip): ?>
+                            <?php foreach (['{nama}', '{jabatan}', '{list_jam}', '{link_jurnal}', '{doa_motivasi}', '{tanggal}', '{jam_pengingat}'] as $varChip): ?>
                                 <button type="button" onclick="insertTplVar('<?= $varChip ?>')"
                                         class="px-2 py-0.5 rounded-lg bg-white border border-slate-300 hover:border-emerald-400 text-slate-700 font-mono font-bold transition-colors">
                                     <?= $varChip ?>
                                 </button>
                             <?php endforeach; ?>
                         </div>
+                        <p class="text-[10.5px] text-slate-500">
+                            <code>{list_jam}</code> otomatis menampilkan seluruh jam yang belum diisi, dan <code>{doa_motivasi}</code> menampilkan doa &amp; motivasi kerja acak yang berbeda setiap hari.
+                        </p>
                     </div>
 
                     <div>
                         <label class="block text-xs font-bold text-slate-700 mb-1">
                             Template 1: Jika Belum Mengisi Jurnal Sama Sekali
                         </label>
-                        <textarea id="tpl-empty" name="jurnal_staff_wa_tpl_empty" rows="5" required
+                        <textarea id="tpl-empty" name="jurnal_staff_wa_tpl_empty" rows="9" required
                                   onfocus="window._activeTplId = 'tpl-empty'"
                                   class="w-full px-3.5 py-2.5 text-xs text-slate-800 bg-slate-50 rounded-xl border border-slate-200 focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none font-sans leading-relaxed"><?= htmlspecialchars($remCfg['jurnal_staff_wa_tpl_empty']) ?></textarea>
                     </div>
@@ -1432,7 +1510,7 @@ $todayYmd = date('Y-m-d');
                         <label class="block text-xs font-bold text-slate-700 mb-1">
                             Template 2: Jika Sudah Mengisi Beberapa (Ada Jam Belum Diisi)
                         </label>
-                        <textarea id="tpl-partial" name="jurnal_staff_wa_tpl_partial" rows="6" required
+                        <textarea id="tpl-partial" name="jurnal_staff_wa_tpl_partial" rows="9" required
                                   onfocus="window._activeTplId = 'tpl-partial'"
                                   class="w-full px-3.5 py-2.5 text-xs text-slate-800 bg-slate-50 rounded-xl border border-slate-200 focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none font-sans leading-relaxed"><?= htmlspecialchars($remCfg['jurnal_staff_wa_tpl_partial']) ?></textarea>
                     </div>
@@ -1468,16 +1546,21 @@ $todayYmd = date('Y-m-d');
                         </div>
 
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div>
+                            <div class="sm:col-span-2">
                                 <label class="block text-xs font-bold text-slate-700 mb-1">Kondisi Pesan</label>
                                 <select id="test-wa-kategori" name="kategori" class="w-full px-3 py-2.5 text-xs font-semibold text-slate-800 bg-slate-50 rounded-xl border border-slate-200 focus:bg-white focus:border-emerald-500 outline-none">
-                                    <option value="belum_isi">Belum Isi Sama Sekali</option>
-                                    <option value="sebagian">Sudah Isi Sebagian (List Jam)</option>
+                                    <option value="belum_isi">Belum Isi Sama Sekali (Semua Jam)</option>
+                                    <option value="sebagian">Sudah Isi Sebagian (Sisa Jam Belum Diisi)</option>
                                 </select>
                             </div>
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 mb-1">Nama Contoh</label>
                                 <input type="text" id="test-wa-name" name="sample_name" value="Rekan Staff"
+                                       class="w-full px-3 py-2.5 text-xs text-slate-800 bg-slate-50 rounded-xl border border-slate-200 focus:bg-white focus:border-emerald-500 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Jabatan Contoh</label>
+                                <input type="text" id="test-wa-jabatan" name="sample_jabatan" value="Staff IT & Media"
                                        class="w-full px-3 py-2.5 text-xs text-slate-800 bg-slate-50 rounded-xl border border-slate-200 focus:bg-white focus:border-emerald-500 outline-none">
                             </div>
                         </div>
@@ -2497,6 +2580,8 @@ function handleTestWaJurnal(event) {
     const phone = document.getElementById('test-wa-phone').value.trim();
     const kategori = document.getElementById('test-wa-kategori').value;
     const sampleName = document.getElementById('test-wa-name').value.trim() || 'Rekan Staff';
+    const sampleJabatanEl = document.getElementById('test-wa-jabatan');
+    const sampleJabatan = sampleJabatanEl ? (sampleJabatanEl.value.trim() || 'Staff IT & Media') : 'Staff IT & Media';
     const btn = document.getElementById('btn-test-wa-jurnal');
     const resBox = document.getElementById('test-wa-jurnal-result');
 
@@ -2510,6 +2595,7 @@ function handleTestWaJurnal(event) {
     body.set('target_phone', phone);
     body.set('kategori', kategori);
     body.set('sample_name', sampleName);
+    body.set('sample_jabatan', sampleJabatan);
 
     fetch('<?= url("kelola-jurnal-staff/pengingat/test") ?>', {
         method: 'POST',
@@ -2545,6 +2631,141 @@ function handleTestWaJurnal(event) {
         }
     });
 }
+
+function getCheckedWaRecipientKey() {
+    return Array.from(document.querySelectorAll('.chk-wa-recipient'))
+        .filter(cb => cb.checked)
+        .map(cb => cb.value)
+        .join(',');
+}
+
+const INITIAL_WA_RECIPIENT_KEY = getCheckedWaRecipientKey();
+
+function syncWaSelectAllCheckbox() {
+    const master = document.getElementById('chk-wa-all');
+    if (!master) return;
+    const visibleCbs = [];
+    document.querySelectorAll('tr[data-wa-row="1"]').forEach(row => {
+        if (row.style.display !== 'none') {
+            const cb = row.querySelector('.chk-wa-recipient');
+            if (cb) visibleCbs.push(cb);
+        }
+    });
+    if (visibleCbs.length === 0) {
+        master.checked = false;
+        master.indeterminate = false;
+        return;
+    }
+    const checkedCount = visibleCbs.filter(cb => cb.checked).length;
+    master.checked = (checkedCount === visibleCbs.length);
+    master.indeterminate = (checkedCount > 0 && checkedCount < visibleCbs.length);
+}
+
+function onWaRecipientCheckChange() {
+    const allCbs = Array.from(document.querySelectorAll('.chk-wa-recipient'));
+    const checkedCount = allCbs.filter(cb => cb.checked).length;
+    const totalCount = allCbs.length;
+
+    allCbs.forEach(cb => {
+        const row = cb.closest('tr[data-wa-row="1"]');
+        if (row) {
+            row.classList.toggle('bg-slate-50/80', !cb.checked);
+            row.classList.toggle('opacity-75', !cb.checked);
+        }
+    });
+
+    const counterEl = document.getElementById('wa-recipient-counter');
+    if (counterEl) {
+        counterEl.textContent = 'Aktif WA: ' + checkedCount + ' / ' + totalCount + ' Staff';
+    }
+
+    const dirtyEl = document.getElementById('wa-recipient-dirty');
+    if (dirtyEl) {
+        const isDirty = (getCheckedWaRecipientKey() !== INITIAL_WA_RECIPIENT_KEY);
+        dirtyEl.classList.toggle('hidden', !isDirty);
+    }
+
+    syncWaSelectAllCheckbox();
+}
+
+function filterWaStaffTable() {
+    const q = (document.getElementById('filter-wa-staff-search')?.value || '').trim().toLowerCase();
+    const jab = document.getElementById('filter-wa-jabatan')?.value || '';
+
+    document.querySelectorAll('tr[data-wa-row="1"]').forEach(row => {
+        const rowNama = (row.getAttribute('data-nama') || '').toLowerCase();
+        const rowJab = row.getAttribute('data-jabatan') || '';
+        const matchQ = (q === '' || rowNama.includes(q) || rowJab.toLowerCase().includes(q));
+        const matchJab = (jab === '' || rowJab === jab);
+        row.style.display = (matchQ && matchJab) ? '' : 'none';
+    });
+
+    syncWaSelectAllCheckbox();
+}
+
+function toggleVisibleWaRecipients(checked) {
+    document.querySelectorAll('tr[data-wa-row="1"]').forEach(row => {
+        if (row.style.display !== 'none') {
+            const cb = row.querySelector('.chk-wa-recipient');
+            if (cb && !cb.disabled) {
+                cb.checked = Boolean(checked);
+            }
+        }
+    });
+    onWaRecipientCheckChange();
+}
+
+function saveWaRecipients() {
+    const allCbs = Array.from(document.querySelectorAll('.chk-wa-recipient'));
+    const enabledIds = allCbs.filter(cb => cb.checked).map(cb => cb.value);
+
+    if (enabledIds.length === 0) {
+        if (!confirm('Tidak ada staff yang dicentang untuk menerima notifikasi WA. Yakin ingin menonaktifkan seluruh penerima?')) {
+            return;
+        }
+    }
+
+    const btn = document.getElementById('btn-save-wa-recipients');
+    const origHtml = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '⏳ Menyimpan...';
+    }
+
+    const body = new URLSearchParams();
+    body.set('<?= CSRF_TOKEN_NAME ?>', JURNAL_STAFF_CSRF_TOKEN);
+    body.set('ajax', '1');
+    enabledIds.forEach(id => body.append('enabled_ids[]', id));
+
+    fetch('<?= url("kelola-jurnal-staff/pengingat/recipients") ?>', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: body.toString()
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = origHtml;
+        }
+        alert(data.message || (data.success ? 'Daftar penerima WA berhasil disimpan.' : 'Gagal menyimpan daftar penerima.'));
+        if (data.success) {
+            location.reload();
+        }
+    })
+    .catch(err => {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = origHtml;
+        }
+        alert('Terjadi kesalahan jaringan: ' + err.message);
+    });
+}
+
+document.addEventListener('DOMContentLoaded', syncWaSelectAllCheckbox);
 
 function insertTplVar(token) {
     const targetId = window._activeTplId || 'tpl-partial';
