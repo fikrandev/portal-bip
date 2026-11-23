@@ -587,72 +587,66 @@ function renderAttendancePageUI() {
   const isAllowed = isCheckoutTimeAllowed();
 
   if (!state.checkin) {
-    // 1. Not yet checked in
+    // 1. Not yet checked in — Big prominent Check-in button
     container.innerHTML = `
-      <div class="bg-white rounded-3xl p-4 shadow-sm border border-slate-100 space-y-3">
+      <div class="bg-white rounded-3xl p-4 shadow-md border border-emerald-200/80 space-y-3">
         <div class="flex items-center justify-between">
           <div>
-            <h3 class="font-bold text-slate-800 text-sm">Presensi Masuk Pagi</h3>
-            <p class="text-[11px] text-slate-400">Jadwal masuk: 06.30 - 08.00 WITA</p>
+            <h3 class="font-extrabold text-slate-800 text-sm">Presensi Masuk</h3>
+            <p class="text-[11px] text-slate-400">Silakan tekan tombol di bawah untuk Check-in</p>
           </div>
           <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-            Buka
+            Siap Check-in
           </span>
         </div>
-        <button type="button" onclick="handleDoCheckin(this)" class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-2xl shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 press-bounce">
-          <span>📍</span> Check-in Sekarang
+        <button type="button" onclick="handleDoCheckin(this)" class="w-full py-4 min-h-[60px] bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black text-base tracking-wide rounded-2xl shadow-xl shadow-emerald-600/30 flex items-center justify-center gap-2.5 press-bounce transition-all">
+          <span class="text-xl">📍</span>
+          <span>CHECK-IN SEKARANG</span>
         </button>
       </div>
     `;
   } else if (state.checkin && !state.checkout) {
-    // 2. Already checked in, check checkout availability
+    // 2. Already checked in, show compact masuk badge + big Check-out button
     container.innerHTML = `
-      <!-- Absen Masuk Card (Recorded) -->
-      <div class="bg-white rounded-3xl p-4 shadow-sm border border-emerald-200/80 space-y-3">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-2.5">
-            <div class="w-9 h-9 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
-              ✓
-            </div>
-            <div>
-              <h3 class="font-bold text-slate-800 text-xs">Absen Masuk Berhasil</h3>
-              <p class="text-[10px] text-slate-400">Pukul ${state.checkin.time} • ${state.checkin.status}</p>
-            </div>
+      <!-- Absen Masuk Recorded (Compact) -->
+      <div class="bg-emerald-50/90 rounded-2xl px-3.5 py-2.5 border border-emerald-200 flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div class="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold text-sm shrink-0">
+            ✓
           </div>
-          <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
-            Terverifikasi
-          </span>
+          <div class="min-w-0">
+            <p class="font-bold text-emerald-950 text-xs truncate">Masuk Pukul ${state.checkin.time} • ${state.checkin.status}</p>
+            <p class="text-[10px] text-emerald-700 truncate">📍 ${state.checkin.location}</p>
+          </div>
         </div>
-        <div class="bg-emerald-50/70 p-2.5 rounded-2xl border border-emerald-100 text-[11px] text-slate-600">
-          📍 Lokasi: <strong>${state.checkin.location}</strong>
-        </div>
+        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white text-emerald-700 border border-emerald-200 shrink-0">
+          Tercatat
+        </span>
       </div>
 
-      <!-- Absen Pulang Section (Available at jam pulang) -->
-      <div class="bg-white rounded-3xl p-4 shadow-sm border border-slate-100 space-y-3">
+      <!-- Absen Pulang Section (Big Prominent Button) -->
+      <div class="bg-white rounded-3xl p-4 shadow-md border ${isAllowed ? 'border-amber-300' : 'border-slate-200'} space-y-3">
         <div class="flex items-center justify-between">
           <div>
-            <h3 class="font-bold text-slate-800 text-xs">Presensi Pulang</h3>
-            <p class="text-[10px] text-slate-400">Tersedia mulai pukul ${window.getPulangTimeDisplay()} WITA</p>
+            <h3 class="font-extrabold text-slate-800 text-sm">Presensi Pulang (Check-out)</h3>
+            <p class="text-[11px] text-slate-400">Aktif mulai pukul ${window.getPulangTimeDisplay()} WITA</p>
           </div>
-          <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${isAllowed ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-500'}">
+          <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${isAllowed ? 'bg-amber-100 text-amber-800 border border-amber-200' : 'bg-slate-100 text-slate-500 border border-slate-200'}">
             ${isAllowed ? 'Waktunya Pulang' : 'Belum Jam ' + window.getPulangTimeDisplay()}
           </span>
         </div>
 
         ${isAllowed ? `
-          <button type="button" onclick="handleDoCheckout(this)" class="w-full py-3.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold text-sm rounded-2xl shadow-lg shadow-orange-500/30 flex items-center justify-center gap-2 press-bounce animate-pulse">
-            <span>🏠</span> Absen Pulang Sekarang
+          <button type="button" onclick="handleDoCheckout(this)" class="w-full py-4 min-h-[60px] bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-black text-base tracking-wide rounded-2xl shadow-xl shadow-orange-500/35 flex items-center justify-center gap-2.5 press-bounce transition-all">
+            <span class="text-xl">🏠</span>
+            <span>CHECK-OUT / ABSEN PULANG</span>
           </button>
         ` : `
-          <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100 text-center space-y-1">
-            <p class="text-xs font-bold text-slate-700">🕒 Belum waktu Absen Pulang</p>
-            <p class="text-[10px] text-slate-400">Tombol absen pulang akan aktif otomatis pada pukul ${window.getPulangTimeDisplay()} waktu perangkat Anda.</p>
-          </div>
-          <button type="button" disabled class="w-full py-3 bg-slate-200 text-slate-400 font-bold text-xs rounded-2xl cursor-not-allowed flex items-center justify-center gap-2">
-            <span>🔒</span> Absen Pulang (Aktif Jam ${window.getPulangTimeDisplay()})
+          <button type="button" disabled class="w-full py-4 min-h-[58px] bg-slate-200 text-slate-500 font-extrabold text-sm rounded-2xl cursor-not-allowed flex items-center justify-center gap-2">
+            <span class="text-lg">🔒</span>
+            <span>CHECK-OUT (AKTIF JAM ${window.getPulangTimeDisplay()})</span>
           </button>
-          <div class="text-center pt-1">
+          <div class="text-center">
             <button type="button" onclick="toggleSimulateAfternoon()" class="text-[10px] font-bold text-blue-600 hover:underline">
               🧪 Simulasi jam ${window.getPulangTimeDisplay()} untuk uji coba
             </button>
@@ -707,9 +701,9 @@ function syncBerandaAttendanceUI() {
 
   if (!state.checkin) {
     berandaCheckinText.textContent = 'Belum check-in hari ini';
-    berandaCheckinSub.textContent = 'Silakan klik tombol Check-in untuk merekam kehadiran.';
-    berandaCheckinBtn.className = 'shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold bg-[#16a34a] hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20 press-bounce';
-    berandaCheckinBtn.innerHTML = '<span>📍</span><span>Check-in</span>';
+    berandaCheckinSub.textContent = 'Rekam kehadiran masuk & pulang Anda di sini.';
+    berandaCheckinBtn.className = 'w-full py-3.5 px-4 rounded-2xl text-sm font-black bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 press-bounce transition-all';
+    berandaCheckinBtn.innerHTML = '<span class="text-base">📍</span><span>CHECK-IN SEKARANG</span>';
     berandaCheckinBtn.href = (window.APP_BASE_URL || '') + '/mobile/absen';
     if (berandaCheckinBadge) {
       berandaCheckinBadge.className = 'w-13 h-13 rounded-2xl bg-slate-50 border border-slate-200/80 flex flex-col items-center justify-center shrink-0';
@@ -717,20 +711,19 @@ function syncBerandaAttendanceUI() {
     }
   } else if (state.checkin && !state.checkout) {
     const isLate = (state.checkin.status || '').toLowerCase().includes('terlambat');
-    const badgeColor = isLate ? 'amber' : 'emerald';
     if (isAllowed) {
-      berandaCheckinText.textContent = `Sudah Masuk (${state.checkin.time})`;
+      berandaCheckinText.textContent = `Sudah Check-in (${state.checkin.time})`;
       berandaCheckinSub.textContent = isLate ? `${state.checkin.status} • Waktunya Pulang (${window.getPulangTimeDisplay()}+)` : `Waktunya Absen Pulang (Pukul ${window.getPulangTimeDisplay()}+)`;
-      berandaCheckinBtn.className = 'shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white shadow-md shadow-amber-500/30 press-bounce animate-pulse';
-      berandaCheckinBtn.innerHTML = '<span>🏠</span><span>Absen Pulang</span>';
+      berandaCheckinBtn.className = 'w-full py-3.5 px-4 rounded-2xl text-sm font-black bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-lg shadow-amber-500/30 flex items-center justify-center gap-2 press-bounce transition-all';
+      berandaCheckinBtn.innerHTML = '<span class="text-base">🏠</span><span>CHECK-OUT / ABSEN PULANG</span>';
       berandaCheckinBtn.href = (window.APP_BASE_URL || '') + '/mobile/absen';
     } else {
-      berandaCheckinText.textContent = `Sudah Masuk (${state.checkin.time})`;
+      berandaCheckinText.textContent = `Sudah Check-in (${state.checkin.time})`;
       berandaCheckinSub.textContent = isLate ? `${state.checkin.status} • Pulang jam ${window.getPulangTimeDisplay()}` : `Absen Pulang buka pukul ${window.getPulangTimeDisplay()}`;
-      berandaCheckinBtn.className = isLate 
-        ? 'shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200'
-        : 'shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200';
-      berandaCheckinBtn.innerHTML = '<span>✓</span><span>Masuk</span>';
+      berandaCheckinBtn.className = isLate
+        ? 'w-full py-3.5 px-4 rounded-2xl text-sm font-extrabold bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 flex items-center justify-center gap-2 press-bounce transition-all'
+        : 'w-full py-3.5 px-4 rounded-2xl text-sm font-extrabold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 flex items-center justify-center gap-2 press-bounce transition-all';
+      berandaCheckinBtn.innerHTML = '<span>✓</span><span>Sudah Masuk &bull; Check-out Jam ' + window.getPulangTimeDisplay() + '</span>';
       berandaCheckinBtn.href = (window.APP_BASE_URL || '') + '/mobile/absen';
     }
     if (berandaCheckinBadge) {
@@ -740,8 +733,8 @@ function syncBerandaAttendanceUI() {
   } else {
     berandaCheckinText.textContent = `Presensi Selesai (Pulang ${state.checkout.time})`;
     berandaCheckinSub.textContent = 'Terima kasih atas kerja keras Anda hari ini!';
-    berandaCheckinBtn.className = 'shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold bg-slate-100 text-slate-600 border border-slate-200';
-    berandaCheckinBtn.innerHTML = '<span>✓</span><span>Selesai</span>';
+    berandaCheckinBtn.className = 'w-full py-3.5 px-4 rounded-2xl text-sm font-extrabold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 flex items-center justify-center gap-2 press-bounce transition-all';
+    berandaCheckinBtn.innerHTML = '<span>✓</span><span>Presensi Selesai &bull; Lihat Detail</span>';
     berandaCheckinBtn.href = (window.APP_BASE_URL || '') + '/mobile/absen';
   }
 }

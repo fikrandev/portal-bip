@@ -105,52 +105,45 @@ if ($hourNow < 11) {
             <!-- Middle Text -->
             <div class="flex-1 min-w-0">
                 <h3 class="font-bold text-slate-800 text-sm leading-snug">Absen Kehadiran</h3>
-                <p class="text-[11px] text-slate-400 leading-tight line-clamp-2 mt-0.5">
+                <p id="beranda-checkin-status" class="text-xs font-bold <?= $hasCheckout ? 'text-emerald-700' : ($hasCheckin ? ($isTerlambat ? 'text-amber-700' : 'text-emerald-700') : 'text-slate-700') ?> leading-tight mt-0.5">
                     <?php if ($hasCheckout): ?>
-                        Presensi lengkap hari ini. Terima kasih atas dedikasi Anda! 💙
+                        Presensi Hari Ini Selesai
                     <?php elseif ($hasCheckin): ?>
-                        Anda telah melakukan check-in masuk hari ini.
+                        Sudah Check-in (<?= e($attJamMasuk) ?>)
                     <?php else: ?>
-                        Mulai aktivitas hari ini dengan melakukan check-in terlebih dahulu.
+                        Belum check-in hari ini
+                    <?php endif; ?>
+                </p>
+                <p id="beranda-checkin-sub" class="text-[11px] text-slate-400 leading-tight mt-0.5">
+                    <?php if ($hasCheckout): ?>
+                        Masuk: <?= e($attJamMasuk) ?> &bull; Pulang: <?= e($attJamPulang) ?>
+                    <?php elseif ($hasCheckin): ?>
+                        <?= e($attKet ?: ($isTerlambat ? 'Terlambat' : 'Tepat Waktu')) ?> &bull; Pulang jam <?= e($jamPulangDisplay) ?>+
+                    <?php else: ?>
+                        Rekam kehadiran masuk & pulang Anda di sini.
                     <?php endif; ?>
                 </p>
             </div>
-
-            <!-- Right Action Button -->
-            <?php if ($hasCheckout): ?>
-                <a href="<?= url('mobile/absen') ?>" id="beranda-checkin-btn" class="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 press-bounce">
-                    <span>Lihat Absen</span>
-                </a>
-            <?php elseif ($hasCheckin): ?>
-                <a href="<?= url('mobile/absen') ?>" id="beranda-checkin-btn" class="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white shadow-md shadow-amber-500/20 press-bounce">
-                    <span>🏠</span>
-                    <span>Absen Pulang</span>
-                </a>
-            <?php else: ?>
-                <a href="<?= url('mobile/absen') ?>" id="beranda-checkin-btn" class="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold bg-[#16a34a] hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20 press-bounce">
-                    <span>📍</span>
-                    <span>Check-in</span>
-                </a>
-            <?php endif; ?>
         </div>
 
-        <!-- Sub-bar: Status Kehadiran -->
-        <div class="rounded-2xl p-2.5 flex items-center gap-2.5 mt-3 border <?= $hasCheckout ? 'bg-emerald-50 border-emerald-100' : ($hasCheckin ? ($isTerlambat ? 'bg-amber-50 border-amber-200' : 'bg-emerald-50 border-emerald-100') : 'bg-slate-50 border-slate-200/80') ?>">
-            <div class="w-6 h-6 rounded-full <?= $hasCheckout ? 'bg-emerald-100 text-emerald-700' : ($hasCheckin ? ($isTerlambat ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700') : 'bg-slate-200/70 text-slate-500') ?> flex items-center justify-center shrink-0 text-xs">
-                <i data-lucide="clock" class="w-3.5 h-3.5"></i>
-            </div>
-            <div>
-                <?php if ($hasCheckout): ?>
-                    <p id="beranda-checkin-status" class="text-xs font-bold text-slate-800 leading-tight">Presensi Hari Ini Selesai</p>
-                    <p id="beranda-checkin-sub" class="text-[10px] text-slate-500">Masuk: <?= e($attJamMasuk) ?> &bull; Pulang: <?= e($attJamPulang) ?></p>
-                <?php elseif ($hasCheckin): ?>
-                    <p id="beranda-checkin-status" class="text-xs font-bold text-slate-800 leading-tight">Sudah Masuk (<?= e($attJamMasuk) ?>)</p>
-                    <p id="beranda-checkin-sub" class="text-[10px] <?= $isTerlambat ? 'text-amber-700 font-semibold' : 'text-slate-500' ?>"><?= e($attKet ?: ($isTerlambat ? 'Terlambat' : 'Tepat Waktu')) ?> &bull; Pulang jam <?= e($jamPulangDisplay) ?>+</p>
-                <?php else: ?>
-                    <p id="beranda-checkin-status" class="text-xs font-bold text-slate-700 leading-tight">Belum check-in hari ini</p>
-                    <p id="beranda-checkin-sub" class="text-[10px] text-slate-400">Silakan klik tombol Check-in untuk merekam kehadiran.</p>
-                <?php endif; ?>
-            </div>
+        <!-- Big Prominent Action Button (Check-in / Check-out langsung terlihat & mudah ditekan) -->
+        <div class="mt-3">
+            <?php if ($hasCheckout): ?>
+                <a href="<?= url('mobile/absen') ?>" id="beranda-checkin-btn" class="w-full py-3.5 px-4 rounded-2xl text-sm font-extrabold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 flex items-center justify-center gap-2 press-bounce transition-all">
+                    <span>✓</span>
+                    <span>Presensi Selesai &bull; Lihat Detail</span>
+                </a>
+            <?php elseif ($hasCheckin): ?>
+                <a href="<?= url('mobile/absen') ?>" id="beranda-checkin-btn" class="w-full py-3.5 px-4 rounded-2xl text-sm font-black bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-lg shadow-amber-500/30 flex items-center justify-center gap-2 press-bounce transition-all">
+                    <span class="text-base">🏠</span>
+                    <span>CHECK-OUT / ABSEN PULANG</span>
+                </a>
+            <?php else: ?>
+                <a href="<?= url('mobile/absen') ?>" id="beranda-checkin-btn" class="w-full py-3.5 px-4 rounded-2xl text-sm font-black bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 press-bounce transition-all">
+                    <span class="text-base">📍</span>
+                    <span>CHECK-IN SEKARANG</span>
+                </a>
+            <?php endif; ?>
         </div>
     </div>
 
