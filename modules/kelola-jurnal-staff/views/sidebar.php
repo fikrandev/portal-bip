@@ -134,20 +134,15 @@ $staffTotal = (int)($dashStats['total_support_staff'] ?? 0);
                 ?>
                     <li>
                         <a href="<?= $href ?>" 
-                           onclick="if(typeof switchStaffTab === 'function'){ switchStaffTab('<?= $m['tab'] ?>'); return false; }"
+                           onclick="if(typeof switchStaffTab === 'function'){ switchStaffTab('<?= $m['tab'] ?>'); if(window.innerWidth < 1024 && typeof toggleSidebar === 'function') toggleSidebar(); return false; }"
                            data-staff-sidebar-tab="<?= $m['tab'] ?>"
                            class="staff-sidebar-link flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-200 group <?= $cls ?>">
-                            <div class="flex items-center gap-2.5 min-w-0">
+                            <div class="flex items-center gap-3 min-w-0">
                                 <svg class="w-5 h-5 shrink-0 transition-colors <?= $iconCls ?>" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor">
                                     <?= $m['icon'] ?>
                                 </svg>
-                                <span class="truncate text-xs font-medium"><?= $m['label'] ?></span>
+                                <span class="text-sm truncate"><?= $m['label'] ?></span>
                             </div>
-                            <?php if ($m['badge'] !== null): ?>
-                                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 <?= $m['badgeClass'] ?? 'bg-primary-700 text-white' ?>">
-                                    <?= $m['badge'] ?>
-                                </span>
-                            <?php endif; ?>
                         </a>
                     </li>
                 <?php endforeach; ?>
@@ -161,31 +156,31 @@ $staffTotal = (int)($dashStats['total_support_staff'] ?? 0);
             </h3>
             <ul class="space-y-1">
                 <li>
-                    <a href="<?= url('kelola-jurnal-staff/cetak?start_date=' . urlencode($filterStartDate ?? date('Y-m-01')) . '&end_date=' . urlencode($filterEndDate ?? date('Y-m-t'))) ?>" 
+                    <a href="<?= url('kelola-jurnal-staff/cetak?mode=rekap&start_date=' . urlencode($filterStartDate ?? date('Y-m-01')) . '&end_date=' . urlencode($filterEndDate ?? date('Y-m-t'))) ?>" 
                        target="_blank"
-                       class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-primary-200 hover:bg-primary-800/60 hover:text-white transition-all text-xs font-medium">
-                        <svg class="w-4 h-4 text-primary-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                       class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-primary-200 font-medium hover:bg-primary-800/60 hover:text-white border border-transparent transition-all duration-200 group">
+                        <svg class="w-5 h-5 text-primary-400 group-hover:text-primary-300 transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24-1.076-.672-2.144-1.28-3.093l-.408-.637c-.368-.574-.532-.83-.532-1.127 0-.482.352-.892.83-.974.776-.133 1.57-.213 2.378-.238m10.584 6.069c.24-1.076.672-2.144 1.28-3.093l.408-.637c.368-.574.532-.83.532-1.127 0-.482-.352-.892-.83-.974a24.28 24.28 0 0 0-2.378-.238M6.75 6.75h10.5a2.25 2.25 0 0 1 2.25 2.25v9.75a2.25 2.25 0 0 1-2.25 2.25H6.75a2.25 2.25 0 0 1-2.25-2.25V9a2.25 2.25 0 0 1 2.25-2.25Zm0 0V4.5a2.25 2.25 0 0 1 2.25-2.25h6a2.25 2.25 0 0 1 2.25 2.25v2.25" />
                         </svg>
-                        <span>Cetak Laporan Rekap</span>
+                        <span class="text-sm truncate">Cetak Laporan Rekap</span>
                     </a>
                 </li>
                 <li>
                     <a href="<?= url('kelola-pegawai') ?>" 
-                       class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-primary-200 hover:bg-primary-800/60 hover:text-white transition-all text-xs font-medium">
-                        <svg class="w-4 h-4 text-primary-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                       class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-primary-200 font-medium hover:bg-primary-800/60 hover:text-white border border-transparent transition-all duration-200 group">
+                        <svg class="w-5 h-5 text-primary-400 group-hover:text-primary-300 transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
                         </svg>
-                        <span>Data Pegawai & Staff</span>
+                        <span class="text-sm truncate">Data Pegawai & Staff</span>
                     </a>
                 </li>
                 <li>
                     <a href="<?= url('kelola-jurnal-guru') ?>" 
-                       class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-primary-200 hover:bg-primary-800/60 hover:text-white transition-all text-xs font-medium">
-                        <svg class="w-4 h-4 text-sky-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                       class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-primary-200 font-medium hover:bg-primary-800/60 hover:text-white border border-transparent transition-all duration-200 group">
+                        <svg class="w-5 h-5 text-sky-400 group-hover:text-sky-300 transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
                         </svg>
-                        <span>Kelola Jurnal Guru</span>
+                        <span class="text-sm truncate">Kelola Jurnal Guru</span>
                     </a>
                 </li>
             </ul>
@@ -193,12 +188,12 @@ $staffTotal = (int)($dashStats['total_support_staff'] ?? 0);
     </div>
 
     <!-- Sidebar Footer -->
-    <div class="p-4 border-t border-primary-800/50 bg-primary-950/40 shrink-0">
-        <a href="<?= url('dashboard') ?>" class="flex items-center gap-2 text-xs text-primary-300 hover:text-white transition-colors">
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+    <div class="p-4 border-t border-primary-800/50 bg-primary-950/20 shrink-0">
+        <a href="<?= url('dashboard') ?>" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-primary-200 hover:text-white hover:bg-primary-800/60 transition-all duration-200 group">
+            <svg class="w-5 h-5 text-primary-400 group-hover:text-primary-300 shrink-0 transition-colors" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"/>
             </svg>
-            <span>Kembali ke Beranda</span>
+            <span class="truncate">Kembali ke Beranda</span>
         </a>
     </div>
 </aside>

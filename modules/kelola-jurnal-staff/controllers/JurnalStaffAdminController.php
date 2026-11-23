@@ -53,7 +53,12 @@ class JurnalStaffAdminController
         // 3. Tab 1: Data Dashboard
         $dashboardStats = JurnalStaffModel::getDashboardStats($filterStartDate, $filterEndDate);
 
-        // 4. Tab 2: Data Jurnal List
+        // 4. Tab 2: Data Jurnal List, Rekap Persentase & Matrix Ceklis Harian
+        $dataSubTab = trim($_GET['subtab'] ?? 'data');
+        if (!in_array($dataSubTab, ['data', 'rekap', 'matrix'], true)) {
+            $dataSubTab = 'data';
+        }
+
         $jurnalFilters = [
             'search'     => $search,
             'start_date' => $filterStartDate,
@@ -63,6 +68,7 @@ class JurnalStaffAdminController
             'status'     => $status,
         ];
         $jurnalData = JurnalStaffModel::getJurnalList($jurnalFilters, $page, 20);
+        $rekapMatrixData = JurnalStaffModel::getRekapAndMatrixData($jurnalFilters);
 
         // 5. Tab 3: Pengaturan Jam List
         $jamList = JurnalStaffModel::getJamList(false);
@@ -125,11 +131,16 @@ class JurnalStaffAdminController
     }
 
     /**
-     * Cetak / Export Rekapitulasi Jurnal Staff
+     * Cetak / Export Rekapitulasi Jurnal Staff (Mendukung mode: data | rekap | matrix | lengkap)
      */
     public static function cetak(): void
     {
         JurnalStaffModel::ensureTablesExist();
+
+        $mode      = trim($_GET['mode'] ?? 'rekap');
+        if (!in_array($mode, ['data', 'rekap', 'matrix', 'lengkap'], true)) {
+            $mode = 'rekap';
+        }
 
         $search    = trim($_GET['search'] ?? '');
         $startDate = trim($_GET['start_date'] ?? date('Y-m-01'));
@@ -149,6 +160,7 @@ class JurnalStaffAdminController
 
         $jurnalList = JurnalStaffModel::getJurnalForExport($filters);
         $totalSelesai = count(array_filter($jurnalList, fn($j) => $j['status'] === 'selesai'));
+        $rekapMatrixData = JurnalStaffModel::getRekapAndMatrixData($filters);
 
         include MODULES_PATH . '/kelola-jurnal-staff/views/cetak.php';
     }

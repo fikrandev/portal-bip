@@ -45,7 +45,7 @@ $todayYmd = date('Y-m-d');
                     <span>Periode: <?= date('d M', strtotime($filterStartDate)) ?> - <?= date('d M Y', strtotime($filterEndDate)) ?></span>
                 </button>
 
-                <a href="<?= url('kelola-jurnal-staff/cetak?start_date=' . urlencode($filterStartDate) . '&end_date=' . urlencode($filterEndDate) . '&jabatan=' . urlencode($jabatan) . '&status=' . urlencode($status)) ?>" 
+                <a href="<?= url('kelola-jurnal-staff/cetak?mode=rekap&start_date=' . urlencode($filterStartDate) . '&end_date=' . urlencode($filterEndDate) . '&jabatan=' . urlencode($jabatan) . '&status=' . urlencode($status)) ?>" 
                    target="_blank"
                    class="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-primary-700 bg-primary-50 hover:bg-primary-100 border border-primary-200 rounded-xl transition-all shadow-sm">
                     <svg class="w-4 h-4 text-primary-600" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
@@ -63,70 +63,6 @@ $todayYmd = date('Y-m-d');
                     <span>+ Input Jurnal Staff</span>
                 </button>
             </div>
-        </div>
-
-        <!-- Tab Bar Navigation (4 Fitur Utama) -->
-        <div class="mt-6 border-b border-slate-200">
-            <nav class="flex space-x-2 md:space-x-4 overflow-x-auto custom-scrollbar" aria-label="Tabs Modul">
-                <!-- Tab 1: Dashboard -->
-                <button type="button" 
-                        onclick="switchStaffTab('dashboard')"
-                        data-staff-tab-btn="dashboard"
-                        class="staff-tab-button whitespace-nowrap py-3 px-4 border-b-2 font-semibold text-sm transition-all duration-200 flex items-center gap-2 <?= $activeTab === 'dashboard' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300' ?>">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z" />
-                    </svg>
-                    <span>Dashboard</span>
-                </button>
-
-                <!-- Tab 2: Data Jurnal -->
-                <button type="button" 
-                        onclick="switchStaffTab('data')"
-                        data-staff-tab-btn="data"
-                        class="staff-tab-button whitespace-nowrap py-3 px-4 border-b-2 font-semibold text-sm transition-all duration-200 flex items-center gap-2 <?= $activeTab === 'data' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300' ?>">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
-                    </svg>
-                    <span>Data Jurnal</span>
-                    <span class="px-2 py-0.5 text-xs rounded-full bg-slate-100 text-slate-600 font-bold"><?= $jurnalData['total'] ?? 0 ?></span>
-                </button>
-
-                <!-- Tab 3: Pengaturan Jam -->
-                <button type="button" 
-                        onclick="switchStaffTab('jam')"
-                        data-staff-tab-btn="jam"
-                        class="staff-tab-button whitespace-nowrap py-3 px-4 border-b-2 font-semibold text-sm transition-all duration-200 flex items-center gap-2 <?= $activeTab === 'jam' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300' ?>">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                    </svg>
-                    <span>Pengaturan Jam</span>
-                    <span class="px-2 py-0.5 text-xs rounded-full bg-primary-50 text-primary-600 font-bold"><?= count($jamList ?? []) ?> Sesi</span>
-                </button>
-
-                <!-- Tab 4: Pengaturan Tugas -->
-                <button type="button" 
-                        onclick="switchStaffTab('tugas')"
-                        data-staff-tab-btn="tugas"
-                        class="staff-tab-button whitespace-nowrap py-3 px-4 border-b-2 font-semibold text-sm transition-all duration-200 flex items-center gap-2 <?= $activeTab === 'tugas' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300' ?>">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 0 0 .75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 0 0-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0 1 12 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 0 1-.673-.38m0 0A2.18 2.18 0 0 1 3 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 0 1 3.413-.387m7.5 0V5.25A2.25 2.25 0 0 0 13.5 3h-3a2.25 2.25 0 0 0-2.25 2.25v.894m7.5 0a48.667 48.667 0 0 0-7.5 0M12 12.75h.008v.008H12v-.008Z" />
-                    </svg>
-                    <span>Pengaturan Tugas</span>
-                    <span class="px-2 py-0.5 text-xs rounded-full bg-amber-50 text-amber-700 font-bold"><?= count($masterJabatanList ?? []) ?> Jabatan</span>
-                </button>
-
-                <!-- Tab 5: Pengingat WA Otomatis -->
-                <button type="button" 
-                        onclick="switchStaffTab('pengingat')"
-                        data-staff-tab-btn="pengingat"
-                        class="staff-tab-button whitespace-nowrap py-3 px-4 border-b-2 font-semibold text-sm transition-all duration-200 flex items-center gap-2 <?= $activeTab === 'pengingat' ? 'border-emerald-600 text-emerald-700' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300' ?>">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 0 1-2.555-.337A5.972 5.972 0 0 1 5.41 20.97a5.969 5.969 0 0 1-.474-.065 4.48 4.48 0 0 0 .978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z" />
-                    </svg>
-                    <span>Pengingat WA</span>
-                    <span class="px-2 py-0.5 text-xs rounded-full bg-emerald-50 text-emerald-700 font-bold"><?= (int)($reminderEval['summary']['needs_reminder'] ?? 0) ?> Belum</span>
-                </button>
-            </nav>
         </div>
     </div>
 
@@ -429,13 +365,89 @@ $todayYmd = date('Y-m-d');
     </div>
 
     <!-- ========================================================================= -->
-    <!-- TAB 2: DATA JURNAL (REKAPITULASI LENGKAP) -->
+    <!-- TAB 2: DATA JURNAL (3 SUB-TAB: DATA JURNAL | REKAP PERSENTASE | MATRIX) -->
     <!-- ========================================================================= -->
+    <?php
+        $dataSubTab = $dataSubTab ?? ($_GET['subtab'] ?? 'data');
+        if (!in_array($dataSubTab, ['data', 'rekap', 'matrix'], true)) {
+            $dataSubTab = 'data';
+        }
+        $rmData = $rekapMatrixData ?? [];
+        $rekapStaffList = $rmData['rekap_staff_list'] ?? [];
+        $matrixDates = $rmData['matrix_dates'] ?? [];
+        $matrixRows = $rmData['matrix_rows'] ?? [];
+        $unfilledDays = $rmData['unfilled_days'] ?? [];
+        $rmSummary = $rmData['summary'] ?? [];
+        $baseCetakParams = http_build_query([
+            'start_date' => $filterStartDate,
+            'end_date'   => $filterEndDate,
+            'jabatan'    => $jabatan,
+            'pegawai_id' => $pegawaiId ?? '',
+            'status'     => $status,
+            'search'     => $search,
+        ]);
+    ?>
     <div id="tab-content-data" class="staff-tab-panel space-y-6 <?= $activeTab === 'data' ? '' : 'hidden' ?>">
-        <!-- Filter Bar -->
-        <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+        <!-- Filter Bar & 3 Sub-Tabs Navigation -->
+        <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 space-y-4">
+            <!-- 3 Sub-Tab Navigation -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
+                <div class="flex items-center gap-2 overflow-x-auto no-scrollbar">
+                    <!-- Sub-Tab 1: Data Jurnal -->
+                    <button type="button"
+                            onclick="switchDataJurnalSubTab('data')"
+                            data-jurnal-staff-subtab-btn="data"
+                            class="jurnal-staff-subtab-btn inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all <?= $dataSubTab === 'data' ? 'bg-primary-600 text-white shadow-md shadow-primary-600/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200/80' ?>">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                        </svg>
+                        <span>Data Jurnal</span>
+                    </button>
+
+                    <!-- Sub-Tab 2: Rekap Jurnal (Persentase) -->
+                    <button type="button"
+                            onclick="switchDataJurnalSubTab('rekap')"
+                            data-jurnal-staff-subtab-btn="rekap"
+                            class="jurnal-staff-subtab-btn inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all <?= $dataSubTab === 'rekap' ? 'bg-primary-600 text-white shadow-md shadow-primary-600/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200/80' ?>">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" />
+                        </svg>
+                        <span>Rekap Jurnal (Persentase)</span>
+                    </button>
+
+                    <!-- Sub-Tab 3: Matrix Ceklis Jurnal -->
+                    <button type="button"
+                            onclick="switchDataJurnalSubTab('matrix')"
+                            data-jurnal-staff-subtab-btn="matrix"
+                            class="jurnal-staff-subtab-btn inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all <?= $dataSubTab === 'matrix' ? 'bg-primary-600 text-white shadow-md shadow-primary-600/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200/80' ?>">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                        </svg>
+                        <span>Matrix Ceklis Jurnal</span>
+                    </button>
+                </div>
+
+                <!-- Tombol Cetak PDF Sesuai Tab -->
+                <div class="flex flex-wrap items-center gap-2 shrink-0">
+                    <a href="<?= url('kelola-jurnal-staff/cetak?mode=rekap&' . $baseCetakParams) ?>"
+                       target="_blank"
+                       class="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-all shadow-sm">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24-1.076-.672-2.144-1.28-3.093l-.408-.637c-.368-.574-.532-.83-.532-1.127 0-.482.352-.892.83-.974.776-.133 1.57-.213 2.378-.238m10.584 6.069c.24-1.076.672-2.144 1.28-3.093l.408-.637c.368-.574.532-.83.532-1.127 0-.482-.352-.892-.83-.974a24.28 24.28 0 0 0-2.378-.238M6.75 6.75h10.5a2.25 2.25 0 0 1 2.25 2.25v9.75a2.25 2.25 0 0 1-2.25 2.25H6.75a2.25 2.25 0 0 1-2.25-2.25V9a2.25 2.25 0 0 1 2.25-2.25Zm0 0V4.5a2.25 2.25 0 0 1 2.25-2.25h6a2.25 2.25 0 0 1 2.25 2.25v2.25" />
+                        </svg>
+                        <span>Cetak Rekap Persentase (PDF)</span>
+                    </a>
+                    <a href="<?= url('kelola-jurnal-staff/cetak?mode=matrix&' . $baseCetakParams) ?>"
+                       target="_blank"
+                       class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl transition-all">
+                        <span>🗓️ Cetak Matrix</span>
+                    </a>
+                </div>
+            </div>
+
             <form action="<?= url('kelola-jurnal-staff') ?>" method="GET" class="space-y-4">
                 <input type="hidden" name="tab" value="data">
+                <input type="hidden" name="subtab" id="filter_data_subtab" value="<?= htmlspecialchars($dataSubTab) ?>">
                 
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
                     <!-- Tanggal Mulai -->
@@ -502,7 +514,7 @@ $todayYmd = date('Y-m-d');
                     </div>
 
                     <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
-                        <a href="<?= url('kelola-jurnal-staff?tab=data') ?>" class="px-3.5 py-2 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">
+                        <a href="<?= url('kelola-jurnal-staff?tab=data&subtab=' . urlencode($dataSubTab)) ?>" class="px-3.5 py-2 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">
                             Reset
                         </a>
                         <button type="submit" class="px-4 py-2 text-xs font-semibold text-white bg-primary-600 hover:bg-primary-700 rounded-xl transition-all shadow-sm">
@@ -513,23 +525,26 @@ $todayYmd = date('Y-m-d');
             </form>
         </div>
 
-        <!-- Tabel Rekap Data Jurnal -->
+        <!-- ================================================================= -->
+        <!-- SUB-TAB 1: DATA JURNAL                                            -->
+        <!-- ================================================================= -->
+        <div id="subtab-panel-data" class="jurnal-staff-subtab-panel space-y-6 <?= $dataSubTab === 'data' ? '' : 'hidden' ?>">
         <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
             <div class="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                    <h3 class="text-base font-bold text-slate-800">Daftar Rekapitulasi Jurnal Staff</h3>
+                    <h3 class="text-base font-bold text-slate-800">Daftar Data Jurnal Staff</h3>
                     <p class="text-xs text-slate-500">
                         Menampilkan <?= count($jurnalData['data']) ?> dari total <?= $jurnalData['total'] ?> catatan jurnal
                     </p>
                 </div>
                 <div class="flex items-center gap-2">
-                    <a href="<?= url('kelola-jurnal-staff/cetak?start_date=' . urlencode($filterStartDate) . '&end_date=' . urlencode($filterEndDate) . '&jabatan=' . urlencode($jabatan) . '&status=' . urlencode($status) . '&search=' . urlencode($search)) ?>" 
+                    <a href="<?= url('kelola-jurnal-staff/cetak?mode=data&' . $baseCetakParams) ?>" 
                        target="_blank"
                        class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-primary-700 bg-primary-50 hover:bg-primary-100 border border-primary-200 rounded-xl transition-colors">
                         <svg class="w-3.5 h-3.5 text-primary-600" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24-1.076-.672-2.144-1.28-3.093l-.408-.637c-.368-.574-.532-.83-.532-1.127 0-.482.352-.892.83-.974.776-.133 1.57-.213 2.378-.238m10.584 6.069c.24-1.076.672-2.144 1.28-3.093l.408-.637c.368-.574.532-.83.532-1.127 0-.482-.352-.892-.83-.974a24.28 24.28 0 0 0-2.378-.238M6.75 6.75h10.5a2.25 2.25 0 0 1 2.25 2.25v9.75a2.25 2.25 0 0 1-2.25 2.25H6.75a2.25 2.25 0 0 1-2.25-2.25V9a2.25 2.25 0 0 1 2.25-2.25Zm0 0V4.5a2.25 2.25 0 0 1 2.25-2.25h6a2.25 2.25 0 0 1 2.25 2.25v2.25" />
                         </svg>
-                        <span>Cetak Data Ini</span>
+                        <span>Cetak Data Jurnal (PDF)</span>
                     </a>
                 </div>
             </div>
@@ -706,7 +721,7 @@ $todayYmd = date('Y-m-d');
                     </div>
                     <div class="flex items-center gap-1">
                         <?php for ($p = 1; $p <= $jurnalData['total_pages']; $p++): 
-                            $pageQuery = array_merge($_GET, ['page' => $p, 'tab' => 'data']);
+                            $pageQuery = array_merge($_GET, ['page' => $p, 'tab' => 'data', 'subtab' => 'data']);
                             $pUrl = url('kelola-jurnal-staff?' . http_build_query($pageQuery));
                         ?>
                             <a href="<?= $pUrl ?>" class="px-3 py-1.5 rounded-lg font-semibold <?= $p === $jurnalData['page'] ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' ?>">
@@ -716,6 +731,418 @@ $todayYmd = date('Y-m-d');
                     </div>
                 </div>
             <?php endif; ?>
+        </div>
+        </div>
+
+        <!-- ================================================================= -->
+        <!-- SUB-TAB 2: REKAP JURNAL (PERSENTASE) — BISA DICETAK PDF           -->
+        <!-- ================================================================= -->
+        <div id="subtab-panel-rekap" class="jurnal-staff-subtab-panel space-y-5 <?= $dataSubTab === 'rekap' ? '' : 'hidden' ?>">
+            <!-- KPI Ringkasan Rekap Persentase -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
+                    <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Staff Terdata</p>
+                    <h4 class="text-2xl font-black text-slate-800 mt-1"><?= (int)($rmSummary['total_staff'] ?? 0) ?> <span class="text-xs font-semibold text-slate-400">Orang</span></h4>
+                    <p class="text-[11px] text-slate-500 mt-1">
+                        <?= (int)($rmSummary['hari_kerja_elapsed'] ?? 0) ?> hari kerja berjalan (<?= (int)($rmSummary['sesi_per_hari'] ?? 8) ?> sesi/hari)
+                    </p>
+                </div>
+                <div class="bg-white rounded-2xl p-4 border border-emerald-100 shadow-sm">
+                    <p class="text-[11px] font-bold text-emerald-600 uppercase tracking-wider">Total Sesi Terisi (✓)</p>
+                    <h4 class="text-2xl font-black text-emerald-600 mt-1">
+                        <?= number_format((int)($rmSummary['total_terisi_sesi'] ?? 0)) ?>
+                        <span class="text-xs font-semibold text-slate-400">/ <?= number_format((int)($rmSummary['total_target_sesi'] ?? 0)) ?> Sesi</span>
+                    </h4>
+                    <p class="text-[11px] text-emerald-600/80 mt-1"><?= number_format((int)($rmSummary['total_catatan'] ?? 0)) ?> total catatan jurnal</p>
+                </div>
+                <div class="bg-white rounded-2xl p-4 border border-rose-100 shadow-sm">
+                    <p class="text-[11px] font-bold text-rose-600 uppercase tracking-wider">Sesi Tidak Terisi (✕)</p>
+                    <h4 class="text-2xl font-black text-rose-600 mt-1"><?= number_format((int)($rmSummary['total_kosong_sesi'] ?? 0)) ?> <span class="text-xs font-semibold text-rose-400">Sesi</span></h4>
+                    <p class="text-[11px] text-slate-500 mt-1">
+                        Minggu &amp; Libur (<?= (int)($rmSummary['hari_minggu'] ?? 0) + (int)($rmSummary['hari_libur_khusus'] ?? 0) ?> hari) dikecualikan
+                    </p>
+                </div>
+                <div class="bg-white rounded-2xl p-4 border border-indigo-100 shadow-sm">
+                    <p class="text-[11px] font-bold text-indigo-600 uppercase tracking-wider">Rata-rata Persentase</p>
+                    <h4 class="text-2xl font-black text-indigo-600 mt-1"><?= number_format((float)($rmSummary['avg_persentase'] ?? 0), 1) ?>%</h4>
+                    <div class="w-full h-2 rounded-full bg-slate-100 overflow-hidden mt-2">
+                        <div class="h-full rounded-full bg-indigo-600" style="width: <?= min(100, (float)($rmSummary['avg_persentase'] ?? 0)) ?>%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabel Rekapitulasi Persentase per Staff -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                <div class="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                        <h3 class="text-base font-bold text-slate-800">Rekapitulasi &amp; Persentase Keterisian Jurnal Staff</h3>
+                        <p class="text-xs text-slate-500">
+                            Periode: <strong><?= date('d M Y', strtotime($filterStartDate)) ?></strong> s/d <strong><?= date('d M Y', strtotime($filterEndDate)) ?></strong>
+                            &bull; Otomatis mengecualikan Hari Minggu, Hari Libur Nasional/Sekolah, serta Cuti/Izin resmi
+                        </p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2 shrink-0">
+                        <a href="<?= url('kelola-jurnal-staff/cetak?mode=rekap&' . $baseCetakParams) ?>"
+                           target="_blank"
+                           class="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-primary-600 hover:bg-primary-700 rounded-xl shadow-sm transition-all">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24-1.076-.672-2.144-1.28-3.093l-.408-.637c-.368-.574-.532-.83-.532-1.127 0-.482.352-.892.83-.974.776-.133 1.57-.213 2.378-.238m10.584 6.069c.24-1.076.672-2.144 1.28-3.093l.408-.637c.368-.574.532-.83.532-1.127 0-.482-.352-.892-.83-.974a24.28 24.28 0 0 0-2.378-.238M6.75 6.75h10.5a2.25 2.25 0 0 1 2.25 2.25v9.75a2.25 2.25 0 0 1-2.25 2.25H6.75a2.25 2.25 0 0 1-2.25-2.25V9a2.25 2.25 0 0 1 2.25-2.25Zm0 0V4.5a2.25 2.25 0 0 1 2.25-2.25h6a2.25 2.25 0 0 1 2.25 2.25v2.25" />
+                            </svg>
+                            <span>Cetak Rekap Persentase (PDF)</span>
+                        </a>
+                        <a href="<?= url('kelola-jurnal-staff/cetak?mode=lengkap&' . $baseCetakParams) ?>"
+                           target="_blank"
+                           class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-xl transition-all">
+                            <span>🖨️ Cetak Rekap + Rincian</span>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50/80 border-b border-slate-100 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                                <th class="py-3.5 px-3 text-center w-12">No</th>
+                                <th class="py-3.5 px-4">Nama Staff</th>
+                                <th class="py-3.5 px-4">Jabatan &amp; Unit</th>
+                                <th class="py-3.5 px-3 text-center">Hari Kerja Efektif</th>
+                                <th class="py-3.5 px-3 text-center">Hari Terisi (✓)</th>
+                                <th class="py-3.5 px-3 text-center">Hari Kosong (✕)</th>
+                                <th class="py-3.5 px-3 text-center">Sesi Terisi / Target</th>
+                                <th class="py-3.5 px-4 min-w-[160px]">Persentase Keterisian</th>
+                                <th class="py-3.5 px-4 text-right">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 text-xs">
+                            <?php if (empty($rekapStaffList)): ?>
+                                <tr>
+                                    <td colspan="9" class="py-12 text-center text-slate-400">
+                                        Belum ada data staff yang sesuai dengan filter periode dan jabatan ini.
+                                    </td>
+                                </tr>
+                            <?php else: ?>
+                                <?php foreach ($rekapStaffList as $idx => $rs): ?>
+                                    <?php
+                                        $pct = (float)$rs['persentase'];
+                                        $barColor = $pct >= 80 ? 'bg-emerald-500' : ($pct >= 50 ? 'bg-amber-500' : 'bg-rose-500');
+                                        $badgeColor = $pct >= 80
+                                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                            : ($pct >= 50 ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-rose-50 text-rose-700 border-rose-200');
+                                    ?>
+                                    <tr class="hover:bg-slate-50/70 transition-colors">
+                                        <td class="py-3.5 px-3 text-center font-bold text-slate-400"><?= $idx + 1 ?></td>
+                                        <td class="py-3.5 px-4">
+                                            <div class="flex items-center gap-2.5">
+                                                <?php if (!empty($rs['foto'])): ?>
+                                                    <img src="<?= url('public/' . ltrim($rs['foto'], '/')) ?>" alt="" class="w-8 h-8 rounded-full object-cover border border-slate-200 shrink-0">
+                                                <?php else: ?>
+                                                    <div class="w-8 h-8 rounded-full bg-indigo-50 text-indigo-700 font-bold flex items-center justify-center text-xs shrink-0">
+                                                        <?= strtoupper(substr($rs['nama'] ?? 'S', 0, 1)) ?>
+                                                    </div>
+                                                <?php endif; ?>
+                                                <div class="min-w-0">
+                                                    <div class="font-bold text-slate-800 truncate"><?= e($rs['nama']) ?></div>
+                                                    <div class="text-[10px] text-slate-400 font-mono">NIY: <?= e($rs['niy'] ?: '-') ?></div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="py-3.5 px-4">
+                                            <div class="font-semibold text-indigo-700"><?= e($rs['jabatan']) ?></div>
+                                            <div class="text-[11px] text-slate-400"><?= e($rs['unit_tugas']) ?></div>
+                                        </td>
+                                        <td class="py-3.5 px-3 text-center">
+                                            <span class="font-bold text-slate-800"><?= (int)$rs['hari_kerja_efektif'] ?> Hari</span>
+                                            <?php if ($rs['hari_cuti_izin'] > 0): ?>
+                                                <div class="text-[10px] text-sky-600 font-semibold">Cuti/Izin: <?= (int)$rs['hari_cuti_izin'] ?>h</div>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td class="py-3.5 px-3 text-center">
+                                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl font-bold text-xs bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                                ✓ <?= (int)$rs['hari_terisi'] ?> Hari
+                                            </span>
+                                            <?php if ($rs['hari_sebagian'] > 0): ?>
+                                                <div class="text-[10px] text-amber-600 mt-0.5"><?= (int)$rs['hari_lengkap'] ?> lengkap, <?= (int)$rs['hari_sebagian'] ?> sebagian</div>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td class="py-3.5 px-3 text-center">
+                                            <?php if ($rs['hari_kosong'] > 0): ?>
+                                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl font-bold text-xs bg-rose-50 text-rose-700 border border-rose-200">
+                                                    ✕ <?= (int)$rs['hari_kosong'] ?> Hari
+                                                </span>
+                                            <?php else: ?>
+                                                <span class="text-xs font-bold text-slate-300">0</span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td class="py-3.5 px-3 text-center whitespace-nowrap">
+                                            <div class="font-bold text-slate-800">
+                                                <?= (int)$rs['terisi_sesi'] ?> <span class="text-slate-400 font-normal">/ <?= (int)$rs['target_sesi'] ?> Sesi</span>
+                                            </div>
+                                            <?php if ($rs['kosong_sesi'] > 0): ?>
+                                                <div class="text-[10px] text-rose-500 font-semibold">Kurang <?= (int)$rs['kosong_sesi'] ?> sesi</div>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td class="py-3.5 px-4">
+                                            <div class="flex items-center justify-between text-xs font-bold mb-1">
+                                                <span class="px-2 py-0.5 rounded-full border text-[11px] <?= $badgeColor ?>">
+                                                    <?= number_format($pct, 1) ?>%
+                                                </span>
+                                                <span class="text-[10px] text-slate-400"><?= (int)$rs['total_tugas'] ?> tugas</span>
+                                            </div>
+                                            <div class="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
+                                                <div class="h-full rounded-full <?= $barColor ?>" style="width: <?= min(100, $pct) ?>%"></div>
+                                            </div>
+                                        </td>
+                                        <td class="py-3.5 px-4 text-right whitespace-nowrap">
+                                            <div class="inline-flex items-center gap-1.5">
+                                                <a href="<?= url('kelola-jurnal-staff?tab=data&subtab=data&pegawai_id=' . (int)$rs['pegawai_id'] . '&start_date=' . urlencode($filterStartDate) . '&end_date=' . urlencode($filterEndDate)) ?>"
+                                                   class="px-2.5 py-1.5 rounded-xl bg-primary-50 hover:bg-primary-100 text-primary-700 font-bold text-xs transition-all">
+                                                    Lihat Jurnal
+                                                </a>
+                                                <a href="<?= url('kelola-jurnal-staff/cetak?mode=lengkap&pegawai_id=' . (int)$rs['pegawai_id'] . '&start_date=' . urlencode($filterStartDate) . '&end_date=' . urlencode($filterEndDate)) ?>"
+                                                   target="_blank"
+                                                   class="p-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition-all"
+                                                   title="Cetak PDF Staff Ini">
+                                                    🖨️
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================================================================= -->
+        <!-- SUB-TAB 3: MATRIX CEKLIS JURNAL (TERISI & TIDAK TERISI)           -->
+        <!-- ================================================================= -->
+        <div id="subtab-panel-matrix" class="jurnal-staff-subtab-panel space-y-6 <?= $dataSubTab === 'matrix' ? '' : 'hidden' ?>">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                <div class="p-5 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+                    <div>
+                        <h3 class="text-base font-bold text-slate-800">Matrix Ceklis Harian Jurnal Staff (✓ Terisi / ✕ Tidak Terisi)</h3>
+                        <p class="text-xs text-slate-500">
+                            Periode <strong><?= date('d M Y', strtotime($filterStartDate)) ?></strong> s/d <strong><?= date('d M Y', strtotime($filterEndDate)) ?></strong>
+                            &bull; Klik kotak merah (✕) untuk langsung menginput jurnal pada tanggal tersebut
+                        </p>
+                    </div>
+
+                    <!-- Legend & Cetak Matrix -->
+                    <div class="flex flex-wrap items-center gap-2 text-xs font-bold">
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <span class="w-4 h-4 rounded-md bg-emerald-500 text-white flex items-center justify-center text-[10px]">✓</span>
+                            Lengkap (<?= (int)($rmSummary['sesi_per_hari'] ?? 8) ?> Sesi)
+                        </span>
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-amber-50 text-amber-700 border border-amber-200">
+                            <span class="w-4 h-4 rounded-md bg-amber-500 text-white flex items-center justify-center text-[10px]">✓</span>
+                            Sebagian (✓N)
+                        </span>
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-rose-50 text-rose-700 border border-rose-200">
+                            <span class="w-4 h-4 rounded-md bg-rose-500 text-white flex items-center justify-center text-[10px]">✕</span>
+                            Tidak Terisi
+                        </span>
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-sky-50 text-sky-700 border border-sky-200">
+                            <span class="w-4 h-4 rounded-md bg-sky-500 text-white flex items-center justify-center text-[10px]">C</span>
+                            Cuti / Izin
+                        </span>
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-100 text-slate-500">
+                            <span class="w-4 h-4 rounded-md bg-slate-200 text-slate-500 flex items-center justify-center text-[10px]">-</span>
+                            Minggu / Libur
+                        </span>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 border-b border-slate-200 text-[10px] font-extrabold text-slate-600 uppercase">
+                                <th class="py-3 px-3 sticky left-0 bg-slate-50 z-10 border-r border-slate-200 min-w-[210px]">Nama Staff &amp; Jabatan</th>
+                                <?php foreach ($matrixDates as $md): ?>
+                                    <?php
+                                        $thBg = $md['is_sunday']
+                                            ? 'bg-rose-50/70 text-rose-600'
+                                            : ($md['is_holiday'] ? 'bg-sky-50/80 text-sky-700' : ($md['is_today'] ? 'bg-primary-50 text-primary-700' : ''));
+                                    ?>
+                                    <th class="py-2 px-1.5 text-center min-w-[38px] border-r border-slate-100 <?= $thBg ?>"
+                                        title="<?= e($md['hari_indo'] . ', ' . $md['date'] . ($md['holiday_name'] ? ' — ' . $md['holiday_name'] : '')) ?>">
+                                        <div class="text-[9px] font-bold opacity-75"><?= e($md['hari_short']) ?></div>
+                                        <div class="text-xs font-black"><?= e($md['day_num']) ?></div>
+                                        <div class="text-[8px] font-normal opacity-70"><?= e($md['month_short']) ?></div>
+                                    </th>
+                                <?php endforeach; ?>
+                                <th class="py-3 px-2.5 text-center bg-emerald-50/60 text-emerald-700 border-l border-slate-200">Hari ✓</th>
+                                <th class="py-3 px-2.5 text-center bg-rose-50/60 text-rose-700">Hari ✕</th>
+                                <th class="py-3 px-2.5 text-center bg-indigo-50/60 text-indigo-700">Sesi ✓</th>
+                                <th class="py-3 px-2.5 text-center bg-primary-50/60 text-primary-700">%</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 text-xs">
+                            <?php if (empty($matrixRows)): ?>
+                                <tr>
+                                    <td colspan="<?= count($matrixDates) + 5 ?>" class="py-10 text-center text-slate-400">
+                                        Tidak ada data staff untuk ditampilkan pada matrix.
+                                    </td>
+                                </tr>
+                            <?php else: ?>
+                                <?php foreach ($matrixRows as $mRow): ?>
+                                    <tr class="hover:bg-slate-50/80 transition-colors">
+                                        <td class="py-2.5 px-3 sticky left-0 bg-white z-10 border-r border-slate-200 font-bold text-slate-900">
+                                            <div class="truncate max-w-[195px]" title="<?= e($mRow['nama']) ?>"><?= e($mRow['nama']) ?></div>
+                                            <div class="text-[10px] text-indigo-600 font-medium truncate max-w-[195px]">
+                                                <?= e($mRow['jabatan']) ?>
+                                            </div>
+                                        </td>
+
+                                        <?php foreach ($matrixDates as $md): ?>
+                                            <?php
+                                                $dStr = $md['date'];
+                                                $cell = $mRow['dates'][$dStr] ?? ['status' => 'holiday', 'filled_count' => 0, 'expected_count' => 0, 'details' => ''];
+                                                $st = $cell['status'];
+                                                $tdBg = $md['is_sunday'] ? 'bg-rose-50/20' : ($md['is_holiday'] ? 'bg-sky-50/20' : '');
+                                            ?>
+                                            <td class="py-2 px-1 text-center border-r border-slate-100 <?= $tdBg ?>">
+                                                <?php if ($st === 'filled'): ?>
+                                                    <div class="w-7 h-7 mx-auto rounded-lg bg-emerald-500 text-white font-black text-xs flex items-center justify-center shadow-2xs"
+                                                         title="<?= e($dStr . ' — Lengkap (' . $cell['filled_count'] . '/' . ($cell['expected_count'] ?: $cell['filled_count']) . ' Sesi): ' . $cell['details']) ?>">
+                                                        ✓
+                                                    </div>
+                                                <?php elseif ($st === 'partial'): ?>
+                                                    <button type="button"
+                                                            onclick="openQuickFillStaffMatrix(<?= (int)$mRow['pegawai_id'] ?>, '<?= e($dStr) ?>')"
+                                                            class="w-7 h-7 mx-auto rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-black text-[10px] flex items-center justify-center shadow-2xs transition-all"
+                                                            title="<?= e($dStr . ' — Terisi Sebagian (' . $cell['filled_count'] . '/' . $cell['expected_count'] . ' Sesi). Belum diisi: ' . implode(', ', array_slice($cell['missing_jams'] ?? [], 0, 4)) . '. Klik untuk tambah jurnal.') ?>">
+                                                        ✓<?= (int)$cell['filled_count'] ?>
+                                                    </button>
+                                                <?php elseif ($st === 'unfilled'): ?>
+                                                    <button type="button"
+                                                            onclick="openQuickFillStaffMatrix(<?= (int)$mRow['pegawai_id'] ?>, '<?= e($dStr) ?>')"
+                                                            class="w-7 h-7 mx-auto rounded-lg bg-rose-100 hover:bg-rose-500 text-rose-600 hover:text-white border border-rose-300 font-black text-xs flex items-center justify-center transition-all"
+                                                            title="<?= e($dStr . ' — TIDAK TERISI (0/' . $cell['expected_count'] . ' Sesi). Klik untuk input jurnal manual.') ?>">
+                                                        ✕
+                                                    </button>
+                                                <?php elseif ($st === 'excused'): ?>
+                                                    <div class="w-7 h-7 mx-auto rounded-lg bg-sky-100 text-sky-700 border border-sky-200 font-black text-[10px] flex items-center justify-center"
+                                                         title="<?= e($dStr . ' — ' . ($cell['excused_reason'] ?? 'Cuti/Izin')) ?>">
+                                                        C
+                                                    </div>
+                                                <?php else: ?>
+                                                    <span class="text-slate-300 font-bold text-xs"
+                                                          title="<?= e($dStr . ' — ' . ($cell['holiday_name'] ?? 'Hari Libur / Belum Berlangsung')) ?>">-</span>
+                                                <?php endif; ?>
+                                            </td>
+                                        <?php endforeach; ?>
+
+                                        <td class="py-2.5 px-2.5 text-center font-black text-emerald-700 bg-emerald-50/30 border-l border-slate-200">
+                                            <?= (int)$mRow['hari_terisi'] ?>
+                                        </td>
+                                        <td class="py-2.5 px-2.5 text-center font-black text-rose-600 bg-rose-50/30">
+                                            <?= (int)$mRow['hari_kosong'] ?>
+                                        </td>
+                                        <td class="py-2.5 px-2.5 text-center font-bold text-indigo-700 bg-indigo-50/30 whitespace-nowrap">
+                                            <?= (int)$mRow['terisi_sesi'] ?>/<?= (int)$mRow['target_sesi'] ?>
+                                        </td>
+                                        <td class="py-2.5 px-2.5 text-center font-black <?= $mRow['persentase'] >= 80 ? 'text-emerald-700 bg-emerald-50/40' : ($mRow['persentase'] >= 50 ? 'text-amber-700 bg-amber-50/40' : 'text-rose-700 bg-rose-50/40') ?> whitespace-nowrap">
+                                            <?= number_format((float)$mRow['persentase'], 1) ?>%
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Daftar Rincian Hari & Jam Jurnal yang Tidak Terisi / Sebagian -->
+            <div class="bg-white rounded-2xl shadow-sm border border-rose-200/80 overflow-hidden">
+                <div class="p-5 bg-rose-50/50 border-b border-rose-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                        <h3 class="text-base font-bold text-rose-950 flex items-center gap-2">
+                            <span>⚠️</span>
+                            <span>Daftar Rincian Jurnal Tidak Terisi &amp; Terisi Sebagian</span>
+                        </h3>
+                        <p class="text-xs text-rose-700/80 mt-0.5">
+                            Menampilkan hari kerja aktif yang belum terisi penuh beserta daftar slot jam yang belum diisi oleh staff
+                        </p>
+                    </div>
+                    <span class="px-3.5 py-1.5 rounded-full text-xs font-extrabold bg-rose-600 text-white shadow-sm self-start sm:self-auto">
+                        <?= count($unfilledDays) ?> Hari Belum Lengkap
+                    </span>
+                </div>
+
+                <div class="overflow-x-auto max-h-[460px] custom-scrollbar">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="sticky top-0 z-10">
+                            <tr class="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                                <th class="py-3 px-4 w-12 text-center">No</th>
+                                <th class="py-3 px-4">Tanggal &amp; Hari</th>
+                                <th class="py-3 px-4">Nama Staff &amp; Jabatan</th>
+                                <th class="py-3 px-4 text-center">Status Hari</th>
+                                <th class="py-3 px-4">Daftar Jam yang Belum Diisi</th>
+                                <th class="py-3 px-4 text-right">Tindak Lanjut</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 text-xs">
+                            <?php if (empty($unfilledDays)): ?>
+                                <tr>
+                                    <td colspan="6" class="py-10 text-center text-emerald-600 font-bold">
+                                        🎉 Alhamdulillah, seluruh sesi jurnal staff pada hari kerja aktif periode ini sudah terisi lengkap!
+                                    </td>
+                                </tr>
+                            <?php else: ?>
+                                <?php foreach (array_slice($unfilledDays, 0, 200) as $uIdx => $ud): ?>
+                                    <tr class="hover:bg-rose-50/30 transition-colors align-top">
+                                        <td class="py-3 px-4 text-center font-bold text-slate-400"><?= $uIdx + 1 ?></td>
+                                        <td class="py-3 px-4 whitespace-nowrap">
+                                            <div class="font-bold text-slate-800"><?= date('d M Y', strtotime($ud['tanggal'])) ?></div>
+                                            <div class="text-[11px] text-rose-600 font-semibold">Hari <?= e($ud['hari']) ?></div>
+                                        </td>
+                                        <td class="py-3 px-4">
+                                            <div class="font-bold text-slate-800"><?= e($ud['nama']) ?></div>
+                                            <div class="text-[11px] text-indigo-600 font-medium"><?= e($ud['jabatan']) ?> &bull; <?= e($ud['unit_tugas']) ?></div>
+                                        </td>
+                                        <td class="py-3 px-4 text-center whitespace-nowrap">
+                                            <?php if ($ud['status_hari'] === 'kosong'): ?>
+                                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-rose-100 text-rose-700 border border-rose-200">
+                                                    ✕ Belum Isi (0/<?= (int)$ud['expected_count'] ?>)
+                                                </span>
+                                            <?php else: ?>
+                                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-amber-100 text-amber-800 border border-amber-200">
+                                                    ⚠ Sebagian (<?= (int)$ud['filled_count'] ?>/<?= (int)$ud['expected_count'] ?>)
+                                                </span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td class="py-3 px-4">
+                                            <?php if ($ud['status_hari'] === 'kosong'): ?>
+                                                <span class="text-rose-600 font-semibold">Seluruh <?= (int)$ud['expected_count'] ?> sesi jam kerja belum diisi</span>
+                                            <?php else: ?>
+                                                <div class="flex flex-wrap gap-1">
+                                                    <?php foreach (array_slice($ud['missing_jams'], 0, 5) as $mjLbl): ?>
+                                                        <span class="px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200 text-[10px] font-semibold">
+                                                            <?= e($mjLbl) ?>
+                                                        </span>
+                                                    <?php endforeach; ?>
+                                                    <?php if (count($ud['missing_jams']) > 5): ?>
+                                                        <span class="text-[10px] text-slate-500 font-bold">+<?= count($ud['missing_jams']) - 5 ?> sesi lainnya</span>
+                                                    <?php endif; ?>
+                                                </div>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td class="py-3 px-4 text-right whitespace-nowrap">
+                                            <button type="button"
+                                                    onclick="openQuickFillStaffMatrix(<?= (int)$ud['pegawai_id'] ?>, '<?= e($ud['tanggal']) ?>')"
+                                                    class="px-3 py-1.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-xs transition-all">
+                                                + Isi Manual
+                                            </button>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -2199,6 +2626,47 @@ function switchStaffTab(tabName) {
     if (activeSb) {
         activeSb.classList.remove('text-primary-200', 'font-medium', 'border-transparent');
         activeSb.classList.add('bg-primary-600/30', 'text-white', 'font-semibold', 'shadow-sm', 'border-primary-500/40');
+    }
+}
+
+function switchDataJurnalSubTab(subTabName) {
+    const url = new URL(window.location.href);
+    url.searchParams.set('tab', 'data');
+    url.searchParams.set('subtab', subTabName);
+    window.history.pushState({}, '', url);
+
+    const inpSubTab = document.getElementById('filter_data_subtab');
+    if (inpSubTab) inpSubTab.value = subTabName;
+
+    document.querySelectorAll('.jurnal-staff-subtab-panel').forEach(panel => {
+        panel.classList.add('hidden');
+    });
+    const target = document.getElementById('subtab-panel-' + subTabName);
+    if (target) {
+        target.classList.remove('hidden');
+    }
+
+    document.querySelectorAll('.jurnal-staff-subtab-btn').forEach(btn => {
+        btn.classList.remove('bg-primary-600', 'text-white', 'shadow-md', 'shadow-primary-600/20');
+        btn.classList.add('bg-slate-100', 'text-slate-600', 'hover:bg-slate-200/80');
+    });
+    const activeBtn = document.querySelector(`[data-jurnal-staff-subtab-btn="${subTabName}"]`);
+    if (activeBtn) {
+        activeBtn.classList.remove('bg-slate-100', 'text-slate-600', 'hover:bg-slate-200/80');
+        activeBtn.classList.add('bg-primary-600', 'text-white', 'shadow-md', 'shadow-primary-600/20');
+    }
+}
+
+function openQuickFillStaffMatrix(pegawaiId, tanggal) {
+    openModalInputJurnal();
+    const pegSelect = document.getElementById('jurnal-pegawai-id');
+    const tglInput = document.getElementById('jurnal-tanggal');
+    if (tglInput && tanggal) {
+        tglInput.value = tanggal;
+    }
+    if (pegSelect && pegawaiId) {
+        pegSelect.value = String(pegawaiId);
+        handlePegawaiChange(pegSelect);
     }
 }
 

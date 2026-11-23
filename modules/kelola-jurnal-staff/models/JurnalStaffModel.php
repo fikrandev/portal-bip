@@ -1266,4 +1266,502 @@ class JurnalStaffModel
         ];
         return $map[$englishDay] ?? $englishDay;
     }
+
+    private static function getNamaHariShortIndo(string $englishDay): string
+    {
+        $map = [
+            'Sunday'    => 'Min',
+            'Monday'    => 'Sen',
+            'Tuesday'   => 'Sel',
+            'Wednesday' => 'Rab',
+            'Thursday'  => 'Kam',
+            'Friday'    => 'Jum',
+            'Saturday'  => 'Sab',
+        ];
+        return $map[$englishDay] ?? substr($englishDay, 0, 3);
+    }
+
+    private static function getBulanShortIndo(int $monthNum): string
+    {
+        $map = [
+            1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr',
+            5 => 'Mei', 6 => 'Jun', 7 => 'Jul', 8 => 'Agu',
+            9 => 'Sep', 10 => 'Okt', 11 => 'Nov', 12 => 'Des',
+        ];
+        return $map[$monthNum] ?? '';
+    }
+
+    /**
+     * Normalisasi string rentang jam "08.00 - 09.00" atau "08:00:00 - 09:00:00" menjadi "08:00-09:00"
+     */
+    public static function normalizeRentangJam(string $rentang): string
+    {
+        $clean = trim($rentang);
+        if ($clean === '') {
+            return '';
+        }
+        if (preg_match('/(\d{1,2})[:.](\d{2})(?::\d{2})?\s*-\s*(\d{1,2})[:.](\d{2})(?::\d{2})?/', $clean, $m)) {
+            return sprintf('%02d:%02d-%02d:%02d', (int)$m[1], (int)$m[2], (int)$m[3], (int)$m[4]);
+        }
+        return strtolower(preg_replace('/\s+/', '', str_replace('.', ':', $clean)));
+    }
+
+    /**
+     * Menghitung Rekap Jurnal (Persentase per Staff) & Matrix Ceklis Harian (Terisi / Sebagian / Tidak Terisi / Libur / Cuti)
+     * Sinkron otomatis dengan Hari Minggu, Hari Libur di Absen Pegawai, dan data Cuti/Izin.
+     */
+    public static function getRekapAndMatrixData(array $filters = []): array
+    {
+        self::ensureTablesExist();
+        require_once MODULES_PATH . '/kelola-absen-pegawai/models/AbsenPegawaiModel.php';
+        require_once MODULES_PATH . '/kelola-jurnal-staff/services/JurnalStaffReminderService.php';
+
+        $db = Database::getInstance();
+        $pdo = $db->getConnection();
+
+        $today = date('Y-m-d');
+        $startDate = !empty($filters['start_date']) ? trim((string)$filters['start_date']) : date('Y-m-01');
+        $endDate   = !empty($filters['end_date']) ? trim((string)$filters['end_date']) : date('Y-m-t');
+        if (strtotime($startDate) > strtotime($endDate)) {
+            [$startDate, $endDate] = [$endDate, $startDate];
+        }
+
+        $filterJabatan   = trim((string)($filters['jabatan'] ?? ''));
+        $filterPegawaiId = !empty($filters['pegawai_id']) ? (int)$filters['pegawai_id'] : null;
+        $filterSearch    = trim((string)($filters['search'] ?? ''));
+        $filterStatus    = trim((string)($filters['status'] ?? ''));
+
+        // 1. Ambil daftar slot jam kerja aktif
+        $remSettings = JurnalStaffReminderService::getSettings();
+        $excludeIstirahat = (($remSettings['jurnal_staff_wa_exclude_istirahat'] ?? '0') === '1');
+        $activeJams = self::getJamList(true);
+        if ($excludeIstirahat) {
+            $activeJams = array_values(array_filter(
+                $activeJams,
+                static fn($j) => strtolower((string)($j['tipe'] ?? '')) !== 'istirahat'
+            ));
+        }
+
+        $requiredJamMapById = [];
+        $requiredJamMapByRentang = [];
+        $requiredJamLabels = [];
+        foreach ($activeJams as $jm) {
+            $jid = (int)$jm['id'];
+            $lbl = date('H.i', strtotime($jm['jam_mulai'])) . ' - ' . date('H.i', strtotime($jm['jam_selesai']));
+            $norm = self::normalizeRentangJam($jm['jam_mulai'] . ' - ' . $jm['jam_selesai']);
+            $requiredJamMapById[$jid] = [
+                'id'        => $jid,
+                'label'     => $lbl,
+                'nama_sesi' => $jm['nama_sesi'] ?? '',
+                'norm'      => $norm,
+            ];
+            if ($norm !== '') {
+                $requiredJamMapByRentang[$norm] = $jid;
+            }
+            $requiredJamLabels[$jid] = $lbl . (!empty($jm['nama_sesi']) ? ' (' . $jm['nama_sesi'] . ')' : '');
+        }
+        $sesiPerHari = count($requiredJamMapById);
+        if ($sesiPerHari <= 0) {
+            $sesiPerHari = 8;
+        }
+
+        // 2. Ambil daftar staff support system (lengkap dengan jabatan efektif & no_wa)
+        $allSupportStaff = JurnalStaffReminderService::getTargetSupportStaff();
+        if (empty($allSupportStaff)) {
+            $allSupportStaff = self::getStaffList();
+        }
+
+        // Filter daftar staff sesuai filter jabatan, pegawai_id, dan search
+        $filteredStaff = [];
+        foreach ($allSupportStaff as $st) {
+            $pid = (int)($st['id'] ?? 0);
+            if ($pid <= 0) continue;
+
+            if ($filterPegawaiId !== null && $pid !== $filterPegawaiId) {
+                continue;
+            }
+            $stJab = trim((string)($st['jabatan'] ?? ''));
+            if ($filterJabatan !== '' && strcasecmp($stJab, $filterJabatan) !== 0) {
+                continue;
+            }
+            if ($filterSearch !== '') {
+                $haystack = strtolower(($st['nama'] ?? '') . ' ' . $stJab . ' ' . ($st['niy'] ?? '') . ' ' . ($st['unit_tugas'] ?? ''));
+                if (strpos($haystack, strtolower($filterSearch)) === false) {
+                    // Cek apakah ada jurnal milik staff ini yang cocok dengan kata kunci search
+                    // (akan dicek di bawah bila tidak cocok di profil)
+                    $st['_check_journal_search'] = true;
+                }
+            }
+            $filteredStaff[$pid] = $st;
+        }
+
+        // 3. Bangun daftar tanggal dalam rentang periode (maks 62 hari agar matriks tetap responsif)
+        $liburMap = AbsenPegawaiModel::getLiburMapInRange($startDate, $endDate);
+        $allDates = [];
+        $matrixDates = [];
+        $curTs = strtotime($startDate);
+        $endTs = strtotime($endDate);
+        $hariKerjaElapsedCount = 0;
+        $hariKerjaTotalCount = 0;
+        $hariLiburKhususCount = 0;
+        $hariMingguCount = 0;
+
+        while ($curTs <= $endTs) {
+            $dStr = date('Y-m-d', $curTs);
+            $w = (int)date('w', $curTs);
+            $isSunday = ($w === 0);
+            $liburInfo = AbsenPegawaiModel::getLiburInfoForDate($dStr, $liburMap);
+            $isHoliday = ($liburInfo !== null);
+            $isFuture = ($dStr > $today);
+            $isToday = ($dStr === $today);
+
+            if ($isSunday) {
+                $hariMingguCount++;
+            } elseif ($isHoliday) {
+                $hariLiburKhususCount++;
+            } else {
+                $hariKerjaTotalCount++;
+                if (!$isFuture) {
+                    $hariKerjaElapsedCount++;
+                }
+            }
+
+            $engDay = date('l', $curTs);
+            $dateMeta = [
+                'date'         => $dStr,
+                'day_num'      => date('d', $curTs),
+                'month_short'  => self::getBulanShortIndo((int)date('n', $curTs)),
+                'hari_indo'    => self::getNamaHariIndo($engDay),
+                'hari_short'   => self::getNamaHariShortIndo($engDay),
+                'is_sunday'    => $isSunday,
+                'is_holiday'   => $isHoliday,
+                'holiday_name' => $liburInfo['nama_libur'] ?? null,
+                'is_future'    => $isFuture,
+                'is_today'     => $isToday,
+                'is_workday'   => (!$isSunday && !$isHoliday),
+            ];
+            $allDates[$dStr] = $dateMeta;
+            $matrixDates[] = $dateMeta;
+
+            $curTs = strtotime('+1 day', $curTs);
+        }
+
+        // 4. Ambil seluruh catatan jurnal staff pada periode tersebut
+        $jWhere = ['js.tanggal BETWEEN ? AND ?'];
+        $jParams = [$startDate, $endDate];
+        if ($filterPegawaiId !== null) {
+            $jWhere[] = 'js.pegawai_id = ?';
+            $jParams[] = $filterPegawaiId;
+        }
+        if ($filterStatus !== '') {
+            $jWhere[] = 'js.status = ?';
+            $jParams[] = $filterStatus;
+        }
+        if ($filterSearch !== '') {
+            $sLike = '%' . $filterSearch . '%';
+            $jWhere[] = '(js.kode_jurnal LIKE ? OR js.nama_staff LIKE ? OR js.jabatan LIKE ? OR js.aktivitas LIKE ? OR js.uraian_hasil LIKE ?)';
+            $jParams = array_merge($jParams, [$sLike, $sLike, $sLike, $sLike, $sLike]);
+        }
+
+        $jSql = "
+            SELECT js.id, js.pegawai_id, js.tanggal, js.jam_id, js.jam_rentang, js.aktivitas, js.status
+            FROM jurnal_staff js
+            WHERE " . implode(' AND ', $jWhere) . "
+            ORDER BY js.tanggal ASC, js.id ASC
+        ";
+        $jStmt = $pdo->prepare($jSql);
+        $jStmt->execute($jParams);
+        $journalRows = $jStmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Kelompokkan jurnal per pegawai_id & tanggal
+        $journalsByStaffDate = [];
+        $staffHasMatchingJournal = [];
+        foreach ($journalRows as $jr) {
+            $pid = (int)$jr['pegawai_id'];
+            $tgl = $jr['tanggal'];
+            $journalsByStaffDate[$pid][$tgl][] = $jr;
+            $staffHasMatchingJournal[$pid] = true;
+        }
+
+        // Jika ada filterSearch, buang staff yang tidak cocok profil maupun jurnalnya
+        if ($filterSearch !== '') {
+            foreach ($filteredStaff as $pid => $st) {
+                if (!empty($st['_check_journal_search']) && empty($staffHasMatchingJournal[$pid])) {
+                    unset($filteredStaff[$pid]);
+                }
+            }
+        }
+
+        // 5. Hitung rekap per staff dan sel matrix per tanggal
+        $rekapStaffList = [];
+        $matrixRows = [];
+        $unfilledDaysList = [];
+
+        $summaryTotalTargetSesi = 0;
+        $summaryTotalTerisiSesi = 0;
+        $summaryTotalKosongSesi = 0;
+        $summaryTotalCatatan = 0;
+        $summaryStaffLengkap = 0;
+        $summaryStaffSebagian = 0;
+        $summaryStaffKosong = 0;
+
+        foreach ($filteredStaff as $pid => $st) {
+            $hariKerjaStaff = 0;
+            $hariCutiIzinStaff = 0;
+            $hariLengkapStaff = 0;
+            $hariSebagianStaff = 0;
+            $hariKosongStaff = 0;
+            $terisiSesiStaff = 0;
+            $totalCatatanStaff = 0;
+            $totalTugasStaff = 0;
+
+            $staffDatesMatrix = [];
+
+            foreach ($allDates as $dStr => $dMeta) {
+                $dayRows = $journalsByStaffDate[$pid][$dStr] ?? [];
+                $filledReqIds = [];
+                $extraSlots = 0;
+                $dayActivities = [];
+                $dayCatatanCount = count($dayRows);
+                $totalCatatanStaff += $dayCatatanCount;
+
+                foreach ($dayRows as $dr) {
+                    $aktParts = self::splitAktivitasList($dr['aktivitas'] ?? '');
+                    $totalTugasStaff += max(1, count($aktParts));
+                    foreach ($aktParts as $ap) {
+                        if (!in_array($ap, $dayActivities, true)) {
+                            $dayActivities[] = $ap;
+                        }
+                    }
+
+                    $jid = !empty($dr['jam_id']) ? (int)$dr['jam_id'] : 0;
+                    if ($jid > 0 && isset($requiredJamMapById[$jid])) {
+                        $filledReqIds[$jid] = true;
+                    } else {
+                        $normR = self::normalizeRentangJam((string)($dr['jam_rentang'] ?? ''));
+                        if ($normR !== '' && isset($requiredJamMapByRentang[$normR])) {
+                            $filledReqIds[$requiredJamMapByRentang[$normR]] = true;
+                        } else {
+                            $extraSlots++;
+                        }
+                    }
+                }
+
+                $filledCount = min($sesiPerHari, count($filledReqIds) + $extraSlots);
+                $missingLabels = [];
+                foreach ($requiredJamLabels as $rJid => $rLbl) {
+                    if (!isset($filledReqIds[$rJid])) {
+                        $missingLabels[] = $rLbl;
+                    }
+                }
+
+                if (!$dMeta['is_workday']) {
+                    // Hari Minggu atau Hari Libur Nasional/Sekolah
+                    $cellStatus = $filledCount > 0 ? ($filledCount >= $sesiPerHari ? 'filled' : 'partial') : 'holiday';
+                    $terisiSesiStaff += $filledCount;
+                    $staffDatesMatrix[$dStr] = [
+                        'status'         => $cellStatus,
+                        'filled_count'   => $filledCount,
+                        'expected_count' => 0,
+                        'missing_count'  => 0,
+                        'details'        => !empty($dayActivities) ? implode(' • ', array_slice($dayActivities, 0, 4)) : ($dMeta['holiday_name'] ?? 'Hari Libur'),
+                        'missing_jams'   => [],
+                        'holiday_name'   => $dMeta['holiday_name'] ?? 'Hari Libur',
+                    ];
+                    continue;
+                }
+
+                if ($dMeta['is_future']) {
+                    // Hari kerja yang belum berlangsung
+                    $cellStatus = $filledCount > 0 ? ($filledCount >= $sesiPerHari ? 'filled' : 'partial') : 'future';
+                    $terisiSesiStaff += $filledCount;
+                    $staffDatesMatrix[$dStr] = [
+                        'status'         => $cellStatus,
+                        'filled_count'   => $filledCount,
+                        'expected_count' => $sesiPerHari,
+                        'missing_count'  => 0,
+                        'details'        => !empty($dayActivities) ? implode(' • ', array_slice($dayActivities, 0, 4)) : 'Belum berlangsung',
+                        'missing_jams'   => [],
+                    ];
+                    continue;
+                }
+
+                // Cek apakah staff sedang Cuti / Izin / Sakit / Dinas Luar pada tanggal ini
+                $excusedReason = JurnalStaffReminderService::getStaffExcusedReason($pid, $dStr);
+                if ($excusedReason !== null && $filledCount === 0) {
+                    $hariCutiIzinStaff++;
+                    $staffDatesMatrix[$dStr] = [
+                        'status'         => 'excused',
+                        'excused_reason' => $excusedReason,
+                        'filled_count'   => 0,
+                        'expected_count' => 0,
+                        'missing_count'  => 0,
+                        'details'        => 'Dikecualikan (' . $excusedReason . ')',
+                        'missing_jams'   => [],
+                    ];
+                    continue;
+                }
+
+                // Hari kerja aktif yang wajib diisi
+                $hariKerjaStaff++;
+                $terisiSesiStaff += $filledCount;
+                $missingCount = max(0, $sesiPerHari - $filledCount);
+
+                if ($filledCount >= $sesiPerHari) {
+                    $cellStatus = 'filled';
+                    $hariLengkapStaff++;
+                } elseif ($filledCount > 0) {
+                    $cellStatus = 'partial';
+                    $hariSebagianStaff++;
+                    $unfilledDaysList[] = [
+                        'pegawai_id'     => $pid,
+                        'nama'           => $st['nama'],
+                        'niy'            => $st['niy'] ?? '-',
+                        'jabatan'        => $st['jabatan'] ?? 'Staff',
+                        'unit_tugas'     => $st['unit_tugas'] ?? 'Yayasan',
+                        'no_wa'          => $st['no_wa_formatted'] ?? ($st['no_wa_raw'] ?? ''),
+                        'tanggal'        => $dStr,
+                        'hari'           => $dMeta['hari_indo'],
+                        'status_hari'    => 'sebagian',
+                        'filled_count'   => $filledCount,
+                        'expected_count' => $sesiPerHari,
+                        'missing_count'  => $missingCount,
+                        'missing_jams'   => $missingLabels,
+                    ];
+                } else {
+                    $cellStatus = 'unfilled';
+                    $hariKosongStaff++;
+                    $unfilledDaysList[] = [
+                        'pegawai_id'     => $pid,
+                        'nama'           => $st['nama'],
+                        'niy'            => $st['niy'] ?? '-',
+                        'jabatan'        => $st['jabatan'] ?? 'Staff',
+                        'unit_tugas'     => $st['unit_tugas'] ?? 'Yayasan',
+                        'no_wa'          => $st['no_wa_formatted'] ?? ($st['no_wa_raw'] ?? ''),
+                        'tanggal'        => $dStr,
+                        'hari'           => $dMeta['hari_indo'],
+                        'status_hari'    => 'kosong',
+                        'filled_count'   => 0,
+                        'expected_count' => $sesiPerHari,
+                        'missing_count'  => $sesiPerHari,
+                        'missing_jams'   => $missingLabels,
+                    ];
+                }
+
+                $staffDatesMatrix[$dStr] = [
+                    'status'         => $cellStatus,
+                    'filled_count'   => $filledCount,
+                    'expected_count' => $sesiPerHari,
+                    'missing_count'  => $missingCount,
+                    'details'        => !empty($dayActivities) ? implode(' • ', array_slice($dayActivities, 0, 4)) : 'Belum mengisi jurnal',
+                    'missing_jams'   => $missingLabels,
+                ];
+            }
+
+            $targetSesiStaff = $hariKerjaStaff * $sesiPerHari;
+            $cappedTerisiSesi = $targetSesiStaff > 0 ? min($targetSesiStaff, $terisiSesiStaff) : $terisiSesiStaff;
+            $kosongSesiStaff = max(0, $targetSesiStaff - $cappedTerisiSesi);
+            $hariTerisiStaff = $hariLengkapStaff + $hariSebagianStaff;
+
+            $persentaseSesi = $targetSesiStaff > 0
+                ? min(100.0, round(($cappedTerisiSesi / $targetSesiStaff) * 100, 1))
+                : 0.0;
+            $persentaseHari = $hariKerjaStaff > 0
+                ? min(100.0, round(($hariTerisiStaff / $hariKerjaStaff) * 100, 1))
+                : 0.0;
+
+            $summaryTotalTargetSesi += $targetSesiStaff;
+            $summaryTotalTerisiSesi += $cappedTerisiSesi;
+            $summaryTotalKosongSesi += $kosongSesiStaff;
+            $summaryTotalCatatan += $totalCatatanStaff;
+
+            if ($persentaseSesi >= 80) {
+                $summaryStaffLengkap++;
+            } elseif ($persentaseSesi > 0) {
+                $summaryStaffSebagian++;
+            } else {
+                $summaryStaffKosong++;
+            }
+
+            $rowSummary = [
+                'pegawai_id'         => $pid,
+                'nama'               => $st['nama'],
+                'niy'                => $st['niy'] ?? '-',
+                'jabatan'            => $st['jabatan'] ?: 'Staff Support System',
+                'unit_tugas'         => $st['unit_tugas'] ?: 'Yayasan',
+                'foto'               => $st['foto'] ?? null,
+                'no_wa'              => $st['no_wa_formatted'] ?? ($st['no_wa_raw'] ?? ''),
+                'hari_kerja_periode' => $hariKerjaElapsedCount,
+                'hari_cuti_izin'     => $hariCutiIzinStaff,
+                'hari_kerja_efektif' => $hariKerjaStaff,
+                'sesi_per_hari'      => $sesiPerHari,
+                'target_sesi'        => $targetSesiStaff,
+                'terisi_sesi'        => $cappedTerisiSesi,
+                'kosong_sesi'        => $kosongSesiStaff,
+                'total_catatan'      => $totalCatatanStaff,
+                'total_tugas'        => $totalTugasStaff,
+                'hari_lengkap'       => $hariLengkapStaff,
+                'hari_sebagian'      => $hariSebagianStaff,
+                'hari_terisi'        => $hariTerisiStaff,
+                'hari_kosong'        => $hariKosongStaff,
+                'persentase'         => $persentaseSesi,
+                'persentase_hari'    => $persentaseHari,
+            ];
+
+            $rekapStaffList[] = $rowSummary;
+            $matrixRows[] = array_merge($rowSummary, [
+                'dates' => $staffDatesMatrix,
+            ]);
+        }
+
+        // Urutkan Rekap Persentase dari persentase tertinggi -> terisi_sesi tertinggi -> nama A-Z
+        usort($rekapStaffList, static function (array $a, array $b): int {
+            if ($b['persentase'] !== $a['persentase']) {
+                return $b['persentase'] <=> $a['persentase'];
+            }
+            if ($b['terisi_sesi'] !== $a['terisi_sesi']) {
+                return $b['terisi_sesi'] <=> $a['terisi_sesi'];
+            }
+            return strcasecmp($a['nama'], $b['nama']);
+        });
+
+        // Urutkan daftar hari belum lengkap dari tanggal terbaru
+        usort($unfilledDaysList, static function (array $a, array $b): int {
+            $cmpDate = strcmp($b['tanggal'], $a['tanggal']);
+            if ($cmpDate !== 0) return $cmpDate;
+            return strcasecmp($a['nama'], $b['nama']);
+        });
+
+        $avgPersentase = $summaryTotalTargetSesi > 0
+            ? min(100.0, round(($summaryTotalTerisiSesi / $summaryTotalTargetSesi) * 100, 1))
+            : 0.0;
+
+        return [
+            'start_date'        => $startDate,
+            'end_date'          => $endDate,
+            'sesi_per_hari'     => $sesiPerHari,
+            'active_jams'       => $activeJams,
+            'rekap_staff_list'  => $rekapStaffList,
+            'matrix_dates'      => $matrixDates,
+            'matrix_rows'       => $matrixRows,
+            'unfilled_days'     => $unfilledDaysList,
+            'summary'           => [
+                'total_staff'          => count($rekapStaffList),
+                'hari_kerja_total'     => $hariKerjaTotalCount,
+                'hari_kerja_elapsed'   => $hariKerjaElapsedCount,
+                'hari_libur_khusus'    => $hariLiburKhususCount,
+                'hari_minggu'          => $hariMingguCount,
+                'sesi_per_hari'        => $sesiPerHari,
+                'total_target_sesi'    => $summaryTotalTargetSesi,
+                'total_terisi_sesi'    => $summaryTotalTerisiSesi,
+                'total_kosong_sesi'    => $summaryTotalKosongSesi,
+                'total_catatan'        => $summaryTotalCatatan,
+                'avg_persentase'       => $avgPersentase,
+                'staff_baik'           => $summaryStaffLengkap,
+                'staff_sebagian'       => $summaryStaffSebagian,
+                'staff_kosong'         => $summaryStaffKosong,
+                'unfilled_days_count'  => count($unfilledDaysList),
+            ],
+        ];
+    }
 }
