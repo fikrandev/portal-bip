@@ -46,7 +46,7 @@ class AbsenSiswaController
         
         // Presensi Hari Ini
         $pkTodayParams = [$today];
-        $pkTodayCond = Auth::kelasSqlCondition('p.kelas', $pkTodayParams);
+        $pkTodayCond = Auth::kelasSqlCondition('p.kelas', $pkTodayParams) . ' AND (' . Auth::personalPegawaiSqlCondition('p.guru_id', $pkTodayParams) . ')';
         $todayStats = $db->find("
             SELECT 
                 COUNT(d.id) as total_presensi,
@@ -72,7 +72,7 @@ class AbsenSiswaController
         $monthStart = date('Y-m-01');
         $monthEnd = date('Y-m-t');
         $pkMonthParams = [$monthStart, $monthEnd];
-        $pkMonthCond = Auth::kelasSqlCondition('p.kelas', $pkMonthParams);
+        $pkMonthCond = Auth::kelasSqlCondition('p.kelas', $pkMonthParams) . ' AND (' . Auth::personalPegawaiSqlCondition('p.guru_id', $pkMonthParams) . ')';
         $monthStats = $db->find("
             SELECT 
                 COUNT(d.id) as total_presensi,
@@ -95,7 +95,7 @@ class AbsenSiswaController
             $chartDates[] = date('d M', strtotime($d));
 
             $dParams = [$d];
-            $dCond = Auth::kelasSqlCondition('p.kelas', $dParams);
+            $dCond = Auth::kelasSqlCondition('p.kelas', $dParams) . ' AND (' . Auth::personalPegawaiSqlCondition('p.guru_id', $dParams) . ')';
             $st = $db->find("
                 SELECT 
                     SUM(CASE WHEN d.status = 'H' THEN 1 ELSE 0 END) as h,
@@ -110,7 +110,7 @@ class AbsenSiswaController
 
         // Chart 2: Komparasi Kehadiran per Kelas (Top 8 Kelas)
         $kcParams = [];
-        $kcCond = Auth::kelasSqlCondition('p.kelas', $kcParams);
+        $kcCond = Auth::kelasSqlCondition('p.kelas', $kcParams) . ' AND (' . Auth::personalPegawaiSqlCondition('p.guru_id', $kcParams) . ')';
         $kelasChartRaw = $db->findAll("
             SELECT p.kelas,
                    SUM(CASE WHEN d.status = 'H' THEN 1 ELSE 0 END) as hadir,
@@ -133,7 +133,7 @@ class AbsenSiswaController
 
         // Presensi Sesi Terbaru (Recent Activities)
         $rsParams = [];
-        $rsCond = Auth::kelasSqlCondition('p.kelas', $rsParams);
+        $rsCond = Auth::kelasSqlCondition('p.kelas', $rsParams) . ' AND (' . Auth::personalPegawaiSqlCondition('p.guru_id', $rsParams) . ')';
         $recentSessions = $db->findAll("
             SELECT p.*, 
                    pg.nama as nama_guru,

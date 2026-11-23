@@ -491,6 +491,10 @@ class NilaiController
         // Matching berdasarkan unit, tahun_akademik_id, semester dari cpatp_group
         $cpatpDocs = [];
         if ($cpatpGroup) {
+            $cpDocParams = [$cpatpGroup['unit'], $cpatpGroup['tahun_akademik_id'], $cpatpGroup['semester']];
+            $cpDocPersonalCond = (class_exists('Auth') && Auth::isPersonalScope())
+                ? ' AND (' . Auth::personalPerangkatSqlCondition('p', $cpDocParams) . ')'
+                : '';
             $cpatpDocs = $db->findAll("
                 SELECT p.id, p.guru_id, p.guru_nama, p.mata_pelajaran, p.tingkat_kelas, p.judul, p.konten_json,
                        p.fase, p.status
@@ -500,17 +504,16 @@ class NilaiController
                   AND p.tahun_akademik_id = ?
                   AND p.semester = ?
                   AND p.is_active = 1
+                  {$cpDocPersonalCond}
                 ORDER BY p.guru_nama ASC, p.mata_pelajaran ASC
-            ", [$cpatpGroup['unit'], $cpatpGroup['tahun_akademik_id'], $cpatpGroup['semester']]);
+            ", $cpDocParams);
         }
 
         // Group by guru
-        $personalPid = (class_exists('Auth') && Auth::isPersonalScope()) ? Auth::personalPegawaiId() : null;
         $guruMap = [];
         foreach ($cpatpDocs as $doc) {
             $gId = (int)($doc['guru_id'] ?? 0);
             if ($gId === 0) continue;
-            if ($personalPid !== null && $gId !== $personalPid) continue;
             
             if (!isset($guruMap[$gId])) {
                 $guruMap[$gId] = [

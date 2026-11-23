@@ -251,13 +251,15 @@ class PegawaiController
 
         // Pendidikan Terakhir
         $pendidikanCounts = ['SMA/SMK' => 0, 'D3' => 0, 'S1' => 0, 'S2' => 0, 'S3' => 0];
+        $pendParams = [];
+        $pendPCond = Auth::personalPegawaiSqlCondition('p.id', $pendParams);
         $allPendidikan = $db->findAll("
             SELECT pp.jenjang, COUNT(1) as total
             FROM pegawai_pendidikan pp
             JOIN pegawai p ON pp.pegawai_id = p.id
-            WHERE p.is_active = 1
+            WHERE p.is_active = 1 AND ({$pendPCond})
             GROUP BY pp.jenjang
-        ");
+        ", $pendParams);
         foreach ($allPendidikan as $pend) {
             $j = strtoupper(trim($pend['jenjang']));
             $cnt = intval($pend['total']);
@@ -294,26 +296,30 @@ class PegawaiController
         ];
 
         // Top 5 Pegawai Berprestasi
+        $topPresParams = [];
+        $topPresPCond = Auth::personalPegawaiSqlCondition('p.id', $topPresParams);
         $topPrestasi = $db->findAll("
             SELECT p.id, p.nama, p.gelar, p.unit_tugas, p.jabatan, COUNT(pp.id) as total_prestasi
             FROM pegawai p
             JOIN pegawai_prestasi pp ON pp.pegawai_id = p.id
-            WHERE p.is_active = 1
+            WHERE p.is_active = 1 AND ({$topPresPCond})
             GROUP BY p.id
             ORDER BY total_prestasi DESC
             LIMIT 5
-        ");
+        ", $topPresParams);
 
         // Top 5 Pegawai Pelatihan
+        $topPelParams = [];
+        $topPelPCond = Auth::personalPegawaiSqlCondition('p.id', $topPelParams);
         $topPelatihan = $db->findAll("
             SELECT p.id, p.nama, p.gelar, p.unit_tugas, COUNT(pp.id) as total_pelatihan, COALESCE(SUM(pp.jumlah_jam), 0) as total_jp
             FROM pegawai p
             JOIN pegawai_pelatihan pp ON pp.pegawai_id = p.id
-            WHERE p.is_active = 1
+            WHERE p.is_active = 1 AND ({$topPelPCond})
             GROUP BY p.id
             ORDER BY total_jp DESC, total_pelatihan DESC
             LIMIT 5
-        ");
+        ", $topPelParams);
 
         // Filter Options List (respects jenjang restriction)
         $ulParams = [];
@@ -362,6 +368,10 @@ class PegawaiController
             $uCond = Auth::unitSqlCondition('unit_tugas', $params);
             if ($uCond !== '1=1') {
                 $where .= " AND ({$uCond})";
+            }
+            $pCond = Auth::personalPegawaiSqlCondition('id', $params);
+            if ($pCond !== '1=1') {
+                $where .= " AND ({$pCond})";
             }
             
             if ($search) {
@@ -1004,8 +1014,15 @@ class PegawaiController
         $search = trim($_GET['search'] ?? '');
         $memberParams = [];
         $memberCond = Auth::unitSqlCondition('mut.nama', $memberParams);
+        if (Auth::isPersonalScope()) {
+            $memberCond .= ' AND (' . Auth::personalPegawaiSqlCondition('pp.pegawai_id', $memberParams) . ')';
+        }
         $grupParams = [];
         $grupCond = Auth::penugasanGrupUnitSqlCondition('pg', $grupParams);
+        if (Auth::isPersonalScope()) {
+            $grupCond .= ' AND EXISTS (SELECT 1 FROM pegawai_penugasan _pp_p WHERE _pp_p.grup_id = pg.id AND _pp_p.pegawai_id = ?)';
+            $grupParams[] = Auth::personalPegawaiId();
+        }
 
         $where = "({$grupCond})";
         $searchParams = [];
@@ -1031,6 +1048,10 @@ class PegawaiController
 
         $agGrupParams = [];
         $agGrupCond = Auth::penugasanGrupUnitSqlCondition('pg', $agGrupParams);
+        if (Auth::isPersonalScope()) {
+            $agGrupCond .= ' AND EXISTS (SELECT 1 FROM pegawai_penugasan _pp_p2 WHERE _pp_p2.grup_id = pg.id AND _pp_p2.pegawai_id = ?)';
+            $agGrupParams[] = Auth::personalPegawaiId();
+        }
         $activeGrups = $db->findAll("
             SELECT pg.*,
                    SUM(CASE WHEN pp.id IS NOT NULL AND ({$memberCond}) THEN 1 ELSE 0 END) as total_pegawai
@@ -1255,9 +1276,9 @@ class PegawaiController
         $grup = self::findAccessiblePenugasanGrupOrRedirect($db, $id);
         if (!$grup) return;
 
-        // Ambil seluruh anggota pegawai yang ditugaskan dalam grup ini (respects jenjang restriction)
+        // Ambil seluruh anggota pegawai yang ditugaskan dalam grup ini (respects jenjang & personal restriction)
         $skParams = [$id];
-        $skUnitCond = Auth::unitSqlCondition('mut.nama', $skParams);
+        $skUnitCond = Auth::unitSqlCondition('mut.nama', $skParams) . ' AND (' . Auth::personalPegawaiSqlCondition('pp.pegawai_id', $skParams) . ')';
         $penugasan = $db->findAll("
             SELECT pp.*, 
                    p.nama AS nama_pegawai, p.niy, p.nik, p.gelar, p.foto,
@@ -1788,6 +1809,10 @@ class PegawaiController
         $dgUnitCond = Auth::unitSqlCondition('mut.nama', $params);
         if ($dgUnitCond !== '1=1') {
             $where .= " AND ({$dgUnitCond})";
+        }
+        $dgPersonalCond = Auth::personalPegawaiSqlCondition('pp.pegawai_id', $params);
+        if ($dgPersonalCond !== '1=1') {
+            $where .= " AND ({$dgPersonalCond})";
         }
 
         if ($search) {
@@ -2779,9 +2804,9 @@ class PegawaiController
             $where .= " AND (pk.is_otomatis = 0 OR pk.is_otomatis IS NULL)";
         }
 
-        // Statistik Ringkas (respects jenjang restriction)
+        // Statistik Ringkas (respects jenjang & personal restriction)
         $ksParams = [];
-        $ksCond = Auth::unitSqlCondition('unit_tugas', $ksParams);
+        $ksCond = Auth::unitSqlCondition('unit_tugas', $ksParams) . ' AND (' . Auth::personalPegawaiSqlCondition('pegawai_id', $ksParams) . ')';
         $stats = [
             'total' => $db->find("SELECT COUNT(*) as c FROM pegawai_karir WHERE ({$ksCond})", $ksParams)['c'] ?? 0,
             'aktif' => $db->find("SELECT COUNT(*) as c FROM pegawai_karir WHERE status = 'Aktif' AND ({$ksCond})", $ksParams)['c'] ?? 0,
@@ -3161,9 +3186,9 @@ class PegawaiController
             $params[] = $filterTahun;
         }
 
-        // Statistik (respects jenjang restriction)
+        // Statistik (respects jenjang & personal restriction)
         $psParams = [];
-        $psCond = Auth::unitSqlCondition('p.unit_tugas', $psParams);
+        $psCond = Auth::unitSqlCondition('p.unit_tugas', $psParams) . ' AND (' . Auth::personalPegawaiSqlCondition('pp.pegawai_id', $psParams) . ')';
         $stats = [
             'total' => $db->find("SELECT COUNT(*) as c FROM pegawai_prestasi pp JOIN pegawai p ON pp.pegawai_id = p.id WHERE ({$psCond})", $psParams)['c'] ?? 0,
             'nasional_intl' => $db->find("SELECT COUNT(*) as c FROM pegawai_prestasi pp JOIN pegawai p ON pp.pegawai_id = p.id WHERE pp.tingkat IN ('Nasional', 'Internasional') AND ({$psCond})", $psParams)['c'] ?? 0,
@@ -3523,9 +3548,9 @@ class PegawaiController
             $params[] = $filterTahun;
         }
 
-        // Statistik (respects jenjang restriction)
+        // Statistik (respects jenjang & personal restriction)
         $plsParams = [];
-        $plsCond = Auth::unitSqlCondition('p.unit_tugas', $plsParams);
+        $plsCond = Auth::unitSqlCondition('p.unit_tugas', $plsParams) . ' AND (' . Auth::personalPegawaiSqlCondition('pp.pegawai_id', $plsParams) . ')';
         $stats = [
             'total' => $db->find("SELECT COUNT(*) as c FROM pegawai_pelatihan pp JOIN pegawai p ON pp.pegawai_id = p.id WHERE ({$plsCond})", $plsParams)['c'] ?? 0,
             'total_jp' => $db->find("SELECT COALESCE(SUM(pp.jumlah_jam), 0) as s FROM pegawai_pelatihan pp JOIN pegawai p ON pp.pegawai_id = p.id WHERE ({$plsCond})", $plsParams)['s'] ?? 0,

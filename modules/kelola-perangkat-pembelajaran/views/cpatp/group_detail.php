@@ -17,7 +17,7 @@
             <a href="<?= url('kelola-perangkat-pembelajaran/cpatp') ?>" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-sm transition-colors">
                 Kembali
             </a>
-            <?php if ($can_approve || $group['created_by'] == Auth::id() || ($currentGuruId && $group['guru_id'] == $currentGuruId)): ?>
+            <?php if ($can_approve || $group['created_by'] == Auth::id() || !empty($currentGuruId)): ?>
                 <a href="<?= url('kelola-perangkat-pembelajaran/cpatp/create/' . $group['id']) ?>" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm shadow-md transition-colors flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
                     Tambah Dokumen CP ATP

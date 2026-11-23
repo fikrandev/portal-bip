@@ -6,8 +6,64 @@
 
 class UserController
 {
+    private static function ensureOtorisasiColumns(): void
+    {
+        static $checked = false;
+        if ($checked) return;
+        $checked = true;
+        try {
+            $pdo = Database::getInstance()->getConnection();
+            $col1 = $pdo->query("SHOW COLUMNS FROM `users` LIKE 'jenis_otorisasi'")->fetch();
+            if (!$col1) {
+                $pdo->exec("ALTER TABLE `users` ADD COLUMN `jenis_otorisasi` ENUM('admin', 'personal') NOT NULL DEFAULT 'admin' AFTER `allowed_jenjang`");
+            }
+            $col2 = $pdo->query("SHOW COLUMNS FROM `users` LIKE 'pegawai_id'")->fetch();
+            if (!$col2) {
+                $pdo->exec("ALTER TABLE `users` ADD COLUMN `pegawai_id` INT(11) DEFAULT NULL AFTER `id`");
+            }
+        } catch (Throwable $e) {
+            // Ignore if already exists
+        }
+    }
+
+    private static function resolvePegawaiIdForUser(?int $pegawaiId, string $fullName, string $usernameOrEmail, string $phone = ''): ?int
+    {
+        if ($pegawaiId && $pegawaiId > 0) {
+            return $pegawaiId;
+        }
+        try {
+            $db = Database::getInstance();
+            $emailTrim = trim($usernameOrEmail);
+            if ($emailTrim !== '' && strpos($emailTrim, '@') !== false) {
+                $p = $db->find("SELECT id FROM pegawai WHERE LOWER(TRIM(email)) = LOWER(?) ORDER BY is_active DESC, id ASC LIMIT 1", [$emailTrim]);
+                if ($p && !empty($p['id'])) return (int)$p['id'];
+            }
+            $nameTrim = trim($fullName);
+            $baseName = trim(explode(',', $nameTrim)[0]);
+            if ($baseName !== '') {
+                $p = $db->find(
+                    "SELECT id FROM pegawai 
+                     WHERE LOWER(TRIM(nama)) = LOWER(?) 
+                        OR LOWER(TRIM(nama)) = LOWER(?) 
+                        OR LOWER(CONCAT(TRIM(nama), ' ', COALESCE(TRIM(gelar), ''))) LIKE LOWER(?)
+                        OR LOWER(TRIM(nama)) LIKE LOWER(?)
+                     ORDER BY is_active DESC, id ASC LIMIT 1",
+                    [$nameTrim, $baseName, '%' . $nameTrim . '%', '%' . $baseName . '%']
+                );
+                if ($p && !empty($p['id'])) return (int)$p['id'];
+            }
+            $phoneTrim = trim($phone);
+            if ($phoneTrim !== '') {
+                $p = $db->find("SELECT id FROM pegawai WHERE TRIM(no_wa) = ? ORDER BY is_active DESC, id ASC LIMIT 1", [$phoneTrim]);
+                if ($p && !empty($p['id'])) return (int)$p['id'];
+            }
+        } catch (Throwable $e) {}
+        return null;
+    }
+
     public static function index(): void
     {
+        self::ensureOtorisasiColumns();
         $pageTitle = 'Kelola Pengguna';
         $breadcrumbs = [['label' => 'Kelola Pengguna']];
         
@@ -98,7 +154,14 @@ class UserController
             }
 
             $jenisOtorisasi = strtolower(trim((string)($_POST['jenis_otorisasi'] ?? 'admin'))) === 'personal' ? 'personal' : 'admin';
-            $pegawaiId = !empty($_POST['pegawai_id']) ? (int)$_POST['pegawai_id'] : null;
+            self::ensureOtorisasiColumns();
+            $rawPegawaiId = !empty($_POST['pegawai_id']) ? (int)$_POST['pegawai_id'] : null;
+            $pegawaiId = self::resolvePegawaiIdForUser(
+                $rawPegawaiId,
+                trim((string)($_POST['full_name'] ?? '')),
+                trim((string)($_POST['username'] ?? '')),
+                trim((string)($_POST['phone'] ?? ''))
+            );
 
             $insertData = [
                 'uuid'            => self::generateUUID(),
@@ -195,7 +258,14 @@ class UserController
             }
 
             $jenisOtorisasi = strtolower(trim((string)($_POST['jenis_otorisasi'] ?? 'admin'))) === 'personal' ? 'personal' : 'admin';
-            $pegawaiId = !empty($_POST['pegawai_id']) ? (int)$_POST['pegawai_id'] : (!empty($user['pegawai_id']) ? (int)$user['pegawai_id'] : null);
+            self::ensureOtorisasiColumns();
+            $rawPegawaiId = !empty($_POST['pegawai_id']) ? (int)$_POST['pegawai_id'] : (!empty($user['pegawai_id']) ? (int)$user['pegawai_id'] : null);
+            $pegawaiId = self::resolvePegawaiIdForUser(
+                $rawPegawaiId,
+                trim((string)($_POST['full_name'] ?? '')),
+                trim((string)($_POST['username'] ?? '')),
+                trim((string)($_POST['phone'] ?? ($user['phone'] ?? '')))
+            );
 
             $data = [
                 'full_name'       => trim($_POST['full_name']),

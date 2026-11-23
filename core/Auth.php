@@ -382,9 +382,16 @@ class Auth
             $pegawai = $db->find("SELECT * FROM pegawai WHERE email = ? ORDER BY is_active DESC, id ASC LIMIT 1", [$user['username']]);
         }
         if (!$pegawai && !empty($user['full_name'])) {
+            $fullNameTrim = trim((string)$user['full_name']);
+            $baseNameTrim = trim(explode(',', $fullNameTrim)[0]);
             $pegawai = $db->find(
-                "SELECT * FROM pegawai WHERE (nama = ? OR nama LIKE ?) ORDER BY is_active DESC, id ASC LIMIT 1",
-                [$user['full_name'], '%' . $user['full_name'] . '%']
+                "SELECT * FROM pegawai 
+                 WHERE LOWER(TRIM(nama)) = LOWER(?) 
+                    OR LOWER(TRIM(nama)) = LOWER(?) 
+                    OR LOWER(CONCAT(TRIM(nama), ' ', COALESCE(TRIM(gelar), ''))) LIKE LOWER(?)
+                    OR LOWER(TRIM(nama)) LIKE LOWER(?) 
+                 ORDER BY is_active DESC, id ASC LIMIT 1",
+                [$fullNameTrim, $baseNameTrim, '%' . $fullNameTrim . '%', '%' . $baseNameTrim . '%']
             );
         }
         if (!$pegawai && !empty($user['phone'])) {
@@ -410,11 +417,8 @@ class Auth
      */
     public static function getJenisOtorisasi(): string
     {
-        if (self::isSuperAdmin()) {
-            return 'admin';
-        }
         $user = self::user();
-        if ($user && isset($user['jenis_otorisasi'])) {
+        if ($user && !empty($user['jenis_otorisasi'])) {
             return strtolower(trim((string)$user['jenis_otorisasi'])) === 'personal' ? 'personal' : 'admin';
         }
         return ($_SESSION['user_jenis_otorisasi'] ?? 'admin') === 'personal' ? 'personal' : 'admin';
@@ -425,9 +429,6 @@ class Auth
      */
     public static function isPersonalScope(): bool
     {
-        if (self::isSuperAdmin()) {
-            return false;
-        }
         return self::getJenisOtorisasi() === 'personal';
     }
 
@@ -465,16 +466,39 @@ class Auth
     }
 
     /**
-     * Bangun kondisi SQL untuk membatasi dokumen berdasarkan guru_id ATAU created_by jika akun bertipe 'personal'
+     * Bangun kondisi SQL untuk membatasi dokumen berdasarkan guru_id ATAU guru_nama milik pegawai yang sedang login (mode 'personal')
      */
-    public static function personalGuruOrCreatorSqlCondition(string $guruCol, string $creatorCol, array &$params): string
+    public static function personalGuruOrCreatorSqlCondition(string $guruCol, string $creatorCol, array &$params, ?string $guruNamaCol = null): string
     {
         if (!self::isPersonalScope()) {
             return '1=1';
         }
-        $params[] = self::personalPegawaiId() ?? -1;
-        $params[] = (int)(self::id() ?? -1);
-        return "({$guruCol} = ? OR {$creatorCol} = ?)";
+        $pid = self::personalPegawaiId() ?? -1;
+        $uid = (int)(self::id() ?? -1);
+        $pegawai = self::findLinkedPegawai();
+        $rawNama = trim((string)($pegawai['nama'] ?? self::name()));
+        $baseNama = trim(explode(',', $rawNama)[0]);
+
+        if ($guruNamaCol !== null && $baseNama !== '' && !in_array(strtolower($baseNama), ['guest', 'administrator', 'super admin'], true)) {
+            $params[] = $pid;
+            $params[] = $pid;
+            $params[] = '%' . $baseNama . '%';
+            $params[] = $uid;
+            return "({$guruCol} = ? OR (({$guruCol} IS NULL OR {$guruCol} = 0 OR {$guruCol} = ?) AND LOWER(TRIM({$guruNamaCol})) LIKE LOWER(?)) OR (({$guruCol} IS NULL OR {$guruCol} = 0) AND ({$guruNamaCol} IS NULL OR TRIM({$guruNamaCol}) = '') AND {$creatorCol} = ?))";
+        }
+
+        $params[] = $pid;
+        $params[] = $uid;
+        return "({$guruCol} = ? OR (({$guruCol} IS NULL OR {$guruCol} = 0) AND {$creatorCol} = ?))";
+    }
+
+    /**
+     * Shortcut kondisi SQL untuk tabel perangkat_pembelajaran (dengan alias tabel, misal 'p' atau 'doc' atau 'perangkat_pembelajaran')
+     */
+    public static function personalPerangkatSqlCondition(string $tableAlias, array &$params): string
+    {
+        $prefix = trim($tableAlias) !== '' ? trim($tableAlias) . '.' : '';
+        return self::personalGuruOrCreatorSqlCondition($prefix . 'guru_id', $prefix . 'created_by', $params, $prefix . 'guru_nama');
     }
 
     /**

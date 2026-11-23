@@ -510,27 +510,41 @@ class JadwalController
         ];
 
         // Mode: 'kelas' atau 'guru'
-        $mode = trim($_GET['mode'] ?? 'kelas');
+        $isPersonal = class_exists('Auth') && Auth::isPersonalScope();
+        $personalPid = $isPersonal ? (int)Auth::personalPegawaiId() : 0;
+        $mode = trim($_GET['mode'] ?? ($isPersonal ? 'guru' : 'kelas'));
         $filterKelas = trim($_GET['kelas'] ?? '');
-        $filterGuru = intval($_GET['guru_id'] ?? 0);
+        $filterGuru = $isPersonal ? $personalPid : intval($_GET['guru_id'] ?? 0);
 
         // List of all classes with schedule
-        $kelasList = $db->findAll("
-            SELECT DISTINCT nama_kelas FROM jadwal_pelajaran WHERE grup_id = ? ORDER BY nama_kelas ASC
-        ", [$id]);
+        if ($isPersonal) {
+            $kelasList = $db->findAll("
+                SELECT DISTINCT nama_kelas FROM jadwal_pelajaran WHERE grup_id = ? AND pegawai_id = ? ORDER BY nama_kelas ASC
+            ", [$id, $personalPid]);
+        } else {
+            $kelasList = $db->findAll("
+                SELECT DISTINCT nama_kelas FROM jadwal_pelajaran WHERE grup_id = ? ORDER BY nama_kelas ASC
+            ", [$id]);
+        }
 
         if (empty($filterKelas) && !empty($kelasList)) {
             $filterKelas = $kelasList[0]['nama_kelas'];
         }
 
         // List of all teachers with schedule
-        $guruList = $db->findAll("
-            SELECT DISTINCT p.id, p.nama 
-            FROM jadwal_pelajaran j 
-            JOIN pegawai p ON j.pegawai_id = p.id 
-            WHERE j.grup_id = ? 
-            ORDER BY p.nama ASC
-        ", [$id]);
+        if ($isPersonal) {
+            $guruList = $db->findAll("
+                SELECT id, nama FROM pegawai WHERE id = ? ORDER BY nama ASC
+            ", [$personalPid]);
+        } else {
+            $guruList = $db->findAll("
+                SELECT DISTINCT p.id, p.nama 
+                FROM jadwal_pelajaran j 
+                JOIN pegawai p ON j.pegawai_id = p.id 
+                WHERE j.grup_id = ? 
+                ORDER BY p.nama ASC
+            ", [$id]);
+        }
 
         if (empty($filterGuru) && !empty($guruList)) {
             $filterGuru = (int)$guruList[0]['id'];

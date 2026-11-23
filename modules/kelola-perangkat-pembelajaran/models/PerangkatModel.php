@@ -335,6 +335,11 @@ class PerangkatModel
             $params[] = $filters['semester'];
         }
 
+        $isGroupOrCalendarTipe = in_array(($filters['tipe'] ?? ''), ['kaldik', 'hes', 'cpatp_group', 'prosem_group', 'prota_group', 'rpp_group'], true);
+        if (class_exists('Auth') && Auth::isPersonalScope() && !$isGroupOrCalendarTipe) {
+            unset($filters['guru_id']);
+        }
+
         if (!empty($filters['guru_id'])) {
             $where[] = 'p.guru_id = ?';
             $params[] = (int) $filters['guru_id'];
@@ -364,8 +369,11 @@ class PerangkatModel
             $where[] = '(p.created_by = ? OR p.guru_id = ?)';
             $params[] = (int) $filters['user_id'];
             $params[] = (int) $filters['user_id'];
-        } elseif (class_exists('Auth') && Auth::isPersonalScope() && !in_array(($filters['tipe'] ?? ''), ['kaldik', 'hes'], true)) {
-            $where[] = '(' . Auth::personalGuruOrCreatorSqlCondition('p.guru_id', 'p.created_by', $params) . ')';
+        } elseif (class_exists('Auth') && Auth::isPersonalScope() && !$isGroupOrCalendarTipe) {
+            if (empty($filters['tipe']) || $filters['tipe'] === 'semua') {
+                $where[] = "p.tipe IN ('heb', 'cpatp', 'prota', 'prosem', 'rpp')";
+            }
+            $where[] = '(' . Auth::personalPerangkatSqlCondition('p', $params) . ')';
         }
 
         $whereClause = implode(' AND ', $where);
@@ -441,6 +449,11 @@ class PerangkatModel
             $params[] = $filters['semester'];
         }
 
+        $isGroupOrCalendarTipe = in_array(($filters['tipe'] ?? ''), ['kaldik', 'hes', 'cpatp_group', 'prosem_group', 'prota_group', 'rpp_group'], true);
+        if (class_exists('Auth') && Auth::isPersonalScope() && !$isGroupOrCalendarTipe) {
+            unset($filters['guru_id']);
+        }
+
         if (!empty($filters['guru_id'])) {
             $where[] = 'p.guru_id = ?';
             $params[] = (int) $filters['guru_id'];
@@ -469,8 +482,11 @@ class PerangkatModel
             $where[] = '(p.created_by = ? OR p.guru_id = ?)';
             $params[] = (int) $filters['user_id'];
             $params[] = (int) $filters['user_id'];
-        } elseif (class_exists('Auth') && Auth::isPersonalScope() && !in_array(($filters['tipe'] ?? ''), ['kaldik', 'hes'], true)) {
-            $where[] = '(' . Auth::personalGuruOrCreatorSqlCondition('p.guru_id', 'p.created_by', $params) . ')';
+        } elseif (class_exists('Auth') && Auth::isPersonalScope() && !$isGroupOrCalendarTipe) {
+            if (empty($filters['tipe']) || $filters['tipe'] === 'semua') {
+                $where[] = "p.tipe IN ('heb', 'cpatp', 'prota', 'prosem', 'rpp')";
+            }
+            $where[] = '(' . Auth::personalPerangkatSqlCondition('p', $params) . ')';
         }
 
         $whereClause = implode(' AND ', $where);
@@ -655,6 +671,11 @@ class PerangkatModel
             }
         }
 
+        if (class_exists('Auth') && Auth::isPersonalScope()) {
+            $where[] = "tipe IN ('heb', 'cpatp', 'prota', 'prosem', 'rpp')";
+            $where[] = '(' . Auth::personalPerangkatSqlCondition('', $params) . ')';
+        }
+
         $whereClause = implode(' AND ', $where);
 
         $totalAll = $db->find("SELECT COUNT(*) as cnt FROM perangkat_pembelajaran WHERE {$whereClause}", $params)['cnt'] ?? 0;
@@ -741,6 +762,17 @@ class PerangkatModel
     {
         if (!class_exists('Auth') || !Auth::check()) {
             return null;
+        }
+
+        $linked = Auth::findLinkedPegawai();
+        if ($linked && !empty($linked['id'])) {
+            return [
+                'id'         => $linked['id'],
+                'nama'       => $linked['nama'] ?? '',
+                'nip'        => $linked['niy'] ?? ($linked['nik'] ?? ''),
+                'jabatan'    => $linked['jabatan'] ?? '',
+                'unit_tugas' => $linked['unit_tugas'] ?? '',
+            ];
         }
 
         $userId = Auth::id();

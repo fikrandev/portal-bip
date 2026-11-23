@@ -44,6 +44,9 @@ class PerangkatController
         $filterSemester = isset($_GET['semester']) && $_GET['semester'] !== '' ? trim($_GET['semester']) : '';
         $filterStatus = isset($_GET['status']) && $_GET['status'] !== '' ? trim($_GET['status']) : '';
         $filterGuru = isset($_GET['guru_id']) && $_GET['guru_id'] !== '' ? (int) $_GET['guru_id'] : null;
+        if (class_exists('Auth') && Auth::isPersonalScope()) {
+            $filterGuru = Auth::personalPegawaiId();
+        }
         $filterUnit = isset($_GET['unit']) && $_GET['unit'] !== '' ? trim($_GET['unit']) : '';
         $search = trim($_GET['search'] ?? '');
 
@@ -965,13 +968,17 @@ class PerangkatController
     public static function getGuruPenugasanMap(): array
     {
         $db = Database::getInstance();
+        $gpParams = [];
+        $gpPersonalCond = (class_exists('Auth') && Auth::isPersonalScope())
+            ? ' AND (' . Auth::personalPegawaiSqlCondition('m.pegawai_id', $gpParams) . ')'
+            : '';
         $penugasanRows = $db->findAll("
             SELECT m.pegawai_id, m.mata_pelajaran, m.nama_kelas, m.jumlah_jp, p.nama as nama_guru, p.gelar, p.niy
             FROM pegawai_penugasan_mengajar m
             JOIN pegawai p ON p.id = m.pegawai_id
-            WHERE m.nama_kelas IS NOT NULL AND m.nama_kelas != ''
+            WHERE m.nama_kelas IS NOT NULL AND m.nama_kelas != ''{$gpPersonalCond}
             ORDER BY p.nama ASC, m.nama_kelas ASC, m.mata_pelajaran ASC
-        ");
+        ", $gpParams);
 
         $guruPenugasanMap = [];
         foreach ($penugasanRows as $r) {
@@ -1200,7 +1207,9 @@ class PerangkatController
         $offset = ($page - 1) * $limit;
 
         $currentGuruId = null;
-        if (class_exists('Auth') && !Auth::isSuperAdmin()) {
+        if (class_exists('Auth') && Auth::isPersonalScope()) {
+            $currentGuruId = Auth::personalPegawaiId();
+        } elseif (class_exists('Auth') && !Auth::isSuperAdmin()) {
             $userPegawai = Database::getInstance()->find("SELECT id FROM pegawai WHERE email = ? OR nama = ?", [Auth::user()['email'] ?? '', Auth::name() ?? '']);
             if ($userPegawai) {
                 $currentGuruId = (int)$userPegawai['id'];
@@ -1253,7 +1262,9 @@ class PerangkatController
         $guruPenugasanMap = self::getGuruPenugasanMap();
 
         $currentGuruId = null;
-        if (class_exists('Auth') && !Auth::isSuperAdmin()) {
+        if (class_exists('Auth') && Auth::isPersonalScope()) {
+            $currentGuruId = Auth::personalPegawaiId();
+        } elseif (class_exists('Auth') && !Auth::isSuperAdmin()) {
             $userPegawai = Database::getInstance()->find("SELECT id FROM pegawai WHERE email = ? OR nama = ?", [Auth::user()['email'] ?? '', Auth::name() ?? '']);
             if ($userPegawai) {
                 $currentGuruId = (int)$userPegawai['id'];
@@ -1567,11 +1578,15 @@ class PerangkatController
 
         $db = Database::getInstance();
         foreach ($items as &$it) {
+            $dcParams = [$it['unit'], $it['tahun_akademik_id']];
+            $dcPersonalCond = (class_exists('Auth') && Auth::isPersonalScope())
+                ? ' AND (' . Auth::personalPerangkatSqlCondition('p', $dcParams) . ')'
+                : '';
             $docCountRow = $db->find("
                 SELECT COUNT(*) as doc_count 
-                FROM perangkat_pembelajaran 
-                WHERE tipe = 'prota' AND unit = ? AND tahun_akademik_id = ?
-            ", [$it['unit'], $it['tahun_akademik_id']]);
+                FROM perangkat_pembelajaran p
+                WHERE p.tipe = 'prota' AND p.unit = ? AND p.tahun_akademik_id = ?{$dcPersonalCond}
+            ", $dcParams);
             $it['doc_count'] = (int)($docCountRow['doc_count'] ?? 0);
         }
         unset($it);
@@ -1691,7 +1706,9 @@ class PerangkatController
         $offset = ($page - 1) * $limit;
 
         $currentGuruId = null;
-        if (class_exists('Auth') && !Auth::isSuperAdmin()) {
+        if (class_exists('Auth') && Auth::isPersonalScope()) {
+            $currentGuruId = Auth::personalPegawaiId();
+        } elseif (class_exists('Auth') && !Auth::isSuperAdmin()) {
             $userPegawai = Database::getInstance()->find("SELECT id FROM pegawai WHERE email = ? OR nama = ?", [Auth::user()['email'] ?? '', Auth::name() ?? '']);
             if ($userPegawai) {
                 $currentGuruId = (int)$userPegawai['id'];
@@ -2261,11 +2278,15 @@ class PerangkatController
 
         $unitProfile = self::getUnitProfile($group['unit'] ?? 'SD');
         $db = Database::getInstance();
+        $csParams = [$group['unit'], $group['tahun_akademik_id']];
+        $csPersonalCond = (class_exists('Auth') && Auth::isPersonalScope())
+            ? ' AND (' . Auth::personalPerangkatSqlCondition('p', $csParams) . ')'
+            : '';
         $items = $db->findAll("
-            SELECT * FROM perangkat_pembelajaran 
-            WHERE tipe = 'prota' AND unit = ? AND tahun_akademik_id = ?
-            ORDER BY mata_pelajaran ASC, tingkat_kelas ASC, guru_nama ASC
-        ", [$group['unit'], $group['tahun_akademik_id']]);
+            SELECT p.* FROM perangkat_pembelajaran p
+            WHERE p.tipe = 'prota' AND p.unit = ? AND p.tahun_akademik_id = ?{$csPersonalCond}
+            ORDER BY p.mata_pelajaran ASC, p.tingkat_kelas ASC, p.guru_nama ASC
+        ", $csParams);
 
         include BASE_PATH . '/modules/kelola-perangkat-pembelajaran/views/prota/cetak_semua.php';
         exit;
@@ -2409,7 +2430,9 @@ class PerangkatController
         $offset = ($page - 1) * $limit;
 
         $currentGuruId = null;
-        if (class_exists('Auth') && !Auth::isSuperAdmin()) {
+        if (class_exists('Auth') && Auth::isPersonalScope()) {
+            $currentGuruId = Auth::personalPegawaiId();
+        } elseif (class_exists('Auth') && !Auth::isSuperAdmin()) {
             $userPegawai = Database::getInstance()->find("SELECT id FROM pegawai WHERE email = ? OR nama = ?", [Auth::user()['email'] ?? '', Auth::name() ?? '']);
             if ($userPegawai) {
                 $currentGuruId = (int)$userPegawai['id'];
@@ -2957,13 +2980,17 @@ class PerangkatController
         }
 
         $db = Database::getInstance();
+        $csParams = [$group['unit'], $group['tahun_akademik_id'], $group['semester']];
+        $csPersonalCond = (class_exists('Auth') && Auth::isPersonalScope())
+            ? ' AND (' . Auth::personalPerangkatSqlCondition('p', $csParams) . ')'
+            : '';
         $items = $db->findAll("
             SELECT p.*, ta.nama_tahun 
             FROM perangkat_pembelajaran p
             JOIN tahun_akademik ta ON ta.id = p.tahun_akademik_id
-            WHERE p.tipe = 'prosem' AND p.unit = ? AND p.tahun_akademik_id = ? AND p.semester = ?
+            WHERE p.tipe = 'prosem' AND p.unit = ? AND p.tahun_akademik_id = ? AND p.semester = ?{$csPersonalCond}
             ORDER BY p.mata_pelajaran ASC, p.tingkat_kelas ASC
-        ", [$group['unit'], $group['tahun_akademik_id'], $group['semester']]);
+        ", $csParams);
 
         $unitProfile = self::getUnitProfile($group['unit']);
         include BASE_PATH . '/modules/kelola-perangkat-pembelajaran/views/prosem/cetak_semua.php';
@@ -3027,12 +3054,17 @@ class PerangkatController
         $total = (int) ($countRow['total'] ?? 0);
         $totalPages = max(1, ceil($total / $limit));
 
+        $docSubParams = [];
+        $docPersonalCond = (class_exists('Auth') && Auth::isPersonalScope())
+            ? ' AND (' . Auth::personalPerangkatSqlCondition('doc', $docSubParams) . ')'
+            : '';
         $sql = "
             SELECT p.*, ta.nama_tahun,
                    (SELECT COUNT(*) FROM perangkat_pembelajaran doc 
                     WHERE doc.tipe = 'rpp' 
                       AND (doc.konten_json LIKE CONCAT('%\"rpp_group_id\":', p.id, '%') 
                            OR (doc.unit = p.unit AND doc.tahun_akademik_id = p.tahun_akademik_id AND doc.semester = p.semester))
+                      {$docPersonalCond}
                    ) as doc_count
             FROM perangkat_pembelajaran p
             LEFT JOIN tahun_akademik ta ON ta.id = p.tahun_akademik_id
@@ -3040,7 +3072,7 @@ class PerangkatController
             ORDER BY p.id DESC
             LIMIT {$limit} OFFSET {$offset}
         ";
-        $items = $db->findAll($sql, $params);
+        $items = $db->findAll($sql, array_merge($docSubParams, $params));
 
         self::view('rpp/index', array_merge($filters, [
             'items' => $items,
@@ -3184,14 +3216,19 @@ class PerangkatController
         }
 
         $db = Database::getInstance();
+        $rppParams = ['%"rpp_group_id":' . $id . '%', $group['unit'], $group['tahun_akademik_id'], $group['semester']];
+        $rppPersonalCond = (class_exists('Auth') && Auth::isPersonalScope())
+            ? ' AND (' . Auth::personalPerangkatSqlCondition('p', $rppParams) . ')'
+            : '';
         $items = $db->findAll("
             SELECT p.*, ta.nama_tahun 
             FROM perangkat_pembelajaran p
             LEFT JOIN tahun_akademik ta ON ta.id = p.tahun_akademik_id
             WHERE p.tipe = 'rpp' 
               AND (p.konten_json LIKE ? OR (p.unit = ? AND p.tahun_akademik_id = ? AND p.semester = ?))
+              {$rppPersonalCond}
             ORDER BY p.guru_nama ASC, p.mata_pelajaran ASC, p.id ASC
-        ", ['%"rpp_group_id":' . $id . '%', $group['unit'], $group['tahun_akademik_id'], $group['semester']]);
+        ", $rppParams);
 
         $filters = self::getCommonFilters();
         self::view('rpp/group_detail', array_merge($filters, [
@@ -3254,12 +3291,17 @@ class PerangkatController
         $cpatpGroup = PerangkatModel::getById($cpatpGroupId);
         if (!$cpatpGroup) return 0;
 
+        $cpatpGenParams = ['%"cpatp_group_id":' . $cpatpGroupId . '%', $cpatpGroup['unit'], $cpatpGroup['tahun_akademik_id'], $cpatpGroup['semester']];
+        $cpatpGenPersonalCond = (class_exists('Auth') && Auth::isPersonalScope())
+            ? ' AND (' . Auth::personalPerangkatSqlCondition('p', $cpatpGenParams) . ')'
+            : '';
         $cpatpDocs = $db->findAll("
-            SELECT * FROM perangkat_pembelajaran 
-            WHERE tipe = 'cpatp' 
-              AND (konten_json LIKE ? OR (unit = ? AND tahun_akademik_id = ? AND semester = ?))
-            ORDER BY mata_pelajaran ASC, tingkat_kelas ASC
-        ", ['%"cpatp_group_id":' . $cpatpGroupId . '%', $cpatpGroup['unit'], $cpatpGroup['tahun_akademik_id'], $cpatpGroup['semester']]);
+            SELECT p.* FROM perangkat_pembelajaran p
+            WHERE p.tipe = 'cpatp' 
+              AND (p.konten_json LIKE ? OR (p.unit = ? AND p.tahun_akademik_id = ? AND p.semester = ?))
+              {$cpatpGenPersonalCond}
+            ORDER BY p.mata_pelajaran ASC, p.tingkat_kelas ASC
+        ", $cpatpGenParams);
 
         $generatedCount = 0;
 
@@ -3831,6 +3873,10 @@ class PerangkatController
         }
 
         $db = Database::getInstance();
+        $csRppParams = ['%"rpp_group_id":' . $id . '%', $group['unit'], $group['tahun_akademik_id'], $group['semester']];
+        $csRppPersonalCond = (class_exists('Auth') && Auth::isPersonalScope())
+            ? ' AND (' . Auth::personalPerangkatSqlCondition('p', $csRppParams) . ')'
+            : '';
         $items = $db->findAll("
             SELECT p.*, ta.nama_tahun, u.full_name AS approver_name
             FROM perangkat_pembelajaran p
@@ -3838,8 +3884,9 @@ class PerangkatController
             LEFT JOIN users u ON p.approved_by = u.id
             WHERE p.tipe = 'rpp' 
               AND (p.konten_json LIKE ? OR (p.unit = ? AND p.tahun_akademik_id = ? AND p.semester = ?))
+              {$csRppPersonalCond}
             ORDER BY p.guru_nama ASC, p.mata_pelajaran ASC, p.id ASC
-        ", ['%"rpp_group_id":' . $id . '%', $group['unit'], $group['tahun_akademik_id'], $group['semester']]);
+        ", $csRppParams);
 
         $unitProfile = self::getUnitProfile($group['unit'] ?? 'SD');
 
@@ -4033,27 +4080,33 @@ class PerangkatController
         $selectedSemester = $_GET['semester'] ?? 'Ganjil';
 
         // Ambil daftar guru dari tabel pegawai yang memiliki penugasan / ada di unit
-        $guruList = $db->findAll("
-            SELECT DISTINCT p.id, p.nama, p.gelar 
-            FROM pegawai p
-            JOIN pegawai_penugasan_mengajar m ON m.pegawai_id = p.id
-            ORDER BY p.nama ASC
-        ");
-        if (empty($guruList)) {
-            $guruList = $db->findAll("SELECT id, nama, gelar FROM pegawai WHERE is_active = 1 ORDER BY nama ASC");
-        }
-
-        $selectedGuruId = !empty($_GET['guru_id']) ? (int)$_GET['guru_id'] : 0;
-        
-        // Auto-select guru jika login sebagai guru
-        if (!$selectedGuruId && class_exists('Auth') && !Auth::isSuperAdmin()) {
-            $userPegawai = $db->find("SELECT id FROM pegawai WHERE email = ? OR nama = ?", [Auth::user()['email'] ?? '', Auth::name() ?? '']);
-            if ($userPegawai) {
-                $selectedGuruId = (int)$userPegawai['id'];
+        if (class_exists('Auth') && Auth::isPersonalScope()) {
+            $personalPid = (int)Auth::personalPegawaiId();
+            $guruList = $db->findAll("SELECT id, nama, gelar FROM pegawai WHERE id = ? ORDER BY nama ASC", [$personalPid]);
+            $selectedGuruId = $personalPid;
+        } else {
+            $guruList = $db->findAll("
+                SELECT DISTINCT p.id, p.nama, p.gelar 
+                FROM pegawai p
+                JOIN pegawai_penugasan_mengajar m ON m.pegawai_id = p.id
+                ORDER BY p.nama ASC
+            ");
+            if (empty($guruList)) {
+                $guruList = $db->findAll("SELECT id, nama, gelar FROM pegawai WHERE is_active = 1 ORDER BY nama ASC");
             }
-        }
-        if (!$selectedGuruId && !empty($guruList)) {
-            $selectedGuruId = (int)$guruList[0]['id'];
+
+            $selectedGuruId = !empty($_GET['guru_id']) ? (int)$_GET['guru_id'] : 0;
+            
+            // Auto-select guru jika login sebagai guru
+            if (!$selectedGuruId && class_exists('Auth') && !Auth::isSuperAdmin()) {
+                $userPegawai = $db->find("SELECT id FROM pegawai WHERE email = ? OR nama = ?", [Auth::user()['email'] ?? '', Auth::name() ?? '']);
+                if ($userPegawai) {
+                    $selectedGuruId = (int)$userPegawai['id'];
+                }
+            }
+            if (!$selectedGuruId && !empty($guruList)) {
+                $selectedGuruId = (int)$guruList[0]['id'];
+            }
         }
 
         // Ambil daftar penugasan lengkap guru (kelas + mapel)
@@ -4152,7 +4205,7 @@ class PerangkatController
         $unit = $_GET['unit'] ?? 'SD';
         $tahunAjaran = $_GET['tahun_ajaran'] ?? '2026/2027';
         $semester = $_GET['semester'] ?? 'Ganjil';
-        $guruId = (int)($_GET['guru_id'] ?? 0);
+        $guruId = (class_exists('Auth') && Auth::isPersonalScope()) ? (int)Auth::personalPegawaiId() : (int)($_GET['guru_id'] ?? 0);
         $kelas = $_GET['kelas'] ?? '';
         $mapel = $_GET['mapel'] ?? '';
 
