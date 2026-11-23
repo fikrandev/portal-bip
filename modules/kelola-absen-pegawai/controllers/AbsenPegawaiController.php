@@ -27,7 +27,7 @@ class AbsenPegawaiController
         AbsenPegawaiModel::init();
 
         $activeTab = $_GET['tab'] ?? 'dashboard';
-        $allowedTabs = ['dashboard', 'pegawai', 'rekap', 'unit', 'pengaturan'];
+        $allowedTabs = ['dashboard', 'pegawai', 'rekap', 'unit', 'pengaturan', 'libur'];
         if (!in_array($activeTab, $allowedTabs, true)) {
             $activeTab = 'dashboard';
         }
@@ -49,6 +49,10 @@ class AbsenPegawaiController
         ];
 
         $targetDate = trim($_GET['tanggal'] ?? date('Y-m-d'));
+        $rawLiburTahun = trim((string)($_GET['libur_tahun'] ?? ''));
+        $liburTahun = ($rawLiburTahun === 'all')
+            ? null
+            : ($rawLiburTahun !== '' ? (int)$rawLiburTahun : (int)date('Y'));
 
         // Load data scoped to user unit
         $dashboardData = AbsenPegawaiModel::getDashboardData($targetDate, $filters['unit_tugas']);
@@ -62,6 +66,7 @@ class AbsenPegawaiController
         $pegawaiList = AbsenPegawaiModel::getAllPegawaiLokasi($filters);
         $allPegawaiDropdown = AbsenPegawaiModel::getAllPegawaiLokasi([]);
         $unitLokasiList = AbsenPegawaiModel::getAllUnitLokasi();
+        $liburList = AbsenPegawaiModel::getLiburList($liburTahun);
 
         $pageTitle = 'Kelola Absen Pegawai';
         $breadcrumbs = [
@@ -71,6 +76,7 @@ class AbsenPegawaiController
                 'rekap'      => 'Data Absen & Rekap PDF',
                 'unit'       => 'Lokasi Custom Per Unit',
                 'pengaturan' => 'Radius Global & Jam Masuk',
+                'libur'      => 'Pengaturan Hari Libur',
                 default      => 'Lokasi Absen Per Pegawai'
             }]
         ];
@@ -624,6 +630,62 @@ class AbsenPegawaiController
             }
         } catch (\Throwable $e) {
             Response::redirect($redirectUrl, 'Terjadi kesalahan: ' . $e->getMessage(), 'error');
+        }
+    }
+
+    /**
+     * Simpan Pengaturan Hari Libur (Tanggal tunggal atau rentang tanggal, Minggu otomatis dilewati)
+     */
+    public static function saveLibur(): void
+    {
+        CSRF::validate();
+        $redirectUrl = url('kelola-absen-pegawai?tab=libur');
+
+        try {
+            $tanggalMulai = trim((string)($_POST['tanggal_mulai'] ?? ''));
+            $tanggalSelesai = trim((string)($_POST['tanggal_selesai'] ?? ''));
+            $namaLibur = trim((string)($_POST['nama_libur'] ?? ''));
+            $jenis = trim((string)($_POST['jenis'] ?? 'nasional'));
+            $keterangan = trim((string)($_POST['keterangan'] ?? ''));
+
+            $res = AbsenPegawaiModel::saveLibur(
+                $tanggalMulai,
+                $tanggalSelesai !== '' ? $tanggalSelesai : null,
+                $namaLibur,
+                $jenis,
+                $keterangan !== '' ? $keterangan : null,
+                Auth::id()
+            );
+
+            $msg = "Hari libur \"{$namaLibur}\" berhasil disimpan ({$res['saved']} tanggal).";
+            if (!empty($res['skipped_sunday'])) {
+                $msg .= " {$res['skipped_sunday']} hari Minggu otomatis dilewati karena sudah libur rutin.";
+            }
+            $msg .= ' Sinkron otomatis ke Absen Pegawai & Jurnal Staff.';
+
+            Response::redirect($redirectUrl, $msg, 'success');
+        } catch (Throwable $e) {
+            Response::redirect($redirectUrl, $e->getMessage(), 'error');
+        }
+    }
+
+    /**
+     * Hapus Entri Hari Libur
+     */
+    public static function deleteLibur(): void
+    {
+        CSRF::validate();
+        $redirectUrl = url('kelola-absen-pegawai?tab=libur');
+
+        try {
+            $id = (int)($_POST['id'] ?? 0);
+            if ($id <= 0) {
+                throw new Exception('ID hari libur tidak valid.');
+            }
+            AbsenPegawaiModel::deleteLibur($id);
+            Response::redirect($redirectUrl, 'Hari libur berhasil dihapus. Rekap absen & jurnal staff otomatis menyesuaikan.', 'success');
+        } catch (Throwable $e) {
+            Response::redirect($redirectUrl, $e->getMessage(), 'error');
         }
     }
 }

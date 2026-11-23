@@ -87,6 +87,9 @@ $pEnd = $endDate ?? date('Y-m-d');
                 </div>
                 <p class="text-[11px] text-primary-100 mt-0.5">
                     Total <strong><?= (int)($summary['total_hadir'] ?? 0) ?></strong> hadir dari <strong><?= (int)($summary['total_hari_kerja'] ?? 0) ?></strong> hari kerja
+                    <?php if (!empty($summary['total_libur'])): ?>
+                        &bull; (<?= (int)$summary['total_libur'] ?> hari libur dikecualikan)
+                    <?php endif; ?>
                 </p>
             </div>
             <div class="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-2xl shadow-inner">
@@ -261,20 +264,25 @@ $pEnd = $endDate ?? date('Y-m-d');
                     'Hadir' => 'emerald',
                     'Terlambat' => 'amber',
                     'Tidak Absen' => 'rose',
+                    'Libur' => 'sky',
                     default => 'indigo'
                 };
             ?>
             <div class="flex items-center justify-between p-3 rounded-2xl bg-white border border-slate-100 shadow-xs">
                 <div class="flex items-center gap-2.5">
                     <div class="w-8 h-8 rounded-xl bg-<?= $badgeColor ?>-100 text-<?= $badgeColor ?>-700 flex items-center justify-center font-bold text-xs shrink-0">
-                        <?= substr($log['hari'] ?? 'S', 0, 1) ?>
+                        <?= ($log['status'] ?? '') === 'Libur' ? '🏖️' : substr($log['hari'] ?? 'S', 0, 1) ?>
                     </div>
                     <div>
                         <p class="text-xs font-bold text-slate-800">
                             <?= e($log['hari'] ?? '') ?>, <?= date('d M Y', strtotime($log['tanggal'])) ?>
                         </p>
                         <p class="text-[10px] text-slate-400">
-                            Masuk: <strong><?= e($log['jam_masuk']) ?></strong> &bull; Pulang: <?= e($log['jam_pulang']) ?>
+                            <?php if (($log['status'] ?? '') === 'Libur'): ?>
+                                <?= e($log['keterangan'] ?? 'Hari Libur') ?>
+                            <?php else: ?>
+                                Masuk: <strong><?= e($log['jam_masuk']) ?></strong> &bull; Pulang: <?= e($log['jam_pulang']) ?>
+                            <?php endif; ?>
                         </p>
                     </div>
                 </div>

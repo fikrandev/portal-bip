@@ -9,6 +9,9 @@
  * - Mendukung pilihan tugas custom / input manual jika tugas belum terdaftar
  * - Rekap progres pengisian harian dan riwayat jurnal sebelumnya
  */
+$isHoliday = !empty($isHoliday);
+$canFill = isset($canFill) ? (bool)$canFill : ($isToday && !$isHoliday);
+$totalLiburPeriode = (int)($totalLiburPeriode ?? 0);
 ?>
 
 <!-- Header with Back Button -->
@@ -84,14 +87,25 @@
                     <span class="text-base">📅</span>
                     <div class="min-w-0">
                         <p class="text-[9px] text-primary-200 font-semibold leading-tight">Hari Kerja Aktif</p>
-                        <p class="font-extrabold text-white truncate"><?= $hariTerisiPeriode ?> / <?= $totalHariKerjaPeriode ?> Hari</p>
+                        <p class="font-extrabold text-white truncate">
+                            <?php if ($totalHariKerjaPeriode > 0): ?>
+                                <?= $hariTerisiPeriode ?> / <?= $totalHariKerjaPeriode ?> Hari
+                            <?php else: ?>
+                                Hari Libur
+                            <?php endif; ?>
+                        </p>
+                        <?php if ($totalLiburPeriode > 0): ?>
+                            <p class="text-[8.5px] text-primary-200/90 truncate">(<?= $totalLiburPeriode ?> hari libur dikecualikan)</p>
+                        <?php endif; ?>
                     </div>
                 </div>
                 <div class="bg-white/10 rounded-xl p-2 flex items-center gap-2">
                     <span class="text-base">🎯</span>
                     <div class="min-w-0">
                         <p class="text-[9px] text-primary-200 font-semibold leading-tight">Status Periode</p>
-                        <p class="font-extrabold text-white truncate"><?= $persenJurnalPeriode >= 100 ? 'Sempurna' : ($persenJurnalPeriode >= 80 ? 'Optimal' : 'Perlu Diisi') ?></p>
+                        <p class="font-extrabold text-white truncate">
+                            <?= $totalHariKerjaPeriode === 0 ? 'Libur' : ($persenJurnalPeriode >= 100 ? 'Sempurna' : ($persenJurnalPeriode >= 80 ? 'Optimal' : 'Perlu Diisi')) ?>
+                        </p>
                     </div>
                 </div>
             </div>
@@ -113,7 +127,11 @@
                             echo e($namaHari . ', ' . date('d M Y', $ts));
                         ?>
                     </span>
-                    <?php if ($isToday): ?>
+                    <?php if ($isHoliday): ?>
+                        <span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-sky-100 text-sky-800 border border-sky-200 shrink-0">
+                            🏖️ <?= (!empty($liburInfo['is_sunday']) && empty($liburInfo['is_custom_libur'])) ? 'Hari Minggu (Libur)' : 'Libur: ' . e($liburInfo['nama_libur'] ?? 'Hari Libur') ?>
+                        </span>
+                    <?php elseif ($isToday): ?>
                         <span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 shrink-0">🟢 Hari Ini (Bisa Diisi)</span>
                     <?php elseif ($isPastDate): ?>
                         <span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-800 border border-amber-200 shrink-0">🔒 Tanggal Lampau (Terkunci)</span>
@@ -147,27 +165,36 @@
             </div>
         </div>
 
-        <?php if (!$isToday): ?>
-            <div class="p-2.5 rounded-2xl bg-amber-50/90 border border-amber-200 text-amber-900 text-xs flex items-start gap-2">
-                <span class="text-sm shrink-0">🔒</span>
+        <?php if ($isHoliday): ?>
+            <div class="p-3 rounded-2xl bg-sky-50/90 border border-sky-200 text-sky-900 text-xs flex items-start gap-2.5">
+                <span class="text-base shrink-0">🏖️</span>
                 <p class="text-[11px] leading-relaxed">
-                    <strong>Perhatian:</strong> Pengisian dan pengeditan jurnal kerja hanya diizinkan pada <strong>Hari Ini</strong>. Jurnal tanggal lampau tidak dapat diubah (hanya dapat dilihat rinciannya).
+                    <strong><?= e($liburInfo['nama_libur'] ?? 'Hari Libur') ?>:</strong> Tidak ada pengisian jurnal kerja pada tanggal ini dan tidak mengurangi perhitungan persentase ketuntasan periode.
                 </p>
             </div>
-        <?php endif; ?>
+        <?php else: ?>
+            <?php if (!$isToday): ?>
+                <div class="p-2.5 rounded-2xl bg-amber-50/90 border border-amber-200 text-amber-900 text-xs flex items-start gap-2">
+                    <span class="text-sm shrink-0">🔒</span>
+                    <p class="text-[11px] leading-relaxed">
+                        <strong>Perhatian:</strong> Pengisian dan pengeditan jurnal kerja hanya diizinkan pada <strong>Hari Ini</strong>. Jurnal tanggal lampau tidak dapat diubah (hanya dapat dilihat rinciannya).
+                    </p>
+                </div>
+            <?php endif; ?>
 
-        <!-- Progress Bar Pengisian Harian -->
-        <div class="bg-slate-50 rounded-2xl p-2.5 border border-slate-100 space-y-1.5">
-            <div class="flex items-center justify-between text-xs gap-1.5 flex-wrap">
-                <span class="font-medium text-slate-500 text-[10.5px]">Sesi Pada Tanggal Ini:</span>
-                <span class="font-black text-[11px] <?= $totalTerisi === $totalSesi && $totalSesi > 0 ? 'text-emerald-700' : 'text-slate-800' ?>">
-                    <?= $totalTerisi ?> / <?= $totalSesi ?> Sesi Terisi (<?= $persenTerisi ?>%)
-                </span>
+            <!-- Progress Bar Pengisian Harian -->
+            <div class="bg-slate-50 rounded-2xl p-2.5 border border-slate-100 space-y-1.5">
+                <div class="flex items-center justify-between text-xs gap-1.5 flex-wrap">
+                    <span class="font-medium text-slate-500 text-[10.5px]">Sesi Pada Tanggal Ini:</span>
+                    <span class="font-black text-[11px] <?= $totalTerisi === $totalSesi && $totalSesi > 0 ? 'text-emerald-700' : 'text-slate-800' ?>">
+                        <?= $totalTerisi ?> / <?= $totalSesi ?> Sesi Terisi (<?= $persenTerisi ?>%)
+                    </span>
+                </div>
+                <div class="w-full h-2 rounded-full bg-slate-200 overflow-hidden">
+                    <div class="h-full rounded-full <?= $persenTerisi >= 100 ? 'bg-emerald-500' : 'bg-primary-600' ?> transition-all duration-500" style="width: <?= min(100, $persenTerisi) ?>%"></div>
+                </div>
             </div>
-            <div class="w-full h-2 rounded-full bg-slate-200 overflow-hidden">
-                <div class="h-full rounded-full <?= $persenTerisi >= 100 ? 'bg-emerald-500' : 'bg-primary-600' ?> transition-all duration-500" style="width: <?= min(100, $persenTerisi) ?>%"></div>
-            </div>
-        </div>
+        <?php endif; ?>
     </div>
 
     <!-- 2. Tab Switcher: Sesi Jam vs Riwayat Jurnal -->
@@ -192,17 +219,23 @@
                 <span class="text-[11px] font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1">
                     <span>Pilih Jam Kerja:</span>
                 </span>
-                <p class="text-[10px] text-slate-400 font-medium"><?= $isToday ? 'Bisa klik beberapa jam sekaligus' : 'Mode Terkunci (Hanya Lihat Rincian)' ?></p>
+                <p class="text-[10px] text-slate-400 font-medium">
+                    <?= $isHoliday ? 'Tanggal Libur (Tidak Ada Pengisian)' : ($canFill ? 'Bisa klik beberapa jam sekaligus' : 'Mode Terkunci (Hanya Lihat Rincian)') ?>
+                </p>
             </div>
             
             <div class="flex items-center gap-1 text-[10px]">
-                <?php if ($isToday): ?>
+                <?php if ($canFill): ?>
                     <button type="button" onclick="selectAllJam()" class="px-2.5 py-1 rounded-xl bg-primary-50 text-primary-700 font-bold hover:bg-primary-100 transition-all press-bounce border border-primary-100">
                         Pilih Semua
                     </button>
                     <button type="button" onclick="clearSelectedJam()" class="px-2.5 py-1 rounded-xl bg-slate-100 text-slate-600 font-bold hover:bg-slate-200 transition-all press-bounce border border-slate-200">
                         Reset
                     </button>
+                <?php elseif ($isHoliday): ?>
+                    <span class="px-2.5 py-1 rounded-xl bg-sky-50 text-sky-700 border border-sky-200 font-bold text-[9.5px] flex items-center gap-1">
+                        <span>🏖️</span> Libur
+                    </span>
                 <?php else: ?>
                     <span class="px-2.5 py-1 rounded-xl bg-amber-50 text-amber-800 border border-amber-200 font-bold text-[9.5px] flex items-center gap-1">
                         <span>🔒</span> Terkunci
@@ -211,7 +244,38 @@
             </div>
         </div>
 
-        <?php if (!empty($jamList)): ?>
+        <?php if ($isHoliday): ?>
+            <div class="bg-white rounded-3xl p-6 text-center space-y-3 border border-sky-100 shadow-xs">
+                <div class="w-14 h-14 rounded-2xl bg-sky-50 border border-sky-200 flex items-center justify-center mx-auto text-3xl">
+                    🏖️
+                </div>
+                <div class="space-y-1">
+                    <h4 class="font-extrabold text-slate-800 text-sm">
+                        <?= (!empty($liburInfo['is_sunday']) && empty($liburInfo['is_custom_libur'])) ? 'Hari Minggu — Libur Rutin' : 'Hari Libur: ' . e($liburInfo['nama_libur'] ?? 'Hari Libur') ?>
+                    </h4>
+                    <p class="text-xs text-slate-500 max-w-xs mx-auto leading-relaxed">
+                        Tidak ada pengisian jurnal kerja pada tanggal ini. Hari libur otomatis dikecualikan agar perhitungan persentase ketuntasan jurnal tetap akurat.
+                    </p>
+                    <?php if (!empty($liburInfo['keterangan']) && !empty($liburInfo['is_custom_libur'])): ?>
+                        <p class="text-[11px] text-sky-700 font-semibold pt-1">
+                            Catatan: <?= e($liburInfo['keterangan']) ?>
+                        </p>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <?php if (!empty($journalsOnDate)): ?>
+                <div class="bg-white rounded-2xl p-3.5 border border-slate-200/80 space-y-2">
+                    <p class="text-[11px] font-bold text-slate-600">Catatan Tersimpan di Tanggal Ini:</p>
+                    <?php foreach ($journalsOnDate as $jo): ?>
+                        <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-100 text-[11px]">
+                            <div class="font-bold text-slate-800"><?= e($jo['jam_rentang']) ?> &bull; <?= e($jo['aktivitas']) ?></div>
+                            <div class="text-slate-500 mt-0.5"><?= e($jo['uraian_hasil']) ?></div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+        <?php elseif (!empty($jamList)): ?>
             <div class="grid grid-cols-3 gap-2 sm:gap-2.5 max-w-full min-w-0" id="grid-jam-staff">
                 <?php foreach ($jamList as $idx => $jam): ?>
                     <?php
@@ -241,8 +305,8 @@
                     ?>
                     
                     <div id="card-jam-<?= $jamId ?>"
-                         onclick="<?= $isToday ? 'toggleSelectJam(' . $jamId . ')' : ($isFilled ? 'openStaffReadOnlyFromCard(' . $jamId . ')' : 'showStaffLockedNotice()') ?>"
-                         class="staff-jam-card group relative rounded-2xl p-2 sm:p-2.5 border transition-all duration-200 cursor-pointer flex flex-col justify-between select-none press-bounce min-w-0 overflow-hidden <?= $isFilled ? 'border-emerald-200 bg-emerald-50/25 hover:border-emerald-300' : 'border-slate-200/90 bg-white hover:border-primary-300 shadow-2xs' ?> <?= !$isToday ? 'opacity-90' : '' ?>"
+                         onclick="<?= $canFill ? 'toggleSelectJam(' . $jamId . ')' : ($isFilled ? 'openStaffReadOnlyFromCard(' . $jamId . ')' : 'showStaffLockedNotice()') ?>"
+                         class="staff-jam-card group relative rounded-2xl p-2 sm:p-2.5 border transition-all duration-200 cursor-pointer flex flex-col justify-between select-none press-bounce min-w-0 overflow-hidden <?= $isFilled ? 'border-emerald-200 bg-emerald-50/25 hover:border-emerald-300' : 'border-slate-200/90 bg-white hover:border-primary-300 shadow-2xs' ?> <?= !$canFill ? 'opacity-90' : '' ?>"
                          data-jam-id="<?= $jamId ?>"
                          data-jam-rentang="<?= e($rentangStr) ?>"
                          data-jam-display="<?= e($rentangDisplay) ?> WITA"
@@ -1672,12 +1736,13 @@
     async function submitJurnalStaff(e) {
         e.preventDefault();
 
-        // Validasi penguncian tanggal: hanya boleh simpan jurnal hari ini
-        if ('<?= $isToday ? '1' : '0' ?>' !== '1') {
+        // Validasi penguncian tanggal & hari libur
+        if ('<?= $canFill ? '1' : '0' ?>' !== '1') {
+            const lockMsg = '<?= $isHoliday ? ('Hari ini adalah hari libur (' . e(addslashes($liburInfo['nama_libur'] ?? 'Hari Libur')) . '). Tidak ada pengisian jurnal pada hari libur.') : 'Jurnal kerja hanya dapat diisi atau diubah pada hari ini.' ?>';
             if (typeof AndroidUI !== 'undefined') {
-                AndroidUI.toast('Jurnal kerja hanya dapat diisi atau diubah pada hari ini.', 'warning');
+                AndroidUI.toast(lockMsg, 'warning');
             } else {
-                alert('Jurnal kerja hanya dapat diisi atau diubah pada hari ini.');
+                alert(lockMsg);
             }
             return;
         }

@@ -32,12 +32,29 @@ class AbsenPegawaiModel
         }
         self::$initialized = true;
 
-        $stampFile = BASE_PATH . '/storage/logs/.schema_absen_pegawai_v9.stamp';
+        $stampFile = BASE_PATH . '/storage/logs/.schema_absen_pegawai_v10.stamp';
         if (file_exists($stampFile)) {
             return;
         }
 
         $pdo = self::db()->getConnection();
+
+        // 0. Tabel Pengaturan Hari Libur (Selain Minggu)
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `absen_pegawai_libur` (
+                `id` INT(11) NOT NULL AUTO_INCREMENT,
+                `tanggal` DATE NOT NULL,
+                `nama_libur` VARCHAR(150) NOT NULL,
+                `jenis` ENUM('nasional', 'cuti_bersama', 'yayasan', 'lainnya') NOT NULL DEFAULT 'nasional',
+                `keterangan` VARCHAR(255) DEFAULT NULL,
+                `created_by` INT(11) DEFAULT NULL,
+                `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+                `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `uniq_absen_libur_tanggal` (`tanggal`),
+                KEY `idx_absen_libur_jenis` (`jenis`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
 
         // 1. Tabel Pengaturan Global Absen (Radius Global & Lokasi Semula/Default)
         $pdo->exec("
@@ -593,6 +610,7 @@ class AbsenPegawaiModel
             'target_unit'      => $targetUnit,
             'is_restricted'    => !empty($effectiveUnit),
             'global_jam'       => $globalJam,
+            'libur_info'       => self::getLiburInfoForDate($targetDate),
             'stats'            => [
                 'total_pegawai'      => $totalPegawai,
                 'hadir_total'        => $hadirTotal,
@@ -636,16 +654,11 @@ class AbsenPegawaiModel
         $todayTs = strtotime(date('Y-m-d'));
         $evalEndTs = min($endTs, $todayTs);
 
-        // Hitung Jumlah Hari Kerja (Senin - Sabtu, abaikan Minggu)
-        $jumlahHariKerja = 0;
-        $curTs = $startTs;
-        while ($curTs <= $evalEndTs) {
-            if ((int)date('N', $curTs) !== 7) {
-                $jumlahHariKerja++;
-            }
-            $curTs = strtotime('+1 day', $curTs);
-        }
-        $jumlahHariKerja = max(1, $jumlahHariKerja);
+        // Hitung Jumlah Hari Kerja Efektif (Senin - Sabtu, abaikan Minggu & tanggal libur terdaftar)
+        $workInfo = ($startTs <= $evalEndTs)
+            ? self::hitungHariKerjaRange(date('Y-m-d', $startTs), date('Y-m-d', $evalEndTs))
+            : ['jumlah_hari_kerja' => 0, 'jumlah_minggu' => 0, 'jumlah_libur_khusus' => 0, 'libur_dates' => []];
+        $jumlahHariKerja = (int)$workInfo['jumlah_hari_kerja'];
 
         $effectiveUnit = self::getEffectiveUserUnit();
         $targetUnit = $effectiveUnit ?: $unit;
@@ -793,12 +806,17 @@ class AbsenPegawaiModel
                 $sakitCount = $izinMap[$pid]['sakit'];
             }
 
-            // Alpa dihitung dari sisa hari kerja yang tidak ada keterangan kehadiran
-            $calcAlpa = max(0, $jumlahHariKerja - ($hadirCount + $izinCount + $sakitCount + $cutiCount));
-            $alpa = max($calcAlpa, $alpaExplicitCount);
+            // Alpa dihitung dari sisa hari kerja efektif yang tidak ada keterangan kehadiran
+            if ($jumlahHariKerja > 0) {
+                $calcAlpa = max(0, $jumlahHariKerja - ($hadirCount + $izinCount + $sakitCount + $cutiCount));
+                $alpa = max($calcAlpa, $alpaExplicitCount);
 
-            $persen = round(($hadirCount / $jumlahHariKerja) * 100, 1);
-            $persen = min(100.0, max(0.0, $persen));
+                $persen = round(($hadirCount / $jumlahHariKerja) * 100, 1);
+                $persen = min(100.0, max(0.0, $persen));
+            } else {
+                $alpa = $alpaExplicitCount;
+                $persen = 0.0;
+            }
 
             $totalHadirSemua += $hadirCount;
             $totalTepatWaktuSemua += $hadirTepatWaktuCount;
@@ -837,10 +855,13 @@ class AbsenPegawaiModel
         $rataRata = $totalPeg > 0 ? round($sumPersen / $totalPeg, 1) : 0.0;
 
         return [
-            'start_date'        => $startDate,
-            'end_date'          => $endDate,
-            'jumlah_hari_kerja' => $jumlahHariKerja,
-            'unit_efektif'      => $effectiveUnit,
+            'start_date'          => $startDate,
+            'end_date'            => $endDate,
+            'jumlah_hari_kerja'   => $jumlahHariKerja,
+            'jumlah_minggu'       => (int)($workInfo['jumlah_minggu'] ?? 0),
+            'jumlah_libur_khusus' => (int)($workInfo['jumlah_libur_khusus'] ?? 0),
+            'libur_list'          => $workInfo['libur_dates'] ?? [],
+            'unit_efektif'        => $effectiveUnit,
             'target_unit'       => $targetUnit,
             'is_restricted'     => !empty($effectiveUnit),
             'summary'           => [
@@ -981,6 +1002,10 @@ class AbsenPegawaiModel
             $logsByDate[$l['tanggal']] = $l;
         }
 
+        $liburMap = (strtotime($evalEnd) >= strtotime($startDate))
+            ? self::getLiburMap($startDate, $evalEnd)
+            : [];
+
         $dayMap = [
             1 => 'Senin',
             2 => 'Selasa',
@@ -992,6 +1017,7 @@ class AbsenPegawaiModel
         ];
 
         $totalHariKerja = 0;
+        $totalLiburKhusus = 0;
         $totalHadir = 0;
         $totalTepatWaktu = 0;
         $totalTerlambat = 0;
@@ -1011,11 +1037,16 @@ class AbsenPegawaiModel
             $dayOfWeek = (int)date('N', $currentTs);
             $namaHari = $dayMap[$dayOfWeek] ?? 'Senin';
             $isSunday = ($dayOfWeek === 7);
+            $liburRow = $liburMap[$curDate] ?? null;
+            $isCustomLibur = ($liburRow !== null);
 
             $log = $logsByDate[$curDate] ?? null;
 
-            if ($isSunday) {
-                // Hari Minggu libur, hanya catat jika ada log presensi khusus
+            if ($isSunday || $isCustomLibur) {
+                if ($isCustomLibur && !$isSunday) {
+                    $totalLiburKhusus++;
+                }
+                // Hari Minggu dan hari libur terdaftar tidak dihitung hari kerja/alpa
                 if ($log) {
                     $allDaysHistory[] = [
                         'tanggal' => $curDate,
@@ -1023,9 +1054,20 @@ class AbsenPegawaiModel
                         'status' => $log['status'],
                         'jam_masuk' => $log['jam_masuk'] ? substr($log['jam_masuk'], 0, 5) . ' WITA' : '-',
                         'jam_pulang' => $log['jam_pulang'] ? substr($log['jam_pulang'], 0, 5) . ' WITA' : '-',
-                        'keterangan' => $log['keterangan'] ?: 'Presensi Hari Libur',
+                        'keterangan' => $log['keterangan'] ?: ('Presensi Hari Libur' . ($liburRow ? ': ' . $liburRow['nama_libur'] : '')),
                         'jarak' => (float)($log['jarak_masuk_meter'] ?? 0),
                         'badge' => 'emerald'
+                    ];
+                } elseif ($isCustomLibur) {
+                    $allDaysHistory[] = [
+                        'tanggal' => $curDate,
+                        'hari' => $namaHari,
+                        'status' => 'Libur',
+                        'jam_masuk' => '-',
+                        'jam_pulang' => '-',
+                        'keterangan' => 'Hari Libur: ' . $liburRow['nama_libur'],
+                        'jarak' => 0,
+                        'badge' => 'sky'
                     ];
                 }
                 $currentTs = strtotime('+1 day', $currentTs);
@@ -1120,6 +1162,7 @@ class AbsenPegawaiModel
         return [
             'summary' => [
                 'total_hari_kerja'      => $totalHariKerja,
+                'total_libur'           => $totalLiburKhusus,
                 'total_hadir'           => $totalHadir,
                 'hadir_tepat_waktu'     => $totalTepatWaktu,
                 'terlambat'             => $totalTerlambat,
@@ -1963,6 +2006,16 @@ class AbsenPegawaiModel
             }
         }
 
+        self::ensureLiburTable();
+        $totalLiburTahunIni = 0;
+        try {
+            $cntLiburRow = self::db()->find(
+                "SELECT COUNT(*) as c FROM `absen_pegawai_libur` WHERE YEAR(`tanggal`) = ?",
+                [(int)date('Y')]
+            );
+            $totalLiburTahunIni = (int)($cntLiburRow['c'] ?? 0);
+        } catch (Throwable $e) {}
+
         return [
             'totalPegawai' => count($all),
             'totalDefault' => $cntDefault,
@@ -1970,6 +2023,7 @@ class AbsenPegawaiModel
             'totalCustomPegawai' => $cntCustom,
             'totalUnit' => count($units),
             'unitCustomCount' => $cntCustomUnit,
+            'totalLiburTahunIni' => $totalLiburTahunIni,
             'radiusGlobal' => (int)$global['radius_meter'],
             'globalConfig' => $global
         ];
@@ -2681,6 +2735,278 @@ class AbsenPegawaiModel
             "UPDATE `absen_pegawai_log` SET `evaluasi` = NULL, `tindak_lanjut` = NULL, `evaluasi_oleh` = NULL, `evaluasi_at` = NULL, `updated_at` = NOW() WHERE `pegawai_id` = ? AND `tanggal` = ?",
             [$pegawaiId, $tanggal]
         );
+        return true;
+    }
+
+    /**
+     * =========================================================================
+     * PENGATURAN HARI LIBUR (SELAIN MINGGU) & HARI KERJA EFEKTIF
+     * Digunakan bersama oleh Modul Absen Pegawai, Jurnal Staff, dan WA Reminder
+     * =========================================================================
+     */
+
+    public static function ensureLiburTable(): void
+    {
+        static $checked = false;
+        if ($checked) {
+            return;
+        }
+        $checked = true;
+
+        try {
+            $pdo = self::db()->getConnection();
+            $pdo->exec("
+                CREATE TABLE IF NOT EXISTS `absen_pegawai_libur` (
+                    `id` INT(11) NOT NULL AUTO_INCREMENT,
+                    `tanggal` DATE NOT NULL,
+                    `nama_libur` VARCHAR(150) NOT NULL,
+                    `jenis` ENUM('nasional', 'cuti_bersama', 'yayasan', 'lainnya') NOT NULL DEFAULT 'nasional',
+                    `keterangan` VARCHAR(255) DEFAULT NULL,
+                    `created_by` INT(11) DEFAULT NULL,
+                    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    PRIMARY KEY (`id`),
+                    UNIQUE KEY `uniq_absen_libur_tanggal` (`tanggal`),
+                    KEY `idx_absen_libur_jenis` (`jenis`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+            ");
+        } catch (Throwable $e) {
+            error_log('Error ensureLiburTable: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Ambil daftar hari libur tersimpan (filter opsional berdasarkan tahun atau rentang tanggal)
+     */
+    public static function getLiburList(?int $tahun = null, ?string $startDate = null, ?string $endDate = null): array
+    {
+        self::ensureLiburTable();
+
+        $where = ['1=1'];
+        $params = [];
+
+        if ($startDate !== null && $startDate !== '') {
+            $where[] = '`tanggal` >= ?';
+            $params[] = $startDate;
+        }
+        if ($endDate !== null && $endDate !== '') {
+            $where[] = '`tanggal` <= ?';
+            $params[] = $endDate;
+        }
+        if ($tahun !== null && $tahun > 0 && $startDate === null && $endDate === null) {
+            $where[] = 'YEAR(`tanggal`) = ?';
+            $params[] = $tahun;
+        }
+
+        $order = ($startDate !== null || $endDate !== null) ? 'ASC' : 'DESC';
+        $whereSql = implode(' AND ', $where);
+
+        return self::db()->findAll(
+            "SELECT * FROM `absen_pegawai_libur` WHERE {$whereSql} ORDER BY `tanggal` {$order}",
+            $params
+        );
+    }
+
+    /**
+     * Ambil peta hari libur ['Y-m-d' => row] dalam rentang tanggal untuk pencarian O(1)
+     */
+    public static function getLiburMap(string $startDate, string $endDate): array
+    {
+        self::ensureLiburTable();
+        $rows = self::getLiburList(null, $startDate, $endDate);
+        $map = [];
+        foreach ($rows as $row) {
+            if (!empty($row['tanggal'])) {
+                $map[(string)$row['tanggal']] = $row;
+            }
+        }
+        return $map;
+    }
+
+    /**
+     * Cek apakah tanggal tertentu adalah hari libur (Hari Minggu atau Hari Libur Terdaftar)
+     */
+    public static function getLiburInfoForDate(string $tanggal): ?array
+    {
+        $tanggal = trim($tanggal);
+        $ts = strtotime($tanggal);
+        if ($ts === false) {
+            return null;
+        }
+        $normDate = date('Y-m-d', $ts);
+        $dayOfWeek = (int)date('N', $ts);
+
+        self::ensureLiburTable();
+        $custom = self::db()->find(
+            "SELECT * FROM `absen_pegawai_libur` WHERE `tanggal` = ? LIMIT 1",
+            [$normDate]
+        );
+
+        if ($custom) {
+            return [
+                'is_libur'        => true,
+                'is_sunday'       => ($dayOfWeek === 7),
+                'is_custom_libur' => true,
+                'nama_libur'      => (string)$custom['nama_libur'],
+                'jenis'           => (string)($custom['jenis'] ?? 'nasional'),
+                'keterangan'      => (string)($custom['keterangan'] ?? ''),
+                'tanggal'         => $normDate,
+            ];
+        }
+
+        if ($dayOfWeek === 7) {
+            return [
+                'is_libur'        => true,
+                'is_sunday'       => true,
+                'is_custom_libur' => false,
+                'nama_libur'      => 'Hari Minggu',
+                'jenis'           => 'mingguan',
+                'keterangan'      => 'Hari libur rutin mingguan',
+                'tanggal'         => $normDate,
+            ];
+        }
+
+        return null;
+    }
+
+    public static function isHariLibur(string $tanggal): bool
+    {
+        return self::getLiburInfoForDate($tanggal) !== null;
+    }
+
+    /**
+     * Hitung rincian hari kerja efektif dalam rentang tanggal (mengecualikan Minggu & tanggal libur terdaftar)
+     * Parameter $liburMap opsional memudahkan pengujian murni maupun pemanggilan berulang.
+     */
+    public static function hitungHariKerjaRange(string $startDate, string $endDate, ?array $liburMap = null): array
+    {
+        $startTs = strtotime($startDate);
+        $endTs = strtotime($endDate);
+        if ($startTs === false || $endTs === false || $startTs > $endTs) {
+            return [
+                'jumlah_hari_kerja'   => 0,
+                'jumlah_minggu'       => 0,
+                'jumlah_libur_khusus' => 0,
+                'libur_dates'         => [],
+                'working_dates'       => [],
+            ];
+        }
+
+        if ($liburMap === null) {
+            $liburMap = self::getLiburMap(date('Y-m-d', $startTs), date('Y-m-d', $endTs));
+        }
+
+        $jumlahHariKerja = 0;
+        $jumlahMinggu = 0;
+        $jumlahLiburKhusus = 0;
+        $liburDates = [];
+        $workingDates = [];
+
+        $curTs = $startTs;
+        while ($curTs <= $endTs) {
+            $curDate = date('Y-m-d', $curTs);
+            $dayOfWeek = (int)date('N', $curTs);
+
+            if ($dayOfWeek === 7) {
+                $jumlahMinggu++;
+            } elseif (isset($liburMap[$curDate])) {
+                $jumlahLiburKhusus++;
+                $liburDates[$curDate] = $liburMap[$curDate];
+            } else {
+                $jumlahHariKerja++;
+                $workingDates[] = $curDate;
+            }
+
+            $curTs = strtotime('+1 day', $curTs);
+        }
+
+        return [
+            'jumlah_hari_kerja'   => $jumlahHariKerja,
+            'jumlah_minggu'       => $jumlahMinggu,
+            'jumlah_libur_khusus' => $jumlahLiburKhusus,
+            'libur_dates'         => $liburDates,
+            'working_dates'       => $workingDates,
+        ];
+    }
+
+    /**
+     * Simpan tanggal libur (tunggal atau rentang, otomatis melewati hari Minggu)
+     */
+    public static function saveLibur(
+        string $tanggalMulai,
+        ?string $tanggalSelesai,
+        string $namaLibur,
+        string $jenis = 'nasional',
+        ?string $keterangan = null,
+        ?int $userId = null
+    ): array {
+        self::ensureLiburTable();
+
+        $tanggalMulai = trim($tanggalMulai);
+        $tanggalSelesai = ($tanggalSelesai !== null && trim($tanggalSelesai) !== '') ? trim($tanggalSelesai) : $tanggalMulai;
+        $namaLibur = trim($namaLibur);
+        $jenis = in_array($jenis, ['nasional', 'cuti_bersama', 'yayasan', 'lainnya'], true) ? $jenis : 'nasional';
+        $keterangan = ($keterangan !== null && trim($keterangan) !== '') ? trim($keterangan) : null;
+
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $tanggalMulai) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $tanggalSelesai)) {
+            throw new Exception('Format tanggal libur tidak valid (harus YYYY-MM-DD).');
+        }
+        if ($namaLibur === '') {
+            throw new Exception('Nama hari libur wajib diisi.');
+        }
+
+        $startTs = strtotime($tanggalMulai);
+        $endTs = strtotime($tanggalSelesai);
+        if ($startTs === false || $endTs === false || $endTs < $startTs) {
+            throw new Exception('Tanggal selesai libur tidak boleh lebih kecil dari tanggal mulai.');
+        }
+
+        $daysDiff = (int)floor(($endTs - $startTs) / 86400) + 1;
+        if ($daysDiff > 90) {
+            throw new Exception('Rentang pengisian hari libur sekaligus maksimal 90 hari.');
+        }
+
+        $saved = 0;
+        $skippedSunday = 0;
+        $curTs = $startTs;
+
+        while ($curTs <= $endTs) {
+            $curDate = date('Y-m-d', $curTs);
+            if ((int)date('N', $curTs) === 7) {
+                $skippedSunday++;
+            } else {
+                self::db()->query("
+                    INSERT INTO `absen_pegawai_libur` (`tanggal`, `nama_libur`, `jenis`, `keterangan`, `created_by`)
+                    VALUES (?, ?, ?, ?, ?)
+                    ON DUPLICATE KEY UPDATE
+                        `nama_libur` = VALUES(`nama_libur`),
+                        `jenis`      = VALUES(`jenis`),
+                        `keterangan` = VALUES(`keterangan`),
+                        `created_by` = VALUES(`created_by`),
+                        `updated_at` = NOW()
+                ", [$curDate, $namaLibur, $jenis, $keterangan, $userId]);
+                $saved++;
+            }
+            $curTs = strtotime('+1 day', $curTs);
+        }
+
+        if ($saved === 0 && $skippedSunday > 0) {
+            throw new Exception('Tanggal yang dipilih adalah hari Minggu. Hari Minggu sudah otomatis tidak dihitung sebagai hari kerja.');
+        }
+
+        return [
+            'saved'          => $saved,
+            'skipped_sunday' => $skippedSunday,
+        ];
+    }
+
+    /**
+     * Hapus satu entri hari libur berdasarkan ID
+     */
+    public static function deleteLibur(int $id): bool
+    {
+        self::ensureLiburTable();
+        self::db()->query("DELETE FROM `absen_pegawai_libur` WHERE `id` = ?", [$id]);
         return true;
     }
 }

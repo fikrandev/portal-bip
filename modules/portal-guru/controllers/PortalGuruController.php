@@ -811,6 +811,7 @@ class PortalGuruController
         $todayAttendance = AbsenPegawaiModel::getTodayAttendance($pegawaiId);
         $recentLogs = AbsenPegawaiModel::getRecentLogs($pegawaiId, 7);
         $globalConfig = AbsenPegawaiModel::getPengaturanGlobal();
+        $liburInfo = AbsenPegawaiModel::getLiburInfoForDate(date('Y-m-d'));
 
         $lokasiSourceLabel = match ($efektif['mode'] ?? 'default') {
             'custom' => 'Custom Pegawai',
@@ -824,6 +825,7 @@ class PortalGuruController
             'teacher' => $teacher,
             'todayAttendance' => $todayAttendance,
             'recentLogs' => $recentLogs,
+            'liburInfo' => $liburInfo,
             'schoolName' => $efektif['nama_kantor'],
             'schoolRadius' => (int) $efektif['radius_meter'],
             'schoolCoords' => [
@@ -1449,7 +1451,7 @@ class PortalGuruController
         $totalBelum = max(0, $totalSesi - $totalTerisi);
         $persenTerisi = $totalSesi > 0 ? round(($totalTerisi / $totalSesi) * 100) : 0;
 
-        // ── 1. Hitung Progres Ketuntasan Jurnal Staff Berdasarkan Periode (seperti Rekap Absen) ──
+        // ── 1. Hitung Progres Ketuntasan Jurnal Staff Berdasarkan Periode (sinkron Hari Libur Absen Pegawai) ──
         require_once MODULES_PATH . '/kelola-absen-pegawai/models/AbsenPegawaiModel.php';
         $absenGlobal = AbsenPegawaiModel::getPengaturanGlobal();
         $staffPeriodeCfg = JurnalStaffModel::getPengaturanPeriode();
@@ -1458,26 +1460,20 @@ class PortalGuruController
         $periodeAkhir = !empty($staffPeriodeCfg['periode_akhir']) ? $staffPeriodeCfg['periode_akhir'] : ($absenGlobal['periode_akhir'] ?: date('Y-m-t'));
 
         $today = date('Y-m-d');
+        $liburInfo = AbsenPegawaiModel::getLiburInfoForDate($selectedDate);
+        $isHoliday = ($liburInfo !== null);
+        $canFill = ($selectedDate === $today) && !$isHoliday;
+
         $evalEnd = (strtotime($periodeAkhir) > strtotime($today)) ? $today : $periodeAkhir;
         $evalStart = $periodeAwal;
         if (strtotime($evalStart) > strtotime($evalEnd)) {
-            $evalStart = $evalEnd;
+            $workInfo = ['jumlah_hari_kerja' => 0, 'jumlah_minggu' => 0, 'jumlah_libur_khusus' => 0, 'libur_dates' => [], 'working_dates' => []];
+        } else {
+            $workInfo = AbsenPegawaiModel::hitungHariKerjaRange($evalStart, $evalEnd);
         }
 
-        // Hitung total hari kerja (Senin - Sabtu) dari evalStart sampai evalEnd
-        $totalHariKerjaPeriode = 0;
-        $curTs = strtotime($evalStart);
-        $endTs = strtotime($evalEnd);
-        while ($curTs <= $endTs) {
-            $dayOfWeek = (int)date('N', $curTs);
-            if ($dayOfWeek !== 7) { // 1=Senin..6=Sabtu (Minggu libur)
-                $totalHariKerjaPeriode++;
-            }
-            $curTs = strtotime('+1 day', $curTs);
-        }
-        if ($totalHariKerjaPeriode <= 0) {
-            $totalHariKerjaPeriode = 1;
-        }
+        $totalHariKerjaPeriode = (int)$workInfo['jumlah_hari_kerja'];
+        $totalLiburPeriode = (int)$workInfo['jumlah_libur_khusus'];
 
         $totalSesiPerHari = count($jamList);
         if ($totalSesiPerHari <= 0) {
@@ -1497,7 +1493,7 @@ class PortalGuruController
         $sesiTerisiPeriode = (int) ($jurnalPeriodeStats['total_sesi_terisi'] ?? 0);
         $hariTerisiPeriode = (int) ($jurnalPeriodeStats['total_hari_terisi'] ?? 0);
 
-        // Persentase progres jurnal periode (cap maks 100%)
+        // Persentase progres jurnal periode (cap maks 100%, aman saat 0 hari kerja)
         $persenJurnalPeriode = $targetSesiPeriode > 0 
             ? min(100, round(($sesiTerisiPeriode / $targetSesiPeriode) * 100, 1)) 
             : 0;
@@ -1529,6 +1525,10 @@ class PortalGuruController
             'targetSesiPeriode' => $targetSesiPeriode,
             'hariTerisiPeriode' => $hariTerisiPeriode,
             'totalHariKerjaPeriode' => $totalHariKerjaPeriode,
+            'totalLiburPeriode' => $totalLiburPeriode,
+            'liburInfo' => $liburInfo,
+            'isHoliday' => $isHoliday,
+            'canFill' => $canFill,
             'isToday' => ($selectedDate === $today),
             'isPastDate' => (strtotime($selectedDate) < strtotime($today)),
             'isFutureDate' => (strtotime($selectedDate) > strtotime($today))
@@ -1563,12 +1563,22 @@ class PortalGuruController
         $jamRentang = trim($input['jam_rentang'] ?? '');
         $tanggal = !empty($input['tanggal']) ? trim($input['tanggal']) : date('Y-m-d');
 
-        // Aturan: Jurnal hanya dapat diisi atau diubah pada HARI INI (hari berjalan)
+        // Aturan: Jurnal hanya dapat diisi atau diubah pada HARI INI (hari berjalan) dan BUKAN hari Minggu/Libur
         $today = date('Y-m-d');
         if ($tanggal !== $today) {
             echo json_encode([
                 'success' => false,
                 'message' => 'Jurnal kerja hanya dapat diisi atau diperbarui pada hari ini (' . date('d/m/Y') . '). Jurnal tanggal kemarin atau hari lainnya telah dikunci dan tidak dapat diubah.'
+            ]);
+            exit;
+        }
+
+        require_once MODULES_PATH . '/kelola-absen-pegawai/models/AbsenPegawaiModel.php';
+        $liburInfo = AbsenPegawaiModel::getLiburInfoForDate($tanggal);
+        if ($liburInfo !== null) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Tidak ada pengisian jurnal pada hari libur (' . $liburInfo['nama_libur'] . '). Tanggal ini otomatis dikecualikan dari target jurnal.'
             ]);
             exit;
         }

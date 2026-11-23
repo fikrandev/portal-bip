@@ -121,6 +121,25 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
             </div>
         </div>
 
+        <?php if (!empty($dashboardData['libur_info'])): ?>
+            <div class="p-4 rounded-2xl bg-sky-50 border border-sky-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div class="flex items-start gap-3">
+                    <span class="text-xl shrink-0">🏖️</span>
+                    <div>
+                        <h4 class="text-xs sm:text-sm font-extrabold text-sky-950">
+                            Hari Libur: <?= e($dashboardData['libur_info']['nama_libur']) ?>
+                        </h4>
+                        <p class="text-xs text-sky-800 mt-0.5">
+                            Tanggal <strong><?= date('d M Y', strtotime($targetDate)) ?></strong> tidak dihitung sebagai hari kerja efektif, tidak memicu alpa absensi, dan otomatis sinkron ke Jurnal Staff &amp; Pengingat WA.
+                        </p>
+                    </div>
+                </div>
+                <button type="button" onclick="switchAbsenTab('libur')" class="px-3.5 py-2 rounded-xl bg-white hover:bg-sky-100 text-sky-800 border border-sky-200 text-xs font-bold shrink-0 cursor-pointer self-start sm:self-auto">
+                    Kelola Hari Libur &rarr;
+                </button>
+            </div>
+        <?php endif; ?>
+
         <!-- 6 KPI Cards Dashboard Presensi -->
         <?php $dStats = $dashboardData['stats'] ?? []; ?>
         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5">
@@ -972,8 +991,13 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
 
                 <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs">
                     <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Hari Kerja</span>
-                    <div class="text-2xl font-extrabold text-slate-900 mt-1"><?= (int)($rekapPeriodeData['jumlah_hari_kerja'] ?? 1) ?> <span class="text-xs font-normal text-slate-500">Hari</span></div>
-                    <p class="text-[11px] text-slate-500 mt-0.5">Senin - Sabtu (efektif)</p>
+                    <div class="text-2xl font-extrabold text-slate-900 mt-1"><?= (int)($rekapPeriodeData['jumlah_hari_kerja'] ?? 0) ?> <span class="text-xs font-normal text-slate-500">Hari</span></div>
+                    <p class="text-[11px] text-slate-500 mt-0.5">
+                        Senin - Sabtu
+                        <?php if (!empty($rekapPeriodeData['jumlah_libur_khusus'])): ?>
+                            <span class="text-rose-600 font-semibold">(dikurangi <?= (int)$rekapPeriodeData['jumlah_libur_khusus'] ?> hari libur)</span>
+                        <?php endif; ?>
+                    </p>
                 </div>
 
                 <div class="bg-white rounded-2xl p-4 border border-emerald-200/80 shadow-xs">
@@ -1702,6 +1726,191 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
                             ↺ Reset Semua Lokasi
                         </button>
                     </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═════════════════════════════════════════════════════════════════════
+         TAB 6: PENGATURAN HARI LIBUR (SELAIN MINGGU)
+         ═════════════════════════════════════════════════════════════════════ -->
+    <?php
+        $liburList = $liburList ?? [];
+        $liburTahunSelected = $liburTahun ?? (int)date('Y');
+        $rawLiburTahunQuery = trim((string)($_GET['libur_tahun'] ?? ''));
+        $isAllTahunLibur = ($rawLiburTahunQuery === 'all');
+        $liburDayMap = [
+            1 => 'Senin', 2 => 'Selasa', 3 => 'Rabu', 4 => 'Kamis',
+            5 => 'Jumat', 6 => 'Sabtu', 7 => 'Minggu'
+        ];
+    ?>
+    <div id="absen-panel-libur" class="absen-tab-panel space-y-6 <?= $activeTab === 'libur' ? '' : 'hidden' ?>">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <!-- Form Tambah Hari Libur -->
+            <div class="lg:col-span-5 bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs space-y-5">
+                <div class="border-b border-slate-100 pb-4">
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                            Sinkron Absen &amp; Jurnal Staff
+                        </span>
+                    </div>
+                    <h3 class="text-base font-extrabold text-slate-900">Tambah Hari Libur (Selain Minggu)</h3>
+                    <p class="text-xs text-slate-500 mt-1">
+                        Hari Minggu sudah otomatis tidak dihitung sebagai hari kerja. Tambahkan tanggal libur nasional, cuti bersama, atau libur yayasan di sini.
+                    </p>
+                </div>
+
+                <div class="p-3.5 rounded-2xl bg-sky-50/80 border border-sky-200 text-xs text-sky-900 space-y-1">
+                    <p class="font-bold flex items-center gap-1.5"><span>🔄</span> Sinkronisasi Otomatis:</p>
+                    <p class="text-[11px] leading-relaxed text-sky-800">
+                        Tanggal yang ditambahkan tidak dihitung hari kerja/alpa di <strong>Rekap Absen</strong>, menonaktifkan kewajiban isi <strong>Jurnal Staff</strong>, melewati <strong>Pengingat WA</strong>, dan membuat persentase periode lebih akurat.
+                    </p>
+                </div>
+
+                <form method="POST" action="<?= url('kelola-absen-pegawai/libur/save') ?>" class="space-y-4">
+                    <?= CSRF::field() ?>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Tanggal Mulai <span class="text-rose-500">*</span></label>
+                            <input type="date" name="tanggal_mulai" value="<?= date('Y-m-d') ?>" required
+                                   class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-900 outline-none focus:border-primary-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Sampai Tanggal <span class="text-slate-400 font-normal">(Opsional)</span></label>
+                            <input type="date" name="tanggal_selesai"
+                                   class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-900 outline-none focus:border-primary-500">
+                            <span class="text-[10px] text-slate-400">Kosongkan jika hanya 1 hari</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Nama Hari Libur <span class="text-rose-500">*</span></label>
+                        <input type="text" name="nama_libur" required placeholder="Contoh: Hari Raya Idul Fitri / Libur Awal Ramadhan"
+                               class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-900 outline-none focus:border-primary-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Kategori Libur</label>
+                        <select name="jenis" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-800 outline-none focus:border-primary-500">
+                            <option value="nasional">Libur Nasional</option>
+                            <option value="cuti_bersama">Cuti Bersama</option>
+                            <option value="yayasan">Libur Yayasan / Sekolah</option>
+                            <option value="lainnya">Lainnya</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Keterangan <span class="text-slate-400 font-normal">(Opsional)</span></label>
+                        <input type="text" name="keterangan" placeholder="Contoh: Berdasarkan SKB 3 Menteri / Edaran Yayasan"
+                               class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-800 outline-none focus:border-primary-500">
+                    </div>
+
+                    <div class="pt-2 border-t border-slate-100 flex justify-end">
+                        <button type="submit" class="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-md shadow-rose-600/20 cursor-pointer">
+                            + Simpan Hari Libur
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Tabel Daftar Hari Libur -->
+            <div class="lg:col-span-7 bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden flex flex-col">
+                <div class="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/60">
+                    <div>
+                        <h3 class="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                            <span>Daftar Hari Libur Terdaftar</span>
+                            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-700">
+                                <?= count($liburList) ?> Tanggal
+                            </span>
+                        </h3>
+                        <p class="text-xs text-slate-500 mt-0.5">
+                            Selain daftar di bawah ini, seluruh hari <strong>Minggu</strong> otomatis dianggap libur.
+                        </p>
+                    </div>
+
+                    <form method="GET" action="<?= url('kelola-absen-pegawai') ?>" class="flex items-center gap-2 shrink-0">
+                        <input type="hidden" name="tab" value="libur">
+                        <select name="libur_tahun" onchange="this.form.submit()" class="px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 outline-none focus:border-primary-500">
+                            <?php $curY = (int)date('Y'); ?>
+                            <?php for ($y = $curY + 1; $y >= $curY - 2; $y--): ?>
+                                <option value="<?= $y ?>" <?= (!$isAllTahunLibur && (int)$liburTahunSelected === $y) ? 'selected' : '' ?>>
+                                    Tahun <?= $y ?>
+                                </option>
+                            <?php endfor; ?>
+                            <option value="all" <?= $isAllTahunLibur ? 'selected' : '' ?>>Semua Tahun</option>
+                        </select>
+                    </form>
+                </div>
+
+                <div class="overflow-x-auto flex-1">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-slate-50/80 border-b border-slate-200/80 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                                <th class="py-3 px-4">Tanggal &amp; Hari</th>
+                                <th class="py-3 px-4">Nama Hari Libur</th>
+                                <th class="py-3 px-4 text-center">Kategori</th>
+                                <th class="py-3 px-4 text-right w-24">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            <?php if (empty($liburList)): ?>
+                                <tr>
+                                    <td colspan="4" class="py-12 text-center text-slate-400">
+                                        <div class="text-3xl mb-2">🗓️</div>
+                                        <p class="font-bold text-slate-600">Belum ada hari libur khusus terdaftar</p>
+                                        <p class="text-[11px] mt-0.5">Tambahkan tanggal libur di formulir sebelah kiri jika ada hari libur selain Minggu.</p>
+                                    </td>
+                                </tr>
+                            <?php else: ?>
+                                <?php foreach ($liburList as $lb): ?>
+                                    <?php
+                                        $lbTs = strtotime($lb['tanggal']);
+                                        $lbDay = $liburDayMap[(int)date('N', $lbTs)] ?? '';
+                                        $jenisVal = $lb['jenis'] ?? 'nasional';
+                                        $jenisBadge = match ($jenisVal) {
+                                            'cuti_bersama' => 'bg-amber-50 text-amber-800 border-amber-200',
+                                            'yayasan'      => 'bg-indigo-50 text-indigo-700 border-indigo-200',
+                                            'lainnya'      => 'bg-slate-100 text-slate-700 border-slate-200',
+                                            default        => 'bg-rose-50 text-rose-700 border-rose-200',
+                                        };
+                                        $jenisLabel = match ($jenisVal) {
+                                            'cuti_bersama' => 'Cuti Bersama',
+                                            'yayasan'      => 'Libur Yayasan',
+                                            'lainnya'      => 'Lainnya',
+                                            default        => 'Nasional',
+                                        };
+                                    ?>
+                                    <tr class="hover:bg-slate-50/70 transition-colors">
+                                        <td class="py-3 px-4 whitespace-nowrap">
+                                            <div class="font-extrabold text-slate-900"><?= date('d M Y', $lbTs) ?></div>
+                                            <div class="text-[10px] text-slate-500 font-semibold"><?= e($lbDay) ?></div>
+                                        </td>
+                                        <td class="py-3 px-4">
+                                            <div class="font-bold text-slate-800"><?= e($lb['nama_libur']) ?></div>
+                                            <?php if (!empty($lb['keterangan'])): ?>
+                                                <div class="text-[10.5px] text-slate-500 mt-0.5"><?= e($lb['keterangan']) ?></div>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td class="py-3 px-4 text-center whitespace-nowrap">
+                                            <span class="inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-bold border <?= $jenisBadge ?>">
+                                                <?= e($jenisLabel) ?>
+                                            </span>
+                                        </td>
+                                        <td class="py-3 px-4 text-right whitespace-nowrap">
+                                            <form method="POST" action="<?= url('kelola-absen-pegawai/libur/delete') ?>" onsubmit="return confirm('Hapus hari libur <?= e(addslashes($lb['nama_libur'])) ?> (<?= date('d/m/Y', $lbTs) ?>)?');">
+                                                <?= CSRF::field() ?>
+                                                <input type="hidden" name="id" value="<?= (int)$lb['id'] ?>">
+                                                <button type="submit" class="px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white border border-rose-200 text-[11px] font-bold transition-colors cursor-pointer">
+                                                    Hapus
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>

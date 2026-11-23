@@ -199,6 +199,15 @@ class JurnalStaffAdminController
         }
 
         try {
+            $tanggalInput = !empty($_POST['tanggal']) ? trim((string)$_POST['tanggal']) : date('Y-m-d');
+            if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $tanggalInput)) {
+                require_once MODULES_PATH . '/kelola-absen-pegawai/models/AbsenPegawaiModel.php';
+                $liburInfo = AbsenPegawaiModel::getLiburInfoForDate($tanggalInput);
+                if ($liburInfo !== null) {
+                    throw new Exception('Tanggal tersebut adalah hari libur (' . $liburInfo['nama_libur'] . '). Tidak ada pengisian jurnal staff pada hari Minggu atau hari libur.');
+                }
+            }
+
             $file = isset($_FILES['foto_bukti']) ? $_FILES['foto_bukti'] : null;
             JurnalStaffModel::storeJurnal($_POST, $file);
             Response::redirect(url('kelola-jurnal-staff?tab=data'), 'Catatan jurnal staff berhasil ditambahkan.', 'success');

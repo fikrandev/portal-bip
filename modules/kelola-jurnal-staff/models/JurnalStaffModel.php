@@ -184,19 +184,41 @@ class JurnalStaffModel
         $stmtSelesai->execute([$sDate, $eDate]);
         $totalSelesaiPeriode = (int)$stmtSelesai->fetchColumn();
 
-        // 7. Tren 7 Hari Terakhir
+        // 7. Tren 7 Hari Terakhir & Hari Libur Efektif (sinkron Absen Pegawai)
+        require_once MODULES_PATH . '/kelola-absen-pegawai/models/AbsenPegawaiModel.php';
+        $todayLibur = AbsenPegawaiModel::getLiburInfoForDate($today);
+
+        $evalEndPeriode = (strtotime($eDate) > strtotime($today)) ? $today : $eDate;
+        $workInfo = (strtotime($sDate) <= strtotime($evalEndPeriode))
+            ? AbsenPegawaiModel::hitungHariKerjaRange($sDate, $evalEndPeriode)
+            : ['jumlah_hari_kerja' => 0, 'jumlah_libur_khusus' => 0, 'jumlah_minggu' => 0];
+        $hariKerjaPeriode = (int)$workInfo['jumlah_hari_kerja'];
+        $liburPeriode = (int)$workInfo['jumlah_libur_khusus'];
+
+        $activeJamCount = (int)$pdo->query("SELECT COUNT(*) FROM jurnal_staff_jam WHERE is_active = 1")->fetchColumn();
+        if ($activeJamCount <= 0) {
+            $activeJamCount = 8;
+        }
+        $targetSesiPeriode = $totalSupportStaff * $hariKerjaPeriode * $activeJamCount;
+        $persenPeriode = $targetSesiPeriode > 0
+            ? min(100, round(($totalJurnalPeriode / $targetSesiPeriode) * 100, 1))
+            : 0;
+
         $trend7Days = [];
         for ($i = 6; $i >= 0; $i--) {
             $d = date('Y-m-d', strtotime("-{$i} days"));
             $ts = strtotime($d);
             $dayNameIndo = self::getNamaHariIndo(date('l', $ts));
+            $dayLibur = AbsenPegawaiModel::getLiburInfoForDate($d);
             $cnt = (int)$pdo->query("SELECT COUNT(*) FROM jurnal_staff WHERE tanggal = '{$d}'")->fetchColumn();
             $trend7Days[] = [
-                'date'       => $d,
-                'label'      => $dayNameIndo . ', ' . date('d/m', $ts),
-                'short_date' => date('d M', $ts),
-                'count'      => $cnt,
-                'is_today'   => ($d === $today)
+                'date'        => $d,
+                'label'       => $dayNameIndo . ', ' . date('d/m', $ts),
+                'short_date'  => date('d M', $ts),
+                'count'       => $cnt,
+                'is_today'    => ($d === $today),
+                'is_libur'    => ($dayLibur !== null),
+                'libur_label' => $dayLibur ? ($dayLibur['nama_libur'] ?? 'Libur') : null,
             ];
         }
 
@@ -228,9 +250,14 @@ class JurnalStaffModel
             'jurnal_hari_ini'         => $jurnalHariIni,
             'staff_isi_hari_ini'      => $staffIsiHariIni,
             'staff_belum_isi_hari_ini'=> $staffBelumIsiHariIni,
-            'persen_hari_ini'         => $totalSupportStaff > 0 ? round(($staffIsiHariIni / $totalSupportStaff) * 100) : 0,
+            'persen_hari_ini'         => $todayLibur !== null ? 0 : ($totalSupportStaff > 0 ? round(($staffIsiHariIni / $totalSupportStaff) * 100) : 0),
             'total_jurnal_periode'    => $totalJurnalPeriode,
             'total_selesai_periode'   => $totalSelesaiPeriode,
+            'today_libur'             => $todayLibur,
+            'hari_kerja_periode'      => $hariKerjaPeriode,
+            'libur_periode'           => $liburPeriode,
+            'target_sesi_periode'     => $targetSesiPeriode,
+            'persen_periode'          => $persenPeriode,
             'trend_7_days'            => $trend7Days,
             'rekap_jabatan'           => $rekapJabatan,
             'latest_jurnal'           => $latestJurnal,

@@ -134,6 +134,25 @@ $todayYmd = date('Y-m-d');
     <!-- TAB 1: DASHBOARD -->
     <!-- ========================================================================= -->
     <div id="tab-content-dashboard" class="staff-tab-panel space-y-6 <?= $activeTab === 'dashboard' ? '' : 'hidden' ?>">
+        <?php if (!empty($dashboardStats['today_libur'])): ?>
+            <div class="p-4 rounded-2xl bg-sky-50 border border-sky-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div class="flex items-start gap-3">
+                    <span class="text-xl shrink-0">🏖️</span>
+                    <div>
+                        <h4 class="text-xs sm:text-sm font-extrabold text-sky-950">
+                            Hari Ini Libur: <?= e($dashboardStats['today_libur']['nama_libur']) ?>
+                        </h4>
+                        <p class="text-xs text-sky-800 mt-0.5">
+                            Tidak ada kewajiban pengisian jurnal staff pada hari Minggu atau hari libur terdaftar. Hari ini tidak masuk ke dalam target hari kerja periode.
+                        </p>
+                    </div>
+                </div>
+                <a href="<?= url('kelola-absen-pegawai?tab=libur') ?>" class="px-3.5 py-2 rounded-xl bg-white hover:bg-sky-100 text-sky-800 border border-sky-200 text-xs font-bold shrink-0 self-start sm:self-auto">
+                    Kelola Hari Libur &rarr;
+                </a>
+            </div>
+        <?php endif; ?>
+
         <!-- KPI Cards Grid -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <!-- Card 1: Total Staff -->
@@ -183,12 +202,14 @@ $todayYmd = date('Y-m-d');
                 </div>
             </div>
 
-            <!-- Card 4: Tugas Selesai dalam Periode -->
+            <!-- Card 4: Keterisian & Tugas Periode -->
             <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex items-center justify-between">
                 <div>
-                    <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Tugas Selesai (Periode)</p>
-                    <h3 class="text-2xl font-bold text-violet-600 mt-1"><?= $dashboardStats['total_selesai_periode'] ?? 0 ?></h3>
-                    <p class="text-[11px] text-slate-400 mt-1">Dari total <?= $dashboardStats['total_jurnal_periode'] ?? 0 ?> catatan</p>
+                    <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Keterisian Periode</p>
+                    <h3 class="text-2xl font-bold text-violet-600 mt-1"><?= number_format((float)($dashboardStats['persen_periode'] ?? 0), 1) ?>%</h3>
+                    <p class="text-[11px] text-slate-400 mt-1">
+                        <?= $dashboardStats['total_selesai_periode'] ?? 0 ?> selesai / <?= $dashboardStats['hari_kerja_periode'] ?? 0 ?> hari kerja<?php if (!empty($dashboardStats['libur_periode'])): ?> <span class="text-rose-500">(libur <?= (int)$dashboardStats['libur_periode'] ?>h)</span><?php endif; ?>
+                    </p>
                 </div>
                 <div class="w-12 h-12 rounded-2xl bg-violet-50 text-violet-600 flex items-center justify-center shrink-0">
                     <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor">
@@ -206,7 +227,7 @@ $todayYmd = date('Y-m-d');
                     <div class="flex items-center justify-between mb-4">
                         <div>
                             <h3 class="text-base font-bold text-slate-800">Tren Pengisian Jurnal 7 Hari Terakhir</h3>
-                            <p class="text-xs text-slate-500">Jumlah aktivitas kerja staff yang dilaporkan per hari</p>
+                            <p class="text-xs text-slate-500">Jumlah aktivitas kerja staff yang dilaporkan per hari (Minggu &amp; tanggal libur ditandai)</p>
                         </div>
                         <span class="text-xs px-2.5 py-1 bg-slate-100 text-slate-600 rounded-lg font-medium">Harian</span>
                     </div>
@@ -221,13 +242,18 @@ $todayYmd = date('Y-m-d');
                     ?>
                     <div class="h-48 flex items-end justify-between gap-2 pt-6 px-2 border-b border-slate-100">
                         <?php foreach ($trendArr as $t): 
+                            $isLiburBar = !empty($t['is_libur']);
                             $heightPct = $maxVal > 0 ? max(8, round(($t['count'] / $maxVal) * 100)) : 8;
-                            $barColor = $t['is_today'] ? 'bg-primary-600 hover:bg-primary-700' : 'bg-slate-200 hover:bg-primary-400';
-                            $textColor = $t['is_today'] ? 'text-primary-600 font-bold' : 'text-slate-500';
+                            $barColor = $isLiburBar
+                                ? 'bg-sky-200/80 border border-dashed border-sky-400'
+                                : ($t['is_today'] ? 'bg-primary-600 hover:bg-primary-700' : 'bg-slate-200 hover:bg-primary-400');
+                            $textColor = $isLiburBar
+                                ? 'text-sky-600 font-semibold'
+                                : ($t['is_today'] ? 'text-primary-600 font-bold' : 'text-slate-500');
                         ?>
-                            <div class="flex-1 flex flex-col items-center gap-2 h-full justify-end group">
-                                <span class="text-[11px] font-bold text-slate-600 transition-opacity opacity-0 group-hover:opacity-100">
-                                    <?= $t['count'] ?>
+                            <div class="flex-1 flex flex-col items-center gap-1.5 h-full justify-end group" title="<?= e(($t['label'] ?? '') . ($isLiburBar ? ' — ' . ($t['libur_label'] ?? 'Libur') : '')) ?>">
+                                <span class="text-[10px] font-bold <?= $isLiburBar ? 'text-sky-600' : 'text-slate-600 transition-opacity opacity-0 group-hover:opacity-100' ?>">
+                                    <?= $isLiburBar ? 'Libur' : $t['count'] ?>
                                 </span>
                                 <div class="w-full max-w-[42px] rounded-t-lg transition-all duration-300 <?= $barColor ?>" style="height: <?= $heightPct ?>%"></div>
                                 <span class="text-[10px] <?= $textColor ?> truncate text-center w-full">
@@ -238,10 +264,15 @@ $todayYmd = date('Y-m-d');
                     </div>
                 </div>
 
-                <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-                    <span class="flex items-center gap-1.5">
-                        <span class="w-3 h-3 rounded bg-primary-600 inline-block"></span> Hari ini
-                    </span>
+                <div class="mt-4 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
+                    <div class="flex items-center gap-4">
+                        <span class="flex items-center gap-1.5">
+                            <span class="w-3 h-3 rounded bg-primary-600 inline-block"></span> Hari ini
+                        </span>
+                        <span class="flex items-center gap-1.5">
+                            <span class="w-3 h-3 rounded bg-sky-200 border border-dashed border-sky-400 inline-block"></span> Minggu / Libur
+                        </span>
+                    </div>
                     <span>Monitoring performa pengisian tim support</span>
                 </div>
             </div>
@@ -1070,6 +1101,25 @@ $todayYmd = date('Y-m-d');
         </div>
 
         <!-- 5.2 Summary Cards & Monitoring Daftar Staff Hari Ini -->
+        <?php if (!empty($remEval['is_holiday'])): ?>
+            <div class="p-4 rounded-2xl bg-sky-50 border border-sky-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div class="flex items-start gap-3">
+                    <span class="text-xl shrink-0">🏖️</span>
+                    <div>
+                        <h4 class="text-xs sm:text-sm font-extrabold text-sky-950">
+                            Hari Ini Libur: <?= e($remEval['holiday_info']['nama_libur'] ?? 'Hari Libur') ?>
+                        </h4>
+                        <p class="text-xs text-sky-800 mt-0.5">
+                            Pengingat WA otomatis Jurnal Staff hari ini dilewati karena bukan hari kerja aktif.
+                        </p>
+                    </div>
+                </div>
+                <a href="<?= url('kelola-absen-pegawai?tab=libur') ?>" class="px-3.5 py-2 rounded-xl bg-white hover:bg-sky-100 text-sky-800 border border-sky-200 text-xs font-bold shrink-0 self-start sm:self-auto">
+                    Atur Hari Libur &rarr;
+                </a>
+            </div>
+        <?php endif; ?>
+
         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
             <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
                 <p class="text-[11px] font-bold text-slate-400 uppercase">Total Staff</p>
@@ -1160,12 +1210,14 @@ $todayYmd = date('Y-m-d');
                                         'belum_isi' => 'bg-rose-50 text-rose-700 border-rose-200',
                                         'sebagian'  => 'bg-amber-50 text-amber-800 border-amber-200',
                                         'cuti_izin' => 'bg-sky-50 text-sky-700 border-sky-200',
+                                        'libur'     => 'bg-sky-50 text-sky-700 border-sky-200',
                                         default     => 'bg-emerald-50 text-emerald-700 border-emerald-200',
                                     };
                                     $catLabel = match($cat) {
                                         'belum_isi' => '✕ Belum Isi',
                                         'sebagian'  => '⚠ Sebagian',
                                         'cuti_izin' => '🏖 ' . ($it['excused_reason'] ?: 'Cuti/Izin'),
+                                        'libur'     => '🏖️ Hari Libur',
                                         default     => '✓ Lengkap',
                                     };
                                     $itemPayload = [
@@ -1196,7 +1248,7 @@ $todayYmd = date('Y-m-d');
                                         <div class="text-[10px] text-slate-400"><?= (int)$it['filled_today_count'] ?> total sesi</div>
                                     </td>
                                     <td class="py-3.5 px-4 max-w-xs">
-                                        <?php if (empty($it['missing_jams']) || $cat === 'cuti_izin'): ?>
+                                        <?php if (empty($it['missing_jams']) || $cat === 'cuti_izin' || $cat === 'libur'): ?>
                                             <span class="text-[11px] text-slate-400 italic">-</span>
                                         <?php else: ?>
                                             <div class="flex flex-wrap gap-1">

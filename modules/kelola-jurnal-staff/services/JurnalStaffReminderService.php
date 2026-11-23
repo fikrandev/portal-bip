@@ -648,6 +648,10 @@ class JurnalStaffReminderService
             $settings = self::getSettings();
         }
 
+        require_once MODULES_PATH . '/kelola-absen-pegawai/models/AbsenPegawaiModel.php';
+        $liburInfo = AbsenPegawaiModel::getLiburInfoForDate($date);
+        $isHoliday = ($liburInfo !== null);
+
         $excludeIstirahat = ($settings['jurnal_staff_wa_exclude_istirahat'] === '1');
         $skipCutiIzin = ($settings['jurnal_staff_wa_skip_cuti_izin'] === '1');
 
@@ -755,6 +759,9 @@ class JurnalStaffReminderService
             if ($skipCutiIzin && $excusedReason !== null) {
                 $category = 'cuti_izin';
                 $summary['cuti_izin']++;
+            } elseif ($isHoliday) {
+                $category = 'libur';
+                $summary['lengkap']++;
             } elseif (empty($requiredJams) || count($missingJams) === 0) {
                 $category = 'lengkap';
                 $summary['lengkap']++;
@@ -804,9 +811,13 @@ class JurnalStaffReminderService
             ];
         }
 
+        $summary['is_holiday'] = $isHoliday;
+
         return [
             'date'          => $date,
             'slot'          => $slotTime,
+            'is_holiday'    => $isHoliday,
+            'holiday_info'  => $liburInfo,
             'required_jams' => $requiredJams,
             'summary'       => $summary,
             'items'         => $items,
@@ -926,6 +937,19 @@ class JurnalStaffReminderService
                 'success' => true,
                 'skipped' => true,
                 'reason'  => 'Hari ini (' . self::formatTanggalIndo($date) . ') bukan hari kerja aktif pengingat.',
+                'date'    => $date,
+                'slot'    => $slotTime,
+                'sent'    => 0,
+            ];
+        }
+
+        require_once MODULES_PATH . '/kelola-absen-pegawai/models/AbsenPegawaiModel.php';
+        $liburInfo = AbsenPegawaiModel::getLiburInfoForDate($date);
+        if (!$force && $liburInfo !== null) {
+            return [
+                'success' => true,
+                'skipped' => true,
+                'reason'  => 'Hari ini (' . self::formatTanggalIndo($date) . ') adalah hari libur (' . $liburInfo['nama_libur'] . '). Pengingat WA otomatis dilewati.',
                 'date'    => $date,
                 'slot'    => $slotTime,
                 'sent'    => 0,

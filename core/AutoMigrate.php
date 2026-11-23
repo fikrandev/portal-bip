@@ -103,6 +103,7 @@ class AutoMigrate
             '2026_11_20_000065_sync_cuti_full_schema_and_approval_columns' => 'migration065SyncCutiFullSchemaAndApprovalColumns',
             '2026_11_21_000066_sync_quran_bookmark_guru_multiuser'         => 'migration066SyncQuranBookmarkGuruMultiuser',
             '2026_11_23_000067_create_jurnal_staff_wa_reminder_log'        => 'migration067CreateJurnalStaffWaReminderLog',
+            '2026_11_23_000068_create_absen_pegawai_libur'                 => 'migration068CreateAbsenPegawaiLibur',
         ];
     }
     /**
@@ -4978,6 +4979,28 @@ class AutoMigrate
                 }
             }
         }
+    }
+
+    /**
+     * 068. Tabel Pengaturan Hari Libur Absen Pegawai (Selain Minggu)
+     */
+    protected static function migration068CreateAbsenPegawaiLibur(PDO $pdo): void
+    {
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `absen_pegawai_libur` (
+                `id` INT(11) NOT NULL AUTO_INCREMENT,
+                `tanggal` DATE NOT NULL,
+                `nama_libur` VARCHAR(150) NOT NULL,
+                `jenis` ENUM('nasional', 'cuti_bersama', 'yayasan', 'lainnya') NOT NULL DEFAULT 'nasional',
+                `keterangan` VARCHAR(255) DEFAULT NULL,
+                `created_by` INT(11) DEFAULT NULL,
+                `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+                `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `uniq_absen_libur_tanggal` (`tanggal`),
+                KEY `idx_absen_libur_jenis` (`jenis`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
     }
 }
 

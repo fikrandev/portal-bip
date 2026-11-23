@@ -54,6 +54,18 @@
         <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-white/10 rounded-full blur-xl pointer-events-none"></div>
     </div>
 
+    <?php if (!empty($liburInfo)): ?>
+    <div class="bg-sky-50 border border-sky-200 rounded-2xl p-3.5 flex items-start gap-2.5 text-sky-900 text-xs shadow-xs">
+        <span class="text-lg shrink-0">🏖️</span>
+        <div>
+            <p class="font-extrabold">Hari Libur: <?= e($liburInfo['nama_libur']) ?></p>
+            <p class="text-[11px] text-sky-800 mt-0.5 leading-snug">
+                Tanggal hari ini dikecualikan dari perhitungan hari kerja, alpa absensi, serta target jurnal staff.
+            </p>
+        </div>
+    </div>
+    <?php endif; ?>
+
     <!-- 2. Interactive Geolocation & Radius Status -->
     <div class="bg-white rounded-3xl p-4 shadow-sm border border-slate-100 space-y-3">
         <div class="flex items-center justify-between">

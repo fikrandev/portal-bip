@@ -12,7 +12,8 @@ $rekapRows = $rekapPeriodeData['rows'] ?? [];
 $summary = $rekapPeriodeData['summary'] ?? [];
 $startDate = $rekapPeriodeData['start_date'] ?? date('Y-m-01');
 $endDate = $rekapPeriodeData['end_date'] ?? date('Y-m-d');
-$hariKerja = (int)($rekapPeriodeData['jumlah_hari_kerja'] ?? 1);
+$hariKerja = (int)($rekapPeriodeData['jumlah_hari_kerja'] ?? 0);
+$jumlahLiburKhusus = (int)($rekapPeriodeData['jumlah_libur_khusus'] ?? 0);
 $unitNama = !empty($targetUnit) ? $targetUnit : (!empty($rekapPeriodeData['target_unit']) ? $rekapPeriodeData['target_unit'] : 'Seluruh Unit');
 
 // Format tanggal Indonesia
@@ -414,7 +415,7 @@ if (defined('SYS_APP_LOGO') && !empty(SYS_APP_LOGO)) {
             <div class="report-meta">
                 <span>Unit Tugas: <strong><?= e($unitNama) ?></strong></span>
                 <span>Periode: <strong><?= e($periodeFmt) ?></strong></span>
-                <span>Jumlah Hari Kerja: <strong><?= $hariKerja ?> Hari</strong></span>
+                <span>Hari Kerja Efektif: <strong><?= $hariKerja ?> Hari</strong><?php if ($jumlahLiburKhusus > 0): ?> <small>(tidak termasuk <?= $jumlahLiburKhusus ?> hari libur &amp; Minggu)</small><?php endif; ?></span>
                 <span>Dicetak Pada: <strong><?= e($cetakFmt) ?></strong></span>
             </div>
         </div>
