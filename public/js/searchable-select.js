@@ -157,13 +157,17 @@
             multiActions.querySelector('.btn-select-all').addEventListener('click', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
+                var prevScroll = optionsList.scrollTop;
                 var visibleOpts = optionsList.querySelectorAll('.searchable-option:not(.hidden)');
                 visibleOpts.forEach(function(el) {
                     var v = el.getAttribute('data-value');
                     var targetOpt = Array.from(select.options).find(o => String(o.value) === String(v));
-                    if (targetOpt && targetOpt.value !== '') targetOpt.selected = true;
+                    if (targetOpt && targetOpt.value !== '' && targetOpt.value !== 'custom' && targetOpt.getAttribute('data-always-show') !== 'true') {
+                        targetOpt.selected = true;
+                    }
                 });
                 renderOptions(searchInput.value);
+                optionsList.scrollTop = prevScroll;
                 updateTrigger();
                 var evt = new Event('change', { bubbles: true });
                 select.dispatchEvent(evt);
@@ -172,10 +176,12 @@
             multiActions.querySelector('.btn-deselect-all').addEventListener('click', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
+                var prevScroll = optionsList.scrollTop;
                 Array.from(select.options).forEach(function(opt) {
                     opt.selected = false;
                 });
                 renderOptions(searchInput.value);
+                optionsList.scrollTop = prevScroll;
                 updateTrigger();
                 var evt = new Event('change', { bubbles: true });
                 select.dispatchEvent(evt);
@@ -343,10 +349,12 @@
                     e.stopPropagation();
                     if (isMultiple) {
                         opt.selected = !opt.selected;
+                        var prevScroll = optionsList.scrollTop;
+                        renderOptions(searchInput.value);
+                        optionsList.scrollTop = prevScroll;
+                        updateTrigger();
                         var evt = new Event('change', { bubbles: true });
                         select.dispatchEvent(evt);
-                        renderOptions(searchInput.value);
-                        updateTrigger();
                     } else {
                         selectOption(val);
                         closeDropdown();
@@ -393,6 +401,7 @@
             if (isMultiple) {
                 var selectedOpts = Array.from(select.options).filter(o => o.selected && o.value !== '');
                 var count = selectedOpts.length;
+                var countLabel = select.getAttribute('data-count-label') || 'Kelas';
 
                 if (count === 0) {
                     var span = document.createElement('span');
@@ -402,26 +411,28 @@
                     return;
                 }
 
+                var names = selectedOpts.map(o => (o.getAttribute('data-nama') || o.text || '').trim()).filter(Boolean);
+                trigger.title = names.join(' • ');
+
                 if (count === 1) {
                     var singleTag = document.createElement('div');
                     singleTag.className = 'flex items-center gap-1.5 min-w-0';
-                    singleTag.innerHTML = `
-                        <span class="px-2 py-0.5 rounded-lg bg-indigo-50 border border-indigo-200/80 text-indigo-800 font-bold text-xs truncate">
-                            ${selectedOpts[0].text}
-                        </span>
-                    `;
+                    var badgeSpan = document.createElement('span');
+                    badgeSpan.className = 'px-2 py-0.5 rounded-lg bg-indigo-50 border border-indigo-200/80 text-indigo-800 font-bold text-xs truncate';
+                    badgeSpan.textContent = names[0] || selectedOpts[0].text;
+                    singleTag.appendChild(badgeSpan);
                     triggerContent.appendChild(singleTag);
                 } else {
                     var multiTag = document.createElement('div');
                     multiTag.className = 'flex items-center gap-1.5 min-w-0';
-                    multiTag.innerHTML = `
-                        <span class="px-2 py-0.5 rounded-lg bg-indigo-600 text-white font-extrabold text-[11px] shrink-0 shadow-xs">
-                            ${count} Kelas
-                        </span>
-                        <span class="font-bold text-slate-800 text-xs truncate">
-                            ${selectedOpts[0].text}, +${count - 1} lainnya
-                        </span>
-                    `;
+                    var countBadge = document.createElement('span');
+                    countBadge.className = 'px-2 py-0.5 rounded-lg bg-indigo-600 text-white font-extrabold text-[11px] shrink-0 shadow-xs';
+                    countBadge.textContent = count + ' ' + countLabel;
+                    var textSummary = document.createElement('span');
+                    textSummary.className = 'font-bold text-slate-800 text-xs truncate';
+                    textSummary.textContent = names.join(', ');
+                    multiTag.appendChild(countBadge);
+                    multiTag.appendChild(textSummary);
                     triggerContent.appendChild(multiTag);
                 }
                 return;

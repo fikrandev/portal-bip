@@ -1802,38 +1802,26 @@ $todayYmd = date('Y-m-d');
                     <input type="hidden" name="jam_rentang" id="jurnal-jam-rentang" value="08:00 - 09:00">
                 </div>
 
-                <!-- Opsi Tugas / Job Desk (Bisa Pilih Lebih Dari 1) -->
-                <div class="md:col-span-2 space-y-2">
-                    <div class="flex items-center justify-between gap-2">
-                        <label class="block text-xs font-semibold text-slate-700">
-                            Pilih Tugas / Job Desk Divisi <span class="text-indigo-600 font-bold">(Bisa Pilih Lebih Dari 1)</span>
-                        </label>
-                        <button type="button" id="btn-admin-clear-tugas" onclick="clearAdminSelectedTugas()" class="hidden text-[11px] font-bold text-rose-600 hover:underline">
-                            Reset Pilihan
-                        </button>
-                    </div>
+                <!-- Opsi Tugas / Job Desk (Multi-Select Stay-Open Dropdown) -->
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">
+                        Pilih Tugas / Job Desk Divisi <span class="text-indigo-600 font-bold">(Bisa Pilih Lebih Dari 1)</span>
+                    </label>
                     <input type="hidden" name="tugas_id" id="jurnal-tugas-id-primary" value="">
                     <input type="hidden" name="tugas_ids" id="jurnal-tugas-ids" value="">
-                    <select id="jurnal-tugas-id" onchange="handleTugasChange(this)"
+                    <select id="jurnal-tugas-id" multiple data-multiple="true" data-count-label="Tugas"
+                            onchange="handleTugasChange(this)"
                             class="searchable-select w-full text-xs"
-                            data-placeholder="-- Cari & Pilih Tugas (Bisa Lebih Dari 1) --"
+                            data-placeholder="-- Pilih Tugas / Job Desk (Bisa Lebih Dari 1) --"
                             data-search-placeholder="Cari nama tugas / job desk...">
-                        <option value="">-- Cari & Pilih Tugas (Bisa Lebih Dari 1) --</option>
                     </select>
-                    <div id="admin-selected-tugas-box" class="hidden p-2.5 rounded-xl bg-indigo-50/60 border border-indigo-100 space-y-1.5">
-                        <div class="flex items-center justify-between text-[11px]">
-                            <span class="font-bold text-indigo-900">Daftar Tugas Terpilih:</span>
-                            <span id="admin-selected-tugas-count" class="px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 font-extrabold text-[10px]">0 Tugas</span>
-                        </div>
-                        <div id="admin-selected-tugas-list" class="flex flex-wrap gap-1.5"></div>
-                    </div>
                 </div>
 
                 <!-- Nama Aktivitas / Pekerjaan -->
                 <div class="md:col-span-2">
                     <label class="block text-xs font-semibold text-slate-700 mb-1">
                         Aktivitas / Nama Pekerjaan <span class="text-rose-500">*</span>
-                        <span class="text-[11px] font-normal text-slate-400">(Otomatis terisi dari tugas terpilih atau ketik manual; pisahkan dengan " • " jika lebih dari 1)</span>
+                        <span class="text-[11px] font-normal text-slate-400">(Otomatis terisi dari tugas terpilih atau ketik manual)</span>
                     </label>
                     <input type="text" name="aktivitas" id="jurnal-aktivitas" required placeholder="Contoh: Maintenance Jaringan • Backup Database Server" class="w-full px-3.5 py-2.5 text-xs font-medium text-slate-800 bg-slate-50/70 hover:bg-white focus:bg-white rounded-xl border border-slate-200 hover:border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none focus:outline-none transition-all placeholder:text-slate-400">
                 </div>
@@ -2214,89 +2202,18 @@ function switchStaffTab(tabName) {
     }
 }
 
-/**
- * State & Helper Multi-Tugas pada Modal Input Jurnal (Admin Desktop)
- */
-let adminSelectedTugasList = [];
+function applyAdminTugasPreselection(tugasSelect, rawTugasIds, rawAktivitas) {
+    if (!tugasSelect) return;
+    Array.from(tugasSelect.options).forEach(o => { o.selected = false; });
 
-function renderAdminSelectedTugasChips() {
-    const box = document.getElementById('admin-selected-tugas-box');
-    const listEl = document.getElementById('admin-selected-tugas-list');
-    const countEl = document.getElementById('admin-selected-tugas-count');
-    const btnClear = document.getElementById('btn-admin-clear-tugas');
-    const inpPrimary = document.getElementById('jurnal-tugas-id-primary');
-    const inpIds = document.getElementById('jurnal-tugas-ids');
-
-    const masterIds = adminSelectedTugasList
-        .filter(it => it.id && Number(it.id) > 0)
-        .map(it => Number(it.id));
-
-    if (inpPrimary) inpPrimary.value = masterIds.length > 0 ? String(masterIds[0]) : '';
-    if (inpIds) inpIds.value = masterIds.join(',');
-
-    if (!box || !listEl) return;
-
-    if (adminSelectedTugasList.length === 0) {
-        box.classList.add('hidden');
-        listEl.innerHTML = '';
-        if (btnClear) btnClear.classList.add('hidden');
-        return;
-    }
-
-    box.classList.remove('hidden');
-    if (btnClear) btnClear.classList.remove('hidden');
-    if (countEl) countEl.textContent = adminSelectedTugasList.length + ' Tugas';
-
-    listEl.innerHTML = '';
-    adminSelectedTugasList.forEach((it, idx) => {
-        const chip = document.createElement('span');
-        chip.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-semibold bg-white text-indigo-900 border border-indigo-200 shadow-2xs';
-        const txt = document.createElement('span');
-        txt.textContent = '🎯 ' + it.nama;
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'w-4 h-4 rounded-full bg-indigo-100 hover:bg-rose-100 text-indigo-600 hover:text-rose-600 flex items-center justify-center text-[10px] font-bold transition-colors';
-        btn.textContent = '✕';
-        btn.title = 'Hapus tugas ini';
-        btn.onclick = function() { removeAdminTugasChip(idx); };
-        chip.appendChild(txt);
-        chip.appendChild(btn);
-        listEl.appendChild(chip);
-    });
-}
-
-function syncAdminAktivitasInput() {
-    const inpAkt = document.getElementById('jurnal-aktivitas');
-    if (!inpAkt) return;
-    inpAkt.value = adminSelectedTugasList.map(it => it.nama).join(' • ');
-}
-
-function removeAdminTugasChip(idx) {
-    if (idx < 0 || idx >= adminSelectedTugasList.length) return;
-    adminSelectedTugasList.splice(idx, 1);
-    renderAdminSelectedTugasChips();
-    syncAdminAktivitasInput();
-}
-
-function clearAdminSelectedTugas() {
-    adminSelectedTugasList = [];
-    renderAdminSelectedTugasChips();
-    syncAdminAktivitasInput();
-}
-
-function hydrateAdminSelectedTugas(tugasSelect, rawTugasIds, rawAktivitas) {
-    adminSelectedTugasList = [];
     const byId = {};
     const byLower = {};
-    if (tugasSelect && tugasSelect.options) {
-        for (let i = 0; i < tugasSelect.options.length; i++) {
-            const o = tugasSelect.options[i];
-            if (!o.value) continue;
-            const nm = (o.getAttribute('data-nama') || o.textContent || '').trim();
-            byId[String(o.value)] = { id: Number(o.value), nama: nm };
-            if (nm) byLower[nm.toLowerCase()] = { id: Number(o.value), nama: nm };
-        }
-    }
+    Array.from(tugasSelect.options).forEach(o => {
+        if (!o.value) return;
+        const nm = (o.getAttribute('data-nama') || o.textContent || '').trim();
+        byId[String(o.value)] = o;
+        if (nm) byLower[nm.toLowerCase()] = o;
+    });
 
     const idList = String(rawTugasIds || '')
         .split(/[\s,;]+/)
@@ -2307,37 +2224,23 @@ function hydrateAdminSelectedTugas(tugasSelect, rawTugasIds, rawAktivitas) {
         .map(s => s.trim())
         .filter(Boolean);
 
-    const seenNames = new Set();
-    const seenIds = new Set();
-
-    if (aktParts.length > 0) {
-        aktParts.forEach(part => {
-            const low = part.toLowerCase();
-            if (seenNames.has(low)) return;
-            if (byLower[low]) {
-                seenNames.add(low);
-                seenIds.add(byLower[low].id);
-                adminSelectedTugasList.push({ id: byLower[low].id, nama: byLower[low].nama });
-            } else {
-                seenNames.add(low);
-                adminSelectedTugasList.push({ id: null, nama: part });
-            }
-        });
-    }
-
     idList.forEach(id => {
-        if (!seenIds.has(id) && byId[String(id)]) {
-            const item = byId[String(id)];
-            const low = item.nama.toLowerCase();
-            if (!seenNames.has(low)) {
-                seenIds.add(id);
-                seenNames.add(low);
-                adminSelectedTugasList.push({ id: item.id, nama: item.nama });
-            }
-        }
+        if (byId[String(id)]) byId[String(id)].selected = true;
+    });
+    aktParts.forEach(part => {
+        const low = part.toLowerCase();
+        if (byLower[low]) byLower[low].selected = true;
     });
 
-    renderAdminSelectedTugasChips();
+    const selectedMasterIds = Array.from(tugasSelect.options)
+        .filter(o => o.selected && o.value !== '')
+        .map(o => parseInt(o.value, 10))
+        .filter(n => n > 0);
+
+    const inpPrimary = document.getElementById('jurnal-tugas-id-primary');
+    const inpIds = document.getElementById('jurnal-tugas-ids');
+    if (inpPrimary) inpPrimary.value = selectedMasterIds.length > 0 ? String(selectedMasterIds[0]) : '';
+    if (inpIds) inpIds.value = selectedMasterIds.join(',');
 }
 
 /**
@@ -2349,14 +2252,16 @@ function handlePegawaiChange(selectEl, preselectTugasIds = null, preselectAktivi
     const tugasSelect = document.getElementById('jurnal-tugas-id');
     if (!tugasSelect) return;
 
-    tugasSelect.innerHTML = '<option value="">-- Cari & Pilih Tugas (Bisa Lebih Dari 1) --</option>';
+    tugasSelect.innerHTML = '';
     if (window.SearchableSelect && typeof window.SearchableSelect.refresh === 'function') {
         window.SearchableSelect.refresh(tugasSelect);
     }
 
     if (!preselectTugasIds && !preselectAktivitas) {
-        adminSelectedTugasList = [];
-        renderAdminSelectedTugasChips();
+        const inpPrimary = document.getElementById('jurnal-tugas-id-primary');
+        const inpIds = document.getElementById('jurnal-tugas-ids');
+        if (inpPrimary) inpPrimary.value = '';
+        if (inpIds) inpIds.value = '';
     }
 
     if (!opt) return;
@@ -2395,17 +2300,14 @@ function handlePegawaiChange(selectEl, preselectTugasIds = null, preselectAktivi
                         tugasSelect.appendChild(newOpt);
                     });
                     if (preselectTugasIds || preselectAktivitas) {
-                        hydrateAdminSelectedTugas(tugasSelect, preselectTugasIds, preselectAktivitas);
+                        applyAdminTugasPreselection(tugasSelect, preselectTugasIds, preselectAktivitas);
                     }
-                    tugasSelect.value = '';
                     if (window.SearchableSelect && typeof window.SearchableSelect.refresh === 'function') {
                         window.SearchableSelect.refresh(tugasSelect);
                     }
                 }
             })
             .catch(err => console.error(err));
-    } else if (preselectTugasIds || preselectAktivitas) {
-        hydrateAdminSelectedTugas(tugasSelect, preselectTugasIds, preselectAktivitas);
     }
 }
 
@@ -2419,38 +2321,18 @@ function handleJamChange(selectEl) {
 }
 
 function handleTugasChange(selectEl) {
-    const opt = selectEl.options[selectEl.selectedIndex];
-    if (!opt || !opt.value) return;
-    const id = parseInt(opt.value, 10) || null;
-    const nama = (opt.getAttribute('data-nama') || opt.text || '').trim();
-    if (!nama) return;
+    if (!selectEl) return;
+    const selectedOpts = Array.from(selectEl.options).filter(o => o.selected && o.value !== '');
+    const masterIds = selectedOpts.map(o => parseInt(o.value, 10)).filter(n => n > 0);
+    const names = selectedOpts.map(o => (o.getAttribute('data-nama') || o.text || '').trim()).filter(Boolean);
 
-    // Sebelum menambah chip, sinkronkan jika ada teks manual di input aktivitas yang belum masuk daftar chip
+    const inpPrimary = document.getElementById('jurnal-tugas-id-primary');
+    const inpIds = document.getElementById('jurnal-tugas-ids');
     const inpAkt = document.getElementById('jurnal-aktivitas');
-    if (inpAkt && inpAkt.value.trim() !== '') {
-        const manualParts = inpAkt.value.split(/\s*•\s*/).map(s => s.trim()).filter(Boolean);
-        manualParts.forEach(mp => {
-            const exists = adminSelectedTugasList.some(it => it.nama.toLowerCase() === mp.toLowerCase());
-            if (!exists) {
-                adminSelectedTugasList.push({ id: null, nama: mp });
-            }
-        });
-    }
 
-    const alreadySelected = adminSelectedTugasList.some(
-        it => (id && it.id === id) || it.nama.toLowerCase() === nama.toLowerCase()
-    );
-    if (!alreadySelected) {
-        adminSelectedTugasList.push({ id: id, nama: nama });
-    }
-
-    renderAdminSelectedTugasChips();
-    syncAdminAktivitasInput();
-
-    selectEl.value = '';
-    if (window.SearchableSelect && typeof window.SearchableSelect.refresh === 'function') {
-        window.SearchableSelect.refresh(selectEl);
-    }
+    if (inpPrimary) inpPrimary.value = masterIds.length > 0 ? String(masterIds[0]) : '';
+    if (inpIds) inpIds.value = masterIds.join(',');
+    if (inpAkt) inpAkt.value = names.join(' • ');
 }
 
 /**
@@ -2460,11 +2342,13 @@ function openModalInputJurnal() {
     document.getElementById('modal-jurnal-title').textContent = 'Input Catatan Jurnal Staff';
     document.getElementById('form-jurnal').action = '<?= url("kelola-jurnal-staff/jurnal/store") ?>';
     document.getElementById('form-jurnal').reset();
-    adminSelectedTugasList = [];
-    renderAdminSelectedTugasChips();
+    const inpPrimary = document.getElementById('jurnal-tugas-id-primary');
+    const inpIds = document.getElementById('jurnal-tugas-ids');
+    if (inpPrimary) inpPrimary.value = '';
+    if (inpIds) inpIds.value = '';
     const tugasSelect = document.getElementById('jurnal-tugas-id');
     if (tugasSelect) {
-        tugasSelect.innerHTML = '<option value="">-- Cari & Pilih Tugas (Bisa Lebih Dari 1) --</option>';
+        tugasSelect.innerHTML = '';
         if (window.SearchableSelect && typeof window.SearchableSelect.refresh === 'function') {
             window.SearchableSelect.refresh(tugasSelect);
         }

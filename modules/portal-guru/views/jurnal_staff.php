@@ -641,25 +641,19 @@ $totalLiburPeriode = (int)($totalLiburPeriode ?? 0);
                     </div>
                 </div>
 
-                <!-- 1. Pilihan Tugas / Job Desk Sesuai Jabatan Penugasan (Bisa Lebih Dari 1) -->
-                <div class="space-y-2">
-                    <div class="flex items-center justify-between gap-2">
-                        <label class="block text-xs font-bold text-slate-800">
-                            Pilih Tugas / Job Desk <span class="text-rose-500">*</span>
-                            <span class="text-[10px] font-semibold text-primary-600">(Bisa &gt; 1)</span>
-                        </label>
-                        <button type="button" id="btn-toggle-custom-tugas" onclick="toggleCustomTugasBox()"
-                                class="text-[10.5px] font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2.5 py-1 rounded-xl transition-colors press-bounce">
-                            ✍️ + Tulis Manual
-                        </button>
-                    </div>
+                <!-- 1. Pilihan Tugas / Job Desk Sesuai Jabatan Penugasan (Multi-Select Stay-Open Dropdown) -->
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-bold text-slate-800">
+                        Pilih Tugas / Job Desk <span class="text-rose-500">*</span>
+                        <span class="text-[10px] font-semibold text-primary-600">(Bisa Pilih Lebih Dari 1)</span>
+                    </label>
 
                     <div id="wrapper-select-tugas-dropdown" class="relative">
-                        <select id="modal_select_tugas" onchange="handleSelectTugasChange(this)"
+                        <select id="modal_select_tugas" multiple data-multiple="true" data-count-label="Tugas"
+                                onchange="handleSelectTugasChange(this)"
                                 class="searchable-select w-full px-3.5 py-3 rounded-2xl border border-slate-200 bg-white font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
-                                data-placeholder="-- Cari &amp; Tambah Tugas (Bisa Lebih Dari 1) --"
+                                data-placeholder="-- Pilih Tugas Dari Daftar (Bisa Lebih Dari 1) --"
                                 data-search-placeholder="Cari nama tugas / job desk...">
-                            <option value="">-- Cari &amp; Tambah Tugas (Bisa Lebih Dari 1) --</option>
 
                             <?php if (!empty($tugasJabatan)): ?>
                                 <optgroup label="⭐ Tugas Jabatan (<?= e($jabatanName) ?>)">
@@ -684,48 +678,21 @@ $totalLiburPeriode = (int)($totalLiburPeriode ?? 0);
                         </select>
                     </div>
 
-                    <!-- Daftar Chip Tugas Terpilih -->
-                    <div id="selected-tugas-container" class="p-3 rounded-2xl bg-slate-50 border border-slate-200/90 space-y-2">
-                        <div class="flex items-center justify-between text-[10.5px]">
-                            <span class="font-bold text-slate-700 flex items-center gap-1">
-                                <span>🎯</span>
-                                <span>Daftar Tugas Terpilih:</span>
-                            </span>
-                            <span id="selected-tugas-count" class="px-2 py-0.5 rounded-full bg-primary-100 text-primary-800 font-extrabold text-[10px]">
-                                0 Tugas
-                            </span>
-                        </div>
-                        <div id="selected-tugas-list" class="flex flex-wrap gap-1.5"></div>
-                        <p id="selected-tugas-empty" class="text-[10.5px] text-slate-400 italic">
-                            Belum ada tugas dipilih. Pilih 1 atau lebih tugas dari daftar di atas.
-                        </p>
-                    </div>
-
                     <?php if (empty($tugasJabatan)): ?>
                         <p class="text-[10.5px] text-amber-700 bg-amber-50 border border-amber-200/80 rounded-xl px-3 py-1.5 mt-1">
-                            Belum ada rincian tugas terjadwal untuk jabatan <strong><?= e($jabatanName) ?></strong>. Gunakan tombol <em>+ Tulis Manual</em> atau hubungi Admin.
+                            Belum ada rincian tugas terjadwal untuk jabatan <strong><?= e($jabatanName) ?></strong>. Pilih <em>Tulis Tugas Sendiri</em> atau hubungi Admin.
                         </p>
                     <?php endif; ?>
                 </div>
 
-                <!-- Input Tugas Custom (Muncul jika klik + Tulis Manual atau pilih Tulis Sendiri) -->
-                <div id="container-tugas-custom" class="space-y-1.5 hidden p-3 rounded-2xl bg-amber-50/70 border border-amber-200">
-                    <label class="block text-[11px] font-bold text-amber-900">
-                        Ketik Nama Tugas / Aktivitas Manual:
+                <!-- Input Tugas Custom (Muncul jika opsi Tulis Tugas Sendiri dicentang) -->
+                <div id="container-tugas-custom" class="space-y-1 hidden">
+                    <label class="block text-xs font-bold text-amber-800">
+                        Ketik Nama Tugas / Aktivitas Baru <span class="text-rose-500">*</span>
                     </label>
-                    <div class="flex items-center gap-1.5">
-                        <input type="text" name="aktivitas_custom" id="inp_aktivitas_custom"
-                               onkeydown="if(event.key==='Enter'){event.preventDefault();addCustomTugasChip();}"
-                               placeholder="Contoh: Koordinasi teknis maintenance WiFi &amp; Server"
-                               class="flex-1 min-w-0 px-3 py-2.5 rounded-xl border border-amber-300 bg-white font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all text-xs">
-                        <button type="button" onclick="addCustomTugasChip()"
-                                class="px-3.5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shrink-0 press-bounce shadow-xs">
-                            + Tambah
-                        </button>
-                    </div>
-                    <p class="text-[10px] text-amber-700">
-                        Tekan <strong>+ Tambah</strong> untuk memasukkan ke daftar tugas terpilih (bisa tambah lebih dari 1).
-                    </p>
+                    <input type="text" name="aktivitas_custom" id="inp_aktivitas_custom"
+                           placeholder="Contoh: Koordinasi teknis maintenance WiFi &amp; Server"
+                           class="w-full px-3.5 py-2.5 rounded-2xl border border-amber-300 bg-amber-50/50 font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all text-xs">
                 </div>
 
                 <!-- 2. Keterangan / Uraian Hasil Kerja -->
@@ -929,159 +896,34 @@ $totalLiburPeriode = (int)($totalLiburPeriode ?? 0);
         });
     } catch (e) {}
 
-    // State management multi-select jam & multi-select tugas
+    // State management multi-select jam
     let selectedJamMap = {};
-    let selectedTugasList = [];
-    let isModalTugasReadOnly = false;
 
-    function renderSelectedTugasChips() {
-        const listEl = document.getElementById('selected-tugas-list');
-        const countEl = document.getElementById('selected-tugas-count');
-        const emptyEl = document.getElementById('selected-tugas-empty');
+    function hydrateMultiSelectTugasFromData(data) {
+        const selectTugas = document.getElementById('modal_select_tugas');
+        const containerCustom = document.getElementById('container-tugas-custom');
+        const inpCustom = document.getElementById('inp_aktivitas_custom');
         const inpTugasId = document.getElementById('inp_tugas_id');
         const inpTugasIds = document.getElementById('inp_tugas_ids');
+        if (!selectTugas) return;
 
-        const masterIds = selectedTugasList
-            .filter(it => it.id && Number(it.id) > 0)
-            .map(it => Number(it.id));
-
-        if (inpTugasId) inpTugasId.value = masterIds.length > 0 ? String(masterIds[0]) : '';
-        if (inpTugasIds) inpTugasIds.value = masterIds.join(',');
-        if (countEl) countEl.textContent = `${selectedTugasList.length} Tugas`;
-
-        if (!listEl) return;
-        listEl.innerHTML = '';
-
-        if (selectedTugasList.length === 0) {
-            if (emptyEl) emptyEl.classList.remove('hidden');
-            return;
-        }
-        if (emptyEl) emptyEl.classList.add('hidden');
-
-        selectedTugasList.forEach((it, idx) => {
-            const chip = document.createElement('div');
-            chip.className = it.custom
-                ? 'inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-amber-50 text-amber-900 border border-amber-200 text-[11px] font-bold shadow-2xs max-w-full'
-                : 'inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white text-primary-900 border border-primary-200 text-[11px] font-bold shadow-2xs max-w-full';
-
-            const iconSpan = document.createElement('span');
-            iconSpan.className = 'shrink-0';
-            iconSpan.textContent = it.custom ? '✍️' : '🎯';
-
-            const textSpan = document.createElement('span');
-            textSpan.className = 'leading-snug break-words';
-            textSpan.textContent = it.nama;
-
-            chip.appendChild(iconSpan);
-            chip.appendChild(textSpan);
-
-            if (!isModalTugasReadOnly) {
-                const rmBtn = document.createElement('button');
-                rmBtn.type = 'button';
-                rmBtn.className = 'w-4 h-4 rounded-full bg-slate-100 hover:bg-rose-100 text-slate-500 hover:text-rose-600 flex items-center justify-center text-[10px] font-black shrink-0 ml-0.5 transition-colors';
-                rmBtn.textContent = '✕';
-                rmBtn.title = 'Hapus tugas ini';
-                rmBtn.onclick = function() {
-                    removeSelectedTugasChip(idx);
-                };
-                chip.appendChild(rmBtn);
-            }
-
-            listEl.appendChild(chip);
-        });
-    }
-
-    function removeSelectedTugasChip(idx) {
-        if (isModalTugasReadOnly) return;
-        if (idx < 0 || idx >= selectedTugasList.length) return;
-        selectedTugasList.splice(idx, 1);
-        renderSelectedTugasChips();
-    }
-
-    function addMasterTugasChip(rawId, rawNama, rawDeskripsi) {
-        const id = parseInt(rawId, 10) || null;
-        const nama = String(rawNama || '').trim();
-        if (!nama) return;
-
-        const already = selectedTugasList.some(
-            it => (id && it.id === id) || it.nama.toLowerCase() === nama.toLowerCase()
-        );
-        if (already) {
-            if (typeof AndroidUI !== 'undefined' && typeof AndroidUI.toast === 'function') {
-                AndroidUI.toast('Tugas tersebut sudah ada di daftar pilihan.', 'info');
-            }
-            return;
-        }
-
-        selectedTugasList.push({ id: id, nama: nama, custom: false });
-        renderSelectedTugasChips();
-
-        const inpUraian = document.getElementById('inp_uraian_hasil');
-        const desc = String(rawDeskripsi || '').trim();
-        if (inpUraian && desc && (!inpUraian.value || inpUraian.value.trim() === '')) {
-            inpUraian.value = `Melaksanakan ${nama}: ${desc}.`;
-        }
-    }
-
-    function toggleCustomTugasBox(forceShow) {
-        if (isModalTugasReadOnly) return;
-        const containerCustom = document.getElementById('container-tugas-custom');
-        const inpCustom = document.getElementById('inp_aktivitas_custom');
-        if (!containerCustom) return;
-
-        const shouldShow = (typeof forceShow === 'boolean')
-            ? forceShow
-            : containerCustom.classList.contains('hidden');
-
-        if (shouldShow) {
-            containerCustom.classList.remove('hidden');
-            if (inpCustom) setTimeout(() => inpCustom.focus(), 40);
-        } else {
-            containerCustom.classList.add('hidden');
-        }
-    }
-
-    function addCustomTugasChip() {
-        if (isModalTugasReadOnly) return;
-        const inpCustom = document.getElementById('inp_aktivitas_custom');
-        const containerCustom = document.getElementById('container-tugas-custom');
-        if (!inpCustom) return false;
-
-        const raw = inpCustom.value.trim();
-        if (!raw) return false;
-
-        const parts = raw.split(/\s*•\s*/).map(s => s.trim()).filter(Boolean);
-        let added = false;
-        parts.forEach(part => {
-            const exists = selectedTugasList.some(it => it.nama.toLowerCase() === part.toLowerCase());
-            if (!exists) {
-                selectedTugasList.push({ id: null, nama: part, custom: true });
-                added = true;
-            }
+        Array.from(selectTugas.options).forEach(opt => {
+            opt.selected = false;
         });
 
-        inpCustom.value = '';
-        if (containerCustom) containerCustom.classList.add('hidden');
-        renderSelectedTugasChips();
-        return added;
-    }
-
-    function hydrateSelectedTugasFromData(data, isReadOnly) {
-        selectedTugasList = [];
-        isModalTugasReadOnly = Boolean(isReadOnly);
-
-        const selectTugas = document.getElementById('modal_select_tugas');
         const byId = {};
         const byLower = {};
-        if (selectTugas && selectTugas.options) {
-            for (let i = 0; i < selectTugas.options.length; i++) {
-                const opt = selectTugas.options[i];
-                if (!opt.value || opt.value === 'custom') continue;
-                const nm = (opt.dataset.nama || opt.textContent || '').trim();
-                byId[String(opt.value)] = { id: Number(opt.value), nama: nm };
-                if (nm) byLower[nm.toLowerCase()] = { id: Number(opt.value), nama: nm };
+        let customOpt = null;
+        Array.from(selectTugas.options).forEach(opt => {
+            if (!opt.value) return;
+            if (opt.value === 'custom') {
+                customOpt = opt;
+                return;
             }
-        }
+            const nm = (opt.dataset.nama || opt.textContent || '').trim();
+            byId[String(opt.value)] = opt;
+            if (nm) byLower[nm.toLowerCase()] = opt;
+        });
 
         const rawIdsStr = String(data.tugas_ids || data.tugas_id || '');
         const idList = rawIdsStr
@@ -1093,37 +935,53 @@ $totalLiburPeriode = (int)($totalLiburPeriode ?? 0);
             .map(s => s.trim())
             .filter(Boolean);
 
-        const seenNames = new Set();
-        const seenIds = new Set();
-
-        if (aktParts.length > 0) {
-            aktParts.forEach(part => {
-                const low = part.toLowerCase();
-                if (seenNames.has(low)) return;
-                if (byLower[low]) {
-                    seenNames.add(low);
-                    seenIds.add(byLower[low].id);
-                    selectedTugasList.push({ id: byLower[low].id, nama: byLower[low].nama, custom: false });
-                } else {
-                    seenNames.add(low);
-                    selectedTugasList.push({ id: null, nama: part, custom: true });
-                }
-            });
-        }
+        const matchedOpts = new Set();
+        const customParts = [];
 
         idList.forEach(id => {
-            if (!seenIds.has(id) && byId[String(id)]) {
-                const item = byId[String(id)];
-                const low = item.nama.toLowerCase();
-                if (!seenNames.has(low)) {
-                    seenIds.add(id);
-                    seenNames.add(low);
-                    selectedTugasList.push({ id: item.id, nama: item.nama, custom: false });
+            if (byId[String(id)]) {
+                byId[String(id)].selected = true;
+                matchedOpts.add(byId[String(id)]);
+            }
+        });
+
+        aktParts.forEach(part => {
+            const low = part.toLowerCase();
+            if (byLower[low]) {
+                byLower[low].selected = true;
+                matchedOpts.add(byLower[low]);
+            } else {
+                const alreadyInMatched = Array.from(matchedOpts).some(
+                    o => ((o.dataset.nama || o.textContent || '').trim().toLowerCase() === low)
+                );
+                if (!alreadyInMatched) {
+                    customParts.push(part);
                 }
             }
         });
 
-        renderSelectedTugasChips();
+        if (customParts.length > 0) {
+            if (customOpt) customOpt.selected = true;
+            if (containerCustom) containerCustom.classList.remove('hidden');
+            if (inpCustom) {
+                inpCustom.value = customParts.join(' • ');
+                inpCustom.required = (matchedOpts.size === 0);
+            }
+        } else {
+            if (containerCustom) containerCustom.classList.add('hidden');
+            if (inpCustom) {
+                inpCustom.value = '';
+                inpCustom.required = false;
+            }
+        }
+
+        const selectedMasterIds = Array.from(selectTugas.options)
+            .filter(o => o.selected && o.value !== '' && o.value !== 'custom')
+            .map(o => parseInt(o.value, 10))
+            .filter(n => n > 0);
+
+        if (inpTugasId) inpTugasId.value = selectedMasterIds.length > 0 ? String(selectedMasterIds[0]) : '';
+        if (inpTugasIds) inpTugasIds.value = selectedMasterIds.join(',');
     }
 
     // Toggle pemilihan jam saat kartu diklik
@@ -1452,13 +1310,9 @@ $totalLiburPeriode = (int)($totalLiburPeriode ?? 0);
             if (lblCapturedName) lblCapturedName.textContent = 'Foto bukti tersimpan';
         }
 
-        // Setup Multi-Tugas & Dropdown Tugas Sesuai Divisi
+        // Setup Multi-Select Dropdown Tugas Sesuai Divisi
         const isReadOnly = Boolean(data.is_readonly);
-        selectTugas.value = '';
-        containerCustom.classList.add('hidden');
-        inpCustom.value = '';
-        inpCustom.required = false;
-        hydrateSelectedTugasFromData(data, isReadOnly);
+        hydrateMultiSelectTugasFromData(data);
 
         // Set radio status
         const statusRadios = document.querySelectorAll('.status-radio');
@@ -1475,16 +1329,12 @@ $totalLiburPeriode = (int)($totalLiburPeriode ?? 0);
         const btnCancel = document.getElementById('btn-cancel-modal');
         const btnClearFoto = document.getElementById('btn-clear-foto');
         const labelFotoInfo = document.getElementById('label-foto-info');
-        const btnToggleCustom = document.getElementById('btn-toggle-custom-tugas');
-        const wrapperSelectTugas = document.getElementById('wrapper-select-tugas-dropdown');
 
         if (isReadOnly) {
             if (readonlyBanner) readonlyBanner.classList.remove('hidden');
             if (containerUpload) containerUpload.classList.add('hidden');
             if (btnSubmit) btnSubmit.classList.add('hidden');
-            if (btnClearFoto) btnClearFoto.classList.remove('hidden'), btnClearFoto.classList.add('hidden');
-            if (btnToggleCustom) btnToggleCustom.classList.add('hidden');
-            if (wrapperSelectTugas) wrapperSelectTugas.classList.add('hidden');
+            if (btnClearFoto) btnClearFoto.classList.add('hidden');
             if (labelFotoInfo) labelFotoInfo.textContent = 'Bukti Tersimpan';
             if (btnCancel) {
                 btnCancel.className = 'w-full py-3 rounded-2xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs press-bounce transition-all';
@@ -1501,8 +1351,6 @@ $totalLiburPeriode = (int)($totalLiburPeriode ?? 0);
             if (containerUpload) containerUpload.classList.remove('hidden');
             if (btnSubmit) btnSubmit.classList.remove('hidden');
             if (btnClearFoto) btnClearFoto.classList.remove('hidden');
-            if (btnToggleCustom) btnToggleCustom.classList.remove('hidden');
-            if (wrapperSelectTugas) wrapperSelectTugas.classList.remove('hidden');
             if (labelFotoInfo) labelFotoInfo.textContent = 'Kamera Langsung / Galeri';
             if (btnCancel) {
                 btnCancel.className = 'w-1/3 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs press-bounce transition-all';
@@ -1632,27 +1480,40 @@ $totalLiburPeriode = (int)($totalLiburPeriode ?? 0);
         }, 250);
     }
 
-    // Event Handler saat dropdown tugas diubah (menambah ke daftar chip tugas terpilih)
+    // Event Handler saat multi-select dropdown tugas diubah (tetap terbuka, tidak memanggil refresh)
     function handleSelectTugasChange(selectEl) {
-        if (!selectEl || isModalTugasReadOnly) return;
-        const val = selectEl.value;
-        if (!val) return;
+        if (!selectEl) return;
+        const containerCustom = document.getElementById('container-tugas-custom');
+        const inpCustom = document.getElementById('inp_aktivitas_custom');
+        const inpUraian = document.getElementById('inp_uraian_hasil');
+        const inpTugasId = document.getElementById('inp_tugas_id');
+        const inpTugasIds = document.getElementById('inp_tugas_ids');
 
-        if (val === 'custom') {
-            toggleCustomTugasBox(true);
+        const selectedOpts = Array.from(selectEl.options).filter(o => o.selected && o.value !== '');
+        const hasCustom = selectedOpts.some(o => o.value === 'custom');
+        const masterOpts = selectedOpts.filter(o => o.value !== 'custom');
+        const masterIds = masterOpts.map(o => parseInt(o.value, 10)).filter(n => n > 0);
+
+        if (inpTugasId) inpTugasId.value = masterIds.length > 0 ? String(masterIds[0]) : '';
+        if (inpTugasIds) inpTugasIds.value = masterIds.join(',');
+
+        if (hasCustom) {
+            if (containerCustom) containerCustom.classList.remove('hidden');
+            if (inpCustom) inpCustom.required = (masterOpts.length === 0);
         } else {
-            const selectedOpt = selectEl.options[selectEl.selectedIndex];
-            if (selectedOpt) {
-                const nama = selectedOpt.dataset.nama || selectedOpt.textContent || '';
-                const deskripsi = selectedOpt.dataset.deskripsi || '';
-                addMasterTugasChip(val, nama, deskripsi);
+            if (containerCustom) containerCustom.classList.add('hidden');
+            if (inpCustom) {
+                inpCustom.required = false;
+                inpCustom.value = '';
             }
         }
 
-        // Reset dropdown ke placeholder agar staff bisa langsung menambah tugas kedua/ketiga
-        selectEl.value = '';
-        if (window.SearchableSelect && typeof window.SearchableSelect.refresh === 'function') {
-            window.SearchableSelect.refresh(selectEl);
+        if (inpUraian && (!inpUraian.value || inpUraian.value.trim() === '') && masterOpts.length > 0) {
+            const firstWithDesc = masterOpts.find(o => o.dataset && o.dataset.deskripsi);
+            if (firstWithDesc) {
+                const nm = firstWithDesc.dataset.nama || firstWithDesc.textContent.trim();
+                inpUraian.value = `Melaksanakan ${nm}: ${firstWithDesc.dataset.deskripsi}.`;
+            }
         }
     }
 
@@ -1997,15 +1858,35 @@ $totalLiburPeriode = (int)($totalLiburPeriode ?? 0);
         const selectTugas = document.getElementById('modal_select_tugas');
         const inpCustom = document.getElementById('inp_aktivitas_custom');
 
-        // Jika masih ada teks tugas manual di kolom input yang belum diklik "+ Tambah", otomatis masukkan ke daftar
-        if (inpCustom && inpCustom.value.trim() !== '') {
-            addCustomTugasChip();
-        }
-        if (selectTugas && selectTugas.value && selectTugas.value !== 'custom') {
-            handleSelectTugasChange(selectTugas);
+        const selectedOpts = selectTugas
+            ? Array.from(selectTugas.options).filter(o => o.selected && o.value !== '')
+            : [];
+        const hasCustom = selectedOpts.some(o => o.value === 'custom');
+        const masterOpts = selectedOpts.filter(o => o.value !== 'custom');
+
+        const aktivitasList = masterOpts
+            .map(o => (o.dataset.nama || o.textContent || '').trim())
+            .filter(Boolean);
+        const masterIds = masterOpts
+            .map(o => parseInt(o.value, 10))
+            .filter(n => !isNaN(n) && n > 0);
+
+        if (hasCustom) {
+            const customVal = inpCustom ? inpCustom.value.trim() : '';
+            if (!customVal && aktivitasList.length === 0) {
+                if (typeof AndroidUI !== 'undefined') AndroidUI.toast('Ketik nama tugas / aktivitas manual Anda.', 'warning');
+                if (inpCustom) inpCustom.focus();
+                return;
+            }
+            if (customVal) {
+                customVal.split(/\s*•\s*/).map(s => s.trim()).filter(Boolean).forEach(cp => {
+                    const exists = aktivitasList.some(a => a.toLowerCase() === cp.toLowerCase());
+                    if (!exists) aktivitasList.push(cp);
+                });
+            }
         }
 
-        if (selectedTugasList.length === 0) {
+        if (aktivitasList.length === 0) {
             if (typeof AndroidUI !== 'undefined') AndroidUI.toast('Silakan pilih minimal 1 tugas terlebih dahulu.', 'warning');
             const wrapper = selectTugas ? selectTugas.nextElementSibling : null;
             const triggerBtn = wrapper && wrapper.classList.contains('searchable-select-wrapper')
@@ -2021,10 +1902,7 @@ $totalLiburPeriode = (int)($totalLiburPeriode ?? 0);
             return;
         }
 
-        const namaAktivitas = selectedTugasList.map(it => it.nama).join(' • ');
-        const masterIds = selectedTugasList
-            .filter(it => it.id && Number(it.id) > 0)
-            .map(it => Number(it.id));
+        const namaAktivitas = aktivitasList.join(' • ');
         const tugasIdsStr = masterIds.join(',');
         const tugasId = masterIds.length > 0 ? String(masterIds[0]) : '';
 
