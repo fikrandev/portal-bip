@@ -1595,13 +1595,10 @@ class PortalGuruController
             }
         }
         
-        $rawTugasId = trim($input['tugas_id'] ?? '');
-        $tugasId = ($rawTugasId !== '' && $rawTugasId !== 'custom' && is_numeric($rawTugasId)) ? (int) $rawTugasId : null;
-
-        $aktivitas = trim($input['aktivitas'] ?? '');
-        if (empty($aktivitas) && !empty($input['aktivitas_custom'])) {
-            $aktivitas = trim($input['aktivitas_custom']);
-        }
+        $resolvedTugas = JurnalStaffModel::resolveTugasPayload($input);
+        $tugasId = $resolvedTugas['tugas_id'];
+        $tugasIdsStr = $resolvedTugas['tugas_ids'];
+        $aktivitas = $resolvedTugas['aktivitas'];
 
         $uraianHasil = trim($input['uraian_hasil'] ?? ($input['keterangan'] ?? ''));
         $kendala = trim($input['kendala'] ?? '');
@@ -1618,15 +1615,8 @@ class PortalGuruController
             $jamRentang = '08:00 - 09:00';
         }
 
-        // Jika aktivitas masih kosong tapi tugas_id ada, ambil nama tugasnya
-        if ($aktivitas === '' && $tugasId) {
-            $tRow = JurnalStaffModel::getTugasById($tugasId);
-            if ($tRow) {
-                $aktivitas = $tRow['nama_tugas'];
-            }
-        }
         if ($aktivitas === '') {
-            echo json_encode(['success' => false, 'message' => 'Pilih tugas atau masukkan nama aktivitas kerja.']);
+            echo json_encode(['success' => false, 'message' => 'Pilih minimal 1 tugas atau masukkan nama aktivitas kerja.']);
             exit;
         }
 
@@ -1703,6 +1693,7 @@ class PortalGuruController
                     'jam_id' => $currJamId ?: null,
                     'jam_rentang' => $currRentang,
                     'tugas_id' => $tugasId,
+                    'tugas_ids' => $tugasIdsStr,
                     'aktivitas' => $aktivitas,
                     'uraian_hasil' => $uraianHasil,
                     'kendala' => $kendala ?: null,

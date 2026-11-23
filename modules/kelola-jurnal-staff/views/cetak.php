@@ -251,7 +251,18 @@
                             <span style="font-size: 8.5pt; color: #444;"><?= htmlspecialchars($row['jabatan']) ?></span>
                         </td>
                         <td>
-                            <strong><?= htmlspecialchars($row['aktivitas']) ?></strong><br>
+                            <?php
+                                $aktParts = JurnalStaffModel::splitAktivitasList($row['aktivitas'] ?? '');
+                                if (count($aktParts) > 1):
+                            ?>
+                                <div style="margin-bottom: 3px;">
+                                    <?php foreach ($aktParts as $aIdx => $aItem): ?>
+                                        <div style="margin-bottom: 2px;"><strong><?= ($aIdx + 1) ?>.</strong> <?= htmlspecialchars($aItem) ?></div>
+                                    <?php endforeach; ?>
+                                </div>
+                            <?php else: ?>
+                                <strong><?= htmlspecialchars($row['aktivitas']) ?></strong><br>
+                            <?php endif; ?>
                             <span style="font-size: 8pt; color: #666; font-family: monospace;"><?= htmlspecialchars($row['kode_jurnal']) ?></span>
                         </td>
                         <td>

@@ -11,6 +11,8 @@
 
 class JurnalStaffModel
 {
+    public const AKTIVITAS_SEPARATOR = ' • ';
+
     /**
      * Memastikan semua tabel yang dibutuhkan modul ini sudah ada.
      * Fallback otomatis jika database belum dimigrasi di server.
@@ -71,7 +73,8 @@ class JurnalStaffModel
                   `jam_id` INT(11) DEFAULT NULL,
                   `jam_rentang` VARCHAR(50) NOT NULL,
                   `tugas_id` INT(11) DEFAULT NULL,
-                  `aktivitas` VARCHAR(255) NOT NULL,
+                  `tugas_ids` VARCHAR(255) DEFAULT NULL,
+                  `aktivitas` TEXT NOT NULL,
                   `uraian_hasil` TEXT NOT NULL,
                   `kendala` TEXT DEFAULT NULL,
                   `foto_bukti` VARCHAR(255) DEFAULT NULL,
@@ -84,6 +87,19 @@ class JurnalStaffModel
                   KEY `idx_tanggal` (`tanggal`)
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
             ");
+
+            // Sinkronisasi kolom multi-tugas pada instalasi lama
+            try {
+                $colTugasIds = $pdo->query("SHOW COLUMNS FROM `jurnal_staff` LIKE 'tugas_ids'")->fetch(PDO::FETCH_ASSOC);
+                if (!$colTugasIds) {
+                    $pdo->exec("ALTER TABLE `jurnal_staff` ADD COLUMN `tugas_ids` VARCHAR(255) DEFAULT NULL AFTER `tugas_id`");
+                    $pdo->exec("UPDATE `jurnal_staff` SET `tugas_ids` = CAST(`tugas_id` AS CHAR) WHERE `tugas_id` IS NOT NULL AND (`tugas_ids` IS NULL OR `tugas_ids` = '')");
+                }
+                $colAkt = $pdo->query("SHOW COLUMNS FROM `jurnal_staff` LIKE 'aktivitas'")->fetch(PDO::FETCH_ASSOC);
+                if ($colAkt && stripos((string)($colAkt['Type'] ?? ''), 'varchar') !== false) {
+                    $pdo->exec("ALTER TABLE `jurnal_staff` MODIFY COLUMN `aktivitas` TEXT NOT NULL");
+                }
+            } catch (Throwable $eCol) {}
 
             // 4. jurnal_staff_pengaturan
             $pdo->exec("
@@ -401,6 +417,138 @@ class JurnalStaffModel
     }
 
     /**
+     * Parse daftar tugas_ids (string "1,2,3", JSON array, atau array PHP) menjadi array int positif unik sesuai urutan pilih
+     */
+    public static function parseTugasIds($raw): array
+    {
+        if ($raw === null || $raw === '' || $raw === false) {
+            return [];
+        }
+
+        $items = [];
+        if (is_array($raw)) {
+            $items = $raw;
+        } elseif (is_string($raw)) {
+            $trimmed = trim($raw);
+            if ($trimmed === '' || strtolower($trimmed) === 'custom') {
+                return [];
+            }
+            if ($trimmed[0] === '[') {
+                $decoded = json_decode($trimmed, true);
+                if (is_array($decoded)) {
+                    $items = $decoded;
+                }
+            }
+            if (empty($items)) {
+                $items = preg_split('/[\s,;]+/', $trimmed, -1, PREG_SPLIT_NO_EMPTY);
+            }
+        } elseif (is_numeric($raw)) {
+            $items = [$raw];
+        }
+
+        $ids = [];
+        $seen = [];
+        foreach ($items as $it) {
+            if (is_numeric($it)) {
+                $id = (int)$it;
+                if ($id > 0 && !isset($seen[$id])) {
+                    $seen[$id] = true;
+                    $ids[] = $id;
+                }
+            }
+        }
+        return $ids;
+    }
+
+    /**
+     * Pecah string aktivitas multi-tugas (dipisahkan oleh " • ") menjadi array daftar nama tugas
+     * Aman terhadap nama tugas yang mengandung tanda koma (,)
+     */
+    public static function splitAktivitasList(?string $aktivitas): array
+    {
+        $raw = trim((string)$aktivitas);
+        if ($raw === '') {
+            return [];
+        }
+
+        $parts = preg_split('/\s*•\s*/u', $raw, -1, PREG_SPLIT_NO_EMPTY);
+        $clean = [];
+        $seen = [];
+        foreach ($parts as $p) {
+            $t = trim($p);
+            if ($t !== '') {
+                $key = mb_strtolower($t, 'UTF-8');
+                if (!isset($seen[$key])) {
+                    $seen[$key] = true;
+                    $clean[] = $t;
+                }
+            }
+        }
+        return !empty($clean) ? $clean : [$raw];
+    }
+
+    /**
+     * Normalisasi payload tugas (mendukung 1 tugas, multi-tugas dari master, maupun kombinasi tugas kustom)
+     */
+    public static function resolveTugasPayload(array $data): array
+    {
+        $tugasIdsArr = [];
+        if (array_key_exists('tugas_ids', $data) && $data['tugas_ids'] !== '' && $data['tugas_ids'] !== null) {
+            $tugasIdsArr = self::parseTugasIds($data['tugas_ids']);
+        }
+        if (empty($tugasIdsArr) && !empty($data['tugas_id']) && $data['tugas_id'] !== 'custom') {
+            $tugasIdsArr = self::parseTugasIds($data['tugas_id']);
+        }
+
+        $primaryTugasId = !empty($tugasIdsArr) ? (int)$tugasIdsArr[0] : null;
+        $tugasIdsStr = !empty($tugasIdsArr) ? implode(',', $tugasIdsArr) : null;
+
+        $rawAktivitas = '';
+        if (!empty($data['aktivitas'])) {
+            if (is_array($data['aktivitas'])) {
+                $rawAktivitas = implode(self::AKTIVITAS_SEPARATOR, array_filter(array_map('trim', $data['aktivitas']), static fn($v) => $v !== ''));
+            } else {
+                $rawAktivitas = trim((string)$data['aktivitas']);
+            }
+        }
+
+        $parts = self::splitAktivitasList($rawAktivitas);
+
+        // Jika aktivitas belum terisi tetapi ada tugasIdsArr, ambil nama_tugas dari DB sesuai urutan
+        if (empty($parts) && !empty($tugasIdsArr)) {
+            foreach ($tugasIdsArr as $tid) {
+                $tRow = self::getTugasById($tid);
+                if ($tRow && !empty($tRow['nama_tugas'])) {
+                    $parts[] = trim((string)$tRow['nama_tugas']);
+                }
+            }
+        }
+
+        // Tambahkan aktivitas_custom jika dikirim terpisah dan belum termasuk di daftar
+        $customText = trim((string)($data['aktivitas_custom'] ?? ''));
+        if ($customText !== '') {
+            $customParts = self::splitAktivitasList($customText);
+            $existingLower = array_map(static fn($x) => mb_strtolower($x, 'UTF-8'), $parts);
+            foreach ($customParts as $cp) {
+                if (!in_array(mb_strtolower($cp, 'UTF-8'), $existingLower, true)) {
+                    $parts[] = $cp;
+                    $existingLower[] = mb_strtolower($cp, 'UTF-8');
+                }
+            }
+        }
+
+        $finalAktivitas = implode(self::AKTIVITAS_SEPARATOR, $parts);
+
+        return [
+            'tugas_id'        => $primaryTugasId,
+            'tugas_ids'       => $tugasIdsStr,
+            'tugas_ids_array' => $tugasIdsArr,
+            'aktivitas'       => $finalAktivitas,
+            'aktivitas_list'  => $parts,
+        ];
+    }
+
+    /**
      * Ambil 1 data jurnal by ID
      */
     public static function getJurnalById(int $id): ?array
@@ -453,14 +601,11 @@ class JurnalStaffModel
             $jamRentang = '08:00 - 09:00';
         }
 
-        $tugasId = !empty($data['tugas_id']) ? (int)$data['tugas_id'] : null;
-        $aktivitas = trim($data['aktivitas'] ?? '');
-        if ($aktivitas === '' && $tugasId) {
-            $tRow = self::getTugasById($tugasId);
-            if ($tRow) {
-                $aktivitas = $tRow['nama_tugas'];
-            }
-        }
+        $resolvedTugas = self::resolveTugasPayload($data);
+        $tugasId = $resolvedTugas['tugas_id'];
+        $tugasIdsStr = $resolvedTugas['tugas_ids'];
+        $aktivitas = $resolvedTugas['aktivitas'];
+
         if ($aktivitas === '') {
             throw new Exception("Aktivitas / uraian tugas wajib diisi.");
         }
@@ -490,9 +635,9 @@ class JurnalStaffModel
         $db->query("
             INSERT INTO jurnal_staff (
                 kode_jurnal, pegawai_id, nama_staff, jabatan, unit_tugas,
-                tanggal, jam_id, jam_rentang, tugas_id, aktivitas,
+                tanggal, jam_id, jam_rentang, tugas_id, tugas_ids, aktivitas,
                 uraian_hasil, kendala, foto_bukti, status
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ", [
             $kodeJurnal,
             $pegawaiId,
@@ -503,6 +648,7 @@ class JurnalStaffModel
             $jamId,
             $jamRentang,
             $tugasId,
+            $tugasIdsStr,
             $aktivitas,
             $uraianHasil,
             $kendala,
@@ -529,8 +675,23 @@ class JurnalStaffModel
         $tanggal = !empty($data['tanggal']) ? trim($data['tanggal']) : $existing['tanggal'];
         $jamId = !empty($data['jam_id']) ? (int)$data['jam_id'] : $existing['jam_id'];
         $jamRentang = !empty($data['jam_rentang']) ? trim($data['jam_rentang']) : $existing['jam_rentang'];
-        $tugasId = !empty($data['tugas_id']) ? (int)$data['tugas_id'] : $existing['tugas_id'];
-        $aktivitas = !empty($data['aktivitas']) ? trim($data['aktivitas']) : $existing['aktivitas'];
+
+        $hasTugasPayload = array_key_exists('tugas_ids', $data) || array_key_exists('tugas_id', $data) || array_key_exists('aktivitas', $data);
+        if ($hasTugasPayload) {
+            $resolvedTugas = self::resolveTugasPayload($data);
+            $tugasId = (array_key_exists('tugas_ids', $data) || array_key_exists('tugas_id', $data))
+                ? $resolvedTugas['tugas_id']
+                : ($existing['tugas_id'] ?? null);
+            $tugasIdsStr = (array_key_exists('tugas_ids', $data) || array_key_exists('tugas_id', $data))
+                ? $resolvedTugas['tugas_ids']
+                : ($existing['tugas_ids'] ?? null);
+            $aktivitas = $resolvedTugas['aktivitas'] !== '' ? $resolvedTugas['aktivitas'] : $existing['aktivitas'];
+        } else {
+            $tugasId = $existing['tugas_id'];
+            $tugasIdsStr = $existing['tugas_ids'] ?? ($existing['tugas_id'] ? (string)$existing['tugas_id'] : null);
+            $aktivitas = $existing['aktivitas'];
+        }
+
         $uraianHasil = !empty($data['uraian_hasil']) ? trim($data['uraian_hasil']) : $existing['uraian_hasil'];
         $kendala = isset($data['kendala']) ? trim($data['kendala']) : $existing['kendala'];
         $status = in_array($data['status'] ?? '', ['selesai', 'proses', 'tertunda'], true) ? $data['status'] : $existing['status'];
@@ -552,7 +713,7 @@ class JurnalStaffModel
 
         $db->query("
             UPDATE jurnal_staff SET
-                tanggal = ?, jam_id = ?, jam_rentang = ?, tugas_id = ?,
+                tanggal = ?, jam_id = ?, jam_rentang = ?, tugas_id = ?, tugas_ids = ?,
                 aktivitas = ?, uraian_hasil = ?, kendala = ?, foto_bukti = ?, status = ?
             WHERE id = ?
         ", [
@@ -560,6 +721,7 @@ class JurnalStaffModel
             $jamId,
             $jamRentang,
             $tugasId,
+            $tugasIdsStr,
             $aktivitas,
             $uraianHasil,
             $kendala,

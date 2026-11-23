@@ -105,6 +105,7 @@ class AutoMigrate
             '2026_11_23_000067_create_jurnal_staff_wa_reminder_log'        => 'migration067CreateJurnalStaffWaReminderLog',
             '2026_11_23_000068_create_absen_pegawai_libur'                 => 'migration068CreateAbsenPegawaiLibur',
             '2026_11_23_000069_upgrade_jurnal_staff_wa_templates_and_recipients' => 'migration069UpgradeJurnalStaffWaTemplatesAndRecipients',
+            '2026_11_23_000070_add_multi_tugas_to_jurnal_staff'            => 'migration070AddMultiTugasToJurnalStaff',
         ];
     }
     /**
@@ -5058,6 +5059,28 @@ class AutoMigrate
                 }
             }
         }
+    }
+
+    /**
+     * 070. Tambah Kolom Multi-Tugas (tugas_ids) & Perluas Kolom aktivitas pada Tabel jurnal_staff
+     */
+    protected static function migration070AddMultiTugasToJurnalStaff(PDO $pdo): void
+    {
+        if (!self::hasTable($pdo, 'jurnal_staff')) {
+            return;
+        }
+
+        if (!self::hasColumn($pdo, 'jurnal_staff', 'tugas_ids')) {
+            $pdo->exec("ALTER TABLE `jurnal_staff` ADD COLUMN `tugas_ids` VARCHAR(255) DEFAULT NULL AFTER `tugas_id`");
+        }
+
+        try {
+            $pdo->exec("ALTER TABLE `jurnal_staff` MODIFY COLUMN `aktivitas` TEXT NOT NULL");
+        } catch (Throwable $e) {}
+
+        try {
+            $pdo->exec("UPDATE `jurnal_staff` SET `tugas_ids` = CAST(`tugas_id` AS CHAR) WHERE `tugas_id` IS NOT NULL AND (`tugas_ids` IS NULL OR `tugas_ids` = '')");
+        } catch (Throwable $e) {}
     }
 }
 

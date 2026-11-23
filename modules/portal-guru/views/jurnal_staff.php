@@ -314,6 +314,7 @@ $totalLiburPeriode = (int)($totalLiburPeriode ?? 0);
                          data-is-filled="<?= $isFilled ? '1' : '0' ?>"
                          data-jurnal-id="<?= $isFilled ? (int)$existing['id'] : 0 ?>"
                          data-tugas-id="<?= $isFilled ? (int)($existing['tugas_id'] ?? 0) : 0 ?>"
+                         data-tugas-ids="<?= $isFilled ? htmlspecialchars((string)($existing['tugas_ids'] ?? ($existing['tugas_id'] ?? '')), ENT_QUOTES) : '' ?>"
                          data-aktivitas="<?= $isFilled ? htmlspecialchars((string)$existing['aktivitas'], ENT_QUOTES) : '' ?>"
                          data-uraian="<?= $isFilled ? htmlspecialchars((string)$existing['uraian_hasil'], ENT_QUOTES) : '' ?>"
                          data-kendala="<?= $isFilled ? htmlspecialchars((string)($existing['kendala'] ?? ''), ENT_QUOTES) : '' ?>"
@@ -344,12 +345,20 @@ $totalLiburPeriode = (int)($totalLiburPeriode ?? 0);
                         <!-- Status Terisi / Kosong -->
                         <div class="pt-1.5 border-t <?= $isFilled ? 'border-emerald-100' : 'border-slate-100' ?>">
                             <?php if ($isFilled): ?>
+                                <?php $cardAktParts = JurnalStaffModel::splitAktivitasList($existing['aktivitas'] ?? ''); ?>
                                 <div class="flex flex-col gap-0.5">
-                                    <span class="inline-flex items-center gap-0.5 text-[8.5px] font-bold text-emerald-800 bg-emerald-100/90 px-1.5 py-0.5 rounded-md w-fit">
-                                        ✓ Terisi
-                                    </span>
+                                    <div class="flex items-center gap-1 flex-wrap">
+                                        <span class="inline-flex items-center gap-0.5 text-[8.5px] font-bold text-emerald-800 bg-emerald-100/90 px-1.5 py-0.5 rounded-md w-fit">
+                                            ✓ Terisi
+                                        </span>
+                                        <?php if (count($cardAktParts) > 1): ?>
+                                            <span class="inline-flex items-center text-[8px] font-extrabold text-primary-700 bg-primary-50 border border-primary-200 px-1 py-0.5 rounded-md">
+                                                <?= count($cardAktParts) ?> Tugas
+                                            </span>
+                                        <?php endif; ?>
+                                    </div>
                                     <span class="text-[8.5px] text-slate-500 truncate font-medium mt-0.5" title="<?= e($existing['aktivitas']) ?>">
-                                        <?= e($existing['aktivitas']) ?>
+                                        <?= e($cardAktParts[0] ?? $existing['aktivitas']) ?>
                                     </span>
                                 </div>
                             <?php else: ?>
@@ -397,6 +406,7 @@ $totalLiburPeriode = (int)($totalLiburPeriode ?? 0);
                         $rHari = $dayNames[date('l', $rTs)] ?? 'Senin';
                         $tglFmt = $rHari . ', ' . date('d M Y', $rTs);
                         $statusClass = ($rj['status'] === 'selesai') ? 'bg-emerald-100 text-emerald-800 border-emerald-200' : (($rj['status'] === 'proses') ? 'bg-amber-100 text-amber-800 border-amber-200' : 'bg-slate-100 text-slate-600 border-slate-200');
+                        $riwayatAktParts = JurnalStaffModel::splitAktivitasList($rj['aktivitas'] ?? '');
                     ?>
                     <div class="bg-white rounded-3xl p-3.5 shadow-sm border border-slate-100 space-y-2">
                         <div class="flex items-center justify-between gap-2">
@@ -410,10 +420,27 @@ $totalLiburPeriode = (int)($totalLiburPeriode ?? 0);
                         </div>
 
                         <div>
-                            <h4 class="font-bold text-xs text-slate-800 flex items-center gap-1.5">
-                                <span class="text-primary-600">🎯</span>
-                                <span><?= e($rj['aktivitas']) ?></span>
-                            </h4>
+                            <?php if (count($riwayatAktParts) > 1): ?>
+                                <div class="space-y-1">
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-primary-50 text-primary-700 border border-primary-100 text-[10px] font-extrabold">
+                                        <span>🎯</span>
+                                        <span><?= count($riwayatAktParts) ?> Tugas Dikerjakan:</span>
+                                    </span>
+                                    <ul class="space-y-1 pl-1">
+                                        <?php foreach ($riwayatAktParts as $rap): ?>
+                                            <li class="font-bold text-xs text-slate-800 flex items-start gap-1.5">
+                                                <span class="text-primary-500 mt-0.5">•</span>
+                                                <span><?= e($rap) ?></span>
+                                            </li>
+                                        <?php endforeach; ?>
+                                    </ul>
+                                </div>
+                            <?php else: ?>
+                                <h4 class="font-bold text-xs text-slate-800 flex items-center gap-1.5">
+                                    <span class="text-primary-600">🎯</span>
+                                    <span><?= e($rj['aktivitas']) ?></span>
+                                </h4>
+                            <?php endif; ?>
                             <p class="text-[10.5px] text-slate-600 mt-1 leading-relaxed whitespace-pre-line">
                                 <?= e($rj['uraian_hasil']) ?>
                             </p>
@@ -444,6 +471,7 @@ $totalLiburPeriode = (int)($totalLiburPeriode ?? 0);
                                             'is_filled' => true,
                                             'jurnal_id' => (int)$rj['id'],
                                             'tugas_id' => (int)($rj['tugas_id'] ?? 0),
+                                            'tugas_ids' => (string)($rj['tugas_ids'] ?? ($rj['tugas_id'] ?? '')),
                                             'aktivitas' => (string)$rj['aktivitas'],
                                             'uraian_hasil' => (string)$rj['uraian_hasil'],
                                             'kendala' => (string)($rj['kendala'] ?? ''),
@@ -466,6 +494,7 @@ $totalLiburPeriode = (int)($totalLiburPeriode ?? 0);
                                             'is_filled' => true,
                                             'jurnal_id' => (int)$rj['id'],
                                             'tugas_id' => (int)($rj['tugas_id'] ?? 0),
+                                            'tugas_ids' => (string)($rj['tugas_ids'] ?? ($rj['tugas_id'] ?? '')),
                                             'aktivitas' => (string)$rj['aktivitas'],
                                             'uraian_hasil' => (string)$rj['uraian_hasil'],
                                             'kendala' => (string)($rj['kendala'] ?? ''),
@@ -571,6 +600,8 @@ $totalLiburPeriode = (int)($totalLiburPeriode ?? 0);
                 <input type="hidden" name="jam_ids" id="inp_jam_ids" value="">
                 <input type="hidden" name="jam_rentang" id="inp_jam_rentang" value="">
                 <input type="hidden" name="tanggal" id="inp_tanggal" value="<?= e($selectedDate) ?>">
+                <input type="hidden" name="tugas_id" id="inp_tugas_id" value="">
+                <input type="hidden" name="tugas_ids" id="inp_tugas_ids" value="">
 
                 <!-- Info Bar Tanggal & Jam Terpilih -->
                 <div class="p-3 rounded-2xl bg-primary-50/70 border border-primary-100 space-y-2 text-[11px]">
@@ -610,17 +641,25 @@ $totalLiburPeriode = (int)($totalLiburPeriode ?? 0);
                     </div>
                 </div>
 
-                <!-- 1. Dropdown Pilihan Tugas / Job Desk Sesuai Jabatan Penugasan -->
-                <div class="space-y-1">
-                    <label class="block text-xs font-bold text-slate-800">
-                        Pilih Tugas / Job Desk <span class="text-rose-500">*</span>
-                    </label>
-                    <div class="relative">
-                        <select id="modal_select_tugas" name="tugas_id" onchange="handleSelectTugasChange(this)"
+                <!-- 1. Pilihan Tugas / Job Desk Sesuai Jabatan Penugasan (Bisa Lebih Dari 1) -->
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between gap-2">
+                        <label class="block text-xs font-bold text-slate-800">
+                            Pilih Tugas / Job Desk <span class="text-rose-500">*</span>
+                            <span class="text-[10px] font-semibold text-primary-600">(Bisa &gt; 1)</span>
+                        </label>
+                        <button type="button" id="btn-toggle-custom-tugas" onclick="toggleCustomTugasBox()"
+                                class="text-[10.5px] font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2.5 py-1 rounded-xl transition-colors press-bounce">
+                            ✍️ + Tulis Manual
+                        </button>
+                    </div>
+
+                    <div id="wrapper-select-tugas-dropdown" class="relative">
+                        <select id="modal_select_tugas" onchange="handleSelectTugasChange(this)"
                                 class="searchable-select w-full px-3.5 py-3 rounded-2xl border border-slate-200 bg-white font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
-                                data-placeholder="-- Pilih Tugas Dari Daftar --"
+                                data-placeholder="-- Cari &amp; Tambah Tugas (Bisa Lebih Dari 1) --"
                                 data-search-placeholder="Cari nama tugas / job desk...">
-                            <option value="">-- Pilih Tugas Dari Daftar --</option>
+                            <option value="">-- Cari &amp; Tambah Tugas (Bisa Lebih Dari 1) --</option>
 
                             <?php if (!empty($tugasJabatan)): ?>
                                 <optgroup label="⭐ Tugas Jabatan (<?= e($jabatanName) ?>)">
@@ -644,20 +683,49 @@ $totalLiburPeriode = (int)($totalLiburPeriode ?? 0);
                             </optgroup>
                         </select>
                     </div>
+
+                    <!-- Daftar Chip Tugas Terpilih -->
+                    <div id="selected-tugas-container" class="p-3 rounded-2xl bg-slate-50 border border-slate-200/90 space-y-2">
+                        <div class="flex items-center justify-between text-[10.5px]">
+                            <span class="font-bold text-slate-700 flex items-center gap-1">
+                                <span>🎯</span>
+                                <span>Daftar Tugas Terpilih:</span>
+                            </span>
+                            <span id="selected-tugas-count" class="px-2 py-0.5 rounded-full bg-primary-100 text-primary-800 font-extrabold text-[10px]">
+                                0 Tugas
+                            </span>
+                        </div>
+                        <div id="selected-tugas-list" class="flex flex-wrap gap-1.5"></div>
+                        <p id="selected-tugas-empty" class="text-[10.5px] text-slate-400 italic">
+                            Belum ada tugas dipilih. Pilih 1 atau lebih tugas dari daftar di atas.
+                        </p>
+                    </div>
+
                     <?php if (empty($tugasJabatan)): ?>
                         <p class="text-[10.5px] text-amber-700 bg-amber-50 border border-amber-200/80 rounded-xl px-3 py-1.5 mt-1">
-                            Belum ada rincian tugas terjadwal untuk jabatan <strong><?= e($jabatanName) ?></strong>. Pilih <em>Tulis Tugas Sendiri</em> atau hubungi Admin.
+                            Belum ada rincian tugas terjadwal untuk jabatan <strong><?= e($jabatanName) ?></strong>. Gunakan tombol <em>+ Tulis Manual</em> atau hubungi Admin.
                         </p>
                     <?php endif; ?>
                 </div>
 
-                <!-- Input Tugas Custom (Muncul jika pilih Tulis Sendiri) -->
-                <div id="container-tugas-custom" class="space-y-1 hidden">
-                    <label class="block text-xs font-bold text-amber-800">
-                        Ketik Nama Tugas / Aktivitas Baru <span class="text-rose-500">*</span>
+                <!-- Input Tugas Custom (Muncul jika klik + Tulis Manual atau pilih Tulis Sendiri) -->
+                <div id="container-tugas-custom" class="space-y-1.5 hidden p-3 rounded-2xl bg-amber-50/70 border border-amber-200">
+                    <label class="block text-[11px] font-bold text-amber-900">
+                        Ketik Nama Tugas / Aktivitas Manual:
                     </label>
-                    <input type="text" name="aktivitas_custom" id="inp_aktivitas_custom" placeholder="Contoh: Koordinasi teknis maintenance WiFi & Server"
-                           class="w-full px-3.5 py-2.5 rounded-2xl border border-amber-300 bg-amber-50/50 font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all text-xs">
+                    <div class="flex items-center gap-1.5">
+                        <input type="text" name="aktivitas_custom" id="inp_aktivitas_custom"
+                               onkeydown="if(event.key==='Enter'){event.preventDefault();addCustomTugasChip();}"
+                               placeholder="Contoh: Koordinasi teknis maintenance WiFi &amp; Server"
+                               class="flex-1 min-w-0 px-3 py-2.5 rounded-xl border border-amber-300 bg-white font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all text-xs">
+                        <button type="button" onclick="addCustomTugasChip()"
+                                class="px-3.5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shrink-0 press-bounce shadow-xs">
+                            + Tambah
+                        </button>
+                    </div>
+                    <p class="text-[10px] text-amber-700">
+                        Tekan <strong>+ Tambah</strong> untuk memasukkan ke daftar tugas terpilih (bisa tambah lebih dari 1).
+                    </p>
                 </div>
 
                 <!-- 2. Keterangan / Uraian Hasil Kerja -->
@@ -861,8 +929,202 @@ $totalLiburPeriode = (int)($totalLiburPeriode ?? 0);
         });
     } catch (e) {}
 
-    // State management multi-select jam
+    // State management multi-select jam & multi-select tugas
     let selectedJamMap = {};
+    let selectedTugasList = [];
+    let isModalTugasReadOnly = false;
+
+    function renderSelectedTugasChips() {
+        const listEl = document.getElementById('selected-tugas-list');
+        const countEl = document.getElementById('selected-tugas-count');
+        const emptyEl = document.getElementById('selected-tugas-empty');
+        const inpTugasId = document.getElementById('inp_tugas_id');
+        const inpTugasIds = document.getElementById('inp_tugas_ids');
+
+        const masterIds = selectedTugasList
+            .filter(it => it.id && Number(it.id) > 0)
+            .map(it => Number(it.id));
+
+        if (inpTugasId) inpTugasId.value = masterIds.length > 0 ? String(masterIds[0]) : '';
+        if (inpTugasIds) inpTugasIds.value = masterIds.join(',');
+        if (countEl) countEl.textContent = `${selectedTugasList.length} Tugas`;
+
+        if (!listEl) return;
+        listEl.innerHTML = '';
+
+        if (selectedTugasList.length === 0) {
+            if (emptyEl) emptyEl.classList.remove('hidden');
+            return;
+        }
+        if (emptyEl) emptyEl.classList.add('hidden');
+
+        selectedTugasList.forEach((it, idx) => {
+            const chip = document.createElement('div');
+            chip.className = it.custom
+                ? 'inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-amber-50 text-amber-900 border border-amber-200 text-[11px] font-bold shadow-2xs max-w-full'
+                : 'inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white text-primary-900 border border-primary-200 text-[11px] font-bold shadow-2xs max-w-full';
+
+            const iconSpan = document.createElement('span');
+            iconSpan.className = 'shrink-0';
+            iconSpan.textContent = it.custom ? '✍️' : '🎯';
+
+            const textSpan = document.createElement('span');
+            textSpan.className = 'leading-snug break-words';
+            textSpan.textContent = it.nama;
+
+            chip.appendChild(iconSpan);
+            chip.appendChild(textSpan);
+
+            if (!isModalTugasReadOnly) {
+                const rmBtn = document.createElement('button');
+                rmBtn.type = 'button';
+                rmBtn.className = 'w-4 h-4 rounded-full bg-slate-100 hover:bg-rose-100 text-slate-500 hover:text-rose-600 flex items-center justify-center text-[10px] font-black shrink-0 ml-0.5 transition-colors';
+                rmBtn.textContent = '✕';
+                rmBtn.title = 'Hapus tugas ini';
+                rmBtn.onclick = function() {
+                    removeSelectedTugasChip(idx);
+                };
+                chip.appendChild(rmBtn);
+            }
+
+            listEl.appendChild(chip);
+        });
+    }
+
+    function removeSelectedTugasChip(idx) {
+        if (isModalTugasReadOnly) return;
+        if (idx < 0 || idx >= selectedTugasList.length) return;
+        selectedTugasList.splice(idx, 1);
+        renderSelectedTugasChips();
+    }
+
+    function addMasterTugasChip(rawId, rawNama, rawDeskripsi) {
+        const id = parseInt(rawId, 10) || null;
+        const nama = String(rawNama || '').trim();
+        if (!nama) return;
+
+        const already = selectedTugasList.some(
+            it => (id && it.id === id) || it.nama.toLowerCase() === nama.toLowerCase()
+        );
+        if (already) {
+            if (typeof AndroidUI !== 'undefined' && typeof AndroidUI.toast === 'function') {
+                AndroidUI.toast('Tugas tersebut sudah ada di daftar pilihan.', 'info');
+            }
+            return;
+        }
+
+        selectedTugasList.push({ id: id, nama: nama, custom: false });
+        renderSelectedTugasChips();
+
+        const inpUraian = document.getElementById('inp_uraian_hasil');
+        const desc = String(rawDeskripsi || '').trim();
+        if (inpUraian && desc && (!inpUraian.value || inpUraian.value.trim() === '')) {
+            inpUraian.value = `Melaksanakan ${nama}: ${desc}.`;
+        }
+    }
+
+    function toggleCustomTugasBox(forceShow) {
+        if (isModalTugasReadOnly) return;
+        const containerCustom = document.getElementById('container-tugas-custom');
+        const inpCustom = document.getElementById('inp_aktivitas_custom');
+        if (!containerCustom) return;
+
+        const shouldShow = (typeof forceShow === 'boolean')
+            ? forceShow
+            : containerCustom.classList.contains('hidden');
+
+        if (shouldShow) {
+            containerCustom.classList.remove('hidden');
+            if (inpCustom) setTimeout(() => inpCustom.focus(), 40);
+        } else {
+            containerCustom.classList.add('hidden');
+        }
+    }
+
+    function addCustomTugasChip() {
+        if (isModalTugasReadOnly) return;
+        const inpCustom = document.getElementById('inp_aktivitas_custom');
+        const containerCustom = document.getElementById('container-tugas-custom');
+        if (!inpCustom) return false;
+
+        const raw = inpCustom.value.trim();
+        if (!raw) return false;
+
+        const parts = raw.split(/\s*•\s*/).map(s => s.trim()).filter(Boolean);
+        let added = false;
+        parts.forEach(part => {
+            const exists = selectedTugasList.some(it => it.nama.toLowerCase() === part.toLowerCase());
+            if (!exists) {
+                selectedTugasList.push({ id: null, nama: part, custom: true });
+                added = true;
+            }
+        });
+
+        inpCustom.value = '';
+        if (containerCustom) containerCustom.classList.add('hidden');
+        renderSelectedTugasChips();
+        return added;
+    }
+
+    function hydrateSelectedTugasFromData(data, isReadOnly) {
+        selectedTugasList = [];
+        isModalTugasReadOnly = Boolean(isReadOnly);
+
+        const selectTugas = document.getElementById('modal_select_tugas');
+        const byId = {};
+        const byLower = {};
+        if (selectTugas && selectTugas.options) {
+            for (let i = 0; i < selectTugas.options.length; i++) {
+                const opt = selectTugas.options[i];
+                if (!opt.value || opt.value === 'custom') continue;
+                const nm = (opt.dataset.nama || opt.textContent || '').trim();
+                byId[String(opt.value)] = { id: Number(opt.value), nama: nm };
+                if (nm) byLower[nm.toLowerCase()] = { id: Number(opt.value), nama: nm };
+            }
+        }
+
+        const rawIdsStr = String(data.tugas_ids || data.tugas_id || '');
+        const idList = rawIdsStr
+            .split(/[\s,;]+/)
+            .map(s => parseInt(s, 10))
+            .filter(n => !isNaN(n) && n > 0);
+        const aktParts = String(data.aktivitas || '')
+            .split(/\s*•\s*/)
+            .map(s => s.trim())
+            .filter(Boolean);
+
+        const seenNames = new Set();
+        const seenIds = new Set();
+
+        if (aktParts.length > 0) {
+            aktParts.forEach(part => {
+                const low = part.toLowerCase();
+                if (seenNames.has(low)) return;
+                if (byLower[low]) {
+                    seenNames.add(low);
+                    seenIds.add(byLower[low].id);
+                    selectedTugasList.push({ id: byLower[low].id, nama: byLower[low].nama, custom: false });
+                } else {
+                    seenNames.add(low);
+                    selectedTugasList.push({ id: null, nama: part, custom: true });
+                }
+            });
+        }
+
+        idList.forEach(id => {
+            if (!seenIds.has(id) && byId[String(id)]) {
+                const item = byId[String(id)];
+                const low = item.nama.toLowerCase();
+                if (!seenNames.has(low)) {
+                    seenIds.add(id);
+                    seenNames.add(low);
+                    selectedTugasList.push({ id: item.id, nama: item.nama, custom: false });
+                }
+            }
+        });
+
+        renderSelectedTugasChips();
+    }
 
     // Toggle pemilihan jam saat kartu diklik
     function toggleSelectJam(jamId) {
@@ -881,6 +1143,7 @@ $totalLiburPeriode = (int)($totalLiburPeriode ?? 0);
                 is_filled: card.dataset.isFilled === '1',
                 jurnal_id: parseInt(card.dataset.jurnalId) || 0,
                 tugas_id: parseInt(card.dataset.tugasId) || 0,
+                tugas_ids: card.dataset.tugasIds || '',
                 aktivitas: card.dataset.aktivitas || '',
                 uraian_hasil: card.dataset.uraian || '',
                 kendala: card.dataset.kendala || '',
@@ -939,6 +1202,7 @@ $totalLiburPeriode = (int)($totalLiburPeriode ?? 0);
             is_filled: true,
             jurnal_id: parseInt(d.jurnalId) || 0,
             tugas_id: parseInt(d.tugasId) || 0,
+            tugas_ids: d.tugasIds || '',
             aktivitas: d.aktivitas || '',
             uraian_hasil: d.uraian || '',
             kendala: d.kendala || '',
@@ -967,6 +1231,7 @@ $totalLiburPeriode = (int)($totalLiburPeriode ?? 0);
                     is_filled: card.dataset.isFilled === '1',
                     jurnal_id: parseInt(card.dataset.jurnalId) || 0,
                     tugas_id: parseInt(card.dataset.tugasId) || 0,
+                    tugas_ids: card.dataset.tugasIds || '',
                     aktivitas: card.dataset.aktivitas || '',
                     uraian_hasil: card.dataset.uraian || '',
                     kendala: card.dataset.kendala || '',
@@ -1040,6 +1305,7 @@ $totalLiburPeriode = (int)($totalLiburPeriode ?? 0);
             is_filled: items.some(it => it.is_filled),
             jurnal_id: filledItem.jurnal_id || 0,
             tugas_id: filledItem.tugas_id || 0,
+            tugas_ids: filledItem.tugas_ids || '',
             aktivitas: filledItem.aktivitas || '',
             uraian_hasil: filledItem.uraian_hasil || '',
             kendala: filledItem.kendala || '',
@@ -1186,42 +1452,13 @@ $totalLiburPeriode = (int)($totalLiburPeriode ?? 0);
             if (lblCapturedName) lblCapturedName.textContent = 'Foto bukti tersimpan';
         }
 
-        // Setup Dropdown Tugas Sesuai Divisi
-        let matchedOption = false;
-        if (data.tugas_id) {
-            for (let i = 0; i < selectTugas.options.length; i++) {
-                if (selectTugas.options[i].value == data.tugas_id) {
-                    selectTugas.selectedIndex = i;
-                    matchedOption = true;
-                    break;
-                }
-            }
-        }
-        if (!matchedOption && data.aktivitas) {
-            for (let i = 0; i < selectTugas.options.length; i++) {
-                if (selectTugas.options[i].dataset.nama && selectTugas.options[i].dataset.nama.trim().toLowerCase() === data.aktivitas.trim().toLowerCase()) {
-                    selectTugas.selectedIndex = i;
-                    matchedOption = true;
-                    break;
-                }
-            }
-        }
-
-        if (!matchedOption && data.aktivitas) {
-            selectTugas.value = 'custom';
-            containerCustom.classList.remove('hidden');
-            inpCustom.value = data.aktivitas;
-            inpCustom.required = true;
-        } else if (!matchedOption) {
-            selectTugas.value = '';
-            containerCustom.classList.add('hidden');
-            inpCustom.value = '';
-            inpCustom.required = false;
-        } else {
-            containerCustom.classList.add('hidden');
-            inpCustom.value = '';
-            inpCustom.required = false;
-        }
+        // Setup Multi-Tugas & Dropdown Tugas Sesuai Divisi
+        const isReadOnly = Boolean(data.is_readonly);
+        selectTugas.value = '';
+        containerCustom.classList.add('hidden');
+        inpCustom.value = '';
+        inpCustom.required = false;
+        hydrateSelectedTugasFromData(data, isReadOnly);
 
         // Set radio status
         const statusRadios = document.querySelectorAll('.status-radio');
@@ -1232,19 +1469,22 @@ $totalLiburPeriode = (int)($totalLiburPeriode ?? 0);
         updateStatusPillStyle();
 
         // Penyesuaian Mode Baca Saja (Read-Only) jika tanggal lampau / terkunci
-        const isReadOnly = Boolean(data.is_readonly);
         const readonlyBanner = document.getElementById('modal-readonly-banner');
         const containerUpload = document.getElementById('container-upload-buttons');
         const btnSubmit = document.getElementById('btn-submit-jurnal-staff');
         const btnCancel = document.getElementById('btn-cancel-modal');
         const btnClearFoto = document.getElementById('btn-clear-foto');
         const labelFotoInfo = document.getElementById('label-foto-info');
+        const btnToggleCustom = document.getElementById('btn-toggle-custom-tugas');
+        const wrapperSelectTugas = document.getElementById('wrapper-select-tugas-dropdown');
 
         if (isReadOnly) {
             if (readonlyBanner) readonlyBanner.classList.remove('hidden');
             if (containerUpload) containerUpload.classList.add('hidden');
             if (btnSubmit) btnSubmit.classList.add('hidden');
-            if (btnClearFoto) btnClearFoto.classList.add('hidden');
+            if (btnClearFoto) btnClearFoto.classList.remove('hidden'), btnClearFoto.classList.add('hidden');
+            if (btnToggleCustom) btnToggleCustom.classList.add('hidden');
+            if (wrapperSelectTugas) wrapperSelectTugas.classList.add('hidden');
             if (labelFotoInfo) labelFotoInfo.textContent = 'Bukti Tersimpan';
             if (btnCancel) {
                 btnCancel.className = 'w-full py-3 rounded-2xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs press-bounce transition-all';
@@ -1261,6 +1501,8 @@ $totalLiburPeriode = (int)($totalLiburPeriode ?? 0);
             if (containerUpload) containerUpload.classList.remove('hidden');
             if (btnSubmit) btnSubmit.classList.remove('hidden');
             if (btnClearFoto) btnClearFoto.classList.remove('hidden');
+            if (btnToggleCustom) btnToggleCustom.classList.remove('hidden');
+            if (wrapperSelectTugas) wrapperSelectTugas.classList.remove('hidden');
             if (labelFotoInfo) labelFotoInfo.textContent = 'Kamera Langsung / Galeri';
             if (btnCancel) {
                 btnCancel.className = 'w-1/3 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs press-bounce transition-all';
@@ -1390,26 +1632,27 @@ $totalLiburPeriode = (int)($totalLiburPeriode ?? 0);
         }, 250);
     }
 
-    // Event Handler saat dropdown tugas diubah
+    // Event Handler saat dropdown tugas diubah (menambah ke daftar chip tugas terpilih)
     function handleSelectTugasChange(selectEl) {
-        const containerCustom = document.getElementById('container-tugas-custom');
-        const inpCustom = document.getElementById('inp_aktivitas_custom');
-        const inpUraian = document.getElementById('inp_uraian_hasil');
+        if (!selectEl || isModalTugasReadOnly) return;
+        const val = selectEl.value;
+        if (!val) return;
 
-        if (selectEl.value === 'custom') {
-            containerCustom.classList.remove('hidden');
-            inpCustom.required = true;
-            inpCustom.focus();
+        if (val === 'custom') {
+            toggleCustomTugasBox(true);
         } else {
-            containerCustom.classList.add('hidden');
-            inpCustom.required = false;
-            inpCustom.value = '';
-
-            // Jika ada deskripsi bawaan tugas dan uraian masih kosong, bantu berikan template ringkas
             const selectedOpt = selectEl.options[selectEl.selectedIndex];
-            if (selectedOpt && selectedOpt.dataset.deskripsi && (!inpUraian.value || inpUraian.value.trim() === '')) {
-                inpUraian.value = `Melaksanakan ${selectedOpt.dataset.nama}: ${selectedOpt.dataset.deskripsi}.`;
+            if (selectedOpt) {
+                const nama = selectedOpt.dataset.nama || selectedOpt.textContent || '';
+                const deskripsi = selectedOpt.dataset.deskripsi || '';
+                addMasterTugasChip(val, nama, deskripsi);
             }
+        }
+
+        // Reset dropdown ke placeholder agar staff bisa langsung menambah tugas kedua/ketiga
+        selectEl.value = '';
+        if (window.SearchableSelect && typeof window.SearchableSelect.refresh === 'function') {
+            window.SearchableSelect.refresh(selectEl);
         }
     }
 
@@ -1754,22 +1997,16 @@ $totalLiburPeriode = (int)($totalLiburPeriode ?? 0);
         const selectTugas = document.getElementById('modal_select_tugas');
         const inpCustom = document.getElementById('inp_aktivitas_custom');
 
-        let namaAktivitas = '';
-        let tugasId = '';
+        // Jika masih ada teks tugas manual di kolom input yang belum diklik "+ Tambah", otomatis masukkan ke daftar
+        if (inpCustom && inpCustom.value.trim() !== '') {
+            addCustomTugasChip();
+        }
+        if (selectTugas && selectTugas.value && selectTugas.value !== 'custom') {
+            handleSelectTugasChange(selectTugas);
+        }
 
-        if (selectTugas.value === 'custom') {
-            namaAktivitas = inpCustom.value.trim();
-            if (!namaAktivitas) {
-                if (typeof AndroidUI !== 'undefined') AndroidUI.toast('Ketik nama tugas / aktivitas Anda.', 'warning');
-                inpCustom.focus();
-                return;
-            }
-        } else if (selectTugas.value) {
-            tugasId = selectTugas.value;
-            const opt = selectTugas.options[selectTugas.selectedIndex];
-            namaAktivitas = opt.dataset.nama || opt.text;
-        } else {
-            if (typeof AndroidUI !== 'undefined') AndroidUI.toast('Silakan pilih tugas terlebih dahulu.', 'warning');
+        if (selectedTugasList.length === 0) {
+            if (typeof AndroidUI !== 'undefined') AndroidUI.toast('Silakan pilih minimal 1 tugas terlebih dahulu.', 'warning');
             const wrapper = selectTugas ? selectTugas.nextElementSibling : null;
             const triggerBtn = wrapper && wrapper.classList.contains('searchable-select-wrapper')
                 ? wrapper.querySelector('.searchable-select-trigger')
@@ -1784,9 +2021,17 @@ $totalLiburPeriode = (int)($totalLiburPeriode ?? 0);
             return;
         }
 
+        const namaAktivitas = selectedTugasList.map(it => it.nama).join(' • ');
+        const masterIds = selectedTugasList
+            .filter(it => it.id && Number(it.id) > 0)
+            .map(it => Number(it.id));
+        const tugasIdsStr = masterIds.join(',');
+        const tugasId = masterIds.length > 0 ? String(masterIds[0]) : '';
+
         const formData = new FormData(form);
         formData.set('aktivitas', namaAktivitas);
         formData.set('tugas_id', tugasId);
+        formData.set('tugas_ids', tugasIdsStr);
 
         // Pastikan jam_ids dikirim
         const jamIdsVal = document.getElementById('inp_jam_ids').value;
