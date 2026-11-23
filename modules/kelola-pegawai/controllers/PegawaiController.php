@@ -1848,57 +1848,16 @@ class PegawaiController
         include TEMPLATES_PATH . '/layouts/app.php';
     }
 
-    public static function storePenugasanGrup(string $id): void
+    /**
+     * Parsing daftar beban mengajar guru (mapel, kelas, JP, dan ringkasan) dari input penugasan
+     */
+    private static function parsePenugasanTeachingItems(array $input): array
     {
-        self::ensurePenugasanMengajarTable();
-        if (!CSRF::validate()) { Response::withError(url('kelola-pegawai/penugasan/grup/' . $id), 'Token tidak valid.'); return; }
-
-        $validator = Validator::make($_POST)
-            ->required('pegawai_id', 'Pegawai')
-            ->required('unit_tugas_id', 'Unit Tugas')
-            ->required('jabatan_id', 'Jabatan');
-
-        if ($validator->fails()) {
-            Response::backWithErrors($validator->errors(), $_POST);
-            return;
-        }
-
-        $db = Database::getInstance();
-        $grup = self::findAccessiblePenugasanGrupOrRedirect($db, $id);
-        if (!$grup) return;
-        if (!self::canAccessUnitTugasId($db, (int)$_POST['unit_tugas_id'])) {
-            Response::withError(url('kelola-pegawai/penugasan/grup/' . $id), 'Anda tidak memiliki akses menambahkan penugasan untuk unit lain.');
-            return;
-        }
-
-        // Upload SK jika ada
-        $file_sk = null;
-        if (isset($_FILES['file_sk']) && $_FILES['file_sk']['error'] === UPLOAD_ERR_OK) {
-            $uploadDir = BASE_PATH . '/public/uploads/sk/';
-            if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
-
-            $fileExt = strtolower(pathinfo($_FILES['file_sk']['name'], PATHINFO_EXTENSION));
-            if (in_array($fileExt, ['pdf', 'jpg', 'jpeg', 'png'])) {
-                $fileName = 'SK_' . time() . '_' . rand(100,999) . '.' . $fileExt;
-                if (move_uploaded_file($_FILES['file_sk']['tmp_name'], $uploadDir . $fileName)) {
-                    $file_sk = '/public/uploads/sk/' . $fileName;
-                }
-            }
-        }
-
-        $no_sk = trim($_POST['no_sk'] ?? ($grup['no_sk'] ?? ''));
-        $tanggal_sk = !empty($_POST['tanggal_sk']) ? $_POST['tanggal_sk'] : ($grup['tanggal_sk'] ?? date('Y-m-d'));
-        $tmt_mulai = !empty($_POST['tmt_mulai']) ? $_POST['tmt_mulai'] : ($grup['tmt_mulai'] ?? date('Y-m-d'));
-        $tst_selesai = !empty($_POST['tst_selesai']) ? $_POST['tst_selesai'] : ($grup['tst_selesai'] ?? null);
-        $status = $_POST['status'] ?? 'Aktif';
-        $waliKelasNama = trim($_POST['wali_kelas_nama'] ?? '');
-
-        // Proses Beban Tugas Mengajar (Mapel, Kelas, JP)
-        $isGuru = !empty($_POST['is_guru']) ? 1 : 0;
-        $mapelNames = $_POST['mapel_nama'] ?? [];
-        $mapelKelas = $_POST['mapel_kelas'] ?? [];
-        $mapelJp = $_POST['mapel_jp'] ?? [];
-        $mapelKet = $_POST['mapel_keterangan'] ?? [];
+        $isGuru = !empty($input['is_guru']) ? 1 : 0;
+        $mapelNames = $input['mapel_nama'] ?? [];
+        $mapelKelas = $input['mapel_kelas'] ?? [];
+        $mapelJp = $input['mapel_jp'] ?? [];
+        $mapelKet = $input['mapel_keterangan'] ?? [];
 
         $teachingItems = [];
         $totalJp = 0;
@@ -1906,12 +1865,12 @@ class PegawaiController
 
         if ($isGuru && is_array($mapelNames)) {
             foreach ($mapelNames as $idx => $mName) {
-                $mName = trim($mName);
+                $mName = trim((string)$mName);
                 $rawKelas = $mapelKelas[$idx] ?? [];
-                $classList = is_array($rawKelas) ? $rawKelas : (!empty($rawKelas) ? explode(',', $rawKelas) : []);
+                $classList = is_array($rawKelas) ? $rawKelas : (!empty($rawKelas) ? explode(',', (string)$rawKelas) : []);
                 $classList = array_values(array_filter(array_map('trim', $classList)));
                 $mJp = max(1, intval($mapelJp[$idx] ?? 2));
-                $mKeterangan = trim($mapelKet[$idx] ?? '');
+                $mKeterangan = trim((string)($mapelKet[$idx] ?? ''));
 
                 if ($mName !== '' && !empty($classList)) {
                     foreach ($classList as $kName) {
@@ -1930,53 +1889,195 @@ class PegawaiController
             }
         }
 
-        $mapelSummary = !empty($summaryParts) ? implode(', ', $summaryParts) : null;
         if (empty($teachingItems)) {
-            $isGuru = 0;
-            $totalJp = 0;
-            $mapelSummary = null;
+            return [
+                'is_guru' => 0,
+                'total_jp' => 0,
+                'mapel_summary' => null,
+                'teaching_items' => []
+            ];
         }
 
-        $newPenugasanId = $db->insert('pegawai_penugasan', [
-            'grup_id' => $id,
-            'pegawai_id' => $_POST['pegawai_id'],
-            'no_sk' => $no_sk,
-            'tanggal_sk' => $tanggal_sk,
-            'unit_tugas_id' => $_POST['unit_tugas_id'],
-            'jabatan_id' => $_POST['jabatan_id'],
-            'wali_kelas_nama' => !empty($waliKelasNama) ? $waliKelasNama : null,
-            'tmt_mulai' => $tmt_mulai,
-            'tst_selesai' => $tst_selesai,
-            'file_sk' => $file_sk,
-            'status' => $status,
-            'is_guru' => $isGuru,
+        return [
+            'is_guru' => 1,
             'total_jp' => $totalJp,
-            'mapel_ajar_summary' => $mapelSummary,
-            'keterangan' => trim($_POST['keterangan'] ?? '')
-        ]);
+            'mapel_summary' => implode(', ', $summaryParts),
+            'teaching_items' => $teachingItems
+        ];
+    }
 
-        // Simpan baris detail tugas mengajar
-        foreach ($teachingItems as $ti) {
-            $db->insert('pegawai_penugasan_mengajar', [
-                'penugasan_id' => $newPenugasanId,
-                'grup_id' => $id,
-                'pegawai_id' => $_POST['pegawai_id'],
-                'mata_pelajaran' => $ti['mata_pelajaran'],
-                'nama_kelas' => $ti['nama_kelas'],
-                'jumlah_jp' => $ti['jumlah_jp'],
-                'keterangan' => $ti['keterangan']
-            ]);
+    public static function storePenugasanGrup(string $id): void
+    {
+        self::ensurePenugasanMengajarTable();
+        if (!CSRF::validate()) { Response::withError(url('kelola-pegawai/penugasan/grup/' . $id), 'Token tidak valid.'); return; }
+
+        $db = Database::getInstance();
+        $grup = self::findAccessiblePenugasanGrupOrRedirect($db, $id);
+        if (!$grup) return;
+
+        // Normalisasi payload: mendukung multi-entry (items[]) maupun single legacy POST
+        $rawItems = [];
+        if (isset($_POST['items']) && is_array($_POST['items'])) {
+            $rawItems = array_values($_POST['items']);
+        } elseif (isset($_POST['pegawai_id']) || isset($_POST['unit_tugas_id']) || isset($_POST['jabatan_id'])) {
+            $rawItems[] = [
+                'pegawai_id' => $_POST['pegawai_id'] ?? '',
+                'unit_tugas_id' => $_POST['unit_tugas_id'] ?? '',
+                'jabatan_id' => $_POST['jabatan_id'] ?? '',
+                'wali_kelas_nama' => $_POST['wali_kelas_nama'] ?? '',
+                'is_guru' => $_POST['is_guru'] ?? 0,
+                'mapel_nama' => $_POST['mapel_nama'] ?? [],
+                'mapel_kelas' => $_POST['mapel_kelas'] ?? [],
+                'mapel_jp' => $_POST['mapel_jp'] ?? [],
+                'mapel_keterangan' => $_POST['mapel_keterangan'] ?? []
+            ];
         }
 
-        // Sinkronisasi otomatis ke riwayat karir pegawai
-        self::syncPenugasanToKarir((int)$newPenugasanId);
+        if (empty($rawItems)) {
+            Response::backWithErrors(['items' => 'Minimal 1 anggota penugasan harus diisi.'], $_POST);
+            return;
+        }
 
-        // Jika grup ini sedang aktif, sinkronkan ke pegawai
-        if ($grup['is_active']) {
+        // Validasi all-or-nothing sebelum menulis ke database
+        $errors = [];
+        $validatedItems = [];
+        $isBatch = count($rawItems) > 1;
+        $seenTriples = [];
+
+        foreach ($rawItems as $idx => $item) {
+            if (!is_array($item)) {
+                $errors["items_{$idx}"] = 'Format data anggota #' . ($idx + 1) . ' tidak valid.';
+                continue;
+            }
+
+            $prefix = $isBatch ? ('Anggota #' . ($idx + 1) . ': ') : '';
+            $pegawaiId = (int)($item['pegawai_id'] ?? 0);
+            $unitTugasId = (int)($item['unit_tugas_id'] ?? 0);
+            $jabatanId = (int)($item['jabatan_id'] ?? 0);
+
+            if ($pegawaiId <= 0) {
+                $errors["items_{$idx}_pegawai"] = $prefix . 'Pegawai wajib dipilih.';
+            }
+            if ($unitTugasId <= 0) {
+                $errors["items_{$idx}_unit"] = $prefix . 'Unit Tugas wajib dipilih.';
+            } elseif (!self::canAccessUnitTugasId($db, $unitTugasId)) {
+                Response::withError(url('kelola-pegawai/penugasan/grup/' . $id), 'Anda tidak memiliki akses menambahkan penugasan untuk unit lain.');
+                return;
+            }
+            if ($jabatanId <= 0) {
+                $errors["items_{$idx}_jabatan"] = $prefix . 'Jabatan wajib dipilih.';
+            }
+
+            if ($pegawaiId > 0 && $unitTugasId > 0 && $jabatanId > 0) {
+                $tripleKey = "{$pegawaiId}|{$unitTugasId}|{$jabatanId}";
+                if (isset($seenTriples[$tripleKey])) {
+                    $errors["items_{$idx}_dup"] = $prefix . 'Kombinasi Pegawai, Unit Tugas, dan Jabatan duplikat pada daftar.';
+                } else {
+                    $seenTriples[$tripleKey] = true;
+                    $validatedItems[] = [
+                        'pegawai_id' => $pegawaiId,
+                        'unit_tugas_id' => $unitTugasId,
+                        'jabatan_id' => $jabatanId,
+                        'wali_kelas_nama' => trim((string)($item['wali_kelas_nama'] ?? '')),
+                        'teaching' => self::parsePenugasanTeachingItems($item)
+                    ];
+                }
+            }
+        }
+
+        if (!empty($errors)) {
+            Response::backWithErrors($errors, $_POST);
+            return;
+        }
+
+        // Upload SK jika ada (diterapkan ke seluruh item batch)
+        $file_sk = null;
+        if (isset($_FILES['file_sk']) && $_FILES['file_sk']['error'] === UPLOAD_ERR_OK) {
+            $uploadDir = BASE_PATH . '/public/uploads/sk/';
+            if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
+
+            $fileExt = strtolower(pathinfo($_FILES['file_sk']['name'], PATHINFO_EXTENSION));
+            if (in_array($fileExt, ['pdf', 'jpg', 'jpeg', 'png'])) {
+                $fileName = 'SK_' . time() . '_' . rand(100,999) . '.' . $fileExt;
+                if (move_uploaded_file($_FILES['file_sk']['tmp_name'], $uploadDir . $fileName)) {
+                    $file_sk = '/public/uploads/sk/' . $fileName;
+                }
+            }
+        }
+
+        $no_sk = trim((string)($_POST['no_sk'] ?? ($grup['no_sk'] ?? '')));
+        $tanggal_sk = !empty($_POST['tanggal_sk']) ? $_POST['tanggal_sk'] : ($grup['tanggal_sk'] ?? date('Y-m-d'));
+        $tmt_mulai = !empty($_POST['tmt_mulai']) ? $_POST['tmt_mulai'] : ($grup['tmt_mulai'] ?? date('Y-m-d'));
+        $tst_selesai = !empty($_POST['tst_selesai']) ? $_POST['tst_selesai'] : ($grup['tst_selesai'] ?? null);
+        $status = $_POST['status'] ?? 'Aktif';
+        $keterangan = trim((string)($_POST['keterangan'] ?? ''));
+
+        $savedCount = 0;
+        try {
+            $db->beginTransaction();
+
+            foreach ($validatedItems as $vItem) {
+                $teaching = $vItem['teaching'];
+                $waliKelasNama = $vItem['wali_kelas_nama'];
+
+                $newPenugasanId = $db->insert('pegawai_penugasan', [
+                    'grup_id' => $id,
+                    'pegawai_id' => $vItem['pegawai_id'],
+                    'no_sk' => $no_sk,
+                    'tanggal_sk' => $tanggal_sk,
+                    'unit_tugas_id' => $vItem['unit_tugas_id'],
+                    'jabatan_id' => $vItem['jabatan_id'],
+                    'wali_kelas_nama' => $waliKelasNama !== '' ? $waliKelasNama : null,
+                    'tmt_mulai' => $tmt_mulai,
+                    'tst_selesai' => $tst_selesai,
+                    'file_sk' => $file_sk,
+                    'status' => $status,
+                    'is_guru' => $teaching['is_guru'],
+                    'total_jp' => $teaching['total_jp'],
+                    'mapel_ajar_summary' => $teaching['mapel_summary'],
+                    'keterangan' => $keterangan
+                ]);
+
+                // Simpan baris detail tugas mengajar
+                foreach ($teaching['teaching_items'] as $ti) {
+                    $db->insert('pegawai_penugasan_mengajar', [
+                        'penugasan_id' => $newPenugasanId,
+                        'grup_id' => $id,
+                        'pegawai_id' => $vItem['pegawai_id'],
+                        'mata_pelajaran' => $ti['mata_pelajaran'],
+                        'nama_kelas' => $ti['nama_kelas'],
+                        'jumlah_jp' => $ti['jumlah_jp'],
+                        'keterangan' => $ti['keterangan']
+                    ]);
+                }
+
+                // Sinkronisasi otomatis ke riwayat karir pegawai
+                self::syncPenugasanToKarir((int)$newPenugasanId);
+                $savedCount++;
+            }
+
+            $db->commit();
+        } catch (Throwable $e) {
+            if ($db->getConnection()->inTransaction()) {
+                $db->rollback();
+            }
+            if ($file_sk && defined('BASE_PATH') && file_exists(BASE_PATH . $file_sk)) {
+                @unlink(BASE_PATH . $file_sk);
+            }
+            error_log('Batch storePenugasanGrup error: ' . $e->getMessage());
+            Response::backWithErrors(['store' => 'Gagal menyimpan data penugasan: ' . $e->getMessage()], $_POST);
+            return;
+        }
+
+        // Jika grup ini sedang aktif, sinkronkan ke pegawai sekali untuk seluruh batch
+        if (!empty($grup['is_active'])) {
             self::syncAllActiveGroupsToPegawai();
         }
 
-        Response::withSuccess(url('kelola-pegawai/penugasan/grup/' . $id), 'Pegawai berhasil ditambahkan ke dalam grup penugasan.');
+        $successMsg = $savedCount === 1
+            ? 'Pegawai berhasil ditambahkan ke dalam grup penugasan.'
+            : "{$savedCount} pegawai berhasil ditambahkan sekaligus ke dalam grup penugasan.";
+        Response::withSuccess(url('kelola-pegawai/penugasan/grup/' . $id), $successMsg);
     }
 
     public static function editPenugasanGrup(string $id): void
@@ -2087,48 +2188,7 @@ class PegawaiController
         $waliKelasNama = trim($_POST['wali_kelas_nama'] ?? '');
 
         // Proses Beban Tugas Mengajar (Mapel, Kelas, JP)
-        $isGuru = !empty($_POST['is_guru']) ? 1 : 0;
-        $mapelNames = $_POST['mapel_nama'] ?? [];
-        $mapelKelas = $_POST['mapel_kelas'] ?? [];
-        $mapelJp = $_POST['mapel_jp'] ?? [];
-        $mapelKet = $_POST['mapel_keterangan'] ?? [];
-
-        $teachingItems = [];
-        $totalJp = 0;
-        $summaryParts = [];
-
-        if ($isGuru && is_array($mapelNames)) {
-            foreach ($mapelNames as $idx => $mName) {
-                $mName = trim($mName);
-                $rawKelas = $mapelKelas[$idx] ?? [];
-                $classList = is_array($rawKelas) ? $rawKelas : (!empty($rawKelas) ? explode(',', $rawKelas) : []);
-                $classList = array_values(array_filter(array_map('trim', $classList)));
-                $mJp = max(1, intval($mapelJp[$idx] ?? 2));
-                $mKeterangan = trim($mapelKet[$idx] ?? '');
-
-                if ($mName !== '' && !empty($classList)) {
-                    foreach ($classList as $kName) {
-                        $teachingItems[] = [
-                            'mata_pelajaran' => $mName,
-                            'nama_kelas' => $kName,
-                            'jumlah_jp' => $mJp,
-                            'keterangan' => $mKeterangan
-                        ];
-                        $totalJp += $mJp;
-                    }
-                    $joinedClasses = implode(', ', $classList);
-                    $subTotalJp = $mJp * count($classList);
-                    $summaryParts[] = "{$mName} ({$joinedClasses}: {$subTotalJp} JP)";
-                }
-            }
-        }
-
-        $mapelSummary = !empty($summaryParts) ? implode(', ', $summaryParts) : null;
-        if (empty($teachingItems)) {
-            $isGuru = 0;
-            $totalJp = 0;
-            $mapelSummary = null;
-        }
+        $teaching = self::parsePenugasanTeachingItems($_POST);
 
         $db->update('pegawai_penugasan', [
             'pegawai_id' => $_POST['pegawai_id'],
@@ -2141,15 +2201,15 @@ class PegawaiController
             'tst_selesai' => empty($_POST['tst_selesai']) ? null : $_POST['tst_selesai'],
             'file_sk' => $file_sk,
             'status' => $status,
-            'is_guru' => $isGuru,
-            'total_jp' => $totalJp,
-            'mapel_ajar_summary' => $mapelSummary,
+            'is_guru' => $teaching['is_guru'],
+            'total_jp' => $teaching['total_jp'],
+            'mapel_ajar_summary' => $teaching['mapel_summary'],
             'keterangan' => trim($_POST['keterangan'] ?? '')
         ], 'id = ?', [$id]);
 
         // Perbarui baris detail tugas mengajar
         $db->delete('pegawai_penugasan_mengajar', 'penugasan_id = ?', [$id]);
-        foreach ($teachingItems as $ti) {
+        foreach ($teaching['teaching_items'] as $ti) {
             $db->insert('pegawai_penugasan_mengajar', [
                 'penugasan_id' => $id,
                 'grup_id' => $grupId,
