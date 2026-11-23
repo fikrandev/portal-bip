@@ -779,21 +779,57 @@ class JurnalStaffReminderService
             }
         }
 
-        // Ambil riwayat WA terkirim hari ini per staff & slot
+        // Ambil seluruh riwayat percobaan pengiriman WA hari ini per staff & slot (success maupun failed)
         $waLogsRows = $db->findAll("
-            SELECT pegawai_id, slot_waktu, status
+            SELECT pegawai_id, slot_waktu, status, error_message, created_at
             FROM jurnal_staff_wa_log
-            WHERE tanggal = ? AND status = 'success'
+            WHERE tanggal = ?
+            ORDER BY id ASC
         ", [$date]);
 
         $sentMap = [];
+        $failedMap = [];
+        $attemptedMap = [];
         foreach ($waLogsRows as $wl) {
             $pid = (int)$wl['pegawai_id'];
             $sw = trim((string)$wl['slot_waktu']);
-            if ($pid > 0 && $sw !== '') {
+            $st = trim((string)$wl['status']);
+            if ($pid <= 0 || $sw === '') {
+                continue;
+            }
+            $attemptedMap[$pid][$sw] = true;
+            if ($st === 'success') {
                 $sentMap[$pid][$sw] = true;
+                unset($failedMap[$pid][$sw]);
+            } elseif ($st === 'failed' && empty($sentMap[$pid][$sw])) {
+                $failedMap[$pid][$sw] = trim((string)($wl['error_message'] ?? 'Gagal mengirim pesan'));
             }
         }
+
+        // Tentukan apakah slot yang dievaluasi sudah jatuh tempo (jam jadwal sudah tiba/lewat)
+        $todayYmd = date('Y-m-d');
+        $nowHi = date('H:i');
+        $schedulesList = $settings['schedules_array'] ?? ['09:00', '13:00', '17:00'];
+        $currentDueSlot = self::getCurrentDueSlot($settings, $nowHi);
+
+        if ($date < $todayYmd) {
+            $isSlotDue = true;
+        } elseif ($date > $todayYmd) {
+            $isSlotDue = false;
+        } else {
+            if ($slotTime === 'all' || $slotTime === 'semua' || $slotTime === '') {
+                $firstSlot = $schedulesList[0] ?? '09:00';
+                $isSlotDue = ($nowHi >= $firstSlot);
+            } elseif (preg_match('/^\d{2}:\d{2}$/', $slotTime)) {
+                $isSlotDue = ($nowHi >= $slotTime);
+            } else {
+                $isSlotDue = true;
+            }
+        }
+
+        $effectiveCheckSlot = ($slotTime === 'all' || $slotTime === 'semua' || $slotTime === '')
+            ? ($currentDueSlot ?? ($schedulesList[0] ?? '09:00'))
+            : $slotTime;
 
         $excludedLookup = array_flip($settings['excluded_ids_array'] ?? []);
         $requiredJamIdMap = [];
@@ -802,16 +838,21 @@ class JurnalStaffReminderService
         }
 
         $summary = [
-            'total_staff'    => count($staffList),
-            'enabled_wa'     => 0,
-            'nonaktif_wa'    => 0,
-            'needs_reminder' => 0,
-            'belum_isi'      => 0,
-            'sebagian'       => 0,
-            'lengkap'        => 0,
-            'cuti_izin'      => 0,
-            'no_wa'          => 0,
-            'already_sent'   => 0,
+            'total_staff'             => count($staffList),
+            'enabled_wa'              => 0,
+            'nonaktif_wa'             => 0,
+            'needs_reminder'          => 0,
+            'belum_isi'               => 0,
+            'sebagian'                => 0,
+            'lengkap'                 => 0,
+            'cuti_izin'               => 0,
+            'no_wa'                   => 0,
+            'already_sent'            => 0,
+            'failed_count'            => 0,
+            'unsent_due_count'        => 0,
+            'scheduled_waiting_count' => 0,
+            'is_slot_due'             => $isSlotDue,
+            'current_due_slot'        => $currentDueSlot,
         ];
 
         $items = [];
@@ -855,8 +896,11 @@ class JurnalStaffReminderService
             }
 
             $excusedReason = self::getStaffExcusedReason($pid, $date);
-            $alreadySentForSlot = !empty($sentMap[$pid][$slotTime]);
+            $alreadySentForSlot = !empty($sentMap[$pid][$slotTime]) || !empty($sentMap[$pid][$effectiveCheckSlot]);
+            $lastFailedForSlot = $failedMap[$pid][$slotTime] ?? ($failedMap[$pid][$effectiveCheckSlot] ?? null);
+            $wasAttemptedForSlot = !empty($attemptedMap[$pid][$slotTime]) || !empty($attemptedMap[$pid][$effectiveCheckSlot]);
             $sentSlotsToday = isset($sentMap[$pid]) ? array_keys($sentMap[$pid]) : [];
+            $failedSlotsToday = isset($failedMap[$pid]) ? array_keys($failedMap[$pid]) : [];
 
             $needsReminder = false;
             $category = 'lengkap';
@@ -891,7 +935,33 @@ class JurnalStaffReminderService
                     $summary['no_wa']++;
                 }
             }
-            if ($alreadySentForSlot) {
+
+            // Status pengiriman otomatis & apakah tombol kirim manual/ulang perlu ditampilkan
+            // Aturan: Pada jam terjadwal pesan otomatis terkirim. Tombol kirim hanya muncul jika jadwal sudah tiba tapi pesan gagal/tidak terkirim.
+            $deliveryState = 'not_needed'; // not_needed | sent | scheduled | failed | unsent_due | no_wa
+            $canManualRetry = false;
+
+            if ($needsReminder) {
+                if ($alreadySentForSlot) {
+                    $deliveryState = 'sent';
+                    $summary['already_sent']++;
+                } elseif (!$staff['has_valid_wa']) {
+                    $deliveryState = 'no_wa';
+                } elseif (!$isSlotDue) {
+                    $deliveryState = 'scheduled';
+                    $summary['scheduled_waiting_count']++;
+                } else {
+                    // Jadwal sudah jatuh tempo namun pesan belum terkirim / gagal
+                    $canManualRetry = true;
+                    $summary['unsent_due_count']++;
+                    if ($lastFailedForSlot !== null) {
+                        $deliveryState = 'failed';
+                        $summary['failed_count']++;
+                    } else {
+                        $deliveryState = 'unsent_due';
+                    }
+                }
+            } elseif ($alreadySentForSlot) {
                 $summary['already_sent']++;
             }
 
@@ -919,7 +989,12 @@ class JurnalStaffReminderService
                 'category'              => $category,
                 'needs_reminder'        => $needsReminder,
                 'already_sent_for_slot' => $alreadySentForSlot,
+                'was_attempted_for_slot'=> $wasAttemptedForSlot,
+                'last_failed_error'     => $lastFailedForSlot,
+                'delivery_state'        => $deliveryState,
+                'can_manual_retry'      => $canManualRetry,
                 'sent_slots_today'      => $sentSlotsToday,
+                'failed_slots_today'    => $failedSlotsToday,
                 'preview_message'       => $previewMessage,
             ];
         }
@@ -1160,30 +1235,17 @@ class JurnalStaffReminderService
             ];
         }
 
-        // Resolusi slot waktu dari parameter atau waktu WITA saat ini (toleransi ±5 menit)
+        // Resolusi slot waktu dari parameter atau slot aktif terakhir yang sudah jatuh tempo hari ini
         $resolvedSlot = trim((string)$slotTime);
         if ($resolvedSlot === '') {
-            $nowMinutes = ((int)date('G')) * 60 + (int)date('i');
-            $matchedSlot = null;
-            $bestDiff = 9999;
-
-            foreach ($settings['schedules_array'] as $sched) {
-                [$sh, $sm] = array_map('intval', explode(':', $sched));
-                $schedMin = $sh * 60 + $sm;
-                $diff = abs($nowMinutes - $schedMin);
-                if ($diff <= 5 && $diff < $bestDiff) {
-                    $bestDiff = $diff;
-                    $matchedSlot = $sched;
-                }
-            }
-
-            if ($matchedSlot !== null) {
-                $resolvedSlot = $matchedSlot;
+            $dueSlot = self::getCurrentDueSlot($settings);
+            if ($dueSlot !== null) {
+                $resolvedSlot = $dueSlot;
             } elseif (!$force) {
                 return [
                     'success' => true,
                     'skipped' => true,
-                    'reason'  => 'Waktu saat ini (' . date('H:i') . ' WITA) di luar jendela jadwal (' . implode(', ', $settings['schedules_array']) . ').',
+                    'reason'  => 'Waktu saat ini (' . date('H:i') . ' WITA) belum memasuki jadwal pengingat (' . implode(', ', $settings['schedules_array']) . ').',
                     'date'    => $date,
                     'slot'    => date('H:i'),
                     'sent'    => 0,
@@ -1515,6 +1577,135 @@ class JurnalStaffReminderService
             ");
         } catch (\Throwable $e) {
             return [];
+        }
+    }
+
+    /**
+     * Tentukan slot jadwal terakhir yang sudah jatuh tempo hari ini (misal '09:00', '13:00', atau '17:00')
+     */
+    public static function getCurrentDueSlot(?array $settings = null, ?string $nowHi = null): ?string
+    {
+        if ($settings === null) {
+            $settings = self::getSettings();
+        }
+        $nowHi = $nowHi ?: date('H:i');
+        if ($nowHi > '22:30') {
+            return null;
+        }
+
+        $schedules = $settings['schedules_array'] ?? ['09:00', '13:00', '17:00'];
+        $dueSlot = null;
+        foreach ($schedules as $sc) {
+            if ($nowHi >= $sc) {
+                $dueSlot = $sc;
+            }
+        }
+        return $dueSlot;
+    }
+
+    /**
+     * Cek dan jalankan pengiriman otomatis (Auto-Dispatch) jika ada slot jadwal hari ini yang sudah tiba
+     * namun belum dieksekusi untuk staff yang wajib diingatkan.
+     *
+     * @param bool $onlyUnattempted Jika true, hanya mengirim otomatis untuk staff yang belum dicoba pada slot ini
+     *                              (sehingga jika gagal, tidak looping terus melainkan menampilkan tombol Kirim Ulang).
+     */
+    public static function autoDispatchDueSlotIfNeeded(bool $onlyUnattempted = true): ?array
+    {
+        try {
+            $nowHi = date('H:i');
+            if ($nowHi < '07:00' || $nowHi > '22:30') {
+                return null;
+            }
+
+            // Throttle file agar pengecekan di setiap request web sangat ringan (<0.1ms)
+            $lockFile = rtrim(sys_get_temp_dir(), '/\\') . DIRECTORY_SEPARATOR . 'portal_bip_jurnal_wa_autocheck.json';
+            $today = date('Y-m-d');
+            $nowTs = time();
+
+            $lockData = [];
+            if (is_file($lockFile)) {
+                $raw = @file_get_contents($lockFile);
+                if ($raw) {
+                    $parsed = json_decode($raw, true);
+                    if (is_array($parsed)) {
+                        $lockData = $parsed;
+                    }
+                }
+            }
+
+            if (($lockData['date'] ?? '') === $today && ($nowTs - (int)($lockData['last_check_ts'] ?? 0)) < 35) {
+                return null;
+            }
+
+            $settings = self::getSettings();
+            if (($settings['jurnal_staff_wa_enabled'] ?? '1') !== '1') {
+                return null;
+            }
+
+            $dueSlot = self::getCurrentDueSlot($settings, $nowHi);
+            if ($dueSlot === null) {
+                @file_put_contents($lockFile, json_encode([
+                    'date'          => $today,
+                    'last_check_ts' => $nowTs,
+                    'due_slot'      => null,
+                ]));
+                return null;
+            }
+
+            // Jika slot ini sudah ditandai selesai penuh di file cache dalam 5 menit terakhir, lewati
+            $slotDoneKey = 'done_' . $dueSlot;
+            if (($lockData['date'] ?? '') === $today && !empty($lockData[$slotDoneKey]) && ($nowTs - (int)$lockData[$slotDoneKey]) < 300) {
+                return null;
+            }
+
+            // Update last_check_ts terlebih dahulu untuk mencegah race condition antar request bersamaan
+            $lockData['date'] = $today;
+            $lockData['last_check_ts'] = $nowTs;
+            @file_put_contents($lockFile, json_encode($lockData));
+
+            $dayOfWeek = (int)date('N', strtotime($today));
+            if (!in_array($dayOfWeek, $settings['active_days_array'], true)) {
+                return null;
+            }
+
+            require_once MODULES_PATH . '/kelola-absen-pegawai/models/AbsenPegawaiModel.php';
+            if (AbsenPegawaiModel::getLiburInfoForDate($today) !== null) {
+                $lockData[$slotDoneKey] = $nowTs;
+                @file_put_contents($lockFile, json_encode($lockData));
+                return null;
+            }
+
+            // Evaluasi apakah ada staff pada dueSlot yang belum pernah dicoba kirim sama sekali di slot ini
+            $eval = self::evaluateAllStaffForDate($today, $dueSlot, $settings);
+            $hasUnattemptedDue = false;
+            foreach ($eval['items'] as $it) {
+                if (!$it['needs_reminder'] || !$it['has_valid_wa'] || $it['already_sent_for_slot']) {
+                    continue;
+                }
+                if (!$onlyUnattempted || empty($it['was_attempted_for_slot'])) {
+                    $hasUnattemptedDue = true;
+                    break;
+                }
+            }
+
+            if (!$hasUnattemptedDue) {
+                $lockData[$slotDoneKey] = $nowTs;
+                @file_put_contents($lockFile, json_encode($lockData));
+                return null;
+            }
+
+            // Jalankan pengiriman otomatis untuk dueSlot
+            $res = self::runScheduledDispatch($dueSlot, $today, 'auto_scheduler', false, false);
+            if (!empty($res['success']) && (int)($res['failed'] ?? 0) === 0) {
+                $lockData[$slotDoneKey] = time();
+                @file_put_contents($lockFile, json_encode($lockData));
+            }
+
+            return $res;
+        } catch (\Throwable $e) {
+            error_log('Error autoDispatchDueSlotIfNeeded: ' . $e->getMessage());
+            return null;
         }
     }
 }

@@ -100,18 +100,15 @@ class JurnalStaffAdminController
         $activeJamOptions = JurnalStaffModel::getJamList(true);
 
         // 7. Tab 5: Pengingat WA Otomatis Jurnal Staff
+        // Jalankan auto-dispatch jika ada slot jadwal hari ini yang sudah tiba namun belum tereksekusi
+        JurnalStaffReminderService::autoDispatchDueSlotIfNeeded(true);
+
         $reminderSettings = JurnalStaffReminderService::getSettings();
         $previewSlot = trim($_GET['preview_slot'] ?? '');
         if ($previewSlot === '') {
-            $nowHi = date('H:i');
+            $dueSlotNow = JurnalStaffReminderService::getCurrentDueSlot($reminderSettings);
             $schedules = $reminderSettings['schedules_array'];
-            if ($nowHi < '09:30') {
-                $previewSlot = $schedules[0] ?? '09:00';
-            } elseif ($nowHi < '13:30') {
-                $previewSlot = $schedules[1] ?? ($schedules[0] ?? '13:00');
-            } else {
-                $previewSlot = end($schedules) ?: '17:00';
-            }
+            $previewSlot = $dueSlotNow ?? ($schedules[0] ?? '09:00');
         }
         $reminderEval = JurnalStaffReminderService::evaluateAllStaffForDate(date('Y-m-d'), $previewSlot, $reminderSettings);
         $reminderLogs = JurnalStaffReminderService::getRecentLogs(30);
@@ -734,6 +731,27 @@ class JurnalStaffAdminController
             echo json_encode([
                 'success' => true,
                 'data'    => $eval,
+            ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        } catch (Throwable $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        }
+        exit;
+    }
+
+    /**
+     * Endpoint Heartbeat Auto-Scheduler (mengecek & mengirim otomatis slot jadwal yang sudah tiba)
+     */
+    public static function apiAutoCheckPengingat(): void
+    {
+        header('Content-Type: application/json; charset=utf-8');
+        try {
+            $res = JurnalStaffReminderService::autoDispatchDueSlotIfNeeded(true);
+            echo json_encode([
+                'success'   => true,
+                'triggered' => ($res !== null),
+                'result'    => $res,
+                'time_wita' => date('H:i:s'),
             ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         } catch (Throwable $e) {
             http_response_code(500);

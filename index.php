@@ -607,6 +607,26 @@ $router->post('/kelola-jurnal-staff/pengingat/test', [JurnalStaffAdminController
 $router->post('/kelola-jurnal-staff/pengingat/regenerate-key', [JurnalStaffAdminController::class, 'regenerateCronKey'], [Middleware::permissionRequired('jurnal_staff.manage')]);
 $router->post('/kelola-jurnal-staff/pengingat/recipients', [JurnalStaffAdminController::class, 'savePengingatRecipients'], [Middleware::permissionRequired('jurnal_staff.manage')]);
 $router->get('/kelola-jurnal-staff/pengingat/preview', [JurnalStaffAdminController::class, 'apiPreviewPengingat'], [Middleware::permissionRequired('jurnal_staff.view')]);
+$router->get('/kelola-jurnal-staff/pengingat/auto-check', [JurnalStaffAdminController::class, 'apiAutoCheckPengingat']);
+
+// Background Auto-Scheduler Hook untuk Pengingat WA Jurnal Staff (berjalan otomatis saat jam jadwal tiba)
+register_shutdown_function(static function (): void {
+    try {
+        $uri = $_SERVER['REQUEST_URI'] ?? '';
+        if (strpos($uri, '/cron/') !== false || strpos($uri, '/auto-check') !== false || strpos($uri, '.png') !== false || strpos($uri, '.js') !== false) {
+            return;
+        }
+        $lockFile = rtrim(sys_get_temp_dir(), '/\\') . DIRECTORY_SEPARATOR . 'portal_bip_jurnal_wa_autocheck.json';
+        if (is_file($lockFile) && (time() - (int)@filemtime($lockFile)) < 35) {
+            return;
+        }
+        if (function_exists('fastcgi_finish_request')) {
+            @fastcgi_finish_request();
+        }
+        require_once MODULES_PATH . '/kelola-jurnal-staff/services/JurnalStaffReminderService.php';
+        JurnalStaffReminderService::autoDispatchDueSlotIfNeeded(true);
+    } catch (Throwable $e) {}
+});
 
 // Base Routes Modul Tambahan Lainnya
 $router->get('/kelola-nilai', [NilaiController::class, 'index'], [[Middleware::class, 'authRequired']]);

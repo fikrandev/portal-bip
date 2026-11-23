@@ -1517,41 +1517,70 @@ $todayYmd = date('Y-m-d');
                     </div>
                 </div>
 
-                <!-- Quick Bulk Dispatch Panel -->
-                <?php if ($canManageReminder): ?>
-                <div class="bg-white/10 backdrop-blur-md border border-white/15 rounded-2xl p-4 space-y-3 shrink-0 w-full xl:w-auto xl:min-w-[340px]">
+                <!-- Status Auto-Scheduler & Tombol Kirim Ulang (Hanya Muncul Jika Tidak Terkirim) -->
+                <?php
+                    $isSlotDueHero = !empty($remSummary['is_slot_due']);
+                    $unsentDueHero = (int)($remSummary['unsent_due_count'] ?? 0);
+                    $failedHero = (int)($remSummary['failed_count'] ?? 0);
+                    $alreadySentHero = (int)($remSummary['already_sent'] ?? 0);
+                    $effectiveSlotHero = ($currentPreviewSlot === 'all')
+                        ? ($remSummary['current_due_slot'] ?? ($activeSchedules[0] ?? '09:00'))
+                        : $currentPreviewSlot;
+                ?>
+                <div class="bg-white/10 backdrop-blur-md border border-white/15 rounded-2xl p-4 space-y-3 shrink-0 w-full xl:w-auto xl:min-w-[360px]">
                     <div class="flex items-center justify-between gap-2">
-                        <span class="text-xs font-bold uppercase tracking-wider text-emerald-200">Kirim Pengingat Manual</span>
+                        <span class="text-xs font-bold uppercase tracking-wider text-emerald-200 flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                            <span>Status Pengiriman Otomatis</span>
+                        </span>
                         <span class="text-[11px] font-mono text-slate-300"><?= date('d M Y H:i') ?> WITA</span>
                     </div>
 
-                    <div class="flex flex-col sm:flex-row gap-2">
-                        <select id="bulk-run-slot" class="flex-1 px-3 py-2 rounded-xl bg-slate-900/80 border border-white/20 text-white text-xs font-semibold outline-none focus:ring-2 focus:ring-emerald-400">
-                            <?php foreach ($activeSchedules as $sc): ?>
-                                <option value="<?= e($sc) ?>" <?= $currentPreviewSlot === $sc ? 'selected' : '' ?>>
-                                    Slot <?= e($sc) ?> WITA
-                                </option>
-                            <?php endforeach; ?>
-                            <option value="all" <?= $currentPreviewSlot === 'all' ? 'selected' : '' ?>>Semua Sesi Hari Ini</option>
-                        </select>
-                        <button type="button" id="btn-run-bulk-wa" onclick="runBulkWaReminder()"
-                                class="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs shadow-lg shadow-emerald-500/25 transition-all flex items-center justify-center gap-1.5 shrink-0">
-                            <span>📤 Kirim Pengingat Sekarang</span>
-                        </button>
-                    </div>
+                    <?php if ($unsentDueHero > 0 && $canManageReminder): ?>
+                        <div class="p-3 rounded-xl bg-rose-500/20 border border-rose-400/40 text-xs space-y-2">
+                            <div class="font-bold text-rose-100 flex items-center gap-1.5">
+                                <span>⚠️</span>
+                                <span><?= $unsentDueHero ?> Pesan Belum / Tidak Terkirim (Slot <?= e($effectiveSlotHero) ?> WITA)</span>
+                            </div>
+                            <p class="text-[11px] text-rose-200/90 leading-relaxed">
+                                Jadwal jam <?= e($effectiveSlotHero) ?> WITA sudah tiba namun terdapat <?= $unsentDueHero ?> staff yang pesannya belum terkirim<?= $failedHero > 0 ? " ({$failedHero} gagal kirim)" : '' ?>.
+                            </p>
+                            <input type="hidden" id="bulk-run-slot" value="<?= e($effectiveSlotHero) ?>">
+                            <button type="button" id="btn-run-bulk-wa" onclick="runBulkWaReminder()"
+                                    class="w-full px-4 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-xs shadow-lg shadow-amber-500/25 transition-all flex items-center justify-center gap-1.5">
+                                <span>🔄 Kirim <?= $unsentDueHero ?> Pesan yang Tidak Terkirim</span>
+                            </button>
+                        </div>
+                    <?php elseif ($isSlotDueHero): ?>
+                        <div class="p-3 rounded-xl bg-emerald-500/20 border border-emerald-400/30 text-xs space-y-1">
+                            <div class="font-bold text-emerald-100 flex items-center gap-1.5">
+                                <span>✅</span>
+                                <span>Auto-Send Slot <?= e($effectiveSlotHero) ?> WITA Aktif &amp; Terkirim</span>
+                            </div>
+                            <p class="text-[11px] text-emerald-200/90 leading-relaxed">
+                                Pesan pengingat terkirim otomatis pada jam terjadwal tanpa perlu klik tombol kirim (<strong><?= $alreadySentHero ?> terkirim</strong> di slot ini).
+                            </p>
+                        </div>
+                    <?php else: ?>
+                        <div class="p-3 rounded-xl bg-sky-500/20 border border-sky-400/30 text-xs space-y-1">
+                            <div class="font-bold text-sky-100 flex items-center gap-1.5">
+                                <span>⏳</span>
+                                <span>Menunggu Jadwal Otomatis (<?= e($effectiveSlotHero) ?> WITA)</span>
+                            </div>
+                            <p class="text-[11px] text-sky-200/90 leading-relaxed">
+                                Sistem akan mengirim pesan WA secara otomatis tepat pada jam <strong><?= e($effectiveSlotHero) ?> WITA</strong>. Tombol kirim hanya muncul jika ada pesan yang gagal terkirim.
+                            </p>
+                        </div>
+                    <?php endif; ?>
 
-                    <div class="flex items-center justify-between gap-2 text-[11px]">
-                        <label class="inline-flex items-center gap-1.5 text-slate-200 cursor-pointer select-none">
-                            <input type="checkbox" id="bulk-run-force" class="rounded border-white/30 bg-slate-900 text-emerald-500 focus:ring-emerald-400">
-                            <span>Kirim ulang meski sudah terkirim di slot ini</span>
-                        </label>
+                    <div class="flex items-center justify-between gap-2 text-[11px] pt-0.5">
+                        <span class="text-slate-300">Mode: <strong class="text-emerald-300">Otomatis Sesuai Jadwal</strong></span>
                         <a href="#card-uji-kirim-wa" class="text-emerald-300 hover:text-emerald-200 font-bold underline shrink-0">
-                            Uji Kirim
+                            Uji Format Pesan &rarr;
                         </a>
                     </div>
                     <div id="bulk-run-result" class="hidden text-xs p-2.5 rounded-xl bg-black/40 border border-white/15"></div>
                 </div>
-                <?php endif; ?>
             </div>
         </div>
 
@@ -1741,13 +1770,19 @@ $todayYmd = date('Y-m-d');
                                         default       => '✓ Lengkap',
                                     };
                                     $waEnabledRow = !isset($it['wa_enabled']) || !empty($it['wa_enabled']);
+                                    $delivState = $it['delivery_state'] ?? 'not_needed';
+                                    $canRetryRow = !empty($it['can_manual_retry']);
+                                    $effectiveRowSlot = ($currentPreviewSlot === 'all')
+                                        ? ($remSummary['current_due_slot'] ?? ($activeSchedules[0] ?? '09:00'))
+                                        : $currentPreviewSlot;
                                     $itemPayload = [
-                                        'pegawai_id' => $it['pegawai_id'],
-                                        'nama'       => $it['nama'],
-                                        'no_wa'      => $it['no_wa_formatted'],
-                                        'kategori'   => $cat,
-                                        'slot'       => $currentPreviewSlot,
-                                        'pesan'      => $it['preview_message'],
+                                        'pegawai_id'       => $it['pegawai_id'],
+                                        'nama'             => $it['nama'],
+                                        'no_wa'            => $it['no_wa_formatted'],
+                                        'kategori'         => $cat,
+                                        'slot'             => $effectiveRowSlot,
+                                        'pesan'            => $it['preview_message'],
+                                        'can_manual_retry' => $canRetryRow,
                                     ];
                                 ?>
                                 <tr data-wa-row="1"
@@ -1799,17 +1834,38 @@ $todayYmd = date('Y-m-d');
                                         </span>
                                     </td>
                                     <td class="py-3.5 px-4 whitespace-nowrap">
-                                        <?php if (empty($it['sent_slots_today'])): ?>
-                                            <span class="text-[11px] text-slate-400">Belum ada</span>
-                                        <?php else: ?>
-                                            <div class="flex flex-wrap gap-1">
-                                                <?php foreach ($it['sent_slots_today'] as $ss): ?>
-                                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                                        <?= e($ss) ?> ✓
-                                                    </span>
-                                                <?php endforeach; ?>
-                                            </div>
-                                        <?php endif; ?>
+                                        <div class="space-y-1">
+                                            <?php if (!empty($it['sent_slots_today'])): ?>
+                                                <div class="flex flex-wrap gap-1">
+                                                    <?php foreach ($it['sent_slots_today'] as $ss): ?>
+                                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                                            <?= e($ss) ?> ✓
+                                                        </span>
+                                                    <?php endforeach; ?>
+                                                </div>
+                                            <?php endif; ?>
+
+                                            <?php if ($delivState === 'sent'): ?>
+                                                <span class="inline-flex items-center gap-1 text-[10.5px] font-bold text-emerald-700">
+                                                    ✅ Auto Terkirim
+                                                </span>
+                                            <?php elseif ($delivState === 'scheduled'): ?>
+                                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-50 text-sky-700 border border-sky-200">
+                                                    ⏳ Auto Jam <?= e($effectiveRowSlot) ?>
+                                                </span>
+                                            <?php elseif ($delivState === 'failed'): ?>
+                                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200"
+                                                      title="<?= e($it['last_failed_error'] ?? 'Gagal mengirim pesan WA') ?>">
+                                                    ❌ Tidak Terkirim
+                                                </span>
+                                            <?php elseif ($delivState === 'unsent_due'): ?>
+                                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                                                    ⚠️ Belum Terkirim
+                                                </span>
+                                            <?php elseif (empty($it['sent_slots_today'])): ?>
+                                                <span class="text-[11px] text-slate-400">-</span>
+                                            <?php endif; ?>
+                                        </div>
                                     </td>
                                     <td class="py-3.5 px-4 text-right whitespace-nowrap">
                                         <?php if ($it['needs_reminder']): ?>
@@ -1819,12 +1875,13 @@ $todayYmd = date('Y-m-d');
                                                         class="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold transition-colors">
                                                     👁️ Preview
                                                 </button>
-                                                <?php if ($canManageReminder && $it['has_valid_wa']): ?>
+                                                <?php if ($canManageReminder && $it['has_valid_wa'] && $canRetryRow): ?>
                                                     <button type="button"
                                                             id="btn-send-single-<?= (int)$it['pegawai_id'] ?>"
-                                                            onclick="sendSingleWaReminder(<?= (int)$it['pegawai_id'] ?>, '<?= e($currentPreviewSlot) ?>', this)"
-                                                            class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold shadow-xs transition-colors">
-                                                        💬 Kirim WA
+                                                            onclick="sendSingleWaReminder(<?= (int)$it['pegawai_id'] ?>, '<?= e($effectiveRowSlot) ?>', this)"
+                                                            class="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-bold shadow-xs transition-colors"
+                                                            title="Pesan belum/tidak terkirim pada jadwal otomatis. Klik untuk kirim ulang.">
+                                                        🔄 Kirim WA
                                                     </button>
                                                 <?php endif; ?>
                                             </div>
@@ -3029,12 +3086,12 @@ function openWaPreviewModal(item) {
     document.getElementById('preview-wa-bubble').textContent = item.pesan || '';
     const sendBtn = document.getElementById('btn-preview-send-wa');
     if (sendBtn) {
-        if (!item.no_wa) {
+        if (!item.no_wa || !item.can_manual_retry) {
             sendBtn.classList.add('hidden');
         } else {
             sendBtn.classList.remove('hidden');
             sendBtn.disabled = false;
-            sendBtn.textContent = '💬 Kirim WA Sekarang';
+            sendBtn.textContent = '🔄 Kirim WA (Tidak Terkirim)';
         }
     }
     document.getElementById('modal-preview-wa-jurnal').classList.remove('hidden');
@@ -3078,10 +3135,17 @@ function sendSingleWaReminder(pegawaiId, slot, btnEl, callback) {
     .then(data => {
         if (btnEl) {
             btnEl.disabled = false;
-            btnEl.textContent = data.success ? '✓ Terkirim' : origText;
+            if (data.success) {
+                btnEl.remove();
+            } else {
+                btnEl.textContent = origText;
+            }
         }
         alert(data.message || (data.success ? 'Pengingat berhasil dikirim.' : 'Gagal mengirim pengingat.'));
         if (typeof callback === 'function') callback(Boolean(data.success));
+        if (data.success && typeof callback !== 'function') {
+            setTimeout(() => location.reload(), 800);
+        }
     })
     .catch(err => {
         if (btnEl) {
@@ -3346,7 +3410,22 @@ function saveWaRecipients() {
     });
 }
 
-document.addEventListener('DOMContentLoaded', syncWaSelectAllCheckbox);
+document.addEventListener('DOMContentLoaded', () => {
+    syncWaSelectAllCheckbox();
+    // Heartbeat Auto-Scheduler: cek setiap 40 detik agar tepat pada jam 09:00, 13:00, 17:00 WITA otomatis terkirim
+    setInterval(() => {
+        fetch('<?= url("kelola-jurnal-staff/pengingat/auto-check") ?>', {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data && data.triggered && data.result && (data.result.sent > 0 || data.result.failed > 0)) {
+                location.reload();
+            }
+        })
+        .catch(() => {});
+    }, 40000);
+});
 
 function insertTplVar(token) {
     const targetId = window._activeTplId || 'tpl-partial';

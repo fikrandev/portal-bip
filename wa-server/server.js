@@ -498,16 +498,27 @@ function startReminderScheduler() {
 
         const wita = getWitaDateParts();
         const activeDays = Array.isArray(cfg.active_days) ? cfg.active_days.map(Number) : [1, 2, 3, 4, 5, 6];
-        const schedules = Array.isArray(cfg.schedules) ? cfg.schedules.map((s) => String(s).trim()) : [];
+        const schedules = Array.isArray(cfg.schedules) ? cfg.schedules.map((s) => String(s).trim()).filter(Boolean).sort() : [];
 
         if (!activeDays.includes(wita.isoDay)) {
             return;
         }
-        if (!schedules.includes(wita.time)) {
+        if (wita.time > '22:30' || schedules.length === 0) {
             return;
         }
 
-        const slotKey = `${wita.date}_${wita.time}`;
+        // Cari slot jadwal terakhir yang sudah tiba hari ini (mendukung catch-up jika server baru terhubung setelah menit ke-00)
+        let dueSlot = null;
+        for (const sc of schedules) {
+            if (wita.time >= sc) {
+                dueSlot = sc;
+            }
+        }
+        if (!dueSlot) {
+            return;
+        }
+
+        const slotKey = `${wita.date}_${dueSlot}`;
         if (lastTriggeredSlots.has(slotKey)) {
             return;
         }
@@ -522,12 +533,20 @@ function startReminderScheduler() {
         }
 
         lastTriggeredSlots.add(slotKey);
-        console.log(`[Scheduler Jurnal Staff] Memicu pengingat otomatis WA untuk slot ${wita.time} WITA (${wita.date})...`);
-        triggerCronEndpoint(cfg.cron_endpoint, cfg.cron_key, wita.time);
+        console.log(`[Scheduler Jurnal Staff] Memicu pengingat otomatis WA untuk slot ${dueSlot} WITA (${wita.date}, waktu sekarang ${wita.time})...`);
+        triggerCronEndpoint(cfg.cron_endpoint, cfg.cron_key, dueSlot).then((res) => {
+            // Jika request gagal atau koneksi error, izinkan retry pada tick berikutnya
+            const ok = res && res.http_code === 200 && (!res.response || res.response.success !== false);
+            if (!ok) {
+                setTimeout(() => {
+                    lastTriggeredSlots.delete(slotKey);
+                }, 120000);
+            }
+        });
     };
 
-    schedulerIntervalHandle = setInterval(tick, 30000);
-    setTimeout(tick, 5000);
+    schedulerIntervalHandle = setInterval(tick, 25000);
+    setTimeout(tick, 4000);
 }
 
 /**
