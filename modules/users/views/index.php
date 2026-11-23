@@ -78,7 +78,19 @@
                     </td>
                     <td class="px-6 py-4 text-slate-600 hidden sm:table-cell"><?= e($u['username']) ?></td>
                     <td class="px-6 py-4 hidden lg:table-cell">
-                        <span class="inline-flex px-2.5 py-1 rounded-2xl bg-primary-50 text-primary-700 text-xs font-medium"><?= e($u['role_names'] ?? '-') ?></span>
+                        <div class="flex flex-wrap items-center gap-1.5">
+                            <span class="inline-flex px-2.5 py-1 rounded-2xl bg-primary-50 text-primary-700 text-xs font-medium"><?= e($u['role_names'] ?? '-') ?></span>
+                            <?php $uOto = strtolower(trim((string)($u['jenis_otorisasi'] ?? 'admin'))); ?>
+                            <?php if ($uOto === 'personal'): ?>
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200" title="Hanya dapat mengakses data milik sendiri">
+                                    👤 Personal
+                                </span>
+                            <?php else: ?>
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200" title="Akses data sesuai peran & jenjang">
+                                    🛡️ Admin
+                                </span>
+                            <?php endif; ?>
+                        </div>
                         <?php if (!empty($u['allowed_jenjang'])): ?>
                             <div class="mt-1 flex items-center gap-1 flex-wrap">
                                 <?php foreach (explode(',', $u['allowed_jenjang']) as $uj): ?>

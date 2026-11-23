@@ -63,6 +63,9 @@ class JurnalGuruAdminController
 
         $search    = trim($_GET['search'] ?? '');
         $guruId    = !empty($_GET['guru_id']) ? (int)$_GET['guru_id'] : null;
+        if (Auth::isPersonalScope()) {
+            $guruId = Auth::personalPegawaiId();
+        }
         $kelas     = trim($_GET['kelas'] ?? '');
         $status    = trim($_GET['status'] ?? '');
         $startDate = trim($_GET['start_date'] ?? '');
@@ -136,16 +139,17 @@ class JurnalGuruAdminController
         $stmtKpi->execute($params);
         $kpiFiltered = $stmtKpi->fetch(PDO::FETCH_ASSOC);
 
-        // KPI Hari Ini (respects jenjang restriction)
+        // KPI Hari Ini (respects jenjang & personal restriction)
         $todayParams = [];
         $todayKelasCond = Auth::kelasSqlCondition('kelas', $todayParams);
+        $todayGuruCond = Auth::personalPegawaiSqlCondition('guru_id', $todayParams);
         $stmtToday = $pdo->prepare("
             SELECT 
                 COUNT(*) as count_today,
                 COALESCE(SUM(jumlah_jp), 0) as jp_today,
                 COUNT(DISTINCT guru_id) as guru_today
             FROM jurnal_mengajar 
-            WHERE tanggal = CURDATE() AND ({$todayKelasCond})
+            WHERE tanggal = CURDATE() AND ({$todayKelasCond}) AND ({$todayGuruCond})
         ");
         $stmtToday->execute($todayParams);
         $kpiToday = $stmtToday->fetch(PDO::FETCH_ASSOC);
@@ -153,12 +157,13 @@ class JurnalGuruAdminController
         // KPI Bulan Ini (sargable date range agar indeks tanggal terpakai)
         $monthParams = [date('Y-m-01'), date('Y-m-t')];
         $monthKelasCond = Auth::kelasSqlCondition('kelas', $monthParams);
+        $monthGuruCond = Auth::personalPegawaiSqlCondition('guru_id', $monthParams);
         $stmtMonth = $pdo->prepare("
             SELECT 
                 COUNT(*) as count_month,
                 COALESCE(SUM(jumlah_jp), 0) as jp_month
             FROM jurnal_mengajar 
-            WHERE tanggal >= ? AND tanggal <= ? AND ({$monthKelasCond})
+            WHERE tanggal >= ? AND tanggal <= ? AND ({$monthKelasCond}) AND ({$monthGuruCond})
         ");
         $stmtMonth->execute($monthParams);
         $kpiMonth = $stmtMonth->fetch(PDO::FETCH_ASSOC);
@@ -193,13 +198,14 @@ class JurnalGuruAdminController
         $stmtList->execute($params);
         $jurnalList = $stmtList->fetchAll(PDO::FETCH_ASSOC);
 
-        // 5. Data Dropdown Guru & Kelas (respects jenjang restriction)
+        // 5. Data Dropdown Guru & Kelas (respects jenjang & personal restriction)
         $gOptParams = [];
         $gOptUCond = Auth::unitSqlCondition('unit_tugas', $gOptParams);
+        $gOptPCond = Auth::personalPegawaiSqlCondition('id', $gOptParams);
         $stmtGOpt = $pdo->prepare("
             SELECT id, nama, niy, nik, no_wa, jabatan 
             FROM pegawai 
-            WHERE (status_pegawai != 'Keluar' OR status_pegawai IS NULL) AND ({$gOptUCond})
+            WHERE (status_pegawai != 'Keluar' OR status_pegawai IS NULL) AND ({$gOptUCond}) AND ({$gOptPCond})
             ORDER BY nama ASC
         ");
         $stmtGOpt->execute($gOptParams);
@@ -264,6 +270,12 @@ class JurnalGuruAdminController
             $stmtSch = $pdo->prepare($sqlSch);
             $stmtSch->execute($schParams);
             $activeSchedules = $stmtSch->fetchAll(PDO::FETCH_ASSOC);
+            if (Auth::isPersonalScope()) {
+                $activeSchedules = array_values(array_filter(
+                    $activeSchedules,
+                    static fn($s) => (int)($s['pegawai_id'] ?? 0) === (int)$guruId
+                ));
+            }
         } catch (Throwable $e) {
             $activeSchedules = [];
         }
@@ -277,6 +289,12 @@ class JurnalGuruAdminController
                 JOIN pegawai p ON m.pegawai_id = p.id
                 ORDER BY p.nama ASC
             ")->fetchAll(PDO::FETCH_ASSOC);
+            if (Auth::isPersonalScope()) {
+                $penugasanPicRows = array_values(array_filter(
+                    $penugasanPicRows,
+                    static fn($ppm) => (int)($ppm['pegawai_id'] ?? 0) === (int)$guruId
+                ));
+            }
         } catch (Throwable $e) {
             $penugasanPicRows = [];
         }
@@ -291,6 +309,12 @@ class JurnalGuruAdminController
         ");
         $stmtPeriodJurnal->execute([$periodStart, $periodEnd]);
         $periodJournals = $stmtPeriodJurnal->fetchAll(PDO::FETCH_ASSOC);
+        if (Auth::isPersonalScope()) {
+            $periodJournals = array_values(array_filter(
+                $periodJournals,
+                static fn($pj) => (int)($pj['guru_id'] ?? 0) === (int)$guruId
+            ));
+        }
 
         // Kelompokkan jurnal periode berdasarkan guru & tanggal
         $journalsByGuruDate = []; // [guruKey][Y-m-d] => array of journal rows
@@ -1111,6 +1135,9 @@ class JurnalGuruAdminController
 
         $search    = trim($_GET['search'] ?? '');
         $guruId    = !empty($_GET['guru_id']) ? (int)$_GET['guru_id'] : null;
+        if (Auth::isPersonalScope()) {
+            $guruId = Auth::personalPegawaiId();
+        }
         $kelas     = trim($_GET['kelas'] ?? '');
         $status    = trim($_GET['status'] ?? '');
         $startDate = trim($_GET['start_date'] ?? date('Y-m-01'));

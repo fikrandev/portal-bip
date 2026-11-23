@@ -204,11 +204,11 @@ class IbadahGuruController
             } catch (Throwable $e) {}
         }
 
-        // 2. Data Semua Guru Aktif + Mutabaah pada $tanggal terpilih (respects jenjang restriction)
+        // 2. Data Semua Guru Aktif + Mutabaah pada $tanggal terpilih (respects jenjang & personal restriction)
         $allTeachers = [];
         try {
             $tParams = [];
-            $tCond = Auth::unitSqlCondition('p.unit_tugas', $tParams);
+            $tCond = Auth::unitSqlCondition('p.unit_tugas', $tParams) . ' AND (' . Auth::personalPegawaiSqlCondition('p.id', $tParams) . ')';
             $stmtT = $pdo->prepare("
                 SELECT p.id, p.nama, p.gelar, p.niy, p.nik, p.jenis_kelamin, p.unit_tugas, p.jabatan, p.foto
                 FROM pegawai p

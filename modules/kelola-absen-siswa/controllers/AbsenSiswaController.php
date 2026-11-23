@@ -428,7 +428,8 @@ class AbsenSiswaController
     public static function absenMapel(): void
     {
         $db = \Database::getInstance();
-        $isAdmin = class_exists('Auth') && Auth::isSuperAdmin();
+        $isPersonal = class_exists('Auth') && Auth::isPersonalScope();
+        $isAdmin = !$isPersonal && class_exists('Auth') && Auth::isSuperAdmin();
 
         $filter_status = $_GET['status'] ?? '';
         $filter_unit = $_GET['unit'] ?? '';
@@ -443,9 +444,13 @@ class AbsenSiswaController
         if (empty($guruList)) {
             $guruList = $db->findAll("SELECT id, nama, gelar FROM pegawai WHERE is_active = 1 ORDER BY nama ASC");
         }
+        if ($isPersonal) {
+            $personalPid = (int)Auth::personalPegawaiId();
+            $guruList = array_values(array_filter($guruList, static fn($g) => (int)($g['id'] ?? 0) === $personalPid));
+        }
 
         // 2. Deteksi Guru yang dipilih atau sedang login
-        $selectedGuruId = !empty($_GET['guru_id']) ? (int)$_GET['guru_id'] : 0;
+        $selectedGuruId = $isPersonal ? (int)Auth::personalPegawaiId() : (!empty($_GET['guru_id']) ? (int)$_GET['guru_id'] : 0);
         if (!$selectedGuruId && !$isAdmin && class_exists('Auth')) {
             $userPegawai = $db->find("SELECT id FROM pegawai WHERE email = ? OR nama = ?", [Auth::user()['email'] ?? '', Auth::name() ?? '']);
             if ($userPegawai) {
@@ -565,8 +570,9 @@ class AbsenSiswaController
             exit;
         }
 
-        $isAdmin = (class_exists('Auth') && (Auth::isSuperAdmin() || Auth::hasRole('admin') || Auth::hasRole('super_admin'))) 
-                || (class_exists('RBAC') && RBAC::hasPermission('absen_siswa.create'));
+        $isPersonal = class_exists('Auth') && Auth::isPersonalScope();
+        $isAdmin = !$isPersonal && ((class_exists('Auth') && (Auth::isSuperAdmin() || Auth::hasRole('admin') || Auth::hasRole('super_admin'))) 
+                || (class_exists('RBAC') && RBAC::hasPermission('absen_siswa.create')));
 
         // 1. Ambil daftar guru yang memiliki penugasan mengajar
         $guruList = $db->findAll("
@@ -580,9 +586,13 @@ class AbsenSiswaController
         if (empty($guruList)) {
             $guruList = $db->findAll("SELECT id, nama, gelar, niy, foto, 0 as total_kelas, 0 as total_mapel FROM pegawai WHERE is_active = 1 ORDER BY nama ASC");
         }
+        if ($isPersonal) {
+            $personalPid = (int)Auth::personalPegawaiId();
+            $guruList = array_values(array_filter($guruList, static fn($g) => (int)($g['id'] ?? 0) === $personalPid));
+        }
 
         // 2. Deteksi Guru Terpilih
-        $selectedGuruId = !empty($_GET['guru_id']) ? (int)$_GET['guru_id'] : 0;
+        $selectedGuruId = $isPersonal ? (int)Auth::personalPegawaiId() : (!empty($_GET['guru_id']) ? (int)$_GET['guru_id'] : 0);
         
         // Jika bukan admin dan user adalah guru login
         if (!$selectedGuruId && !$isAdmin && class_exists('Auth')) {

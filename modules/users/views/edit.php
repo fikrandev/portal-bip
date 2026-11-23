@@ -4,12 +4,27 @@
         <form action="<?= url('users/update/' . $user['id']) ?>" method="POST" id="form-edit-user">
             <?= CSRF::field() ?>
             
+            <?php
+            $matchedPegawaiId = !empty($user['pegawai_id']) ? (int)$user['pegawai_id'] : 0;
+            if (!$matchedPegawaiId && !empty($pegawaiList)) {
+                foreach ($pegawaiList as $pgRow) {
+                    if (
+                        (!empty($user['email']) && strcasecmp((string)($pgRow['email'] ?? ''), (string)$user['email']) === 0) ||
+                        (!empty($user['username']) && strcasecmp((string)($pgRow['email'] ?? ''), (string)$user['username']) === 0) ||
+                        (!empty($user['full_name']) && strcasecmp((string)($pgRow['nama'] ?? ''), (string)$user['full_name']) === 0)
+                    ) {
+                        $matchedPegawaiId = (int)$pgRow['id'];
+                        break;
+                    }
+                }
+            }
+            ?>
             <div class="mb-5 bg-blue-50/50 p-4 rounded-xl border border-blue-100">
                 <label for="pegawai_autofill" class="block text-sm font-semibold text-primary-800 mb-1.5 flex items-center gap-2">
                     <svg class="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" /></svg>
                     Pilih dari Data Pegawai (Auto-fill)
                 </label>
-                <select id="pegawai_autofill" class="searchable-select w-full" data-placeholder="-- Cari Nama Pegawai --">
+                <select id="pegawai_autofill" name="pegawai_id" class="searchable-select w-full" data-placeholder="-- Cari Nama Pegawai --">
                     <option value="">-- Ketik untuk mencari pegawai --</option>
                     <?php if (isset($pegawaiList)): ?>
                         <?php foreach ($pegawaiList as $pegawai): ?>
@@ -17,9 +32,10 @@
                             $pegName = e($pegawai['nama']);
                             $pegEmail = e($pegawai['email'] ?? '');
                             $pegPhone = e($pegawai['no_wa'] ?? '');
-                            $pegUsername = empty($pegEmail) ? strtolower(str_replace(' ', '', $pegName)) : explode('@', $pegEmail)[0];
+                            $pegUsername = empty($pegEmail) ? strtolower(str_replace(' ', '', $pegName)) : $pegEmail;
                             ?>
                             <option value="<?= $pegawai['id'] ?>" 
+                                    <?= $matchedPegawaiId === (int)$pegawai['id'] ? 'selected' : '' ?>
                                     data-nama="<?= $pegName ?>" 
                                     data-email="<?= $pegEmail ?>"
                                     data-phone="<?= $pegPhone ?>"
@@ -29,7 +45,7 @@
                         <?php endforeach; ?>
                     <?php endif; ?>
                 </select>
-                <p class="text-xs text-blue-600 mt-1.5">*Pilih nama pegawai untuk menimpa data di bawah secara otomatis.</p>
+                <p class="text-xs text-blue-600 mt-1.5">*Pilih nama pegawai untuk menimpa data di bawah secara otomatis &amp; menautkan akun ke data pegawai.</p>
             </div>
             
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">
@@ -61,6 +77,34 @@
                     </label>
                     <?php endforeach; ?>
                 </div>
+            </div>
+
+            <!-- Jenis Otorisasi (Personal / Admin) -->
+            <?php
+            $currentOtorisasi = strtolower(trim((string)(old('jenis_otorisasi') ?: ($user['jenis_otorisasi'] ?? 'admin'))));
+            if (!in_array($currentOtorisasi, ['admin', 'personal'], true)) {
+                $currentOtorisasi = 'admin';
+            }
+            ?>
+            <div class="mb-5 p-4 rounded-2xl bg-indigo-50/50 border border-indigo-200/80">
+                <div class="flex items-center justify-between mb-1.5">
+                    <label for="jenis_otorisasi" class="block text-xs font-bold text-slate-800 flex items-center gap-2">
+                        <span>Jenis Otorisasi Data</span>
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800">Cakupan Data</span>
+                    </label>
+                </div>
+                <p class="text-xs text-slate-500 mb-3">
+                    Pilih <strong>Personal</strong> jika pengguna ini saat login di Portal Web hanya boleh melihat dan mengelola datanya sendiri. Pilih <strong>Admin</strong> jika pengguna dapat mengelola seluruh data sesuai peran dan jenjangnya.
+                </p>
+                <select id="jenis_otorisasi" name="jenis_otorisasi"
+                        class="w-full px-4 py-2.5 bg-white border border-indigo-200 rounded-xl text-slate-900 outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all text-sm font-semibold">
+                    <option value="admin" <?= $currentOtorisasi === 'admin' ? 'selected' : '' ?>>
+                        🛡️ Admin — Akses Semua Data (Sesuai Peran &amp; Filter Jenjang)
+                    </option>
+                    <option value="personal" <?= $currentOtorisasi === 'personal' ? 'selected' : '' ?>>
+                        👤 Personal — Hanya Data Milik Sendiri Saat Login di Portal Web
+                    </option>
+                </select>
             </div>
 
             <!-- Filter Jenjang Akses Pengguna -->

@@ -505,10 +505,12 @@ class NilaiController
         }
 
         // Group by guru
+        $personalPid = (class_exists('Auth') && Auth::isPersonalScope()) ? Auth::personalPegawaiId() : null;
         $guruMap = [];
         foreach ($cpatpDocs as $doc) {
             $gId = (int)($doc['guru_id'] ?? 0);
             if ($gId === 0) continue;
+            if ($personalPid !== null && $gId !== $personalPid) continue;
             
             if (!isset($guruMap[$gId])) {
                 $guruMap[$gId] = [
@@ -556,6 +558,9 @@ class NilaiController
      */
     public static function guruDetail($groupId, $guruId): void
     {
+        if (class_exists('Auth') && Auth::isPersonalScope()) {
+            $guruId = (int)Auth::personalPegawaiId();
+        }
         $db = \Database::getInstance();
         $group = $db->find("
             SELECT g.*, ta.nama_tahun

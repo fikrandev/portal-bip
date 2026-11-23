@@ -1118,11 +1118,11 @@ class CutiModel
         $today = date('Y-m-d');
 
         $pParams = [];
-        $uCond = Auth::unitSqlCondition('unit_tugas', $pParams);
+        $uCond = Auth::unitSqlCondition('unit_tugas', $pParams) . ' AND (' . Auth::personalPegawaiSqlCondition('id', $pParams) . ')';
         $totalPegawai = (int)(self::db()->find("SELECT COUNT(*) as c FROM `pegawai` WHERE `is_active` = 1 AND ({$uCond})", $pParams)['c'] ?? 0);
 
         $cpParams = [];
-        $cpUCond = Auth::unitSqlCondition('p.unit_tugas', $cpParams);
+        $cpUCond = Auth::unitSqlCondition('p.unit_tugas', $cpParams) . ' AND (' . Auth::personalPegawaiSqlCondition('p.id', $cpParams) . ')';
         $totalPending = (int)(self::db()->find("SELECT COUNT(*) as c FROM `cuti_pengajuan` cp JOIN `pegawai` p ON cp.pegawai_id = p.id WHERE cp.`status` = 'Pending' AND ({$cpUCond})", $cpParams)['c'] ?? 0);
         $totalApproved = (int)(self::db()->find("SELECT COUNT(*) as c FROM `cuti_pengajuan` cp JOIN `pegawai` p ON cp.pegawai_id = p.id WHERE cp.`status` = 'Disetujui' AND ({$cpUCond})", $cpParams)['c'] ?? 0);
         $totalRejected = (int)(self::db()->find("SELECT COUNT(*) as c FROM `cuti_pengajuan` cp JOIN `pegawai` p ON cp.pegawai_id = p.id WHERE cp.`status` = 'Ditolak' AND ({$cpUCond})", $cpParams)['c'] ?? 0);
@@ -1167,6 +1167,9 @@ class CutiModel
         $uCond = Auth::unitSqlCondition('p.unit_tugas', $params);
         if ($uCond !== '1=1') {
             $where[] = "({$uCond})";
+        }
+        if (Auth::isPersonalScope()) {
+            $where[] = Auth::personalPegawaiSqlCondition('p.id', $params);
         }
 
         if (!empty($filters['search'])) {
@@ -1885,6 +1888,9 @@ class CutiModel
         if ($uCondList !== '1=1') {
             $where[] = "({$uCondList})";
         }
+        if (Auth::isPersonalScope()) {
+            $where[] = Auth::personalPegawaiSqlCondition('cp.pegawai_id', $params);
+        }
 
         if (!empty($filters['status'])) {
             if (is_array($filters['status'])) {
@@ -2016,6 +2022,9 @@ class CutiModel
         self::init();
         $where = ["1=1"];
         $params = [];
+        if (Auth::isPersonalScope()) {
+            $where[] = Auth::personalPegawaiSqlCondition('l.pegawai_id', $params);
+        }
 
         if (!empty($filters['tipe'])) {
             if ($filters['tipe'] === 'pengurangan') {

@@ -1782,6 +1782,9 @@ class AbsenPegawaiModel
         if ($uCondPeg !== '1=1') {
             $where[] = "({$uCondPeg})";
         }
+        if (class_exists('Auth') && Auth::isPersonalScope()) {
+            $where[] = Auth::personalPegawaiSqlCondition('p.id', $params);
+        }
 
         if (!empty($filters['search'])) {
             $term = '%' . trim($filters['search']) . '%';
@@ -2424,6 +2427,9 @@ class AbsenPegawaiModel
         if ($uCondRekap !== '1=1') {
             $where[] = "({$uCondRekap})";
         }
+        if (class_exists('Auth') && Auth::isPersonalScope()) {
+            $where[] = Auth::personalPegawaiSqlCondition('p.id', $params);
+        }
 
         if (!empty($filters['search'])) {
             $where[] = "(p.nama LIKE ? OR p.niy LIKE ? OR p.jabatan LIKE ?)";
@@ -2524,9 +2530,9 @@ class AbsenPegawaiModel
         }
         unset($r);
 
-        // Hitung statistik untuk tanggal terpilih (respects jenjang restriction)
+        // Hitung statistik untuk tanggal terpilih (respects jenjang & personal restriction)
         $statsParams = [$targetDate];
-        $statsUCond = Auth::unitSqlCondition('p.unit_tugas', $statsParams);
+        $statsUCond = Auth::unitSqlCondition('p.unit_tugas', $statsParams) . ' AND (' . Auth::personalPegawaiSqlCondition('p.id', $statsParams) . ')';
         $allStatsRows = self::db()->findAll("
             SELECT p.id, apl.status, apl.jam_masuk, apl.jam_pulang
             FROM `pegawai` p

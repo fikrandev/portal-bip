@@ -69,6 +69,7 @@ class Auth
         $_SESSION['user_name'] = $user['full_name'];
         $_SESSION['user_username'] = $user['username'];
         $_SESSION['user_roles'] = $user['role_slugs'] ? explode(',', $user['role_slugs']) : [];
+        $_SESSION['user_jenis_otorisasi'] = strtolower(trim((string)($user['jenis_otorisasi'] ?? 'admin'))) === 'personal' ? 'personal' : 'admin';
         $_SESSION['login_time'] = time();
         $_SESSION['ip_address'] = self::getClientIp();
 
@@ -139,6 +140,7 @@ class Auth
         $_SESSION['user_name'] = $user['full_name'];
         $_SESSION['user_username'] = $user['username'];
         $_SESSION['user_roles'] = $user['role_slugs'] ? explode(',', $user['role_slugs']) : [];
+        $_SESSION['user_jenis_otorisasi'] = strtolower(trim((string)($user['jenis_otorisasi'] ?? 'admin'))) === 'personal' ? 'personal' : 'admin';
         $_SESSION['login_time'] = time();
         $_SESSION['ip_address'] = self::getClientIp();
 
@@ -214,11 +216,19 @@ class Auth
 
         if (self::$currentUser === null) {
             $db = Database::getInstance();
-            self::$currentUser = $db->find(
-                "SELECT id, uuid, full_name, email, username, avatar, phone, is_active, last_login 
-                 FROM users WHERE id = ?",
-                [$_SESSION['user_id']]
-            );
+            try {
+                self::$currentUser = $db->find(
+                    "SELECT id, pegawai_id, uuid, full_name, email, username, avatar, phone, is_active, last_login, allowed_jenjang, COALESCE(jenis_otorisasi, 'admin') AS jenis_otorisasi 
+                     FROM users WHERE id = ?",
+                    [$_SESSION['user_id']]
+                );
+            } catch (Throwable $e) {
+                self::$currentUser = $db->find(
+                    "SELECT id, uuid, full_name, email, username, avatar, phone, is_active, last_login 
+                     FROM users WHERE id = ?",
+                    [$_SESSION['user_id']]
+                );
+            }
         }
 
         return self::$currentUser;
@@ -362,8 +372,14 @@ class Auth
 
         $db = Database::getInstance();
         $pegawai = null;
-        if (!empty($user['email'])) {
+        if (!empty($user['pegawai_id'])) {
+            $pegawai = $db->find("SELECT * FROM pegawai WHERE id = ? LIMIT 1", [(int)$user['pegawai_id']]);
+        }
+        if (!$pegawai && !empty($user['email'])) {
             $pegawai = $db->find("SELECT * FROM pegawai WHERE email = ? ORDER BY is_active DESC, id ASC LIMIT 1", [$user['email']]);
+        }
+        if (!$pegawai && !empty($user['username']) && strpos((string)$user['username'], '@') !== false) {
+            $pegawai = $db->find("SELECT * FROM pegawai WHERE email = ? ORDER BY is_active DESC, id ASC LIMIT 1", [$user['username']]);
         }
         if (!$pegawai && !empty($user['full_name'])) {
             $pegawai = $db->find(
@@ -375,7 +391,7 @@ class Auth
             $pegawai = $db->find("SELECT * FROM pegawai WHERE no_wa = ? ORDER BY is_active DESC, id ASC LIMIT 1", [$user['phone']]);
         }
         if (!$pegawai && !empty($user['username'])) {
-            $cleanName = str_replace(['.', '_', '-'], ' ', $user['username']);
+            $cleanName = str_replace(['.', '_', '-'], ' ', explode('@', (string)$user['username'])[0]);
             if (strlen(trim($cleanName)) >= 3) {
                 $pegawai = $db->find(
                     "SELECT * FROM pegawai WHERE nama LIKE ? ORDER BY is_active DESC, id ASC LIMIT 1",
@@ -387,6 +403,78 @@ class Auth
         self::$cachedPegawai = $pegawai ?: null;
         self::$pegawaiResolved = true;
         return self::$cachedPegawai;
+    }
+
+    /**
+     * Ambil jenis otorisasi pengguna saat ini: 'admin' atau 'personal'
+     */
+    public static function getJenisOtorisasi(): string
+    {
+        if (self::isSuperAdmin()) {
+            return 'admin';
+        }
+        $user = self::user();
+        if ($user && isset($user['jenis_otorisasi'])) {
+            return strtolower(trim((string)$user['jenis_otorisasi'])) === 'personal' ? 'personal' : 'admin';
+        }
+        return ($_SESSION['user_jenis_otorisasi'] ?? 'admin') === 'personal' ? 'personal' : 'admin';
+    }
+
+    /**
+     * Cek apakah pengguna yang sedang login memiliki otorisasi 'personal' (hanya akses data milik sendiri)
+     */
+    public static function isPersonalScope(): bool
+    {
+        if (self::isSuperAdmin()) {
+            return false;
+        }
+        return self::getJenisOtorisasi() === 'personal';
+    }
+
+    /**
+     * Ambil ID pegawai yang terhubung dengan akun login saat ini
+     */
+    public static function getLinkedPegawaiId(): ?int
+    {
+        $p = self::findLinkedPegawai();
+        return ($p && !empty($p['id'])) ? (int)$p['id'] : null;
+    }
+
+    /**
+     * Ambil ID pegawai untuk pembatasan scope 'personal'.
+     * Mengembalikan null jika user bertipe 'admin', atau int (ID pegawai / -1 jika belum tertaut) jika bertipe 'personal'.
+     */
+    public static function personalPegawaiId(): ?int
+    {
+        if (!self::isPersonalScope()) {
+            return null;
+        }
+        return self::getLinkedPegawaiId() ?? -1;
+    }
+
+    /**
+     * Bangun kondisi SQL untuk membatasi kolom pegawai_id / guru_id jika akun bertipe 'personal'
+     */
+    public static function personalPegawaiSqlCondition(string $column, array &$params): string
+    {
+        if (!self::isPersonalScope()) {
+            return '1=1';
+        }
+        $params[] = self::personalPegawaiId() ?? -1;
+        return "{$column} = ?";
+    }
+
+    /**
+     * Bangun kondisi SQL untuk membatasi dokumen berdasarkan guru_id ATAU created_by jika akun bertipe 'personal'
+     */
+    public static function personalGuruOrCreatorSqlCondition(string $guruCol, string $creatorCol, array &$params): string
+    {
+        if (!self::isPersonalScope()) {
+            return '1=1';
+        }
+        $params[] = self::personalPegawaiId() ?? -1;
+        $params[] = (int)(self::id() ?? -1);
+        return "({$guruCol} = ? OR {$creatorCol} = ?)";
     }
 
     /**

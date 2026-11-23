@@ -158,45 +158,52 @@ class JurnalStaffModel
         $today = date('Y-m-d');
         $sDate = $startDate ?: date('Y-m-01');
         $eDate = $endDate ?: date('Y-m-t');
+        $personalPid = (class_exists('Auth') && Auth::isPersonalScope()) ? Auth::personalPegawaiId() : null;
+        $jsPegWhere = $personalPid !== null ? ' AND pegawai_id = ' . (int)$personalPid : '';
 
         // 1. Total Staff Terdaftar (Aktif)
-        $totalStaff = (int)$pdo->query("
-            SELECT COUNT(*) FROM pegawai 
-            WHERE is_active = 1
-        ")->fetchColumn();
-
-        // Total Staff Support System spesifik (berdasarkan jenis_pegawai atau master_jabatan kategori support_system)
-        $supportParams = [];
-        $supportCond = self::buildSupportStaffCondition($supportParams);
-        $stmtSup = $pdo->prepare("SELECT COUNT(*) FROM pegawai p WHERE p.is_active = 1 AND ({$supportCond})");
-        $stmtSup->execute($supportParams);
-        $totalSupportStaff = (int)$stmtSup->fetchColumn();
-        if ($totalSupportStaff === 0) {
+        if ($personalPid !== null) {
+            $totalStaff = $personalPid > 0 ? 1 : 0;
             $totalSupportStaff = $totalStaff;
+        } else {
+            $totalStaff = (int)$pdo->query("
+                SELECT COUNT(*) FROM pegawai 
+                WHERE is_active = 1
+            ")->fetchColumn();
+
+            // Total Staff Support System spesifik (berdasarkan jenis_pegawai atau master_jabatan kategori support_system)
+            $supportParams = [];
+            $supportCond = self::buildSupportStaffCondition($supportParams);
+            $stmtSup = $pdo->prepare("SELECT COUNT(*) FROM pegawai p WHERE p.is_active = 1 AND ({$supportCond})");
+            $stmtSup->execute($supportParams);
+            $totalSupportStaff = (int)$stmtSup->fetchColumn();
+            if ($totalSupportStaff === 0) {
+                $totalSupportStaff = $totalStaff;
+            }
         }
 
         // 2. Jurnal Hari Ini
         $jurnalHariIni = (int)$pdo->query("
             SELECT COUNT(*) FROM jurnal_staff 
-            WHERE tanggal = '{$today}'
+            WHERE tanggal = '{$today}'{$jsPegWhere}
         ")->fetchColumn();
 
         // 3. Staff yang Mengisi Jurnal Hari Ini
         $staffIsiHariIni = (int)$pdo->query("
             SELECT COUNT(DISTINCT pegawai_id) FROM jurnal_staff 
-            WHERE tanggal = '{$today}'
+            WHERE tanggal = '{$today}'{$jsPegWhere}
         ")->fetchColumn();
 
         // 4. Staff yang Belum Mengisi Hari Ini
         $staffBelumIsiHariIni = max(0, $totalSupportStaff - $staffIsiHariIni);
 
         // 5. Total Jurnal dalam Periode Terpilih
-        $stmtPeriode = $pdo->prepare("SELECT COUNT(*) FROM jurnal_staff WHERE tanggal BETWEEN ? AND ?");
+        $stmtPeriode = $pdo->prepare("SELECT COUNT(*) FROM jurnal_staff WHERE tanggal BETWEEN ? AND ?{$jsPegWhere}");
         $stmtPeriode->execute([$sDate, $eDate]);
         $totalJurnalPeriode = (int)$stmtPeriode->fetchColumn();
 
         // 6. Total Selesai dalam Periode
-        $stmtSelesai = $pdo->prepare("SELECT COUNT(*) FROM jurnal_staff WHERE status = 'selesai' AND tanggal BETWEEN ? AND ?");
+        $stmtSelesai = $pdo->prepare("SELECT COUNT(*) FROM jurnal_staff WHERE status = 'selesai' AND tanggal BETWEEN ? AND ?{$jsPegWhere}");
         $stmtSelesai->execute([$sDate, $eDate]);
         $totalSelesaiPeriode = (int)$stmtSelesai->fetchColumn();
 
@@ -226,7 +233,7 @@ class JurnalStaffModel
             $ts = strtotime($d);
             $dayNameIndo = self::getNamaHariIndo(date('l', $ts));
             $dayLibur = AbsenPegawaiModel::getLiburInfoForDate($d);
-            $cnt = (int)$pdo->query("SELECT COUNT(*) FROM jurnal_staff WHERE tanggal = '{$d}'")->fetchColumn();
+            $cnt = (int)$pdo->query("SELECT COUNT(*) FROM jurnal_staff WHERE tanggal = '{$d}'{$jsPegWhere}")->fetchColumn();
             $trend7Days[] = [
                 'date'        => $d,
                 'label'       => $dayNameIndo . ', ' . date('d/m', $ts),
@@ -239,6 +246,7 @@ class JurnalStaffModel
         }
 
         // 8. Rekap Jurnal per Divisi / Jabatan
+        $rekapWhereSql = $personalPid !== null ? 'WHERE pegawai_id = ' . (int)$personalPid : '';
         $rekapJabatan = $pdo->query("
             SELECT 
                 COALESCE(NULLIF(TRIM(jabatan), ''), 'Tanpa Jabatan') as nama_jabatan,
@@ -246,16 +254,19 @@ class JurnalStaffModel
                 COUNT(DISTINCT pegawai_id) as total_staff_aktif,
                 SUM(CASE WHEN status = 'selesai' THEN 1 ELSE 0 END) as total_selesai
             FROM jurnal_staff
+            {$rekapWhereSql}
             GROUP BY COALESCE(NULLIF(TRIM(jabatan), ''), 'Tanpa Jabatan')
             ORDER BY total_jurnal DESC
             LIMIT 10
         ")->fetchAll(PDO::FETCH_ASSOC);
 
         // 9. Aktivitas Jurnal Terbaru (10 record)
+        $latestWhereSql = $personalPid !== null ? 'WHERE js.pegawai_id = ' . (int)$personalPid : '';
         $latestJurnal = $pdo->query("
             SELECT js.*, p.foto, p.niy
             FROM jurnal_staff js
             LEFT JOIN pegawai p ON js.pegawai_id = p.id
+            {$latestWhereSql}
             ORDER BY js.created_at DESC, js.id DESC
             LIMIT 10
         ")->fetchAll(PDO::FETCH_ASSOC);
@@ -308,6 +319,9 @@ class JurnalStaffModel
             $params[] = $filters['end_date'];
         }
 
+        if (class_exists('Auth') && Auth::isPersonalScope()) {
+            $filters['pegawai_id'] = Auth::personalPegawaiId();
+        }
         if (!empty($filters['pegawai_id'])) {
             $where[] = 'js.pegawai_id = ?';
             $params[] = (int)$filters['pegawai_id'];
@@ -385,6 +399,9 @@ class JurnalStaffModel
             $params[] = $filters['end_date'];
         }
 
+        if (class_exists('Auth') && Auth::isPersonalScope()) {
+            $filters['pegawai_id'] = Auth::personalPegawaiId();
+        }
         if (!empty($filters['pegawai_id'])) {
             $where[] = 'js.pegawai_id = ?';
             $params[] = (int)$filters['pegawai_id'];
@@ -1100,6 +1117,14 @@ class JurnalStaffModel
     public static function getStaffList(): array
     {
         $db = Database::getInstance();
+        if (class_exists('Auth') && Auth::isPersonalScope()) {
+            return $db->findAll("
+                SELECT id, nama, niy, jabatan, unit_tugas, jenis_pegawai, foto
+                FROM pegawai
+                WHERE is_active = 1 AND id = ?
+                ORDER BY nama ASC
+            ", [Auth::personalPegawaiId()]);
+        }
         $params = [];
         $cond = self::buildSupportStaffCondition($params);
         $rows = $db->findAll("
@@ -1328,6 +1353,9 @@ class JurnalStaffModel
 
         $filterJabatan   = trim((string)($filters['jabatan'] ?? ''));
         $filterPegawaiId = !empty($filters['pegawai_id']) ? (int)$filters['pegawai_id'] : null;
+        if (class_exists('Auth') && Auth::isPersonalScope()) {
+            $filterPegawaiId = Auth::personalPegawaiId();
+        }
         $filterSearch    = trim((string)($filters['search'] ?? ''));
         $filterStatus    = trim((string)($filters['status'] ?? ''));
 

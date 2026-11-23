@@ -97,16 +97,23 @@ class UserController
                 }
             }
 
-            $userId = $db->insert('users', [
-                'uuid'      => self::generateUUID(),
-                'full_name' => trim($_POST['full_name']),
-                'email'     => trim($_POST['username']), // set email to username
-                'username'  => trim($_POST['username']),
-                'password'  => password_hash($_POST['password'], PASSWORD_BCRYPT),
-                'phone'     => '',
+            $jenisOtorisasi = strtolower(trim((string)($_POST['jenis_otorisasi'] ?? 'admin'))) === 'personal' ? 'personal' : 'admin';
+            $pegawaiId = !empty($_POST['pegawai_id']) ? (int)$_POST['pegawai_id'] : null;
+
+            $insertData = [
+                'uuid'            => self::generateUUID(),
+                'full_name'       => trim($_POST['full_name']),
+                'email'           => trim($_POST['username']), // set email to username
+                'username'        => trim($_POST['username']),
+                'password'        => password_hash($_POST['password'], PASSWORD_BCRYPT),
+                'phone'           => trim((string)($_POST['phone'] ?? '')),
                 'allowed_jenjang' => $allowedJenjang,
-                'is_active' => isset($_POST['is_active']) ? 1 : 0,
-            ]);
+                'jenis_otorisasi' => $jenisOtorisasi,
+                'pegawai_id'      => $pegawaiId,
+                'is_active'       => isset($_POST['is_active']) ? 1 : 0,
+            ];
+
+            $userId = $db->insert('users', $insertData);
             
             // Assign roles
             if (!empty($_POST['roles'])) {
@@ -187,13 +194,18 @@ class UserController
                 }
             }
 
+            $jenisOtorisasi = strtolower(trim((string)($_POST['jenis_otorisasi'] ?? 'admin'))) === 'personal' ? 'personal' : 'admin';
+            $pegawaiId = !empty($_POST['pegawai_id']) ? (int)$_POST['pegawai_id'] : (!empty($user['pegawai_id']) ? (int)$user['pegawai_id'] : null);
+
             $data = [
-                'full_name' => trim($_POST['full_name']),
-                'email'     => trim($_POST['username']), // set email to username
-                'username'  => trim($_POST['username']),
-                'phone'     => '',
+                'full_name'       => trim($_POST['full_name']),
+                'email'           => trim($_POST['username']), // set email to username
+                'username'        => trim($_POST['username']),
+                'phone'           => trim((string)($_POST['phone'] ?? ($user['phone'] ?? ''))),
                 'allowed_jenjang' => $allowedJenjang,
-                'is_active' => isset($_POST['is_active']) ? 1 : 0,
+                'jenis_otorisasi' => $jenisOtorisasi,
+                'pegawai_id'      => $pegawaiId,
+                'is_active'       => isset($_POST['is_active']) ? 1 : 0,
             ];
             if (!empty($_POST['password'])) {
                 $data['password'] = password_hash($_POST['password'], PASSWORD_BCRYPT);

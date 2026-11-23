@@ -38,6 +38,9 @@ class JurnalStaffAdminController
         $endDate   = trim($_GET['end_date'] ?? '');
         $jabatan   = trim($_GET['jabatan'] ?? '');
         $pegawaiId = !empty($_GET['pegawai_id']) ? (int)$_GET['pegawai_id'] : null;
+        if (Auth::isPersonalScope()) {
+            $pegawaiId = Auth::personalPegawaiId();
+        }
         $status    = trim($_GET['status'] ?? '');
         $page      = max(1, (int)($_GET['page'] ?? 1));
 
@@ -111,6 +114,13 @@ class JurnalStaffAdminController
             $previewSlot = $dueSlotNow ?? ($schedules[0] ?? '09:00');
         }
         $reminderEval = JurnalStaffReminderService::evaluateAllStaffForDate(date('Y-m-d'), $previewSlot, $reminderSettings);
+        if (Auth::isPersonalScope() && !empty($reminderEval['staff_list']) && is_array($reminderEval['staff_list'])) {
+            $personalPid = Auth::personalPegawaiId();
+            $reminderEval['staff_list'] = array_values(array_filter(
+                $reminderEval['staff_list'],
+                static fn($st) => (int)($st['id'] ?? 0) === $personalPid
+            ));
+        }
         $reminderLogs = JurnalStaffReminderService::getRecentLogs(30);
         $waConnection = WaGateway::checkConnection();
 
@@ -144,6 +154,9 @@ class JurnalStaffAdminController
         $endDate   = trim($_GET['end_date'] ?? date('Y-m-t'));
         $jabatan   = trim($_GET['jabatan'] ?? '');
         $pegawaiId = !empty($_GET['pegawai_id']) ? (int)$_GET['pegawai_id'] : null;
+        if (Auth::isPersonalScope()) {
+            $pegawaiId = Auth::personalPegawaiId();
+        }
         $status    = trim($_GET['status'] ?? '');
 
         $filters = [

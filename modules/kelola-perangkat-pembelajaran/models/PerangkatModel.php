@@ -364,6 +364,8 @@ class PerangkatModel
             $where[] = '(p.created_by = ? OR p.guru_id = ?)';
             $params[] = (int) $filters['user_id'];
             $params[] = (int) $filters['user_id'];
+        } elseif (class_exists('Auth') && Auth::isPersonalScope() && !in_array(($filters['tipe'] ?? ''), ['kaldik', 'hes'], true)) {
+            $where[] = '(' . Auth::personalGuruOrCreatorSqlCondition('p.guru_id', 'p.created_by', $params) . ')';
         }
 
         $whereClause = implode(' AND ', $where);
@@ -467,6 +469,8 @@ class PerangkatModel
             $where[] = '(p.created_by = ? OR p.guru_id = ?)';
             $params[] = (int) $filters['user_id'];
             $params[] = (int) $filters['user_id'];
+        } elseif (class_exists('Auth') && Auth::isPersonalScope() && !in_array(($filters['tipe'] ?? ''), ['kaldik', 'hes'], true)) {
+            $where[] = '(' . Auth::personalGuruOrCreatorSqlCondition('p.guru_id', 'p.created_by', $params) . ')';
         }
 
         $whereClause = implode(' AND ', $where);
@@ -713,10 +717,11 @@ class PerangkatModel
         try {
             $params = [];
             $uCond = class_exists('Auth') ? Auth::unitSqlCondition('unit_tugas', $params) : '1=1';
+            $pCond = class_exists('Auth') ? Auth::personalPegawaiSqlCondition('id', $params) : '1=1';
             return $db->findAll("
                 SELECT id, nama, niy AS nip, jabatan, unit_tugas, email, no_wa
                 FROM pegawai
-                WHERE is_active = 1 AND ({$uCond})
+                WHERE is_active = 1 AND ({$uCond}) AND ({$pCond})
                 ORDER BY nama ASC
             ", $params);
         } catch (Exception $e) {

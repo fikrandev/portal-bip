@@ -22,6 +22,9 @@ class PegawaiController
      */
     private static function filteredActivePegawai(Database $db, string $cols = 'id, nama, niy, gelar, foto'): array
     {
+        if (Auth::isPersonalScope()) {
+            return $db->findAll("SELECT {$cols} FROM pegawai WHERE is_active = 1 AND id = ? ORDER BY nama ASC", [Auth::personalPegawaiId()]);
+        }
         if (!Auth::isJenjangRestricted()) {
             return $db->findAll("SELECT {$cols} FROM pegawai WHERE is_active = 1 ORDER BY nama ASC");
         }
@@ -103,6 +106,10 @@ class PegawaiController
         if ($uCond !== '1=1') {
             $where .= " AND ({$uCond})";
         }
+        $pCond = Auth::personalPegawaiSqlCondition('id', $params);
+        if ($pCond !== '1=1') {
+            $where .= " AND ({$pCond})";
+        }
 
         if (!empty($filterUnit)) {
             $where .= " AND unit_tugas = ?";
@@ -171,7 +178,7 @@ class PegawaiController
 
         // Penugasan Aktif
         $ditParams = [];
-        $ditUCond = Auth::unitSqlCondition('p.unit_tugas', $ditParams);
+        $ditUCond = Auth::unitSqlCondition('p.unit_tugas', $ditParams) . ' AND (' . Auth::personalPegawaiSqlCondition('p.id', $ditParams) . ')';
         $totalDitugaskan = $db->find("
             SELECT COUNT(DISTINCT pp.pegawai_id) as total
             FROM pegawai_penugasan pp
@@ -183,11 +190,11 @@ class PegawaiController
         $totalBelumDitugaskan = max(0, $totalAktif - $totalDitugaskan);
 
         $presParams = [];
-        $presUCond = Auth::unitSqlCondition('p.unit_tugas', $presParams);
+        $presUCond = Auth::unitSqlCondition('p.unit_tugas', $presParams) . ' AND (' . Auth::personalPegawaiSqlCondition('p.id', $presParams) . ')';
         $totalPrestasi = $db->find("SELECT COUNT(1) as c FROM pegawai_prestasi pp JOIN pegawai p ON pp.pegawai_id = p.id WHERE {$presUCond}", $presParams)['c'] ?? 0;
 
         $pelParams = [];
-        $pelUCond = Auth::unitSqlCondition('p.unit_tugas', $pelParams);
+        $pelUCond = Auth::unitSqlCondition('p.unit_tugas', $pelParams) . ' AND (' . Auth::personalPegawaiSqlCondition('p.id', $pelParams) . ')';
         $pelRow = $db->find("SELECT COUNT(1) as c, COALESCE(SUM(pp.jumlah_jam), 0) as s FROM pegawai_pelatihan pp JOIN pegawai p ON pp.pegawai_id = p.id WHERE {$pelUCond}", $pelParams);
         $totalPelatihan = $pelRow['c'] ?? 0;
         $totalJP = $pelRow['s'] ?? 0;
@@ -485,6 +492,10 @@ class PegawaiController
         if ($kUnitCond !== '1=1') {
             $where .= " AND ({$kUnitCond})";
         }
+        $kPersonalCond = Auth::personalPegawaiSqlCondition('id', $params);
+        if ($kPersonalCond !== '1=1') {
+            $where .= " AND ({$kPersonalCond})";
+        }
         
         if ($search) {
             $where .= " AND nama LIKE ?";
@@ -671,6 +682,15 @@ class PegawaiController
 
     public static function edit(string $id): void
     {
+        if (Auth::isPersonalScope() && (int)$id !== Auth::personalPegawaiId()) {
+            $ownId = Auth::personalPegawaiId();
+            if ($ownId && $ownId > 0) {
+                Response::redirect(url('kelola-pegawai/edit/' . $ownId));
+            } else {
+                Response::withError(url('kelola-pegawai'), 'Anda hanya dapat mengakses data profil pegawai milik Anda sendiri.');
+            }
+            return;
+        }
         $db = Database::getInstance();
         $pegawai = $db->find("SELECT * FROM pegawai WHERE id = ?", [$id]);
         if (!$pegawai) { Response::withError(url('kelola-pegawai'), 'Data pegawai tidak ditemukan.'); return; }
@@ -713,6 +733,10 @@ class PegawaiController
 
     public static function update(string $id): void
     {
+        if (Auth::isPersonalScope() && (int)$id !== Auth::personalPegawaiId()) {
+            Response::withError(url('kelola-pegawai'), 'Anda hanya dapat memperbarui data profil pegawai milik Anda sendiri.');
+            return;
+        }
         if (!CSRF::validate()) { Response::withError(url('kelola-pegawai/edit/' . $id), 'Token tidak valid.'); return; }
         
         $validator = Validator::make($_POST)
@@ -2728,6 +2752,10 @@ class PegawaiController
         if ($krCond !== '1=1') {
             $where .= " AND ({$krCond})";
         }
+        $krPersonalCond = Auth::personalPegawaiSqlCondition('pk.pegawai_id', $params);
+        if ($krPersonalCond !== '1=1') {
+            $where .= " AND ({$krPersonalCond})";
+        }
 
         if (!empty($search)) {
             $where .= " AND (p.nama LIKE ? OR p.niy LIKE ? OR p.nik LIKE ? OR pk.jabatan LIKE ? OR pk.unit_tugas LIKE ? OR pk.no_sk LIKE ?)";
@@ -3107,6 +3135,10 @@ class PegawaiController
         if ($prCond !== '1=1') {
             $where .= " AND ({$prCond})";
         }
+        $prPersonalCond = Auth::personalPegawaiSqlCondition('pp.pegawai_id', $params);
+        if ($prPersonalCond !== '1=1') {
+            $where .= " AND ({$prPersonalCond})";
+        }
 
         if (!empty($search)) {
             $where .= " AND (p.nama LIKE ? OR p.niy LIKE ? OR pp.nama_prestasi LIKE ? OR pp.penyelenggara LIKE ? OR pp.peringkat LIKE ?)";
@@ -3464,6 +3496,10 @@ class PegawaiController
         $plCond = Auth::unitSqlCondition('p.unit_tugas', $params);
         if ($plCond !== '1=1') {
             $where .= " AND ({$plCond})";
+        }
+        $plPersonalCond = Auth::personalPegawaiSqlCondition('pp.pegawai_id', $params);
+        if ($plPersonalCond !== '1=1') {
+            $where .= " AND ({$plPersonalCond})";
         }
 
         if (!empty($search)) {

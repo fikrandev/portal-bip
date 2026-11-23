@@ -106,6 +106,7 @@ class AutoMigrate
             '2026_11_23_000068_create_absen_pegawai_libur'                 => 'migration068CreateAbsenPegawaiLibur',
             '2026_11_23_000069_upgrade_jurnal_staff_wa_templates_and_recipients' => 'migration069UpgradeJurnalStaffWaTemplatesAndRecipients',
             '2026_11_23_000070_add_multi_tugas_to_jurnal_staff'            => 'migration070AddMultiTugasToJurnalStaff',
+            '2026_11_23_000071_add_jenis_otorisasi_to_users'               => 'migration071AddJenisOtorisasiToUsers',
         ];
     }
     /**
@@ -5081,6 +5082,24 @@ class AutoMigrate
         try {
             $pdo->exec("UPDATE `jurnal_staff` SET `tugas_ids` = CAST(`tugas_id` AS CHAR) WHERE `tugas_id` IS NOT NULL AND (`tugas_ids` IS NULL OR `tugas_ids` = '')");
         } catch (Throwable $e) {}
+    }
+
+    /**
+     * 071. Tambah Kolom jenis_otorisasi ('admin' | 'personal') & pegawai_id pada Tabel users
+     */
+    protected static function migration071AddJenisOtorisasiToUsers(PDO $pdo): void
+    {
+        if (!self::hasTable($pdo, 'users')) {
+            return;
+        }
+
+        if (!self::hasColumn($pdo, 'users', 'jenis_otorisasi')) {
+            $pdo->exec("ALTER TABLE `users` ADD COLUMN `jenis_otorisasi` ENUM('admin', 'personal') NOT NULL DEFAULT 'admin' AFTER `allowed_jenjang`");
+        }
+
+        if (!self::hasColumn($pdo, 'users', 'pegawai_id')) {
+            $pdo->exec("ALTER TABLE `users` ADD COLUMN `pegawai_id` INT(11) DEFAULT NULL AFTER `id`");
+        }
     }
 }
 
