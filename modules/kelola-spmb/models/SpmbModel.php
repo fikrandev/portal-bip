@@ -3153,10 +3153,33 @@ class SpmbModel
     }
 
     /**
+     * Pastikan kolom pelacakan pengiriman WA Observasi tersedia di spmb_pendaftar
+     */
+    public static function ensureObservasiWaColumns(): void
+    {
+        static $checked = false;
+        if ($checked) {
+            return;
+        }
+        $checked = true;
+        try {
+            $pdo = self::db()->getConnection();
+            $cols = $pdo->query("SHOW COLUMNS FROM `spmb_pendaftar` LIKE 'wa_observasi_sent_%'")->fetchAll(PDO::FETCH_COLUMN);
+            if (!in_array('wa_observasi_sent_at', $cols, true)) {
+                $pdo->exec("ALTER TABLE `spmb_pendaftar` ADD COLUMN `wa_observasi_sent_at` DATETIME NULL DEFAULT NULL");
+            }
+            if (!in_array('wa_observasi_sent_count', $cols, true)) {
+                $pdo->exec("ALTER TABLE `spmb_pendaftar` ADD COLUMN `wa_observasi_sent_count` INT NOT NULL DEFAULT 0");
+            }
+        } catch (Throwable $e) {}
+    }
+
+    /**
      * Ambil daftar hasil observasi awal calon siswa (Admin list - Hanya yang Lulus / Diterima)
      */
     public static function getDaftarHasilObservasiAwal(array $filters = [], int $limit = 50, int $offset = 0): array
     {
+        self::ensureObservasiWaColumns();
         $conditions = [];
         $params = [];
 
@@ -3185,11 +3208,21 @@ class SpmbModel
             }
         }
 
+        if (!empty($filters['status_wa_observasi'])) {
+            if ($filters['status_wa_observasi'] === 'sudah') {
+                $conditions[] = "(p.wa_observasi_sent_count > 0 OR p.wa_observasi_sent_at IS NOT NULL)";
+            } elseif ($filters['status_wa_observasi'] === 'belum') {
+                $conditions[] = "(p.wa_observasi_sent_count IS NULL OR p.wa_observasi_sent_count = 0) AND p.wa_observasi_sent_at IS NULL";
+            }
+        }
+
         if (!empty($filters['status_group'])) {
             if ($filters['status_group'] === 'sudah') {
                 $conditions[] = "p.is_gabung_group = 1";
             } elseif ($filters['status_group'] === 'belum') {
                 $conditions[] = "(p.is_gabung_group = 0 OR p.is_gabung_group IS NULL)";
+            } elseif ($filters['status_group'] === 'belum_wa') {
+                $conditions[] = "(p.is_gabung_group = 0 OR p.is_gabung_group IS NULL) AND (p.wa_group_sent_count IS NULL OR p.wa_group_sent_count = 0)";
             }
         }
 
@@ -3208,6 +3241,7 @@ class SpmbModel
             SELECT p.id as pendaftar_id, p.id, p.nomor_pendaftaran, p.nama_lengkap, p.nama_panggilan,
                    p.jenjang, p.jenis_pendaftaran, p.no_wa, p.no_hp, p.no_hp_ayah, p.no_hp_ibu,
                    p.observasi_token, p.biodata_token, p.status_observasi, p.skor_observasi, p.kategori_observasi, p.tgl_observasi,
+                   p.wa_observasi_sent_at, p.wa_observasi_sent_count,
                    p.is_gabung_group, p.tgl_gabung_group, p.wa_group_sent_at, p.wa_group_sent_count,
                    obs.id as respon_id, obs.nama_pengisi, obs.hubungan_pengisi, obs.total_skor, obs.skor_maksimal, obs.persentase,
                    obs.kategori_hasil, obs.catatan_orang_tua, obs.harapan_orang_tua, obs.submitted_at
@@ -3272,11 +3306,21 @@ class SpmbModel
             }
         }
 
+        if (!empty($filters['status_wa_observasi'])) {
+            if ($filters['status_wa_observasi'] === 'sudah') {
+                $conditions[] = "(p.wa_observasi_sent_count > 0 OR p.wa_observasi_sent_at IS NOT NULL)";
+            } elseif ($filters['status_wa_observasi'] === 'belum') {
+                $conditions[] = "(p.wa_observasi_sent_count IS NULL OR p.wa_observasi_sent_count = 0) AND p.wa_observasi_sent_at IS NULL";
+            }
+        }
+
         if (!empty($filters['status_group'])) {
             if ($filters['status_group'] === 'sudah') {
                 $conditions[] = "p.is_gabung_group = 1";
             } elseif ($filters['status_group'] === 'belum') {
                 $conditions[] = "(p.is_gabung_group = 0 OR p.is_gabung_group IS NULL)";
+            } elseif ($filters['status_group'] === 'belum_wa') {
+                $conditions[] = "(p.is_gabung_group = 0 OR p.is_gabung_group IS NULL) AND (p.wa_group_sent_count IS NULL OR p.wa_group_sent_count = 0)";
             }
         }
 
@@ -3460,10 +3504,26 @@ class SpmbModel
 
         $pesan = str_replace(array_keys($replacements), array_values($replacements), $template);
 
-        return WaGateway::send($targetPhone, $pesan, [
+        self::ensureObservasiWaColumns();
+        $res = WaGateway::send($targetPhone, $pesan, [
             'module'         => 'spmb_observasi',
             'include_footer' => true
         ]);
+
+        if (!empty($res['success'])) {
+            try {
+                self::db()->query(
+                    "UPDATE `spmb_pendaftar`
+                     SET `wa_observasi_sent_at` = NOW(),
+                         `wa_observasi_sent_count` = COALESCE(`wa_observasi_sent_count`, 0) + 1
+                     WHERE `id` = ?",
+                    [$pendaftarId]
+                );
+            } catch (Throwable $e) {}
+        }
+
+        $res['phone'] = $targetPhone;
+        return $res;
     }
 
     /**

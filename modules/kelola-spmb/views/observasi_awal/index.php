@@ -16,6 +16,7 @@
 $csrfToken = CSRF::token();
 $selectedJenjang     = $filters['jenjang'] ?? '';
 $selectedStatus      = $filters['status_observasi'] ?? '';
+$selectedStatusWa    = $filters['status_wa_observasi'] ?? '';
 $selectedStatusGroup = $filters['status_group'] ?? '';
 $searchKeyword       = $filters['search'] ?? '';
 $groupLinks          = $groupLinks ?? [];
@@ -213,6 +214,15 @@ $groupLinks          = $groupLinks ?? [];
                 </select>
             </div>
 
+            <!-- Status Terkirim WA Link Observasi -->
+            <div class="w-full md:w-48 shrink-0">
+                <select name="status_wa_observasi" onchange="this.form.submit()" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs sm:text-sm font-medium focus:ring-2 focus:ring-sky-500 bg-white">
+                    <option value="">Semua Status WA Link</option>
+                    <option value="sudah" <?= $selectedStatusWa === 'sudah' ? 'selected' : '' ?>>✓ Sudah Terkirim WA</option>
+                    <option value="belum" <?= $selectedStatusWa === 'belum' ? 'selected' : '' ?>>⏳ Belum Terkirim WA</option>
+                </select>
+            </div>
+
             <!-- Status Masuk Group WA -->
             <div class="w-full md:w-48 shrink-0">
                 <select name="status_group" onchange="this.form.submit()" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs sm:text-sm font-medium focus:ring-2 focus:ring-sky-500 bg-white">
@@ -240,7 +250,7 @@ $groupLinks          = $groupLinks ?? [];
                 <button type="submit" class="w-full md:w-auto px-4 py-2 rounded-xl bg-slate-800 text-white text-xs sm:text-sm font-semibold hover:bg-slate-900 transition-colors">
                     Filter
                 </button>
-                <?php if ($selectedJenjang || $selectedStatus || $selectedStatusGroup || $searchKeyword): ?>
+                <?php if ($selectedJenjang || $selectedStatus || $selectedStatusWa || $selectedStatusGroup || $searchKeyword): ?>
                     <a href="<?= url('kelola-spmb/observasi-awal') ?>" class="w-full md:w-auto px-3.5 py-2 rounded-xl border border-slate-300 text-xs sm:text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors text-center">
                         Reset
                     </a>
@@ -378,25 +388,42 @@ $groupLinks          = $groupLinks ?? [];
 
                                 <!-- Tautan Khusus Orang Tua -->
                                 <td class="py-4 px-4">
-                                    <div class="flex items-center gap-2">
-                                        <button type="button" 
-                                                onclick="copyLink('<?= htmlspecialchars($publicLink) ?>')"
-                                                class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-colors"
-                                                title="Salin Tautan">
-                                            <svg class="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 0 1-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 0 1 1.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 0 0-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 0 1-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 0 0-3.375-3.375h-1.5a1.125 1.125 0 0 1-1.125-1.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H9.75" />
-                                            </svg>
-                                            Salin Link
-                                        </button>
+                                    <div class="flex flex-col gap-1.5">
+                                        <div class="flex items-center gap-2">
+                                            <button type="button" 
+                                                    onclick="copyLink('<?= htmlspecialchars($publicLink) ?>')"
+                                                    class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-colors"
+                                                    title="Salin Tautan">
+                                                <svg class="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 0 1-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 0 1 1.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 0 0-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 0 1-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 0 0-3.375-3.375h-1.5a1.125 1.125 0 0 1-1.125-1.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H9.75" />
+                                                </svg>
+                                                Salin Link
+                                            </button>
 
-                                        <a href="<?= htmlspecialchars($publicLink) ?>" 
-                                            target="_blank" 
-                                            class="p-1.5 rounded-lg text-slate-400 hover:text-sky-600 hover:bg-sky-50 transition-colors"
-                                            title="Buka Formulir Observasi">
-                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-                                            </svg>
-                                        </a>
+                                            <a href="<?= htmlspecialchars($publicLink) ?>" 
+                                                target="_blank" 
+                                                class="p-1.5 rounded-lg text-slate-400 hover:text-sky-600 hover:bg-sky-50 transition-colors"
+                                                title="Buka Formulir Observasi">
+                                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                                                </svg>
+                                            </a>
+                                        </div>
+                                        <?php if (!empty($it['wa_observasi_sent_at']) || (int)($it['wa_observasi_sent_count'] ?? 0) > 0): ?>
+                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 w-fit">
+                                                <svg class="w-3 h-3 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                                                </svg>
+                                                WA Terkirim <?= max(1, (int)($it['wa_observasi_sent_count'] ?? 1)) ?>x
+                                                <?php if (!empty($it['wa_observasi_sent_at'])): ?>
+                                                    (<?= date('d/m H:i', strtotime($it['wa_observasi_sent_at'])) ?>)
+                                                <?php endif; ?>
+                                            </span>
+                                        <?php else: ?>
+                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-100 text-slate-500 border border-slate-200 w-fit">
+                                                Belum Dikirim WA
+                                            </span>
+                                        <?php endif; ?>
                                     </div>
                                 </td>
 
@@ -619,10 +646,11 @@ $groupLinks          = $groupLinks ?? [];
                         </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Status Pengisian</label>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Target Penerima</label>
                         <select id="bc-filter-status" onchange="loadBroadcastPreview()" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs sm:text-sm font-semibold bg-white">
-                            <option value="belum" selected>Hanya yang Belum Mengisi</option>
-                            <option value="">Semua (Termasuk yang Sudah)</option>
+                            <option value="belum_wa" selected>Belum Mengisi & Belum Terkirim WA (Lanjut Antrian)</option>
+                            <option value="belum">Semua yang Belum Mengisi (Kirim Ulang / Reminder)</option>
+                            <option value="">Semua Siswa Lulus (Termasuk yang Sudah)</option>
                         </select>
                     </div>
                 </div>
@@ -804,9 +832,10 @@ $groupLinks          = $groupLinks ?? [];
                     <div>
                         <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Target Calon Siswa</label>
                         <select id="bcg-filter-target" onchange="loadBroadcastGroupPreview()" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs sm:text-sm font-semibold bg-white">
-                            <option value="belum" selected>Hanya yang Belum Masuk Group</option>
+                            <option value="belum_wa" selected>Belum Masuk & Belum Dikirimi WA (Lanjut Antrian)</option>
+                            <option value="belum">Semua yang Belum Masuk Group (Kirim Ulang)</option>
                             <option value="semua_observasi">Sudah Mengisi Observasi (Belum Masuk)</option>
-                            <option value="semua">Semua Siswa Terdaftar</option>
+                            <option value="semua">Semua Siswa Lulus</option>
                         </select>
                     </div>
                 </div>
@@ -1105,7 +1134,8 @@ function submitSendWaSingle() {
         btn.innerHTML = `Kirim Sekarang`;
         if (data.success) {
             closeModalWaSingle();
-            Swal.fire('Alhamdulillah', data.message || 'Pesan WhatsApp berhasil dikirim!', 'success');
+            Swal.fire('Alhamdulillah', data.message || 'Pesan WhatsApp berhasil dikirim!', 'success')
+                .then(() => location.reload());
         } else {
             Swal.fire('Gagal', data.message || 'Gagal mengirim pesan WhatsApp.', 'error');
         }
@@ -1120,8 +1150,10 @@ function submitSendWaSingle() {
 // --- Broadcast WhatsApp ---
 let broadcastTargets = [];
 let isBroadcasting = false;
+let broadcastHasSent = false;
 
 function openModalBroadcast() {
+    broadcastHasSent = false;
     document.getElementById('modal-broadcast').classList.remove('hidden');
     loadBroadcastPreview();
 }
@@ -1132,6 +1164,9 @@ function closeModalBroadcast() {
         return;
     }
     document.getElementById('modal-broadcast').classList.add('hidden');
+    if (broadcastHasSent) {
+        location.reload();
+    }
 }
 
 function loadBroadcastPreview() {
@@ -1231,6 +1266,7 @@ async function startBroadcast() {
             const data = await res.json();
             if (data.success) {
                 successCount++;
+                broadcastHasSent = true;
                 progressLog.innerHTML += `<div class="text-emerald-700">✓ [${i+1}] Berhasil kirim ke ${escapeHtml(item.nama_lengkap)} (${escapeHtml(item.target_phone || '')})</div>`;
             } else {
                 failCount++;
@@ -1253,9 +1289,12 @@ async function startBroadcast() {
     document.getElementById('bc-btn-cancel').disabled = false;
     progressStatus.innerText = `Selesai! Berhasil: ${successCount}, Gagal: ${failCount}`;
 
+    // Perbarui daftar antrian berikutnya secara otomatis (misal dari 50 siswa sudah terkirim 10, sisa 40 otomatis siap untuk kloter berikutnya)
+    loadBroadcastPreview();
+
     Swal.fire({
         title: 'Broadcast Selesai',
-        html: `Proses broadcast selesai.<br><strong>Berhasil:</strong> ${successCount}<br><strong>Gagal/Dilewati:</strong> ${failCount}`,
+        html: `Proses broadcast kloter ini selesai.<br><strong>Berhasil:</strong> ${successCount}<br><strong>Gagal/Dilewati:</strong> ${failCount}<br><br><span class="text-xs text-slate-500">Daftar target telah diperbarui otomatis untuk sisa siswa yang belum terkirim.</span>`,
         icon: 'success'
     });
 }

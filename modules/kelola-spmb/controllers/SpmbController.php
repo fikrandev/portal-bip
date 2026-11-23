@@ -3370,12 +3370,13 @@ SVG;
         $perPageParam = $pagination['perPageParam'];
 
         $filters = [
-            'group_id'         => $groupId,
-            'jenjang'          => trim($_GET['jenjang'] ?? ''),
-            'status_kelulusan' => 'Lulus / Diterima', // Khusus Observasi Awal: Hanya siswa yang sudah ditetapkan Lulus / Diterima
-            'status_observasi' => trim($_GET['status_observasi'] ?? ''),
-            'status_group'     => trim($_GET['status_group'] ?? ''),
-            'search'           => trim($_GET['search'] ?? '')
+            'group_id'            => $groupId,
+            'jenjang'             => trim($_GET['jenjang'] ?? ''),
+            'status_kelulusan'    => 'Lulus / Diterima', // Khusus Observasi Awal: Hanya siswa yang sudah ditetapkan Lulus / Diterima
+            'status_observasi'    => trim($_GET['status_observasi'] ?? ''),
+            'status_wa_observasi' => trim($_GET['status_wa_observasi'] ?? ''),
+            'status_group'        => trim($_GET['status_group'] ?? ''),
+            'search'              => trim($_GET['search'] ?? '')
         ];
 
         $totalItems = SpmbModel::countDaftarHasilObservasiAwal($filters);
@@ -3659,11 +3660,20 @@ SVG;
     public static function observasiAwalBroadcastData(): void
     {
         $activeGroup = SpmbModel::getActiveGroup();
+        $rawTarget = trim($_GET['status_observasi'] ?? 'belum_wa');
+
         $filters = [
             'group_id'         => $activeGroup['id'] ?? null,
             'jenjang'          => trim($_GET['jenjang'] ?? ''),
-            'status_observasi' => trim($_GET['status_observasi'] ?? 'belum'),
+            'status_kelulusan' => 'Lulus / Diterima',
         ];
+
+        if ($rawTarget === 'belum_wa') {
+            $filters['status_observasi'] = 'belum';
+            $filters['status_wa_observasi'] = 'belum';
+        } elseif ($rawTarget === 'belum') {
+            $filters['status_observasi'] = 'belum';
+        }
 
         $items = SpmbModel::getDaftarHasilObservasiAwal($filters, 1000, 0);
 
@@ -3932,10 +3942,13 @@ SVG;
             'jenjang'  => $jenjang,
         ];
 
-        if ($targetFilter === 'belum') {
+        if ($targetFilter === 'belum_wa') {
+            $filters['status_group'] = 'belum_wa';
+        } elseif ($targetFilter === 'belum') {
             $filters['status_group'] = 'belum';
         } elseif ($targetFilter === 'semua_observasi') {
             $filters['status_observasi'] = 'sudah';
+            $filters['status_group'] = 'belum';
         }
 
         $items = SpmbModel::getDaftarHasilObservasiAwal($filters, 2000, 0);
