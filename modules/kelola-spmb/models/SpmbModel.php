@@ -3153,7 +3153,7 @@ class SpmbModel
     }
 
     /**
-     * Ambil daftar hasil observasi awal calon siswa (Admin list)
+     * Ambil daftar hasil observasi awal calon siswa (Admin list - Hanya yang Lulus / Diterima)
      */
     public static function getDaftarHasilObservasiAwal(array $filters = [], int $limit = 50, int $offset = 0): array
     {
@@ -3164,6 +3164,11 @@ class SpmbModel
             $conditions[] = "p.group_id = ?";
             $params[] = (int)$filters['group_id'];
         }
+
+        // Khusus Observasi Awal: Hanya tampilkan calon siswa yang sudah ditetapkan Lulus / Diterima
+        $statusKelulusan = !empty($filters['status_kelulusan']) ? $filters['status_kelulusan'] : 'Lulus / Diterima';
+        $conditions[] = "p.status_kelulusan = ?";
+        $params[] = $statusKelulusan;
 
         $reqJen = (!empty($filters['jenjang']) && strtoupper(trim($filters['jenjang'])) !== 'ALL') ? (string)$filters['jenjang'] : '';
         $jObs = '1=1';
@@ -3235,7 +3240,7 @@ class SpmbModel
     }
 
     /**
-     * Hitung total pendaftar untuk hasil observasi awal
+     * Hitung total pendaftar untuk hasil observasi awal (Hanya yang Lulus / Diterima)
      */
     public static function countDaftarHasilObservasiAwal(array $filters = []): int
     {
@@ -3246,6 +3251,11 @@ class SpmbModel
             $conditions[] = "p.group_id = ?";
             $params[] = (int)$filters['group_id'];
         }
+
+        // Khusus Observasi Awal: Hanya hitung calon siswa yang sudah ditetapkan Lulus / Diterima
+        $statusKelulusan = !empty($filters['status_kelulusan']) ? $filters['status_kelulusan'] : 'Lulus / Diterima';
+        $conditions[] = "p.status_kelulusan = ?";
+        $params[] = $statusKelulusan;
 
         $reqJen = (!empty($filters['jenjang']) && strtoupper(trim($filters['jenjang'])) !== 'ALL') ? (string)$filters['jenjang'] : '';
         $jObs = '1=1';
@@ -3292,12 +3302,12 @@ class SpmbModel
     }
 
     /**
-     * Hitung statistik ringkasan observasi awal
+     * Hitung statistik ringkasan observasi awal (Hanya yang Lulus / Diterima)
      */
     public static function getObservasiStats(?int $groupId = null): array
     {
         $params = [];
-        $conditions = [];
+        $conditions = ["p.status_kelulusan = 'Lulus / Diterima'"];
         if (!empty($groupId)) {
             $conditions[] = "p.group_id = ?";
             $params[] = $groupId;
@@ -3638,7 +3648,7 @@ class SpmbModel
     }
 
     /**
-     * Ambil seluruh data hasil observasi awal untuk cetak rekap (tanpa paginasi ketat)
+     * Ambil seluruh data hasil observasi awal untuk cetak rekap (tanpa paginasi ketat - Hanya yang Lulus / Diterima)
      */
     public static function getRekapObservasiAwal(array $filters = []): array
     {
@@ -3649,6 +3659,11 @@ class SpmbModel
             $conditions[] = "p.group_id = ?";
             $params[] = (int)$filters['group_id'];
         }
+
+        // Khusus Observasi Awal: Hanya siswa yang sudah ditetapkan Lulus / Diterima
+        $statusKelulusan = !empty($filters['status_kelulusan']) ? $filters['status_kelulusan'] : 'Lulus / Diterima';
+        $conditions[] = "p.status_kelulusan = ?";
+        $params[] = $statusKelulusan;
 
         $reqJen = (!empty($filters['jenjang']) && strtoupper(trim($filters['jenjang'])) !== 'ALL') ? (string)$filters['jenjang'] : '';
         $jObs = '1=1';

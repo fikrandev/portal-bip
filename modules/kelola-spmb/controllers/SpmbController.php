@@ -3372,6 +3372,7 @@ SVG;
         $filters = [
             'group_id'         => $groupId,
             'jenjang'          => trim($_GET['jenjang'] ?? ''),
+            'status_kelulusan' => 'Lulus / Diterima', // Khusus Observasi Awal: Hanya siswa yang sudah ditetapkan Lulus / Diterima
             'status_observasi' => trim($_GET['status_observasi'] ?? ''),
             'status_group'     => trim($_GET['status_group'] ?? ''),
             'search'           => trim($_GET['search'] ?? '')

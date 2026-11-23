@@ -103,7 +103,7 @@ $groupLinks          = $groupLinks ?? [];
                 <span class="text-2xl font-bold text-slate-900"><?= number_format($stats['total_siswa'] ?? 0) ?></span>
                 <span class="text-xs text-slate-400 ml-1">anak</span>
             </div>
-            <p class="text-[11px] text-slate-400 mt-1">Terdaftar di group aktif</p>
+            <p class="text-[11px] text-slate-400 mt-1">Status Lulus / Diterima</p>
         </div>
 
         <!-- Sudah Mengisi -->
