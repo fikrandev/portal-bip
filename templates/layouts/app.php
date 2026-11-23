@@ -6,6 +6,11 @@
  */
 $hideSidebar = $hideSidebar ?? false;
 $customSidebar = $customSidebar ?? null;
+$isPersonalScopeLayout = class_exists('Auth') && Auth::check() && Auth::isPersonalScope();
+if ($isPersonalScopeLayout) {
+    $hideSidebar = false;
+    $customSidebar = TEMPLATES_PATH . '/partials/sidebar_personal.php';
+}
 $isPortalPjax = !empty($_SERVER['HTTP_X_PORTAL_PJAX']);
 
 if ($isPortalPjax):

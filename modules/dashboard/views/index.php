@@ -1,7 +1,10 @@
-<?php /** Dashboard View — Module Cards Grid */ ?>
+<?php
+/** Dashboard View — Module Cards Grid / Workspace Personal */
+$isPersonalDash = class_exists('Auth') && Auth::isPersonalScope();
+?>
 
 <!-- Welcome Banner -->
-<div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary-500 via-primary-400 to-primary-400 p-6 sm:p-8 mb-8 shadow-lg shadow-primary-500/20">
+<div class="relative overflow-hidden rounded-2xl bg-gradient-to-r <?= $isPersonalDash ? 'from-teal-600 via-primary-600 to-primary-500' : 'from-primary-500 via-primary-400 to-primary-400' ?> p-6 sm:p-8 mb-8 shadow-lg shadow-primary-500/20">
     <!-- Background Pattern -->
     <div class="absolute inset-0 opacity-10" aria-hidden="true">
         <div class="absolute -top-12 -right-12 w-48 h-48 bg-white rounded-full"></div>
@@ -20,19 +23,43 @@
                 </div>
             <?php endif; ?>
             <div>
-                <p class="text-primary-100 text-xs sm:text-sm font-semibold tracking-wide mb-0.5">
-                    Assalamu'alaikum,
-                </p>
+                <div class="flex flex-wrap items-center gap-2 mb-0.5">
+                    <p class="text-primary-100 text-xs sm:text-sm font-semibold tracking-wide">
+                        Assalamu'alaikum,
+                    </p>
+                    <?php if ($isPersonalDash): ?>
+                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-white/20 text-white border border-white/30">
+                            👤 Workspace Personal
+                        </span>
+                    <?php endif; ?>
+                </div>
                 <h2 class="text-xl sm:text-2xl font-bold text-white mb-0.5">
-                    Selamat datang, <?= e(Auth::jabatan()) ?>! 👋
+                    Selamat datang, <?= e(Auth::name()) ?>! 👋
                 </h2>
                 <p class="text-primary-100 text-xs sm:text-sm">
-                    <span class="font-semibold text-white/95"><?= e(Auth::name()) ?></span> &bull; Kelola semua modul dan fitur portal dari satu tempat.
+                    <span class="font-semibold text-white/95"><?= e(Auth::jabatan()) ?></span> &bull;
+                    <?= $isPersonalDash ? 'Gunakan menu sidebar di sebelah kiri untuk berpindah antar fitur dan data pribadi Anda secara cepat.' : 'Kelola semua modul dan fitur portal dari satu tempat.' ?>
                 </p>
             </div>
         </div>
         
         <!-- Quick Stats -->
+        <?php if ($isPersonalDash): ?>
+        <div class="flex flex-wrap gap-3 sm:gap-4 mt-5">
+            <div class="flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/15">
+                <svg class="w-4 h-4 text-teal-200" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z"/>
+                </svg>
+                <span class="text-xs font-semibold text-white">Mode Otorisasi: Data Pribadi (Personal)</span>
+            </div>
+            <div class="flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/15">
+                <svg class="w-4 h-4 text-teal-200" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z"/>
+                </svg>
+                <span class="text-xs font-semibold text-white"><?= count($modules) ?> Modul Aktif di Sidebar</span>
+            </div>
+        </div>
+        <?php else: ?>
         <div class="flex flex-wrap gap-4 sm:gap-6 mt-6">
             <div class="flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-white/15 backdrop-blur-sm">
                 <svg class="w-5 h-5 text-white/80" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -62,6 +89,7 @@
                 </div>
             </div>
         </div>
+        <?php endif; ?>
     </div>
 </div>
 
