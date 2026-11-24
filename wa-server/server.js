@@ -44,6 +44,10 @@ let connectionStatus = 'initializing'; // initializing, qr_ready, connecting, co
 let connectedPhone = null;
 let connectedName = null;
 let reconnectAttempts = 0;
+let isConnecting = false;
+let isLoggingOut = false;
+let reconnectTimer = null;
+let cachedBaileysVersion = null;
 
 // Pastikan direktori auth ada
 if (!fs.existsSync(AUTH_DIR)) {
@@ -73,18 +77,73 @@ function formatToJid(number) {
     return clean;
 }
 
+function scheduleReconnect(delayMs = 1500) {
+    if (reconnectTimer) {
+        clearTimeout(reconnectTimer);
+        reconnectTimer = null;
+    }
+    reconnectTimer = setTimeout(() => {
+        reconnectTimer = null;
+        connectToWhatsApp();
+    }, delayMs);
+}
+
+async function getBaileysVersionSafe() {
+    if (cachedBaileysVersion) {
+        return cachedBaileysVersion;
+    }
+    try {
+        const res = await Promise.race([
+            fetchLatestBaileysVersion(),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000))
+        ]);
+        if (res && res.version) {
+            cachedBaileysVersion = res.version;
+            return res.version;
+        }
+    } catch (e) {
+        console.warn('[WA Gateway eportal] fetchLatestBaileysVersion fallback:', e.message);
+    }
+    return [2, 3000, 1023223821];
+}
+
 /**
  * Inisialisasi Koneksi WhatsApp Baileys
  */
 async function connectToWhatsApp() {
+    if (isConnecting) {
+        console.log('[WA Gateway eportal] Koneksi sedang diinisialisasi, melewati duplikat...');
+        return;
+    }
+    isConnecting = true;
+
     try {
+        if (reconnectTimer) {
+            clearTimeout(reconnectTimer);
+            reconnectTimer = null;
+        }
+
+        // Bersihkan socket lama agar event dari socket lama tidak mengganggu socket baru
+        if (sock) {
+            try { sock.ev.removeAllListeners('connection.update'); } catch (e) {}
+            try { sock.ev.removeAllListeners('creds.update'); } catch (e) {}
+            try { sock.end(); } catch (e) {}
+            sock = null;
+        }
+
         console.log('[WA Gateway eportal] Menginisialisasi session WhatsApp...');
         connectionStatus = 'connecting';
+        currentQrRaw = null;
+        currentQrImage = null;
+
+        if (!fs.existsSync(AUTH_DIR)) {
+            fs.mkdirSync(AUTH_DIR, { recursive: true });
+        }
 
         const { state, saveCreds } = await useMultiFileAuthState(AUTH_DIR);
-        const { version } = await fetchLatestBaileysVersion();
+        const version = await getBaileysVersionSafe();
 
-        sock = makeWASocket({
+        const currentSock = makeWASocket({
             version,
             logger,
             printQRInTerminal: true, // Tampilkan juga di console terminal jika dibuka manual
@@ -95,12 +154,19 @@ async function connectToWhatsApp() {
             connectTimeoutMs: 60000,
             defaultQueryTimeoutMs: 60000
         });
+        sock = currentSock;
 
         // Event: Update Kredensial
-        sock.ev.on('creds.update', saveCreds);
+        currentSock.ev.on('creds.update', () => {
+            if (sock !== currentSock || isLoggingOut) return;
+            saveCreds();
+        });
 
         // Event: Update Status Koneksi & QR Code
-        sock.ev.on('connection.update', async (update) => {
+        currentSock.ev.on('connection.update', async (update) => {
+            // Abaikan event dari socket lama yang sudah digantikan
+            if (sock !== currentSock) return;
+
             const { connection, lastDisconnect, qr } = update;
 
             // Jika menerima QR Code baru
@@ -124,6 +190,8 @@ async function connectToWhatsApp() {
 
             // Jika status koneksi berubah
             if (connection === 'close') {
+                if (isLoggingOut) return;
+
                 const statusCode = lastDisconnect?.error?.output?.statusCode;
                 const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
                 
@@ -139,15 +207,12 @@ async function connectToWhatsApp() {
                     reconnectAttempts++;
                     const delay = Math.min(reconnectAttempts * 2000, 10000);
                     console.log(`[WA Gateway eportal] Mencoba menghubungkan kembali dalam ${delay / 1000} detik...`);
-                    setTimeout(() => {
-                        connectToWhatsApp();
-                    }, delay);
+                    scheduleReconnect(delay);
                 } else {
                     console.log('[WA Gateway eportal] Device ter-logout. Membersihkan auth...');
                     clearAuthDir();
-                    setTimeout(() => {
-                        connectToWhatsApp();
-                    }, 2000);
+                    reconnectAttempts = 0;
+                    scheduleReconnect(1500);
                 }
             } else if (connection === 'open') {
                 reconnectAttempts = 0;
@@ -156,10 +221,10 @@ async function connectToWhatsApp() {
                 currentQrImage = null;
 
                 // Ambil nomor telepon dari akun yang tertaut
-                if (sock.user) {
-                    const rawId = sock.user.id || '';
+                if (currentSock.user) {
+                    const rawId = currentSock.user.id || '';
                     connectedPhone = rawId.split(':')[0] || rawId.split('@')[0];
-                    connectedName = sock.user.name || 'WA Gateway eportal';
+                    connectedName = currentSock.user.name || 'WA Gateway eportal';
                 }
 
                 console.log('========================================================');
@@ -173,7 +238,9 @@ async function connectToWhatsApp() {
     } catch (error) {
         console.error('[WA Gateway eportal] Gagal inisialisasi socket:', error);
         connectionStatus = 'disconnected';
-        setTimeout(() => connectToWhatsApp(), 5000);
+        scheduleReconnect(5000);
+    } finally {
+        isConnecting = false;
     }
 }
 
@@ -183,12 +250,10 @@ async function connectToWhatsApp() {
 function clearAuthDir() {
     try {
         if (fs.existsSync(AUTH_DIR)) {
-            const files = fs.readdirSync(AUTH_DIR);
-            for (const file of files) {
-                fs.unlinkSync(path.join(AUTH_DIR, file));
-            }
-            console.log('[WA Gateway eportal] Folder auth session berhasil dibersihkan.');
+            fs.rmSync(AUTH_DIR, { recursive: true, force: true });
         }
+        fs.mkdirSync(AUTH_DIR, { recursive: true });
+        console.log('[WA Gateway eportal] Folder auth session berhasil dibersihkan.');
     } catch (err) {
         console.error('[WA Gateway eportal] Gagal membersihkan auth dir:', err.message);
     }
@@ -327,30 +392,42 @@ app.post('/api/send', async (req, res) => {
 app.post('/api/logout', async (req, res) => {
     try {
         console.log('[WA Gateway eportal] Memproses logout perangkat...');
-        if (sock) {
-            try {
-                await sock.logout();
-            } catch (e) {}
-            try {
-                sock.end();
-            } catch (e) {}
+        isLoggingOut = true;
+        if (reconnectTimer) {
+            clearTimeout(reconnectTimer);
+            reconnectTimer = null;
         }
+        const oldSock = sock;
         sock = null;
+        if (oldSock) {
+            try { oldSock.ev.removeAllListeners('connection.update'); } catch (e) {}
+            try { oldSock.ev.removeAllListeners('creds.update'); } catch (e) {}
+            try {
+                await Promise.race([
+                    oldSock.logout(),
+                    new Promise((resolve) => setTimeout(resolve, 3000))
+                ]);
+            } catch (e) {}
+            try { oldSock.end(); } catch (e) {}
+        }
         clearAuthDir();
-        connectionStatus = 'disconnected';
+        reconnectAttempts = 0;
+        connectionStatus = 'connecting';
         currentQrRaw = null;
         currentQrImage = null;
         connectedPhone = null;
         connectedName = null;
+        isLoggingOut = false;
 
-        // Inisialisasi ulang untuk generate QR baru
-        setTimeout(() => connectToWhatsApp(), 1500);
+        // Inisialisasi ulang sekali saja untuk generate QR baru
+        scheduleReconnect(1000);
 
         return res.json({
             success: true,
             message: 'Perangkat berhasil diputuskan. QR Code baru sedang disiapkan.'
         });
     } catch (error) {
+        isLoggingOut = false;
         return res.status(500).json({
             success: false,
             message: 'Gagal logout: ' + error.message
