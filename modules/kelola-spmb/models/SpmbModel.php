@@ -3227,12 +3227,31 @@ class SpmbModel
         }
 
         if (!empty($filters['search'])) {
-            $term = '%' . trim($filters['search']) . '%';
-            $conditions[] = "(p.nama_lengkap LIKE ? OR p.nomor_pendaftaran LIKE ? OR p.nisn LIKE ? OR obs.nama_pengisi LIKE ?)";
-            $params[] = $term;
-            $params[] = $term;
-            $params[] = $term;
-            $params[] = $term;
+            $rawSearch = trim($filters['search']);
+            $term = '%' . $rawSearch . '%';
+            $digitsOnly = preg_replace('/[^0-9]/', '', $rawSearch);
+            $phoneConds = [
+                "p.nama_lengkap LIKE ?",
+                "p.nomor_pendaftaran LIKE ?",
+                "p.nisn LIKE ?",
+                "obs.nama_pengisi LIKE ?",
+                "p.no_wa LIKE ?",
+                "p.no_hp LIKE ?",
+                "p.no_hp_ayah LIKE ?",
+                "p.no_hp_ibu LIKE ?",
+            ];
+            for ($i = 0; $i < 8; $i++) {
+                $params[] = $term;
+            }
+            if ($digitsOnly !== '' && strlen($digitsOnly) >= 4) {
+                $altPhone = (strpos($digitsOnly, '0') === 0) ? ('62' . substr($digitsOnly, 1)) : ((strpos($digitsOnly, '62') === 0) ? ('0' . substr($digitsOnly, 2)) : $digitsOnly);
+                $altTerm = '%' . $altPhone . '%';
+                $phoneConds[] = "p.no_wa LIKE ? OR p.no_hp LIKE ? OR p.no_hp_ayah LIKE ? OR p.no_hp_ibu LIKE ?";
+                for ($i = 0; $i < 4; $i++) {
+                    $params[] = $altTerm;
+                }
+            }
+            $conditions[] = "(" . implode(" OR ", $phoneConds) . ")";
         }
 
         $whereClause = !empty($conditions) ? "WHERE " . implode(" AND ", $conditions) : "";
@@ -3326,12 +3345,31 @@ class SpmbModel
         }
 
         if (!empty($filters['search'])) {
-            $term = '%' . trim($filters['search']) . '%';
-            $conditions[] = "(p.nama_lengkap LIKE ? OR p.nomor_pendaftaran LIKE ? OR p.nisn LIKE ? OR obs.nama_pengisi LIKE ?)";
-            $params[] = $term;
-            $params[] = $term;
-            $params[] = $term;
-            $params[] = $term;
+            $rawSearch = trim($filters['search']);
+            $term = '%' . $rawSearch . '%';
+            $digitsOnly = preg_replace('/[^0-9]/', '', $rawSearch);
+            $phoneConds = [
+                "p.nama_lengkap LIKE ?",
+                "p.nomor_pendaftaran LIKE ?",
+                "p.nisn LIKE ?",
+                "obs.nama_pengisi LIKE ?",
+                "p.no_wa LIKE ?",
+                "p.no_hp LIKE ?",
+                "p.no_hp_ayah LIKE ?",
+                "p.no_hp_ibu LIKE ?",
+            ];
+            for ($i = 0; $i < 8; $i++) {
+                $params[] = $term;
+            }
+            if ($digitsOnly !== '' && strlen($digitsOnly) >= 4) {
+                $altPhone = (strpos($digitsOnly, '0') === 0) ? ('62' . substr($digitsOnly, 1)) : ((strpos($digitsOnly, '62') === 0) ? ('0' . substr($digitsOnly, 2)) : $digitsOnly);
+                $altTerm = '%' . $altPhone . '%';
+                $phoneConds[] = "p.no_wa LIKE ? OR p.no_hp LIKE ? OR p.no_hp_ayah LIKE ? OR p.no_hp_ibu LIKE ?";
+                for ($i = 0; $i < 4; $i++) {
+                    $params[] = $altTerm;
+                }
+            }
+            $conditions[] = "(" . implode(" OR ", $phoneConds) . ")";
         }
 
         $whereClause = !empty($conditions) ? "WHERE " . implode(" AND ", $conditions) : "";
@@ -3744,12 +3782,31 @@ class SpmbModel
         }
 
         if (!empty($filters['search'])) {
-            $term = '%' . trim($filters['search']) . '%';
-            $conditions[] = "(p.nama_lengkap LIKE ? OR p.nomor_pendaftaran LIKE ? OR p.nisn LIKE ? OR obs.nama_pengisi LIKE ?)";
-            $params[] = $term;
-            $params[] = $term;
-            $params[] = $term;
-            $params[] = $term;
+            $rawSearch = trim($filters['search']);
+            $term = '%' . $rawSearch . '%';
+            $digitsOnly = preg_replace('/[^0-9]/', '', $rawSearch);
+            $phoneConds = [
+                "p.nama_lengkap LIKE ?",
+                "p.nomor_pendaftaran LIKE ?",
+                "p.nisn LIKE ?",
+                "obs.nama_pengisi LIKE ?",
+                "p.no_wa LIKE ?",
+                "p.no_hp LIKE ?",
+                "p.no_hp_ayah LIKE ?",
+                "p.no_hp_ibu LIKE ?",
+            ];
+            for ($i = 0; $i < 8; $i++) {
+                $params[] = $term;
+            }
+            if ($digitsOnly !== '' && strlen($digitsOnly) >= 4) {
+                $altPhone = (strpos($digitsOnly, '0') === 0) ? ('62' . substr($digitsOnly, 1)) : ((strpos($digitsOnly, '62') === 0) ? ('0' . substr($digitsOnly, 2)) : $digitsOnly);
+                $altTerm = '%' . $altPhone . '%';
+                $phoneConds[] = "p.no_wa LIKE ? OR p.no_hp LIKE ? OR p.no_hp_ayah LIKE ? OR p.no_hp_ibu LIKE ?";
+                for ($i = 0; $i < 4; $i++) {
+                    $params[] = $altTerm;
+                }
+            }
+            $conditions[] = "(" . implode(" OR ", $phoneConds) . ")";
         }
 
         $whereClause = !empty($conditions) ? "WHERE " . implode(" AND ", $conditions) : "";
