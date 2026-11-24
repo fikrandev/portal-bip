@@ -3949,10 +3949,11 @@ SVG;
 
         if ($targetFilter === 'belum_wa') {
             $filters['status_group'] = 'belum_wa';
-        } elseif ($targetFilter === 'belum') {
-            $filters['status_group'] = 'belum';
         } elseif ($targetFilter === 'semua_observasi') {
             $filters['status_observasi'] = 'sudah';
+            $filters['status_group'] = 'belum';
+        } else {
+            // Otomatis kecualikan siswa yang sudah ditandai masuk group agar tidak terkirim ulang
             $filters['status_group'] = 'belum';
         }
 

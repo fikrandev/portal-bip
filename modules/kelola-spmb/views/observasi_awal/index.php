@@ -612,7 +612,7 @@ $groupLinks          = $groupLinks ?? [];
 <!-- ========================================================================= -->
 <div id="modal-broadcast" class="fixed inset-0 z-50 hidden overflow-y-auto bg-slate-900/60 backdrop-blur-sm transition-opacity">
     <div class="flex min-h-screen items-center justify-center p-4">
-        <div class="relative w-full max-w-xl rounded-2xl bg-white shadow-2xl border border-slate-100 overflow-hidden my-8">
+        <div class="relative w-full max-w-2xl rounded-2xl bg-white shadow-2xl border border-slate-100 overflow-hidden my-8">
             <div class="flex items-center justify-between border-b border-slate-100 bg-emerald-50/80 px-6 py-4">
                 <div class="flex items-center gap-2.5">
                     <div class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
@@ -796,7 +796,7 @@ $groupLinks          = $groupLinks ?? [];
 <!-- ========================================================================= -->
 <div id="modal-broadcast-group" class="fixed inset-0 z-50 hidden overflow-y-auto bg-slate-900/60 backdrop-blur-sm transition-opacity">
     <div class="flex min-h-screen items-center justify-center p-4">
-        <div class="relative w-full max-w-xl rounded-2xl bg-white shadow-2xl border border-slate-100 overflow-hidden my-8">
+        <div class="relative w-full max-w-2xl rounded-2xl bg-white shadow-2xl border border-slate-100 overflow-hidden my-8">
             <div class="flex items-center justify-between border-b border-slate-100 bg-teal-50/80 px-6 py-4">
                 <div class="flex items-center gap-2.5">
                     <div class="w-8 h-8 rounded-xl bg-teal-100 text-teal-700 flex items-center justify-center font-bold">
@@ -835,7 +835,7 @@ $groupLinks          = $groupLinks ?? [];
                             <option value="belum_wa" selected>Belum Masuk & Belum Dikirimi WA (Lanjut Antrian)</option>
                             <option value="belum">Semua yang Belum Masuk Group (Kirim Ulang)</option>
                             <option value="semua_observasi">Sudah Mengisi Observasi (Belum Masuk)</option>
-                            <option value="semua">Semua Siswa Lulus</option>
+                            <option value="semua">Semua Siswa Lulus (Belum Masuk Group)</option>
                         </select>
                     </div>
                 </div>
@@ -866,13 +866,31 @@ $groupLinks          = $groupLinks ?? [];
                     <svg class="w-4 h-4 text-teal-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                     </svg>
-                    <span><strong>Otomatisasi Tautan Unit:</strong> Sistem akan otomatis mencocokkan tautan grup WhatsApp sesuai jenjang masing-masing siswa (PAUD, SD, SMP, SMA).</span>
+                    <span><strong>Otomatisasi Tautan &amp; Filter Group:</strong> Siswa yang sudah ditandai <em>Masuk Group</em> otomatis tidak dimasukkan ke daftar kirim. Anda juga dapat mencentang/menghapus centang secara manual di bawah ini.</span>
                 </div>
 
-                <!-- Ringkasan Target -->
-                <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-xs">
-                    <span class="font-semibold text-slate-600">Target Siswa Penerima:</span>
-                    <span id="bcg-target-count" class="font-bold text-teal-700 text-sm">0 Siswa</span>
+                <!-- Ringkasan & Daftar Checklist Siswa Penerima -->
+                <div class="border border-slate-200 rounded-xl overflow-hidden bg-slate-50/70">
+                    <div class="px-3 py-2.5 bg-slate-100/80 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2 text-xs">
+                        <div class="flex items-center gap-2">
+                            <span class="font-semibold text-slate-700">Daftar Siswa Siap Kirim:</span>
+                            <span id="bcg-target-count" class="font-bold text-teal-700">0 Siswa</span>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <button type="button" onclick="toggleAllBroadcastGroupTargets(true)" class="px-2 py-1 rounded-lg bg-white border border-slate-300 text-[11px] font-semibold text-slate-700 hover:bg-teal-50 hover:text-teal-700 hover:border-teal-300 transition-colors">
+                                Centang Semua
+                            </button>
+                            <button type="button" onclick="toggleAllBroadcastGroupTargets(false)" class="px-2 py-1 rounded-lg bg-white border border-slate-300 text-[11px] font-semibold text-slate-700 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-300 transition-colors">
+                                Hapus Centang
+                            </button>
+                        </div>
+                    </div>
+                    <div class="p-2 border-b border-slate-200 bg-white">
+                        <input type="text" id="bcg-search-input" oninput="filterBroadcastGroupList()" placeholder="Cari nama siswa, no. pendaftaran, atau nomor WA..." class="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-xs focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none">
+                    </div>
+                    <div id="bcg-checklist-container" class="max-h-52 overflow-y-auto divide-y divide-slate-100 bg-white custom-scrollbar">
+                        <div class="p-4 text-center text-xs text-slate-400">Memuat daftar siswa...</div>
+                    </div>
                 </div>
 
                 <!-- Template Pesan -->
@@ -1412,10 +1430,13 @@ function toggleGroupStatus(pendaftarId, nama, currentStatus) {
 
 // --- Broadcast Group WhatsApp ---
 let broadcastGroupTargets = [];
+let broadcastGroupSelectedIds = new Set();
 let isBroadcastingGroup = false;
 
 function openModalBroadcastGroup() {
     document.getElementById('modal-broadcast-group').classList.remove('hidden');
+    const searchInp = document.getElementById('bcg-search-input');
+    if (searchInp) searchInp.value = '';
     loadBroadcastGroupPreview();
 }
 
@@ -1427,49 +1448,161 @@ function closeModalBroadcastGroup() {
     document.getElementById('modal-broadcast-group').classList.add('hidden');
 }
 
+function updateBroadcastGroupSelectedCount() {
+    const targetLabel = document.getElementById('bcg-target-count');
+    const total = broadcastGroupTargets.length;
+    const selected = broadcastGroupTargets.filter(it => broadcastGroupSelectedIds.has(String(it.pendaftar_id))).length;
+    if (targetLabel) {
+        targetLabel.innerText = `${selected} dicentang (dari ${total} siap kirim)`;
+    }
+}
+
+function applyLimitToBroadcastGroupSelection() {
+    const limitVal = parseInt(document.getElementById('bcg-filter-limit').value) || 0;
+    broadcastGroupSelectedIds.clear();
+    const countToSelect = limitVal > 0 ? Math.min(limitVal, broadcastGroupTargets.length) : broadcastGroupTargets.length;
+    for (let i = 0; i < countToSelect; i++) {
+        broadcastGroupSelectedIds.add(String(broadcastGroupTargets[i].pendaftar_id));
+    }
+}
+
+function renderBroadcastGroupChecklist() {
+    const container = document.getElementById('bcg-checklist-container');
+    if (!container) return;
+
+    const searchEl = document.getElementById('bcg-search-input');
+    const q = searchEl ? searchEl.value.trim().toLowerCase() : '';
+
+    const filtered = broadcastGroupTargets.filter(item => {
+        if (!q) return true;
+        const nama = (item.nama_lengkap || '').toLowerCase();
+        const nodaf = (item.nomor_pendaftaran || '').toLowerCase();
+        const phone = (item.target_phone || item.no_hp_ortu || '').toLowerCase();
+        const jenjang = (item.jenjang || '').toLowerCase();
+        return nama.includes(q) || nodaf.includes(q) || phone.includes(q) || jenjang.includes(q);
+    });
+
+    if (filtered.length === 0) {
+        container.innerHTML = `<div class="p-4 text-center text-xs text-slate-400">Tidak ada siswa yang siap dikirim untuk filter ini.</div>`;
+        updateBroadcastGroupSelectedCount();
+        return;
+    }
+
+    container.innerHTML = filtered.map(item => {
+        const pid = String(item.pendaftar_id);
+        const checked = broadcastGroupSelectedIds.has(pid) ? 'checked' : '';
+        const phone = item.target_phone || item.no_hp_ortu || '-';
+        const sentCount = parseInt(item.wa_group_sent_count || 0, 10);
+        const statusBadge = sentCount > 0
+            ? `<span class="px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 text-[10px] font-semibold">Dikirim ${sentCount}x</span>`
+            : `<span class="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 text-[10px] font-semibold">Belum Dikirim</span>`;
+
+        return `
+            <label class="flex items-center justify-between gap-2 px-3 py-2 hover:bg-teal-50/50 cursor-pointer transition-colors text-xs">
+                <div class="flex items-center gap-2.5 min-w-0">
+                    <input type="checkbox" class="bcg-item-checkbox w-4 h-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500 shrink-0"
+                           value="${escapeHtml(pid)}" ${checked} onchange="toggleBroadcastGroupItem('${escapeHtml(pid)}', this.checked)">
+                    <div class="min-w-0">
+                        <div class="font-bold text-slate-800 truncate">${escapeHtml(item.nama_lengkap || '-')}</div>
+                        <div class="text-[10px] text-slate-500 truncate">${escapeHtml(item.nomor_pendaftaran || '-')} &bull; WA: ${escapeHtml(phone)}</div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-1.5 shrink-0">
+                    <span class="px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 text-[10px] font-bold">${escapeHtml(item.jenjang || '-')}</span>
+                    ${statusBadge}
+                </div>
+            </label>
+        `;
+    }).join('');
+
+    updateBroadcastGroupSelectedCount();
+}
+
+function toggleBroadcastGroupItem(pid, isChecked) {
+    if (isChecked) {
+        broadcastGroupSelectedIds.add(String(pid));
+    } else {
+        broadcastGroupSelectedIds.delete(String(pid));
+    }
+    updateBroadcastGroupSelectedCount();
+}
+
+function toggleAllBroadcastGroupTargets(checked) {
+    const searchEl = document.getElementById('bcg-search-input');
+    const q = searchEl ? searchEl.value.trim().toLowerCase() : '';
+    broadcastGroupTargets.forEach(item => {
+        const pid = String(item.pendaftar_id);
+        if (q) {
+            const nama = (item.nama_lengkap || '').toLowerCase();
+            const nodaf = (item.nomor_pendaftaran || '').toLowerCase();
+            const phone = (item.target_phone || item.no_hp_ortu || '').toLowerCase();
+            const jenjang = (item.jenjang || '').toLowerCase();
+            if (!(nama.includes(q) || nodaf.includes(q) || phone.includes(q) || jenjang.includes(q))) {
+                return;
+            }
+        }
+        if (checked) {
+            broadcastGroupSelectedIds.add(pid);
+        } else {
+            broadcastGroupSelectedIds.delete(pid);
+        }
+    });
+    renderBroadcastGroupChecklist();
+}
+
+function filterBroadcastGroupList() {
+    renderBroadcastGroupChecklist();
+}
+
 function loadBroadcastGroupPreview() {
     const jenjang = document.getElementById('bcg-filter-jenjang').value;
     const target = document.getElementById('bcg-filter-target').value;
     const targetLabel = document.getElementById('bcg-target-count');
+    const container = document.getElementById('bcg-checklist-container');
 
     targetLabel.innerText = 'Menghitung...';
+    if (container) {
+        container.innerHTML = `<div class="p-4 text-center text-xs text-slate-400">Memuat daftar siswa...</div>`;
+    }
 
     fetch(`<?= url('kelola-spmb/observasi-awal/broadcast-group-data') ?>?jenjang=${encodeURIComponent(jenjang)}&target=${encodeURIComponent(target)}`)
         .then(res => res.json())
         .then(data => {
             if (data.success) {
                 broadcastGroupTargets = data.items || [];
-                const limitVal = parseInt(document.getElementById('bcg-filter-limit').value) || 0;
-                let finalCount = broadcastGroupTargets.length;
-                if (limitVal > 0 && finalCount > limitVal) {
-                    finalCount = limitVal;
-                }
-                targetLabel.innerText = `${finalCount} dari total ${broadcastGroupTargets.length} Siswa`;
+                applyLimitToBroadcastGroupSelection();
+                renderBroadcastGroupChecklist();
 
                 if (!document.getElementById('bcg-template').value.trim() && data.defaultTemplate) {
                     document.getElementById('bcg-template').value = data.defaultTemplate;
                 }
             } else {
+                broadcastGroupTargets = [];
+                broadcastGroupSelectedIds.clear();
                 targetLabel.innerText = '0 Siswa';
+                if (container) {
+                    container.innerHTML = `<div class="p-4 text-center text-xs text-rose-500">Gagal memuat daftar siswa.</div>`;
+                }
             }
         })
         .catch(() => {
+            broadcastGroupTargets = [];
+            broadcastGroupSelectedIds.clear();
             targetLabel.innerText = 'Gagal memuat data';
+            if (container) {
+                container.innerHTML = `<div class="p-4 text-center text-xs text-rose-500">Gagal memuat daftar siswa.</div>`;
+            }
         });
 }
 
 async function startBroadcastGroup() {
-    const limitVal = parseInt(document.getElementById('bcg-filter-limit').value) || 0;
     const delaySec = parseInt(document.getElementById('bcg-filter-delay').value) || 5;
     const template = document.getElementById('bcg-template').value.trim();
 
-    let targets = [...broadcastGroupTargets];
-    if (limitVal > 0) {
-        targets = targets.slice(0, limitVal);
-    }
+    let targets = broadcastGroupTargets.filter(it => broadcastGroupSelectedIds.has(String(it.pendaftar_id)));
 
     if (targets.length === 0) {
-        Swal.fire('Perhatian', 'Tidak ada target calon siswa yang memenuhi kriteria filter.', 'warning');
+        Swal.fire('Perhatian', 'Silakan centang minimal 1 siswa yang akan dikirim undangan grup.', 'warning');
         return;
     }
 
