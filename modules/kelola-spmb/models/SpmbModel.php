@@ -2705,6 +2705,7 @@ class SpmbModel
     public static function getDefaultWaPsikologTemplate(): string
     {
         return "Assalamu'alaikum Warahmatullahi Wabarakatuh.\n\n"
+             . "Perkenalkan kami dari Panitia SPMB Bina Insan Palu.\n\n"
              . "Yth. Bapak/Ibu Orang Tua/Wali dari ananda:\n"
              . "👤 Nama: *{nama_siswa}*\n"
              . "📋 No. Pendaftaran: *{nomor_pendaftaran}*\n"
@@ -3572,6 +3573,7 @@ class SpmbModel
     public static function getDefaultWaObservasiTemplate(): string
     {
         return "Assalamu'alaikum Warahmatullahi Wabarakatuh.\n\n"
+             . "Perkenalkan kami dari Panitia SPMB Bina Insan Palu.\n\n"
              . "Yth. Bapak/Ibu Orang Tua/Wali dari ananda:\n"
              . "👤 Nama: *{nama_siswa}*\n"
              . "📋 No. Pendaftaran: *{nomor_pendaftaran}*\n"
@@ -3626,6 +3628,7 @@ class SpmbModel
         }
 
         return "Assalamu'alaikum Warahmatullahi Wabarakatuh.\n\n"
+             . "Perkenalkan kami dari Panitia SPMB Bina Insan Palu.\n\n"
              . "Yth. Ayah/Bunda dari ananda *{nama_siswa}* ({jenjang}),\n"
              . "No. Pendaftaran: *{nomor_pendaftaran}*\n\n"
              . "Terima kasih telah melengkapi kuesioner observasi awal SPMB SIT Bina Insan Palu Tahun Ajaran *{tahun_ajaran}*.\n\n"
