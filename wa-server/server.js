@@ -48,6 +48,7 @@ let isConnecting = false;
 let isLoggingOut = false;
 let reconnectTimer = null;
 let cachedBaileysVersion = null;
+let lastConnectionError = null;
 
 // Pastikan direktori auth ada
 if (!fs.existsSync(AUTH_DIR)) {
@@ -194,6 +195,7 @@ async function connectToWhatsApp() {
 
                 const statusCode = lastDisconnect?.error?.output?.statusCode;
                 const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
+                lastConnectionError = `Disconnect code: ${statusCode || 'unknown'} (${lastDisconnect?.error?.message || 'closed'})`;
                 
                 console.log(`[WA Gateway eportal] Koneksi ditutup. Alasan: ${statusCode}, Reconnect: ${shouldReconnect}`);
                 
@@ -216,6 +218,7 @@ async function connectToWhatsApp() {
                 }
             } else if (connection === 'open') {
                 reconnectAttempts = 0;
+                lastConnectionError = null;
                 connectionStatus = 'connected';
                 currentQrRaw = null;
                 currentQrImage = null;
@@ -275,7 +278,8 @@ app.get('/api/status', (req, res) => {
         connected: connectionStatus === 'connected',
         phone: connectedPhone,
         name: connectedName || 'WA Gateway eportal',
-        has_qr: Boolean(currentQrImage)
+        has_qr: Boolean(currentQrImage),
+        last_error: lastConnectionError
     });
 });
 
