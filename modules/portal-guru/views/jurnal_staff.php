@@ -568,7 +568,7 @@ $totalLiburPeriode = (int)($totalLiburPeriode ?? 0);
 
     <!-- Sheet Wrapper -->
     <div class="fixed inset-x-0 bottom-0 max-w-md mx-auto w-full pointer-events-none z-10">
-        <form id="form-jurnal-staff" onsubmit="submitJurnalStaff(event)" enctype="multipart/form-data"
+        <form id="form-jurnal-staff" action="javascript:void(0)" onsubmit="return window.submitJurnalStaff ? window.submitJurnalStaff(event) : false" enctype="multipart/form-data"
               style="touch-action: pan-y; overscroll-behavior: contain;"
               class="bg-white rounded-t-[32px] shadow-2xl pointer-events-auto border-t border-slate-200/80 flex flex-col max-h-[88vh] w-full transform translate-y-full transition-transform duration-250 ease-out overflow-hidden text-xs">
 
@@ -1948,6 +1948,7 @@ $totalLiburPeriode = (int)($totalLiburPeriode ?? 0);
             const res = await fetch(targetUrl, {
                 method: 'POST',
                 body: formData,
+                credentials: 'same-origin',
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest'
                 }
@@ -1997,13 +1998,39 @@ $totalLiburPeriode = (int)($totalLiburPeriode ?? 0);
         }
     }
 
-    // Auto-switch ke tab sesuai parameter URL (?tab=riwayat)
-    document.addEventListener('DOMContentLoaded', () => {
+    // Ekspos seluruh handler ke window agar tetap berfungsi saat navigasi SPA tanpa reload
+    window.toggleSelectJam = toggleSelectJam;
+    window.showStaffLockedNotice = showStaffLockedNotice;
+    window.openStaffReadOnlyFromCard = openStaffReadOnlyFromCard;
+    window.selectAllJam = selectAllJam;
+    window.clearSelectedJam = clearSelectedJam;
+    window.openModalFromFloatingBar = openModalFromFloatingBar;
+    window.switchStaffTab = switchStaffTab;
+    window.openModalJurnalStaff = openModalJurnalStaff;
+    window.closeModalJurnalStaff = closeModalJurnalStaff;
+    window.handleSelectTugasChange = handleSelectTugasChange;
+    window.updateStatusPillStyle = updateStatusPillStyle;
+    window.openStaffGalleryPicker = openStaffGalleryPicker;
+    window.clearStaffFotoPreview = clearStaffFotoPreview;
+    window.openStaffLiveCamera = openStaffLiveCamera;
+    window.closeStaffLiveCamera = closeStaffLiveCamera;
+    window.switchStaffCamera = switchStaffCamera;
+    window.snapStaffPhoto = snapStaffPhoto;
+    window.handleFotoPreview = handleFotoPreview;
+    window.submitJurnalStaff = submitJurnalStaff;
+
+    function initJurnalStaffView() {
         try {
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.get('tab') === 'riwayat') {
                 switchStaffTab('riwayat');
             }
         } catch (e) {}
-    });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initJurnalStaffView);
+    } else {
+        initJurnalStaffView();
+    }
 </script>
