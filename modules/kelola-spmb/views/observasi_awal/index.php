@@ -288,14 +288,45 @@ $groupLinks          = $groupLinks ?? [];
                     <?php else: ?>
                         <?php 
                         $no = ($page - 1) * $limit + 1;
+                        $groupInviteTpl = class_exists('SpmbModel') ? SpmbModel::getDefaultWaGroupInviteTemplate() : '';
                         foreach ($items as $it): 
                             $isSudah = ($it['status_observasi'] === 'Sudah Mengisi' && !empty($it['respon_id']));
                             $publicLink = $it['public_url'];
+                            $rawPhone = preg_replace('/[^0-9]/', '', (string)($it['target_phone'] ?? ''));
+                            if ($rawPhone !== '' && strpos($rawPhone, '0') === 0) {
+                                $waPhone62 = '62' . substr($rawPhone, 1);
+                            } elseif ($rawPhone !== '' && strpos($rawPhone, '8') === 0) {
+                                $waPhone62 = '62' . $rawPhone;
+                            } else {
+                                $waPhone62 = $rawPhone;
+                            }
+                            $waGroupMsg = strtr($groupInviteTpl, [
+                                '{nama_siswa}'        => (string)($it['nama_lengkap'] ?? ''),
+                                '{nomor_pendaftaran}' => (string)($it['nomor_pendaftaran'] ?? ''),
+                                '{jenjang}'           => (string)($it['jenjang'] ?? ''),
+                                '{link_group}'        => (string)($it['group_wa_link'] ?? ''),
+                            ]);
+                            $waShareUrl = ($waPhone62 !== '')
+                                ? ('https://wa.me/' . $waPhone62 . '?text=' . rawurlencode($waGroupMsg))
+                                : '';
                         ?>
                             <tr class="hover:bg-slate-50/70 transition-colors">
-                                <!-- No -->
+                                <!-- No + Tombol Share WA Group Langsung -->
                                 <td class="py-4 px-4 text-center font-medium text-slate-400">
-                                    <?= $no++ ?>
+                                    <div class="inline-flex items-center justify-center gap-2">
+                                        <span><?= $no++ ?></span>
+                                        <?php if ($waShareUrl !== ''): ?>
+                                            <a href="<?= htmlspecialchars($waShareUrl) ?>"
+                                               target="_blank" rel="noopener noreferrer"
+                                               title="Share Undangan Group WA langsung via WhatsApp HP/Device"
+                                               class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white border border-emerald-200 hover:border-emerald-600 text-[11px] font-bold transition-all shadow-2xs">
+                                                <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                                                    <path d="M12.031 2c-5.516 0-9.969 4.453-9.969 9.969 0 1.766.469 3.484 1.344 5l-1.406 5.156 5.281-1.375c1.469.797 3.109 1.219 4.75 1.219 5.516 0 9.969-4.453 9.969-9.969S17.547 2 12.031 2zm5.813 14.125c-.25.703-1.438 1.344-2 1.422-.516.078-1.172.109-1.891-.125-.438-.141-1-.328-1.719-.641-3.031-1.312-5-4.375-5.156-4.578-.156-.203-1.234-1.641-1.234-3.125 0-1.484.781-2.219 1.063-2.516.281-.297.609-.375.813-.375.203 0 .406.016.578.016.188 0 .438-.078.688.516.25.609.859 2.094.938 2.25.078.156.125.344.016.547-.109.203-.156.344-.313.516-.156.172-.328.391-.469.531-.156.156-.328.328-.141.641.188.313.828 1.359 1.781 2.203 1.219 1.094 2.25 1.438 2.563 1.594.313.156.484.125.672-.078.188-.203.781-.906.984-1.219.203-.313.406-.266.688-.156.281.109 1.781.844 2.094 1 .313.156.516.234.594.359.078.125.078.734-.172 1.438z"/>
+                                                </svg>
+                                                <span>WA</span>
+                                            </a>
+                                        <?php endif; ?>
+                                    </div>
                                 </td>
 
                                 <!-- Calon Siswa -->
