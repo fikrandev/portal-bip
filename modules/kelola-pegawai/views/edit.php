@@ -13,6 +13,7 @@ $curJabatan = old('jabatan', $penugasanJabatan ?: ($pegawai['jabatan'] ?? ''));
 $curJenisPegawai = old('jenis_pegawai', $pegawai['jenis_pegawai'] ?? '');
 $curStatusDapodik = old('status_dapodik', $pegawai['status_dapodik'] ?? '');
 $tglMasuk = old('tanggal_masuk', $pegawai['tanggal_masuk'] ?? ($pegawai['tmt'] ?? ''));
+$isPersonalReadonly = class_exists('Auth') && Auth::isPersonalScope();
 
 // Hitung Masa Kerja
 $masaKerjaStr = '-';
@@ -261,13 +262,27 @@ if (!empty($tglMasuk)) {
             </div>
 
             <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 sm:p-8">
-                <div class="border-b border-slate-100 pb-4 mb-6">
-                    <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
-                        <span class="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs font-bold">2</span>
-                        Data Kepegawaian, Unit & Penugasan
-                    </h2>
-                    <p class="text-xs text-slate-500 mt-0.5">Penempatan unit tugas, posisi jabatan, status kerja, dan status dapodik.</p>
+                <div class="border-b border-slate-100 pb-4 mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                        <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                            <span class="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs font-bold">2</span>
+                            Data Kepegawaian, Unit & Penugasan
+                        </h2>
+                        <p class="text-xs text-slate-500 mt-0.5">Penempatan unit tugas, posisi jabatan, status kerja, dan status dapodik.</p>
+                    </div>
+                    <?php if ($isPersonalReadonly): ?>
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200 shrink-0">
+                            🔒 Hanya dapat diisi / diubah oleh Admin
+                        </span>
+                    <?php endif; ?>
                 </div>
+
+                <?php
+                    $kepegAttr = $isPersonalReadonly ? 'disabled' : '';
+                    $kepegClass = $isPersonalReadonly
+                        ? 'w-full px-3.5 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-slate-500 text-sm font-medium cursor-not-allowed'
+                        : 'w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm font-medium focus:bg-white focus:border-primary-500 transition-all';
+                ?>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                     <!-- Unit Tugas -->
@@ -278,7 +293,7 @@ if (!empty($tglMasuk)) {
                                 <span class="text-[10px] text-primary-600 font-bold lowercase">(dari SK: <?= e($penugasanUnit) ?>)</span>
                             <?php endif; ?>
                         </label>
-                        <select name="unit_tugas" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm font-medium focus:bg-white focus:border-primary-500 transition-all">
+                        <select name="unit_tugas" <?= $kepegAttr ?> class="<?= $kepegClass ?>">
                             <option value="">-- Pilih Unit Tugas --</option>
                             <?php 
                             $defaultUnits = ['PAUD', 'SD', 'SMP', 'SMA', 'Yayasan'];
@@ -297,7 +312,7 @@ if (!empty($tglMasuk)) {
                                 <span class="text-[10px] text-primary-600 font-bold lowercase">(dari SK: <?= e($penugasanJabatan) ?>)</span>
                             <?php endif; ?>
                         </label>
-                        <select name="jabatan" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm font-medium focus:bg-white focus:border-primary-500 transition-all">
+                        <select name="jabatan" <?= $kepegAttr ?> class="<?= $kepegClass ?>">
                             <option value="">-- Pilih Jabatan --</option>
                             <?php 
                             $defaultJabs = ['Wali Kelas', 'Guru Mapel', 'Wakakum', 'Kepala Sekolah', 'Kepala Divisi IT', 'Staff Tata Usaha', 'Bendahara', 'Security', 'Cleaning Service'];
@@ -313,7 +328,7 @@ if (!empty($tglMasuk)) {
                         <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                             Status Pegawai <span class="text-rose-500">*</span>
                         </label>
-                        <select name="status_pegawai" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm font-bold focus:bg-white focus:border-primary-500 transition-all">
+                        <select name="status_pegawai" <?= $kepegAttr ?> class="<?= $kepegClass ?> font-bold">
                             <option value="Tetap" <?= $curStatusPegawai === 'Tetap' ? 'selected' : '' ?>>🟢 Tetap</option>
                             <option value="Kontrak" <?= $curStatusPegawai === 'Kontrak' ? 'selected' : '' ?>>🟡 Kontrak</option>
                             <option value="Training" <?= $curStatusPegawai === 'Training' ? 'selected' : '' ?>>🔵 Training</option>
@@ -323,7 +338,7 @@ if (!empty($tglMasuk)) {
                     <!-- Jenis Pegawai -->
                     <div>
                         <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Jenis Pegawai</label>
-                        <select name="jenis_pegawai" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm font-medium focus:bg-white focus:border-primary-500 transition-all">
+                        <select name="jenis_pegawai" <?= $kepegAttr ?> class="<?= $kepegClass ?>">
                             <option value="">-- Pilih Jenis Pegawai --</option>
                             <?php 
                             $defaultJenis = ['Guru', 'Support System', 'Tenaga Kependidikan'];
@@ -337,7 +352,7 @@ if (!empty($tglMasuk)) {
                     <!-- Status Dapodik -->
                     <div>
                         <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Status Dapodik</label>
-                        <select name="status_dapodik" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm font-medium focus:bg-white focus:border-primary-500 transition-all">
+                        <select name="status_dapodik" <?= $kepegAttr ?> class="<?= $kepegClass ?>">
                             <option value="Belum Terdaftar" <?= ($curStatusDapodik === 'Belum Terdaftar' || empty($curStatusDapodik)) ? 'selected' : '' ?>>Belum Terdaftar</option>
                             <option value="Sudah Terdaftar" <?= $curStatusDapodik === 'Sudah Terdaftar' ? 'selected' : '' ?>>Sudah Terdaftar</option>
                         </select>
@@ -346,7 +361,7 @@ if (!empty($tglMasuk)) {
                     <!-- Tanggal Masuk Kerja -->
                     <div>
                         <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Tanggal Masuk Kerja</label>
-                        <input type="date" name="tanggal_masuk" value="<?= $tglMasuk ?>" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm font-medium focus:bg-white focus:border-primary-500 transition-all">
+                        <input type="date" name="tanggal_masuk" <?= $kepegAttr ?> value="<?= $tglMasuk ?>" class="<?= $kepegClass ?>">
                     </div>
 
                     <!-- Status Aktif Checkbox -->
@@ -356,8 +371,8 @@ if (!empty($tglMasuk)) {
                                 <span class="text-sm font-bold text-slate-900">Status Keaktifan Pegawai</span>
                                 <p class="text-xs text-slate-500">Jika dinonaktifkan, pegawai akan dipindahkan ke daftar Pegawai Keluar dan akun tidak dapat login.</p>
                             </div>
-                            <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" name="is_active" value="1" <?= old('is_active', $pegawai['is_active']) ? 'checked' : '' ?> class="sr-only peer">
+                            <label class="relative inline-flex items-center <?= $isPersonalReadonly ? 'cursor-not-allowed opacity-70' : 'cursor-pointer' ?>">
+                                <input type="checkbox" name="is_active" value="1" <?= $kepegAttr ?> <?= old('is_active', $pegawai['is_active']) ? 'checked' : '' ?> class="sr-only peer">
                                 <div class="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
                             </label>
                         </div>
@@ -727,10 +742,11 @@ if (!empty($tglMasuk)) {
                     <table class="w-full text-xs">
                         <thead>
                             <tr class="border-b border-slate-200 bg-slate-50 text-slate-700 font-bold">
-                                <th class="text-left py-3 px-2 w-36">Jenjang</th>
-                                <th class="text-left py-3 px-2 min-w-[200px]">Nama Institusi / Sekolah / Kampus</th>
-                                <th class="text-left py-3 px-2 min-w-[160px]">Jurusan / Program Studi</th>
-                                <th class="text-center py-3 px-2 w-28">Tahun Lulus</th>
+                                <th class="text-left py-3 px-2 w-32">Jenjang</th>
+                                <th class="text-left py-3 px-2 min-w-[180px]">Nama Institusi / Sekolah / Kampus</th>
+                                <th class="text-left py-3 px-2 min-w-[150px]">Jurusan / Program Studi</th>
+                                <th class="text-center py-3 px-2 w-24">Tahun Lulus</th>
+                                <th class="text-left py-3 px-2 min-w-[190px]">Upload Ijazah (PDF/Gambar)</th>
                                 <th class="text-center py-3 px-2 w-10">Aksi</th>
                             </tr>
                         </thead>
@@ -755,6 +771,10 @@ if (!empty($tglMasuk)) {
                                     <td class="p-2"><input type="text" name="pendidikan_institusi[]" placeholder="Nama Universitas / Sekolah" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-medium"></td>
                                     <td class="p-2"><input type="text" name="pendidikan_jurusan[]" placeholder="Contoh: Pendidikan Bahasa Inggris" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs"></td>
                                     <td class="p-2"><input type="text" name="pendidikan_tahun[]" placeholder="2020" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-center font-mono font-bold"></td>
+                                    <td class="p-2">
+                                        <input type="hidden" name="pendidikan_existing_ijazah[]" value="">
+                                        <input type="file" name="pendidikan_ijazah[]" accept=".pdf,.jpg,.jpeg,.png,.webp" class="w-full text-[11px] text-slate-600 file:mr-2 file:py-1.5 file:px-2.5 file:rounded-lg file:border-0 file:text-[11px] file:font-semibold file:bg-sky-50 file:text-sky-700 hover:file:bg-sky-100">
+                                    </td>
                                     <td class="p-2 text-center">
                                         <button type="button" onclick="this.closest('tr').remove()" class="w-7 h-7 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 flex items-center justify-center mx-auto text-xs font-bold">✕</button>
                                     </td>
@@ -773,6 +793,15 @@ if (!empty($tglMasuk)) {
                                         <td class="p-2"><input type="text" name="pendidikan_institusi[]" value="<?= e($p_edu['institusi']) ?>" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-medium"></td>
                                         <td class="p-2"><input type="text" name="pendidikan_jurusan[]" value="<?= e($p_edu['jurusan']) ?>" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs"></td>
                                         <td class="p-2"><input type="text" name="pendidikan_tahun[]" value="<?= e($p_edu['tahun_lulus']) ?>" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-center font-mono font-bold"></td>
+                                        <td class="p-2 space-y-1">
+                                            <input type="hidden" name="pendidikan_existing_ijazah[]" value="<?= e($p_edu['file_ijazah'] ?? '') ?>">
+                                            <?php if (!empty($p_edu['file_ijazah'])): ?>
+                                                <a href="<?= url(ltrim($p_edu['file_ijazah'], '/')) ?>" target="_blank" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-bold hover:bg-emerald-100">
+                                                    📄 Lihat Ijazah
+                                                </a>
+                                            <?php endif; ?>
+                                            <input type="file" name="pendidikan_ijazah[]" accept=".pdf,.jpg,.jpeg,.png,.webp" class="w-full text-[11px] text-slate-600 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[11px] file:font-semibold file:bg-sky-50 file:text-sky-700 hover:file:bg-sky-100">
+                                        </td>
                                         <td class="p-2 text-center">
                                             <button type="button" onclick="this.closest('tr').remove()" class="w-7 h-7 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 flex items-center justify-center mx-auto text-xs font-bold">✕</button>
                                         </td>
@@ -1130,6 +1159,10 @@ document.getElementById('btn-add-pendidikan')?.addEventListener('click', functio
         <td class="p-2"><input type="text" name="pendidikan_institusi[]" placeholder="Nama Universitas / Sekolah" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-medium"></td>
         <td class="p-2"><input type="text" name="pendidikan_jurusan[]" placeholder="Jurusan" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs"></td>
         <td class="p-2"><input type="text" name="pendidikan_tahun[]" placeholder="2024" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-center font-mono font-bold"></td>
+        <td class="p-2">
+            <input type="hidden" name="pendidikan_existing_ijazah[]" value="">
+            <input type="file" name="pendidikan_ijazah[]" accept=".pdf,.jpg,.jpeg,.png,.webp" class="w-full text-[11px] text-slate-600 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[11px] file:font-semibold file:bg-sky-50 file:text-sky-700 hover:file:bg-sky-100">
+        </td>
         <td class="p-2 text-center">
             <button type="button" onclick="this.closest('tr').remove()" class="w-7 h-7 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 flex items-center justify-center mx-auto text-xs font-bold">✕</button>
         </td>

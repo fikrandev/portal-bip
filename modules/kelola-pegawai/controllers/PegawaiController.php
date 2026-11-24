@@ -6,6 +6,25 @@
 class PegawaiController
 {
     private static bool $penugasanTableChecked = false;
+    private static bool $pendidikanIjazahChecked = false;
+
+    /**
+     * Pastikan kolom file_ijazah tersedia di tabel pegawai_pendidikan
+     */
+    private static function ensurePendidikanIjazahColumn(): void
+    {
+        if (self::$pendidikanIjazahChecked) {
+            return;
+        }
+        self::$pendidikanIjazahChecked = true;
+        try {
+            $pdo = Database::getInstance()->getConnection();
+            $col = $pdo->query("SHOW COLUMNS FROM `pegawai_pendidikan` LIKE 'file_ijazah'")->fetch(PDO::FETCH_ASSOC);
+            if (!$col) {
+                $pdo->exec("ALTER TABLE `pegawai_pendidikan` ADD COLUMN `file_ijazah` VARCHAR(255) NULL DEFAULT NULL AFTER `tahun_lulus`");
+            }
+        } catch (Throwable $e) {}
+    }
 
     /**
      * Return master_unit_tugas rows allowed for the current user
@@ -924,6 +943,7 @@ class PegawaiController
             return;
         }
         $db = Database::getInstance();
+        self::ensurePendidikanIjazahColumn();
         $pegawai = $db->find("SELECT * FROM pegawai WHERE id = ?", [$id]);
         if (!$pegawai) { Response::withError(url('kelola-pegawai'), 'Data pegawai tidak ditemukan.'); return; }
         
@@ -977,8 +997,10 @@ class PegawaiController
         if ($validator->fails()) { Response::backWithErrors($validator->errors(), $_POST); return; }
         
         $db = Database::getInstance();
+        self::ensurePendidikanIjazahColumn();
         $pegawai = $db->find("SELECT * FROM pegawai WHERE id = ?", [$id]);
         if (!$pegawai) { Response::withError(url('kelola-pegawai'), 'Data pegawai tidak ditemukan.'); return; }
+        $isPersonalUser = Auth::isPersonalScope();
         
         // Handle Foto Upload
         $fotoPath = $pegawai['foto'];
@@ -1030,37 +1052,39 @@ class PegawaiController
                 'kontak_darurat_2_nama' => trim($_POST['kontak_darurat_2_nama'] ?? ''),
                 'kontak_darurat_2_hubungan' => trim($_POST['kontak_darurat_2_hubungan'] ?? ''),
                 'kontak_darurat_2_no_hp' => trim($_POST['kontak_darurat_2_no_hp'] ?? ''),
-                'is_active' => isset($_POST['is_active']) ? 1 : 0
+                'is_active' => $isPersonalUser ? (int)($pegawai['is_active'] ?? 1) : (isset($_POST['is_active']) ? 1 : 0)
             ];
 
-            // If penugasan fields are provided in POST (e.g. API or other caller), update them; otherwise preserve existing
-            if (isset($_POST['unit_tugas'])) $updateData['unit_tugas'] = trim($_POST['unit_tugas']);
-            if (isset($_POST['jabatan'])) $updateData['jabatan'] = trim($_POST['jabatan']);
-            if (isset($_POST['status_pegawai'])) {
-                $st = trim($_POST['status_pegawai']);
-                $updateData['status_pegawai'] = $st;
-                $updateData['status_kerja'] = $st;
-            } elseif (isset($_POST['status_kerja'])) {
-                $st = trim($_POST['status_kerja']);
-                $updateData['status_pegawai'] = $st;
-                $updateData['status_kerja'] = $st;
-            }
-            if (isset($_POST['jenis_pegawai'])) $updateData['jenis_pegawai'] = trim($_POST['jenis_pegawai']);
-            if (isset($_POST['status_dapodik'])) $updateData['status_dapodik'] = trim($_POST['status_dapodik']);
-            if (isset($_POST['tanggal_masuk'])) {
-                $tglMasuk = !empty($_POST['tanggal_masuk']) ? $_POST['tanggal_masuk'] : null;
-                $updateData['tanggal_masuk'] = $tglMasuk;
-                $updateData['tmt'] = $tglMasuk;
-            } elseif (isset($_POST['tmt'])) {
-                $tglMasuk = !empty($_POST['tmt']) ? $_POST['tmt'] : null;
-                $updateData['tanggal_masuk'] = $tglMasuk;
-                $updateData['tmt'] = $tglMasuk;
+            // Data Kepegawaian, Unit & Penugasan hanya boleh diubah oleh Admin (bukan akun Personal)
+            if (!$isPersonalUser) {
+                if (isset($_POST['unit_tugas'])) $updateData['unit_tugas'] = trim($_POST['unit_tugas']);
+                if (isset($_POST['jabatan'])) $updateData['jabatan'] = trim($_POST['jabatan']);
+                if (isset($_POST['status_pegawai'])) {
+                    $st = trim($_POST['status_pegawai']);
+                    $updateData['status_pegawai'] = $st;
+                    $updateData['status_kerja'] = $st;
+                } elseif (isset($_POST['status_kerja'])) {
+                    $st = trim($_POST['status_kerja']);
+                    $updateData['status_pegawai'] = $st;
+                    $updateData['status_kerja'] = $st;
+                }
+                if (isset($_POST['jenis_pegawai'])) $updateData['jenis_pegawai'] = trim($_POST['jenis_pegawai']);
+                if (isset($_POST['status_dapodik'])) $updateData['status_dapodik'] = trim($_POST['status_dapodik']);
+                if (isset($_POST['tanggal_masuk'])) {
+                    $tglMasuk = !empty($_POST['tanggal_masuk']) ? $_POST['tanggal_masuk'] : null;
+                    $updateData['tanggal_masuk'] = $tglMasuk;
+                    $updateData['tmt'] = $tglMasuk;
+                } elseif (isset($_POST['tmt'])) {
+                    $tglMasuk = !empty($_POST['tmt']) ? $_POST['tmt'] : null;
+                    $updateData['tanggal_masuk'] = $tglMasuk;
+                    $updateData['tmt'] = $tglMasuk;
+                }
             }
 
             $db->update('pegawai', $updateData, 'id = ?', [$id]);
 
-            // Sinkronisasi dengan Penugasan Aktif jika unit_tugas atau jabatan diubah
-            if (!empty($_POST['unit_tugas']) || !empty($_POST['jabatan'])) {
+            // Sinkronisasi dengan Penugasan Aktif jika unit_tugas atau jabatan diubah (hanya untuk Admin)
+            if (!$isPersonalUser && (!empty($_POST['unit_tugas']) || !empty($_POST['jabatan']))) {
                 $activePenugasan = $db->find("
                     SELECT pp.id 
                     FROM pegawai_penugasan pp
@@ -1087,14 +1111,35 @@ class PegawaiController
             $db->delete('pegawai_pendidikan', 'pegawai_id = ?', [$id]);
             
             if (!empty($_POST['pendidikan_jenjang']) && is_array($_POST['pendidikan_jenjang'])) {
+                $ijazahUploadDir = BASE_PATH . '/public/uploads/pegawai/ijazah/';
                 foreach ($_POST['pendidikan_jenjang'] as $index => $jenjang) {
                     if (!empty($jenjang)) {
+                        $fileIjazahPath = trim((string)($_POST['pendidikan_existing_ijazah'][$index] ?? ''));
+                        if (
+                            isset($_FILES['pendidikan_ijazah']['error'][$index]) &&
+                            $_FILES['pendidikan_ijazah']['error'][$index] === UPLOAD_ERR_OK &&
+                            !empty($_FILES['pendidikan_ijazah']['name'][$index])
+                        ) {
+                            $ijzSize = (int)($_FILES['pendidikan_ijazah']['size'][$index] ?? 0);
+                            $ijzExt = strtolower(pathinfo($_FILES['pendidikan_ijazah']['name'][$index], PATHINFO_EXTENSION));
+                            if (in_array($ijzExt, ['pdf', 'jpg', 'jpeg', 'png', 'webp'], true) && $ijzSize <= 5 * 1024 * 1024) {
+                                if (!is_dir($ijazahUploadDir)) {
+                                    @mkdir($ijazahUploadDir, 0775, true);
+                                }
+                                $ijzFilename = 'ijazah_' . $id . '_' . $index . '_' . time() . '_' . rand(100, 999) . '.' . $ijzExt;
+                                if (move_uploaded_file($_FILES['pendidikan_ijazah']['tmp_name'][$index], $ijazahUploadDir . $ijzFilename)) {
+                                    $fileIjazahPath = '/public/uploads/pegawai/ijazah/' . $ijzFilename;
+                                }
+                            }
+                        }
+
                         $db->insert('pegawai_pendidikan', [
-                            'pegawai_id' => $id,
-                            'jenjang' => $jenjang,
-                            'institusi' => trim($_POST['pendidikan_institusi'][$index] ?? ''),
-                            'jurusan' => trim($_POST['pendidikan_jurusan'][$index] ?? ''),
-                            'tahun_lulus' => trim($_POST['pendidikan_tahun'][$index] ?? '')
+                            'pegawai_id'  => $id,
+                            'jenjang'     => $jenjang,
+                            'institusi'   => trim($_POST['pendidikan_institusi'][$index] ?? ''),
+                            'jurusan'     => trim($_POST['pendidikan_jurusan'][$index] ?? ''),
+                            'tahun_lulus' => trim($_POST['pendidikan_tahun'][$index] ?? ''),
+                            'file_ijazah' => $fileIjazahPath !== '' ? $fileIjazahPath : null
                         ]);
                     }
                 }
@@ -1151,6 +1196,7 @@ class PegawaiController
         if (!CSRF::validate()) { Response::withError(url('kelola-pegawai'), 'Token tidak valid.'); return; }
         
         $db = Database::getInstance();
+        self::ensurePendidikanIjazahColumn();
         $pegawai = $db->find("SELECT * FROM pegawai WHERE id = ?", [$id]);
         
         if ($pegawai) {
@@ -3325,6 +3371,7 @@ class PegawaiController
     public static function timelinePegawai(string $id): void
     {
         $db = Database::getInstance();
+        self::ensurePendidikanIjazahColumn();
         $pegawai = $db->find("SELECT * FROM pegawai WHERE id = ?", [$id]);
         if (!$pegawai) {
             Response::withError(url('kelola-pegawai/karir'), 'Data pegawai tidak ditemukan.');
@@ -3687,6 +3734,7 @@ class PegawaiController
     public static function prestasiPegawai(string $id): void
     {
         $db = Database::getInstance();
+        self::ensurePendidikanIjazahColumn();
         $pegawai = $db->find("SELECT * FROM pegawai WHERE id = ?", [$id]);
         if (!$pegawai) {
             Response::withError(url('kelola-pegawai/prestasi'), 'Data pegawai tidak ditemukan.');
@@ -4051,6 +4099,7 @@ class PegawaiController
     public static function pelatihanPegawai(string $id): void
     {
         $db = Database::getInstance();
+        self::ensurePendidikanIjazahColumn();
         $pegawai = $db->find("SELECT * FROM pegawai WHERE id = ?", [$id]);
         if (!$pegawai) {
             Response::withError(url('kelola-pegawai/pelatihan'), 'Data pegawai tidak ditemukan.');
@@ -4083,6 +4132,7 @@ class PegawaiController
     public static function cetakCv(string $id): void
     {
         $db = Database::getInstance();
+        self::ensurePendidikanIjazahColumn();
         $pegawai = $db->find("SELECT * FROM pegawai WHERE id = ?", [$id]);
 
         if (!$pegawai) {
