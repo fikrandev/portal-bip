@@ -18,11 +18,172 @@
                         <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 10.5H21A7.5 7.5 0 0 0 13.5 3v7.5Z" />
                     </svg>
                 </div>
-                <span>Dashboard & Monitoring Pegawai</span>
+                <span>Dashboard Pegawai</span>
             </h1>
             <p class="text-slate-500 text-sm mt-1">
-                Pusat kontrol data SDM, pemantauan masa kerja, status penugasan SK, rekap prestasi, dan pengembangan kompetensi guru.
+                Pusat kontrol data SDM, pemberitahuan kenaikan status kepegawaian, rekap Training/Kontrak/Tetap, penugasan SK, dan kompetensi pegawai.
             </p>
+        </div>
+    </div>
+
+    <?php
+        $jmlTraining = count($kenaikanTrainingKeKontrak ?? []);
+        $jmlKontrak  = count($kenaikanKontrakKeTetap ?? []);
+        $jmlSiapTrain = count(array_filter($kenaikanTrainingKeKontrak ?? [], fn($r) => !empty($r['siap_naik'])));
+        $jmlSiapKontrak = count(array_filter($kenaikanKontrakKeTetap ?? [], fn($r) => !empty($r['siap_naik'])));
+        $jmlRiwayatSk = count($recentPromosiSk ?? []);
+    ?>
+
+    <!-- PEMBERITAHUAN KENAIKAN STATUS PEGAWAI (PALING ATAS DASHBOARD) -->
+    <div class="bg-white rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden">
+        <div class="px-5 py-4 bg-gradient-to-r from-amber-50 via-orange-50/60 to-white border-b border-amber-200/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-amber-500 text-white flex items-center justify-center shadow-md shadow-amber-500/25 shrink-0">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
+                    </svg>
+                </div>
+                <div>
+                    <h2 class="text-sm sm:text-base font-extrabold text-slate-900">Pemberitahuan Kenaikan Status Pegawai</h2>
+                    <p class="text-xs text-slate-500">Pantau kenaikan <strong>Training → Kontrak</strong> (≥ <?= (int)($trainingTargetBulan ?? 3) ?> bln) &amp; <strong>Kontrak → Tetap</strong> (≥ <?= (int)($kontrakTargetBulan ?? 12) ?> bln), update status &amp; cetak SK langsung</p>
+                </div>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+                <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                    Training → Kontrak: <?= $jmlTraining ?> <?= $jmlSiapTrain > 0 ? "({$jmlSiapTrain} Siap)" : '' ?>
+                </span>
+                <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-sky-100 text-sky-800 border border-sky-200">
+                    Kontrak → Tetap: <?= $jmlKontrak ?> <?= $jmlSiapKontrak > 0 ? "({$jmlSiapKontrak} Siap)" : '' ?>
+                </span>
+            </div>
+        </div>
+
+        <!-- Tab Selector -->
+        <div class="px-5 pt-3 border-b border-slate-100 flex flex-wrap gap-2 bg-slate-50/50">
+            <button type="button" onclick="switchPromosiTab('training')" id="tab-promosi-training" class="px-4 py-2 text-xs font-bold rounded-t-xl border-b-2 border-amber-500 text-amber-700 bg-white transition-colors cursor-pointer">
+                Training → Kontrak (<?= $jmlTraining ?>)
+            </button>
+            <button type="button" onclick="switchPromosiTab('kontrak')" id="tab-promosi-kontrak" class="px-4 py-2 text-xs font-bold rounded-t-xl border-b-2 border-transparent text-slate-500 hover:text-slate-700 transition-colors cursor-pointer">
+                Kontrak → Tetap (<?= $jmlKontrak ?>)
+            </button>
+            <button type="button" onclick="switchPromosiTab('riwayat')" id="tab-promosi-riwayat" class="px-4 py-2 text-xs font-bold rounded-t-xl border-b-2 border-transparent text-slate-500 hover:text-slate-700 transition-colors cursor-pointer">
+                Riwayat &amp; Cetak SK Status (<?= $jmlRiwayatSk ?>)
+            </button>
+        </div>
+
+        <!-- Tab 1: Training -> Kontrak -->
+        <div id="panel-promosi-training" class="p-4 sm:p-5">
+            <?php if (empty($kenaikanTrainingKeKontrak)): ?>
+                <p class="text-xs text-slate-400 text-center py-4 italic">Tidak ada pegawai berstatus Training saat ini.</p>
+            <?php else: ?>
+                <div class="divide-y divide-slate-100 max-h-72 overflow-y-auto custom-scrollbar">
+                    <?php foreach ($kenaikanTrainingKeKontrak as $kr):
+                        $namaFull = trim($kr['nama'] . (!empty($kr['gelar']) ? ', ' . $kr['gelar'] : ''));
+                    ?>
+                    <div class="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <span class="px-2.5 py-1 rounded-full text-[11px] font-bold shrink-0 <?= !empty($kr['siap_naik']) ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200' ?>">
+                                <?= !empty($kr['siap_naik']) ? '✓ Siap ke Kontrak' : 'Masa Training' ?>
+                            </span>
+                            <div class="min-w-0">
+                                <p class="text-sm font-bold text-slate-800 truncate"><?= e($namaFull) ?></p>
+                                <p class="text-[11px] text-slate-500 truncate">
+                                    <?= e($kr['unit_tugas'] ?: 'Yayasan BIP') ?> &bull; <?= e($kr['jabatan'] ?: 'Pegawai') ?> &bull;
+                                    Masa Training: <strong class="text-slate-700"><?= (int)$kr['bulan_berjalan'] ?> bulan</strong>
+                                    (TMT: <?= !empty($kr['tmt_efektif']) ? date('d/m/Y', strtotime($kr['tmt_efektif'])) : '-' ?>)
+                                </p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <?php if (RBAC::hasPermission('pegawai.data.update')): ?>
+                            <button type="button"
+                                    onclick="openModalPromosiStatus(<?= (int)$kr['id'] ?>, '<?= e(addslashes($namaFull)) ?>', 'Training', 'Kontrak')"
+                                    class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold shadow-xs transition-colors cursor-pointer">
+                                <span>⬆️ Update ke Kontrak</span>
+                            </button>
+                            <?php endif; ?>
+                            <a href="<?= url('kelola-pegawai/cetak-sk-status/' . (int)$kr['id'] . '?target=Kontrak') ?>"
+                               target="_blank"
+                               class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-colors">
+                                <span>🖨️ Cetak SK</span>
+                            </a>
+                        </div>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+        </div>
+
+        <!-- Tab 2: Kontrak -> Tetap -->
+        <div id="panel-promosi-kontrak" class="p-4 sm:p-5 hidden">
+            <?php if (empty($kenaikanKontrakKeTetap)): ?>
+                <p class="text-xs text-slate-400 text-center py-4 italic">Tidak ada pegawai berstatus Kontrak saat ini.</p>
+            <?php else: ?>
+                <div class="divide-y divide-slate-100 max-h-72 overflow-y-auto custom-scrollbar">
+                    <?php foreach ($kenaikanKontrakKeTetap as $kr):
+                        $namaFull = trim($kr['nama'] . (!empty($kr['gelar']) ? ', ' . $kr['gelar'] : ''));
+                    ?>
+                    <div class="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <span class="px-2.5 py-1 rounded-full text-[11px] font-bold shrink-0 <?= !empty($kr['siap_naik']) ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-sky-50 text-sky-700 border border-sky-200' ?>">
+                                <?= !empty($kr['siap_naik']) ? '✓ Siap ke Tetap' : 'Masa Kontrak' ?>
+                            </span>
+                            <div class="min-w-0">
+                                <p class="text-sm font-bold text-slate-800 truncate"><?= e($namaFull) ?></p>
+                                <p class="text-[11px] text-slate-500 truncate">
+                                    <?= e($kr['unit_tugas'] ?: 'Yayasan BIP') ?> &bull; <?= e($kr['jabatan'] ?: 'Pegawai') ?> &bull;
+                                    Masa Kontrak: <strong class="text-slate-700"><?= (int)$kr['bulan_berjalan'] ?> bulan</strong>
+                                    (TMT: <?= !empty($kr['tmt_efektif']) ? date('d/m/Y', strtotime($kr['tmt_efektif'])) : '-' ?>)
+                                </p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <?php if (RBAC::hasPermission('pegawai.data.update')): ?>
+                            <button type="button"
+                                    onclick="openModalPromosiStatus(<?= (int)$kr['id'] ?>, '<?= e(addslashes($namaFull)) ?>', 'Kontrak', 'Tetap')"
+                                    class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold shadow-xs transition-colors cursor-pointer">
+                                <span>⬆️ Update ke Tetap</span>
+                            </button>
+                            <?php endif; ?>
+                            <a href="<?= url('kelola-pegawai/cetak-sk-status/' . (int)$kr['id'] . '?target=Tetap') ?>"
+                               target="_blank"
+                               class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-colors">
+                                <span>🖨️ Cetak SK</span>
+                            </a>
+                        </div>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+        </div>
+
+        <!-- Tab 3: Riwayat SK Kenaikan Status -->
+        <div id="panel-promosi-riwayat" class="p-4 sm:p-5 hidden">
+            <?php if (empty($recentPromosiSk)): ?>
+                <p class="text-xs text-slate-400 text-center py-4 italic">Belum ada riwayat penerbitan SK kenaikan status pegawai.</p>
+            <?php else: ?>
+                <div class="divide-y divide-slate-100 max-h-72 overflow-y-auto custom-scrollbar">
+                    <?php foreach ($recentPromosiSk as $rsk):
+                        $namaFull = trim($rsk['nama'] . (!empty($rsk['gelar']) ? ', ' . $rsk['gelar'] : ''));
+                    ?>
+                    <div class="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div class="min-w-0">
+                            <p class="text-sm font-bold text-slate-800 truncate"><?= e($namaFull) ?> <span class="text-xs font-normal text-slate-500">(<?= e($rsk['status_kerja'] ?: '-') ?>)</span></p>
+                            <p class="text-[11px] text-slate-500 truncate">
+                                No. SK: <strong class="font-mono text-slate-700"><?= e($rsk['no_sk']) ?></strong> &bull;
+                                TMT: <?= !empty($rsk['tmt_mulai']) ? date('d/m/Y', strtotime($rsk['tmt_mulai'])) : '-' ?> &bull;
+                                <?= e($rsk['keterangan']) ?>
+                            </p>
+                        </div>
+                        <a href="<?= url('kelola-pegawai/cetak-sk-status/' . (int)$rsk['pegawai_id'] . '?karir_id=' . (int)$rsk['karir_id']) ?>"
+                           target="_blank"
+                           class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold shrink-0 transition-colors">
+                            <span>🖨️ Cetak SK</span>
+                        </a>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
         </div>
     </div>
 
@@ -165,6 +326,60 @@
             </div>
         </div>
 
+    </div>
+
+    <!-- REKAP JENIS STATUS PEGAWAI: TRAINING, KONTRAK, TETAP -->
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5">
+        <div class="flex items-center justify-between mb-3.5">
+            <div>
+                <h3 class="text-sm font-extrabold text-slate-900">Rekap Jenis Status Pegawai</h3>
+                <p class="text-xs text-slate-500">Distribusi pegawai aktif berdasarkan status kepegawaian (Training, Kontrak, Tetap)</p>
+            </div>
+            <span class="text-xs font-bold text-slate-500">Total: <?= number_format($kpi['total_aktif']) ?> Pegawai</span>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <!-- Training -->
+            <a href="<?= url('kelola-pegawai/statistik?status_kerja=Training') ?>" class="p-4 rounded-2xl bg-amber-50/70 border border-amber-200/80 hover:border-amber-400 transition-all flex items-center justify-between group">
+                <div>
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-amber-700">Pegawai Training</span>
+                    <p class="text-2xl font-black text-amber-900 mt-0.5"><?= number_format($statusRekap['Training'] ?? 0) ?> <span class="text-xs font-semibold text-amber-700">orang</span></p>
+                    <span class="text-[11px] text-amber-700/80">
+                        <?= $kpi['total_aktif'] > 0 ? round((($statusRekap['Training'] ?? 0) / $kpi['total_aktif']) * 100, 1) : 0 ?>% dari total pegawai
+                    </span>
+                </div>
+                <div class="w-11 h-11 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-lg group-hover:scale-105 transition-transform">
+                    🌱
+                </div>
+            </a>
+
+            <!-- Kontrak -->
+            <a href="<?= url('kelola-pegawai/statistik?status_kerja=Kontrak') ?>" class="p-4 rounded-2xl bg-sky-50/70 border border-sky-200/80 hover:border-sky-400 transition-all flex items-center justify-between group">
+                <div>
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-sky-700">Pegawai Kontrak</span>
+                    <p class="text-2xl font-black text-sky-900 mt-0.5"><?= number_format($statusRekap['Kontrak'] ?? 0) ?> <span class="text-xs font-semibold text-sky-700">orang</span></p>
+                    <span class="text-[11px] text-sky-700/80">
+                        <?= $kpi['total_aktif'] > 0 ? round((($statusRekap['Kontrak'] ?? 0) / $kpi['total_aktif']) * 100, 1) : 0 ?>% dari total pegawai
+                    </span>
+                </div>
+                <div class="w-11 h-11 rounded-2xl bg-sky-100 text-sky-700 flex items-center justify-center font-bold text-lg group-hover:scale-105 transition-transform">
+                    📝
+                </div>
+            </a>
+
+            <!-- Tetap -->
+            <a href="<?= url('kelola-pegawai/statistik?status_kerja=Tetap') ?>" class="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200/80 hover:border-emerald-400 transition-all flex items-center justify-between group">
+                <div>
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-700">Pegawai Tetap</span>
+                    <p class="text-2xl font-black text-emerald-900 mt-0.5"><?= number_format($statusRekap['Tetap'] ?? 0) ?> <span class="text-xs font-semibold text-emerald-700">orang</span></p>
+                    <span class="text-[11px] text-emerald-700/80">
+                        <?= $kpi['total_aktif'] > 0 ? round((($statusRekap['Tetap'] ?? 0) / $kpi['total_aktif']) * 100, 1) : 0 ?>% dari total pegawai
+                    </span>
+                </div>
+                <div class="w-11 h-11 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-lg group-hover:scale-105 transition-transform">
+                    🏅
+                </div>
+            </a>
+        </div>
     </div>
 
     <!-- Alert Monitoring: Pegawai Belum Ditugaskan di SK Aktif -->
@@ -385,8 +600,135 @@
 
 </div>
 
+<!-- Modal Update Status Pegawai & Cetak SK -->
+<div id="modal-promosi-status" class="fixed inset-0 z-50 hidden overflow-y-auto bg-slate-900/60 backdrop-blur-sm">
+    <div class="flex min-h-screen items-center justify-center p-4">
+        <div class="relative w-full max-w-md rounded-2xl bg-white shadow-2xl border border-slate-100 overflow-hidden">
+            <div class="flex items-center justify-between px-5 py-4 bg-slate-50 border-b border-slate-100">
+                <div>
+                    <h3 class="text-sm font-extrabold text-slate-900">Update Kenaikan Status Pegawai</h3>
+                    <p id="promosi-subtitle" class="text-xs text-slate-500 mt-0.5"></p>
+                </div>
+                <button type="button" onclick="closeModalPromosiStatus()" class="p-1 rounded-lg text-slate-400 hover:text-slate-700">✕</button>
+            </div>
+            <form id="form-promosi-status" onsubmit="submitPromosiStatus(event)" class="p-5 space-y-3.5">
+                <?= CSRF::field() ?>
+                <input type="hidden" name="pegawai_id" id="promosi-pegawai-id">
+                <input type="hidden" name="status_baru" id="promosi-status-baru">
+
+                <div class="p-3 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-between text-xs">
+                    <span class="text-amber-800 font-semibold">Perubahan Status:</span>
+                    <span id="promosi-badge-flow" class="font-extrabold text-amber-900"></span>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Nomor SK</label>
+                    <input type="text" name="no_sk" id="promosi-no-sk" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono font-semibold">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Tanggal SK</label>
+                        <input type="date" name="tanggal_sk" value="<?= date('Y-m-d') ?>" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">TMT Berlaku</label>
+                        <input type="date" name="tmt_mulai" value="<?= date('Y-m-d') ?>" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Penandatangan SK</label>
+                    <input type="text" name="penandatangan_sk" value="Ketua Yayasan Bina Insan Paripurna" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs">
+                </div>
+
+                <div class="pt-2 flex items-center justify-end gap-2 border-t border-slate-100">
+                    <button type="button" onclick="closeModalPromosiStatus()" class="px-3.5 py-2 rounded-xl border border-slate-300 text-xs font-semibold text-slate-700">Batal</button>
+                    <button type="submit" id="btn-submit-promosi" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow cursor-pointer">
+                        Simpan &amp; Siapkan SK
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <!-- Chart.js Logic Script -->
 <script>
+window.switchPromosiTab = function(tab) {
+    ['training', 'kontrak', 'riwayat'].forEach(function(t) {
+        var panel = document.getElementById('panel-promosi-' + t);
+        var btn = document.getElementById('tab-promosi-' + t);
+        if (!panel || !btn) return;
+        if (t === tab) {
+            panel.classList.remove('hidden');
+            btn.className = 'px-4 py-2 text-xs font-bold rounded-t-xl border-b-2 border-amber-500 text-amber-700 bg-white transition-colors cursor-pointer';
+        } else {
+            panel.classList.add('hidden');
+            btn.className = 'px-4 py-2 text-xs font-bold rounded-t-xl border-b-2 border-transparent text-slate-500 hover:text-slate-700 transition-colors cursor-pointer';
+        }
+    });
+};
+
+window.openModalPromosiStatus = function(pegawaiId, nama, statusLama, statusBaru) {
+    document.getElementById('promosi-pegawai-id').value = pegawaiId;
+    document.getElementById('promosi-status-baru').value = statusBaru;
+    document.getElementById('promosi-subtitle').innerText = nama;
+    document.getElementById('promosi-badge-flow').innerText = statusLama + ' → ' + statusBaru;
+    var padId = String(pegawaiId).padStart(3, '0');
+    document.getElementById('promosi-no-sk').value = padId + '/SK-STATUS/YYS/<?= date('m/Y') ?>';
+    document.getElementById('modal-promosi-status').classList.remove('hidden');
+};
+
+window.closeModalPromosiStatus = function() {
+    document.getElementById('modal-promosi-status').classList.add('hidden');
+};
+
+window.submitPromosiStatus = function(e) {
+    e.preventDefault();
+    var form = document.getElementById('form-promosi-status');
+    var btn = document.getElementById('btn-submit-promosi');
+    btn.disabled = true;
+    btn.innerText = 'Menyimpan...';
+
+    fetch('<?= url('kelola-pegawai/promosi-status') ?>', {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json'
+        },
+        body: new FormData(form)
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(res) {
+        btn.disabled = false;
+        btn.innerText = 'Simpan & Siapkan SK';
+        if (res && res.success) {
+            closeModalPromosiStatus();
+            Swal.fire({
+                title: 'Berhasil Diperbarui!',
+                text: res.message,
+                icon: 'success',
+                showCancelButton: true,
+                confirmButtonText: '🖨️ Cetak SK Sekarang',
+                cancelButtonText: 'Tutup & Refresh',
+                confirmButtonColor: '#d97706'
+            }).then(function(choice) {
+                if (choice.isConfirmed && res.cetak_url) {
+                    window.open(res.cetak_url, '_blank');
+                }
+                location.reload();
+            });
+        } else {
+            Swal.fire('Gagal', (res && res.message) || 'Gagal memperbarui status.', 'error');
+        }
+    })
+    .catch(function(err) {
+        btn.disabled = false;
+        btn.innerText = 'Simpan & Siapkan SK';
+        Swal.fire('Error', err.message || 'Terjadi kesalahan sistem.', 'error');
+    });
+};
 document.addEventListener('DOMContentLoaded', function() {
     // 1. Chart Unit Tugas (Bar)
     const ctxUnit = document.getElementById('chartUnitTugas');

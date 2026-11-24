@@ -87,10 +87,10 @@ class PegawaiController
     public static function statistik(): void
     {
         $db = Database::getInstance();
-        $pageTitle = 'Dashboard & Monitoring Pegawai';
+        $pageTitle = 'Dashboard Pegawai';
         $breadcrumbs = [
             ['label' => 'Kelola Pegawai', 'url' => url('kelola-pegawai')],
-            ['label' => 'Dashboard Monitoring']
+            ['label' => 'Dashboard']
         ];
 
         $filterUnit = trim($_GET['unit_tugas'] ?? '');
@@ -328,11 +328,233 @@ class PegawaiController
         $statusKerjaList = $db->findAll("SELECT DISTINCT nama FROM master_status_kerja ORDER BY nama ASC");
         $jenisPegawaiList = $db->findAll("SELECT DISTINCT nama FROM master_jenis_pegawai ORDER BY nama ASC");
 
+        // Rekap Jenis Status Pegawai: Training, Kontrak, Tetap
+        $statusRekap = [
+            'Training' => 0,
+            'Kontrak'  => 0,
+            'Tetap'    => 0,
+            'Lainnya'  => 0,
+        ];
+        foreach ($statusCounts as $sName => $sCnt) {
+            $norm = strtolower(trim((string)$sName));
+            if ($norm === 'training') {
+                $statusRekap['Training'] += (int)$sCnt;
+            } elseif ($norm === 'kontrak') {
+                $statusRekap['Kontrak'] += (int)$sCnt;
+            } elseif ($norm === 'tetap') {
+                $statusRekap['Tetap'] += (int)$sCnt;
+            } else {
+                $statusRekap['Lainnya'] += (int)$sCnt;
+            }
+        }
+
+        // Pemberitahuan Kenaikan Status: Training -> Kontrak & Kontrak -> Tetap
+        $trainingTargetBulan = 3;
+        $kontrakTargetBulan  = 12;
+        $promParams = [];
+        $promCond = "p.is_active = 1";
+        $promUCond = Auth::unitSqlCondition('p.unit_tugas', $promParams);
+        if ($promUCond !== '1=1') {
+            $promCond .= " AND ({$promUCond})";
+        }
+        $promPCond = Auth::personalPegawaiSqlCondition('p.id', $promParams);
+        if ($promPCond !== '1=1') {
+            $promCond .= " AND ({$promPCond})";
+        }
+
+        $kandidatRows = $db->findAll("
+            SELECT p.id, p.nama, p.gelar, p.niy, p.unit_tugas, p.jabatan,
+                   COALESCE(NULLIF(p.status_kerja, ''), NULLIF(p.status_pegawai, ''), '') AS status_sekarang,
+                   COALESCE(NULLIF(p.tmt, '0000-00-00'), NULLIF(p.tanggal_masuk, '0000-00-00'), DATE(p.created_at)) AS tmt_efektif,
+                   TIMESTAMPDIFF(MONTH, COALESCE(NULLIF(p.tmt, '0000-00-00'), NULLIF(p.tanggal_masuk, '0000-00-00'), DATE(p.created_at)), CURDATE()) AS bulan_berjalan
+            FROM pegawai p
+            WHERE {$promCond}
+              AND LOWER(TRIM(COALESCE(NULLIF(p.status_kerja, ''), NULLIF(p.status_pegawai, ''), ''))) IN ('training', 'kontrak')
+            ORDER BY bulan_berjalan DESC, p.nama ASC
+        ", $promParams);
+
+        $kenaikanTrainingKeKontrak = [];
+        $kenaikanKontrakKeTetap = [];
+        foreach ($kandidatRows as $kr) {
+            $normSt = strtolower(trim((string)($kr['status_sekarang'] ?? '')));
+            $bln = max(0, (int)($kr['bulan_berjalan'] ?? 0));
+            if ($normSt === 'training') {
+                $kr['target_status'] = 'Kontrak';
+                $kr['target_bulan']  = $trainingTargetBulan;
+                $kr['siap_naik']     = $bln >= $trainingTargetBulan;
+                $kenaikanTrainingKeKontrak[] = $kr;
+            } elseif ($normSt === 'kontrak') {
+                $kr['target_status'] = 'Tetap';
+                $kr['target_bulan']  = $kontrakTargetBulan;
+                $kr['siap_naik']     = $bln >= $kontrakTargetBulan;
+                $kenaikanKontrakKeTetap[] = $kr;
+            }
+        }
+
+        // Riwayat SK Kenaikan Status terbaru (untuk langsung Cetak SK setelah update)
+        $recentPromosiSk = [];
+        try {
+            $rSkParams = [];
+            $rSkCond = "p.is_active = 1 AND pk.tipe_karir = 'Pengangkatan Status'";
+            $rSkUCond = Auth::unitSqlCondition('p.unit_tugas', $rSkParams);
+            if ($rSkUCond !== '1=1') {
+                $rSkCond .= " AND ({$rSkUCond})";
+            }
+            $rSkPCond = Auth::personalPegawaiSqlCondition('p.id', $rSkParams);
+            if ($rSkPCond !== '1=1') {
+                $rSkCond .= " AND ({$rSkPCond})";
+            }
+            $recentPromosiSk = $db->findAll("
+                SELECT pk.id AS karir_id, pk.pegawai_id, pk.no_sk, pk.tanggal_sk, pk.tmt_mulai, pk.keterangan,
+                       p.nama, p.gelar, p.niy, p.unit_tugas, p.jabatan, p.status_kerja
+                FROM pegawai_karir pk
+                JOIN pegawai p ON p.id = pk.pegawai_id
+                WHERE {$rSkCond}
+                ORDER BY pk.id DESC
+                LIMIT 10
+            ", $rSkParams);
+        } catch (Throwable $e) {}
+
         ob_start();
         include MODULES_PATH . '/kelola-pegawai/views/statistik.php';
         $content = ob_get_clean();
         $customSidebar = MODULES_PATH . '/kelola-pegawai/views/sidebar.php';
         include TEMPLATES_PATH . '/layouts/app.php';
+    }
+
+    /**
+     * Proses Update Kenaikan Status Pegawai (Training -> Kontrak / Kontrak -> Tetap) + Catat SK
+     */
+    public static function promosiStatus(): void
+    {
+        $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) || str_contains($_SERVER['HTTP_ACCEPT'] ?? '', 'application/json');
+        if (!CSRF::validate(false)) {
+            if ($isAjax) {
+                Response::json(['success' => false, 'message' => 'Token CSRF tidak valid.'], 403);
+                return;
+            }
+            Response::withError(url('kelola-pegawai/statistik'), 'Token CSRF tidak valid.');
+            return;
+        }
+
+        $pegawaiId = (int)($_POST['pegawai_id'] ?? 0);
+        $statusBaru = trim($_POST['status_baru'] ?? '');
+        $noSk = trim($_POST['no_sk'] ?? '');
+        $tanggalSk = trim($_POST['tanggal_sk'] ?? date('Y-m-d'));
+        $tmtMulai = trim($_POST['tmt_mulai'] ?? date('Y-m-d'));
+        $penandatangan = trim($_POST['penandatangan_sk'] ?? 'Ketua Yayasan Bina Insan Paripurna');
+
+        if ($pegawaiId <= 0 || !in_array($statusBaru, ['Kontrak', 'Tetap'], true)) {
+            if ($isAjax) {
+                Response::json(['success' => false, 'message' => 'Data pegawai atau status tujuan tidak valid.'], 400);
+                return;
+            }
+            Response::withError(url('kelola-pegawai/statistik'), 'Data pegawai atau status tujuan tidak valid.');
+            return;
+        }
+
+        $db = Database::getInstance();
+        $pegawai = $db->find("SELECT * FROM pegawai WHERE id = ? LIMIT 1", [$pegawaiId]);
+        if (!$pegawai) {
+            if ($isAjax) {
+                Response::json(['success' => false, 'message' => 'Pegawai tidak ditemukan.'], 404);
+                return;
+            }
+            Response::withError(url('kelola-pegawai/statistik'), 'Pegawai tidak ditemukan.');
+            return;
+        }
+
+        $statusLama = $pegawai['status_kerja'] ?: ($pegawai['status_pegawai'] ?: 'Training');
+        if ($noSk === '') {
+            $noSk = str_pad((string)$pegawaiId, 3, '0', STR_PAD_LEFT) . '/SK-STATUS/YYS/' . date('m/Y');
+        }
+
+        // Update status_kerja, status_pegawai, dan tmt di tabel pegawai
+        $db->query(
+            "UPDATE pegawai SET status_kerja = ?, status_pegawai = ?, tmt = ?, updated_at = NOW() WHERE id = ?",
+            [$statusBaru, $statusBaru, $tmtMulai, $pegawaiId]
+        );
+
+        // Catat ke pegawai_karir sebagai SK Pengangkatan Status
+        $karirId = 0;
+        try {
+            $db->query("
+                INSERT INTO pegawai_karir (pegawai_id, tipe_karir, unit_tugas, jabatan, no_sk, tanggal_sk, tmt_mulai, penandatangan_sk, status, keterangan, is_otomatis)
+                VALUES (?, 'Pengangkatan Status', ?, ?, ?, ?, ?, ?, 'Aktif', ?, 1)
+            ", [
+                $pegawaiId,
+                $pegawai['unit_tugas'] ?: null,
+                $pegawai['jabatan'] ?: null,
+                $noSk,
+                $tanggalSk ?: date('Y-m-d'),
+                $tmtMulai ?: date('Y-m-d'),
+                $penandatangan ?: 'Ketua Yayasan Bina Insan Paripurna',
+                "Kenaikan status kepegawaian dari {$statusLama} menjadi {$statusBaru}"
+            ]);
+            $karirId = (int)$db->lastInsertId();
+        } catch (Throwable $e) {}
+
+        $cetakUrl = url('kelola-pegawai/cetak-sk-status/' . $pegawaiId . ($karirId > 0 ? '?karir_id=' . $karirId : ''));
+        $msg = "Status kepegawaian {$pegawai['nama']} berhasil diperbarui dari {$statusLama} menjadi {$statusBaru}.";
+
+        if ($isAjax) {
+            Response::json([
+                'success'   => true,
+                'message'   => $msg,
+                'cetak_url' => $cetakUrl,
+                'karir_id'  => $karirId,
+            ]);
+            return;
+        }
+
+        Response::withSuccess(url('kelola-pegawai/statistik'), $msg);
+    }
+
+    /**
+     * Cetak SK Pengangkatan / Kenaikan Status Pegawai (Training -> Kontrak / Kontrak -> Tetap)
+     */
+    public static function cetakSkStatus(int $id): void
+    {
+        $db = Database::getInstance();
+        $pegawai = $db->find("SELECT * FROM pegawai WHERE id = ? LIMIT 1", [$id]);
+        if (!$pegawai) {
+            Response::withError(url('kelola-pegawai/statistik'), 'Data pegawai tidak ditemukan.');
+            return;
+        }
+
+        $karirId = (int)($_GET['karir_id'] ?? 0);
+        $karir = null;
+        if ($karirId > 0) {
+            $karir = $db->find("SELECT * FROM pegawai_karir WHERE id = ? AND pegawai_id = ? LIMIT 1", [$karirId, $id]);
+        } else {
+            $karir = $db->find("SELECT * FROM pegawai_karir WHERE pegawai_id = ? AND tipe_karir = 'Pengangkatan Status' ORDER BY id DESC LIMIT 1", [$id]);
+        }
+
+        $statusSekarang = $pegawai['status_kerja'] ?: ($pegawai['status_pegawai'] ?: 'Training');
+        $targetParam = trim($_GET['target'] ?? '');
+        $statusBaru = in_array($targetParam, ['Kontrak', 'Tetap'], true)
+            ? $targetParam
+            : ($statusSekarang === 'Training' ? 'Kontrak' : ($statusSekarang === 'Kontrak' ? 'Tetap' : $statusSekarang));
+        $statusLama = ($statusBaru === 'Tetap') ? 'Kontrak' : 'Training';
+
+        $skMeta = [
+            'status_lama'        => $statusLama,
+            'status_baru'        => $statusBaru,
+            'no_sk'              => $karir['no_sk'] ?? (str_pad((string)$id, 3, '0', STR_PAD_LEFT) . '/SK-STATUS/YYS/' . date('m/Y')),
+            'tanggal_sk'         => $karir['tanggal_sk'] ?? date('Y-m-d'),
+            'tmt_mulai'          => $karir['tmt_mulai'] ?? (!empty($pegawai['tmt']) ? $pegawai['tmt'] : date('Y-m-d')),
+            'penandatangan_nama' => $karir['penandatangan_sk'] ?? 'Ketua Yayasan Bina Insan Paripurna',
+            'penandatangan_jabatan' => 'Ketua Yayasan Bina Insan Paripurna',
+        ];
+
+        $settingsRows = $db->findAll("SELECT setting_key, setting_value FROM settings");
+        $settings = [];
+        foreach ($settingsRows as $sr) {
+            $settings[$sr['setting_key']] = $sr['setting_value'];
+        }
+
+        include MODULES_PATH . '/kelola-pegawai/views/cetak_sk_status.php';
+        exit;
     }
 
     public static function index(): void

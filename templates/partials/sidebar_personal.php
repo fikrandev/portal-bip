@@ -47,7 +47,7 @@ if (!function_exists('getPersonalModuleSubItems')) {
                     ['label' => 'Prestasi Saya',           'url' => url('kelola-pegawai/prestasi'),  'match' => '/kelola-pegawai/prestasi',  'exact' => false, 'perm' => 'pegawai.prestasi.view'],
                     ['label' => 'Pelatihan & Diklat',      'url' => url('kelola-pegawai/pelatihan'), 'match' => '/kelola-pegawai/pelatihan', 'exact' => false, 'perm' => 'pegawai.pelatihan.view'],
                     ['label' => 'Riwayat Karir',           'url' => url('kelola-pegawai/karir'),     'match' => '/kelola-pegawai/karir',     'exact' => false, 'perm' => 'pegawai.karir.view'],
-                    ['label' => 'Ringkasan Kepegawaian',   'url' => url('kelola-pegawai/statistik'), 'match' => '/kelola-pegawai/statistik', 'exact' => false, 'perm' => 'pegawai.dashboard'],
+                    ['label' => 'Dashboard',               'url' => url('kelola-pegawai/statistik'), 'match' => '/kelola-pegawai/statistik', 'exact' => false, 'perm' => 'pegawai.dashboard'],
                 ];
                 break;
 

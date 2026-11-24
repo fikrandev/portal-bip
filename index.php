@@ -366,6 +366,8 @@ $router->get('/kelola-pegawai/template', [PegawaiController::class, 'downloadTem
 $router->post('/kelola-pegawai/import', [PegawaiController::class, 'import'], [Middleware::permissionRequired('pegawai.data.create')]);
 $router->get('/kelola-pegawai/keluar', [PegawaiController::class, 'keluar'], [Middleware::permissionRequired('pegawai.keluar.view')]);
 $router->get('/kelola-pegawai/cetak-cv/{id}', [PegawaiController::class, 'cetakCv'], [Middleware::permissionRequired('pegawai.data.export')]);
+$router->post('/kelola-pegawai/promosi-status', [PegawaiController::class, 'promosiStatus'], [Middleware::permissionRequired('pegawai.data.update')]);
+$router->get('/kelola-pegawai/cetak-sk-status/{id}', [PegawaiController::class, 'cetakSkStatus'], [Middleware::permissionRequired(['pegawai.dashboard', 'pegawai.data.view'])]);
 
 // Isi Jurnal & Data Jurnal Saya (Personal Pegawai/Guru yang Login)
 $router->get('/kelola-pegawai/jurnal', [PegawaiController::class, 'jurnalSaya'], [[Middleware::class, 'authRequired']]);
