@@ -45,7 +45,7 @@
                 </div>
                 <div>
                     <h2 class="text-sm sm:text-base font-extrabold text-slate-900">Pemberitahuan Kenaikan Status Pegawai</h2>
-                    <p class="text-xs text-slate-500">Pantau kenaikan <strong>Training → Kontrak</strong> (≥ <?= (int)($trainingTargetBulan ?? 3) ?> bln) &amp; <strong>Kontrak → Tetap</strong> (≥ <?= (int)($kontrakTargetBulan ?? 12) ?> bln), update status &amp; cetak SK langsung</p>
+                    <p class="text-xs text-slate-500">Hanya menampilkan pegawai yang sudah mencapai masa kenaikan: <strong>Training → Kontrak</strong> (≥ <?= (int)($trainingTargetBulan ?? 3) ?> bln) &amp; <strong>Kontrak → Tetap</strong> (≥ <?= (int)($kontrakTargetBulan ?? 12) ?> bln di luar masa Training)</p>
                 </div>
             </div>
             <div class="flex flex-wrap items-center gap-2">
@@ -74,7 +74,7 @@
         <!-- Tab 1: Training -> Kontrak -->
         <div id="panel-promosi-training" class="p-4 sm:p-5">
             <?php if (empty($kenaikanTrainingKeKontrak)): ?>
-                <p class="text-xs text-slate-400 text-center py-4 italic">Tidak ada pegawai berstatus Training saat ini.</p>
+                <p class="text-xs text-slate-400 text-center py-4 italic">Belum ada pegawai Training yang mencapai masa ≥ <?= (int)($trainingTargetBulan ?? 3) ?> bulan.</p>
             <?php else: ?>
                 <div class="divide-y divide-slate-100 max-h-72 overflow-y-auto custom-scrollbar">
                     <?php foreach ($kenaikanTrainingKeKontrak as $kr):
@@ -117,7 +117,7 @@
         <!-- Tab 2: Kontrak -> Tetap -->
         <div id="panel-promosi-kontrak" class="p-4 sm:p-5 hidden">
             <?php if (empty($kenaikanKontrakKeTetap)): ?>
-                <p class="text-xs text-slate-400 text-center py-4 italic">Tidak ada pegawai berstatus Kontrak saat ini.</p>
+                <p class="text-xs text-slate-400 text-center py-4 italic">Belum ada pegawai Kontrak yang mencapai masa ≥ <?= (int)($kontrakTargetBulan ?? 12) ?> bulan.</p>
             <?php else: ?>
                 <div class="divide-y divide-slate-100 max-h-72 overflow-y-auto custom-scrollbar">
                     <?php foreach ($kenaikanKontrakKeTetap as $kr):

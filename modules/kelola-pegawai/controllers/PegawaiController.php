@@ -378,15 +378,15 @@ class PegawaiController
         foreach ($kandidatRows as $kr) {
             $normSt = strtolower(trim((string)($kr['status_sekarang'] ?? '')));
             $bln = max(0, (int)($kr['bulan_berjalan'] ?? 0));
-            if ($normSt === 'training') {
+            if ($normSt === 'training' && $bln >= $trainingTargetBulan) {
                 $kr['target_status'] = 'Kontrak';
                 $kr['target_bulan']  = $trainingTargetBulan;
-                $kr['siap_naik']     = $bln >= $trainingTargetBulan;
+                $kr['siap_naik']     = true;
                 $kenaikanTrainingKeKontrak[] = $kr;
-            } elseif ($normSt === 'kontrak') {
+            } elseif ($normSt === 'kontrak' && $bln >= $kontrakTargetBulan) {
                 $kr['target_status'] = 'Tetap';
                 $kr['target_bulan']  = $kontrakTargetBulan;
-                $kr['siap_naik']     = $bln >= $kontrakTargetBulan;
+                $kr['siap_naik']     = true;
                 $kenaikanKontrakKeTetap[] = $kr;
             }
         }
