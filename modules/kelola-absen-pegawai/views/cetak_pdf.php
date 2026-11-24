@@ -364,8 +364,8 @@ if (defined('SYS_APP_LOGO') && !empty(SYS_APP_LOGO)) {
                 display: none !important;
             }
             @page {
-                size: A4 landscape;
-                margin: 1.2cm 1cm 1.2cm 1cm;
+                size: 330mm 215mm;
+                margin: 1cm 0.9cm 1cm 0.9cm;
             }
             table.rekap-table {
                 font-size: 9.5px !important;
