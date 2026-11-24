@@ -244,25 +244,33 @@ if (defined('SYS_APP_LOGO') && !empty(SYS_APP_LOGO)) {
         table.rekap-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 10.5px;
+            font-size: 9.5px;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
         }
         table.rekap-table th, 
         table.rekap-table td {
-            border: 1px solid #cbd5e1;
-            padding: 6px 8px;
+            border: 1px solid #475569;
+            padding: 4px 5px;
             vertical-align: middle;
         }
         table.rekap-table th {
-            background: #f1f5f9;
+            background: #e2a8a5;
             color: #0f172a;
             font-weight: 700;
             text-align: center;
+            font-size: 9px;
+            line-height: 1.25;
+        }
+        table.rekap-table tr.group-header-row td {
+            background: #a5d8e6 !important;
+            color: #0f172a;
+            font-weight: 800;
             font-size: 10px;
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
+            padding: 5px 6px;
         }
         table.rekap-table tbody tr:nth-child(even) {
-            background: #f8fafc;
+            background: #ffffff;
         }
         table.rekap-table td.text-center {
             text-align: center;
@@ -271,65 +279,70 @@ if (defined('SYS_APP_LOGO') && !empty(SYS_APP_LOGO)) {
             text-align: right;
         }
         table.rekap-table tfoot th {
-            background: #e2e8f0;
+            background: #f1f5f9;
             font-weight: 800;
-            font-size: 10.5px;
+            font-size: 9.5px;
         }
         .pegawai-nama {
-            font-weight: 700;
+            font-weight: 600;
             color: #0f172a;
+            white-space: nowrap;
         }
         .pegawai-sub {
-            font-size: 9.5px;
+            font-size: 8.5px;
             color: #64748b;
         }
         .badge-pct {
             display: inline-block;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-weight: 800;
-            font-size: 10px;
+            padding: 1px 4px;
+            border-radius: 3px;
+            font-weight: 700;
+            font-size: 9.5px;
         }
         .badge-pct-high {
-            background: #dcfce7;
-            color: #15803d;
+            background: transparent;
+            color: #0f172a;
         }
         .badge-pct-mid {
-            background: #e0f2fe;
+            background: transparent;
             color: #0369a1;
         }
         .badge-pct-low {
-            background: #ffe4e6;
+            background: transparent;
             color: #be123c;
         }
 
         /* Signatures */
         .signature-area {
-            margin-top: 36px;
+            margin-top: 32px;
             display: flex;
-            justify-content: space-between;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            gap: 24px 18px;
             page-break-inside: avoid;
         }
         .sig-block {
             text-align: center;
-            width: 240px;
+            min-width: 195px;
+            max-width: 230px;
+            flex: 1 1 195px;
         }
         .sig-title {
-            font-size: 11px;
-            color: #475569;
-            margin-bottom: 60px;
+            font-size: 10.5px;
+            color: #334155;
+            margin-bottom: 54px;
         }
         .sig-name {
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 700;
             color: #0f172a;
             border-bottom: 1px solid #0f172a;
             display: inline-block;
             padding-bottom: 2px;
-            min-width: 180px;
+            min-width: 170px;
         }
         .sig-nip {
-            font-size: 10px;
+            font-size: 9.5px;
             color: #64748b;
             margin-top: 3px;
         }
@@ -449,98 +462,142 @@ if (defined('SYS_APP_LOGO') && !empty(SYS_APP_LOGO)) {
         </div>
 
         <!-- TABEL REKAP RESMI -->
+        <?php
+        $groups = $rekapPeriodeData['groups'] ?? [
+            'guru' => array_values(array_filter($rekapRows, fn($x) => ($x['kategori_group'] ?? '') === 'guru')),
+            'support_system' => array_values(array_filter($rekapRows, fn($x) => ($x['kategori_group'] ?? '') !== 'guru')),
+        ];
+        $kepalaSekolahList = $rekapPeriodeData['kepala_sekolah_list'] ?? [];
+        ?>
         <table class="rekap-table">
             <thead>
                 <tr>
-                    <th style="width: 32px;">No</th>
-                    <th style="text-align: left; min-width: 170px;">Nama Pegawai</th>
-                    <th style="width: 105px;">NIY</th>
-                    <th style="width: 85px;">Unit Tugas</th>
-                    <th style="width: 105px; text-align: left;">Jabatan</th>
-                    <th style="width: 58px;" title="Jumlah Hari Kerja Efektif">Hari Kerja</th>
-                    <th style="width: 55px;" title="Jumlah Hadir (Total)">Hadir Total</th>
-                    <th style="width: 65px;" title="Jumlah Hadir Tanpa Terlambat">Hadir Tepat</th>
-                    <th style="width: 58px;" title="Terlambat">Terlambat</th>
-                    <th style="width: 45px;" title="Izin">Izin</th>
-                    <th style="width: 45px;" title="Sakit">Sakit</th>
-                    <th style="width: 45px;" title="Cuti">Cuti</th>
-                    <th style="width: 45px;" title="Alpa / Tanpa Keterangan">Alpa</th>
-                    <th style="width: 65px;" title="Persentase Total Kehadiran">Total (%)</th>
+                    <th rowspan="2" style="width: 26px;">No</th>
+                    <th rowspan="2" style="min-width: 155px;">Nama</th>
+                    <th rowspan="2" style="width: 52px;">Kehadiran<br>Lain-lain</th>
+                    <th rowspan="2" style="width: 44px;">Periode 1</th>
+                    <th rowspan="2" style="width: 44px;">Periode 2</th>
+                    <th rowspan="2" style="width: 40px;">Hari<br>Kerja</th>
+                    <th rowspan="2" style="width: 42px;">Hari<br>Masuk</th>
+                    <th rowspan="2" style="width: 48px;">Total<br>Terlambat</th>
+                    <th rowspan="2" style="width: 48px;">Terlambat<br>Finger</th>
+                    <th rowspan="2" style="width: 48px;">Terlambat<br>Piket</th>
+                    <th rowspan="2" style="width: 54px;">Hari Tidak<br>Terlambat</th>
+                    <th colspan="6">Tidak hadir</th>
+                    <th rowspan="2" style="width: 56px;">Presentasi<br>Kehadiran</th>
+                    <th rowspan="2" style="width: 60px;">Presentasi<br>Kedisiplinan</th>
+                </tr>
+                <tr>
+                    <th style="width: 34px;">Izin</th>
+                    <th style="width: 44px;">Izin Khusus</th>
+                    <th style="width: 34px;">Sakit</th>
+                    <th style="width: 34px;">Alpa</th>
+                    <th style="width: 34px;">Cuti</th>
+                    <th style="width: 38px;">Tugas</th>
                 </tr>
             </thead>
             <tbody>
                 <?php if (empty($rekapRows)): ?>
                     <tr>
-                        <td colspan="14" class="text-center" style="padding: 24px; color: #64748b;">
+                        <td colspan="19" class="text-center" style="padding: 24px; color: #64748b;">
                             Tidak ada data presensi pegawai untuk unit dan periode ini.
                         </td>
                     </tr>
                 <?php else: ?>
-                    <?php 
-                    $no = 1; 
-                    foreach ($rekapRows as $r): 
-                        $pct = (float)$r['total_kehadiran'];
-                        $badgeClass = 'badge-pct-high';
-                        if ($pct < 75) {
-                            $badgeClass = 'badge-pct-low';
-                        } elseif ($pct < 90) {
-                            $badgeClass = 'badge-pct-mid';
-                        }
+                    <?php
+                    $sectionConfigs = [
+                        ['letter' => 'A.', 'label' => 'Guru', 'items' => $groups['guru'] ?? []],
+                        ['letter' => 'B.', 'label' => 'Support System', 'items' => $groups['support_system'] ?? []],
+                    ];
+                    foreach ($sectionConfigs as $sec):
+                        if (empty($sec['items'])) continue;
                     ?>
-                        <tr>
-                            <td class="text-center"><?= $no++ ?></td>
-                            <td>
-                                <div class="pegawai-nama"><?= e($r['nama']) ?></div>
-                            </td>
-                            <td class="text-center" style="font-family: monospace; font-size: 10px;"><?= e($r['niy']) ?></td>
-                            <td class="text-center"><strong><?= e($r['unit_tugas']) ?></strong></td>
-                            <td><?= e($r['jabatan']) ?></td>
-                            <td class="text-center"><strong><?= $r['jumlah_hari_kerja'] ?></strong></td>
-                            <td class="text-center" style="font-weight: 700; color: #0f172a;"><?= $r['jumlah_hadir'] ?></td>
-                            <td class="text-center" style="color: #16a34a; font-weight: 700;"><?= $r['hadir_tanpa_terlambat'] ?></td>
-                            <td class="text-center" style="<?= $r['terlambat'] > 0 ? 'color: #d97706; font-weight: 700;' : 'color: #94a3b8;' ?>"><?= $r['terlambat'] ?></td>
-                            <td class="text-center" style="<?= $r['izin'] > 0 ? 'color: #0284c7; font-weight: 700;' : 'color: #94a3b8;' ?>"><?= $r['izin'] ?></td>
-                            <td class="text-center" style="<?= $r['sakit'] > 0 ? 'color: #7c3aed; font-weight: 700;' : 'color: #94a3b8;' ?>"><?= $r['sakit'] ?></td>
-                            <td class="text-center" style="<?= $r['cuti'] > 0 ? 'color: #0d9488; font-weight: 700;' : 'color: #94a3b8;' ?>"><?= $r['cuti'] ?></td>
-                            <td class="text-center" style="<?= $r['alpa'] > 0 ? 'color: #dc2626; font-weight: 700;' : 'color: #94a3b8;' ?>"><?= $r['alpa'] ?></td>
-                            <td class="text-center">
-                                <span class="badge-pct <?= $badgeClass ?>"><?= number_format($pct, 1) ?>%</span>
-                            </td>
+                        <tr class="group-header-row">
+                            <td class="text-center"><?= e($sec['letter']) ?></td>
+                            <td><?= e($sec['label']) ?></td>
+                            <td colspan="17"></td>
                         </tr>
+                        <?php
+                        $no = 1;
+                        foreach ($sec['items'] as $r):
+                            $pctHadir = (float)($r['total_kehadiran'] ?? 0);
+                            $pctDisiplin = (float)($r['presentasi_kedisiplinan'] ?? 0);
+                            $hariMasuk = (int)($r['jumlah_hadir'] ?? 0);
+                        ?>
+                            <tr>
+                                <td class="text-center"><?= $no++ ?></td>
+                                <td><div class="pegawai-nama"><?= e($r['nama']) ?></div></td>
+                                <td class="text-center"><?= (int)($r['kehadiran_lain'] ?? 0) ?></td>
+                                <td class="text-center"><?= (int)($r['periode_1'] ?? 0) ?></td>
+                                <td class="text-center"><?= (int)($r['periode_2'] ?? 0) ?></td>
+                                <td class="text-center"><strong><?= (int)($r['jumlah_hari_kerja'] ?? $hariKerja) ?></strong></td>
+                                <td class="text-center"><strong><?= $hariMasuk ?></strong></td>
+                                <td class="text-center" style="<?= (int)($r['terlambat'] ?? 0) > 0 ? 'color: #d97706; font-weight: 700;' : '' ?>"><?= (int)($r['terlambat'] ?? 0) ?></td>
+                                <td class="text-center" style="<?= (int)($r['terlambat_finger'] ?? 0) > 0 ? 'color: #d97706; font-weight: 700;' : '' ?>"><?= (int)($r['terlambat_finger'] ?? 0) ?></td>
+                                <td class="text-center" style="<?= (int)($r['terlambat_piket'] ?? 0) > 0 ? 'color: #b45309; font-weight: 700;' : '' ?>"><?= (int)($r['terlambat_piket'] ?? 0) ?></td>
+                                <td class="text-center"><?= (int)($r['hadir_tanpa_terlambat'] ?? 0) ?></td>
+                                <td class="text-center"><?= (int)($r['izin'] ?? 0) ?></td>
+                                <td class="text-center"><?= (int)($r['izin_khusus'] ?? 0) ?></td>
+                                <td class="text-center"><?= (int)($r['sakit'] ?? 0) ?></td>
+                                <td class="text-center" style="<?= (int)($r['alpa'] ?? 0) > 0 ? 'color: #dc2626; font-weight: 700;' : '' ?>"><?= (int)($r['alpa'] ?? 0) ?></td>
+                                <td class="text-center"><?= (int)($r['cuti'] ?? 0) ?></td>
+                                <td class="text-center"><?= (int)($r['tugas'] ?? 0) ?></td>
+                                <td class="text-center"><strong><?= number_format($pctHadir, 0) ?>%</strong></td>
+                                <td class="text-center"><strong><?= $hariMasuk > 0 ? number_format($pctDisiplin, 0) . '%' : '0%' ?></strong></td>
+                            </tr>
+                        <?php endforeach; ?>
                     <?php endforeach; ?>
                 <?php endif; ?>
             </tbody>
             <tfoot>
                 <tr>
-                    <th colspan="5" class="text-right" style="padding-right: 12px;">TOTAL / RATA-RATA</th>
+                    <th colspan="5" class="text-right" style="padding-right: 10px;">TOTAL / RATA-RATA</th>
                     <th class="text-center"><?= $hariKerja ?></th>
                     <th class="text-center"><?= number_format($summary['total_hadir_semua'] ?? 0) ?></th>
-                    <th class="text-center" style="color: #16a34a;"><?= number_format($summary['total_tepat_waktu_semua'] ?? 0) ?></th>
                     <th class="text-center" style="color: #d97706;"><?= number_format($summary['total_terlambat_semua'] ?? 0) ?></th>
+                    <th class="text-center" style="color: #d97706;"><?= number_format($summary['total_terlambat_finger_semua'] ?? 0) ?></th>
+                    <th class="text-center" style="color: #b45309;"><?= number_format($summary['total_terlambat_piket_semua'] ?? 0) ?></th>
+                    <th class="text-center" style="color: #16a34a;"><?= number_format($summary['total_tepat_waktu_semua'] ?? 0) ?></th>
                     <th class="text-center"><?= number_format($summary['total_izin_semua'] ?? 0) ?></th>
+                    <th class="text-center"><?= number_format($summary['total_izin_khusus_semua'] ?? 0) ?></th>
                     <th class="text-center"><?= number_format($summary['total_sakit_semua'] ?? 0) ?></th>
-                    <th class="text-center"><?= number_format($summary['total_cuti_semua'] ?? 0) ?></th>
                     <th class="text-center" style="color: #dc2626;"><?= number_format($summary['total_alpa_semua'] ?? 0) ?></th>
-                    <th class="text-center" style="color: #2563eb;"><?= number_format($summary['rata_rata_kehadiran'] ?? 0, 1) ?>%</th>
+                    <th class="text-center"><?= number_format($summary['total_cuti_semua'] ?? 0) ?></th>
+                    <th class="text-center"><?= number_format($summary['total_tugas_semua'] ?? 0) ?></th>
+                    <th class="text-center" style="color: #2563eb;"><?= number_format($summary['rata_rata_kehadiran'] ?? 0, 0) ?>%</th>
+                    <th class="text-center" style="color: #16a34a;"><?= number_format($summary['rata_rata_kedisiplinan'] ?? 0, 0) ?>%</th>
                 </tr>
             </tfoot>
         </table>
 
-        <!-- TANDA TANGAN PEJABAT PENGESAH -->
+        <!-- TANDA TANGAN MASING-MASING KEPALA SEKOLAH -->
         <div class="signature-area">
-            <div class="sig-block">
-                <div class="sig-title">
-                    Mengetahui,<br>
-                    <strong>Kepala Unit / Pimpinan Sekolah</strong>
+            <?php if (!empty($kepalaSekolahList)): ?>
+                <?php foreach ($kepalaSekolahList as $ks): ?>
+                    <div class="sig-block">
+                        <div class="sig-title">
+                            Mengetahui,<br>
+                            <strong><?= e($ks['jabatan']) ?></strong>
+                        </div>
+                        <div class="sig-name"><?= e($ks['nama']) ?></div>
+                        <div class="sig-nip">NIY. <?= e($ks['niy']) ?></div>
+                    </div>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <div class="sig-block">
+                    <div class="sig-title">
+                        Mengetahui,<br>
+                        <strong>Kepala Unit / Pimpinan Sekolah</strong>
+                    </div>
+                    <div class="sig-name">( .................................................... )</div>
+                    <div class="sig-nip">NIY. ........................................</div>
                 </div>
-                <div class="sig-name">( .................................................... )</div>
-                <div class="sig-nip">NIY. ........................................</div>
-            </div>
+            <?php endif; ?>
 
             <div class="sig-block">
                 <div class="sig-title">
                     Palu, <?= e($cetakFmt) ?><br>
-                    <strong>Penanggung Jawab Kepegawaian & SDM</strong>
+                    <strong>Penanggung Jawab Kepegawaian &amp; SDM</strong>
                 </div>
                 <div class="sig-name"><?= e(Auth::user()['full_name'] ?? 'Bagian Kepegawaian') ?></div>
                 <div class="sig-nip">SIT Bina Insan Palu</div>

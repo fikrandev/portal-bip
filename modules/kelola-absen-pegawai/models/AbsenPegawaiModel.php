@@ -655,10 +655,38 @@ class AbsenPegawaiModel
         $evalEndTs = min($endTs, $todayTs);
 
         // Hitung Jumlah Hari Kerja Efektif (Senin - Sabtu, abaikan Minggu & tanggal libur terdaftar)
+        $evalStartStr = date('Y-m-d', $startTs);
+        $evalEndStr = date('Y-m-d', $evalEndTs);
+        $liburMap = ($startTs <= $evalEndTs) ? self::getLiburMap($evalStartStr, $evalEndStr) : [];
         $workInfo = ($startTs <= $evalEndTs)
-            ? self::hitungHariKerjaRange(date('Y-m-d', $startTs), date('Y-m-d', $evalEndTs))
-            : ['jumlah_hari_kerja' => 0, 'jumlah_minggu' => 0, 'jumlah_libur_khusus' => 0, 'libur_dates' => []];
+            ? self::hitungHariKerjaRange($evalStartStr, $evalEndStr, $liburMap)
+            : ['jumlah_hari_kerja' => 0, 'jumlah_minggu' => 0, 'jumlah_libur_khusus' => 0, 'libur_dates' => [], 'working_dates' => []];
         $jumlahHariKerja = (int)$workInfo['jumlah_hari_kerja'];
+
+        // Hitung Periode 1 dan Periode 2 (jika lintas bulan: bulan awal vs bulan akhir; jika 1 bulan: tgl 1-15 vs 16-akhir)
+        $periode1Hari = 0;
+        $periode2Hari = 0;
+        if ($jumlahHariKerja > 0 && !empty($workInfo['working_dates'])) {
+            $startYm = date('Y-m', $startTs);
+            $endYm = date('Y-m', $evalEndTs);
+            if ($startYm !== $endYm) {
+                foreach ($workInfo['working_dates'] as $wd) {
+                    if (substr($wd, 0, 7) === $startYm) {
+                        $periode1Hari++;
+                    } else {
+                        $periode2Hari++;
+                    }
+                }
+            } else {
+                foreach ($workInfo['working_dates'] as $wd) {
+                    if ((int)substr($wd, 8, 2) <= 15) {
+                        $periode1Hari++;
+                    } else {
+                        $periode2Hari++;
+                    }
+                }
+            }
+        }
 
         $effectiveUnit = self::getEffectiveUserUnit();
         $targetUnit = $effectiveUnit ?: $unit;
@@ -674,7 +702,8 @@ class AbsenPegawaiModel
 
         if (!empty($search)) {
             $term = '%' . trim($search) . '%';
-            $where[] = "(p.nama LIKE ? OR p.niy LIKE ? OR p.jabatan LIKE ?)";
+            $where[] = "(p.nama LIKE ? OR p.niy LIKE ? OR p.jabatan LIKE ? OR p.jenis_pegawai LIKE ?)";
+            $params[] = $term;
             $params[] = $term;
             $params[] = $term;
             $params[] = $term;
@@ -684,19 +713,35 @@ class AbsenPegawaiModel
 
         $sqlPegawai = "
             SELECT 
-                p.id, p.niy, p.nama, p.gelar, p.foto, p.jabatan,
-                COALESCE(NULLIF(TRIM(p.unit_tugas), ''), (mu.nama COLLATE utf8mb4_unicode_ci), 'Yayasan') as unit_tugas_efektif
+                p.id, p.niy, p.nama, p.gelar, p.foto, p.jabatan, p.jenis_pegawai,
+                COALESCE(NULLIF(TRIM(p.unit_tugas), ''), (mu.nama COLLATE utf8mb4_unicode_ci), 'Yayasan') as unit_tugas_efektif,
+                l.jam_masuk_mulai as peg_jam_masuk_mulai,
+                l.jam_masuk_batas as peg_jam_masuk_batas,
+                l.jam_pulang_mulai as peg_jam_pulang_mulai,
+                u.is_custom as unit_is_custom,
+                u.jam_masuk_mulai as unit_jam_masuk_mulai,
+                u.jam_masuk_batas as unit_jam_masuk_batas,
+                u.jam_pulang_mulai as unit_jam_pulang_mulai
             FROM `pegawai` p
             LEFT JOIN `pegawai_penugasan` pp ON pp.pegawai_id = p.id
             LEFT JOIN `master_unit_tugas` mu ON mu.id = pp.unit_tugas_id
+            LEFT JOIN `absen_pegawai_lokasi` l ON l.pegawai_id = p.id
+            LEFT JOIN `absen_pegawai_lokasi_unit` u ON u.unit_tugas = COALESCE(NULLIF(TRIM(p.unit_tugas), ''), (mu.nama COLLATE utf8mb4_unicode_ci), 'Yayasan')
             WHERE {$whereSql}
             GROUP BY p.id
             ORDER BY 
-                COALESCE(NULLIF(TRIM(p.unit_tugas), ''), (mu.nama COLLATE utf8mb4_unicode_ci), 'Yayasan') ASC,
+                CASE 
+                    WHEN LOWER(COALESCE(p.jenis_pegawai, '')) = 'guru'
+                      OR LOWER(COALESCE(p.jabatan, '')) LIKE '%guru%'
+                      OR LOWER(COALESCE(p.jabatan, '')) LIKE '%wali kelas%'
+                    THEN 0 ELSE 1 
+                END ASC,
                 p.nama ASC
         ";
 
         $pegawaiList = self::db()->findAll($sqlPegawai, $params);
+        $globalSettings = self::getPengaturanGlobal();
+        $jamHarianMap = self::getAllJamHarianMap();
 
         // Ambil seluruh log absensi dalam rentang periode
         $sqlLogs = "
@@ -716,21 +761,29 @@ class AbsenPegawaiModel
             $logsByPegawai[$l['pegawai_id']][] = $l;
         }
 
-        // Ambil cuti disetujui jika ada
+        // Ambil cuti disetujui jika ada (pisahkan Tahunan -> Cuti, Khusus -> Izin Khusus)
         $cutiMap = [];
         try {
             $cutiRows = self::db()->findAll("
-                SELECT pegawai_id, SUM(jumlah_hari) as total_cuti 
+                SELECT pegawai_id, kategori_cuti, SUM(jumlah_hari) as total_cuti 
                 FROM `cuti_pengajuan` 
                 WHERE status = 'Disetujui' AND tanggal_mulai <= ? AND tanggal_selesai >= ?
-                GROUP BY pegawai_id
+                GROUP BY pegawai_id, kategori_cuti
             ", [$endDate, $startDate]);
             foreach ($cutiRows as $cr) {
-                $cutiMap[$cr['pegawai_id']] = (int)$cr['total_cuti'];
+                $pid = (int)$cr['pegawai_id'];
+                if (!isset($cutiMap[$pid])) {
+                    $cutiMap[$pid] = ['cuti' => 0, 'izin_khusus' => 0];
+                }
+                if (strcasecmp((string)($cr['kategori_cuti'] ?? ''), 'Khusus') === 0) {
+                    $cutiMap[$pid]['izin_khusus'] += (int)$cr['total_cuti'];
+                } else {
+                    $cutiMap[$pid]['cuti'] += (int)$cr['total_cuti'];
+                }
             }
         } catch (Throwable $e) {}
 
-        // Ambil izin guru disetujui jika ada
+        // Ambil izin guru disetujui jika ada (pisahkan Sakit, Dinas Luar -> Tugas, lainnya -> Izin)
         $izinMap = [];
         try {
             $izinRows = self::db()->findAll("
@@ -743,10 +796,12 @@ class AbsenPegawaiModel
                 $pid = (int)$ir['pegawai_id'];
                 $kat = strtolower(trim((string)$ir['kategori']));
                 if (!isset($izinMap[$pid])) {
-                    $izinMap[$pid] = ['izin' => 0, 'sakit' => 0];
+                    $izinMap[$pid] = ['izin' => 0, 'sakit' => 0, 'tugas' => 0];
                 }
                 if ($kat === 'sakit') {
                     $izinMap[$pid]['sakit'] += (int)$ir['cnt'];
+                } elseif ($kat === 'dinas luar') {
+                    $izinMap[$pid]['tugas'] += (int)$ir['cnt'];
                 } else {
                     $izinMap[$pid]['izin'] += (int)$ir['cnt'];
                 }
@@ -754,50 +809,106 @@ class AbsenPegawaiModel
         } catch (Throwable $e) {}
 
         $rows = [];
-        $no = 1;
+        $guruRows = [];
+        $supportRows = [];
+        $noGuru = 1;
+        $noSupport = 1;
+
         $totalHadirSemua = 0;
         $totalTepatWaktuSemua = 0;
         $totalTerlambatSemua = 0;
+        $totalTerlambatFingerSemua = 0;
+        $totalTerlambatPiketSemua = 0;
         $totalIzinSemua = 0;
+        $totalIzinKhususSemua = 0;
         $totalSakitSemua = 0;
         $totalCutiSemua = 0;
+        $totalTugasSemua = 0;
         $totalAlpaSemua = 0;
         $sumPersen = 0;
+        $sumDisiplin = 0;
+        $countDisiplinPegawai = 0;
 
         foreach ($pegawaiList as $p) {
             $pid = (int)$p['id'];
             $pegLogs = $logsByPegawai[$pid] ?? [];
+            $dailyMap = $jamHarianMap[$pid] ?? [];
+
+            $jenisPegawai = trim((string)($p['jenis_pegawai'] ?? ''));
+            $jabatanStr = trim((string)($p['jabatan'] ?? ''));
+            $isGuru = (strcasecmp($jenisPegawai, 'Guru') === 0)
+                || (stripos($jabatanStr, 'guru') !== false)
+                || (stripos($jabatanStr, 'wali kelas') !== false);
+            $kategoriGroup = $isGuru ? 'guru' : 'support_system';
 
             $hadirCount = 0;
-            $hadirTepatWaktuCount = 0;
-            $terlambatCount = 0;
+            $terlambatFingerCount = 0;
+            $terlambatPiketCount = 0;
+            $totalTerlambatCount = 0;
             $izinCount = 0;
+            $izinKhususCount = 0;
             $sakitCount = 0;
             $cutiCount = 0;
+            $tugasCount = 0;
             $alpaExplicitCount = 0;
+            $kehadiranLainCount = 0;
 
             foreach ($pegLogs as $pl) {
                 $st = trim((string)($pl['status'] ?? ''));
-                if ($st === 'Terlambat') {
-                    $terlambatCount++;
+                $tglLog = (string)($pl['tanggal'] ?? '');
+                $jamMasuk = trim((string)($pl['jam_masuk'] ?? ''));
+
+                if ($st === 'Terlambat' || $st === 'Hadir' || $jamMasuk !== '') {
                     $hadirCount++;
-                } elseif ($st === 'Hadir' || !empty($pl['jam_masuk'])) {
-                    $hadirTepatWaktuCount++;
-                    $hadirCount++;
+
+                    // Resolve batas jam masuk efektif untuk tanggal log ini
+                    $resolvedJam = self::resolvePegawaiJamForDate($p, $dailyMap, $globalSettings, $tglLog);
+                    $batasEfektif = self::normalizeTimeStr($resolvedJam['jam_masuk_batas'] ?? null, '07:30:00');
+                    $isPiketSchedule = ($isGuru && substr($batasEfektif, 0, 5) <= '06:30');
+
+                    $isLatePiket = false;
+                    $isLateFinger = false;
+
+                    if ($isPiketSchedule) {
+                        // Aturan Piket Guru (jadwal 06:30): hadir > 06:30:00 (misal 06:31) => Terlambat Piket & otomatis Terlambat Finger
+                        if (($jamMasuk !== '' && substr($jamMasuk, 0, 8) > '06:30:00') || $st === 'Terlambat') {
+                            $isLatePiket = true;
+                            $isLateFinger = true;
+                        }
+                    } else {
+                        if ($st === 'Terlambat' || ($jamMasuk !== '' && substr($jamMasuk, 0, 8) > $batasEfektif)) {
+                            $isLateFinger = true;
+                        }
+                    }
+
+                    if ($isLatePiket) {
+                        $terlambatPiketCount++;
+                    }
+                    if ($isLateFinger) {
+                        $terlambatFingerCount++;
+                    }
+                    if ($isLatePiket || $isLateFinger) {
+                        $totalTerlambatCount++;
+                    }
                 } elseif ($st === 'Izin') {
                     $izinCount++;
                 } elseif ($st === 'Sakit') {
                     $sakitCount++;
                 } elseif ($st === 'Cuti') {
                     $cutiCount++;
+                } elseif ($st === 'Dinas Luar') {
+                    $tugasCount++;
                 } elseif (in_array($st, ['Alpha', 'Alpa'], true)) {
                     $alpaExplicitCount++;
                 }
             }
 
             // Gabungkan dengan data izin/cuti disetujui jika di log belum tercatat
-            if ($cutiCount === 0 && !empty($cutiMap[$pid])) {
-                $cutiCount = $cutiMap[$pid];
+            if ($cutiCount === 0 && !empty($cutiMap[$pid]['cuti'])) {
+                $cutiCount = $cutiMap[$pid]['cuti'];
+            }
+            if ($izinKhususCount === 0 && !empty($cutiMap[$pid]['izin_khusus'])) {
+                $izinKhususCount = $cutiMap[$pid]['izin_khusus'];
             }
             if ($izinCount === 0 && !empty($izinMap[$pid]['izin'])) {
                 $izinCount = $izinMap[$pid]['izin'];
@@ -805,78 +916,218 @@ class AbsenPegawaiModel
             if ($sakitCount === 0 && !empty($izinMap[$pid]['sakit'])) {
                 $sakitCount = $izinMap[$pid]['sakit'];
             }
+            if ($tugasCount === 0 && !empty($izinMap[$pid]['tugas'])) {
+                $tugasCount = $izinMap[$pid]['tugas'];
+            }
+
+            $hadirTepatWaktuCount = max(0, $hadirCount - $totalTerlambatCount);
 
             // Alpa dihitung dari sisa hari kerja efektif yang tidak ada keterangan kehadiran
             if ($jumlahHariKerja > 0) {
-                $calcAlpa = max(0, $jumlahHariKerja - ($hadirCount + $izinCount + $sakitCount + $cutiCount));
+                $calcAlpa = max(0, $jumlahHariKerja - ($hadirCount + $izinCount + $izinKhususCount + $sakitCount + $cutiCount + $tugasCount));
                 $alpa = max($calcAlpa, $alpaExplicitCount);
 
-                $persen = round(($hadirCount / $jumlahHariKerja) * 100, 1);
+                $persen = round(($hadirCount / $jumlahHariKerja) * 100, 0);
                 $persen = min(100.0, max(0.0, $persen));
             } else {
                 $alpa = $alpaExplicitCount;
                 $persen = 0.0;
             }
 
+            $persenDisiplin = $hadirCount > 0 ? round(($hadirTepatWaktuCount / $hadirCount) * 100, 0) : 0.0;
+            $persenDisiplin = min(100.0, max(0.0, $persenDisiplin));
+            if ($hadirCount > 0) {
+                $sumDisiplin += $persenDisiplin;
+                $countDisiplinPegawai++;
+            }
+
             $totalHadirSemua += $hadirCount;
             $totalTepatWaktuSemua += $hadirTepatWaktuCount;
-            $totalTerlambatSemua += $terlambatCount;
+            $totalTerlambatSemua += $totalTerlambatCount;
+            $totalTerlambatFingerSemua += $terlambatFingerCount;
+            $totalTerlambatPiketSemua += $terlambatPiketCount;
             $totalIzinSemua += $izinCount;
+            $totalIzinKhususSemua += $izinKhususCount;
             $totalSakitSemua += $sakitCount;
             $totalCutiSemua += $cutiCount;
+            $totalTugasSemua += $tugasCount;
             $totalAlpaSemua += $alpa;
             $sumPersen += $persen;
 
             $gelar = trim((string)($p['gelar'] ?? ''));
             $gelarStr = ($gelar !== '' && stripos($p['nama'], $gelar) === false) ? ', ' . $gelar : '';
-            $rows[] = [
-                'no'                    => $no++,
-                'pegawai_id'            => $pid,
-                'nama'                  => trim($p['nama'] . $gelarStr),
-                'nama_polos'            => $p['nama'],
-                'gelar'                 => $p['gelar'],
-                'niy'                   => $p['niy'] ?: '-',
-                'foto'                  => $p['foto'],
-                'unit_tugas'            => $p['unit_tugas_efektif'] ?: 'Yayasan',
-                'jabatan'               => $p['jabatan'] ?: 'Pegawai',
-                'jumlah_hari_kerja'     => $jumlahHariKerja,
-                'jumlah_hadir'          => $hadirCount,
-                'hadir_tanpa_terlambat' => $hadirTepatWaktuCount,
-                'terlambat'             => $terlambatCount,
-                'izin'                  => $izinCount,
-                'sakit'                 => $sakitCount,
-                'cuti'                  => $cutiCount,
-                'alpa'                  => $alpa,
-                'total_kehadiran'       => $persen
+            $item = [
+                'no'                      => $isGuru ? $noGuru++ : $noSupport++,
+                'pegawai_id'              => $pid,
+                'nama'                    => trim($p['nama'] . $gelarStr),
+                'nama_polos'              => $p['nama'],
+                'gelar'                   => $p['gelar'],
+                'niy'                     => $p['niy'] ?: '-',
+                'foto'                    => $p['foto'],
+                'unit_tugas'              => $p['unit_tugas_efektif'] ?: 'Yayasan',
+                'jabatan'                 => $p['jabatan'] ?: ($isGuru ? 'Guru' : 'Support System'),
+                'jenis_pegawai'           => $jenisPegawai ?: ($isGuru ? 'Guru' : 'Support System'),
+                'kategori_group'          => $kategoriGroup,
+                'kehadiran_lain'          => $kehadiranLainCount,
+                'periode_1'               => $periode1Hari,
+                'periode_2'               => $periode2Hari,
+                'jumlah_hari_kerja'       => $jumlahHariKerja,
+                'jumlah_hadir'            => $hadirCount,
+                'terlambat'               => $totalTerlambatCount,
+                'terlambat_finger'        => $terlambatFingerCount,
+                'terlambat_piket'         => $terlambatPiketCount,
+                'hadir_tanpa_terlambat'   => $hadirTepatWaktuCount,
+                'izin'                    => $izinCount,
+                'izin_khusus'             => $izinKhususCount,
+                'sakit'                   => $sakitCount,
+                'alpa'                    => $alpa,
+                'cuti'                    => $cutiCount,
+                'tugas'                   => $tugasCount,
+                'total_kehadiran'         => $persen,
+                'presentasi_kedisiplinan' => $persenDisiplin,
             ];
+
+            $rows[] = $item;
+            if ($isGuru) {
+                $guruRows[] = $item;
+            } else {
+                $supportRows[] = $item;
+            }
         }
 
         $totalPeg = count($rows);
         $rataRata = $totalPeg > 0 ? round($sumPersen / $totalPeg, 1) : 0.0;
+        $rataRataDisiplin = $countDisiplinPegawai > 0 ? round($sumDisiplin / $countDisiplinPegawai, 1) : 0.0;
+
+        $kepalaSekolahList = self::getKepalaSekolahByUnit($targetUnit, $rows);
 
         return [
             'start_date'          => $startDate,
             'end_date'            => $endDate,
             'jumlah_hari_kerja'   => $jumlahHariKerja,
+            'periode_1_hari'      => $periode1Hari,
+            'periode_2_hari'      => $periode2Hari,
             'jumlah_minggu'       => (int)($workInfo['jumlah_minggu'] ?? 0),
             'jumlah_libur_khusus' => (int)($workInfo['jumlah_libur_khusus'] ?? 0),
             'libur_list'          => $workInfo['libur_dates'] ?? [],
             'unit_efektif'        => $effectiveUnit,
-            'target_unit'       => $targetUnit,
-            'is_restricted'     => !empty($effectiveUnit),
-            'summary'           => [
-                'total_pegawai'           => $totalPeg,
-                'rata_rata_kehadiran'     => $rataRata,
-                'total_hadir_semua'       => $totalHadirSemua,
-                'total_tepat_waktu_semua' => $totalTepatWaktuSemua,
-                'total_terlambat_semua'   => $totalTerlambatSemua,
-                'total_izin_semua'        => $totalIzinSemua,
-                'total_sakit_semua'       => $totalSakitSemua,
-                'total_cuti_semua'        => $totalCutiSemua,
-                'total_alpa_semua'        => $totalAlpaSemua,
+            'target_unit'         => $targetUnit,
+            'is_restricted'       => !empty($effectiveUnit),
+            'kepala_sekolah_list' => $kepalaSekolahList,
+            'summary'             => [
+                'total_pegawai'               => $totalPeg,
+                'total_guru'                  => count($guruRows),
+                'total_support'               => count($supportRows),
+                'rata_rata_kehadiran'         => $rataRata,
+                'rata_rata_kedisiplinan'      => $rataRataDisiplin,
+                'total_hadir_semua'           => $totalHadirSemua,
+                'total_tepat_waktu_semua'     => $totalTepatWaktuSemua,
+                'total_terlambat_semua'       => $totalTerlambatSemua,
+                'total_terlambat_finger_semua'=> $totalTerlambatFingerSemua,
+                'total_terlambat_piket_semua' => $totalTerlambatPiketSemua,
+                'total_izin_semua'            => $totalIzinSemua,
+                'total_izin_khusus_semua'     => $totalIzinKhususSemua,
+                'total_sakit_semua'           => $totalSakitSemua,
+                'total_cuti_semua'            => $totalCutiSemua,
+                'total_tugas_semua'           => $totalTugasSemua,
+                'total_alpa_semua'            => $totalAlpaSemua,
             ],
-            'rows'              => $rows
+            'groups'              => [
+                'guru'           => $guruRows,
+                'support_system' => $supportRows,
+            ],
+            'rows'                => $rows
         ];
+    }
+
+    /**
+     * Ambil daftar Kepala Sekolah per unit untuk blok tanda tangan rekap absen
+     */
+    public static function getKepalaSekolahByUnit(?string $targetUnit = null, array $rows = []): array
+    {
+        self::init();
+        $kepsekRows = self::db()->findAll("
+            SELECT 
+                p.id, p.niy, p.nama, p.gelar, p.jabatan,
+                COALESCE(NULLIF(TRIM(p.unit_tugas), ''), (mu.nama COLLATE utf8mb4_unicode_ci), 'Yayasan') as unit_tugas_efektif
+            FROM `pegawai` p
+            LEFT JOIN `pegawai_penugasan` pp ON pp.pegawai_id = p.id
+            LEFT JOIN `master_unit_tugas` mu ON mu.id = pp.unit_tugas_id
+            WHERE p.is_active = 1
+              AND (
+                  LOWER(COALESCE(p.jabatan, '')) LIKE '%kepala sekolah%'
+                  OR LOWER(COALESCE(p.jabatan, '')) LIKE '%kepsek%'
+                  OR LOWER(COALESCE(p.jabatan, '')) LIKE '%kepala unit%'
+              )
+            GROUP BY p.id
+            ORDER BY unit_tugas_efektif ASC, p.nama ASC
+        ");
+
+        $byUnit = [];
+        foreach ($kepsekRows as $kr) {
+            $u = trim((string)($kr['unit_tugas_efektif'] ?? ''));
+            if ($u === '') continue;
+            $gelar = trim((string)($kr['gelar'] ?? ''));
+            $gelarStr = ($gelar !== '' && stripos($kr['nama'], $gelar) === false) ? ', ' . $gelar : '';
+            $byUnit[strtoupper($u)] = [
+                'unit'    => $u,
+                'jabatan' => 'Kepala Sekolah ' . $u,
+                'nama'    => trim($kr['nama'] . $gelarStr),
+                'niy'     => $kr['niy'] ?: '-',
+            ];
+        }
+
+        if (!empty($targetUnit)) {
+            $key = strtoupper(trim($targetUnit));
+            if (isset($byUnit[$key])) {
+                return [$byUnit[$key]];
+            }
+            return [[
+                'unit'    => $targetUnit,
+                'jabatan' => 'Kepala Sekolah ' . $targetUnit,
+                'nama'    => '( ........................................ )',
+                'niy'     => '................................',
+            ]];
+        }
+
+        // Ambil unit sekolah aktif dari master_unit_tugas atau rows (utamakan PAUD/TK, SD, SMP, SMA)
+        $units = [];
+        try {
+            $masterUnits = self::db()->findAll("SELECT nama FROM `master_unit_tugas` ORDER BY id ASC");
+            foreach ($masterUnits as $mu) {
+                $uName = trim((string)($mu['nama'] ?? ''));
+                if ($uName !== '' && !in_array(strtolower($uName), ['yayasan', 'staff'], true)) {
+                    $units[strtoupper($uName)] = $uName;
+                }
+            }
+        } catch (Throwable $e) {}
+
+        foreach ($rows as $r) {
+            $uName = trim((string)($r['unit_tugas'] ?? ''));
+            if ($uName !== '' && !in_array(strtolower($uName), ['yayasan', 'staff'], true)) {
+                $units[strtoupper($uName)] = $uName;
+            }
+        }
+
+        if (empty($units)) {
+            $units = ['PAUD' => 'PAUD', 'SD' => 'SD', 'SMP' => 'SMP', 'SMA' => 'SMA'];
+        }
+
+        $result = [];
+        foreach ($units as $key => $uName) {
+            if (isset($byUnit[$key])) {
+                $result[] = $byUnit[$key];
+            } else {
+                $result[] = [
+                    'unit'    => $uName,
+                    'jabatan' => 'Kepala Sekolah ' . $uName,
+                    'nama'    => '( ........................................ )',
+                    'niy'     => '................................',
+                ];
+            }
+        }
+
+        return $result;
     }
 
     /**

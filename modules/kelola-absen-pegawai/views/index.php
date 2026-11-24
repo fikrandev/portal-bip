@@ -1052,108 +1052,132 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse text-xs">
                         <thead>
-                            <tr class="bg-slate-50/80 border-b border-slate-200/80 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                                <th class="py-3 px-3 w-10 text-center">No</th>
-                                <th class="py-3 px-4 min-w-[200px]">Nama Pegawai</th>
-                                <th class="py-3 px-3 text-center">NIY</th>
-                                <th class="py-3 px-3 text-center">Unit Tugas</th>
-                                <th class="py-3 px-3 text-center" title="Jumlah Hari Kerja Efektif">Hari Kerja</th>
-                                <th class="py-3 px-3 text-center" title="Jumlah Hadir (Total)">Hadir Total</th>
-                                <th class="py-3 px-3 text-center text-emerald-700" title="Jumlah Hadir Tanpa Terlambat">Hadir Tepat</th>
-                                <th class="py-3 px-3 text-center text-amber-700" title="Terlambat">Terlambat</th>
-                                <th class="py-3 px-3 text-center" title="Izin">Izin</th>
-                                <th class="py-3 px-3 text-center" title="Sakit">Sakit</th>
-                                <th class="py-3 px-3 text-center" title="Cuti">Cuti</th>
-                                <th class="py-3 px-3 text-center text-rose-700" title="Alpa">Alpa</th>
-                                <th class="py-3 px-4 text-center min-w-[120px]" title="Total Kehadiran (%)">Total Kehadiran (%)</th>
-                                <th class="py-3 px-3 text-center w-20">Aksi</th>
+                            <tr class="bg-rose-200/75 border-b border-slate-300 text-[10px] font-bold text-slate-800 uppercase tracking-wider">
+                                <th rowspan="2" class="py-2.5 px-2.5 w-10 text-center border-r border-slate-300">No</th>
+                                <th rowspan="2" class="py-2.5 px-3 min-w-[190px] border-r border-slate-300">Nama</th>
+                                <th rowspan="2" class="py-2.5 px-2 text-center border-r border-slate-300">Kehadiran<br>Lain-lain</th>
+                                <th rowspan="2" class="py-2.5 px-2 text-center border-r border-slate-300">Periode 1</th>
+                                <th rowspan="2" class="py-2.5 px-2 text-center border-r border-slate-300">Periode 2</th>
+                                <th rowspan="2" class="py-2.5 px-2 text-center border-r border-slate-300">Hari<br>Kerja</th>
+                                <th rowspan="2" class="py-2.5 px-2 text-center border-r border-slate-300">Hari<br>Masuk</th>
+                                <th rowspan="2" class="py-2.5 px-2 text-center border-r border-slate-300 text-amber-800">Total<br>Terlambat</th>
+                                <th rowspan="2" class="py-2.5 px-2 text-center border-r border-slate-300 text-amber-800">Terlambat<br>Finger</th>
+                                <th rowspan="2" class="py-2.5 px-2 text-center border-r border-slate-300 text-orange-800" title="Berlaku untuk Guru dengan jadwal 06:30 yang hadir >= 06:31 (otomatis Terlambat Finger)">Terlambat<br>Piket</th>
+                                <th rowspan="2" class="py-2.5 px-2 text-center border-r border-slate-300 text-emerald-800">Hari Tidak<br>Terlambat</th>
+                                <th colspan="6" class="py-1.5 px-2 text-center border-b border-r border-slate-300">Tidak hadir</th>
+                                <th rowspan="2" class="py-2.5 px-2 text-center border-r border-slate-300">Presentasi<br>Kehadiran</th>
+                                <th rowspan="2" class="py-2.5 px-2 text-center border-r border-slate-300">Presentasi<br>Kedisiplinan</th>
+                                <th rowspan="2" class="py-2.5 px-2.5 text-center w-16">Aksi</th>
+                            </tr>
+                            <tr class="bg-rose-200/75 border-b border-slate-300 text-[10px] font-bold text-slate-800">
+                                <th class="py-1.5 px-2 text-center border-r border-slate-300">Izin</th>
+                                <th class="py-1.5 px-2 text-center border-r border-slate-300">Izin Khusus</th>
+                                <th class="py-1.5 px-2 text-center border-r border-slate-300">Sakit</th>
+                                <th class="py-1.5 px-2 text-center border-r border-slate-300">Alpa</th>
+                                <th class="py-1.5 px-2 text-center border-r border-slate-300">Cuti</th>
+                                <th class="py-1.5 px-2 text-center border-r border-slate-300">Tugas</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-slate-100 font-medium">
+                        <tbody class="divide-y divide-slate-200 font-medium">
                             <?php 
                             $rRows = $rekapPeriodeData['rows'] ?? [];
+                            $rGroups = $rekapPeriodeData['groups'] ?? [
+                                'guru' => array_values(array_filter($rRows, fn($x) => ($x['kategori_group'] ?? '') === 'guru')),
+                                'support_system' => array_values(array_filter($rRows, fn($x) => ($x['kategori_group'] ?? '') !== 'guru')),
+                            ];
                             if (empty($rRows)): 
                             ?>
                                 <tr>
-                                    <td colspan="14" class="py-12 text-center text-slate-400">
+                                    <td colspan="20" class="py-12 text-center text-slate-400">
                                         Tidak ada data pegawai yang sesuai dengan filter periode atau unit.
                                     </td>
                                 </tr>
                             <?php else: ?>
                                 <?php 
-                                $rNo = 1;
-                                foreach ($rRows as $row): 
-                                    $pct = (float)$row['total_kehadiran'];
-                                    $badgeBg = 'bg-emerald-50 text-emerald-700 border-emerald-200';
-                                    if ($pct < 75) {
-                                        $badgeBg = 'bg-rose-50 text-rose-700 border-rose-200';
-                                    } elseif ($pct < 90) {
-                                        $badgeBg = 'bg-sky-50 text-sky-700 border-sky-200';
-                                    }
+                                $webSections = [
+                                    ['letter' => 'A.', 'label' => 'Guru', 'items' => $rGroups['guru'] ?? []],
+                                    ['letter' => 'B.', 'label' => 'Support System', 'items' => $rGroups['support_system'] ?? []],
+                                ];
+                                foreach ($webSections as $sec):
+                                    if (empty($sec['items'])) continue;
                                 ?>
-                                    <tr class="hover:bg-slate-50/50 transition-colors">
-                                        <td class="py-3 px-3 text-center text-slate-400 font-bold"><?= $rNo++ ?></td>
-                                        <td class="py-3 px-4">
-                                            <div class="flex items-center gap-2.5">
-                                                <?php if (!empty($row['foto'])): ?>
-                                                    <img src="<?= url(ltrim($row['foto'], '/')) ?>" alt="Foto" class="w-8 h-8 rounded-xl object-cover border border-slate-200 shrink-0">
-                                                <?php else: ?>
-                                                    <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-primary-400 to-primary-600 text-white font-extrabold text-[11px] flex items-center justify-center shrink-0">
-                                                        <?= strtoupper(substr($row['nama_polos'], 0, 2)) ?>
-                                                    </div>
-                                                <?php endif; ?>
-                                                <div>
-                                                    <div class="font-bold text-slate-900"><?= e($row['nama']) ?></div>
-                                                    <div class="text-[10px] text-slate-500"><?= e($row['jabatan']) ?></div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td class="py-3 px-3 text-center font-mono text-[11px] text-slate-600"><?= e($row['niy']) ?></td>
-                                        <td class="py-3 px-3 text-center">
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] font-bold bg-slate-100 text-slate-700">
-                                                <?= e($row['unit_tugas']) ?>
-                                            </span>
-                                        </td>
-                                        <td class="py-3 px-3 text-center font-bold text-slate-900"><?= $row['jumlah_hari_kerja'] ?></td>
-                                        <td class="py-3 px-3 text-center font-extrabold text-primary-700"><?= $row['jumlah_hadir'] ?></td>
-                                        <td class="py-3 px-3 text-center font-bold text-emerald-600"><?= $row['hadir_tanpa_terlambat'] ?></td>
-                                        <td class="py-3 px-3 text-center font-bold <?= $row['terlambat'] > 0 ? 'text-amber-600 bg-amber-50/50 rounded' : 'text-slate-400' ?>"><?= $row['terlambat'] ?></td>
-                                        <td class="py-3 px-3 text-center <?= $row['izin'] > 0 ? 'font-bold text-sky-600' : 'text-slate-400' ?>"><?= $row['izin'] ?></td>
-                                        <td class="py-3 px-3 text-center <?= $row['sakit'] > 0 ? 'font-bold text-purple-600' : 'text-slate-400' ?>"><?= $row['sakit'] ?></td>
-                                        <td class="py-3 px-3 text-center <?= $row['cuti'] > 0 ? 'font-bold text-teal-600' : 'text-slate-400' ?>"><?= $row['cuti'] ?></td>
-                                        <td class="py-3 px-3 text-center <?= $row['alpa'] > 0 ? 'font-bold text-rose-600 bg-rose-50/50 rounded' : 'text-slate-400' ?>"><?= $row['alpa'] ?></td>
-                                        <td class="py-3 px-4 text-center">
-                                            <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-extrabold border <?= $badgeBg ?>">
-                                                <span><?= number_format($pct, 1) ?>%</span>
-                                            </div>
-                                        </td>
-                                        <td class="py-3 px-3 text-center">
-                                            <a href="<?= url('kelola-absen-pegawai?tab=rekap&rekap_view=harian&tanggal=' . urlencode($targetDate) . '&search=' . urlencode($row['niy'] ?: $row['nama_polos'])) ?>"
-                                               class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[11px] font-bold bg-primary-50 text-primary-700 hover:bg-primary-600 hover:text-white border border-primary-200 transition-all shadow-xs"
-                                               title="Lihat & Ubah Log Presensi Harian Pegawai Ini">
-                                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                                                </svg>
-                                                <span>Log</span>
-                                            </a>
-                                        </td>
+                                    <tr class="bg-sky-200/80 border-y border-slate-300 font-extrabold text-slate-900">
+                                        <td class="py-2 px-2.5 text-center border-r border-slate-300"><?= e($sec['letter']) ?></td>
+                                        <td class="py-2 px-3 border-r border-slate-300"><?= e($sec['label']) ?></td>
+                                        <td colspan="18" class="py-2 px-2"></td>
                                     </tr>
+                                    <?php 
+                                    $rNo = 1;
+                                    foreach ($sec['items'] as $row): 
+                                        $pct = (float)($row['total_kehadiran'] ?? 0);
+                                        $pctDisiplin = (float)($row['presentasi_kedisiplinan'] ?? 0);
+                                        $hariMasuk = (int)($row['jumlah_hadir'] ?? 0);
+                                        $badgeBg = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+                                        if ($pct < 75) {
+                                            $badgeBg = 'bg-rose-50 text-rose-700 border-rose-200';
+                                        } elseif ($pct < 90) {
+                                            $badgeBg = 'bg-sky-50 text-sky-700 border-sky-200';
+                                        }
+                                    ?>
+                                        <tr class="hover:bg-slate-50/70 transition-colors">
+                                            <td class="py-2.5 px-2.5 text-center text-slate-500 font-bold border-r border-slate-100"><?= $rNo++ ?></td>
+                                            <td class="py-2.5 px-3 border-r border-slate-100">
+                                                <div class="font-bold text-slate-900"><?= e($row['nama']) ?></div>
+                                                <div class="text-[10px] text-slate-500"><?= e($row['unit_tugas']) ?> · <?= e($row['jabatan']) ?></div>
+                                            </td>
+                                            <td class="py-2.5 px-2 text-center border-r border-slate-100 text-slate-600"><?= (int)($row['kehadiran_lain'] ?? 0) ?></td>
+                                            <td class="py-2.5 px-2 text-center border-r border-slate-100 text-slate-700"><?= (int)($row['periode_1'] ?? 0) ?></td>
+                                            <td class="py-2.5 px-2 text-center border-r border-slate-100 text-slate-700"><?= (int)($row['periode_2'] ?? 0) ?></td>
+                                            <td class="py-2.5 px-2 text-center border-r border-slate-100 font-bold text-slate-900"><?= (int)($row['jumlah_hari_kerja'] ?? 0) ?></td>
+                                            <td class="py-2.5 px-2 text-center border-r border-slate-100 font-extrabold text-primary-700"><?= $hariMasuk ?></td>
+                                            <td class="py-2.5 px-2 text-center border-r border-slate-100 font-bold <?= (int)($row['terlambat'] ?? 0) > 0 ? 'text-amber-600 bg-amber-50/50' : 'text-slate-400' ?>"><?= (int)($row['terlambat'] ?? 0) ?></td>
+                                            <td class="py-2.5 px-2 text-center border-r border-slate-100 font-bold <?= (int)($row['terlambat_finger'] ?? 0) > 0 ? 'text-amber-600' : 'text-slate-400' ?>"><?= (int)($row['terlambat_finger'] ?? 0) ?></td>
+                                            <td class="py-2.5 px-2 text-center border-r border-slate-100 font-bold <?= (int)($row['terlambat_piket'] ?? 0) > 0 ? 'text-orange-600 bg-orange-50/60' : 'text-slate-400' ?>"><?= (int)($row['terlambat_piket'] ?? 0) ?></td>
+                                            <td class="py-2.5 px-2 text-center border-r border-slate-100 font-bold text-emerald-600"><?= (int)($row['hadir_tanpa_terlambat'] ?? 0) ?></td>
+                                            <td class="py-2.5 px-2 text-center border-r border-slate-100 <?= (int)($row['izin'] ?? 0) > 0 ? 'font-bold text-sky-600' : 'text-slate-400' ?>"><?= (int)($row['izin'] ?? 0) ?></td>
+                                            <td class="py-2.5 px-2 text-center border-r border-slate-100 <?= (int)($row['izin_khusus'] ?? 0) > 0 ? 'font-bold text-indigo-600' : 'text-slate-400' ?>"><?= (int)($row['izin_khusus'] ?? 0) ?></td>
+                                            <td class="py-2.5 px-2 text-center border-r border-slate-100 <?= (int)($row['sakit'] ?? 0) > 0 ? 'font-bold text-purple-600' : 'text-slate-400' ?>"><?= (int)($row['sakit'] ?? 0) ?></td>
+                                            <td class="py-2.5 px-2 text-center border-r border-slate-100 <?= (int)($row['alpa'] ?? 0) > 0 ? 'font-bold text-rose-600 bg-rose-50/50' : 'text-slate-400' ?>"><?= (int)($row['alpa'] ?? 0) ?></td>
+                                            <td class="py-2.5 px-2 text-center border-r border-slate-100 <?= (int)($row['cuti'] ?? 0) > 0 ? 'font-bold text-teal-600' : 'text-slate-400' ?>"><?= (int)($row['cuti'] ?? 0) ?></td>
+                                            <td class="py-2.5 px-2 text-center border-r border-slate-100 <?= (int)($row['tugas'] ?? 0) > 0 ? 'font-bold text-cyan-700' : 'text-slate-400' ?>"><?= (int)($row['tugas'] ?? 0) ?></td>
+                                            <td class="py-2.5 px-2 text-center border-r border-slate-100">
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-extrabold border <?= $badgeBg ?>">
+                                                    <?= number_format($pct, 0) ?>%
+                                                </span>
+                                            </td>
+                                            <td class="py-2.5 px-2 text-center border-r border-slate-100 font-extrabold text-slate-800">
+                                                <?= $hariMasuk > 0 ? number_format($pctDisiplin, 0) . '%' : '0%' ?>
+                                            </td>
+                                            <td class="py-2.5 px-2.5 text-center">
+                                                <a href="<?= url('kelola-absen-pegawai?tab=rekap&rekap_view=harian&tanggal=' . urlencode($targetDate) . '&search=' . urlencode($row['niy'] ?: $row['nama_polos'])) ?>"
+                                                   class="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold bg-primary-50 text-primary-700 hover:bg-primary-600 hover:text-white border border-primary-200 transition-all"
+                                                   title="Lihat & Ubah Log Presensi Harian Pegawai Ini">
+                                                    <span>Log</span>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
                                 <?php endforeach; ?>
                             <?php endif; ?>
                         </tbody>
-                        <tfoot class="bg-slate-100/80 border-t-2 border-slate-200 text-xs font-bold text-slate-800">
+                        <tfoot class="bg-slate-100/90 border-t-2 border-slate-300 text-xs font-bold text-slate-800">
                             <tr>
-                                <td colspan="4" class="py-3.5 px-4 text-right">TOTAL / RATA-RATA UNIT:</td>
-                                <td class="py-3.5 px-3 text-center"><?= (int)($rekapPeriodeData['jumlah_hari_kerja'] ?? 1) ?></td>
-                                <td class="py-3.5 px-3 text-center text-primary-700"><?= number_format($pSum['total_hadir_semua'] ?? 0) ?></td>
-                                <td class="py-3.5 px-3 text-center text-emerald-600"><?= number_format($pSum['total_tepat_waktu_semua'] ?? 0) ?></td>
-                                <td class="py-3.5 px-3 text-center text-amber-600"><?= number_format($pSum['total_terlambat_semua'] ?? 0) ?></td>
-                                <td class="py-3.5 px-3 text-center"><?= number_format($pSum['total_izin_semua'] ?? 0) ?></td>
-                                <td class="py-3.5 px-3 text-center"><?= number_format($pSum['total_sakit_semua'] ?? 0) ?></td>
-                                <td class="py-3.5 px-3 text-center"><?= number_format($pSum['total_cuti_semua'] ?? 0) ?></td>
-                                <td class="py-3.5 px-3 text-center text-rose-600"><?= number_format($pSum['total_alpa_semua'] ?? 0) ?></td>
-                                <td class="py-3.5 px-4 text-center text-primary-700"><?= number_format($pSum['rata_rata_kehadiran'] ?? 0, 1) ?>%</td>
-                                <td class="py-3.5 px-3 text-center text-slate-400">-</td>
+                                <td colspan="5" class="py-3 px-4 text-right border-r border-slate-200">TOTAL / RATA-RATA:</td>
+                                <td class="py-3 px-2 text-center border-r border-slate-200"><?= (int)($rekapPeriodeData['jumlah_hari_kerja'] ?? 0) ?></td>
+                                <td class="py-3 px-2 text-center border-r border-slate-200 text-primary-700"><?= number_format($pSum['total_hadir_semua'] ?? 0) ?></td>
+                                <td class="py-3 px-2 text-center border-r border-slate-200 text-amber-600"><?= number_format($pSum['total_terlambat_semua'] ?? 0) ?></td>
+                                <td class="py-3 px-2 text-center border-r border-slate-200 text-amber-600"><?= number_format($pSum['total_terlambat_finger_semua'] ?? 0) ?></td>
+                                <td class="py-3 px-2 text-center border-r border-slate-200 text-orange-600"><?= number_format($pSum['total_terlambat_piket_semua'] ?? 0) ?></td>
+                                <td class="py-3 px-2 text-center border-r border-slate-200 text-emerald-600"><?= number_format($pSum['total_tepat_waktu_semua'] ?? 0) ?></td>
+                                <td class="py-3 px-2 text-center border-r border-slate-200"><?= number_format($pSum['total_izin_semua'] ?? 0) ?></td>
+                                <td class="py-3 px-2 text-center border-r border-slate-200"><?= number_format($pSum['total_izin_khusus_semua'] ?? 0) ?></td>
+                                <td class="py-3 px-2 text-center border-r border-slate-200"><?= number_format($pSum['total_sakit_semua'] ?? 0) ?></td>
+                                <td class="py-3 px-2 text-center border-r border-slate-200 text-rose-600"><?= number_format($pSum['total_alpa_semua'] ?? 0) ?></td>
+                                <td class="py-3 px-2 text-center border-r border-slate-200"><?= number_format($pSum['total_cuti_semua'] ?? 0) ?></td>
+                                <td class="py-3 px-2 text-center border-r border-slate-200"><?= number_format($pSum['total_tugas_semua'] ?? 0) ?></td>
+                                <td class="py-3 px-2 text-center border-r border-slate-200 text-primary-700"><?= number_format($pSum['rata_rata_kehadiran'] ?? 0, 0) ?>%</td>
+                                <td class="py-3 px-2 text-center border-r border-slate-200 text-emerald-700"><?= number_format($pSum['rata_rata_kedisiplinan'] ?? 0, 0) ?>%</td>
+                                <td class="py-3 px-2.5 text-center text-slate-400">-</td>
                             </tr>
                         </tfoot>
                     </table>
