@@ -38,13 +38,17 @@ class AbsenPegawaiController
         $stats = AbsenPegawaiModel::getSummaryStats();
         $globalConfig = $stats['globalConfig'];
 
+        $defaultStartDate = ((int)date('j') <= 21)
+            ? date('Y-m-22', strtotime('first day of previous month'))
+            : date('Y-m-22');
+
         $filters = [
             'search'      => trim($_GET['search'] ?? ''),
             'unit_tugas'  => $isUnitRestricted ? $effectiveUserUnit : trim($_GET['unit_tugas'] ?? ''),
             'mode_lokasi' => trim($_GET['mode_lokasi'] ?? ''),
             'status'      => trim($_GET['status'] ?? ''),
             'rekap_view'  => trim($_GET['rekap_view'] ?? 'periode'),
-            'start_date'  => trim($_GET['start_date'] ?? date('Y-m-01')),
+            'start_date'  => trim($_GET['start_date'] ?? $defaultStartDate),
             'end_date'    => trim($_GET['end_date'] ?? date('Y-m-d')),
         ];
 
@@ -98,7 +102,10 @@ class AbsenPegawaiController
 
         $effectiveUserUnit = AbsenPegawaiModel::getEffectiveUserUnit();
         $unit = $effectiveUserUnit ?: trim($_GET['unit_tugas'] ?? '');
-        $startDate = trim($_GET['start_date'] ?? date('Y-m-01'));
+        $defaultStartDate = ((int)date('j') <= 21)
+            ? date('Y-m-22', strtotime('first day of previous month'))
+            : date('Y-m-22');
+        $startDate = trim($_GET['start_date'] ?? $defaultStartDate);
         $endDate = trim($_GET['end_date'] ?? date('Y-m-d'));
         $search = trim($_GET['search'] ?? '');
 

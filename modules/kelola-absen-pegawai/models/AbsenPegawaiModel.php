@@ -663,27 +663,16 @@ class AbsenPegawaiModel
             : ['jumlah_hari_kerja' => 0, 'jumlah_minggu' => 0, 'jumlah_libur_khusus' => 0, 'libur_dates' => [], 'working_dates' => []];
         $jumlahHariKerja = (int)$workInfo['jumlah_hari_kerja'];
 
-        // Hitung Periode 1 dan Periode 2 (jika lintas bulan: bulan awal vs bulan akhir; jika 1 bulan: tgl 1-15 vs 16-akhir)
+        // Hitung Periode 1 (tgl 22 s/d akhir bulan 30/31) dan Periode 2 (tgl 01 s/d 21), hari Ahad tidak dihitung
         $periode1Hari = 0;
         $periode2Hari = 0;
         if ($jumlahHariKerja > 0 && !empty($workInfo['working_dates'])) {
-            $startYm = date('Y-m', $startTs);
-            $endYm = date('Y-m', $evalEndTs);
-            if ($startYm !== $endYm) {
-                foreach ($workInfo['working_dates'] as $wd) {
-                    if (substr($wd, 0, 7) === $startYm) {
-                        $periode1Hari++;
-                    } else {
-                        $periode2Hari++;
-                    }
-                }
-            } else {
-                foreach ($workInfo['working_dates'] as $wd) {
-                    if ((int)substr($wd, 8, 2) <= 15) {
-                        $periode1Hari++;
-                    } else {
-                        $periode2Hari++;
-                    }
+            foreach ($workInfo['working_dates'] as $wd) {
+                $dayNum = (int)substr($wd, 8, 2);
+                if ($dayNum >= 22) {
+                    $periode1Hari++;
+                } else {
+                    $periode2Hari++;
                 }
             }
         }
