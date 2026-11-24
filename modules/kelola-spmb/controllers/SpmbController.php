@@ -3671,7 +3671,8 @@ SVG;
         if ($rawTarget === 'belum_wa') {
             $filters['status_observasi'] = 'belum';
             $filters['status_wa_observasi'] = 'belum';
-        } elseif ($rawTarget === 'belum') {
+        } else {
+            // Otomatis kecualikan siswa yang sudah mengisi observasi
             $filters['status_observasi'] = 'belum';
         }
 
