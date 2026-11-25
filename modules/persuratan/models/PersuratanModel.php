@@ -150,7 +150,7 @@ class PersuratanModel
                     'slug' => 'persuratan-yayasan',
                     'name' => 'Persuratan Yayasan',
                     'desc' => 'Administrasi surat masuk, surat keluar, arsip data surat, KOP, jenis & kode surat Yayasan.',
-                    'group' => 'Kesekretariatan',
+                    'group' => 'Administrasi',
                     'color' => '#0284c7',
                     'route' => '/persuratan-yayasan',
                     'sort' => 24,
@@ -163,7 +163,7 @@ class PersuratanModel
                     'slug' => 'persuratan-sekolah',
                     'name' => 'Persuratan Sekolah',
                     'desc' => 'Administrasi surat masuk, surat keluar, arsip data surat, KOP tiap unit (PAUD/SD/SMP/SMA), jenis & kode surat.',
-                    'group' => 'Kesekretariatan',
+                    'group' => 'Administrasi',
                     'color' => '#059669',
                     'route' => '/persuratan-sekolah',
                     'sort' => 25,
@@ -177,7 +177,7 @@ class PersuratanModel
             $adminRoleIds = $pdo->query("SELECT id FROM roles WHERE LOWER(name) IN ('super admin','admin','operator')")->fetchAll(PDO::FETCH_COLUMN);
 
             foreach ($mods as $m) {
-                $modRow = self::db()->find("SELECT id FROM modules WHERE slug = ? LIMIT 1", [$m['slug']]);
+                $modRow = self::db()->find("SELECT id, module_group FROM modules WHERE slug = ? LIMIT 1", [$m['slug']]);
                 if (!$modRow) {
                     self::db()->query(
                         "INSERT INTO modules (name, slug, description, module_group, icon_svg, color, route, sort_order, is_active, created_at, updated_at)
@@ -187,6 +187,9 @@ class PersuratanModel
                     $modId = (int)self::db()->lastInsertId();
                 } else {
                     $modId = (int)$modRow['id'];
+                    if (($modRow['module_group'] ?? '') !== $m['group']) {
+                        self::db()->query("UPDATE modules SET module_group = ? WHERE id = ?", [$m['group'], $modId]);
+                    }
                 }
 
                 foreach ($m['perms'] as [$permSlug, $permName]) {

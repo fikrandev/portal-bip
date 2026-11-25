@@ -13,7 +13,17 @@ class DashboardController
     {
         $pageTitle = 'Dashboard';
         $pageDescription = 'Portal utama ' . APP_NAME;
-        
+
+        // Pastikan modul Persuratan Yayasan & Sekolah otomatis terdaftar saat pertama kali dibuka setelah git pull
+        if (empty($_SESSION['_persuratan_bootstrapped_v2'])) {
+            $persuratanModelFile = MODULES_PATH . '/persuratan/models/PersuratanModel.php';
+            if (is_file($persuratanModelFile)) {
+                require_once $persuratanModelFile;
+                PersuratanModel::ensureModulesAndPermissions();
+                $_SESSION['_persuratan_bootstrapped_v2'] = 1;
+            }
+        }
+
         // Get accessible modules (skip "Dashboard" itself from cards)
         $allModules = RBAC::getAccessibleModules();
         $modules = array_filter($allModules, fn($m) => $m['slug'] !== 'dashboard');
