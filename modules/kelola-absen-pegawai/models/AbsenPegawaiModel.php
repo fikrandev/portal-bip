@@ -1120,6 +1120,219 @@ class AbsenPegawaiModel
     }
 
     /**
+     * Ambil data Matriks Kehadiran Pegawai per Tanggal dalam rentang periode
+     */
+    public static function getRekapMatrix(string $startDate, string $endDate, ?string $unit = null, ?string $search = null): array
+    {
+        self::init();
+        $startTs = strtotime($startDate);
+        $endTs = strtotime($endDate);
+        if ($startTs > $endTs) {
+            $tmp = $startDate;
+            $startDate = $endDate;
+            $endDate = $tmp;
+            $startTs = strtotime($startDate);
+            $endTs = strtotime($endDate);
+        }
+
+        if ((($endTs - $startTs) / 86400) > 45) {
+            $startTs = strtotime('-44 days', $endTs);
+            $startDate = date('Y-m-d', $startTs);
+        }
+
+        $todayStr = date('Y-m-d');
+        $liburMap = self::getLiburMap($startDate, $endDate);
+        $dayShortMap = [1 => 'Sen', 2 => 'Sel', 3 => 'Rab', 4 => 'Kam', 5 => 'Jum', 6 => 'Sab', 7 => 'Ahd'];
+
+        $dates = [];
+        $curTs = $startTs;
+        while ($curTs <= $endTs) {
+            $ymd = date('Y-m-d', $curTs);
+            $n = (int)date('N', $curTs);
+            $dates[] = [
+                'ymd'        => $ymd,
+                'day_num'    => date('j', $curTs),
+                'month_num'  => date('n', $curTs),
+                'day_short'  => $dayShortMap[$n] ?? '',
+                'is_sunday'  => ($n === 7),
+                'is_libur'   => isset($liburMap[$ymd]),
+                'libur_nama' => $liburMap[$ymd]['nama_libur'] ?? '',
+                'is_future'  => ($ymd > $todayStr),
+            ];
+            $curTs = strtotime('+1 day', $curTs);
+        }
+
+        $effectiveUnit = self::getEffectiveUserUnit();
+        $targetUnit = $effectiveUnit ?: $unit;
+        $where = ["p.is_active = 1"];
+        $params = [];
+
+        $unitColExpr = "COALESCE(NULLIF(TRIM(p.unit_tugas), ''), (mu.nama COLLATE utf8mb4_unicode_ci), 'Yayasan')";
+        $uCond = self::getUnitFilterSql($unitColExpr, $params, $targetUnit);
+        if ($uCond !== '1=1') {
+            $where[] = "({$uCond})";
+        }
+        if (!empty($search)) {
+            $term = '%' . trim($search) . '%';
+            $where[] = "(p.nama LIKE ? OR p.niy LIKE ? OR p.jabatan LIKE ?)";
+            array_push($params, $term, $term, $term);
+        }
+        $whereSql = implode(' AND ', $where);
+
+        $pegawaiList = self::db()->findAll("
+            SELECT 
+                p.id, p.niy, p.nama, p.gelar, p.jabatan, p.jenis_pegawai,
+                COALESCE(NULLIF(TRIM(p.unit_tugas), ''), (mu.nama COLLATE utf8mb4_unicode_ci), 'Yayasan') as unit_tugas_efektif,
+                l.jam_masuk_mulai as peg_jam_masuk_mulai,
+                l.jam_masuk_batas as peg_jam_masuk_batas,
+                l.jam_pulang_mulai as peg_jam_pulang_mulai,
+                u.is_custom as unit_is_custom,
+                u.jam_masuk_mulai as unit_jam_masuk_mulai,
+                u.jam_masuk_batas as unit_jam_masuk_batas,
+                u.jam_pulang_mulai as unit_jam_pulang_mulai
+            FROM `pegawai` p
+            LEFT JOIN `pegawai_penugasan` pp ON pp.pegawai_id = p.id
+            LEFT JOIN `master_unit_tugas` mu ON mu.id = pp.unit_tugas_id
+            LEFT JOIN `absen_pegawai_lokasi` l ON l.pegawai_id = p.id
+            LEFT JOIN `absen_pegawai_lokasi_unit` u ON u.unit_tugas = COALESCE(NULLIF(TRIM(p.unit_tugas), ''), (mu.nama COLLATE utf8mb4_unicode_ci), 'Yayasan')
+            WHERE {$whereSql}
+            GROUP BY p.id
+            ORDER BY 
+                CASE 
+                    WHEN LOWER(COALESCE(p.jenis_pegawai, '')) = 'guru'
+                      OR LOWER(COALESCE(p.jabatan, '')) LIKE '%guru%'
+                      OR LOWER(COALESCE(p.jabatan, '')) LIKE '%wali kelas%'
+                    THEN 0 ELSE 1 
+                END ASC,
+                p.nama ASC
+        ", $params);
+
+        $logs = self::db()->findAll("
+            SELECT id, pegawai_id, tanggal, jam_masuk, jam_pulang, status, keterangan, nama_kantor_absen
+            FROM `absen_pegawai_log`
+            WHERE tanggal BETWEEN ? AND ?
+        ", [$startDate, $endDate]);
+
+        $logMap = [];
+        foreach ($logs as $l) {
+            $logMap[(int)$l['pegawai_id']][(string)$l['tanggal']] = $l;
+        }
+
+        $globalSettings = self::getPengaturanGlobal();
+        $jamHarianMap = self::getAllJamHarianMap();
+
+        $guruRows = [];
+        $supportRows = [];
+
+        foreach ($pegawaiList as $p) {
+            $pid = (int)$p['id'];
+            $dailyMap = $jamHarianMap[$pid] ?? [];
+            $jenisPegawai = trim((string)($p['jenis_pegawai'] ?? ''));
+            $jabatanStr = trim((string)($p['jabatan'] ?? ''));
+            $isGuru = (strcasecmp($jenisPegawai, 'Guru') === 0)
+                || (stripos($jabatanStr, 'guru') !== false)
+                || (stripos($jabatanStr, 'wali kelas') !== false);
+
+            $gelar = trim((string)($p['gelar'] ?? ''));
+            $gelarStr = ($gelar !== '' && stripos($p['nama'], $gelar) === false) ? ', ' . $gelar : '';
+
+            $cells = [];
+            $hadirCount = 0;
+            $lateCount = 0;
+
+            foreach ($dates as $d) {
+                $ymd = $d['ymd'];
+                $pl = $logMap[$pid][$ymd] ?? null;
+                $resolvedJam = self::resolvePegawaiJamForDate($p, $dailyMap, $globalSettings, $ymd);
+                $batasEfektif = self::normalizeTimeStr($resolvedJam['jam_masuk_batas'] ?? null, '07:30:00');
+
+                if ($pl) {
+                    $st = trim((string)($pl['status'] ?? ''));
+                    $jamIn = trim((string)($pl['jam_masuk'] ?? ''));
+                    if ($st === 'Terlambat' || $st === 'Hadir' || $jamIn !== '') {
+                        $hadirCount++;
+                        $isPiketSchedule = ($isGuru && substr($batasEfektif, 0, 5) <= '06:30');
+                        $isLatePiket = $isPiketSchedule && (($jamIn !== '' && substr($jamIn, 0, 8) > '06:30:00') || $st === 'Terlambat');
+                        $isLateFinger = $isLatePiket || $st === 'Terlambat' || ($jamIn !== '' && substr($jamIn, 0, 8) > $batasEfektif);
+
+                        if ($isLatePiket) {
+                            $code = 'TP';
+                            $lateCount++;
+                        } elseif ($isLateFinger) {
+                            $code = 'T';
+                            $lateCount++;
+                        } else {
+                            $code = 'H';
+                        }
+                    } elseif ($st === 'Izin') {
+                        $code = 'I';
+                    } elseif ($st === 'Sakit') {
+                        $code = 'S';
+                    } elseif ($st === 'Cuti') {
+                        $code = 'C';
+                    } elseif ($st === 'Dinas Luar') {
+                        $code = 'D';
+                    } else {
+                        $code = 'A';
+                    }
+
+                    $cells[$ymd] = [
+                        'code'        => $code,
+                        'status'      => $st,
+                        'jam_masuk'   => $pl['jam_masuk'] ? substr((string)$pl['jam_masuk'], 0, 5) : '',
+                        'jam_pulang'  => $pl['jam_pulang'] ? substr((string)$pl['jam_pulang'], 0, 5) : '',
+                        'keterangan'  => $pl['keterangan'] ?? '',
+                        'nama_kantor' => $pl['nama_kantor_absen'] ?? '',
+                        'batas_jam'   => substr($batasEfektif, 0, 5),
+                        'has_log'     => true,
+                    ];
+                } elseif ($d['is_sunday'] || $d['is_libur'] || $d['is_future']) {
+                    $cells[$ymd] = [
+                        'code'      => '',
+                        'status'    => '',
+                        'batas_jam' => substr($batasEfektif, 0, 5),
+                        'has_log'   => false,
+                    ];
+                } else {
+                    $cells[$ymd] = [
+                        'code'      => 'A',
+                        'status'    => 'Alpha',
+                        'batas_jam' => substr($batasEfektif, 0, 5),
+                        'has_log'   => false,
+                    ];
+                }
+            }
+
+            $item = [
+                'pegawai_id' => $pid,
+                'nama'       => trim($p['nama'] . $gelarStr),
+                'niy'        => $p['niy'] ?: '-',
+                'unit_tugas' => $p['unit_tugas_efektif'] ?: 'Yayasan',
+                'jabatan'    => $p['jabatan'] ?: ($isGuru ? 'Guru' : 'Support System'),
+                'hadir'      => $hadirCount,
+                'terlambat'  => $lateCount,
+                'cells'      => $cells,
+            ];
+
+            if ($isGuru) {
+                $guruRows[] = $item;
+            } else {
+                $supportRows[] = $item;
+            }
+        }
+
+        return [
+            'start_date' => $startDate,
+            'end_date'   => $endDate,
+            'dates'      => $dates,
+            'groups'     => [
+                'guru'           => $guruRows,
+                'support_system' => $supportRows,
+            ],
+        ];
+    }
+
+    /**
      * Ambil pengaturan global (Lokasi Semula/Default & Radius Global)
      */
     public static function getPengaturanGlobal(): array

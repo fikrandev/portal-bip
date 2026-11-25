@@ -67,6 +67,9 @@ class AbsenPegawaiController
             $filters['search']
         );
         $rekapData = AbsenPegawaiModel::getRekapHarian($targetDate, $filters);
+        $rekapMatrixData = ($filters['rekap_view'] === 'matrix')
+            ? AbsenPegawaiModel::getRekapMatrix($filters['start_date'], $filters['end_date'], $filters['unit_tugas'], $filters['search'])
+            : null;
         $pegawaiList = AbsenPegawaiModel::getAllPegawaiLokasi($filters);
         $allPegawaiDropdown = AbsenPegawaiModel::getAllPegawaiLokasi([]);
         $unitLokasiList = AbsenPegawaiModel::getAllUnitLokasi();

@@ -887,6 +887,14 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
                     </svg>
                     <span>Log Presensi Harian</span>
                 </button>
+
+                <button type="button" onclick="switchRekapSubView('matrix')" id="btn-rekap-sub-matrix"
+                        class="px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer <?= $currentRekapView === 'matrix' ? 'bg-primary-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100' ?>">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3.375 19.5h17.25m-17.25 0a1.125 1.125 0 0 1-1.125-1.125M3.375 19.5h7.5c.621 0 1.125-.504 1.125-1.125m-9.75 0V5.625m0 12.75v-1.5c0-.621.504-1.125 1.125-1.125m18.375 2.625V5.625m0 12.75c0 .621-.504 1.125-1.125 1.125m1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125m0 3.75h-7.5A1.125 1.125 0 0 1 12 18.375m9.75-12.75c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125m19.5 0v1.5c0 .621-.504 1.125-1.125 1.125M2.25 5.625v1.5c0 .621.504 1.125 1.125 1.125m0 0h17.25" />
+                    </svg>
+                    <span>Matriks Kehadiran</span>
+                </button>
             </div>
 
             <!-- Tombol Absen Manual & Cetak PDF Cepat -->
@@ -1473,6 +1481,167 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
             </div>
         </div>
         </div> <!-- End of subview-rekap-harian -->
+
+        <!-- ═════════════════════════════════════════════════════════════════
+             SUB-VIEW C: MATRIKS KEHADIRAN PEGAWAI (PER TANGGAL)
+             ═════════════════════════════════════════════════════════════════ -->
+        <div id="subview-rekap-matrix" class="space-y-4 <?= $currentRekapView === 'matrix' ? '' : 'hidden' ?>">
+            <?php
+            $mData = $rekapMatrixData ?? AbsenPegawaiModel::getRekapMatrix($filters['start_date'], $filters['end_date'], $filters['unit_tugas'], $filters['search']);
+            $mDates = $mData['dates'] ?? [];
+            $mGroups = $mData['groups'] ?? ['guru' => [], 'support_system' => []];
+            ?>
+            <!-- Toolbar Filter Matriks -->
+            <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                <form method="GET" action="<?= url('kelola-absen-pegawai') ?>" class="flex flex-wrap items-center gap-2.5 flex-1">
+                    <input type="hidden" name="tab" value="rekap">
+                    <input type="hidden" name="rekap_view" value="matrix">
+
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-xs font-bold text-slate-700">Periode:</span>
+                        <input type="date" name="start_date" value="<?= e($mData['start_date'] ?? $filters['start_date']) ?>"
+                               class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:bg-white focus:border-primary-500">
+                        <span class="text-xs text-slate-400 font-bold">s/d</span>
+                        <input type="date" name="end_date" value="<?= e($mData['end_date'] ?? $filters['end_date']) ?>"
+                               class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:bg-white focus:border-primary-500">
+                    </div>
+
+                    <?php if (empty($isUnitRestricted)): ?>
+                        <select name="unit_tugas" class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none">
+                            <option value="">Semua Unit</option>
+                            <?php foreach (['PAUD', 'SD', 'SMP', 'SMA', 'Yayasan', 'Staff'] as $uOpt): ?>
+                                <option value="<?= $uOpt ?>" <?= ($filters['unit_tugas'] ?? '') === $uOpt ? 'selected' : '' ?>><?= $uOpt ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    <?php endif; ?>
+
+                    <input type="text" name="search" value="<?= e($filters['search'] ?? '') ?>" placeholder="Cari nama / NIY..."
+                           class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 outline-none focus:bg-white focus:border-primary-500">
+
+                    <button type="submit" class="px-4 py-2 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold cursor-pointer">
+                        Tampilkan Matriks
+                    </button>
+                </form>
+
+                <!-- Legenda Kode -->
+                <div class="flex flex-wrap items-center gap-1.5 text-[10px] font-bold">
+                    <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-700">✓ Hadir</span>
+                    <span class="px-2 py-0.5 rounded bg-amber-100 text-amber-700">T Telat</span>
+                    <span class="px-2 py-0.5 rounded bg-orange-100 text-orange-700">TP Telat Piket</span>
+                    <span class="px-2 py-0.5 rounded bg-sky-100 text-sky-700">I Izin</span>
+                    <span class="px-2 py-0.5 rounded bg-purple-100 text-purple-700">S Sakit</span>
+                    <span class="px-2 py-0.5 rounded bg-teal-100 text-teal-700">C Cuti</span>
+                    <span class="px-2 py-0.5 rounded bg-cyan-100 text-cyan-700">D Tugas</span>
+                    <span class="px-2 py-0.5 rounded bg-rose-100 text-rose-700">A Alpa</span>
+                </div>
+            </div>
+
+            <!-- Tabel Matriks Kehadiran -->
+            <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-[11px]">
+                        <thead>
+                            <tr class="bg-slate-100 border-b border-slate-300 text-slate-700 font-bold">
+                                <th class="py-2.5 px-3 sticky left-0 z-20 bg-slate-100 border-r border-slate-300 min-w-[200px]">Nama Pegawai</th>
+                                <?php foreach ($mDates as $md):
+                                    $hdrCls = $md['is_sunday']
+                                        ? 'bg-rose-100/80 text-rose-700'
+                                        : ($md['is_libur'] ? 'bg-amber-100/80 text-amber-800' : 'bg-slate-100 text-slate-700');
+                                ?>
+                                    <th class="py-2 px-1 text-center border-r border-slate-200 min-w-[34px] <?= $hdrCls ?>"
+                                        title="<?= e($md['ymd'] . ($md['libur_nama'] ? ' (' . $md['libur_nama'] . ')' : '')) ?>">
+                                        <div class="text-[11px] leading-tight"><?= $md['day_num'] ?></div>
+                                        <div class="text-[9px] font-semibold opacity-80"><?= $md['day_short'] ?></div>
+                                    </th>
+                                <?php endforeach; ?>
+                                <th class="py-2 px-2 text-center bg-emerald-50 text-emerald-800 border-l border-slate-300">Hadir</th>
+                                <th class="py-2 px-2 text-center bg-amber-50 text-amber-800">Telat</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-200">
+                            <?php
+                            $mSections = [
+                                ['letter' => 'A.', 'label' => 'Guru', 'items' => $mGroups['guru'] ?? []],
+                                ['letter' => 'B.', 'label' => 'Support System', 'items' => $mGroups['support_system'] ?? []],
+                            ];
+                            $hasAnyMatrix = !empty($mGroups['guru']) || !empty($mGroups['support_system']);
+                            if (!$hasAnyMatrix):
+                            ?>
+                                <tr>
+                                    <td colspan="<?= count($mDates) + 3 ?>" class="py-10 text-center text-slate-400">
+                                        Tidak ada data pegawai untuk filter ini.
+                                    </td>
+                                </tr>
+                            <?php else: ?>
+                                <?php foreach ($mSections as $sec): if (empty($sec['items'])) continue; ?>
+                                    <tr class="bg-sky-100/80 font-extrabold text-slate-900">
+                                        <td class="py-1.5 px-3 sticky left-0 z-10 bg-sky-100/95 border-r border-slate-300">
+                                            <?= e($sec['letter'] . ' ' . $sec['label']) ?>
+                                        </td>
+                                        <td colspan="<?= count($mDates) + 2 ?>"></td>
+                                    </tr>
+                                    <?php foreach ($sec['items'] as $mRow): ?>
+                                        <tr class="hover:bg-slate-50/70">
+                                            <td class="py-2 px-3 sticky left-0 z-10 bg-white border-r border-slate-200">
+                                                <div class="font-bold text-slate-900 truncate max-w-[190px]"><?= e($mRow['nama']) ?></div>
+                                                <div class="text-[10px] text-slate-400 truncate"><?= e($mRow['unit_tugas']) ?></div>
+                                            </td>
+                                            <?php foreach ($mDates as $md):
+                                                $ymd = $md['ymd'];
+                                                $c = $mRow['cells'][$ymd] ?? ['code' => ''];
+                                                $code = $c['code'] ?? '';
+                                                $badgeCls = match($code) {
+                                                    'H'  => 'bg-emerald-100 text-emerald-700',
+                                                    'T'  => 'bg-amber-100 text-amber-700',
+                                                    'TP' => 'bg-orange-100 text-orange-800',
+                                                    'I'  => 'bg-sky-100 text-sky-700',
+                                                    'S'  => 'bg-purple-100 text-purple-700',
+                                                    'C'  => 'bg-teal-100 text-teal-700',
+                                                    'D'  => 'bg-cyan-100 text-cyan-700',
+                                                    'A'  => 'bg-rose-100 text-rose-700',
+                                                    default => ($md['is_sunday'] ? 'bg-rose-50/50 text-slate-300' : 'text-slate-300'),
+                                                };
+                                                $disp = $code === 'H' ? '✓' : ($code !== '' ? $code : '-');
+                                                $tip = $ymd . ($code !== '' ? (' • ' . ($c['status'] ?? $code) . (!empty($c['jam_masuk']) ? ' (' . $c['jam_masuk'] . ')' : '')) : ($md['is_sunday'] ? ' • Ahad' : ($md['libur_nama'] ? ' • ' . $md['libur_nama'] : '')));
+                                                $editPayload = json_encode([
+                                                    'pegawai_id' => $mRow['pegawai_id'],
+                                                    'nama' => $mRow['nama'],
+                                                    'niy' => $mRow['niy'],
+                                                    'unit_tugas' => $mRow['unit_tugas'],
+                                                    'jabatan' => $mRow['jabatan'],
+                                                    'tanggal' => $ymd,
+                                                    'tanggal_formatted' => date('d/m/Y', strtotime($ymd)),
+                                                    'status' => $c['status'] ?: 'Hadir',
+                                                    'jam_masuk' => $c['jam_masuk'] ?? '',
+                                                    'jam_pulang' => $c['jam_pulang'] ?? '',
+                                                    'keterangan' => $c['keterangan'] ?? '',
+                                                    'nama_kantor' => $c['nama_kantor'] ?? '',
+                                                    'batas_jam' => $c['batas_jam'] ?? '07:30',
+                                                    'has_log' => !empty($c['has_log']),
+                                                    'return_tab' => 'rekap',
+                                                    'rekap_view' => 'matrix',
+                                                ]);
+                                            ?>
+                                                <td class="p-1 text-center border-r border-slate-100 <?= $md['is_sunday'] ? 'bg-rose-50/40' : '' ?>">
+                                                    <button type="button"
+                                                            onclick='openModalEditLogPresensi(<?= htmlspecialchars($editPayload, ENT_QUOTES, "UTF-8") ?>)'
+                                                            title="<?= e($tip) ?>"
+                                                            class="w-6 h-6 rounded-md font-extrabold text-[10px] inline-flex items-center justify-center transition-transform hover:scale-110 cursor-pointer <?= $badgeCls ?>">
+                                                        <?= $disp ?>
+                                                    </button>
+                                                </td>
+                                            <?php endforeach; ?>
+                                            <td class="py-2 px-2 text-center font-extrabold text-emerald-700 bg-emerald-50/40 border-l border-slate-200"><?= (int)$mRow['hadir'] ?></td>
+                                            <td class="py-2 px-2 text-center font-extrabold text-amber-700 bg-amber-50/40"><?= (int)$mRow['terlambat'] ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div> <!-- End of subview-rekap-matrix -->
     </div> <!-- End of absen-panel-rekap -->
 
     <!-- ═════════════════════════════════════════════════════════════════════
@@ -2856,28 +3025,20 @@ function setPeriodeAbsen(preset) {
 function switchRekapSubView(mode) {
     const subPeriode = document.getElementById('subview-rekap-periode');
     const subHarian  = document.getElementById('subview-rekap-harian');
+    const subMatrix  = document.getElementById('subview-rekap-matrix');
     const btnPeriode = document.getElementById('btn-rekap-sub-periode');
     const btnHarian  = document.getElementById('btn-rekap-sub-harian');
+    const btnMatrix  = document.getElementById('btn-rekap-sub-matrix');
 
-    if (mode === 'periode') {
-        if (subPeriode) subPeriode.classList.remove('hidden');
-        if (subHarian)  subHarian.classList.add('hidden');
-        if (btnPeriode) {
-            btnPeriode.className = 'px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer bg-primary-600 text-white shadow-xs';
-        }
-        if (btnHarian) {
-            btnHarian.className = 'px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer text-slate-600 hover:bg-slate-100';
-        }
-    } else {
-        if (subPeriode) subPeriode.classList.add('hidden');
-        if (subHarian)  subHarian.classList.remove('hidden');
-        if (btnPeriode) {
-            btnPeriode.className = 'px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer text-slate-600 hover:bg-slate-100';
-        }
-        if (btnHarian) {
-            btnHarian.className = 'px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer bg-primary-600 text-white shadow-xs';
-        }
-    }
+    const activeCls   = 'px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer bg-primary-600 text-white shadow-xs';
+    const inactiveCls = 'px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer text-slate-600 hover:bg-slate-100';
+
+    if (subPeriode) subPeriode.classList.toggle('hidden', mode !== 'periode');
+    if (subHarian)  subHarian.classList.toggle('hidden', mode !== 'harian');
+    if (subMatrix)  subMatrix.classList.toggle('hidden', mode !== 'matrix');
+    if (btnPeriode) btnPeriode.className = (mode === 'periode') ? activeCls : inactiveCls;
+    if (btnHarian)  btnHarian.className  = (mode === 'harian')  ? activeCls : inactiveCls;
+    if (btnMatrix)  btnMatrix.className  = (mode === 'matrix')  ? activeCls : inactiveCls;
 
     const urlObj = new URL(window.location.href);
     urlObj.searchParams.set('tab', 'rekap');
