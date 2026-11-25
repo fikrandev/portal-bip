@@ -1492,8 +1492,8 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
             $mGroups = $mData['groups'] ?? ['guru' => [], 'support_system' => []];
             ?>
             <!-- Toolbar Filter Matriks -->
-            <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-                <form method="GET" action="<?= url('kelola-absen-pegawai') ?>" class="flex flex-wrap items-center gap-2.5 flex-1">
+            <div class="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200/80 shadow-xs">
+                <form method="GET" action="<?= url('kelola-absen-pegawai') ?>" class="flex flex-wrap items-center gap-2.5">
                     <input type="hidden" name="tab" value="rekap">
                     <input type="hidden" name="rekap_view" value="matrix">
 
@@ -1522,43 +1522,70 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
                         Tampilkan Matriks
                     </button>
                 </form>
-
-                <!-- Legenda Kode -->
-                <div class="flex flex-wrap items-center gap-1.5 text-[10px] font-bold">
-                    <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-700">✓ Hadir</span>
-                    <span class="px-2 py-0.5 rounded bg-amber-100 text-amber-700">T Telat</span>
-                    <span class="px-2 py-0.5 rounded bg-orange-100 text-orange-700">TP Telat Piket</span>
-                    <span class="px-2 py-0.5 rounded bg-sky-100 text-sky-700">I Izin</span>
-                    <span class="px-2 py-0.5 rounded bg-purple-100 text-purple-700">S Sakit</span>
-                    <span class="px-2 py-0.5 rounded bg-teal-100 text-teal-700">C Cuti</span>
-                    <span class="px-2 py-0.5 rounded bg-cyan-100 text-cyan-700">D Tugas</span>
-                    <span class="px-2 py-0.5 rounded bg-rose-100 text-rose-700">A Alpa</span>
-                </div>
             </div>
 
-            <!-- Tabel Matriks Kehadiran -->
-            <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+            <!-- Tabel Matriks Kehadiran (Sama Dengan Matrix Kelola Jurnal) -->
+            <div class="bg-white rounded-3xl border border-slate-200/80 shadow-sm overflow-hidden">
+                <div class="p-5 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+                    <div>
+                        <h3 class="font-black text-slate-900 text-base">Data Rekap Harian Matrix (✓ Hadir / ✕ Alpa)</h3>
+                        <p class="text-xs text-slate-500">
+                            Menampilkan matriks kehadiran pegawai dari tanggal <strong><?= date('d M Y', strtotime($mData['start_date'] ?? $filters['start_date'])) ?></strong> s/d <strong><?= date('d M Y', strtotime($mData['end_date'] ?? $filters['end_date'])) ?></strong>
+                        </p>
+                    </div>
+
+                    <!-- Legend -->
+                    <div class="flex flex-wrap items-center gap-2 text-xs font-bold">
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <span class="w-4 h-4 rounded-md bg-emerald-500 text-white flex items-center justify-center text-[10px]">✓</span>
+                            Hadir
+                        </span>
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-amber-50 text-amber-700 border border-amber-200">
+                            <span class="w-4 h-4 rounded-md bg-amber-500 text-white flex items-center justify-center text-[10px]">T</span>
+                            Terlambat
+                        </span>
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-orange-50 text-orange-700 border border-orange-200">
+                            <span class="w-4 h-4 rounded-md bg-orange-500 text-white flex items-center justify-center text-[9px]">TP</span>
+                            Telat Piket
+                        </span>
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-sky-50 text-sky-700 border border-sky-200">
+                            <span class="w-4 h-4 rounded-md bg-sky-500 text-white flex items-center justify-center text-[10px]">I</span>
+                            Izin/Sakit/Cuti
+                        </span>
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-rose-50 text-rose-700 border border-rose-200">
+                            <span class="w-4 h-4 rounded-md bg-rose-500 text-white flex items-center justify-center text-[10px]">✕</span>
+                            Alpa
+                        </span>
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-100 text-slate-500">
+                            <span class="w-4 h-4 rounded-md bg-slate-200 text-slate-500 flex items-center justify-center text-[10px]">-</span>
+                            Libur / Ahad
+                        </span>
+                    </div>
+                </div>
+
                 <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse text-[11px]">
+                    <table class="w-full text-left border-collapse">
                         <thead>
-                            <tr class="bg-slate-100 border-b border-slate-300 text-slate-700 font-bold">
-                                <th class="py-2.5 px-3 sticky left-0 z-20 bg-slate-100 border-r border-slate-300 min-w-[200px]">Nama Pegawai</th>
+                            <tr class="bg-slate-50 border-b border-slate-200 text-[10px] font-extrabold text-slate-600 uppercase">
+                                <th class="py-3 px-3 sticky left-0 z-20 bg-slate-50 border-r border-slate-200 min-w-[195px]">Nama Pegawai</th>
                                 <?php foreach ($mDates as $md):
-                                    $hdrCls = $md['is_sunday']
-                                        ? 'bg-rose-100/80 text-rose-700'
-                                        : ($md['is_libur'] ? 'bg-amber-100/80 text-amber-800' : 'bg-slate-100 text-slate-700');
+                                    $hdrCls = !empty($md['is_sunday'])
+                                        ? 'bg-rose-50/60 text-rose-600'
+                                        : (!empty($md['is_today']) ? 'bg-primary-50 text-primary-700' : (!empty($md['is_libur']) ? 'bg-amber-50/70 text-amber-700' : ''));
                                 ?>
-                                    <th class="py-2 px-1 text-center border-r border-slate-200 min-w-[34px] <?= $hdrCls ?>"
-                                        title="<?= e($md['ymd'] . ($md['libur_nama'] ? ' (' . $md['libur_nama'] . ')' : '')) ?>">
-                                        <div class="text-[11px] leading-tight"><?= $md['day_num'] ?></div>
-                                        <div class="text-[9px] font-semibold opacity-80"><?= $md['day_short'] ?></div>
+                                    <th class="py-2 px-1.5 text-center min-w-[38px] border-r border-slate-100 <?= $hdrCls ?>"
+                                        title="<?= e($md['ymd'] . (!empty($md['libur_nama']) ? ' (' . $md['libur_nama'] . ')' : '')) ?>">
+                                        <div class="text-[9px] font-bold opacity-75"><?= e($md['day_short']) ?></div>
+                                        <div class="text-xs font-black"><?= e($md['day_num']) ?></div>
+                                        <div class="text-[8px] font-normal opacity-70"><?= e($md['month_short'] ?? '') ?></div>
                                     </th>
                                 <?php endforeach; ?>
-                                <th class="py-2 px-2 text-center bg-emerald-50 text-emerald-800 border-l border-slate-300">Hadir</th>
-                                <th class="py-2 px-2 text-center bg-amber-50 text-amber-800">Telat</th>
+                                <th class="py-3 px-2.5 text-center bg-emerald-50/60 text-emerald-700 border-l border-slate-200">Total ✓</th>
+                                <th class="py-3 px-2.5 text-center bg-amber-50/60 text-amber-700">Telat</th>
+                                <th class="py-3 px-2.5 text-center bg-rose-50/60 text-rose-700">Total ✕</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-slate-200">
+                        <tbody class="divide-y divide-slate-100 text-xs">
                             <?php
                             $mSections = [
                                 ['letter' => 'A.', 'label' => 'Guru', 'items' => $mGroups['guru'] ?? []],
@@ -1568,41 +1595,29 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
                             if (!$hasAnyMatrix):
                             ?>
                                 <tr>
-                                    <td colspan="<?= count($mDates) + 3 ?>" class="py-10 text-center text-slate-400">
+                                    <td colspan="<?= count($mDates) + 4 ?>" class="py-10 text-center text-slate-400">
                                         Tidak ada data pegawai untuk filter ini.
                                     </td>
                                 </tr>
                             <?php else: ?>
                                 <?php foreach ($mSections as $sec): if (empty($sec['items'])) continue; ?>
-                                    <tr class="bg-sky-100/80 font-extrabold text-slate-900">
-                                        <td class="py-1.5 px-3 sticky left-0 z-10 bg-sky-100/95 border-r border-slate-300">
+                                    <tr class="bg-sky-50/90 font-extrabold text-slate-800">
+                                        <td class="py-2 px-3 sticky left-0 z-10 bg-sky-50 border-r border-slate-200">
                                             <?= e($sec['letter'] . ' ' . $sec['label']) ?>
                                         </td>
-                                        <td colspan="<?= count($mDates) + 2 ?>"></td>
+                                        <td colspan="<?= count($mDates) + 3 ?>"></td>
                                     </tr>
                                     <?php foreach ($sec['items'] as $mRow): ?>
-                                        <tr class="hover:bg-slate-50/70">
-                                            <td class="py-2 px-3 sticky left-0 z-10 bg-white border-r border-slate-200">
-                                                <div class="font-bold text-slate-900 truncate max-w-[190px]"><?= e($mRow['nama']) ?></div>
-                                                <div class="text-[10px] text-slate-400 truncate"><?= e($mRow['unit_tugas']) ?></div>
+                                        <tr class="hover:bg-slate-50/80 transition-colors">
+                                            <td class="py-2.5 px-3 sticky left-0 z-10 bg-white border-r border-slate-200 font-bold text-slate-900">
+                                                <div class="truncate max-w-[185px]" title="<?= e($mRow['nama']) ?>"><?= e($mRow['nama']) ?></div>
+                                                <div class="text-[10px] text-slate-400 font-normal truncate max-w-[185px]"><?= e($mRow['unit_tugas']) ?></div>
                                             </td>
                                             <?php foreach ($mDates as $md):
                                                 $ymd = $md['ymd'];
                                                 $c = $mRow['cells'][$ymd] ?? ['code' => ''];
                                                 $code = $c['code'] ?? '';
-                                                $badgeCls = match($code) {
-                                                    'H'  => 'bg-emerald-100 text-emerald-700',
-                                                    'T'  => 'bg-amber-100 text-amber-700',
-                                                    'TP' => 'bg-orange-100 text-orange-800',
-                                                    'I'  => 'bg-sky-100 text-sky-700',
-                                                    'S'  => 'bg-purple-100 text-purple-700',
-                                                    'C'  => 'bg-teal-100 text-teal-700',
-                                                    'D'  => 'bg-cyan-100 text-cyan-700',
-                                                    'A'  => 'bg-rose-100 text-rose-700',
-                                                    default => ($md['is_sunday'] ? 'bg-rose-50/50 text-slate-300' : 'text-slate-300'),
-                                                };
-                                                $disp = $code === 'H' ? '✓' : ($code !== '' ? $code : '-');
-                                                $tip = $ymd . ($code !== '' ? (' • ' . ($c['status'] ?? $code) . (!empty($c['jam_masuk']) ? ' (' . $c['jam_masuk'] . ')' : '')) : ($md['is_sunday'] ? ' • Ahad' : ($md['libur_nama'] ? ' • ' . $md['libur_nama'] : '')));
+                                                $tip = $ymd . ($code !== '' ? (' • ' . ($c['status'] ?? $code) . (!empty($c['jam_masuk']) ? ' (' . $c['jam_masuk'] . ')' : '')) : (!empty($md['is_sunday']) ? ' • Ahad' : (!empty($md['libur_nama']) ? ' • ' . $md['libur_nama'] : '')));
                                                 $editPayload = json_encode([
                                                     'pegawai_id' => $mRow['pegawai_id'],
                                                     'nama' => $mRow['nama'],
@@ -1622,17 +1637,43 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
                                                     'rekap_view' => 'matrix',
                                                 ]);
                                             ?>
-                                                <td class="p-1 text-center border-r border-slate-100 <?= $md['is_sunday'] ? 'bg-rose-50/40' : '' ?>">
-                                                    <button type="button"
-                                                            onclick='openModalEditLogPresensi(<?= htmlspecialchars($editPayload, ENT_QUOTES, "UTF-8") ?>)'
-                                                            title="<?= e($tip) ?>"
-                                                            class="w-6 h-6 rounded-md font-extrabold text-[10px] inline-flex items-center justify-center transition-transform hover:scale-110 cursor-pointer <?= $badgeCls ?>">
-                                                        <?= $disp ?>
-                                                    </button>
+                                                <td class="py-2 px-1 text-center border-r border-slate-100 <?= !empty($md['is_sunday']) ? 'bg-rose-50/20' : '' ?>">
+                                                    <?php if ($code === ''): ?>
+                                                        <span class="text-slate-300 font-bold text-xs cursor-pointer"
+                                                              onclick='openModalEditLogPresensi(<?= htmlspecialchars($editPayload, ENT_QUOTES, "UTF-8") ?>)'
+                                                              title="<?= e($tip) ?>">-</span>
+                                                    <?php elseif ($code === 'A'): ?>
+                                                        <button type="button"
+                                                                onclick='openModalEditLogPresensi(<?= htmlspecialchars($editPayload, ENT_QUOTES, "UTF-8") ?>)'
+                                                                title="<?= e($tip . ' (Klik untuk isi/ubah)') ?>"
+                                                                class="w-7 h-7 mx-auto rounded-lg bg-rose-100 hover:bg-rose-500 text-rose-600 hover:text-white border border-rose-300 font-black text-xs flex items-center justify-center transition-all cursor-pointer">
+                                                            ✕
+                                                        </button>
+                                                    <?php else:
+                                                        $solidCls = match($code) {
+                                                            'H'  => 'bg-emerald-500 text-white',
+                                                            'T'  => 'bg-amber-500 text-white',
+                                                            'TP' => 'bg-orange-500 text-white text-[10px]',
+                                                            'I'  => 'bg-sky-500 text-white',
+                                                            'S'  => 'bg-purple-500 text-white',
+                                                            'C'  => 'bg-teal-500 text-white',
+                                                            'D'  => 'bg-cyan-600 text-white',
+                                                            default => 'bg-slate-400 text-white',
+                                                        };
+                                                        $disp = ($code === 'H') ? '✓' : $code;
+                                                    ?>
+                                                        <button type="button"
+                                                                onclick='openModalEditLogPresensi(<?= htmlspecialchars($editPayload, ENT_QUOTES, "UTF-8") ?>)'
+                                                                title="<?= e($tip) ?>"
+                                                                class="w-7 h-7 mx-auto rounded-lg font-black text-xs flex items-center justify-center shadow-2xs transition-transform hover:scale-105 cursor-pointer <?= $solidCls ?>">
+                                                            <?= $disp ?>
+                                                        </button>
+                                                    <?php endif; ?>
                                                 </td>
                                             <?php endforeach; ?>
-                                            <td class="py-2 px-2 text-center font-extrabold text-emerald-700 bg-emerald-50/40 border-l border-slate-200"><?= (int)$mRow['hadir'] ?></td>
-                                            <td class="py-2 px-2 text-center font-extrabold text-amber-700 bg-amber-50/40"><?= (int)$mRow['terlambat'] ?></td>
+                                            <td class="py-2.5 px-2.5 text-center font-black text-emerald-700 bg-emerald-50/30 border-l border-slate-200"><?= (int)$mRow['hadir'] ?></td>
+                                            <td class="py-2.5 px-2.5 text-center font-black text-amber-600 bg-amber-50/30"><?= (int)$mRow['terlambat'] ?></td>
+                                            <td class="py-2.5 px-2.5 text-center font-black text-rose-600 bg-rose-50/30"><?= (int)($mRow['alpa'] ?? 0) ?></td>
                                         </tr>
                                     <?php endforeach; ?>
                                 <?php endforeach; ?>

@@ -1143,21 +1143,25 @@ class AbsenPegawaiModel
         $todayStr = date('Y-m-d');
         $liburMap = self::getLiburMap($startDate, $endDate);
         $dayShortMap = [1 => 'Sen', 2 => 'Sel', 3 => 'Rab', 4 => 'Kam', 5 => 'Jum', 6 => 'Sab', 7 => 'Ahd'];
+        $monthShortMap = [1=>'Jan',2=>'Feb',3=>'Mar',4=>'Apr',5=>'Mei',6=>'Jun',7=>'Jul',8=>'Agu',9=>'Sep',10=>'Okt',11=>'Nov',12=>'Des'];
 
         $dates = [];
         $curTs = $startTs;
         while ($curTs <= $endTs) {
             $ymd = date('Y-m-d', $curTs);
             $n = (int)date('N', $curTs);
+            $mNum = (int)date('n', $curTs);
             $dates[] = [
-                'ymd'        => $ymd,
-                'day_num'    => date('j', $curTs),
-                'month_num'  => date('n', $curTs),
-                'day_short'  => $dayShortMap[$n] ?? '',
-                'is_sunday'  => ($n === 7),
-                'is_libur'   => isset($liburMap[$ymd]),
-                'libur_nama' => $liburMap[$ymd]['nama_libur'] ?? '',
-                'is_future'  => ($ymd > $todayStr),
+                'ymd'         => $ymd,
+                'day_num'     => date('j', $curTs),
+                'month_num'   => $mNum,
+                'month_short' => $monthShortMap[$mNum] ?? '',
+                'day_short'   => $dayShortMap[$n] ?? '',
+                'is_sunday'   => ($n === 7),
+                'is_today'    => ($ymd === $todayStr),
+                'is_libur'    => isset($liburMap[$ymd]),
+                'libur_nama'  => $liburMap[$ymd]['nama_libur'] ?? '',
+                'is_future'   => ($ymd > $todayStr),
             ];
             $curTs = strtotime('+1 day', $curTs);
         }
@@ -1239,6 +1243,7 @@ class AbsenPegawaiModel
             $cells = [];
             $hadirCount = 0;
             $lateCount = 0;
+            $alpaCount = 0;
 
             foreach ($dates as $d) {
                 $ymd = $d['ymd'];
@@ -1274,6 +1279,7 @@ class AbsenPegawaiModel
                         $code = 'D';
                     } else {
                         $code = 'A';
+                        $alpaCount++;
                     }
 
                     $cells[$ymd] = [
@@ -1294,6 +1300,7 @@ class AbsenPegawaiModel
                         'has_log'   => false,
                     ];
                 } else {
+                    $alpaCount++;
                     $cells[$ymd] = [
                         'code'      => 'A',
                         'status'    => 'Alpha',
@@ -1311,6 +1318,7 @@ class AbsenPegawaiModel
                 'jabatan'    => $p['jabatan'] ?: ($isGuru ? 'Guru' : 'Support System'),
                 'hadir'      => $hadirCount,
                 'terlambat'  => $lateCount,
+                'alpa'       => $alpaCount,
                 'cells'      => $cells,
             ];
 
