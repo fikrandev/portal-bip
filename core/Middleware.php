@@ -73,6 +73,32 @@ class Middleware
     }
 
     /**
+     * Require a specific permission OR allow logged-in user with 'personal' authorization scope
+     * (whose controller & model strictly filter output to the user's own data).
+     *
+     * @param string|array $permissionSlug
+     * @return callable
+     */
+    public static function personalOrPermissionRequired(string|array $permissionSlug): callable
+    {
+        return function () use ($permissionSlug) {
+            Middleware::authRequired();
+            if (class_exists('Auth') && Auth::isPersonalScope()) {
+                return true;
+            }
+            $allowed = is_array($permissionSlug)
+                ? RBAC::hasAnyPermission($permissionSlug)
+                : RBAC::hasPermission($permissionSlug);
+            if (!$allowed) {
+                http_response_code(403);
+                include TEMPLATES_PATH . '/errors/403.php';
+                exit;
+            }
+            return true;
+        };
+    }
+
+    /**
      * Guest only — redirect to dashboard if already logged in
      */
     public static function guestOnly(): bool

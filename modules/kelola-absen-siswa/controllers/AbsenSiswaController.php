@@ -1223,12 +1223,17 @@ class AbsenSiswaController
         }
         $cleanKelas = preg_replace('/^Kelas\s+/i', '', $selectedKelas);
 
+        $mapelParams = [];
+        $mapelWhere = "mata_pelajaran IS NOT NULL AND mata_pelajaran != ''";
+        if (class_exists('Auth') && Auth::isPersonalScope()) {
+            $mapelWhere .= " AND (" . Auth::personalPegawaiSqlCondition('pegawai_id', $mapelParams) . ")";
+        }
         $mapelList = $db->findAll("
             SELECT DISTINCT mata_pelajaran 
             FROM pegawai_penugasan_mengajar 
-            WHERE mata_pelajaran IS NOT NULL AND mata_pelajaran != ''
+            WHERE {$mapelWhere}
             ORDER BY mata_pelajaran ASC
-        ");
+        ", $mapelParams);
         if (empty($selectedMapel) && !empty($mapelList)) {
             $selectedMapel = $mapelList[0]['mata_pelajaran'];
         }
@@ -1305,12 +1310,17 @@ class AbsenSiswaController
             }
         } elseif ($mode === 'mapel') {
             // Mode Rekap Absen Mapel (Matriks Pertemuan)
+            $sesMapelParams = [$cleanKelas, $selectedKelas, $selectedMapel];
+            $sesMapelWhere = "(kelas = ? OR kelas = ?) AND mata_pelajaran = ? AND tipe_presensi = 'mapel'";
+            if (class_exists('Auth') && Auth::isPersonalScope()) {
+                $sesMapelWhere .= " AND (" . Auth::personalPegawaiSqlCondition('guru_id', $sesMapelParams) . ")";
+            }
             $sessions = $db->findAll("
                 SELECT id, tanggal, pertemuan_ke, jam_ke, materi
                 FROM presensi_kelas
-                WHERE (kelas = ? OR kelas = ?) AND mata_pelajaran = ? AND tipe_presensi = 'mapel'
+                WHERE {$sesMapelWhere}
                 ORDER BY pertemuan_ke ASC, tanggal ASC
-            ", [$cleanKelas, $selectedKelas, $selectedMapel]);
+            ", $sesMapelParams);
 
             $sessionIds = array_column($sessions, 'id');
             $rawDetails = [];

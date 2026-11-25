@@ -899,6 +899,7 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
 
             <!-- Tombol Absen Manual & Cetak PDF Cepat -->
             <div class="flex flex-wrap items-center gap-2">
+                <?php if (!(class_exists('Auth') && Auth::isPersonalScope()) && RBAC::hasAnyPermission(['absen_pegawai.create', 'absen_pegawai.update'])): ?>
                 <button type="button" onclick="openModalAbsenManual()"
                         class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/20 transition-all cursor-pointer">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
@@ -906,6 +907,7 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
                     </svg>
                     <span>+ Absen Manual</span>
                 </button>
+                <?php endif; ?>
                 <?php
                 $cetakPdfUrl = url('kelola-absen-pegawai/cetak-pdf?' . http_build_query([
                     'start_date' => $filters['start_date'] ?? date('Y-m-01'),

@@ -98,7 +98,7 @@ if (!function_exists('getPersonalModuleSubItems')) {
                     ['label' => 'Dashboard Absen Siswa', 'url' => url('kelola-absen-siswa'),       'match' => '/kelola-absen-siswa',       'exact' => true,  'perm' => 'absen_siswa.dashboard'],
                     ['label' => 'Input Absen Mapel',     'url' => url('kelola-absen-siswa/mapel'), 'match' => '/kelola-absen-siswa/mapel', 'exact' => false, 'perm' => ['absen_siswa.mapel.view', 'absen_siswa.mapel.create']],
                     ['label' => 'Input Absen Kelas',     'url' => url('kelola-absen-siswa/kelas'), 'match' => '/kelola-absen-siswa/kelas', 'exact' => false, 'perm' => ['absen_siswa.kelas.view', 'absen_siswa.kelas.create']],
-                    ['label' => 'Rekap Absen Siswa',     'url' => url('kelola-absen-siswa/rekap'), 'match' => '/kelola-absen-siswa/rekap', 'exact' => false, 'perm' => 'absen_siswa.rekap'],
+                    ['label' => 'Rekap Absen Siswa',     'url' => url('kelola-absen-siswa/rekap'), 'match' => '/kelola-absen-siswa/rekap', 'exact' => false, 'perm' => ['absen_siswa.rekap', 'absen_siswa.dashboard', 'absen_siswa.mapel.view', 'absen_siswa.kelas.view', 'absen_siswa.view']],
                 ];
                 break;
 

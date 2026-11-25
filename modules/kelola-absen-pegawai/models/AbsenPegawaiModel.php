@@ -447,6 +447,9 @@ class AbsenPegawaiModel
         if ($uCond !== '1=1') {
             $where[] = "({$uCond})";
         }
+        if (class_exists('Auth') && Auth::isPersonalScope()) {
+            $where[] = Auth::personalPegawaiSqlCondition('p.id', $params);
+        }
         $whereSql = implode(' AND ', $where);
 
         $sql = "
@@ -687,6 +690,9 @@ class AbsenPegawaiModel
         $uCond = self::getUnitFilterSql($unitColExpr, $params, $targetUnit);
         if ($uCond !== '1=1') {
             $where[] = "({$uCond})";
+        }
+        if (class_exists('Auth') && Auth::isPersonalScope()) {
+            $where[] = Auth::personalPegawaiSqlCondition('p.id', $params);
         }
 
         if (!empty($search)) {
@@ -1175,6 +1181,9 @@ class AbsenPegawaiModel
         $uCond = self::getUnitFilterSql($unitColExpr, $params, $targetUnit);
         if ($uCond !== '1=1') {
             $where[] = "({$uCond})";
+        }
+        if (class_exists('Auth') && Auth::isPersonalScope()) {
+            $where[] = Auth::personalPegawaiSqlCondition('p.id', $params);
         }
         if (!empty($search)) {
             $term = '%' . trim($search) . '%';

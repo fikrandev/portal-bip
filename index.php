@@ -681,11 +681,11 @@ $router->post('/kelola-absen-siswa/kelas/autosave', [AbsenSiswaController::class
 $router->get('/kelola-absen-siswa/kelas/cetak', [AbsenSiswaController::class, 'absenKelasCetak'], [Middleware::permissionRequired('absen_siswa.kelas.view')]);
 
 // Rekap Absen Mapel + Kelas
-$router->get('/kelola-absen-siswa/rekap', [AbsenSiswaController::class, 'rekap'], [Middleware::permissionRequired('absen_siswa.rekap')]);
-$router->get('/kelola-absen-siswa/rekap/cetak', [AbsenSiswaController::class, 'rekapCetak'], [Middleware::permissionRequired('absen_siswa.rekap')]);
-$router->get('/kelola-absen-siswa/rekap/export', [AbsenSiswaController::class, 'rekapExport'], [Middleware::permissionRequired('absen_siswa.export')]);
+$router->get('/kelola-absen-siswa/rekap', [AbsenSiswaController::class, 'rekap'], [Middleware::personalOrPermissionRequired(['absen_siswa.rekap', 'absen_siswa.dashboard', 'absen_siswa.mapel.view', 'absen_siswa.kelas.view', 'absen_siswa.view'])]);
+$router->get('/kelola-absen-siswa/rekap/cetak', [AbsenSiswaController::class, 'rekapCetak'], [Middleware::personalOrPermissionRequired(['absen_siswa.rekap', 'absen_siswa.dashboard', 'absen_siswa.mapel.view', 'absen_siswa.kelas.view', 'absen_siswa.view'])]);
+$router->get('/kelola-absen-siswa/rekap/export', [AbsenSiswaController::class, 'rekapExport'], [Middleware::personalOrPermissionRequired(['absen_siswa.export', 'absen_siswa.rekap', 'absen_siswa.dashboard', 'absen_siswa.mapel.view', 'absen_siswa.kelas.view', 'absen_siswa.view'])]);
 // -- Kelola Lokasi & Radius Absen Pegawai --
-$router->get('/kelola-absen-pegawai', [AbsenPegawaiController::class, 'index'], [Middleware::permissionRequired('absen_pegawai.view')]);
+$router->get('/kelola-absen-pegawai', [AbsenPegawaiController::class, 'index'], [Middleware::personalOrPermissionRequired(['absen_pegawai.view', 'absen_pegawai.dashboard', 'absen_pegawai.create', 'absen_pegawai.update', 'absen_pegawai.approve'])]);
 $router->post('/kelola-absen-pegawai/pengaturan/save', [AbsenPegawaiController::class, 'savePengaturanGlobal'], [Middleware::permissionRequired('absen_pegawai.update')]);
 $router->post('/kelola-absen-pegawai/radius/update', [AbsenPegawaiController::class, 'updateRadiusQuick'], [Middleware::permissionRequired('absen_pegawai.update')]);
 $router->post('/kelola-absen-pegawai/pegawai/save', [AbsenPegawaiController::class, 'saveLokasiPegawai'], [Middleware::permissionRequired('absen_pegawai.update')]);
@@ -695,8 +695,8 @@ $router->post('/kelola-absen-pegawai/jam-kerja/reset', [AbsenPegawaiController::
 $router->post('/kelola-absen-pegawai/unit/save', [AbsenPegawaiController::class, 'saveLokasiUnit'], [Middleware::permissionRequired('absen_pegawai.update')]);
 $router->post('/kelola-absen-pegawai/unit/reset', [AbsenPegawaiController::class, 'resetLokasiUnit'], [Middleware::permissionRequired('absen_pegawai.update')]);
 $router->post('/kelola-absen-pegawai/reset-semua', [AbsenPegawaiController::class, 'resetSemuaLokasi'], [Middleware::permissionRequired('absen_pegawai.delete')]);
-$router->get('/kelola-absen-pegawai/export', [AbsenPegawaiController::class, 'exportCsv'], [Middleware::permissionRequired('absen_pegawai.view')]);
-$router->get('/kelola-absen-pegawai/cetak-pdf', [AbsenPegawaiController::class, 'cetakPdfRekap'], [Middleware::permissionRequired('absen_pegawai.view')]);
+$router->get('/kelola-absen-pegawai/export', [AbsenPegawaiController::class, 'exportCsv'], [Middleware::personalOrPermissionRequired(['absen_pegawai.view', 'absen_pegawai.dashboard', 'absen_pegawai.approve'])]);
+$router->get('/kelola-absen-pegawai/cetak-pdf', [AbsenPegawaiController::class, 'cetakPdfRekap'], [Middleware::personalOrPermissionRequired(['absen_pegawai.view', 'absen_pegawai.dashboard', 'absen_pegawai.approve'])]);
 $router->post('/kelola-absen-pegawai/log/update', [AbsenPegawaiController::class, 'updateLogPresensi'], [Middleware::permissionRequired('absen_pegawai.update')]);
 $router->post('/kelola-absen-pegawai/log/delete', [AbsenPegawaiController::class, 'deleteLogPresensi'], [Middleware::permissionRequired('absen_pegawai.update')]);
 $router->post('/kelola-absen-pegawai/catatan-terlambat/save', [AbsenPegawaiController::class, 'saveCatatanTerlambat'], [Middleware::permissionRequired('absen_pegawai.update')]);

@@ -27,7 +27,10 @@ class AbsenPegawaiController
         AbsenPegawaiModel::init();
 
         $activeTab = $_GET['tab'] ?? 'dashboard';
-        $allowedTabs = ['dashboard', 'pegawai', 'rekap', 'unit', 'pengaturan', 'libur'];
+        $isPersonalScope = class_exists('Auth') && Auth::isPersonalScope();
+        $allowedTabs = $isPersonalScope
+            ? ['dashboard', 'pegawai', 'rekap']
+            : ['dashboard', 'pegawai', 'rekap', 'unit', 'pengaturan', 'libur'];
         if (!in_array($activeTab, $allowedTabs, true)) {
             $activeTab = 'dashboard';
         }
