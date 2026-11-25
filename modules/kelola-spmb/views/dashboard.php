@@ -341,6 +341,8 @@ $group = $stats['activeGroup'] ?? null;
                 $visibleJenjangConfigs = array_filter($jenjangConfigs, fn($k) => Auth::canAccessJenjang($k), ARRAY_FILTER_USE_KEY);
                 foreach ($visibleJenjangConfigs as $k => $cfg):
                     $terisi = $stats['jenjangStats'][$k] ?? 0;
+                    $tidakLulusUnit = $stats['jenjangTidakLulus'][$k] ?? 0;
+                    $sisaKursi = max(0, $cfg['kuota'] - $terisi);
                     $pct = $cfg['kuota'] > 0 ? min(100, round(($terisi / $cfg['kuota']) * 100)) : 0;
                 ?>
                     <div>
@@ -348,11 +350,19 @@ $group = $stats['activeGroup'] ?? null;
                             <span class="font-semibold text-slate-700"><?= $cfg['label'] ?></span>
                             <span class="text-slate-500">
                                 <strong class="text-slate-800"><?= $terisi ?></strong> / <?= $cfg['kuota'] ?> kursi (<?= $pct ?>%)
+                                <?php if ($sisaKursi > 0): ?>
+                                    <span class="text-emerald-600 font-semibold">&bull; Sisa <?= $sisaKursi ?></span>
+                                <?php endif; ?>
                             </span>
                         </div>
                         <div class="w-full h-2.5 rounded-full bg-slate-100 overflow-hidden">
                             <div class="h-full <?= $cfg['color'] ?> rounded-full transition-all duration-500" style="width: <?= $pct ?>%"></div>
                         </div>
+                        <?php if ($tidakLulusUnit > 0): ?>
+                            <p class="text-[10px] text-emerald-700 mt-1 font-medium">
+                                🔓 +<?= $tidakLulusUnit ?> kuota terbuka kembali (<?= $tidakLulusUnit ?> tidak lulus)
+                            </p>
+                        <?php endif; ?>
                     </div>
                 <?php endforeach; ?>
             </div>

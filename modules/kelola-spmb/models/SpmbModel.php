@@ -1602,6 +1602,7 @@ class SpmbModel
                 SUM(CASE WHEN jenis_pendaftaran != 'Daftar Tunggu' AND status_kelulusan = 'Lulus / Diterima' THEN 1 ELSE 0 END) as total_lulus,
                 SUM(CASE WHEN jenis_pendaftaran != 'Daftar Tunggu' AND status_kelulusan = 'Menunggu Seleksi' THEN 1 ELSE 0 END) as total_menunggu,
                 SUM(CASE WHEN jenis_pendaftaran != 'Daftar Tunggu' AND status_kelulusan = 'Lolos Berkas' THEN 1 ELSE 0 END) as total_lolos_berkas,
+                SUM(CASE WHEN jenis_pendaftaran != 'Daftar Tunggu' AND status_kelulusan = 'Tidak Lulus' THEN 1 ELSE 0 END) as total_tidak_lulus,
                 SUM(CASE WHEN jenis_pendaftaran != 'Daftar Tunggu' AND status_kelulusan = 'Dibatalkan' THEN 1 ELSE 0 END) as total_dibatalkan,
                 SUM(CASE WHEN jenis_pendaftaran != 'Daftar Tunggu' AND (kategori_pendaftar LIKE '%Keluarga%' OR kategori_pendaftar LIKE '%Adik%' OR kategori_pendaftar LIKE '%Saudara%') THEN 1 ELSE 0 END) as total_keluarga,
                 SUM(CASE WHEN jenis_pendaftaran != 'Daftar Tunggu' AND ((kategori_pendaftar NOT LIKE '%Keluarga%' AND kategori_pendaftar NOT LIKE '%Adik%' AND kategori_pendaftar NOT LIKE '%Saudara%') OR kategori_pendaftar IS NULL OR kategori_pendaftar = '') THEN 1 ELSE 0 END) as total_umum,
@@ -1612,16 +1613,31 @@ class SpmbModel
             $whereGroup
         ", $baseParams) ?: [];
 
-        // Breakdown per Jenjang (Hanya Siswa Baru & Pindahan, Daftar Tunggu tidak masuk kuota/progres)
+        // Breakdown per Jenjang (Hanya Siswa Baru & Pindahan; Daftar Tunggu, Tidak Lulus, & Dibatalkan tidak memakan kuota)
+        $quotaConds = $nonDtConds;
+        $quotaConds[] = "COALESCE(status_kelulusan, '') NOT IN ('Tidak Lulus', 'Dibatalkan')";
+        $whereQuota = "WHERE " . implode(" AND ", $quotaConds);
         $jenjangRaw = self::db()->findAll("
             SELECT jenjang, COUNT(*) as jumlah
             FROM `spmb_pendaftar`
-            $whereNonDaftarTunggu
+            $whereQuota
             GROUP BY jenjang
         ", $baseParams);
         $jenjangStats = ['PAUD' => 0, 'SD' => 0, 'SMP' => 0, 'SMA' => 0];
         foreach ($jenjangRaw as $r) {
             $jenjangStats[$r['jenjang']] = (int)$r['jumlah'];
+        }
+
+        // Hitung jumlah Tidak Lulus per jenjang (yang membuka kembali kuota)
+        $tidakLulusRaw = self::db()->findAll("
+            SELECT jenjang, COUNT(*) as jumlah
+            FROM `spmb_pendaftar`
+            $whereNonDaftarTunggu AND status_kelulusan = 'Tidak Lulus'
+            GROUP BY jenjang
+        ", $baseParams);
+        $jenjangTidakLulus = ['PAUD' => 0, 'SD' => 0, 'SMP' => 0, 'SMA' => 0];
+        foreach ($tidakLulusRaw as $r) {
+            $jenjangTidakLulus[$r['jenjang']] = (int)$r['jumlah'];
         }
 
         // Breakdown per Kategori / Jalur (Hanya Siswa Baru & Pindahan)
@@ -1652,6 +1668,7 @@ class SpmbModel
             'totalLulus'        => (int)($counts['total_lulus'] ?? 0),
             'totalMenunggu'     => (int)($counts['total_menunggu'] ?? 0),
             'totalLolosBerkas'  => (int)($counts['total_lolos_berkas'] ?? 0),
+            'totalTidakLulus'   => (int)($counts['total_tidak_lulus'] ?? 0),
             'totalDibatalkan'   => (int)($counts['total_dibatalkan'] ?? 0),
             'totalKeluarga'     => (int)($counts['total_keluarga'] ?? 0),
             'totalUmum'         => (int)($counts['total_umum'] ?? 0),
@@ -1659,6 +1676,7 @@ class SpmbModel
             'totalLunas'        => (int)($counts['total_lunas'] ?? 0),
             'totalBelumLunas'   => (int)($counts['total_belum_lunas'] ?? 0),
             'jenjangStats'      => $jenjangStats,
+            'jenjangTidakLulus' => $jenjangTidakLulus,
             'jalurStats'        => $jalurStats,
             'recentPendaftar'   => $recentPendaftar
         ];
