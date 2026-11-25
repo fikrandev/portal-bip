@@ -229,6 +229,7 @@ spl_autoload_register(static function (string $class): void {
         'JurnalStaffAdminController' => '/modules/kelola-jurnal-staff/controllers/JurnalStaffAdminController.php',
         'MobileSarprasController'   => '/modules/mobile-sarpras/controllers/MobileSarprasController.php',
         'MobileSarprasAuthController' => '/modules/mobile-sarpras/controllers/MobileSarprasAuthController.php',
+        'PersuratanController'      => '/modules/persuratan/controllers/PersuratanController.php',
     ];
     if (isset($controllerMap[$class])) {
         require_once BASE_PATH . $controllerMap[$class];
@@ -757,6 +758,18 @@ $router->get('/kelola-ibadah-guru', [IbadahGuruController::class, 'index'], [[Mi
 $router->post('/kelola-ibadah-guru/store', [IbadahGuruController::class, 'store'], [[Middleware::class, 'authRequired']]);
 $router->post('/kelola-ibadah-guru/delete/{id}', [IbadahGuruController::class, 'delete'], [Middleware::permissionRequired('ibadah_guru.delete')]);
 $router->get('/kelola-ibadah-guru/cetak', [IbadahGuruController::class, 'cetak'], [[Middleware::class, 'authRequired']]);
+
+// -- Modul Persuratan Yayasan & Persuratan Sekolah --
+$router->get('/persuratan-yayasan', [PersuratanController::class, 'yayasanIndex'], [[Middleware::class, 'authRequired']]);
+$router->get('/persuratan-sekolah', [PersuratanController::class, 'sekolahIndex'], [[Middleware::class, 'authRequired']]);
+$router->post('/persuratan/surat/store', [PersuratanController::class, 'storeSurat'], [[Middleware::class, 'authRequired']]);
+$router->post('/persuratan/surat/delete', [PersuratanController::class, 'deleteSurat'], [[Middleware::class, 'authRequired']]);
+$router->get('/persuratan/cetak/{id}', [PersuratanController::class, 'cetakSurat'], [[Middleware::class, 'authRequired']]);
+$router->get('/persuratan/api/next-nomor', [PersuratanController::class, 'apiNextNomor'], [[Middleware::class, 'authRequired']]);
+$router->post('/persuratan/jenis/store', [PersuratanController::class, 'storeJenis'], [[Middleware::class, 'authRequired']]);
+$router->post('/persuratan/jenis/delete', [PersuratanController::class, 'deleteJenis'], [[Middleware::class, 'authRequired']]);
+$router->post('/persuratan/kop/save', [PersuratanController::class, 'saveKop'], [[Middleware::class, 'authRequired']]);
+$router->get('/persuratan/export', [PersuratanController::class, 'exportCsv'], [[Middleware::class, 'authRequired']]);
 // -- Kelola SPMB (Seleksi Penerimaan Murid Baru) --
 // 1. Dashboard & Entry Point
 $router->get('/kelola-spmb', [SpmbController::class, 'index'], [[Middleware::class, 'authRequired']]);
