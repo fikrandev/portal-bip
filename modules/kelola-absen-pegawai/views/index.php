@@ -1489,7 +1489,8 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
              ═════════════════════════════════════════════════════════════════ -->
         <div id="subview-rekap-matrix" class="space-y-4 <?= $currentRekapView === 'matrix' ? '' : 'hidden' ?>">
             <?php
-            $mData = $rekapMatrixData ?? AbsenPegawaiModel::getRekapMatrix($filters['start_date'], $filters['end_date'], $filters['unit_tugas'], $filters['search']);
+            $matrixEndDefault = $filters['matrix_end_date'] ?? $filters['end_date'];
+            $mData = $rekapMatrixData ?? AbsenPegawaiModel::getRekapMatrix($filters['start_date'], $matrixEndDefault, $filters['unit_tugas'], $filters['search']);
             $mDates = $mData['dates'] ?? [];
             $mGroups = $mData['groups'] ?? ['guru' => [], 'support_system' => []];
             ?>
@@ -1504,7 +1505,7 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
                         <input type="date" name="start_date" value="<?= e($mData['start_date'] ?? $filters['start_date']) ?>"
                                class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:bg-white focus:border-primary-500">
                         <span class="text-xs text-slate-400 font-bold">s/d</span>
-                        <input type="date" name="end_date" value="<?= e($mData['end_date'] ?? $filters['end_date']) ?>"
+                        <input type="date" name="end_date" value="<?= e($mData['end_date'] ?? $matrixEndDefault) ?>"
                                class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:bg-white focus:border-primary-500">
                     </div>
 
@@ -1532,7 +1533,7 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
                     <div>
                         <h3 class="font-black text-slate-900 text-base">Data Rekap Harian Matrix (✓ Hadir / ✕ Alpa)</h3>
                         <p class="text-xs text-slate-500">
-                            Menampilkan matriks kehadiran pegawai dari tanggal <strong><?= date('d M Y', strtotime($mData['start_date'] ?? $filters['start_date'])) ?></strong> s/d <strong><?= date('d M Y', strtotime($mData['end_date'] ?? $filters['end_date'])) ?></strong>
+                            Menampilkan matriks kehadiran pegawai dari tanggal <strong><?= date('d M Y', strtotime($mData['start_date'] ?? $filters['start_date'])) ?></strong> s/d <strong><?= date('d M Y', strtotime($mData['end_date'] ?? $matrixEndDefault)) ?></strong>
                         </p>
                     </div>
 
