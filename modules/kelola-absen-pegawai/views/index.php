@@ -889,22 +889,31 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
                 </button>
             </div>
 
-            <!-- Tombol Cetak PDF Cepat -->
-            <?php
-            $cetakPdfUrl = url('kelola-absen-pegawai/cetak-pdf?' . http_build_query([
-                'start_date' => $filters['start_date'] ?? date('Y-m-01'),
-                'end_date'   => $filters['end_date'] ?? date('Y-m-d'),
-                'unit_tugas' => $filters['unit_tugas'] ?? '',
-                'search'     => $filters['search'] ?? ''
-            ]));
-            ?>
-            <a href="<?= $cetakPdfUrl ?>" target="_blank"
-               class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-500 hover:to-rose-600 text-white text-xs font-bold shadow-md shadow-rose-600/20 transition-all cursor-pointer">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24-1.076-.672-2.144-1.28-3.093l-.408-.637c-.368-.574-.532-.83-.532-1.127 0-.482.352-.892.83-.974.776-.133 1.57-.213 2.378-.238m10.584 6.069c.24-1.076.672-2.144 1.28-3.093l.408-.637c.368-.574.532-.83.532-1.127 0-.482-.352-.892-.83-.974a24.28 24.28 0 0 0-2.378-.238M6.75 6.75h10.5a2.25 2.25 0 0 1 2.25 2.25v9.75a2.25 2.25 0 0 1-2.25 2.25H6.75a2.25 2.25 0 0 1-2.25-2.25V9a2.25 2.25 0 0 1 2.25-2.25Zm0 0V4.5a2.25 2.25 0 0 1 2.25-2.25h6a2.25 2.25 0 0 1 2.25 2.25v2.25" />
-                </svg>
-                <span>Cetak PDF Rekap</span>
-            </a>
+            <!-- Tombol Absen Manual & Cetak PDF Cepat -->
+            <div class="flex flex-wrap items-center gap-2">
+                <button type="button" onclick="openModalAbsenManual()"
+                        class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/20 transition-all cursor-pointer">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    </svg>
+                    <span>+ Absen Manual</span>
+                </button>
+                <?php
+                $cetakPdfUrl = url('kelola-absen-pegawai/cetak-pdf?' . http_build_query([
+                    'start_date' => $filters['start_date'] ?? date('Y-m-01'),
+                    'end_date'   => $filters['end_date'] ?? date('Y-m-d'),
+                    'unit_tugas' => $filters['unit_tugas'] ?? '',
+                    'search'     => $filters['search'] ?? ''
+                ]));
+                ?>
+                <a href="<?= $cetakPdfUrl ?>" target="_blank"
+                   class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-500 hover:to-rose-600 text-white text-xs font-bold shadow-md shadow-rose-600/20 transition-all cursor-pointer">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24-1.076-.672-2.144-1.28-3.093l-.408-.637c-.368-.574-.532-.83-.532-1.127 0-.482.352-.892.83-.974.776-.133 1.57-.213 2.378-.238m10.584 6.069c.24-1.076.672-2.144 1.28-3.093l.408-.637c.368-.574.532-.83.532-1.127 0-.482-.352-.892-.83-.974a24.28 24.28 0 0 0-2.378-.238M6.75 6.75h10.5a2.25 2.25 0 0 1 2.25 2.25v9.75a2.25 2.25 0 0 1-2.25 2.25H6.75a2.25 2.25 0 0 1-2.25-2.25V9a2.25 2.25 0 0 1 2.25-2.25Zm0 0V4.5a2.25 2.25 0 0 1 2.25-2.25h6a2.25 2.25 0 0 1 2.25 2.25v2.25" />
+                    </svg>
+                    <span>Cetak PDF Rekap</span>
+                </a>
+            </div>
         </div>
 
         <!-- ═════════════════════════════════════════════════════════════════
@@ -2525,6 +2534,117 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
     </div>
 </div>
 
+<!-- Modal Input Absen Manual (Untuk Pegawai yang Lupa / Kendala / Terlambat Melapor) -->
+<div id="modalAbsenManual" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
+    <div class="relative bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 my-8">
+        <div class="flex items-start justify-between pb-4 border-b border-slate-100">
+            <div>
+                <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 mb-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+                    Input Absen Manual
+                </div>
+                <h3 class="text-base font-extrabold text-slate-900">Catat Presensi Pegawai Secara Manual</h3>
+                <p class="text-xs text-slate-500">Gunakan form ini jika pegawai terlambat melapor atau mengalami kendala tidak bisa absen di HP.</p>
+            </div>
+            <button type="button" onclick="closeModal('modalAbsenManual')" class="p-1.5 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+
+        <form method="POST" action="<?= url('kelola-absen-pegawai/log/update') ?>" class="space-y-4 mt-4">
+            <?= CSRF::field() ?>
+            <input type="hidden" name="return_tab" value="rekap">
+            <input type="hidden" name="rekap_view" id="manual_rekap_view" value="<?= e($currentRekapView ?? 'periode') ?>">
+
+            <!-- Pilih Pegawai (dengan pencarian cepat) -->
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Pilih Pegawai <span class="text-rose-500">*</span></label>
+                <input type="text" id="manual_pegawai_search" oninput="filterManualPegawaiOptions(this.value)" placeholder="Ketik nama / NIY pegawai untuk filter cepat..."
+                       class="w-full px-3.5 py-2 mb-1.5 rounded-xl border border-slate-200 bg-white text-xs text-slate-800 outline-none focus:border-emerald-500">
+                <select name="pegawai_id" id="manual_pegawai_id" required
+                        class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-bold text-slate-800 outline-none focus:bg-white focus:border-emerald-500">
+                    <option value="">-- Pilih Pegawai --</option>
+                    <?php foreach (($allPegawaiDropdown ?? []) as $pgItem):
+                        $pgNama = trim((string)($pgItem['nama'] ?? '')) . (!empty($pgItem['gelar']) ? ', ' . $pgItem['gelar'] : '');
+                        $pgUnit = $pgItem['unit_tugas'] ?: 'Yayasan';
+                        $pgNiy  = $pgItem['niy'] ?: '-';
+                    ?>
+                        <option value="<?= (int)$pgItem['id'] ?>" data-search="<?= e(strtolower($pgNama . ' ' . $pgNiy . ' ' . $pgUnit)) ?>">
+                            <?= e($pgNama) ?> (<?= e($pgUnit) ?> • NIY: <?= e($pgNiy) ?>)
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+
+            <!-- Tanggal & Status -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Tanggal Absen <span class="text-rose-500">*</span></label>
+                    <input type="date" name="tanggal" id="manual_tanggal" value="<?= e($targetDate ?? date('Y-m-d')) ?>" required
+                           class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-bold text-slate-800 outline-none focus:bg-white focus:border-emerald-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Status Kehadiran <span class="text-rose-500">*</span></label>
+                    <select name="status" id="manual_status" required onchange="handleManualAbsenStatusChange(this.value)"
+                            class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-bold text-slate-800 outline-none focus:bg-white focus:border-emerald-500">
+                        <option value="Hadir">Hadir (Tepat Waktu)</option>
+                        <option value="Terlambat">Hadir Terlambat</option>
+                        <option value="Izin">Izin</option>
+                        <option value="Sakit">Sakit</option>
+                        <option value="Cuti">Cuti</option>
+                        <option value="Dinas Luar">Tugas / Dinas Luar</option>
+                        <option value="Alpha">Alpa (Tanpa Keterangan)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Preset Cepat -->
+            <div class="flex flex-wrap gap-1.5">
+                <button type="button" onclick="setManualAbsenStatusPreset('Hadir')" class="px-2.5 py-1 rounded-xl text-[11px] font-bold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 transition-colors cursor-pointer">🟢 Hadir (07:15)</button>
+                <button type="button" onclick="setManualAbsenStatusPreset('Terlambat')" class="px-2.5 py-1 rounded-xl text-[11px] font-bold bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 transition-colors cursor-pointer">🟡 Terlambat (07:45)</button>
+                <button type="button" onclick="setManualAbsenStatusPreset('Izin')" class="px-2.5 py-1 rounded-xl text-[11px] font-bold bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 transition-colors cursor-pointer">🔵 Izin</button>
+                <button type="button" onclick="setManualAbsenStatusPreset('Sakit')" class="px-2.5 py-1 rounded-xl text-[11px] font-bold bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 transition-colors cursor-pointer">🟣 Sakit</button>
+                <button type="button" onclick="setManualAbsenStatusPreset('Dinas Luar')" class="px-2.5 py-1 rounded-xl text-[11px] font-bold bg-cyan-50 hover:bg-cyan-100 text-cyan-700 border border-cyan-200 transition-colors cursor-pointer">💼 Tugas</button>
+            </div>
+
+            <!-- Jam Masuk & Jam Pulang -->
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Jam Masuk</label>
+                    <input type="time" name="jam_masuk" id="manual_jam_masuk" value="07:15"
+                           class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-mono font-bold text-slate-800 outline-none focus:bg-white focus:border-emerald-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Jam Pulang</label>
+                    <input type="time" name="jam_pulang" id="manual_jam_pulang" value="15:00"
+                           class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-mono font-bold text-slate-800 outline-none focus:bg-white focus:border-emerald-500">
+                </div>
+            </div>
+
+            <!-- Keterangan -->
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Keterangan / Alasan Absen Manual</label>
+                <input type="text" name="keterangan" id="manual_keterangan" value="Absen manual admin (kendala absen / laporan terlambat)"
+                       placeholder="Contoh: Kendala GPS / HP bermasalah / laporan terlambat"
+                       class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs text-slate-800 outline-none focus:bg-white focus:border-emerald-500">
+            </div>
+
+            <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-2">
+                <button type="button" onclick="closeModal('modalAbsenManual')"
+                        class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer">
+                    Batal
+                </button>
+                <button type="submit"
+                        class="px-5 py-2 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-600/20 transition-all cursor-pointer">
+                    Simpan Absen Manual
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <!-- Modal Catatan Keterlambatan (Evaluasi & Tindak Lanjut) -->
 <div id="modalCatatanTerlambat" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
     <div class="relative w-full max-w-xl bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden my-8 animate-in fade-in zoom-in duration-150">
@@ -3340,6 +3460,63 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 let currentEditLogData = null;
+
+function openModalAbsenManual() {
+    const searchInp = document.getElementById('manual_pegawai_search');
+    if (searchInp) {
+        searchInp.value = '';
+        filterManualPegawaiOptions('');
+    }
+    const sel = document.getElementById('manual_pegawai_id');
+    if (sel) sel.value = '';
+    setManualAbsenStatusPreset('Hadir');
+    const modal = document.getElementById('modalAbsenManual');
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+}
+
+function filterManualPegawaiOptions(keyword) {
+    const sel = document.getElementById('manual_pegawai_id');
+    if (!sel) return;
+    const q = (keyword || '').trim().toLowerCase();
+    Array.from(sel.options).forEach((opt, idx) => {
+        if (idx === 0) {
+            opt.hidden = false;
+            return;
+        }
+        const hay = opt.getAttribute('data-search') || opt.textContent.toLowerCase();
+        opt.hidden = q !== '' && !hay.includes(q);
+    });
+}
+
+function setManualAbsenStatusPreset(st) {
+    const sel = document.getElementById('manual_status');
+    if (sel) sel.value = st;
+    handleManualAbsenStatusChange(st);
+}
+
+function handleManualAbsenStatusChange(st) {
+    const jamIn = document.getElementById('manual_jam_masuk');
+    const jamOut = document.getElementById('manual_jam_pulang');
+    const ket = document.getElementById('manual_keterangan');
+    if (!jamIn || !jamOut) return;
+
+    if (st === 'Hadir') {
+        if (!jamIn.value) jamIn.value = '07:15';
+        if (!jamOut.value) jamOut.value = '15:00';
+        if (ket && (!ket.value || ket.value.startsWith('Izin') || ket.value.startsWith('Sakit'))) {
+            ket.value = 'Absen manual admin (kendala absen / laporan terlambat)';
+        }
+    } else if (st === 'Terlambat') {
+        jamIn.value = '07:45';
+        if (!jamOut.value) jamOut.value = '15:00';
+    } else if (['Izin', 'Sakit', 'Cuti', 'Alpha'].includes(st)) {
+        jamIn.value = '';
+        jamOut.value = '';
+    }
+}
 
 function openModalEditLogPresensi(data) {
     currentEditLogData = data;
