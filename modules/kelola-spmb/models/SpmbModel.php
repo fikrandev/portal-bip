@@ -3040,12 +3040,12 @@ class SpmbModel
             return ['success' => false, 'message' => 'Instrumen pertanyaan observasi awal belum dikonfigurasi untuk unit ' . $jenjang];
         }
 
-        // Info pengisi
-        $namaPengisi     = trim($postData['nama_pengisi'] ?? '');
-        $hubunganPengisi = trim($postData['hubungan_pengisi'] ?? 'Orang Tua / Wali');
-        $noWaPengisi     = trim($postData['no_wa_pengisi'] ?? ($pendaftar['no_wa'] ?: ''));
-        $catatanOrtu     = trim($postData['catatan_orang_tua'] ?? '');
-        $harapanOrtu     = trim($postData['harapan_orang_tua'] ?? '');
+        // Info pengisi (dibatasi panjang aman agar sesuai kolom database)
+        $namaPengisi     = mb_substr(trim((string)($postData['nama_pengisi'] ?? '')), 0, 250);
+        $hubunganPengisi = mb_substr(trim((string)($postData['hubungan_pengisi'] ?? 'Orang Tua / Wali')), 0, 100);
+        $noWaPengisi     = mb_substr(trim((string)($postData['no_wa_pengisi'] ?? ($pendaftar['no_wa'] ?: ''))), 0, 150);
+        $catatanOrtu     = trim((string)($postData['catatan_orang_tua'] ?? ''));
+        $harapanOrtu     = trim((string)($postData['harapan_orang_tua'] ?? ''));
 
         if (empty($namaPengisi)) {
             return ['success' => false, 'message' => 'Mohon isi nama lengkap Ayah/Ibu/Wali yang mengisi formulir.'];
@@ -3092,7 +3092,7 @@ class SpmbModel
                 $parsedAnswers[] = [
                     'pertanyaan_id'   => $qId,
                     'group_id'        => (int)$grp['id'],
-                    'pilihan_jawaban' => $labelChosen,
+                    'pilihan_jawaban' => mb_substr((string)$labelChosen, 0, 250),
                     'skor'            => $skorItem,
                     'catatan_jawaban' => $catatanItem !== '' ? $catatanItem : null
                 ];
@@ -3111,38 +3111,45 @@ class SpmbModel
             $kategoriHasil = 'Cukup';
         }
 
-        $tokenRespon = $pendaftar['observasi_token'] ?: bin2hex(random_bytes(24));
+        $tokenRespon = mb_substr((string)($pendaftar['observasi_token'] ?: bin2hex(random_bytes(24))), 0, 64);
+        $ipSafe = $ip !== null ? mb_substr(trim($ip), 0, 45) : null;
 
-        // Cek respon yang sudah ada (UPSERT)
+        // Cek respon yang sudah ada (UPSERT dengan auto-heal panjang kolom jika server belum migrate)
         $existing = self::db()->find("SELECT id FROM `spmb_observasi_respon` WHERE `pendaftar_id` = ?", [$pendaftarId]);
-        if ($existing) {
-            $responId = (int)$existing['id'];
-            self::db()->query("
-                UPDATE `spmb_observasi_respon` SET
-                    `status` = 'selesai',
-                    `nama_pengisi` = ?,
-                    `hubungan_pengisi` = ?,
-                    `no_wa_pengisi` = ?,
-                    `total_skor` = ?,
-                    `skor_maksimal` = ?,
-                    `persentase` = ?,
-                    `kategori_hasil` = ?,
-                    `catatan_orang_tua` = ?,
-                    `harapan_orang_tua` = ?,
-                    `submitted_at` = NOW(),
-                    `ip_address` = ?,
-                    `user_agent` = ?,
-                    `updated_at` = NOW()
-                WHERE `id` = ?
-            ", [
-                $namaPengisi, $hubunganPengisi, $noWaPengisi,
-                $totalSkor, $skorMaksTotal, $persentase, $kategoriHasil,
-                $catatanOrtu, $harapanOrtu, $ip, $ua, $responId
-            ]);
+        $saveRespon = function (string $nama, string $hubungan, string $noWa) use (
+            $existing, $pendaftarId, $tokenRespon, $totalSkor, $skorMaksTotal,
+            $persentase, $kategoriHasil, $catatanOrtu, $harapanOrtu, $ipSafe, $ua
+        ): int {
+            if ($existing) {
+                $rId = (int)$existing['id'];
+                self::db()->query("
+                    UPDATE `spmb_observasi_respon` SET
+                        `status` = 'selesai',
+                        `nama_pengisi` = ?,
+                        `hubungan_pengisi` = ?,
+                        `no_wa_pengisi` = ?,
+                        `total_skor` = ?,
+                        `skor_maksimal` = ?,
+                        `persentase` = ?,
+                        `kategori_hasil` = ?,
+                        `catatan_orang_tua` = ?,
+                        `harapan_orang_tua` = ?,
+                        `submitted_at` = NOW(),
+                        `ip_address` = ?,
+                        `user_agent` = ?,
+                        `updated_at` = NOW()
+                    WHERE `id` = ?
+                ", [
+                    $nama, $hubungan, $noWa,
+                    $totalSkor, $skorMaksTotal, $persentase, $kategoriHasil,
+                    $catatanOrtu, $harapanOrtu, $ipSafe, $ua, $rId
+                ]);
 
-            // Hapus jawaban lama dan simpan yang baru
-            self::db()->query("DELETE FROM `spmb_observasi_jawaban` WHERE `respon_id` = ?", [$responId]);
-        } else {
+                // Hapus jawaban lama dan simpan yang baru
+                self::db()->query("DELETE FROM `spmb_observasi_jawaban` WHERE `respon_id` = ?", [$rId]);
+                return $rId;
+            }
+
             self::db()->query("
                 INSERT INTO `spmb_observasi_respon` (
                     `pendaftar_id`, `token`, `status`, `nama_pengisi`, `hubungan_pengisi`,
@@ -3150,11 +3157,35 @@ class SpmbModel
                     `catatan_orang_tua`, `harapan_orang_tua`, `submitted_at`, `ip_address`, `user_agent`, `created_at`, `updated_at`
                 ) VALUES (?, ?, 'selesai', ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, NOW(), NOW())
             ", [
-                $pendaftarId, $tokenRespon, $namaPengisi, $hubunganPengisi,
-                $noWaPengisi, $totalSkor, $skorMaksTotal, $persentase, $kategoriHasil,
-                $catatanOrtu, $harapanOrtu, $ip, $ua
+                $pendaftarId, $tokenRespon, $nama, $hubungan,
+                $noWa, $totalSkor, $skorMaksTotal, $persentase, $kategoriHasil,
+                $catatanOrtu, $harapanOrtu, $ipSafe, $ua
             ]);
-            $responId = (int)self::db()->lastInsertId();
+            return (int)self::db()->lastInsertId();
+        };
+
+        try {
+            $responId = $saveRespon($namaPengisi, $hubunganPengisi, $noWaPengisi);
+        } catch (PDOException $e) {
+            if ($e->getCode() === '22001' || str_contains($e->getMessage(), 'Data too long')) {
+                try {
+                    self::db()->getConnection()->exec("
+                        ALTER TABLE `spmb_observasi_respon`
+                            MODIFY COLUMN `nama_pengisi` VARCHAR(255) NULL,
+                            MODIFY COLUMN `hubungan_pengisi` VARCHAR(100) NULL,
+                            MODIFY COLUMN `no_wa_pengisi` VARCHAR(150) NULL
+                    ");
+                    $responId = $saveRespon($namaPengisi, $hubunganPengisi, $noWaPengisi);
+                } catch (Throwable $alterEx) {
+                    $responId = $saveRespon(
+                        mb_substr($namaPengisi, 0, 150),
+                        mb_substr($hubunganPengisi, 0, 50),
+                        mb_substr($noWaPengisi, 0, 30)
+                    );
+                }
+            } else {
+                throw $e;
+            }
         }
 
         // Insert jawaban per pertanyaan

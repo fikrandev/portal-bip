@@ -330,6 +330,7 @@ if (defined('SYS_APP_LOGO') && !empty(SYS_APP_LOGO)) {
                                    name="nama_pengisi" 
                                    id="nama_pengisi" 
                                    required 
+                                   maxlength="150"
                                    value="<?= htmlspecialchars($respon['nama_pengisi'] ?? ($pendaftar['nama_ayah'] ?: ($pendaftar['nama_ibu'] ?: ''))) ?>" 
                                    placeholder="Contoh: Ahmad Fauzi, S.T." 
                                    class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs sm:text-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-all font-semibold">
@@ -357,6 +358,7 @@ if (defined('SYS_APP_LOGO') && !empty(SYS_APP_LOGO)) {
                                    name="no_wa_pengisi" 
                                    id="no_wa_pengisi" 
                                    required 
+                                   maxlength="150"
                                    value="<?= htmlspecialchars($respon['no_wa_pengisi'] ?? ($pendaftar['no_wa'] ?: ($pendaftar['no_hp'] ?: ''))) ?>" 
                                    placeholder="Contoh: 081234567890" 
                                    class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs sm:text-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-all font-mono font-semibold">

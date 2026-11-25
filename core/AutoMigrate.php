@@ -107,6 +107,7 @@ class AutoMigrate
             '2026_11_23_000069_upgrade_jurnal_staff_wa_templates_and_recipients' => 'migration069UpgradeJurnalStaffWaTemplatesAndRecipients',
             '2026_11_23_000070_add_multi_tugas_to_jurnal_staff'            => 'migration070AddMultiTugasToJurnalStaff',
             '2026_11_23_000071_add_jenis_otorisasi_to_users'               => 'migration071AddJenisOtorisasiToUsers',
+            '2026_11_25_000072_widen_spmb_observasi_respon_columns'        => 'migration072WidenSpmbObservasiResponColumns',
         ];
     }
     /**
@@ -1864,9 +1865,9 @@ class AutoMigrate
                 `pendaftar_id` INT NOT NULL,
                 `token` VARCHAR(64) NOT NULL UNIQUE,
                 `status` VARCHAR(20) NOT NULL DEFAULT 'selesai',
-                `nama_pengisi` VARCHAR(150) NULL,
-                `hubungan_pengisi` VARCHAR(50) NULL,
-                `no_wa_pengisi` VARCHAR(30) NULL,
+                `nama_pengisi` VARCHAR(255) NULL,
+                `hubungan_pengisi` VARCHAR(100) NULL,
+                `no_wa_pengisi` VARCHAR(150) NULL,
                 `total_skor` INT NOT NULL DEFAULT 0,
                 `skor_maksimal` INT NOT NULL DEFAULT 0,
                 `persentase` DECIMAL(5,2) NOT NULL DEFAULT 0.00,
@@ -2765,9 +2766,9 @@ class AutoMigrate
                 `pendaftar_id` INT NOT NULL,
                 `token` VARCHAR(64) NOT NULL UNIQUE,
                 `status` VARCHAR(20) NOT NULL DEFAULT 'selesai',
-                `nama_pengisi` VARCHAR(150) NULL,
-                `hubungan_pengisi` VARCHAR(50) NULL,
-                `no_wa_pengisi` VARCHAR(30) NULL,
+                `nama_pengisi` VARCHAR(255) NULL,
+                `hubungan_pengisi` VARCHAR(100) NULL,
+                `no_wa_pengisi` VARCHAR(150) NULL,
                 `total_skor` INT NOT NULL DEFAULT 0,
                 `skor_maksimal` INT NOT NULL DEFAULT 0,
                 `persentase` DECIMAL(5,2) NOT NULL DEFAULT 0.00,
@@ -5099,6 +5100,27 @@ class AutoMigrate
 
         if (!self::hasColumn($pdo, 'users', 'pegawai_id')) {
             $pdo->exec("ALTER TABLE `users` ADD COLUMN `pegawai_id` INT(11) DEFAULT NULL AFTER `id`");
+        }
+    }
+
+    /**
+     * 072. Perlebar kolom pengisi pada spmb_observasi_respon agar input nomor WA/nama panjang tidak error 1406
+     */
+    protected static function migration072WidenSpmbObservasiResponColumns(PDO $pdo): void
+    {
+        if (!self::hasTable($pdo, 'spmb_observasi_respon')) {
+            return;
+        }
+
+        try {
+            $pdo->exec("
+                ALTER TABLE `spmb_observasi_respon`
+                    MODIFY COLUMN `nama_pengisi` VARCHAR(255) NULL,
+                    MODIFY COLUMN `hubungan_pengisi` VARCHAR(100) NULL,
+                    MODIFY COLUMN `no_wa_pengisi` VARCHAR(150) NULL
+            ");
+        } catch (Throwable $e) {
+            error_log('migration072WidenSpmbObservasiResponColumns warning: ' . $e->getMessage());
         }
     }
 }
