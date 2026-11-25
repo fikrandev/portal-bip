@@ -107,11 +107,8 @@ $filters = $filters ?? [];
 
     <!-- Filter Form -->
     <div class="bg-white p-5 rounded-2xl border border-primary-100/70 shadow-sm">
-        <form method="GET" action="<?= url('kelola-spmb/siswa-baru') ?>" id="filterFormSiswaBaru" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-3">
+        <form method="GET" action="<?= url('kelola-spmb/siswa-baru') ?>" id="filterFormSiswaBaru" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-8 gap-3">
             <input type="hidden" name="per_page" value="<?= e($perPageParam ?? '50') ?>">
-            <?php if (!empty($filters['status_kelulusan'])): ?>
-                <input type="hidden" name="status_kelulusan" value="<?= e($filters['status_kelulusan']) ?>">
-            <?php endif; ?>
             <?php if (!empty($_GET['group_id'])): ?>
                 <input type="hidden" name="group_id" value="<?= e($_GET['group_id']) ?>">
             <?php endif; ?>
@@ -171,6 +168,18 @@ $filters = $filters ?? [];
                     <option value="Belum Dikembalikan" <?= (($filters['status_berkas'] ?? '') === 'Belum Dikembalikan') ? 'selected' : '' ?>>⏳ Belum Dikembalikan</option>
                     <option value="Lengkap" <?= (($filters['status_berkas'] ?? '') === 'Lengkap') ? 'selected' : '' ?>>✓ Lengkap / Diterima</option>
                     <option value="Perlu Perbaikan" <?= (($filters['status_berkas'] ?? '') === 'Perlu Perbaikan') ? 'selected' : '' ?>>⚠️ Perlu Perbaikan</option>
+                </select>
+            </div>
+
+            <!-- Status Kelulusan -->
+            <div>
+                <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Status Kelulusan</label>
+                <select name="status_kelulusan" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 outline-none bg-white font-medium text-slate-700">
+                    <option value="">Semua Kelulusan</option>
+                    <option value="Lulus / Diterima" <?= (($filters['status_kelulusan'] ?? '') === 'Lulus / Diterima') ? 'selected' : '' ?>>🎓 Lulus / Diterima</option>
+                    <option value="Menunggu Seleksi" <?= (($filters['status_kelulusan'] ?? '') === 'Menunggu Seleksi') ? 'selected' : '' ?>>⏳ Menunggu Seleksi</option>
+                    <option value="Cadangan" <?= (($filters['status_kelulusan'] ?? '') === 'Cadangan') ? 'selected' : '' ?>>📋 Cadangan</option>
+                    <option value="Tidak Lulus" <?= (($filters['status_kelulusan'] ?? '') === 'Tidak Lulus') ? 'selected' : '' ?>>✕ Tidak Lulus</option>
                 </select>
             </div>
 
