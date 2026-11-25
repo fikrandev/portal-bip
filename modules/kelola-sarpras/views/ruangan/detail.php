@@ -107,14 +107,27 @@
                                 $decoded = json_decode($d['foto'], true);
                                 $fotos = is_array($decoded) ? $decoded : [$d['foto']];
                             }
-                            $thumbUrl = !empty($fotos[0]) ? url($fotos[0]) : null;
+                            $thumbUrl = null;
+                            if (!empty($fotos[0])) {
+                                $rawThumb = ltrim(trim((string)$fotos[0]), '/');
+                                if (preg_match('#^https?://#i', $rawThumb)) {
+                                    $thumbUrl = $rawThumb;
+                                } elseif (strpos($rawThumb, 'public/') === 0) {
+                                    $thumbUrl = url($rawThumb);
+                                } else {
+                                    $thumbUrl = url('public/' . $rawThumb);
+                                }
+                            }
                             ?>
                             <tr class="hover:bg-slate-50/70 transition-colors">
                                 <td class="py-3.5 px-4 text-center text-slate-400 font-medium"><?= $no++ ?></td>
                                 <td class="py-3.5 px-4">
                                     <div class="flex items-center gap-3">
                                         <?php if ($thumbUrl): ?>
-                                            <img src="<?= $thumbUrl ?>" alt="" class="w-10 h-10 rounded-xl object-cover border border-slate-200 shrink-0 bg-slate-100">
+                                            <img src="<?= htmlspecialchars($thumbUrl) ?>" alt="" class="w-10 h-10 rounded-xl object-cover border border-slate-200 shrink-0 bg-slate-100" onerror="this.classList.add('hidden'); if(this.nextElementSibling) this.nextElementSibling.classList.remove('hidden');">
+                                            <div class="hidden w-10 h-10 rounded-xl bg-slate-100 border border-slate-200/80 flex items-center justify-center text-slate-400 shrink-0">
+                                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="m20.25 7.5-.625 10.632a2.25 2.25 0 0 1-2.247 2.118H6.622a2.25 2.25 0 0 1-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z"/></svg>
+                                            </div>
                                         <?php else: ?>
                                             <div class="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200/80 flex items-center justify-center text-slate-400 shrink-0">
                                                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="m20.25 7.5-.625 10.632a2.25 2.25 0 0 1-2.247 2.118H6.622a2.25 2.25 0 0 1-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z"/></svg>
