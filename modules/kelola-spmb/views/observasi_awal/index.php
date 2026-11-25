@@ -1352,50 +1352,55 @@ function filterBroadcastList() {
     renderBroadcastChecklist();
 }
 
-async function copyBroadcastObservasiLinks() {
-    const selected = broadcastTargets.filter(it => broadcastSelectedIds.has(String(it.pendaftar_id)));
-    const list = selected.length > 0 ? selected : broadcastTargets;
-
-    if (!list || list.length === 0) {
-        Swal.fire('Perhatian', 'Tidak ada data siswa untuk disalin.', 'warning');
+async function copyTextToClipboard(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
         return;
     }
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+}
 
-    const filterJenjang = document.getElementById('bc-filter-jenjang')?.value || '';
-    const unitLabel = filterJenjang ? `UNIT ${filterJenjang.toUpperCase()}` : 'SEMUA UNIT (PAUD, SD, SMP, SMA)';
-    const taLabel = <?= json_encode((string)($activeGroup['tahun_ajaran'] ?? date('Y') . '/' . (date('Y') + 1))) ?>;
-
-    // Kelompokkan per unit agar rapih jika Semua Unit dipilih
+function buildObservasiChunkMessage(chunkItems, startNumber, unitLabel, taLabel, partIdx, totalParts, filterJenjang) {
     const grouped = {};
-    list.forEach(item => {
+    chunkItems.forEach((item, offset) => {
         const u = (item.jenjang || 'UMUM').toUpperCase();
         if (!grouped[u]) grouped[u] = [];
-        grouped[u].push(item);
+        grouped[u].push({ item, num: startNumber + offset });
     });
 
     const unitKeys = Object.keys(grouped);
-    let bodySections = [];
-
+    const bodySections = [];
     unitKeys.forEach(u => {
-        const items = grouped[u];
-        let lines = [];
+        const entries = grouped[u];
+        const lines = [];
         if (!filterJenjang || unitKeys.length > 1) {
             lines.push(`🏫 *UNIT ${u}*`);
         }
-        items.forEach((it, idx) => {
-            const nama = (it.nama_lengkap || '-').trim();
-            const link = (it.public_url || '').trim();
-            lines.push(`*${idx + 1}. ${nama}*\n${link}`);
+        entries.forEach(({ item, num }) => {
+            const nama = (item.nama_lengkap || '-').trim();
+            let link = (item.public_url || '').trim();
+            if (link && !/^https?:\/\//i.test(link)) {
+                link = window.location.origin.replace(/\/+$/, '') + '/' + link.replace(/^\/+/, '');
+            }
+            lines.push(`*${num}. ${nama}*\n${link}`);
         });
         bodySections.push(lines.join('\n\n'));
     });
 
-    const textOutput = [
+    const partBadge = totalParts > 1 ? ` (Bagian ${partIdx}/${totalParts})` : '';
+    return [
         "Assalamu'alaikum Warahmatullahi Wabarakatuh.",
         "Perkenalkan kami dari Panitia SPMB Bina Insan Palu.",
         "",
         "━━━━━━━━━━━━━━━━━━━━━━",
-        "📋 *PENGUMUMAN PENGISIAN OBSERVASI AWAL*",
+        `📋 *PENGUMUMAN PENGISIAN OBSERVASI AWAL${partBadge}*`,
         `🏫 *${unitLabel}*`,
         `📅 *Tahun Ajaran ${taLabel}*`,
         "━━━━━━━━━━━━━━━━━━━━━━",
@@ -1409,32 +1414,94 @@ async function copyBroadcastObservasiLinks() {
         "Wassalamu'alaikum Warahmatullahi Wabarakatuh.",
         "_Panitia SPMB SIT Bina Insan Palu_"
     ].join("\n");
+}
+
+async function copyBroadcastObservasiLinks() {
+    const selected = broadcastTargets.filter(it => broadcastSelectedIds.has(String(it.pendaftar_id)));
+    const list = selected.length > 0 ? selected : broadcastTargets;
+
+    if (!list || list.length === 0) {
+        Swal.fire('Perhatian', 'Tidak ada data siswa untuk disalin.', 'warning');
+        return;
+    }
+
+    const filterJenjang = document.getElementById('bc-filter-jenjang')?.value || '';
+    const unitLabel = filterJenjang ? `UNIT ${filterJenjang.toUpperCase()}` : 'SEMUA UNIT (PAUD, SD, SMP, SMA)';
+    const taLabel = <?= json_encode((string)($activeGroup['tahun_ajaran'] ?? date('Y') . '/' . (date('Y') + 1))) ?>;
+
+    // WhatsApp membatasi deteksi link otomatis jika 1 pesan terlalu panjang (~20+ link).
+    // Bagi per 15 siswa per pesan agar 100% link tetap biru dan bisa diklik di WhatsApp!
+    const CHUNK_SIZE = 15;
+    const chunks = [];
+    for (let i = 0; i < list.length; i += CHUNK_SIZE) {
+        chunks.push({
+            startNumber: i + 1,
+            endNumber: Math.min(i + CHUNK_SIZE, list.length),
+            items: list.slice(i, i + CHUNK_SIZE),
+        });
+    }
+
+    const messages = chunks.map((ch, idx) =>
+        buildObservasiChunkMessage(ch.items, ch.startNumber, unitLabel, taLabel, idx + 1, chunks.length, filterJenjang)
+    );
+    window.__observasiCopyParts = messages;
 
     try {
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            await navigator.clipboard.writeText(textOutput);
-        } else {
-            const ta = document.createElement('textarea');
-            ta.value = textOutput;
-            ta.style.position = 'fixed';
-            ta.style.left = '-9999px';
-            document.body.appendChild(ta);
-            ta.select();
-            document.execCommand('copy');
-            document.body.removeChild(ta);
+        await copyTextToClipboard(messages[0]);
+
+        if (messages.length === 1) {
+            Swal.fire({
+                icon: 'success',
+                title: 'List Link Berhasil Disalin!',
+                html: `<div class="text-xs text-slate-600 mb-2">Sebanyak <strong>${list.length} siswa</strong> (${escapeHtml(unitLabel)}) sudah disalin dengan kop pengumuman rapih. Silakan tempel (Paste) di WhatsApp.</div>
+                       <pre class="text-left text-[10px] font-mono bg-slate-50 border border-slate-200 rounded-xl p-3 max-h-48 overflow-y-auto whitespace-pre-wrap">${escapeHtml(messages[0])}</pre>`,
+                confirmButtonText: 'Oke',
+                confirmButtonColor: '#0284c7'
+            });
+            return;
         }
+
+        const partButtonsHtml = chunks.map((ch, idx) => `
+            <button type="button"
+                    id="btn-copy-obs-part-${idx}"
+                    onclick="copyObservasiPart(${idx})"
+                    class="px-3 py-2 rounded-xl text-xs font-bold border transition-all flex items-center justify-between gap-2 ${idx === 0 ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-slate-700 border-slate-300 hover:bg-sky-50 hover:border-sky-400'}">
+                <span>Bagian ${idx + 1} (No. ${ch.startNumber}–${ch.endNumber})</span>
+                <span class="text-[10px] opacity-90">${idx === 0 ? '✓ Tersalin' : 'Salin'}</span>
+            </button>
+        `).join('');
 
         Swal.fire({
             icon: 'success',
-            title: 'List Link Berhasil Disalin!',
-            html: `<div class="text-xs text-slate-600 mb-2">Sebanyak <strong>${list.length} siswa</strong> (${escapeHtml(unitLabel)}) sudah disalin dengan kop pengumuman rapih. Silakan tempel (Paste) di WhatsApp.</div>
-                   <pre class="text-left text-[10px] font-mono bg-slate-50 border border-slate-200 rounded-xl p-3 max-h-48 overflow-y-auto whitespace-pre-wrap">${escapeHtml(textOutput)}</pre>`,
-            confirmButtonText: 'Oke',
+            title: `Dibagi ${chunks.length} Bagian Agar Semua Link Bisa Diklik`,
+            width: 620,
+            html: `<div class="text-xs text-slate-600 mb-3 text-left leading-relaxed">
+                        WhatsApp membatasi jumlah link yang bisa diklik dalam 1 pesan panjang. Supaya <strong>semua ${list.length} link siswa (${escapeHtml(unitLabel)}) tetap biru &amp; bisa diklik</strong>, daftar dibagi per <strong>${CHUNK_SIZE} siswa</strong>. <strong>Bagian 1 sudah otomatis disalin</strong>, silakan klik bagian berikutnya setelah menempel:
+                   </div>
+                   <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">${partButtonsHtml}</div>
+                   <pre id="obs-copy-preview-box" class="text-left text-[10px] font-mono bg-slate-50 border border-slate-200 rounded-xl p-3 max-h-44 overflow-y-auto whitespace-pre-wrap">${escapeHtml(messages[0])}</pre>`,
+            confirmButtonText: 'Selesai',
             confirmButtonColor: '#0284c7'
         });
     } catch (err) {
         Swal.fire('Gagal Menyalin', 'Browser menolak akses clipboard. Silakan salin manual.', 'error');
     }
+}
+
+async function copyObservasiPart(idx) {
+    const msgs = window.__observasiCopyParts || [];
+    if (!msgs[idx]) return;
+    try {
+        await copyTextToClipboard(msgs[idx]);
+        const preview = document.getElementById('obs-copy-preview-box');
+        if (preview) preview.textContent = msgs[idx];
+        const btn = document.getElementById(`btn-copy-obs-part-${idx}`);
+        if (btn) {
+            btn.className = 'px-3 py-2 rounded-xl text-xs font-bold border transition-all flex items-center justify-between gap-2 bg-emerald-600 text-white border-emerald-600';
+            const badge = btn.querySelector('span:last-child');
+            if (badge) badge.textContent = '✓ Tersalin';
+        }
+    } catch (e) {}
 }
 
 function loadBroadcastPreview() {
