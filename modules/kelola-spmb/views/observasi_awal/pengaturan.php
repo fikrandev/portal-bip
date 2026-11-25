@@ -214,6 +214,9 @@ $csrfToken = CSRF::token();
                                         </div>
                                     </div>
                                     <div class="flex items-center gap-2 self-end md:self-start shrink-0">
+                                        <?php if (!empty($q['is_deskripsi_aktif'])): ?>
+                                            <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-sky-50 text-sky-700 border border-sky-200" title="Orang tua dapat mengisi deskripsi tambahan untuk soal ini">📝 Deskripsi Aktif</span>
+                                        <?php endif; ?>
                                         <?php if ((int)$q['is_active'] === 1): ?>
                                             <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">Aktif</span>
                                         <?php else: ?>
@@ -475,7 +478,7 @@ $csrfToken = CSRF::token();
                         <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                             Status Soal
                         </label>
-                        <div class="pt-2">
+                        <div class="pt-2 space-y-2.5">
                             <label class="relative inline-flex items-center cursor-pointer">
                                 <input type="checkbox" name="is_active" id="pertanyaan_is_active" value="1" checked class="sr-only peer">
                                 <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sky-600"></div>
@@ -483,6 +486,18 @@ $csrfToken = CSRF::token();
                             </label>
                         </div>
                     </div>
+                </div>
+
+                <!-- Toggle Input Deskripsi Orang Tua -->
+                <div class="p-3.5 rounded-xl bg-sky-50/70 border border-sky-200 flex items-center justify-between gap-3">
+                    <div>
+                        <div class="text-xs font-bold text-slate-800">Aktifkan Input Deskripsi Orang Tua</div>
+                        <div class="text-[11px] text-slate-500 mt-0.5">Jika diaktifkan, orang tua dapat menuliskan penjelasan/deskripsi tambahan di bawah pilihan jawaban soal ini.</div>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                        <input type="checkbox" name="is_deskripsi_aktif" id="pertanyaan_is_deskripsi_aktif" value="1" class="sr-only peer">
+                        <div class="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sky-600"></div>
+                    </label>
                 </div>
 
                 <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-2">
@@ -701,6 +716,7 @@ function openModalPertanyaan(data = null, defaultGroupId = null) {
     const inputIndikator = document.getElementById('pertanyaan_indikator');
     const inputUrutan = document.getElementById('pertanyaan_urutan');
     const inputActive = document.getElementById('pertanyaan_is_active');
+    const inputDeskripsiAktif = document.getElementById('pertanyaan_is_deskripsi_aktif');
     const containerOpsi = document.getElementById('opsi-jawaban-container');
     const noticeEl = document.getElementById('copy-inheritance-notice');
 
@@ -714,6 +730,7 @@ function openModalPertanyaan(data = null, defaultGroupId = null) {
         inputIndikator.value = data.indikator || '';
         inputUrutan.value = data.urutan || 1;
         inputActive.checked = (parseInt(data.is_active) === 1);
+        if (inputDeskripsiAktif) inputDeskripsiAktif.checked = (parseInt(data.is_deskripsi_aktif || 0) === 1);
         if (noticeEl) noticeEl.classList.add('hidden');
 
         // Render opsi jawaban yang ada
@@ -742,6 +759,7 @@ function openModalPertanyaan(data = null, defaultGroupId = null) {
         inputTeks.value = '';
         inputIndikator.value = '';
         inputActive.checked = true;
+        if (inputDeskripsiAktif) inputDeskripsiAktif.checked = false;
 
         // Otomatis salin format pilihan jawaban & nomor urut berikutnya dari group terpilih!
         populateOptionsFromGroup(selectGroup.value);
@@ -765,6 +783,9 @@ function duplicatePertanyaan(q) {
 
     const inputIndikator = document.getElementById('pertanyaan_indikator');
     inputIndikator.value = q.indikator || '';
+
+    const inputDeskripsiAktif = document.getElementById('pertanyaan_is_deskripsi_aktif');
+    if (inputDeskripsiAktif) inputDeskripsiAktif.checked = (parseInt(q.is_deskripsi_aktif || 0) === 1);
 
     // Salin opsi jawaban langsung dari pertanyaan ini
     const containerOpsi = document.getElementById('opsi-jawaban-container');

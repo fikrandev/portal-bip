@@ -1092,6 +1092,7 @@ function showDetailObservasi(pendaftarId) {
                             <div class="flex-1 min-w-0">
                                 <p class="text-xs font-medium text-slate-800 leading-snug">${idx + 1}. ${escapeHtml(it.pertanyaan)}</p>
                                 ${it.indikator ? `<p class="text-[11px] text-slate-400 mt-0.5">Indikator: ${escapeHtml(it.indikator)}</p>` : ''}
+                                ${it.catatan_jawaban ? `<p class="text-[11px] text-sky-700 bg-sky-50/80 border border-sky-100 rounded-lg px-2 py-1 mt-1.5">📝 <strong>Deskripsi:</strong> ${escapeHtml(it.catatan_jawaban)}</p>` : ''}
                             </div>
                             <div class="text-right shrink-0">
                                 <span class="px-2 py-0.5 rounded text-xs font-bold bg-sky-50 text-sky-800 border border-sky-200">

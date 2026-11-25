@@ -23,7 +23,8 @@ if (!empty($answersSaved)) {
     foreach ($answersSaved as $ans) {
         $savedMap[$ans['pertanyaan_id']] = [
             'pilihan' => $ans['pilihan_jawaban'],
-            'skor'    => $ans['skor']
+            'skor'    => $ans['skor'],
+            'catatan' => $ans['catatan_jawaban'] ?? ''
         ];
     }
 }
@@ -446,6 +447,19 @@ if (defined('SYS_APP_LOGO') && !empty(SYS_APP_LOGO)) {
                                                 </label>
                                             <?php endforeach; ?>
                                         </div>
+
+                                        <?php if (!empty($q['is_deskripsi_aktif'])): ?>
+                                            <div class="pt-2">
+                                                <label for="desc_<?= $qId ?>" class="block text-[11px] font-semibold text-slate-600 mb-1">
+                                                    Deskripsi / Penjelasan Tambahan (Opsional)
+                                                </label>
+                                                <textarea name="answer_descriptions[<?= $qId ?>]"
+                                                          id="desc_<?= $qId ?>"
+                                                          rows="2"
+                                                          placeholder="Tuliskan penjelasan atau deskripsi tambahan terkait poin ini..."
+                                                          class="w-full px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-xs text-slate-800 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none transition-all"><?= htmlspecialchars($savedMap[$qId]['catatan'] ?? '') ?></textarea>
+                                            </div>
+                                        <?php endif; ?>
                                     </div>
                                 <?php endforeach; ?>
                             </div>

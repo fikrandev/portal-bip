@@ -2795,10 +2795,28 @@ class SpmbModel
     }
 
     /**
+     * Pastikan kolom is_deskripsi_aktif tersedia pada tabel spmb_observasi_pertanyaan
+     */
+    public static function ensureObservasiPertanyaanDeskripsiColumn(): void
+    {
+        static $checked = false;
+        if ($checked) return;
+        $checked = true;
+        try {
+            $pdo = self::db()->getConnection();
+            $cols = $pdo->query("SHOW COLUMNS FROM `spmb_observasi_pertanyaan`")->fetchAll(PDO::FETCH_COLUMN);
+            if (!in_array('is_deskripsi_aktif', $cols, true)) {
+                $pdo->exec("ALTER TABLE `spmb_observasi_pertanyaan` ADD COLUMN `is_deskripsi_aktif` TINYINT(1) NOT NULL DEFAULT 0 AFTER `is_active`");
+            }
+        } catch (Throwable $e) {}
+    }
+
+    /**
      * Ambil daftar butir pertanyaan observasi awal
      */
     public static function getObservasiPertanyaanList(?string $jenjang = null, ?int $groupId = null, bool $onlyActive = true): array
     {
+        self::ensureObservasiPertanyaanDeskripsiColumn();
         $conditions = [];
         $params = [];
 
@@ -2859,13 +2877,15 @@ class SpmbModel
      */
     public static function saveObservasiPertanyaan(array $data, ?int $id = null): int
     {
-        $groupId    = (int)($data['group_id'] ?? 0);
-        $jenjang    = strtoupper(trim($data['jenjang'] ?? 'ALL'));
-        $pertanyaan = trim($data['pertanyaan'] ?? '');
-        $indikator  = trim($data['indikator'] ?? '');
-        $tipe       = $data['tipe_jawaban'] ?? 'skala';
-        $urutan     = (int)($data['urutan'] ?? 1);
-        $isActive   = isset($data['is_active']) ? (int)$data['is_active'] : 1;
+        self::ensureObservasiPertanyaanDeskripsiColumn();
+        $groupId          = (int)($data['group_id'] ?? 0);
+        $jenjang          = strtoupper(trim($data['jenjang'] ?? 'ALL'));
+        $pertanyaan       = trim($data['pertanyaan'] ?? '');
+        $indikator        = trim($data['indikator'] ?? '');
+        $tipe             = $data['tipe_jawaban'] ?? 'skala';
+        $urutan           = (int)($data['urutan'] ?? 1);
+        $isActive         = isset($data['is_active']) ? (int)$data['is_active'] : 1;
+        $isDeskripsiAktif = !empty($data['is_deskripsi_aktif']) ? 1 : 0;
 
         // Ambil opsi jawaban (baik berupa JSON string atau array dari form)
         $opsi = [];
@@ -2896,18 +2916,18 @@ class SpmbModel
                 UPDATE `spmb_observasi_pertanyaan` SET
                     `group_id` = ?, `jenjang` = ?, `pertanyaan` = ?, `indikator` = ?,
                     `tipe_jawaban` = ?, `opsi_jawaban` = ?, `skor_maksimal` = ?,
-                    `urutan` = ?, `is_active` = ?, `updated_at` = NOW()
+                    `urutan` = ?, `is_active` = ?, `is_deskripsi_aktif` = ?, `updated_at` = NOW()
                 WHERE `id` = ?
-            ", [$groupId, $jenjang, $pertanyaan, $indikator, $tipe, $opsiJson, $skorMaks, $urutan, $isActive, $id]);
+            ", [$groupId, $jenjang, $pertanyaan, $indikator, $tipe, $opsiJson, $skorMaks, $urutan, $isActive, $isDeskripsiAktif, $id]);
             return $id;
         }
 
         self::db()->query("
             INSERT INTO `spmb_observasi_pertanyaan` (
                 `group_id`, `jenjang`, `pertanyaan`, `indikator`, `tipe_jawaban`,
-                `opsi_jawaban`, `skor_maksimal`, `urutan`, `is_active`, `created_at`, `updated_at`
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
-        ", [$groupId, $jenjang, $pertanyaan, $indikator, $tipe, $opsiJson, $skorMaks, $urutan, $isActive]);
+                `opsi_jawaban`, `skor_maksimal`, `urutan`, `is_active`, `is_deskripsi_aktif`, `created_at`, `updated_at`
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+        ", [$groupId, $jenjang, $pertanyaan, $indikator, $tipe, $opsiJson, $skorMaks, $urutan, $isActive, $isDeskripsiAktif]);
 
         return (int)self::db()->lastInsertId();
     }
@@ -3014,6 +3034,7 @@ class SpmbModel
         }
 
         $answers = $postData['answers'] ?? [];
+        $answerDescriptions = $postData['answer_descriptions'] ?? [];
         $totalSkor = 0;
         $skorMaksTotal = 0;
         $parsedAnswers = [];
@@ -3048,11 +3069,14 @@ class SpmbModel
                 $totalSkor += $skorItem;
                 $skorMaksTotal += $skorMaksItem;
 
+                $catatanItem = !empty($q['is_deskripsi_aktif']) ? trim((string)($answerDescriptions[$qId] ?? '')) : '';
+
                 $parsedAnswers[] = [
                     'pertanyaan_id'   => $qId,
                     'group_id'        => (int)$grp['id'],
                     'pilihan_jawaban' => $labelChosen,
-                    'skor'            => $skorItem
+                    'skor'            => $skorItem,
+                    'catatan_jawaban' => $catatanItem !== '' ? $catatanItem : null
                 ];
             }
         }
@@ -3117,8 +3141,8 @@ class SpmbModel
 
         // Insert jawaban per pertanyaan
         $insertAnswer = self::db()->getConnection()->prepare("
-            INSERT INTO `spmb_observasi_jawaban` (`respon_id`, `pendaftar_id`, `pertanyaan_id`, `group_id`, `pilihan_jawaban`, `skor`, `created_at`)
-            VALUES (?, ?, ?, ?, ?, ?, NOW())
+            INSERT INTO `spmb_observasi_jawaban` (`respon_id`, `pendaftar_id`, `pertanyaan_id`, `group_id`, `pilihan_jawaban`, `skor`, `catatan_jawaban`, `created_at`)
+            VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
         ");
 
         foreach ($parsedAnswers as $ans) {
@@ -3128,7 +3152,8 @@ class SpmbModel
                 $ans['pertanyaan_id'],
                 $ans['group_id'],
                 $ans['pilihan_jawaban'],
-                $ans['skor']
+                $ans['skor'],
+                $ans['catatan_jawaban']
             ]);
         }
 

@@ -503,6 +503,11 @@ $unitKopUrl = !empty($unitKopPath) ? SpmbModel::getKopUrl($unitKopPath) : '';
                                         Indikator: <?= htmlspecialchars($a['indikator']) ?>
                                     </div>
                                 <?php endif; ?>
+                                <?php if (!empty($a['catatan_jawaban'])): ?>
+                                    <div style="font-size: 8pt; color: #0369a1; margin-top: 3px; background: #f0f9ff; padding: 3px 6px; border-radius: 4px;">
+                                        <strong>Deskripsi:</strong> <?= htmlspecialchars($a['catatan_jawaban']) ?>
+                                    </div>
+                                <?php endif; ?>
                             </td>
                             <td style="text-align: center; font-weight: 700; color: #0369a1;">
                                 <?= htmlspecialchars($a['pilihan_jawaban']) ?>

@@ -3572,14 +3572,15 @@ SVG;
         }
 
         $savedId = SpmbModel::saveObservasiPertanyaan([
-            'group_id'     => $groupId,
-            'jenjang'      => $jenjang,
-            'pertanyaan'   => $pertanyaan,
-            'indikator'    => $indikator,
-            'tipe_jawaban' => 'skala',
-            'opsi_jawaban' => $opsi,
-            'urutan'       => $urutan,
-            'is_active'    => $isActive
+            'group_id'           => $groupId,
+            'jenjang'            => $jenjang,
+            'pertanyaan'         => $pertanyaan,
+            'indikator'          => $indikator,
+            'tipe_jawaban'       => 'skala',
+            'opsi_jawaban'       => $opsi,
+            'urutan'             => $urutan,
+            'is_active'          => $isActive,
+            'is_deskripsi_aktif' => isset($_POST['is_deskripsi_aktif']) ? 1 : 0
         ], $id);
 
         $msg = $id ? 'Butir pertanyaan berhasil diperbarui.' : 'Butir pertanyaan baru berhasil ditambahkan.';
