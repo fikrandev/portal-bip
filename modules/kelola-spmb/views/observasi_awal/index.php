@@ -722,7 +722,13 @@ $groupLinks          = $groupLinks ?? [];
                             <span class="font-semibold text-slate-700">Daftar Siswa Siap Kirim:</span>
                             <span id="bc-target-count" class="font-bold text-emerald-700">0 Siswa</span>
                         </div>
-                        <div class="flex items-center gap-1.5">
+                        <div class="flex flex-wrap items-center gap-1.5">
+                            <button type="button" onclick="copyBroadcastObservasiLinks()" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-sky-600 hover:bg-sky-700 text-white text-[11px] font-bold shadow-2xs transition-colors" title="Salin pengumuman & daftar link observasi per unit untuk dishare ke grup WA">
+                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.666 3.888A2.25 2.25 0 0 0 13.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 0 1-.75.75H9a.75.75 0 0 1-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 0 1-2.25 2.25H6.75A2.25 2.25 0 0 1 4.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 0 1 1.927-.184" />
+                                </svg>
+                                <span>Salin List Link</span>
+                            </button>
                             <button type="button" onclick="toggleAllBroadcastTargets(true)" class="px-2 py-1 rounded-lg bg-white border border-slate-300 text-[11px] font-semibold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 transition-colors">
                                 Centang Semua
                             </button>
@@ -1343,6 +1349,91 @@ function toggleAllBroadcastTargets(checked) {
 
 function filterBroadcastList() {
     renderBroadcastChecklist();
+}
+
+async function copyBroadcastObservasiLinks() {
+    const selected = broadcastTargets.filter(it => broadcastSelectedIds.has(String(it.pendaftar_id)));
+    const list = selected.length > 0 ? selected : broadcastTargets;
+
+    if (!list || list.length === 0) {
+        Swal.fire('Perhatian', 'Tidak ada data siswa untuk disalin.', 'warning');
+        return;
+    }
+
+    const filterJenjang = document.getElementById('bc-filter-jenjang')?.value || '';
+    const unitLabel = filterJenjang ? `UNIT ${filterJenjang.toUpperCase()}` : 'SEMUA UNIT (PAUD, SD, SMP, SMA)';
+    const taLabel = <?= json_encode((string)($activeGroup['tahun_ajaran'] ?? date('Y') . '/' . (date('Y') + 1))) ?>;
+
+    // Kelompokkan per unit agar rapih jika Semua Unit dipilih
+    const grouped = {};
+    list.forEach(item => {
+        const u = (item.jenjang || 'UMUM').toUpperCase();
+        if (!grouped[u]) grouped[u] = [];
+        grouped[u].push(item);
+    });
+
+    const unitKeys = Object.keys(grouped);
+    let bodySections = [];
+
+    unitKeys.forEach(u => {
+        const items = grouped[u];
+        let lines = [];
+        if (!filterJenjang || unitKeys.length > 1) {
+            lines.push(`🏫 *UNIT ${u}*`);
+        }
+        items.forEach((it, idx) => {
+            const nama = (it.nama_lengkap || '-').trim();
+            const link = (it.public_url || '').trim();
+            lines.push(`*${idx + 1}. ${nama}*\n${link}`);
+        });
+        bodySections.push(lines.join('\n\n'));
+    });
+
+    const textOutput = [
+        "Assalamu'alaikum Warahmatullahi Wabarakatuh.",
+        "Perkenalkan kami dari Panitia SPMB Bina Insan Palu.",
+        "",
+        "━━━━━━━━━━━━━━━━━━━━━━",
+        "📋 *PENGUMUMAN PENGISIAN OBSERVASI AWAL*",
+        `🏫 *${unitLabel}*`,
+        `📅 *Tahun Ajaran ${taLabel}*`,
+        "━━━━━━━━━━━━━━━━━━━━━━",
+        "",
+        "Yth. Ayah/Bunda Orang Tua/Wali Calon Murid Baru,",
+        "Mohon kesediaannya untuk mengisi *Kuesioner Observasi Awal* ananda melalui tautan masing-masing di bawah ini:",
+        "",
+        bodySections.join("\n\n━━━━━━━━━━━━━━━━━━━━━━\n\n"),
+        "",
+        "Terima kasih atas perhatian dan kerja sama Ayah/Bunda.",
+        "Wassalamu'alaikum Warahmatullahi Wabarakatuh.",
+        "_Panitia SPMB SIT Bina Insan Palu_"
+    ].join("\n");
+
+    try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(textOutput);
+        } else {
+            const ta = document.createElement('textarea');
+            ta.value = textOutput;
+            ta.style.position = 'fixed';
+            ta.style.left = '-9999px';
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+        }
+
+        Swal.fire({
+            icon: 'success',
+            title: 'List Link Berhasil Disalin!',
+            html: `<div class="text-xs text-slate-600 mb-2">Sebanyak <strong>${list.length} siswa</strong> (${escapeHtml(unitLabel)}) sudah disalin dengan kop pengumuman rapih. Silakan tempel (Paste) di WhatsApp.</div>
+                   <pre class="text-left text-[10px] font-mono bg-slate-50 border border-slate-200 rounded-xl p-3 max-h-48 overflow-y-auto whitespace-pre-wrap">${escapeHtml(textOutput)}</pre>`,
+            confirmButtonText: 'Oke',
+            confirmButtonColor: '#0284c7'
+        });
+    } catch (err) {
+        Swal.fire('Gagal Menyalin', 'Browser menolak akses clipboard. Silakan salin manual.', 'error');
+    }
 }
 
 function loadBroadcastPreview() {
