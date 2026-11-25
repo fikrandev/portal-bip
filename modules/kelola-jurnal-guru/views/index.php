@@ -1133,6 +1133,17 @@ $cetakQuery = http_build_query([
                             <p class="text-[10px] font-bold text-amber-700 uppercase">Catatan / Evaluasi Kelas</p>
                             <p class="text-slate-700 mt-0.5">${d.catatan_kelas}</p>
                         </div>` : ''}
+                        ${(d.foto_kegiatan || d.foto_bukti) ? (() => {
+                            const rawFoto = String(d.foto_kegiatan || d.foto_bukti).trim().replace(/^\/+/, '');
+                            const fotoUrl = /^https?:\/\//i.test(rawFoto)
+                                ? rawFoto
+                                : (rawFoto.startsWith('public/') ? '<?= rtrim(url(''), '/') ?>/' + rawFoto : '<?= url("public") ?>/' + rawFoto);
+                            return `
+                            <div class="pt-2 border-t border-slate-100">
+                                <p class="text-[10px] font-bold text-slate-400 uppercase mb-1.5">Foto Bukti Kegiatan</p>
+                                <img src="${fotoUrl}" alt="Foto Kegiatan" class="w-full max-h-72 object-cover rounded-2xl border border-slate-200 shadow-xs" onerror="this.parentElement.style.display='none'">
+                            </div>`;
+                        })() : ''}
                     </div>
                 `;
             })

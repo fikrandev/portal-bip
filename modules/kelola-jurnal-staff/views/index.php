@@ -10,6 +10,22 @@
 
 $activeTab = $activeTab ?? ($_GET['tab'] ?? 'dashboard');
 $todayYmd = date('Y-m-d');
+
+if (!function_exists('resolveStaffMediaUrl')) {
+    function resolveStaffMediaUrl(?string $rawPath): string {
+        $p = trim((string)$rawPath);
+        if ($p === '') return '';
+        if (preg_match('#^https?://#i', $p)) return $p;
+        $clean = ltrim($p, '/');
+        if (is_file(BASE_PATH . '/' . $clean)) {
+            return url($clean);
+        }
+        if (is_file(BASE_PATH . '/public/' . $clean)) {
+            return url('public/' . $clean);
+        }
+        return '';
+    }
+}
 ?>
 
 <div class="space-y-6">
@@ -304,8 +320,12 @@ $todayYmd = date('Y-m-d');
                                 </td>
                                 <td class="py-3 px-3">
                                     <div class="flex items-center gap-2.5">
-                                        <?php if (!empty($lj['foto'])): ?>
-                                            <img src="<?= url('public/' . ltrim($lj['foto'], '/')) ?>" alt="" class="w-8 h-8 rounded-full object-cover border border-slate-200 shrink-0">
+                                        <?php $ljFotoUrl = resolveStaffMediaUrl($lj['foto'] ?? null); ?>
+                                        <?php if ($ljFotoUrl !== ''): ?>
+                                            <img src="<?= htmlspecialchars($ljFotoUrl) ?>" alt="" class="w-8 h-8 rounded-full object-cover border border-slate-200 shrink-0" onerror="this.classList.add('hidden'); if(this.nextElementSibling) this.nextElementSibling.classList.remove('hidden');">
+                                            <div class="hidden w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 font-bold flex items-center justify-center text-xs shrink-0">
+                                                <?= strtoupper(substr($lj['nama_staff'] ?? 'S', 0, 1)) ?>
+                                            </div>
                                         <?php else: ?>
                                             <div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 font-bold flex items-center justify-center text-xs shrink-0">
                                                 <?= strtoupper(substr($lj['nama_staff'] ?? 'S', 0, 1)) ?>
@@ -603,8 +623,12 @@ $todayYmd = date('Y-m-d');
                                 </td>
                                 <td class="py-3.5 px-3">
                                     <div class="flex items-center gap-2.5">
-                                        <?php if (!empty($j['foto'])): ?>
-                                            <img src="<?= url('public/' . ltrim($j['foto'], '/')) ?>" alt="" class="w-8 h-8 rounded-full object-cover border border-slate-200 shrink-0">
+                                        <?php $jFotoUrl = resolveStaffMediaUrl($j['foto'] ?? null); ?>
+                                        <?php if ($jFotoUrl !== ''): ?>
+                                            <img src="<?= htmlspecialchars($jFotoUrl) ?>" alt="" class="w-8 h-8 rounded-full object-cover border border-slate-200 shrink-0" onerror="this.classList.add('hidden'); if(this.nextElementSibling) this.nextElementSibling.classList.remove('hidden');">
+                                            <div class="hidden w-8 h-8 rounded-full bg-slate-100 text-slate-700 font-bold flex items-center justify-center text-xs shrink-0">
+                                                <?= strtoupper(substr($j['nama_staff'] ?? 'S', 0, 1)) ?>
+                                            </div>
                                         <?php else: ?>
                                             <div class="w-8 h-8 rounded-full bg-slate-100 text-slate-700 font-bold flex items-center justify-center text-xs shrink-0">
                                                 <?= strtoupper(substr($j['nama_staff'] ?? 'S', 0, 1)) ?>
@@ -833,8 +857,12 @@ $todayYmd = date('Y-m-d');
                                         <td class="py-3.5 px-3 text-center font-bold text-slate-400"><?= $idx + 1 ?></td>
                                         <td class="py-3.5 px-4">
                                             <div class="flex items-center gap-2.5">
-                                                <?php if (!empty($rs['foto'])): ?>
-                                                    <img src="<?= url('public/' . ltrim($rs['foto'], '/')) ?>" alt="" class="w-8 h-8 rounded-full object-cover border border-slate-200 shrink-0">
+                                                <?php $rsFotoUrl = resolveStaffMediaUrl($rs['foto'] ?? null); ?>
+                                                <?php if ($rsFotoUrl !== ''): ?>
+                                                    <img src="<?= htmlspecialchars($rsFotoUrl) ?>" alt="" class="w-8 h-8 rounded-full object-cover border border-slate-200 shrink-0" onerror="this.classList.add('hidden'); if(this.nextElementSibling) this.nextElementSibling.classList.remove('hidden');">
+                                                    <div class="hidden w-8 h-8 rounded-full bg-indigo-50 text-indigo-700 font-bold flex items-center justify-center text-xs shrink-0">
+                                                        <?= strtoupper(substr($rs['nama'] ?? 'S', 0, 1)) ?>
+                                                    </div>
                                                 <?php else: ?>
                                                     <div class="w-8 h-8 rounded-full bg-indigo-50 text-indigo-700 font-bold flex items-center justify-center text-xs shrink-0">
                                                         <?= strtoupper(substr($rs['nama'] ?? 'S', 0, 1)) ?>
@@ -2947,8 +2975,16 @@ function viewDetailJurnal(id) {
                     document.getElementById('detail-kendala-box').classList.add('hidden');
                 }
 
-                if (d.foto_bukti) {
-                    document.getElementById('detail-foto-img').src = '<?= url("public") ?>/' + d.foto_bukti.replace(/^\/+/, '');
+                if (d.foto_bukti && String(d.foto_bukti).trim() !== '') {
+                    const cleanFoto = String(d.foto_bukti).trim().replace(/^\/+/, '');
+                    const fotoSrc = /^https?:\/\//i.test(cleanFoto)
+                        ? cleanFoto
+                        : (cleanFoto.startsWith('public/') ? '<?= rtrim(url(''), '/') ?>/' + cleanFoto : '<?= url("public") ?>/' + cleanFoto);
+                    const fotoImg = document.getElementById('detail-foto-img');
+                    fotoImg.onerror = function() {
+                        document.getElementById('detail-foto-box').classList.add('hidden');
+                    };
+                    fotoImg.src = fotoSrc;
                     document.getElementById('detail-foto-box').classList.remove('hidden');
                 } else {
                     document.getElementById('detail-foto-box').classList.add('hidden');
