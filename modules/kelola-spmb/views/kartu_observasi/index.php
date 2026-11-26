@@ -597,49 +597,138 @@ $cetakQuery = http_build_query(array_filter([
     <?php endif; ?>
 </div>
 
-<!-- Modal Broadcast Jadwal Sesi & Ruangan via WA -->
-<div id="modalBroadcastJadwal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
-    <div class="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100 space-y-4">
-        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-            <div>
-                <h3 class="text-base font-extrabold text-slate-900">Broadcast Jadwal Sesi &amp; Ruangan (WhatsApp)</h3>
-                <p class="text-xs text-slate-500">Kirim jadwal sesi, ruangan, dan link Kartu QR Observasi ke seluruh peserta sesuai filter aktif.</p>
+<!-- Modal Broadcast Jadwal Sesi & Ruangan via WA (Sama Dengan Broadcast Link Observasi) -->
+<div id="modalBroadcastJadwal" class="fixed inset-0 z-50 hidden overflow-y-auto bg-slate-900/60 backdrop-blur-xs">
+    <div class="flex min-h-screen items-center justify-center p-4">
+        <div class="relative w-full max-w-2xl rounded-2xl bg-white shadow-2xl border border-slate-100 overflow-hidden my-8">
+            <div class="flex items-center justify-between border-b border-slate-100 bg-emerald-50/80 px-6 py-4">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-slate-800">Broadcast Jadwal Sesi, Ruangan &amp; Kartu QR</h3>
+                        <p class="text-xs text-slate-500">Kirim otomatis jadwal sesi, ruangan, dan link kartu QR ke orang tua</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeBroadcastJadwalModal()" class="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/50 cursor-pointer">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                    </svg>
+                </button>
             </div>
-            <button type="button" onclick="closeBroadcastJadwalModal()" class="p-1.5 rounded-full text-slate-400 hover:bg-slate-100 cursor-pointer">✕</button>
-        </div>
 
-        <div class="flex flex-wrap items-center justify-between gap-2 bg-slate-50 p-3 rounded-2xl border border-slate-200">
-            <label class="inline-flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer">
-                <input type="checkbox" id="bc_jadwal_only_unsent" checked class="w-4 h-4 rounded text-emerald-600">
-                <span>Hanya kirim ke orang tua yang belum pernah dikirim</span>
-            </label>
-            <button type="button" onclick="copyAllKartuLinks()" class="px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-bold cursor-pointer">
-                Salin Daftar Link Kartu
-            </button>
-        </div>
+            <div class="p-6 space-y-4">
+                <!-- Filter Unit, Ruangan & Target -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Filter Jenjang / Unit</label>
+                        <select id="bc_jadwal_jenjang" onchange="loadBroadcastJadwalPreview()" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs sm:text-sm font-semibold bg-white">
+                            <option value="">Semua Unit</option>
+                            <?php foreach (['PAUD', 'SD', 'SMP', 'SMA'] as $jOpt): ?>
+                                <option value="<?= $jOpt ?>" <?= $selJenjang === $jOpt ? 'selected' : '' ?>><?= $jOpt ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Filter Ruangan &amp; Sesi</label>
+                        <select id="bc_jadwal_ruangan" onchange="loadBroadcastJadwalPreview()" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs sm:text-sm font-semibold bg-white">
+                            <option value="">Semua Ruangan</option>
+                            <?php foreach ($ruanganList as $rg): ?>
+                                <option value="<?= (int)$rg['id'] ?>" <?= (string)$selRuangan === (string)$rg['id'] ? 'selected' : '' ?>>
+                                    <?= e($rg['nama_ruangan']) ?> (<?= e($rg['sesi_nama']) ?>)
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Target Penerima</label>
+                        <select id="bc_jadwal_target_mode" onchange="loadBroadcastJadwalPreview()" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs sm:text-sm font-semibold bg-white">
+                            <option value="belum_wa" selected>Belum Terkirim WA (Lanjut Antrian)</option>
+                            <option value="terjadwal_belum_wa">Sudah Dapat Ruangan &amp; Belum WA</option>
+                            <option value="semua">Semua Peserta (Kirim Ulang / Reminder)</option>
+                        </select>
+                    </div>
+                </div>
 
-        <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">Template Pesan WhatsApp (Otomatis menyertakan Link Kartu masing-masing ortu)</label>
-            <textarea id="bc_jadwal_template" rows="7" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-mono outline-none focus:border-emerald-500"><?= e($defaultWaTemplate) ?></textarea>
-            <p class="text-[11px] text-slate-400 mt-1">Variabel: <code>{nama_siswa}</code>, <code>{no_pendaftaran}</code>, <code>{jenjang}</code>, <code>{tanggal_sesi}</code>, <code>{sesi_jam}</code>, <code>{ruangan}</code>, <code>{pengawas}</code>, <code>{link_kartu}</code></p>
-        </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Batasi Jumlah Kirim</label>
+                        <select id="bc_jadwal_limit" onchange="loadBroadcastJadwalPreview()" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs sm:text-sm font-semibold bg-white">
+                            <option value="0">Kirim ke Semua Target</option>
+                            <option value="5">Maksimal 5 Nomor (Aman)</option>
+                            <option value="10" selected>Maksimal 10 Nomor</option>
+                            <option value="20">Maksimal 20 Nomor</option>
+                            <option value="50">Maksimal 50 Nomor</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Jeda Antar Pesan</label>
+                        <select id="bc_jadwal_delay" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs sm:text-sm font-semibold bg-white">
+                            <option value="3">3 Detik (Cepat)</option>
+                            <option value="5" selected>5 Detik (Disarankan)</option>
+                            <option value="8">8 Detik (Sangat Aman)</option>
+                        </select>
+                    </div>
+                </div>
 
-        <div id="bc_jadwal_progress_wrap" class="hidden space-y-2 bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
-            <div class="flex justify-between text-xs font-bold">
-                <span id="bc_jadwal_status_txt">Menyiapkan...</span>
-                <span id="bc_jadwal_count_txt">0 / 0</span>
+                <!-- Checklist Daftar Siswa Siap Kirim -->
+                <div class="border border-slate-200 rounded-xl overflow-hidden bg-slate-50/70">
+                    <div class="px-3 py-2.5 bg-slate-100/80 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2 text-xs">
+                        <div class="flex items-center gap-2">
+                            <span class="font-semibold text-slate-700">Daftar Siswa Siap Kirim:</span>
+                            <span id="bc_jadwal_target_count" class="font-bold text-emerald-700">0 Siswa</span>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-1.5">
+                            <button type="button" onclick="copyAllKartuLinks()" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-sky-600 hover:bg-sky-700 text-white text-[11px] font-bold cursor-pointer">
+                                Salin List Link
+                            </button>
+                            <button type="button" onclick="toggleAllBcJadwalTargets(true)" class="px-2 py-1 rounded-lg bg-white border border-slate-300 text-[11px] font-semibold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 cursor-pointer">
+                                Centang Semua
+                            </button>
+                            <button type="button" onclick="toggleAllBcJadwalTargets(false)" class="px-2 py-1 rounded-lg bg-white border border-slate-300 text-[11px] font-semibold text-slate-700 hover:bg-rose-50 hover:text-rose-700 cursor-pointer">
+                                Hapus Centang
+                            </button>
+                        </div>
+                    </div>
+                    <div class="p-2 border-b border-slate-200 bg-white">
+                        <input type="text" id="bc_jadwal_search" oninput="filterBcJadwalChecklist()" placeholder="Cari nama siswa, ruangan, atau nomor WA..." class="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-xs focus:border-emerald-500 outline-none">
+                    </div>
+                    <div id="bc_jadwal_checklist" class="max-h-48 overflow-y-auto divide-y divide-slate-100 bg-white">
+                        <div class="p-4 text-center text-xs text-slate-400">Memuat daftar siswa...</div>
+                    </div>
+                </div>
+
+                <!-- Template Pesan -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Template Pesan WhatsApp</label>
+                    <textarea id="bc_jadwal_template" rows="5" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs text-slate-700 font-mono leading-relaxed outline-none focus:border-emerald-500"><?= e($defaultWaTemplate) ?></textarea>
+                    <p class="text-[11px] text-slate-400 mt-1">Variabel: <code>{nama_siswa}</code>, <code>{no_pendaftaran}</code>, <code>{jenjang}</code>, <code>{tanggal_sesi}</code>, <code>{sesi_jam}</code>, <code>{ruangan}</code>, <code>{pengawas}</code>, <code>{link_kartu}</code></p>
+                </div>
+
+                <!-- Live Progress Bar -->
+                <div id="bc_jadwal_progress_wrap" class="hidden space-y-2 pt-2 border-t border-slate-100">
+                    <div class="flex items-center justify-between text-xs font-semibold">
+                        <span id="bc_jadwal_status_txt" class="text-slate-700">Menyiapkan...</span>
+                        <span id="bc_jadwal_count_txt" class="text-emerald-700 font-bold">0 / 0</span>
+                    </div>
+                    <div class="w-full h-3 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
+                        <div id="bc_jadwal_bar" class="h-full bg-emerald-600 rounded-full transition-all duration-300" style="width:0%"></div>
+                    </div>
+                    <div id="bc_jadwal_log" class="max-h-28 overflow-y-auto divide-y divide-slate-200/70 text-[11px] font-mono bg-slate-50 p-2 rounded-lg"></div>
+                </div>
             </div>
-            <div class="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden">
-                <div id="bc_jadwal_bar" class="h-full bg-emerald-600 transition-all" style="width:0%"></div>
-            </div>
-            <div id="bc_jadwal_log" class="max-h-36 overflow-y-auto divide-y divide-slate-200/70 text-[11px] pt-1"></div>
-        </div>
 
-        <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
-            <button type="button" onclick="closeBroadcastJadwalModal()" class="px-4 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold text-slate-700 cursor-pointer">Tutup</button>
-            <button type="button" id="btnStartBcJadwal" onclick="startBroadcastJadwal()" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold cursor-pointer">
-                Mulai Broadcast WA
-            </button>
+            <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2">
+                <button type="button" onclick="closeBroadcastJadwalModal()" class="px-4 py-2 rounded-xl border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-100 cursor-pointer">
+                    Tutup
+                </button>
+                <button type="button" id="btnStartBcJadwal" onclick="startBroadcastJadwal()" class="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md cursor-pointer">
+                    Mulai Broadcast WA
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -698,16 +787,92 @@ function resetRuanganForm() {
     document.getElementById('ruangan_pengawas').value = '';
 }
 
+let bcJadwalItemsCache = [];
+
 function openBroadcastJadwalModal() {
     const m = document.getElementById('modalBroadcastJadwal');
     m.classList.remove('hidden');
-    m.classList.add('flex');
+    loadBroadcastJadwalPreview();
 }
 
 function closeBroadcastJadwalModal() {
     const m = document.getElementById('modalBroadcastJadwal');
     m.classList.add('hidden');
-    m.classList.remove('flex');
+}
+
+async function loadBroadcastJadwalPreview() {
+    const container = document.getElementById('bc_jadwal_checklist');
+    const countEl = document.getElementById('bc_jadwal_target_count');
+    if (container) container.innerHTML = '<div class="p-4 text-center text-xs text-slate-400">Memuat daftar siswa...</div>';
+
+    const qs = new URLSearchParams({
+        jenjang: document.getElementById('bc_jadwal_jenjang')?.value || '',
+        ruangan_id: document.getElementById('bc_jadwal_ruangan')?.value || '',
+        target_mode: document.getElementById('bc_jadwal_target_mode')?.value || 'belum_wa',
+        limit: document.getElementById('bc_jadwal_limit')?.value || '0',
+        search: ''
+    });
+    try {
+        const res = await fetch('<?= url('kelola-spmb/kartu-observasi/broadcast-data') ?>?' + qs.toString());
+        const json = await res.json();
+        bcJadwalItemsCache = json.items || [];
+        renderBcJadwalChecklist();
+    } catch (e) {
+        if (container) container.innerHTML = '<div class="p-4 text-center text-xs text-rose-500">Gagal memuat daftar peserta.</div>';
+        if (countEl) countEl.textContent = '0 Siswa';
+    }
+}
+
+function renderBcJadwalChecklist() {
+    const container = document.getElementById('bc_jadwal_checklist');
+    if (!container) return;
+    if (!bcJadwalItemsCache.length) {
+        container.innerHTML = '<div class="p-4 text-center text-xs text-slate-400">Tidak ada peserta yang sesuai dengan filter ini.</div>';
+        updateBcJadwalCount();
+        return;
+    }
+    container.innerHTML = bcJadwalItemsCache.map(it => {
+        const ruangTxt = it.nama_ruangan ? `${it.nama_ruangan} (${it.sesi_nama || '-'})` : 'Belum Diatur';
+        const waBadge = it.wa_jadwal_sent_at
+            ? '<span class="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 text-[10px] font-bold">Sudah WA</span>'
+            : '<span class="px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 text-[10px] font-bold">Belum WA</span>';
+        const searchStr = `${it.nama_lengkap} ${it.nomor_peserta} ${it.jenjang} ${ruangTxt} ${it.target_phone}`.toLowerCase();
+        return `<label class="bc-jadwal-row flex items-center justify-between gap-2 px-3 py-2 hover:bg-slate-50 cursor-pointer" data-search="${searchStr.replace(/"/g, '&quot;')}">
+            <div class="flex items-center gap-2.5 min-w-0">
+                <input type="checkbox" class="bc-jadwal-cb w-4 h-4 rounded text-emerald-600" value="${it.id}" checked onchange="updateBcJadwalCount()">
+                <div class="min-w-0">
+                    <div class="text-xs font-bold text-slate-800 truncate">${it.nama_lengkap} <span class="text-slate-400 font-normal">(${it.jenjang})</span></div>
+                    <div class="text-[11px] text-slate-500 truncate">${ruangTxt} &bull; <span class="font-mono">${it.target_phone}</span></div>
+                </div>
+            </div>
+            <div class="shrink-0">${waBadge}</div>
+        </label>`;
+    }).join('');
+    updateBcJadwalCount();
+}
+
+function updateBcJadwalCount() {
+    const checked = document.querySelectorAll('.bc-jadwal-cb:checked').length;
+    const total = document.querySelectorAll('.bc-jadwal-cb').length;
+    const countEl = document.getElementById('bc_jadwal_target_count');
+    if (countEl) countEl.textContent = `${checked} / ${total} Siswa Dipilih`;
+}
+
+function toggleAllBcJadwalTargets(state) {
+    document.querySelectorAll('.bc-jadwal-row').forEach(row => {
+        if (row.style.display === 'none') return;
+        const cb = row.querySelector('.bc-jadwal-cb');
+        if (cb) cb.checked = state;
+    });
+    updateBcJadwalCount();
+}
+
+function filterBcJadwalChecklist() {
+    const q = (document.getElementById('bc_jadwal_search')?.value || '').trim().toLowerCase();
+    document.querySelectorAll('.bc-jadwal-row').forEach(row => {
+        const hay = row.getAttribute('data-search') || '';
+        row.style.display = (!q || hay.includes(q)) ? '' : 'none';
+    });
 }
 
 function copyKartuLink(link, btn) {
@@ -719,17 +884,9 @@ function copyKartuLink(link, btn) {
 }
 
 async function copyAllKartuLinks() {
-    const onlyUnsent = document.getElementById('bc_jadwal_only_unsent')?.checked ? '1' : '';
-    const qs = new URLSearchParams({
-        jenjang: '<?= e($selJenjang) ?>',
-        ruangan_id: '<?= e($selRuangan) ?>',
-        search: '<?= e($search) ?>',
-        only_unsent: onlyUnsent
-    });
-    const res = await fetch('<?= url('kelola-spmb/kartu-observasi/broadcast-data') ?>?' + qs.toString());
-    const json = await res.json();
-    const items = json.items || [];
-    if (!items.length) { alert('Tidak ada data peserta untuk disalin.'); return; }
+    const selectedIds = new Set(Array.from(document.querySelectorAll('.bc-jadwal-cb:checked')).map(el => String(el.value)));
+    const items = bcJadwalItemsCache.filter(it => selectedIds.has(String(it.id)));
+    if (!items.length) { alert('Centang minimal 1 siswa untuk disalin.'); return; }
     const text = items.map((it, i) =>
         `${i + 1}. ${it.nama_lengkap} (${it.jenjang})\nRuang: ${it.nama_ruangan || '-'} | ${it.sesi_nama || '-'}\nKartu QR: ${it.kartu_url}`
     ).join('\n\n');
@@ -745,32 +902,23 @@ async function startBroadcastJadwal() {
     const bar = document.getElementById('bc_jadwal_bar');
     const logEl = document.getElementById('bc_jadwal_log');
     const tpl = document.getElementById('bc_jadwal_template').value;
-    const onlyUnsent = document.getElementById('bc_jadwal_only_unsent')?.checked ? '1' : '';
+    const delaySec = Math.max(1, parseInt(document.getElementById('bc_jadwal_delay')?.value || '5', 10));
+
+    const selectedIds = new Set(Array.from(document.querySelectorAll('.bc-jadwal-cb:checked')).map(el => String(el.value)));
+    const items = bcJadwalItemsCache.filter(it => selectedIds.has(String(it.id)));
+    if (items.length === 0) {
+        alert('Pilih minimal 1 siswa pada daftar checklist terlebih dahulu.');
+        return;
+    }
 
     btn.disabled = true;
     wrap.classList.remove('hidden');
     if (logEl) logEl.innerHTML = '';
-    txt.textContent = 'Mengambil daftar peserta...';
-
-    const qs = new URLSearchParams({
-        jenjang: '<?= e($selJenjang) ?>',
-        ruangan_id: '<?= e($selRuangan) ?>',
-        search: '<?= e($search) ?>',
-        only_unsent: onlyUnsent
-    });
-    const listRes = await fetch('<?= url('kelola-spmb/kartu-observasi/broadcast-data') ?>?' + qs.toString());
-    const listJson = await listRes.json();
-    const items = listJson.items || [];
-    if (items.length === 0) {
-        txt.textContent = 'Tidak ada peserta target dengan nomor WA valid.';
-        btn.disabled = false;
-        return;
-    }
 
     let ok = 0, fail = 0;
     for (let i = 0; i < items.length; i++) {
         const it = items[i];
-        txt.textContent = 'Mengirim ke ' + it.nama_lengkap + '...';
+        txt.textContent = `Mengirim (${i + 1}/${items.length}) ke ${it.nama_lengkap}...`;
         cnt.textContent = (i + 1) + ' / ' + items.length;
         bar.style.width = Math.round(((i + 1) / items.length) * 100) + '%';
 
@@ -791,6 +939,11 @@ async function startBroadcastJadwal() {
         } catch (e) {
             fail++;
             if (logEl) logEl.insertAdjacentHTML('afterbegin', `<div class="py-1 text-rose-600 font-semibold">✕ ${it.nama_lengkap} — Error koneksi</div>`);
+        }
+
+        if (i < items.length - 1) {
+            txt.textContent = `Jeda keamanan ${delaySec} detik sebelum pesan berikutnya...`;
+            await new Promise(resolve => setTimeout(resolve, delaySec * 1000));
         }
     }
     txt.textContent = `Selesai! Terkirim: ${ok}, Gagal: ${fail}`;

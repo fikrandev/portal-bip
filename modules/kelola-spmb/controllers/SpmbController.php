@@ -4143,7 +4143,10 @@ SVG;
     {
         $activeGroup = SpmbModel::getActiveGroup();
         $groupId = (int)($activeGroup['id'] ?? 0);
-        $onlyUnsent = !empty($_GET['only_unsent']);
+        $targetMode = trim((string)($_GET['target_mode'] ?? ''));
+        $onlyUnsent = !empty($_GET['only_unsent']) || $targetMode === 'belum_wa' || $targetMode === 'terjadwal_belum_wa';
+        $limit = max(0, (int)($_GET['limit'] ?? 0));
+
         $filters = [
             'group_id'   => $groupId,
             'jenjang'    => trim((string)($_GET['jenjang'] ?? '')),
@@ -4151,11 +4154,15 @@ SVG;
             'search'     => trim((string)($_GET['search'] ?? '')),
         ];
         $data = SpmbModel::getKartuObservasiPeserta($filters);
-        $items = array_values(array_filter($data['items'], function ($x) use ($onlyUnsent) {
+        $items = array_values(array_filter($data['items'], function ($x) use ($onlyUnsent, $targetMode) {
             if (empty($x['target_phone'])) return false;
+            if ($targetMode === 'terjadwal_belum_wa' && empty($x['ruangan_id'])) return false;
             if ($onlyUnsent && !empty($x['wa_jadwal_sent_at'])) return false;
             return true;
         }));
+        if ($limit > 0 && count($items) > $limit) {
+            $items = array_slice($items, 0, $limit);
+        }
         Response::json([
             'success'         => true,
             'total'           => count($items),
