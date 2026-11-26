@@ -5127,16 +5127,23 @@ class SpmbModel
             ", $hasilIds);
             foreach ($jRows as $jr) {
                 $hid = (int)$jr['hasil_id'];
-                $detailMap[$hid][] = [
-                    'aspek' => $jr['aspek_snapshot'] ?: 'Umum',
-                    'nilai' => (float)$jr['nilai'],
-                    'maks'  => (float)$jr['nilai_maksimal'],
-                ];
+                $asp = trim((string)($jr['aspek_snapshot'] ?? 'Umum')) ?: 'Umum';
+                if (!isset($detailMap[$hid][$asp])) {
+                    $detailMap[$hid][$asp] = [
+                        'aspek' => $asp,
+                        'nilai' => 0.0,
+                        'maks'  => 0.0,
+                        'count' => 0,
+                    ];
+                }
+                $detailMap[$hid][$asp]['nilai'] += (float)$jr['nilai'];
+                $detailMap[$hid][$asp]['maks']  += (float)$jr['nilai_maksimal'];
+                $detailMap[$hid][$asp]['count']++;
             }
         }
         foreach ($items as &$it) {
             $hid = (int)($it['hasil_id'] ?? 0);
-            $it['detail_nilai'] = $hid > 0 ? ($detailMap[$hid] ?? []) : [];
+            $it['detail_nilai'] = $hid > 0 ? array_values($detailMap[$hid] ?? []) : [];
         }
         unset($it);
 

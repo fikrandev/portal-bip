@@ -98,7 +98,7 @@ if (defined('SYS_APP_LOGO') && !empty(SYS_APP_LOGO)) {
                                         (<?= number_format((float)$it['persentase'], 1) ?>%)
                                         <?php if (!empty($it['detail_nilai'])): ?>
                                             <div style="font-size:9px;color:#334155;margin-top:3px;">
-                                                <?= htmlspecialchars(implode(', ', array_map(fn($dn) => $dn['aspek'] . ': ' . rtrim(rtrim(number_format((float)$dn['nilai'], 2, '.', ''), '0'), '.'), $it['detail_nilai']))) ?>
+                                                <?= htmlspecialchars(implode(', ', array_map(fn($dn) => $dn['aspek'] . ': ' . rtrim(rtrim(number_format((float)$dn['nilai'], 2, '.', ''), '0'), '.') . '/' . rtrim(rtrim(number_format((float)$dn['maks'], 2, '.', ''), '0'), '.'), $it['detail_nilai']))) ?>
                                             </div>
                                         <?php endif; ?>
                                     </td>
@@ -138,32 +138,49 @@ if (defined('SYS_APP_LOGO') && !empty(SYS_APP_LOGO)) {
                             <div><strong>Tanggal Observasi:</strong> <?= !empty($h['observed_at']) ? date('d/m/Y H:i', strtotime($h['observed_at'])) : '-' ?></div>
                         </div>
 
+                        <?php
+                        $jByAspek = [];
+                        foreach ($jList as $jwItem) {
+                            $aKey = trim((string)($jwItem['aspek_snapshot'] ?? 'Umum')) ?: 'Umum';
+                            $jByAspek[$aKey][] = $jwItem;
+                        }
+                        ?>
                         <table>
                             <thead>
                                 <tr>
                                     <th class="center" style="width:28px;">No</th>
-                                    <th style="width:90px;">Aspek</th>
                                     <th>Pertanyaan / Indikator</th>
-                                    <th style="width:110px;">Jawaban</th>
-                                    <th class="center" style="width:52px;">Nilai</th>
-                                    <th style="width:125px;">Keterangan</th>
+                                    <th style="width:120px;">Jawaban</th>
+                                    <th class="center" style="width:55px;">Nilai</th>
+                                    <th style="width:130px;">Keterangan</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php foreach ($jList as $idx => $jw): ?>
-                                    <tr>
-                                        <td class="center"><?= $idx + 1 ?></td>
-                                        <td><?= htmlspecialchars($jw['aspek_snapshot'] ?: 'Umum') ?></td>
-                                        <td><?= htmlspecialchars($jw['pertanyaan_snapshot']) ?></td>
-                                        <td><strong><?= htmlspecialchars($jw['jawaban_dipilih']) ?></strong></td>
-                                        <td class="center"><strong><?= rtrim(rtrim(number_format((float)$jw['nilai'], 2, '.', ''), '0'), '.') ?></strong></td>
-                                        <td><?= htmlspecialchars($jw['keterangan'] ?: '-') ?></td>
+                                <?php $aNum = 0; foreach ($jByAspek as $aName => $aRows):
+                                    $aNum++;
+                                    $aVal = array_sum(array_map(fn($x) => (float)$x['nilai'], $aRows));
+                                    $aMax = array_sum(array_map(fn($x) => (float)$x['nilai_maksimal'], $aRows));
+                                ?>
+                                    <tr style="background:#eff6ff;font-weight:700;color:#1e3a8a;">
+                                        <td class="center"><?= chr(64 + $aNum) ?></td>
+                                        <td colspan="2">ASPEK: <?= htmlspecialchars(strtoupper($aName)) ?> (<?= count($aRows) ?> Pertanyaan)</td>
+                                        <td class="center"><?= rtrim(rtrim(number_format($aVal, 2, '.', ''), '0'), '.') ?>/<?= rtrim(rtrim(number_format($aMax, 2, '.', ''), '0'), '.') ?></td>
+                                        <td class="center"><?= $aMax > 0 ? number_format(($aVal / $aMax) * 100, 0) . '%' : '-' ?></td>
                                     </tr>
+                                    <?php foreach ($aRows as $idx => $jw): ?>
+                                        <tr>
+                                            <td class="center"><?= $idx + 1 ?></td>
+                                            <td><?= htmlspecialchars($jw['pertanyaan_snapshot']) ?></td>
+                                            <td><strong><?= htmlspecialchars($jw['jawaban_dipilih']) ?></strong></td>
+                                            <td class="center"><strong><?= rtrim(rtrim(number_format((float)$jw['nilai'], 2, '.', ''), '0'), '.') ?></strong></td>
+                                            <td><?= htmlspecialchars($jw['keterangan'] ?: '-') ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
                                 <?php endforeach; ?>
                             </tbody>
                             <tfoot>
                                 <tr style="background:#f1f5f9;font-weight:700;">
-                                    <td colspan="4" style="text-align:right;">TOTAL NILAI / PERSENTASE</td>
+                                    <td colspan="3" style="text-align:right;">TOTAL NILAI / PERSENTASE</td>
                                     <td class="center"><?= rtrim(rtrim(number_format((float)($h['total_nilai'] ?? 0), 2, '.', ''), '0'), '.') ?> / <?= rtrim(rtrim(number_format((float)($h['nilai_maksimal'] ?? 0), 2, '.', ''), '0'), '.') ?></td>
                                     <td class="center"><?= number_format((float)($h['persentase'] ?? 0), 1) ?>% (<?= htmlspecialchars($h['kategori_hasil'] ?? '-') ?>)</td>
                                 </tr>

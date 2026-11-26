@@ -55,13 +55,22 @@ $search = $filters['search'] ?? '';
     </div>
 
     <?php if ($activeTab === 'soal' && $canSoal): ?>
-        <!-- ══════════ TAB 1: BUAT PERTANYAAN OBSERVASI SISWA (PER UNIT) ══════════ -->
+        <?php
+        // Kelompokkan daftar pertanyaan berdasarkan Aspek Penilaian
+        $soalByAspek = [];
+        foreach ($soalList as $sItem) {
+            $aspKey = trim((string)($sItem['aspek'] ?? 'Umum')) ?: 'Umum';
+            $soalByAspek[$aspKey][] = $sItem;
+        }
+        $existingAspeks = array_keys($soalByAspek);
+        ?>
+        <!-- ══════════ TAB 1: BUAT PERTANYAAN OBSERVASI SISWA (PER ASPEK & PER UNIT) ══════════ -->
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <!-- Form Buat / Edit Pertanyaan -->
             <div class="lg:col-span-5 bg-white rounded-2xl border border-slate-200 shadow-xs p-5 sm:p-6 space-y-4">
                 <div>
                     <h3 id="soalFormTitle" class="text-base font-extrabold text-slate-900">Tambah Pertanyaan — Unit <?= e($selJenjang) ?></h3>
-                    <p class="text-xs text-slate-500 mt-0.5">Tentukan pertanyaan, pilihan jawaban beserta nilainya, dan opsi kolom keterangan.</p>
+                    <p class="text-xs text-slate-500 mt-0.5">Pilih aspek yang sudah ada atau ketik aspek baru, lalu tambahkan beberapa pertanyaan di dalamnya.</p>
                 </div>
 
                 <form method="POST" action="<?= url('kelola-spmb/observasi-siswa/soal/store') ?>" class="space-y-4 text-sm">
@@ -72,9 +81,14 @@ $search = $filters['search'] ?? '';
 
                     <div class="grid grid-cols-3 gap-3">
                         <div class="col-span-2">
-                            <label class="block text-sm font-semibold text-slate-700 mb-1">Aspek Penilaian</label>
-                            <input type="text" name="aspek" id="soal_aspek" value="Umum" placeholder="Misal: Kognitif / Agama / Motorik"
-                                   class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white outline-none">
+                            <label class="block text-sm font-semibold text-slate-700 mb-1">Aspek Penilaian *</label>
+                            <input type="text" name="aspek" id="soal_aspek" list="aspekDatalist" value="<?= e($existingAspeks[0] ?? 'Kognitif') ?>" required placeholder="Misal: Kognitif / Agama / Motorik"
+                                   class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white outline-none focus:border-indigo-500 font-semibold">
+                            <datalist id="aspekDatalist">
+                                <?php foreach (array_unique(array_merge($existingAspeks, ['Kognitif', 'Agama & Akhlak', 'Motorik', 'Bahasa & Komunikasi', 'Kemandirian & Sosial'])) as $aOpt): ?>
+                                    <option value="<?= e($aOpt) ?>">
+                                <?php endforeach; ?>
+                            </datalist>
                         </div>
                         <div>
                             <label class="block text-sm font-semibold text-slate-700 mb-1">Urutan</label>
@@ -82,6 +96,18 @@ $search = $filters['search'] ?? '';
                                    class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white outline-none text-center font-bold">
                         </div>
                     </div>
+
+                    <?php if (!empty($existingAspeks)): ?>
+                        <div class="flex flex-wrap items-center gap-1.5">
+                            <span class="text-[11px] font-bold text-slate-400">Pilih cepat aspek:</span>
+                            <?php foreach ($existingAspeks as $aChip): ?>
+                                <button type="button" onclick="pilihAspekCepat('<?= e(addslashes($aChip)) ?>')"
+                                        class="px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-bold cursor-pointer">
+                                    <?= e($aChip) ?> (<?= count($soalByAspek[$aChip]) ?>)
+                                </button>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
 
                     <div>
                         <label class="block text-sm font-semibold text-slate-700 mb-1">Pertanyaan *</label>
@@ -112,54 +138,76 @@ $search = $filters['search'] ?? '';
                 </form>
             </div>
 
-            <!-- Daftar Pertanyaan Unit -->
-            <div class="lg:col-span-7 bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-                <div class="px-5 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
-                    <h3 class="text-base font-extrabold text-slate-900">Daftar Pertanyaan Unit <?= e($selJenjang) ?></h3>
-                    <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700"><?= count($soalList) ?> Pertanyaan</span>
+            <!-- Daftar Pertanyaan Dikelompokkan Per Aspek -->
+            <div class="lg:col-span-7 space-y-4">
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-xs px-5 py-4 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-base font-extrabold text-slate-900">Daftar Aspek &amp; Pertanyaan Unit <?= e($selJenjang) ?></h3>
+                        <p class="text-xs text-slate-500"><?= count($soalByAspek) ?> Aspek &bull; <?= count($soalList) ?> Total Pertanyaan</p>
+                    </div>
                 </div>
-                <div class="divide-y divide-slate-100">
-                    <?php if (empty($soalList)): ?>
-                        <div class="p-10 text-center text-sm text-slate-400">
-                            Belum ada pertanyaan Observasi Siswa untuk unit <strong><?= e($selJenjang) ?></strong>. Silakan buat pada form di sebelah kiri.
-                        </div>
-                    <?php else: ?>
-                        <?php foreach ($soalList as $s): ?>
-                            <div class="p-4 sm:p-5 hover:bg-slate-50/70 space-y-2">
-                                <div class="flex items-start justify-between gap-3">
-                                    <div>
-                                        <div class="flex flex-wrap items-center gap-1.5 mb-1">
-                                            <span class="px-2 py-0.5 rounded-lg bg-slate-800 text-white text-[11px] font-bold">#<?= (int)$s['urutan'] ?></span>
-                                            <span class="px-2.5 py-0.5 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-200 text-xs font-bold"><?= e($s['aspek'] ?: 'Umum') ?></span>
-                                            <span class="px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-700 text-[11px] font-bold">Maks Nilai: <?= rtrim(rtrim(number_format((float)$s['nilai_maksimal'], 2, '.', ''), '0'), '.') ?></span>
-                                            <?php if (!empty($s['pakai_keterangan'])): ?>
-                                                <span class="px-2 py-0.5 rounded-lg bg-sky-50 text-sky-700 text-[11px] font-semibold">+ Keterangan</span>
-                                            <?php endif; ?>
-                                        </div>
-                                        <p class="text-sm font-bold text-slate-900"><?= e($s['pertanyaan']) ?></p>
-                                    </div>
-                                    <div class="flex items-center gap-1.5 shrink-0">
-                                        <button type="button" onclick='editSoal(<?= json_encode($s, JSON_UNESCAPED_UNICODE) ?>)'
-                                                class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700 cursor-pointer">Edit</button>
-                                        <form method="POST" action="<?= url('kelola-spmb/observasi-siswa/soal/delete/' . (int)$s['id']) ?>" class="inline" onsubmit="return confirm('Hapus pertanyaan ini?')">
-                                            <?= CSRF::field() ?>
-                                            <input type="hidden" name="jenjang" value="<?= e($selJenjang) ?>">
-                                            <button type="submit" class="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white text-xs font-bold cursor-pointer">Hapus</button>
-                                        </form>
-                                    </div>
+
+                <?php if (empty($soalByAspek)): ?>
+                    <div class="bg-white rounded-2xl border border-slate-200 p-10 text-center text-sm text-slate-400">
+                        Belum ada pertanyaan Observasi Siswa untuk unit <strong><?= e($selJenjang) ?></strong>. Silakan buat pada form di sebelah kiri.
+                    </div>
+                <?php else: ?>
+                    <?php $aspekIdx = 0; foreach ($soalByAspek as $aspekNama => $aspekSoals):
+                        $aspekIdx++;
+                        $aspekMaxSum = array_sum(array_map(fn($x) => (float)($x['nilai_maksimal'] ?? 0), $aspekSoals));
+                    ?>
+                        <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+                            <div class="px-5 py-3.5 bg-indigo-50/80 border-b border-indigo-100 flex flex-wrap items-center justify-between gap-2">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-6 h-6 rounded-lg bg-indigo-600 text-white text-xs font-extrabold flex items-center justify-center"><?= chr(64 + $aspekIdx) ?></span>
+                                    <h4 class="text-sm font-extrabold text-indigo-950">Aspek <?= e($aspekNama) ?></h4>
+                                    <span class="px-2 py-0.5 rounded-full bg-white text-indigo-700 border border-indigo-200 text-[11px] font-bold">
+                                        <?= count($aspekSoals) ?> Pertanyaan &bull; Maks <?= rtrim(rtrim(number_format($aspekMaxSum, 2, '.', ''), '0'), '.') ?>
+                                    </span>
                                 </div>
-                                <div class="flex flex-wrap gap-1.5 pt-1">
-                                    <?php foreach (($s['opsi'] ?? []) as $op): ?>
-                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 text-xs font-semibold">
-                                            <span><?= e($op['jawaban']) ?></span>
-                                            <strong class="text-indigo-700">(<?= rtrim(rtrim(number_format((float)$op['nilai'], 2, '.', ''), '0'), '.') ?>)</strong>
-                                        </span>
-                                    <?php endforeach; ?>
-                                </div>
+                                <button type="button" onclick="pilihAspekCepat('<?= e(addslashes($aspekNama)) ?>', true)"
+                                        class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold cursor-pointer">
+                                    + Tambah Pertanyaan
+                                </button>
                             </div>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                </div>
+                            <div class="divide-y divide-slate-100">
+                                <?php foreach ($aspekSoals as $qNo => $s): ?>
+                                    <div class="p-4 sm:p-5 hover:bg-slate-50/70 space-y-2">
+                                        <div class="flex items-start justify-between gap-3">
+                                            <div>
+                                                <div class="flex flex-wrap items-center gap-1.5 mb-1">
+                                                    <span class="px-2 py-0.5 rounded-lg bg-slate-800 text-white text-[11px] font-bold"><?= $qNo + 1 ?></span>
+                                                    <span class="px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-700 text-[11px] font-bold">Maks Nilai: <?= rtrim(rtrim(number_format((float)$s['nilai_maksimal'], 2, '.', ''), '0'), '.') ?></span>
+                                                    <?php if (!empty($s['pakai_keterangan'])): ?>
+                                                        <span class="px-2 py-0.5 rounded-lg bg-sky-50 text-sky-700 text-[11px] font-semibold">+ Keterangan</span>
+                                                    <?php endif; ?>
+                                                </div>
+                                                <p class="text-sm font-bold text-slate-900"><?= e($s['pertanyaan']) ?></p>
+                                            </div>
+                                            <div class="flex items-center gap-1.5 shrink-0">
+                                                <button type="button" onclick='editSoal(<?= json_encode($s, JSON_UNESCAPED_UNICODE) ?>)'
+                                                        class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700 cursor-pointer">Edit</button>
+                                                <form method="POST" action="<?= url('kelola-spmb/observasi-siswa/soal/delete/' . (int)$s['id']) ?>" class="inline" onsubmit="return confirm('Hapus pertanyaan ini?')">
+                                                    <?= CSRF::field() ?>
+                                                    <input type="hidden" name="jenjang" value="<?= e($selJenjang) ?>">
+                                                    <button type="submit" class="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white text-xs font-bold cursor-pointer">Hapus</button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                        <div class="flex flex-wrap gap-1.5 pt-1">
+                                            <?php foreach (($s['opsi'] ?? []) as $op): ?>
+                                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 text-xs font-semibold">
+                                                    <span><?= e($op['jawaban']) ?></span>
+                                                    <strong class="text-indigo-700">(<?= rtrim(rtrim(number_format((float)$op['nilai'], 2, '.', ''), '0'), '.') ?>)</strong>
+                                                </span>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
             </div>
         </div>
 
@@ -253,7 +301,7 @@ $search = $filters['search'] ?? '';
                                                 <div class="flex flex-wrap justify-center gap-1 mt-1.5">
                                                     <?php foreach ($it['detail_nilai'] as $dn): ?>
                                                         <span class="px-1.5 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-bold">
-                                                            <?= e($dn['aspek']) ?>: <?= rtrim(rtrim(number_format((float)$dn['nilai'], 2, '.', ''), '0'), '.') ?>
+                                                            <?= e($dn['aspek']) ?>: <?= rtrim(rtrim(number_format((float)$dn['nilai'], 2, '.', ''), '0'), '.') ?>/<?= rtrim(rtrim(number_format((float)$dn['maks'], 2, '.', ''), '0'), '.') ?>
                                                         </span>
                                                     <?php endforeach; ?>
                                                 </div>
@@ -383,10 +431,25 @@ function editSoal(s) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+function pilihAspekCepat(namaAspek, focusInput = false) {
+    document.getElementById('soal_id').value = '';
+    document.getElementById('soalFormTitle').textContent = 'Tambah Pertanyaan di Aspek ' + namaAspek;
+    const aspInp = document.getElementById('soal_aspek');
+    if (aspInp) aspInp.value = namaAspek;
+    const qInp = document.getElementById('soal_pertanyaan');
+    if (qInp) {
+        qInp.value = '';
+        if (focusInput) {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            qInp.focus();
+        }
+    }
+}
+
 function resetSoalForm() {
     document.getElementById('soalFormTitle').textContent = 'Tambah Pertanyaan — Unit <?= e($selJenjang) ?>';
     document.getElementById('soal_id').value = '';
-    document.getElementById('soal_aspek').value = 'Umum';
+    document.getElementById('soal_aspek').value = 'Kognitif';
     document.getElementById('soal_pertanyaan').value = '';
     document.getElementById('soal_pakai_ket').checked = true;
     initDefaultOpsi();
@@ -423,35 +486,61 @@ async function openIsiObservasiModal(pendaftarId) {
             return;
         }
 
-        wrap.innerHTML = currentObsSoalList.map((s, idx) => {
-            const prev = jMap[s.id] || null;
-            const opsiHtml = (s.opsi || []).map((op, oIdx) => {
-                const checked = prev && prev.jawaban_dipilih === op.jawaban ? 'checked' : '';
-                return `<label class="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-200 bg-white hover:border-emerald-400 cursor-pointer text-xs font-semibold">
-                    <input type="radio" name="jawaban[${s.id}]" value="${oIdx}" data-soal-id="${s.id}" data-aspek="${String(s.aspek || 'Umum').replace(/"/g, '&quot;')}" data-val="${op.nilai}" data-max="${s.nilai_maksimal || 0}" ${checked} required onchange="recalcLiveObsScore()" class="obs-radio text-emerald-600">
-                    <span>${op.jawaban}</span>
-                    <span class="text-indigo-700 font-bold">(${op.nilai})</span>
-                </label>`;
+        // Kelompokkan soal berdasarkan Aspek di dalam Modal Pengisian
+        const groupedAspek = {};
+        currentObsSoalList.forEach(s => {
+            const asp = (s.aspek || 'Umum').trim() || 'Umum';
+            if (!groupedAspek[asp]) groupedAspek[asp] = [];
+            groupedAspek[asp].push(s);
+        });
+
+        let gIdx = 0;
+        wrap.innerHTML = Object.entries(groupedAspek).map(([aspekNama, soals]) => {
+            gIdx++;
+            const aspSlug = 'asp_' + gIdx;
+            const aspMax = soals.reduce((acc, x) => acc + parseFloat(x.nilai_maksimal || 0), 0);
+            const itemsHtml = soals.map((s, qIdx) => {
+                const prev = jMap[s.id] || null;
+                const opsiHtml = (s.opsi || []).map((op, oIdx) => {
+                    const checked = prev && prev.jawaban_dipilih === op.jawaban ? 'checked' : '';
+                    return `<label class="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-200 bg-white hover:border-emerald-400 cursor-pointer text-xs font-semibold">
+                        <input type="radio" name="jawaban[${s.id}]" value="${oIdx}" data-soal-id="${s.id}" data-aspek="${String(aspekNama).replace(/"/g, '&quot;')}" data-aspek-slug="${aspSlug}" data-val="${op.nilai}" data-max="${s.nilai_maksimal || 0}" ${checked} required onchange="recalcLiveObsScore()" class="obs-radio text-emerald-600">
+                        <span>${op.jawaban}</span>
+                        <span class="text-indigo-700 font-bold">(${op.nilai})</span>
+                    </label>`;
+                }).join('');
+
+                const ketHtml = Number(s.pakai_keterangan) === 1
+                    ? `<input type="text" name="keterangan[${s.id}]" value="${prev && prev.keterangan ? String(prev.keterangan).replace(/"/g, '&quot;') : ''}" placeholder="Keterangan tambahan (opsional)..." class="w-full mt-2 px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs outline-none focus:border-indigo-400">`
+                    : '';
+
+                const maxClean = parseFloat(s.nilai_maksimal || 0);
+                return `<div class="p-3.5 rounded-xl bg-white border border-slate-200 space-y-2">
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2">
+                            <span class="px-2 py-0.5 rounded-md bg-slate-800 text-white text-[10px] font-bold">${qIdx + 1}</span>
+                            <span class="text-sm font-bold text-slate-900">${s.pertanyaan}</span>
+                        </div>
+                        <span id="obs_q_score_${s.id}" class="shrink-0 px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-slate-100 text-slate-600">
+                            Nilai: - / ${maxClean}
+                        </span>
+                    </div>
+                    <div class="flex flex-wrap gap-2 pt-0.5">${opsiHtml}</div>
+                    ${ketHtml}
+                </div>`;
             }).join('');
 
-            const ketHtml = Number(s.pakai_keterangan) === 1
-                ? `<input type="text" name="keterangan[${s.id}]" value="${prev && prev.keterangan ? String(prev.keterangan).replace(/"/g, '&quot;') : ''}" placeholder="Keterangan tambahan (opsional)..." class="w-full mt-2 px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs outline-none focus:border-indigo-400">`
-                : '';
-
-            const maxClean = parseFloat(s.nilai_maksimal || 0);
-            return `<div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
-                <div class="flex items-center justify-between gap-2">
+            return `<div class="rounded-2xl border border-indigo-200 bg-indigo-50/40 overflow-hidden">
+                <div class="px-4 py-2.5 bg-indigo-100/70 border-b border-indigo-200 flex items-center justify-between gap-2">
                     <div class="flex items-center gap-2">
-                        <span class="px-2 py-0.5 rounded-md bg-slate-800 text-white text-[10px] font-bold">${idx + 1}</span>
-                        <span class="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 text-[11px] font-bold">${s.aspek || 'Umum'}</span>
+                        <span class="w-6 h-6 rounded-lg bg-indigo-600 text-white text-xs font-extrabold flex items-center justify-center">${String.fromCharCode(64 + gIdx)}</span>
+                        <span class="text-xs sm:text-sm font-extrabold text-indigo-950">Aspek ${aspekNama} (${soals.length} Pertanyaan)</span>
                     </div>
-                    <span id="obs_q_score_${s.id}" class="px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-slate-200 text-slate-600">
-                        Nilai: - / ${maxClean}
+                    <span id="obs_aspek_total_${aspSlug}" data-aspek-max="${aspMax}" class="px-2.5 py-0.5 rounded-full bg-white text-indigo-800 border border-indigo-200 text-xs font-extrabold">
+                        Total: 0 / ${aspMax}
                     </span>
                 </div>
-                <div class="text-sm font-bold text-slate-900">${s.pertanyaan}</div>
-                <div class="flex flex-wrap gap-2 pt-1">${opsiHtml}</div>
-                ${ketHtml}
+                <div class="p-3 space-y-2.5">${itemsHtml}</div>
             </div>`;
         }).join('');
         recalcLiveObsScore();
@@ -463,33 +552,49 @@ async function openIsiObservasiModal(pendaftarId) {
 function recalcLiveObsScore() {
     let total = 0, maxT = 0;
     const aspekTotals = {};
+    const aspekSlugTotals = {};
     currentObsSoalList.forEach(s => {
         const m = parseFloat(s.nilai_maksimal || 0);
         maxT += m;
-        const asp = s.aspek || 'Umum';
+        const asp = (s.aspek || 'Umum').trim() || 'Umum';
         if (!aspekTotals[asp]) aspekTotals[asp] = { val: 0, max: 0 };
         aspekTotals[asp].max += m;
 
         const badge = document.getElementById('obs_q_score_' + s.id);
         if (badge) {
             badge.textContent = `Nilai: - / ${m}`;
-            badge.className = 'px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-slate-200 text-slate-600';
+            badge.className = 'shrink-0 px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-slate-100 text-slate-600';
         }
+    });
+
+    document.querySelectorAll('[id^="obs_aspek_total_"]').forEach(el => {
+        const mx = el.getAttribute('data-aspek-max') || '0';
+        el.textContent = `Total: 0 / ${mx}`;
     });
 
     document.querySelectorAll('.obs-radio:checked').forEach(r => {
         const sid = r.getAttribute('data-soal-id');
         const asp = r.getAttribute('data-aspek') || 'Umum';
+        const slug = r.getAttribute('data-aspek-slug') || '';
         const val = parseFloat(r.getAttribute('data-val') || 0);
         const max = parseFloat(r.getAttribute('data-max') || 0);
         total += val;
         if (!aspekTotals[asp]) aspekTotals[asp] = { val: 0, max: max };
         aspekTotals[asp].val += val;
+        if (slug) aspekSlugTotals[slug] = (aspekSlugTotals[slug] || 0) + val;
 
         const badge = document.getElementById('obs_q_score_' + sid);
         if (badge) {
             badge.textContent = `Nilai: ${val} / ${max}`;
-            badge.className = 'px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300';
+            badge.className = 'shrink-0 px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300';
+        }
+    });
+
+    Object.entries(aspekSlugTotals).forEach(([slug, sumVal]) => {
+        const el = document.getElementById('obs_aspek_total_' + slug);
+        if (el) {
+            const mx = el.getAttribute('data-aspek-max') || '0';
+            el.textContent = `Total: ${sumVal} / ${mx}`;
         }
     });
 
