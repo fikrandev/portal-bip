@@ -260,8 +260,40 @@
                                         <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
                                             <?= e($s['status_surat']) ?>
                                         </span>
+                                        <?php if ($scope === 'sekolah' && $s['arah'] === 'keluar'):
+                                            $apSt = $s['approval_status'] ?? 'none';
+                                            $apLabel = match($apSt) {
+                                                'approved' => '✓ Di-Approve & TTD',
+                                                'rejected' => '✕ Ditolak Kepsek',
+                                                'pending'  => '⏳ Menunggu Kepsek',
+                                                default    => 'Belum Diajukan',
+                                            };
+                                            $apCls = match($apSt) {
+                                                'approved' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                                                'rejected' => 'bg-rose-50 text-rose-700 border-rose-200',
+                                                'pending'  => 'bg-amber-50 text-amber-700 border-amber-200',
+                                                default    => 'bg-slate-50 text-slate-500 border-slate-200',
+                                            };
+                                        ?>
+                                            <div class="mt-1">
+                                                <span class="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold border <?= $apCls ?>" title="<?= e($s['wa_notify_status'] ?? '') ?>">
+                                                    <?= $apLabel ?>
+                                                </span>
+                                            </div>
+                                        <?php endif; ?>
                                     </td>
                                     <td class="py-3.5 px-4 text-right whitespace-nowrap space-x-1.5">
+                                        <?php if ($scope === 'sekolah' && $s['arah'] === 'keluar' && ($s['approval_status'] ?? 'none') !== 'approved'): ?>
+                                            <form method="POST" action="<?= url('persuratan/surat/resend-wa') ?>" class="inline">
+                                                <?= CSRF::field() ?>
+                                                <input type="hidden" name="scope" value="<?= e($scope) ?>">
+                                                <input type="hidden" name="return_tab" value="<?= e($activeTab) ?>">
+                                                <input type="hidden" name="id" value="<?= (int)$s['id'] ?>">
+                                                <button type="submit" class="inline-flex items-center px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white border border-emerald-200 font-bold text-xs cursor-pointer transition-colors" title="<?= e($s['wa_notify_status'] ?? 'Kirim WA Approve ke Kepala Sekolah') ?>">
+                                                    WA Approve
+                                                </button>
+                                            </form>
+                                        <?php endif; ?>
                                         <?php if ($s['arah'] === 'keluar'): ?>
                                             <a href="<?= url('persuratan/cetak/' . (int)$s['id']) ?>" target="_blank"
                                                class="inline-flex items-center px-3 py-1.5 rounded-xl bg-sky-50 hover:bg-sky-600 text-sky-700 hover:text-white border border-sky-200 font-bold text-xs transition-colors">
@@ -361,7 +393,34 @@
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sm font-semibold text-slate-700 mb-1.5">Logo KOP Kiri (Opsional)</label>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1.5">Gambar KOP Surat Full (Opsional, Menggantikan Teks KOP)</label>
+                            <input type="file" name="kop_gambar" accept="image/*" class="w-full text-sm text-slate-600 file:mr-3 file:py-2 file:px-3.5 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100">
+                            <?php if (!empty($curKop['kop_gambar'])): ?>
+                                <div class="mt-2 p-2 rounded-xl border border-slate-200 bg-slate-50">
+                                    <img src="<?= url('public/' . ltrim($curKop['kop_gambar'], '/')) ?>" alt="KOP Gambar" class="max-h-20 w-full object-contain">
+                                    <label class="inline-flex items-center gap-1.5 text-xs text-rose-600 font-semibold mt-1.5 cursor-pointer">
+                                        <input type="checkbox" name="hapus_kop_gambar" value="1"> Hapus gambar KOP (kembali ke KOP teks)
+                                    </label>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1.5">Gambar Cap / Stempel Unit (PNG Transparan)</label>
+                            <input type="file" name="cap_gambar" accept="image/*" class="w-full text-sm text-slate-600 file:mr-3 file:py-2 file:px-3.5 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100">
+                            <?php if (!empty($curKop['cap_gambar'])): ?>
+                                <div class="mt-2 p-2 rounded-xl border border-slate-200 bg-slate-50 flex items-center gap-3">
+                                    <img src="<?= url('public/' . ltrim($curKop['cap_gambar'], '/')) ?>" alt="Cap Unit" class="h-14 w-14 object-contain">
+                                    <label class="inline-flex items-center gap-1.5 text-xs text-rose-600 font-semibold cursor-pointer">
+                                        <input type="checkbox" name="hapus_cap_gambar" value="1"> Hapus Cap Unit
+                                    </label>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1.5">Logo KOP Kiri (Jika Pakai KOP Teks)</label>
                             <input type="file" name="logo_kiri" accept="image/*" class="w-full text-sm text-slate-600 file:mr-3 file:py-2 file:px-3.5 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200">
                             <?php if (!empty($curKop['logo_kiri'])): ?>
                                 <img src="<?= url('public/' . ltrim($curKop['logo_kiri'], '/')) ?>" alt="Logo Kiri" class="h-12 mt-2 rounded border p-0.5">

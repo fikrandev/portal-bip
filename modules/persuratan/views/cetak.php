@@ -10,6 +10,10 @@ $bulanIndo = [1=>'Januari',2=>'Februari',3=>'Maret',4=>'April',5=>'Mei',6=>'Juni
 $ts = strtotime($surat['tanggal_surat'] ?? date('Y-m-d'));
 $tglIndo = date('j', $ts) . ' ' . ($bulanIndo[(int)date('n', $ts)] ?? '') . ' ' . date('Y', $ts);
 
+$kopGambar = !empty($kop['kop_gambar']) ? url('public/' . ltrim($kop['kop_gambar'], '/')) : '';
+$capGambar = !empty($kop['cap_gambar']) ? url('public/' . ltrim($kop['cap_gambar'], '/')) : '';
+$ttdGambar = !empty($surat['ttd_gambar']) ? url('public/' . ltrim($surat['ttd_gambar'], '/')) : '';
+$isApproved = (($surat['approval_status'] ?? '') === 'approved');
 $logoKiri = !empty($kop['logo_kiri']) ? url('public/' . ltrim($kop['logo_kiri'], '/')) : (defined('SYS_APP_LOGO') && SYS_APP_LOGO ? url(ltrim(SYS_APP_LOGO, '/')) : '');
 $logoKanan = !empty($kop['logo_kanan']) ? url('public/' . ltrim($kop['logo_kanan'], '/')) : '';
 ?>
@@ -37,8 +41,11 @@ $logoKanan = !empty($kop['logo_kanan']) ? url('public/' . ltrim($kop['logo_kanan
         .meta-table td { padding: 2px 6px 2px 0; vertical-align: top; }
         .isi { min-height: 120mm; white-space: pre-line; text-align: justify; margin: 16px 0 32px 0; }
         .ttd-wrap { display: flex; justify-content: flex-end; margin-top: 24px; }
-        .ttd-box { width: 250px; text-align: left; }
-        .ttd-space { height: 68px; }
+        .ttd-box { width: 260px; text-align: left; }
+        .ttd-space { position: relative; height: 78px; margin: 4px 0; }
+        .ttd-cap-img { position: absolute; left: -18px; top: 0; height: 78px; opacity: 0.85; pointer-events: none; }
+        .ttd-sign-img { position: relative; height: 72px; max-width: 220px; object-fit: contain; z-index: 2; }
+        .kop-banner-img { width: 100%; max-height: 150px; object-fit: contain; display: block; }
         @media print {
             body { background: #fff; padding: 0; }
             .no-print { display: none !important; }
@@ -54,17 +61,23 @@ $logoKanan = !empty($kop['logo_kanan']) ? url('public/' . ltrim($kop['logo_kanan
     </div>
 
     <div class="sheet">
-        <div class="kop">
-            <?php if ($logoKiri): ?><img src="<?= htmlspecialchars($logoKiri) ?>" alt="Logo" class="kop-logo"><?php endif; ?>
-            <div class="kop-text">
-                <div class="kop-b1"><?= htmlspecialchars($kop['baris_1'] ?? '') ?></div>
-                <div class="kop-b2"><?= htmlspecialchars($kop['baris_2'] ?? '') ?></div>
-                <?php if (!empty($kop['sub_judul'])): ?><div class="kop-sub"><?= htmlspecialchars($kop['sub_judul']) ?></div><?php endif; ?>
-                <?php if (!empty($kop['alamat'])): ?><div class="kop-addr"><?= htmlspecialchars($kop['alamat']) ?></div><?php endif; ?>
-                <?php if (!empty($kop['kontak'])): ?><div class="kop-addr"><?= htmlspecialchars($kop['kontak']) ?></div><?php endif; ?>
+        <?php if ($kopGambar): ?>
+            <div class="kop" style="display:block; padding-bottom: 8px;">
+                <img src="<?= htmlspecialchars($kopGambar) ?>" alt="KOP Surat" class="kop-banner-img">
             </div>
-            <?php if ($logoKanan): ?><img src="<?= htmlspecialchars($logoKanan) ?>" alt="Logo" class="kop-logo"><?php endif; ?>
-        </div>
+        <?php else: ?>
+            <div class="kop">
+                <?php if ($logoKiri): ?><img src="<?= htmlspecialchars($logoKiri) ?>" alt="Logo" class="kop-logo"><?php endif; ?>
+                <div class="kop-text">
+                    <div class="kop-b1"><?= htmlspecialchars($kop['baris_1'] ?? '') ?></div>
+                    <div class="kop-b2"><?= htmlspecialchars($kop['baris_2'] ?? '') ?></div>
+                    <?php if (!empty($kop['sub_judul'])): ?><div class="kop-sub"><?= htmlspecialchars($kop['sub_judul']) ?></div><?php endif; ?>
+                    <?php if (!empty($kop['alamat'])): ?><div class="kop-addr"><?= htmlspecialchars($kop['alamat']) ?></div><?php endif; ?>
+                    <?php if (!empty($kop['kontak'])): ?><div class="kop-addr"><?= htmlspecialchars($kop['kontak']) ?></div><?php endif; ?>
+                </div>
+                <?php if ($logoKanan): ?><img src="<?= htmlspecialchars($logoKanan) ?>" alt="Logo" class="kop-logo"><?php endif; ?>
+            </div>
+        <?php endif; ?>
 
         <div class="meta-row">
             <table class="meta-table">
@@ -87,13 +100,20 @@ $logoKanan = !empty($kop['logo_kanan']) ? url('public/' . ltrim($kop['logo_kanan
 
         <div class="ttd-wrap">
             <div class="ttd-box">
-                <div><?= htmlspecialchars($kop['penandatangan_jabatan'] ?: 'Pimpinan ' . $surat['unit_nama']) ?></div>
-                <div class="ttd-space"></div>
-                <div style="font-weight: 700; text-decoration: underline;">
-                    <?= htmlspecialchars($surat['penandatangan'] ?: ($kop['penandatangan_nama'] ?: '........................................')) ?>
+                <div><?= htmlspecialchars($surat['approver_jabatan'] ?: ($kop['penandatangan_jabatan'] ?: 'Pimpinan ' . $surat['unit_nama'])) ?></div>
+                <div class="ttd-space">
+                    <?php if ($isApproved && $capGambar): ?>
+                        <img src="<?= htmlspecialchars($capGambar) ?>" alt="Cap Unit" class="ttd-cap-img">
+                    <?php endif; ?>
+                    <?php if ($isApproved && $ttdGambar): ?>
+                        <img src="<?= htmlspecialchars($ttdGambar) ?>" alt="TTD Digital" class="ttd-sign-img">
+                    <?php endif; ?>
                 </div>
-                <?php if (!empty($kop['penandatangan_niy'])): ?>
-                    <div>NIY. <?= htmlspecialchars($kop['penandatangan_niy']) ?></div>
+                <div style="font-weight: 700; text-decoration: underline;">
+                    <?= htmlspecialchars($surat['penandatangan'] ?: ($surat['approver_nama'] ?: ($kop['penandatangan_nama'] ?: '........................................'))) ?>
+                </div>
+                <?php if (!empty($surat['approver_niy']) || !empty($kop['penandatangan_niy'])): ?>
+                    <div>NIY. <?= htmlspecialchars($surat['approver_niy'] ?: $kop['penandatangan_niy']) ?></div>
                 <?php endif; ?>
             </div>
         </div>

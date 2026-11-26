@@ -95,6 +95,37 @@ class PersuratanModel
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         ");
 
+        // Kolom tambahan idempoten untuk KOP gambar, Cap unit, dan Approval + TTD Kepala Sekolah
+        $extraCols = [
+            'persuratan_kop' => [
+                'kop_gambar' => 'VARCHAR(255) DEFAULT NULL AFTER `logo_kanan`',
+                'cap_gambar' => 'VARCHAR(255) DEFAULT NULL AFTER `kop_gambar`',
+            ],
+            'persuratan_surat' => [
+                'approval_status'     => "ENUM('none','pending','approved','rejected') NOT NULL DEFAULT 'none' AFTER `status_surat`",
+                'approval_token'      => 'VARCHAR(80) DEFAULT NULL AFTER `approval_status`',
+                'approver_pegawai_id' => 'INT(11) DEFAULT NULL AFTER `approval_token`',
+                'approver_nama'       => 'VARCHAR(150) DEFAULT NULL AFTER `approver_pegawai_id`',
+                'approver_jabatan'    => 'VARCHAR(150) DEFAULT NULL AFTER `approver_nama`',
+                'approver_niy'        => 'VARCHAR(60) DEFAULT NULL AFTER `approver_jabatan`',
+                'ttd_gambar'          => 'VARCHAR(255) DEFAULT NULL AFTER `approver_niy`',
+                'approved_at'         => 'DATETIME DEFAULT NULL AFTER `ttd_gambar`',
+                'wa_notified_at'      => 'DATETIME DEFAULT NULL AFTER `approved_at`',
+                'wa_notify_status'    => 'VARCHAR(150) DEFAULT NULL AFTER `wa_notified_at`',
+                'approval_note'       => 'VARCHAR(255) DEFAULT NULL AFTER `wa_notify_status`',
+            ],
+        ];
+        foreach ($extraCols as $tbl => $cols) {
+            foreach ($cols as $col => $def) {
+                try {
+                    $chk = $pdo->query("SHOW COLUMNS FROM `{$tbl}` LIKE '{$col}'")->fetchAll();
+                    if (empty($chk)) {
+                        $pdo->exec("ALTER TABLE `{$tbl}` ADD COLUMN `{$col}` {$def}");
+                    }
+                } catch (Throwable $e) {}
+            }
+        }
+
         self::seedDefaults();
         self::ensureModulesAndPermissions();
     }
@@ -582,6 +613,8 @@ class PersuratanModel
             'kontak' => 'Telp: (0451) 481-999 | Email: info@binainsanpalu.sch.id',
             'logo_kiri' => null,
             'logo_kanan' => null,
+            'kop_gambar' => null,
+            'cap_gambar' => null,
             'penandatangan_nama' => '',
             'penandatangan_jabatan' => 'Pimpinan ' . $unitNama,
             'penandatangan_niy' => '',
@@ -596,6 +629,8 @@ class PersuratanModel
 
         $logoKiri = self::uploadFile($files['logo_kiri'] ?? null, 'persuratan_kop') ?: ($existing['logo_kiri'] ?? null);
         $logoKanan = self::uploadFile($files['logo_kanan'] ?? null, 'persuratan_kop') ?: ($existing['logo_kanan'] ?? null);
+        $kopGambar = !empty($data['hapus_kop_gambar']) ? null : (self::uploadFile($files['kop_gambar'] ?? null, 'persuratan_kop') ?: ($existing['kop_gambar'] ?? null));
+        $capGambar = !empty($data['hapus_cap_gambar']) ? null : (self::uploadFile($files['cap_gambar'] ?? null, 'persuratan_kop') ?: ($existing['cap_gambar'] ?? null));
 
         $params = [
             strtoupper(trim((string)($data['kode_unit'] ?? $unitNama))),
@@ -606,6 +641,8 @@ class PersuratanModel
             trim((string)($data['kontak'] ?? '')) ?: null,
             $logoKiri,
             $logoKanan,
+            $kopGambar,
+            $capGambar,
             trim((string)($data['penandatangan_nama'] ?? '')) ?: null,
             trim((string)($data['penandatangan_jabatan'] ?? '')) ?: null,
             trim((string)($data['penandatangan_niy'] ?? '')) ?: null,
@@ -616,16 +653,239 @@ class PersuratanModel
                 UPDATE `persuratan_kop` SET
                     kode_unit = ?, baris_1 = ?, baris_2 = ?, sub_judul = ?,
                     alamat = ?, kontak = ?, logo_kiri = ?, logo_kanan = ?,
+                    kop_gambar = ?, cap_gambar = ?,
                     penandatangan_nama = ?, penandatangan_jabatan = ?, penandatangan_niy = ?
                 WHERE id = ?
             ", array_merge($params, [(int)$existing['id']]));
         } else {
             self::db()->query("
                 INSERT INTO `persuratan_kop`
-                (scope, unit_nama, kode_unit, baris_1, baris_2, sub_judul, alamat, kontak, logo_kiri, logo_kanan, penandatangan_nama, penandatangan_jabatan, penandatangan_niy)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (scope, unit_nama, kode_unit, baris_1, baris_2, sub_judul, alamat, kontak, logo_kiri, logo_kanan, kop_gambar, cap_gambar, penandatangan_nama, penandatangan_jabatan, penandatangan_niy)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ", array_merge([$scope, $unitNama], $params));
         }
         return true;
+    }
+
+    /**
+     * Cari Kepala Sekolah berdasarkan penugasan pada unit terkait
+     */
+    public static function findKepalaSekolahByUnit(string $unitNama): ?array
+    {
+        self::ensureSchema();
+        $unitTrim = trim($unitNama);
+        if ($unitTrim === '') {
+            return null;
+        }
+        $unitLike = '%' . strtolower($unitTrim) . '%';
+
+        $row = self::db()->find("
+            SELECT
+                p.id, p.nama, p.gelar, p.niy, p.no_wa,
+                COALESCE(NULLIF(TRIM(mj.nama), ''), NULLIF(TRIM(p.jabatan), ''), 'Kepala Sekolah') as jabatan_nama,
+                COALESCE(NULLIF(TRIM(mu.nama), ''), NULLIF(TRIM(p.unit_tugas), ''), ?) as unit_nama
+            FROM `pegawai` p
+            LEFT JOIN `pegawai_penugasan` pp ON pp.pegawai_id = p.id
+            LEFT JOIN `master_unit_tugas` mu ON mu.id = pp.unit_tugas_id
+            LEFT JOIN `master_jabatan` mj ON mj.id = pp.jabatan_id
+            WHERE p.is_active = 1
+              AND (
+                  LOWER(COALESCE(mj.nama, '')) LIKE '%kepala sekolah%'
+                  OR LOWER(COALESCE(mj.nama, '')) LIKE '%kepala paud%'
+                  OR LOWER(COALESCE(mj.nama, '')) LIKE '%kepsek%'
+                  OR LOWER(COALESCE(p.jabatan, '')) LIKE '%kepala sekolah%'
+                  OR LOWER(COALESCE(p.jabatan, '')) LIKE '%kepala paud%'
+                  OR LOWER(COALESCE(p.jabatan, '')) LIKE '%kepsek%'
+              )
+              AND (
+                  LOWER(COALESCE(mu.nama, '')) LIKE ?
+                  OR LOWER(COALESCE(p.unit_tugas, '')) LIKE ?
+              )
+            ORDER BY
+                CASE WHEN pp.id IS NOT NULL AND mj.id IS NOT NULL THEN 0 ELSE 1 END ASC,
+                pp.id DESC,
+                p.id DESC
+            LIMIT 1
+        ", [$unitTrim, $unitLike, $unitLike]);
+
+        return $row ?: null;
+    }
+
+    public static function getSuratByToken(string $token): ?array
+    {
+        self::ensureSchema();
+        $token = trim($token);
+        if ($token === '') return null;
+        $row = self::db()->find("
+            SELECT s.*, j.nama_jenis, j.kode_surat as jenis_kode
+            FROM `persuratan_surat` s
+            LEFT JOIN `persuratan_jenis` j ON j.id = s.jenis_id
+            WHERE s.approval_token = ?
+            LIMIT 1
+        ", [$token]);
+        return $row ?: null;
+    }
+
+    public static function initiateSchoolApprovalAndNotifyWa(int $suratId): array
+    {
+        self::ensureSchema();
+        $surat = self::getSuratById($suratId);
+        if (!$surat) {
+            return ['sent' => false, 'message' => 'Surat tidak ditemukan'];
+        }
+        if (($surat['scope'] ?? '') !== 'sekolah' || ($surat['arah'] ?? '') !== 'keluar') {
+            return ['sent' => false, 'message' => 'Approval hanya berlaku untuk surat keluar sekolah'];
+        }
+
+        $token = trim((string)($surat['approval_token'] ?? ''));
+        if ($token === '') {
+            $token = bin2hex(random_bytes(24));
+        }
+
+        $kepsek = self::findKepalaSekolahByUnit((string)$surat['unit_nama']);
+        $approverId = $kepsek ? (int)$kepsek['id'] : null;
+        $approverNama = null;
+        $approverJabatan = null;
+        $approverNiy = null;
+        if ($kepsek) {
+            $gelar = trim((string)($kepsek['gelar'] ?? ''));
+            $approverNama = trim((string)$kepsek['nama']) . ($gelar !== '' && stripos($kepsek['nama'], $gelar) === false ? ', ' . $gelar : '');
+            $approverJabatan = $kepsek['jabatan_nama'] ?? ('Kepala ' . $surat['unit_nama']);
+            $approverNiy = $kepsek['niy'] ?? null;
+        }
+
+        $waStatus = 'Menunggu pengiriman WA';
+        $sent = false;
+        $waTime = null;
+
+        if (!$kepsek) {
+            $waStatus = 'Kepala Sekolah unit ' . $surat['unit_nama'] . ' belum ditemukan di penugasan';
+        } elseif (empty(trim((string)($kepsek['no_wa'] ?? '')))) {
+            $waStatus = 'No. WA Kepala Sekolah (' . $approverNama . ') belum diisi';
+        } else {
+            require_once BASE_PATH . '/core/WaGateway.php';
+            $approveUrl = self::buildPublicUrl('persuratan/approve/' . $token);
+            $tglFmt = date('d/m/Y', strtotime($surat['tanggal_surat']));
+            $msg = "*PERMOHONAN APPROVE & TTD SURAT*\n"
+                 . "Yth. *{$approverNama}*\n"
+                 . "({$approverJabatan})\n\n"
+                 . "Ada surat keluar unit *{$surat['unit_nama']}* yang dibuat oleh admin dan memerlukan persetujuan serta tanda tangan Anda:\n"
+                 . "• Nomor: *{$surat['nomor_surat']}*\n"
+                 . "• Tanggal: {$tglFmt}\n"
+                 . "• Tujuan: " . ($surat['tujuan'] ?: '-') . "\n"
+                 . "• Perihal: *{$surat['perihal']}*\n\n"
+                 . "Silakan buka link berikut untuk melihat tampilan surat, tanda tangan langsung, dan membubuhkan cap unit:\n"
+                 . $approveUrl . "\n\n"
+                 . "_Link otomatis tidak dapat diakses lagi setelah surat di-approve._";
+
+            $waRes = WaGateway::send((string)$kepsek['no_wa'], $msg, ['module' => 'persuratan']);
+            $sent = !empty($waRes['success']);
+            $waTime = $sent ? date('Y-m-d H:i:s') : null;
+            $waStatus = $sent
+                ? ('Terkirim ke ' . $approverNama . ' (' . ($waRes['target'] ?? $kepsek['no_wa']) . ')')
+                : ('Gagal kirim WA: ' . ($waRes['message'] ?? 'Gateway error'));
+        }
+
+        $newStatus = ($surat['approval_status'] === 'approved') ? 'approved' : 'pending';
+        self::db()->query("
+            UPDATE `persuratan_surat` SET
+                approval_status = ?,
+                approval_token = ?,
+                approver_pegawai_id = ?,
+                approver_nama = ?,
+                approver_jabatan = ?,
+                approver_niy = ?,
+                wa_notified_at = COALESCE(?, wa_notified_at),
+                wa_notify_status = ?
+            WHERE id = ?
+        ", [
+            $newStatus,
+            $token,
+            $approverId,
+            $approverNama,
+            $approverJabatan,
+            $approverNiy,
+            $waTime,
+            substr($waStatus, 0, 145),
+            $suratId
+        ]);
+
+        return [
+            'sent'          => $sent,
+            'message'       => $waStatus,
+            'approver_nama' => $approverNama,
+            'token'         => $token,
+        ];
+    }
+
+    public static function saveApprovalSignature(string $token, string $action, string $ttdBase64 = '', string $note = ''): array
+    {
+        self::ensureSchema();
+        $surat = self::getSuratByToken($token);
+        if (!$surat) {
+            throw new Exception('Link persetujuan surat tidak valid.');
+        }
+        if (($surat['approval_status'] ?? '') === 'approved') {
+            throw new Exception('Surat ini sudah di-approve sebelumnya.');
+        }
+
+        $id = (int)$surat['id'];
+        if ($action === 'reject') {
+            self::db()->query("
+                UPDATE `persuratan_surat` SET
+                    approval_status = 'rejected',
+                    approval_note = ?,
+                    approved_at = NOW()
+                WHERE id = ?
+            ", [trim($note) ?: 'Ditolak oleh Kepala Sekolah', $id]);
+            return ['status' => 'rejected'];
+        }
+
+        // Validasi & simpan gambar TTD canvas PNG
+        if (!preg_match('/^data:image\/(png|jpeg|jpg);base64,(.+)$/', $ttdBase64, $m)) {
+            throw new Exception('Tanda tangan digital wajib diisi terlebih dahulu.');
+        }
+        $rawImg = base64_decode($m[2], true);
+        if ($rawImg === false || strlen($rawImg) < 100) {
+            throw new Exception('Data gambar tanda tangan tidak valid.');
+        }
+
+        $dirRel = 'uploads/persuratan_ttd';
+        $dirAbs = BASE_PATH . '/public/' . $dirRel;
+        if (!is_dir($dirAbs)) {
+            @mkdir($dirAbs, 0755, true);
+        }
+        $ext = ($m[1] === 'jpeg' || $m[1] === 'jpg') ? 'jpg' : 'png';
+        $fileName = 'ttd_' . $id . '_' . date('YmdHis') . '.' . $ext;
+        if (file_put_contents($dirAbs . '/' . $fileName, $rawImg) === false) {
+            throw new Exception('Gagal menyimpan file tanda tangan.');
+        }
+        $ttdRel = $dirRel . '/' . $fileName;
+
+        $penandatanganFinal = trim((string)($surat['approver_nama'] ?? '')) ?: trim((string)($surat['penandatangan'] ?? ''));
+
+        self::db()->query("
+            UPDATE `persuratan_surat` SET
+                approval_status = 'approved',
+                ttd_gambar = ?,
+                approved_at = NOW(),
+                approval_note = ?,
+                status_surat = 'Terkirim',
+                penandatangan = COALESCE(NULLIF(?, ''), penandatangan)
+            WHERE id = ?
+        ", [$ttdRel, trim($note) ?: null, $penandatanganFinal, $id]);
+
+        return ['status' => 'approved', 'ttd_gambar' => $ttdRel];
+    }
+
+    private static function buildPublicUrl(string $path): string
+    {
+        $clean = ltrim($path, '/');
+        if (defined('BASE_URL') && BASE_URL) {
+            return rtrim(BASE_URL, '/') . '/' . $clean;
+        }
+        $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+        return $scheme . '://' . $host . '/' . $clean;
     }
 }

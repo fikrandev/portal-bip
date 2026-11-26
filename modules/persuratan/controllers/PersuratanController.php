@@ -98,8 +98,19 @@ class PersuratanController
             if (empty(trim((string)($_POST['perihal'] ?? '')))) {
                 Response::redirect($redirect, 'Perihal surat wajib diisi.', 'error');
             }
-            PersuratanModel::saveSurat($scope, $_POST, $_FILES['file_lampiran'] ?? null, $id);
-            Response::redirect($redirect, $id ? 'Data surat berhasil diperbarui.' : 'Data surat berhasil disimpan.', 'success');
+            $savedId = PersuratanModel::saveSurat($scope, $_POST, $_FILES['file_lampiran'] ?? null, $id);
+            $arah = trim((string)($_POST['arah'] ?? 'masuk'));
+            $msg = $id ? 'Data surat berhasil diperbarui.' : 'Data surat berhasil disimpan.';
+
+            // Khusus Persuratan Sekolah (Surat Keluar): proses approve & notifikasi WA ke Kepala Sekolah
+            if ($scope === 'sekolah' && $arah === 'keluar' && $savedId > 0) {
+                $existing = PersuratanModel::getSuratById($savedId);
+                if (($existing['approval_status'] ?? 'none') !== 'approved') {
+                    $waRes = PersuratanModel::initiateSchoolApprovalAndNotifyWa($savedId);
+                    $msg .= ' ' . ($waRes['message'] ?? '');
+                }
+            }
+            Response::redirect($redirect, $msg, 'success');
         } catch (Throwable $e) {
             Response::redirect($redirect, 'Gagal menyimpan surat: ' . $e->getMessage(), 'error');
         }
@@ -228,5 +239,60 @@ class PersuratanController
         }
         fclose($out);
         exit;
+    }
+
+    public static function resendApprovalWa(): void
+    {
+        CSRF::validate();
+        $scope = self::detectScopeFromRequest();
+        $returnTab = trim((string)($_POST['return_tab'] ?? 'keluar'));
+        $redirect = url(self::baseUrlForScope($scope) . '?tab=' . urlencode($returnTab));
+        $id = (int)($_POST['id'] ?? 0);
+
+        if ($id <= 0 || $scope !== 'sekolah') {
+            Response::redirect($redirect, 'Permintaan tidak valid.', 'error');
+        }
+
+        $surat = PersuratanModel::getSuratById($id);
+        if (!$surat || ($surat['approval_status'] ?? '') === 'approved') {
+            Response::redirect($redirect, 'Surat tidak ditemukan atau sudah di-approve.', 'error');
+        }
+
+        $waRes = PersuratanModel::initiateSchoolApprovalAndNotifyWa($id);
+        Response::redirect($redirect, $waRes['message'] ?? 'Proses kirim WA selesai.', !empty($waRes['sent']) ? 'success' : 'error');
+    }
+
+    public static function approvePublicPage(string $token): void
+    {
+        $surat = PersuratanModel::getSuratByToken($token);
+        if (!$surat) {
+            http_response_code(404);
+            $notFound = true;
+            $kop = [];
+            include BASE_PATH . '/modules/persuratan/views/approve_public.php';
+            return;
+        }
+        $notFound = false;
+        $kop = PersuratanModel::getKopByUnit($surat['scope'], $surat['unit_nama']);
+        include BASE_PATH . '/modules/persuratan/views/approve_public.php';
+    }
+
+    public static function submitPublicApproval(string $token): void
+    {
+        $action = trim((string)($_POST['action'] ?? 'approve'));
+        $ttdData = (string)($_POST['ttd_data'] ?? '');
+        $note = trim((string)($_POST['approval_note'] ?? ''));
+
+        try {
+            PersuratanModel::saveApprovalSignature($token, $action, $ttdData, $note);
+            header('Location: ' . url('persuratan/approve/' . urlencode($token)));
+            exit;
+        } catch (Throwable $e) {
+            $surat = PersuratanModel::getSuratByToken($token);
+            $notFound = !$surat;
+            $kop = $surat ? PersuratanModel::getKopByUnit($surat['scope'], $surat['unit_nama']) : [];
+            $errorMsg = $e->getMessage();
+            include BASE_PATH . '/modules/persuratan/views/approve_public.php';
+        }
     }
 }
