@@ -989,6 +989,13 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
                 </form>
 
                 <div class="flex items-center gap-2 shrink-0">
+                    <button type="button" onclick="openModalUrutanUnit('periode')"
+                            class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-bold transition-all cursor-pointer">
+                        <svg class="w-4 h-4 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12" />
+                        </svg>
+                        <span>Atur Urutan Unit</span>
+                    </button>
                     <a href="<?= $cetakPdfUrl ?>" target="_blank"
                        class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-primary-50 hover:bg-primary-100 text-primary-700 border border-primary-200 text-xs font-bold transition-all">
                         <svg class="w-4 h-4 text-primary-600" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
@@ -1139,7 +1146,7 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
                                         }
                                     ?>
                                         <tr class="hover:bg-slate-50/70 transition-colors">
-                                            <td class="py-2.5 px-2.5 text-center text-slate-500 font-bold border-r border-slate-100"><?= $rNo++ ?></td>
+                                            <td class="py-2.5 px-2.5 text-center text-slate-500 font-bold border-r border-slate-100"><?= !empty($row['custom_urutan']) ? (int)$row['custom_urutan'] : $rNo ?><?php $rNo++; ?></td>
                                             <td class="py-2.5 px-3 border-r border-slate-100">
                                                 <div class="font-bold text-slate-900"><?= e($row['nama']) ?></div>
                                                 <div class="text-[10px] text-slate-500"><?= e($row['unit_tugas']) ?> · <?= e($row['jabatan']) ?></div>
@@ -1523,6 +1530,13 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
 
                     <button type="submit" class="px-4 py-2 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold cursor-pointer">
                         Tampilkan Matriks
+                    </button>
+                    <button type="button" onclick="openModalUrutanUnit('matrix')"
+                            class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-bold transition-all cursor-pointer ml-auto">
+                        <svg class="w-4 h-4 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12" />
+                        </svg>
+                        <span>Atur Urutan Unit</span>
                     </button>
                 </form>
             </div>
@@ -2859,6 +2873,170 @@ $targetDate = $targetDate ?? ($rekapData['tanggal'] ?? date('Y-m-d'));
 </div>
 
 <!-- Modal Catatan Keterlambatan (Evaluasi & Tindak Lanjut) -->
+<!-- Modal Atur Nomor Urut Custom Per Unit -->
+<?php
+$urutanUnitOptions = [];
+if (!empty($effectiveUserUnit)) {
+    $urutanUnitOptions = [$effectiveUserUnit];
+} else {
+    $seenU = [];
+    foreach (($unitLokasiList ?? []) as $ul) {
+        $uName = trim((string)($ul['unit_tugas'] ?? ''));
+        if ($uName !== '' && !isset($seenU[$uName])) {
+            $seenU[$uName] = true;
+            $urutanUnitOptions[] = $uName;
+        }
+    }
+    foreach (['PAUD', 'SD', 'SMP', 'SMA', 'Yayasan', 'Staff'] as $defU) {
+        if (!isset($seenU[$defU])) {
+            $seenU[$defU] = true;
+            $urutanUnitOptions[] = $defU;
+        }
+    }
+}
+$urutanDefaultUnit = !empty($filters['unit_tugas']) ? $filters['unit_tugas'] : ($urutanUnitOptions[0] ?? 'Yayasan');
+$pegawaiForUrutan = [];
+foreach (($allPegawaiDropdown ?? []) as $pg) {
+    $pgUnit = trim((string)($pg['unit_tugas'] ?? '')) ?: 'Yayasan';
+    $pgJab = trim((string)($pg['jabatan'] ?? ''));
+    $pgJenis = trim((string)($pg['jenis_pegawai'] ?? ''));
+    $isG = (strcasecmp($pgJenis, 'Guru') === 0) || (stripos($pgJab, 'guru') !== false) || (stripos($pgJab, 'wali kelas') !== false);
+    $pgNama = trim((string)($pg['nama'] ?? '')) . (!empty($pg['gelar']) ? ', ' . $pg['gelar'] : '');
+    $pegawaiForUrutan[] = [
+        'id'         => (int)$pg['id'],
+        'nama'       => $pgNama,
+        'niy'        => $pg['niy'] ?: '-',
+        'unit_tugas' => $pgUnit,
+        'jabatan'    => $pgJab ?: ($isG ? 'Guru' : 'Support System'),
+        'is_guru'    => $isG,
+    ];
+}
+?>
+<div id="modalUrutanUnit" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
+    <div class="relative bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100 my-8">
+        <div class="flex items-center justify-between pb-3.5 border-b border-slate-100">
+            <div>
+                <h3 class="text-base font-extrabold text-slate-900">Atur Nomor Urut Custom Per Unit</h3>
+                <p class="text-xs text-slate-500 mt-0.5">Urutkan tampilan pegawai di Rekap Periode, Matriks, dan Cetak PDF sesuai nomor urut masing-masing unit.</p>
+            </div>
+            <button type="button" onclick="closeModal('modalUrutanUnit')" class="p-1.5 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+
+        <form method="POST" action="<?= url('kelola-absen-pegawai/urutan-unit/save') ?>" class="mt-4 space-y-4">
+            <?= CSRF::field() ?>
+            <input type="hidden" name="rekap_view" id="urutan_rekap_view" value="<?= e($currentRekapView ?? 'periode') ?>">
+            <input type="hidden" name="start_date" value="<?= e($filters['start_date'] ?? '') ?>">
+            <input type="hidden" name="end_date" value="<?= e($filters['end_date'] ?? '') ?>">
+
+            <div class="flex flex-wrap items-center justify-between gap-2.5 bg-slate-50 p-3 rounded-2xl border border-slate-200">
+                <div class="flex items-center gap-2">
+                    <label class="text-xs font-bold text-slate-700">Pilih Unit:</label>
+                    <?php if (!empty($effectiveUserUnit)): ?>
+                        <input type="hidden" name="unit_tugas" id="urutan_unit_select" value="<?= e($effectiveUserUnit) ?>">
+                        <span class="px-3 py-1.5 rounded-xl bg-sky-100 text-sky-800 text-xs font-bold"><?= e($effectiveUserUnit) ?></span>
+                    <?php else: ?>
+                        <select name="unit_tugas" id="urutan_unit_select" onchange="renderUrutanUnitList()"
+                                class="px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-800 outline-none focus:border-indigo-500">
+                            <?php foreach ($urutanUnitOptions as $uo): ?>
+                                <option value="<?= e($uo) ?>" <?= strcasecmp($urutanDefaultUnit, $uo) === 0 ? 'selected' : '' ?>><?= e($uo) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    <?php endif; ?>
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <button type="button" onclick="autoNumberUrutanUnit()"
+                            class="px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-bold cursor-pointer">
+                        Isi Otomatis 1, 2, 3...
+                    </button>
+                    <button type="button" onclick="resetUrutanUnitInputs()"
+                            class="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 text-xs font-bold cursor-pointer">
+                        Kosongkan
+                    </button>
+                </div>
+            </div>
+
+            <div id="urutan_unit_list" class="max-h-96 overflow-y-auto divide-y divide-slate-100 border border-slate-200 rounded-2xl"></div>
+
+            <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                <button type="button" onclick="closeModal('modalUrutanUnit')" class="px-4 py-2 rounded-xl border border-slate-300 text-xs font-semibold text-slate-600 cursor-pointer">Batal</button>
+                <button type="submit" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm cursor-pointer">Simpan Urutan Unit</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+const urutanPegawaiData = <?= json_encode($pegawaiForUrutan, JSON_UNESCAPED_UNICODE) ?>;
+const urutanSavedMap = <?= json_encode($urutanUnitMap ?? [], JSON_UNESCAPED_UNICODE) ?>;
+
+function openModalUrutanUnit(viewMode) {
+    const viewInp = document.getElementById('urutan_rekap_view');
+    if (viewInp && viewMode) viewInp.value = viewMode;
+    renderUrutanUnitList();
+    openModal('modalUrutanUnit');
+}
+
+function renderUrutanUnitList() {
+    const sel = document.getElementById('urutan_unit_select');
+    const listEl = document.getElementById('urutan_unit_list');
+    if (!sel || !listEl) return;
+    const unit = sel.value || '';
+    const saved = urutanSavedMap[unit] || {};
+
+    const items = urutanPegawaiData
+        .filter(p => p.unit_tugas.toLowerCase() === unit.toLowerCase())
+        .sort((a, b) => {
+            if (a.is_guru !== b.is_guru) return a.is_guru ? -1 : 1;
+            const ua = parseInt(saved[a.id] || 999999, 10);
+            const ub = parseInt(saved[b.id] || 999999, 10);
+            if (ua !== ub) return ua - ub;
+            return a.nama.localeCompare(b.nama);
+        });
+
+    if (items.length === 0) {
+        listEl.innerHTML = '<div class="py-10 text-center text-xs text-slate-400">Tidak ada pegawai aktif pada unit ' + unit + '.</div>';
+        return;
+    }
+
+    listEl.innerHTML = items.map((p, idx) => {
+        const val = saved[p.id] ? String(saved[p.id]) : '';
+        const grpBadge = p.is_guru
+            ? '<span class="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[10px] font-bold">Guru</span>'
+            : '<span class="px-2 py-0.5 rounded-md bg-sky-50 text-sky-700 text-[10px] font-bold">Support</span>';
+        return `<div class="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-slate-50">
+            <div class="min-w-0">
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold text-slate-900 truncate">${p.nama}</span>
+                    ${grpBadge}
+                </div>
+                <div class="text-[11px] text-slate-400">${p.jabatan} &bull; NIY: ${p.niy}</div>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+                <span class="text-[11px] text-slate-400 font-semibold">No:</span>
+                <input type="number" min="1" name="urutan[${p.id}]" value="${val}" placeholder="${idx + 1}"
+                       class="urutan-unit-input w-20 px-2.5 py-1.5 rounded-xl border border-slate-300 text-xs font-bold text-center text-slate-900 outline-none focus:border-indigo-500">
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function autoNumberUrutanUnit() {
+    document.querySelectorAll('.urutan-unit-input').forEach((inp, idx) => {
+        inp.value = idx + 1;
+    });
+}
+
+function resetUrutanUnitInputs() {
+    document.querySelectorAll('.urutan-unit-input').forEach((inp) => {
+        inp.value = '';
+    });
+}
+</script>
+
 <div id="modalCatatanTerlambat" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
     <div class="relative w-full max-w-xl bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden my-8 animate-in fade-in zoom-in duration-150">
         <!-- Header -->

@@ -81,6 +81,7 @@ class AbsenPegawaiController
         $allPegawaiDropdown = AbsenPegawaiModel::getAllPegawaiLokasi([]);
         $unitLokasiList = AbsenPegawaiModel::getAllUnitLokasi();
         $liburList = AbsenPegawaiModel::getLiburList($liburTahun);
+        $urutanUnitMap = AbsenPegawaiModel::getUrutanUnitMap();
 
         $pageTitle = 'Kelola Absen Pegawai';
         $breadcrumbs = [
@@ -703,6 +704,44 @@ class AbsenPegawaiController
             Response::redirect($redirectUrl, 'Hari libur berhasil dihapus. Rekap absen & jurnal staff otomatis menyesuaikan.', 'success');
         } catch (Throwable $e) {
             Response::redirect($redirectUrl, $e->getMessage(), 'error');
+        }
+    }
+
+    /**
+     * Simpan Nomor Urut Custom Pegawai Per Unit di Rekap Absen
+     */
+    public static function saveUrutanUnit(): void
+    {
+        CSRF::validate();
+        $returnView = trim((string)($_POST['rekap_view'] ?? 'periode'));
+        $unitTugas = trim((string)($_POST['unit_tugas'] ?? ''));
+        $startDate = trim((string)($_POST['start_date'] ?? ''));
+        $endDate = trim((string)($_POST['end_date'] ?? ''));
+
+        $qs = [
+            'tab'        => 'rekap',
+            'rekap_view' => in_array($returnView, ['periode', 'harian', 'matrix'], true) ? $returnView : 'periode',
+        ];
+        if ($unitTugas !== '') $qs['unit_tugas'] = $unitTugas;
+        if ($startDate !== '') $qs['start_date'] = $startDate;
+        if ($endDate !== '') $qs['end_date'] = $endDate;
+        $redirectUrl = url('kelola-absen-pegawai?' . http_build_query($qs));
+
+        try {
+            $effUnit = AbsenPegawaiModel::getEffectiveUserUnit();
+            if ($effUnit !== null && strcasecmp($unitTugas, $effUnit) !== 0 && stripos($unitTugas, $effUnit) === false) {
+                throw new Exception('Anda hanya memiliki akses untuk mengatur urutan unit ' . $effUnit . '.');
+            }
+
+            $urutanRaw = $_POST['urutan'] ?? [];
+            if (!is_array($urutanRaw)) {
+                $urutanRaw = [];
+            }
+
+            AbsenPegawaiModel::saveUrutanUnit($unitTugas, $urutanRaw);
+            Response::redirect($redirectUrl, 'Nomor urut custom untuk unit ' . $unitTugas . ' berhasil disimpan.', 'success');
+        } catch (Throwable $e) {
+            Response::redirect($redirectUrl, 'Gagal menyimpan urutan unit: ' . $e->getMessage(), 'error');
         }
     }
 }

@@ -145,6 +145,19 @@ class AbsenPegawaiModel
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
         ");
 
+        // 3b. Tabel Nomor Urut Custom Pegawai Per Unit di Rekap Absen
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `absen_pegawai_urutan_unit` (
+                `id` INT AUTO_INCREMENT PRIMARY KEY,
+                `unit_tugas` VARCHAR(100) NOT NULL,
+                `pegawai_id` INT NOT NULL,
+                `nomor_urut` INT NOT NULL DEFAULT 9999,
+                `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                UNIQUE KEY `uniq_unit_pegawai` (`unit_tugas`, `pegawai_id`),
+                INDEX `idx_unit_urut` (`unit_tugas`, `nomor_urut`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
+
         // Pastikan kolom tambahan tersedia pada tabel yang sudah ada (idempoten per kolom)
         $schemaColumns = [
             'absen_pegawai_pengaturan' => [
@@ -716,12 +729,14 @@ class AbsenPegawaiModel
                 u.is_custom as unit_is_custom,
                 u.jam_masuk_mulai as unit_jam_masuk_mulai,
                 u.jam_masuk_batas as unit_jam_masuk_batas,
-                u.jam_pulang_mulai as unit_jam_pulang_mulai
+                u.jam_pulang_mulai as unit_jam_pulang_mulai,
+                MAX(ou.nomor_urut) as custom_urutan
             FROM `pegawai` p
             LEFT JOIN `pegawai_penugasan` pp ON pp.pegawai_id = p.id
             LEFT JOIN `master_unit_tugas` mu ON mu.id = pp.unit_tugas_id
             LEFT JOIN `absen_pegawai_lokasi` l ON l.pegawai_id = p.id
             LEFT JOIN `absen_pegawai_lokasi_unit` u ON u.unit_tugas = COALESCE(NULLIF(TRIM(p.unit_tugas), ''), (mu.nama COLLATE utf8mb4_unicode_ci), 'Yayasan')
+            LEFT JOIN `absen_pegawai_urutan_unit` ou ON ou.pegawai_id = p.id AND ou.unit_tugas = COALESCE(NULLIF(TRIM(p.unit_tugas), ''), (mu.nama COLLATE utf8mb4_unicode_ci), 'Yayasan')
             WHERE {$whereSql}
             GROUP BY p.id
             ORDER BY 
@@ -731,6 +746,7 @@ class AbsenPegawaiModel
                       OR LOWER(COALESCE(p.jabatan, '')) LIKE '%wali kelas%'
                     THEN 0 ELSE 1 
                 END ASC,
+                COALESCE(MAX(ou.nomor_urut), 999999) ASC,
                 p.nama ASC
         ";
 
@@ -953,6 +969,7 @@ class AbsenPegawaiModel
             $gelarStr = ($gelar !== '' && stripos($p['nama'], $gelar) === false) ? ', ' . $gelar : '';
             $item = [
                 'no'                      => $isGuru ? $noGuru++ : $noSupport++,
+                'custom_urutan'           => !empty($p['custom_urutan']) ? (int)$p['custom_urutan'] : null,
                 'pegawai_id'              => $pid,
                 'nama'                    => trim($p['nama'] . $gelarStr),
                 'nama_polos'              => $p['nama'],
@@ -1202,12 +1219,14 @@ class AbsenPegawaiModel
                 u.is_custom as unit_is_custom,
                 u.jam_masuk_mulai as unit_jam_masuk_mulai,
                 u.jam_masuk_batas as unit_jam_masuk_batas,
-                u.jam_pulang_mulai as unit_jam_pulang_mulai
+                u.jam_pulang_mulai as unit_jam_pulang_mulai,
+                MAX(ou.nomor_urut) as custom_urutan
             FROM `pegawai` p
             LEFT JOIN `pegawai_penugasan` pp ON pp.pegawai_id = p.id
             LEFT JOIN `master_unit_tugas` mu ON mu.id = pp.unit_tugas_id
             LEFT JOIN `absen_pegawai_lokasi` l ON l.pegawai_id = p.id
             LEFT JOIN `absen_pegawai_lokasi_unit` u ON u.unit_tugas = COALESCE(NULLIF(TRIM(p.unit_tugas), ''), (mu.nama COLLATE utf8mb4_unicode_ci), 'Yayasan')
+            LEFT JOIN `absen_pegawai_urutan_unit` ou ON ou.pegawai_id = p.id AND ou.unit_tugas = COALESCE(NULLIF(TRIM(p.unit_tugas), ''), (mu.nama COLLATE utf8mb4_unicode_ci), 'Yayasan')
             WHERE {$whereSql}
             GROUP BY p.id
             ORDER BY 
@@ -1217,6 +1236,7 @@ class AbsenPegawaiModel
                       OR LOWER(COALESCE(p.jabatan, '')) LIKE '%wali kelas%'
                     THEN 0 ELSE 1 
                 END ASC,
+                COALESCE(MAX(ou.nomor_urut), 999999) ASC,
                 p.nama ASC
         ", $params);
 
@@ -1320,8 +1340,9 @@ class AbsenPegawaiModel
             }
 
             $item = [
-                'pegawai_id' => $pid,
-                'nama'       => trim($p['nama'] . $gelarStr),
+                'pegawai_id'    => $pid,
+                'custom_urutan' => !empty($p['custom_urutan']) ? (int)$p['custom_urutan'] : null,
+                'nama'          => trim($p['nama'] . $gelarStr),
                 'niy'        => $p['niy'] ?: '-',
                 'unit_tugas' => $p['unit_tugas_efektif'] ?: 'Yayasan',
                 'jabatan'    => $p['jabatan'] ?: ($isGuru ? 'Guru' : 'Support System'),
@@ -3484,6 +3505,63 @@ class AbsenPegawaiModel
         self::ensureLiburTable();
         self::db()->query("DELETE FROM `absen_pegawai_libur` WHERE `id` = ?", [$id]);
         return true;
+    }
+
+    /**
+     * Ambil peta nomor urut custom pegawai per unit [unit_tugas => [pegawai_id => nomor_urut]]
+     */
+    public static function getUrutanUnitMap(): array
+    {
+        self::init();
+        $rows = self::db()->findAll("SELECT unit_tugas, pegawai_id, nomor_urut FROM `absen_pegawai_urutan_unit`");
+        $map = [];
+        foreach ($rows as $r) {
+            $u = trim((string)($r['unit_tugas'] ?? ''));
+            $pid = (int)($r['pegawai_id'] ?? 0);
+            $urut = (int)($r['nomor_urut'] ?? 0);
+            if ($u !== '' && $pid > 0 && $urut > 0) {
+                $map[$u][$pid] = $urut;
+            }
+        }
+        return $map;
+    }
+
+    /**
+     * Simpan nomor urut custom pegawai untuk satu unit tugas
+     */
+    public static function saveUrutanUnit(string $unitTugas, array $urutanMap): bool
+    {
+        self::init();
+        $unitTugas = trim($unitTugas);
+        if ($unitTugas === '') {
+            throw new Exception('Unit tugas wajib dipilih.');
+        }
+
+        $pdo = self::db()->getConnection();
+        $pdo->beginTransaction();
+        try {
+            $delStmt = $pdo->prepare("DELETE FROM `absen_pegawai_urutan_unit` WHERE `unit_tugas` = ?");
+            $delStmt->execute([$unitTugas]);
+
+            $insStmt = $pdo->prepare("
+                INSERT INTO `absen_pegawai_urutan_unit` (`unit_tugas`, `pegawai_id`, `nomor_urut`)
+                VALUES (?, ?, ?)
+            ");
+            foreach ($urutanMap as $pid => $urut) {
+                $pidInt = (int)$pid;
+                $urutInt = (int)$urut;
+                if ($pidInt > 0 && $urutInt > 0) {
+                    $insStmt->execute([$unitTugas, $pidInt, $urutInt]);
+                }
+            }
+            $pdo->commit();
+            return true;
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            throw $e;
+        }
     }
 }
 

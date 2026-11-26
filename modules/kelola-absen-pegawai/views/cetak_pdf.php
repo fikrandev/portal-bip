@@ -525,7 +525,7 @@ if (defined('SYS_APP_LOGO') && !empty(SYS_APP_LOGO)) {
                             $hariMasuk = (int)($r['jumlah_hadir'] ?? 0);
                         ?>
                             <tr>
-                                <td class="text-center"><?= $no++ ?></td>
+                                <td class="text-center"><?= !empty($r['custom_urutan']) ? (int)$r['custom_urutan'] : $no ?><?php $no++; ?></td>
                                 <td><div class="pegawai-nama"><?= e($r['nama']) ?></div></td>
                                 <td class="text-center"><?= (int)($r['kehadiran_lain'] ?? 0) ?></td>
                                 <td class="text-center"><?= (int)($r['periode_1'] ?? 0) ?></td>
