@@ -62,6 +62,9 @@ if (str_contains($jUpper, 'PAUD') || str_contains($jUpper, 'TK') || str_contains
                 </div>
 
                 <div class="bg-slate-50 rounded-2xl p-4 border border-slate-200 text-left text-xs space-y-1.5">
+                    <?php if (!empty($item['urutan_sesi'])): ?>
+                        <div class="flex justify-between"><span class="text-slate-500">No. Urut Sesi:</span><strong class="text-blue-700 font-extrabold">#<?= str_pad((string)(int)$item['urutan_sesi'], 2, '0', STR_PAD_LEFT) ?></strong></div>
+                    <?php endif; ?>
                     <div class="flex justify-between"><span class="text-slate-500">Ruangan:</span><strong class="text-slate-900"><?= htmlspecialchars($item['nama_ruangan'] ?: 'Belum Ditentukan') ?></strong></div>
                     <div class="flex justify-between"><span class="text-slate-500">Tanggal:</span><strong class="text-slate-900"><?= !empty($item['tgl_sesi']) ? date('d/m/Y', strtotime($item['tgl_sesi'])) : '-' ?></strong></div>
                     <div class="flex justify-between"><span class="text-slate-500">Sesi &amp; Jam:</span><strong class="text-indigo-700"><?= !empty($item['sesi_nama']) ? htmlspecialchars($item['sesi_nama'] . ' (' . $item['jam_mulai'] . ' - ' . $item['jam_selesai'] . ')') : '-' ?></strong></div>

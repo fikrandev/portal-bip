@@ -49,6 +49,10 @@ $cetakQuery = http_build_query(array_filter([
                     class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold shadow-xs cursor-pointer">
                 Broadcast Link &amp; Jadwal WA
             </button>
+            <a href="<?= url('kelola-spmb/kartu-observasi/cetak-jadwal' . ($cetakQuery ? '?' . $cetakQuery : '')) ?>" target="_blank"
+               class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold shadow-xs">
+                Cetak PDF Jadwal Sesi
+            </a>
             <a href="<?= url('kelola-spmb/kartu-observasi/cetak?' . ($cetakQuery ? $cetakQuery . '&' : '') . 'auto_download=1') ?>" target="_blank"
                class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-sm font-bold shadow-xs">
                 Download PDF Semua Kartu
@@ -173,15 +177,21 @@ $cetakQuery = http_build_query(array_filter([
                                         <span class="px-2.5 py-0.5 rounded-lg bg-slate-100 text-slate-700 font-bold text-xs"><?= e($it['jenjang']) ?></span>
                                     </td>
                                     <td class="py-3.5 px-4">
-                                        <select onchange="assignRuanganManual(<?= (int)$it['id'] ?>, this.value)"
-                                                class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-xs font-semibold text-slate-800 outline-none">
-                                            <option value="">-- Belum Diatur --</option>
-                                            <?php foreach ($ruanganList as $rg): ?>
-                                                <option value="<?= (int)$rg['id'] ?>" <?= (int)$it['ruangan_id'] === (int)$rg['id'] ? 'selected' : '' ?>>
-                                                    <?= e($rg['nama_ruangan']) ?> | <?= e($rg['sesi_nama']) ?> (<?= date('d/m', strtotime($rg['tanggal'])) ?> <?= e($rg['jam_mulai']) ?>-<?= e($rg['jam_selesai']) ?>)
-                                                </option>
-                                            <?php endforeach; ?>
-                                        </select>
+                                        <div class="flex items-center gap-1.5">
+                                            <input type="number" min="1" id="urut_sesi_<?= (int)$it['id'] ?>" value="<?= !empty($it['urutan_sesi']) ? (int)$it['urutan_sesi'] : '' ?>"
+                                                   onchange="assignRuanganManual(<?= (int)$it['id'] ?>, document.getElementById('ruang_sel_<?= (int)$it['id'] ?>').value, this.value)"
+                                                   placeholder="#" title="Nomor Urut Sesi"
+                                                   class="w-14 px-2 py-2 rounded-xl border border-slate-200 bg-white text-xs font-extrabold text-center text-indigo-700 outline-none focus:border-indigo-500">
+                                            <select id="ruang_sel_<?= (int)$it['id'] ?>" onchange="assignRuanganManual(<?= (int)$it['id'] ?>, this.value, '')"
+                                                    class="flex-1 px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-xs font-semibold text-slate-800 outline-none">
+                                                <option value="">-- Belum Diatur --</option>
+                                                <?php foreach ($ruanganList as $rg): ?>
+                                                    <option value="<?= (int)$rg['id'] ?>" <?= (int)$it['ruangan_id'] === (int)$rg['id'] ? 'selected' : '' ?>>
+                                                        <?= e($rg['nama_ruangan']) ?> | <?= e($rg['sesi_nama']) ?> (<?= date('d/m', strtotime($rg['tanggal'])) ?> <?= e($rg['jam_mulai']) ?>-<?= e($rg['jam_selesai']) ?>)
+                                                    </option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                        </div>
                                     </td>
                                     <td class="py-3.5 px-4 text-center">
                                         <?php if ($it['status_absen'] === 'Hadir'): ?>
@@ -462,6 +472,8 @@ $cetakQuery = http_build_query(array_filter([
                                             <?= (int)$rg['terisi'] ?> / <?= (int)$rg['kapasitas'] ?>
                                         </td>
                                         <td class="px-4 py-3.5 text-right whitespace-nowrap space-x-1">
+                                            <a href="<?= url('kelola-spmb/kartu-observasi/cetak-jadwal?ruangan_id=' . (int)$rg['id']) ?>" target="_blank" class="inline-flex px-2.5 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white text-xs font-bold">Jadwal PDF</a>
+                                            <a href="<?= url('kelola-spmb/kartu-observasi/cetak?ruangan_id=' . (int)$rg['id']) ?>" target="_blank" class="inline-flex px-2.5 py-1.5 rounded-xl bg-sky-50 hover:bg-sky-600 text-sky-700 hover:text-white text-xs font-bold">Kartu</a>
                                             <button type="button" onclick='editRuangan(<?= json_encode($rg) ?>)' class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-bold cursor-pointer">Edit</button>
                                             <form method="POST" action="<?= url('kelola-spmb/kartu-observasi/ruangan/delete/' . (int)$rg['id']) ?>" class="inline" onsubmit="return confirm('Hapus ruangan ini?')">
                                                 <?= CSRF::field() ?>
@@ -734,15 +746,23 @@ $cetakQuery = http_build_query(array_filter([
 </div>
 
 <script>
-async function assignRuanganManual(pesertaId, ruanganId) {
+async function assignRuanganManual(pesertaId, ruanganId, urutanSesi = '') {
     const fd = new FormData();
     fd.append('csrf_token', '<?= e($csrfToken) ?>');
     fd.append('peserta_id', pesertaId);
     fd.append('ruangan_id', ruanganId);
+    if (urutanSesi !== '' && urutanSesi !== null && urutanSesi !== undefined) {
+        fd.append('urutan_sesi', urutanSesi);
+    }
     try {
         const res = await fetch('<?= url('kelola-spmb/kartu-observasi/assign-manual') ?>', { method: 'POST', body: fd });
         const json = await res.json();
-        if (!json.success) alert(json.message || 'Gagal mengubah ruangan');
+        if (json.success) {
+            const urutInp = document.getElementById('urut_sesi_' + pesertaId);
+            if (urutInp) urutInp.value = json.urutan_sesi ? json.urutan_sesi : '';
+        } else {
+            alert(json.message || 'Gagal mengubah ruangan');
+        }
     } catch (e) {
         alert('Koneksi gagal saat menyimpan ruangan.');
     }

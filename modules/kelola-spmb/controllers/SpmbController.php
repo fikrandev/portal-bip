@@ -4091,12 +4091,13 @@ SVG;
         }
         $pesertaId = (int)($_POST['peserta_id'] ?? 0);
         $ruanganId = !empty($_POST['ruangan_id']) ? (int)$_POST['ruangan_id'] : null;
+        $urutanSesi = isset($_POST['urutan_sesi']) && $_POST['urutan_sesi'] !== '' ? (int)$_POST['urutan_sesi'] : null;
         if ($pesertaId <= 0) {
             Response::json(['success' => false, 'message' => 'ID peserta tidak valid.'], 400);
             return;
         }
-        SpmbModel::assignRuanganManual($pesertaId, $ruanganId);
-        Response::json(['success' => true, 'message' => 'Ruangan peserta diperbarui.']);
+        $assignedUrut = SpmbModel::assignRuanganManual($pesertaId, $ruanganId, $urutanSesi);
+        Response::json(['success' => true, 'urutan_sesi' => $assignedUrut, 'message' => 'Ruangan & nomor urut sesi diperbarui.']);
     }
 
     public static function kartuObservasiScan(): void
@@ -4123,11 +4124,14 @@ SVG;
         $activeGroup = SpmbModel::getActiveGroup();
         $groupId = (int)($activeGroup['id'] ?? 0);
         $singleId = !empty($_GET['id']) ? (int)$_GET['id'] : 0;
+        $selJenjang = trim((string)($_GET['jenjang'] ?? ''));
+        $selRuangan = trim((string)($_GET['ruangan_id'] ?? ''));
+        $ruanganList = SpmbModel::getKartuObservasiRuangan($groupId);
 
         $filters = [
             'group_id'   => $groupId,
-            'jenjang'    => trim((string)($_GET['jenjang'] ?? '')),
-            'ruangan_id' => trim((string)($_GET['ruangan_id'] ?? '')),
+            'jenjang'    => $selJenjang,
+            'ruangan_id' => $selRuangan,
             'search'     => trim((string)($_GET['search'] ?? '')),
         ];
         $data = SpmbModel::getKartuObservasiPeserta($filters);
@@ -4137,6 +4141,24 @@ SVG;
         }
 
         include BASE_PATH . '/modules/kelola-spmb/views/kartu_observasi/cetak.php';
+    }
+
+    public static function kartuObservasiCetakJadwal(): void
+    {
+        $activeGroup = SpmbModel::getActiveGroup();
+        $groupId = (int)($activeGroup['id'] ?? 0);
+        $selJenjang = trim((string)($_GET['jenjang'] ?? ''));
+        $selRuangan = trim((string)($_GET['ruangan_id'] ?? ''));
+        $ruanganList = SpmbModel::getKartuObservasiRuangan($groupId);
+
+        $filters = [
+            'group_id'   => $groupId,
+            'jenjang'    => $selJenjang,
+            'ruangan_id' => $selRuangan ?: 'assigned',
+            'search'     => trim((string)($_GET['search'] ?? '')),
+        ];
+        $jadwalGroups = SpmbModel::getKartuObservasiJadwalPerRuangan($filters);
+        include BASE_PATH . '/modules/kelola-spmb/views/kartu_observasi/cetak_jadwal.php';
     }
 
     public static function kartuObservasiBroadcastData(): void

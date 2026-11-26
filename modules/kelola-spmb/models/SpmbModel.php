@@ -4232,6 +4232,7 @@ class SpmbModel
                 `group_id` INT(11) NOT NULL,
                 `pendaftar_id` INT(11) NOT NULL,
                 `ruangan_id` INT(11) DEFAULT NULL,
+                `urutan_sesi` INT(11) DEFAULT NULL,
                 `nomor_peserta` VARCHAR(50) NOT NULL,
                 `qr_token` VARCHAR(80) NOT NULL,
                 `status_absen` ENUM('Belum Hadir','Hadir') NOT NULL DEFAULT 'Belum Hadir',
@@ -4248,6 +4249,34 @@ class SpmbModel
                 KEY `idx_absen` (`status_absen`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         ");
+
+        // Pastikan kolom urutan_sesi tersedia pada tabel yang sudah dibuat sebelumnya
+        try {
+            $chkCol = $pdo->query("SHOW COLUMNS FROM `spmb_observasi_peserta_jadwal` LIKE 'urutan_sesi'")->fetchAll();
+            if (empty($chkCol)) {
+                $pdo->exec("ALTER TABLE `spmb_observasi_peserta_jadwal` ADD COLUMN `urutan_sesi` INT(11) DEFAULT NULL AFTER `ruangan_id`");
+            }
+            // Backfill urutan_sesi untuk peserta yang sudah masuk ruangan namun urutan_sesi masih NULL
+            $nullRows = self::db()->findAll("
+                SELECT id, ruangan_id
+                FROM `spmb_observasi_peserta_jadwal`
+                WHERE ruangan_id IS NOT NULL AND urutan_sesi IS NULL
+                ORDER BY ruangan_id ASC, updated_at ASC, id ASC
+            ");
+            if (!empty($nullRows)) {
+                $maxMap = [];
+                $updUrut = $pdo->prepare("UPDATE `spmb_observasi_peserta_jadwal` SET urutan_sesi = ? WHERE id = ?");
+                foreach ($nullRows as $nr) {
+                    $rid = (int)$nr['ruangan_id'];
+                    if (!isset($maxMap[$rid])) {
+                        $mRow = self::db()->find("SELECT COALESCE(MAX(urutan_sesi), 0) AS mx FROM `spmb_observasi_peserta_jadwal` WHERE ruangan_id = ?", [$rid]);
+                        $maxMap[$rid] = (int)($mRow['mx'] ?? 0);
+                    }
+                    $maxMap[$rid]++;
+                    $updUrut->execute([$maxMap[$rid], (int)$nr['id']]);
+                }
+            }
+        } catch (Throwable $e) {}
     }
 
     public static function getKartuObservasiRuangan(?int $groupId): array
@@ -4298,7 +4327,7 @@ class SpmbModel
     public static function deleteKartuObservasiRuangan(int $id, int $groupId): bool
     {
         self::ensureKartuObservasiSchema();
-        self::db()->query("UPDATE `spmb_observasi_peserta_jadwal` SET ruangan_id = NULL WHERE ruangan_id = ?", [$id]);
+        self::db()->query("UPDATE `spmb_observasi_peserta_jadwal` SET ruangan_id = NULL, urutan_sesi = NULL WHERE ruangan_id = ?", [$id]);
         self::db()->query("DELETE FROM `spmb_observasi_ruangan` WHERE id = ? AND group_id = ?", [$id, $groupId]);
         return true;
     }
@@ -4355,6 +4384,8 @@ class SpmbModel
         if (!empty($filters['ruangan_id'])) {
             if ($filters['ruangan_id'] === 'unassigned') {
                 $where[] = "pj.ruangan_id IS NULL";
+            } elseif ($filters['ruangan_id'] === 'assigned') {
+                $where[] = "pj.ruangan_id IS NOT NULL";
             } else {
                 $where[] = "pj.ruangan_id = ?";
                 $params[] = (int)$filters['ruangan_id'];
@@ -4382,7 +4413,7 @@ class SpmbModel
             INNER JOIN `spmb_observasi_respon` obs ON obs.pendaftar_id = p.id AND obs.status = 'selesai'
             LEFT JOIN `spmb_observasi_ruangan` r ON r.id = pj.ruangan_id
             WHERE {$whereSql}
-            ORDER BY r.tanggal ASC, r.jam_mulai ASC, r.nama_ruangan ASC, p.nama_lengkap ASC
+            ORDER BY r.tanggal ASC, r.jam_mulai ASC, r.nama_ruangan ASC, COALESCE(pj.urutan_sesi, 999999) ASC, pj.id ASC
         ", $params);
 
         $hadir = 0;
@@ -4437,7 +4468,13 @@ class SpmbModel
             return 0;
         }
 
-        $upd = self::db()->getConnection()->prepare("UPDATE `spmb_observasi_peserta_jadwal` SET ruangan_id = ? WHERE id = ?");
+        $upd = self::db()->getConnection()->prepare("UPDATE `spmb_observasi_peserta_jadwal` SET ruangan_id = ?, urutan_sesi = ? WHERE id = ?");
+        $maxUrutMap = [];
+        foreach ($ruanganList as $r) {
+            $rid = (int)$r['id'];
+            $mRow = self::db()->find("SELECT COALESCE(MAX(urutan_sesi), 0) AS mx FROM `spmb_observasi_peserta_jadwal` WHERE ruangan_id = ?", [$rid]);
+            $maxUrutMap[$rid] = (int)($mRow['mx'] ?? 0);
+        }
         $assignedCount = 0;
 
         foreach ($unassigned as $peserta) {
@@ -4453,7 +4490,9 @@ class SpmbModel
                 }
             }
             if ($chosenIdx !== null) {
-                $upd->execute([(int)$ruanganList[$chosenIdx]['id'], (int)$peserta['id']]);
+                $targetRid = (int)$ruanganList[$chosenIdx]['id'];
+                $maxUrutMap[$targetRid] = ($maxUrutMap[$targetRid] ?? 0) + 1;
+                $upd->execute([$targetRid, $maxUrutMap[$targetRid], (int)$peserta['id']]);
                 $ruanganList[$chosenIdx]['terisi'] = (int)$ruanganList[$chosenIdx]['terisi'] + 1;
                 $assignedCount++;
             }
@@ -4462,14 +4501,65 @@ class SpmbModel
         return $assignedCount;
     }
 
-    public static function assignRuanganManual(int $pesertaId, ?int $ruanganId): bool
+    public static function assignRuanganManual(int $pesertaId, ?int $ruanganId, ?int $urutanSesi = null): ?int
     {
         self::ensureKartuObservasiSchema();
+        if (!$ruanganId) {
+            self::db()->query(
+                "UPDATE `spmb_observasi_peserta_jadwal` SET ruangan_id = NULL, urutan_sesi = NULL WHERE id = ?",
+                [$pesertaId]
+            );
+            return null;
+        }
+
+        $current = self::db()->find("SELECT ruangan_id, urutan_sesi FROM `spmb_observasi_peserta_jadwal` WHERE id = ? LIMIT 1", [$pesertaId]);
+        $finalUrut = $urutanSesi;
+
+        if ($finalUrut === null || $finalUrut <= 0) {
+            if ($current && (int)($current['ruangan_id'] ?? 0) === $ruanganId && !empty($current['urutan_sesi'])) {
+                $finalUrut = (int)$current['urutan_sesi'];
+            } else {
+                $mRow = self::db()->find("SELECT COALESCE(MAX(urutan_sesi), 0) AS mx FROM `spmb_observasi_peserta_jadwal` WHERE ruangan_id = ?", [$ruanganId]);
+                $finalUrut = ((int)($mRow['mx'] ?? 0)) + 1;
+            }
+        }
+
         self::db()->query(
-            "UPDATE `spmb_observasi_peserta_jadwal` SET ruangan_id = ? WHERE id = ?",
-            [$ruanganId ?: null, $pesertaId]
+            "UPDATE `spmb_observasi_peserta_jadwal` SET ruangan_id = ?, urutan_sesi = ? WHERE id = ?",
+            [$ruanganId, $finalUrut, $pesertaId]
         );
-        return true;
+        return $finalUrut;
+    }
+
+    /**
+     * Daftar jadwal peserta yang sudah diatur sesinya dikelompokkan per Sesi & Ruangan (untuk Cetak PDF)
+     */
+    public static function getKartuObservasiJadwalPerRuangan(array $filters = []): array
+    {
+        if (empty($filters['ruangan_id'])) {
+            $filters['ruangan_id'] = 'assigned';
+        }
+        $data = self::getKartuObservasiPeserta($filters);
+        $items = $data['items'] ?? [];
+        $groups = [];
+        foreach ($items as $it) {
+            $rid = (int)($it['ruangan_id'] ?? 0);
+            if ($rid <= 0) continue;
+            if (!isset($groups[$rid])) {
+                $groups[$rid] = [
+                    'ruangan_id'   => $rid,
+                    'nama_ruangan' => $it['nama_ruangan'] ?: ('Ruangan #' . $rid),
+                    'sesi_nama'    => $it['sesi_nama'] ?: '-',
+                    'tgl_sesi'     => $it['tgl_sesi'] ?? null,
+                    'jam_mulai'    => $it['jam_mulai'] ?? '',
+                    'jam_selesai'  => $it['jam_selesai'] ?? '',
+                    'pengawas'     => $it['pengawas'] ?? '',
+                    'items'        => [],
+                ];
+            }
+            $groups[$rid]['items'][] = $it;
+        }
+        return array_values($groups);
     }
 
     public static function scanAbsenObservasi(string $qrInput, string $petugas = 'Admin'): array

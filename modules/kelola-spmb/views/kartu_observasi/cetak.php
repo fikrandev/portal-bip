@@ -80,12 +80,42 @@ function getKartuThemeByJenjang(string $jenjang): array {
             max-width: 190mm;
             margin: 0 auto 14px auto;
             display: flex;
+            flex-wrap: wrap;
             justify-content: space-between;
             align-items: center;
+            gap: 10px;
             background: #0f172a;
             color: #fff;
-            padding: 10px 16px;
+            padding: 10px 14px;
             border-radius: 10px;
+        }
+        .toolbar-filter {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 6px;
+        }
+        .toolbar-select {
+            padding: 6px 10px;
+            border-radius: 7px;
+            border: 1px solid #334155;
+            background: #1e293b;
+            color: #fff;
+            font-size: 11.5px;
+            font-weight: 600;
+            outline: none;
+        }
+        .urut-pill {
+            margin-left: auto;
+            padding: 0.7mm 2.2mm;
+            border-radius: 1.8mm;
+            background: rgba(255, 255, 255, 0.92);
+            color: #0f172a;
+            font-size: 8.5pt;
+            font-weight: 900;
+            letter-spacing: 0.2px;
+            flex-shrink: 0;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.12);
         }
         .btn {
             padding: 8px 16px;
@@ -229,7 +259,24 @@ function getKartuThemeByJenjang(string $jenjang): array {
 </head>
 <body>
     <div class="toolbar no-print">
-        <div style="font-size:13px;font-weight:700;">Pratinjau Cetak Kartu Observasi — Ukuran KTP 85.6 × 54 mm (<?= count($items) ?> Kartu)</div>
+        <form method="GET" action="<?= url('kelola-spmb/kartu-observasi/cetak') ?>" class="toolbar-filter">
+            <span style="font-size:12px;font-weight:700;margin-right:4px;">Kartu KTP (<?= count($items) ?>):</span>
+            <select name="jenjang" onchange="this.form.submit()" class="toolbar-select">
+                <option value="">Semua Jenjang</option>
+                <?php foreach (['PAUD', 'SD', 'SMP', 'SMA'] as $jOpt): ?>
+                    <option value="<?= $jOpt ?>" <?= ($selJenjang ?? '') === $jOpt ? 'selected' : '' ?>><?= $jOpt ?></option>
+                <?php endforeach; ?>
+            </select>
+            <select name="ruangan_id" onchange="this.form.submit()" class="toolbar-select">
+                <option value="">Semua Peserta</option>
+                <option value="assigned" <?= ($selRuangan ?? '') === 'assigned' ? 'selected' : '' ?>>Sudah Diatur Sesi &amp; Ruangan</option>
+                <?php foreach (($ruanganList ?? []) as $rg): ?>
+                    <option value="<?= (int)$rg['id'] ?>" <?= (string)($selRuangan ?? '') === (string)$rg['id'] ? 'selected' : '' ?>>
+                        <?= htmlspecialchars($rg['nama_ruangan']) ?> | <?= htmlspecialchars($rg['sesi_nama']) ?> (<?= date('d/m', strtotime($rg['tanggal'])) ?> <?= htmlspecialchars($rg['jam_mulai']) ?>)
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </form>
         <div style="display:flex;gap:8px;align-items:center;">
             <button type="button" id="btnDownloadPdfAll" class="btn" style="background:#059669;color:#fff;" onclick="downloadAllCardsPdf()">Download PDF Semua Kartu</button>
             <button type="button" class="btn btn-print" onclick="window.print()">Cetak / Print PDF</button>
@@ -239,14 +286,18 @@ function getKartuThemeByJenjang(string $jenjang): array {
     <div id="kartuPdfContainer" class="grid">
         <?php foreach ($items as $it):
             $theme = getKartuThemeByJenjang((string)($it['jenjang'] ?? ''));
+            $urutSesi = !empty($it['urutan_sesi']) ? str_pad((string)(int)$it['urutan_sesi'], 2, '0', STR_PAD_LEFT) : '';
         ?>
             <div class="card" style="border-color: <?= $theme['border'] ?>;">
                 <div class="card-head" style="background: <?= $theme['head_bg'] ?>; color: <?= $theme['head_text'] ?>;">
                     <?php if ($logoUrl): ?><img src="<?= htmlspecialchars($logoUrl) ?>" alt="Logo"><?php endif; ?>
-                    <div style="min-width:0;">
+                    <div style="min-width:0;flex:1;">
                         <div class="card-title">Kartu Peserta Observasi SPMB</div>
                         <div class="card-sub"><?= htmlspecialchars($activeGroup['nama_group'] ?? 'SIT Bina Insan Palu') ?></div>
                     </div>
+                    <?php if ($urutSesi !== ''): ?>
+                        <div class="urut-pill">No. <?= $urutSesi ?></div>
+                    <?php endif; ?>
                 </div>
                 <div class="card-body">
                     <div class="info">
