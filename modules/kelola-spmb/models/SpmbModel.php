@@ -4392,6 +4392,7 @@ class SpmbModel
             if (!empty($it['ruangan_id'])) $terjadwal++;
             $it['target_phone'] = self::resolvePendaftarPhone($it);
             $it['kartu_url'] = self::buildKartuPublicUrl($it['qr_token']);
+            $it['absen_qr_url'] = self::buildAbsenQrDirectUrl($it['qr_token']);
         }
         unset($it);
 
@@ -4479,10 +4480,16 @@ class SpmbModel
             return ['success' => false, 'message' => 'Kode QR tidak boleh kosong.'];
         }
 
-        // Jika QR berisi URL publik (.../publik/{token}), ambil token terakhirnya
-        if (strpos($code, '/publik/') !== false) {
+        // Jika QR berisi URL publik (.../publik/{token}) atau URL absen langsung (.../absen-qr/{token}), ambil token terakhirnya
+        if (strpos($code, '/absen-qr/') !== false) {
+            $parts = explode('/absen-qr/', $code);
+            $code = trim((string)end($parts), "/ \t\n\r");
+        } elseif (strpos($code, '/publik/') !== false) {
             $parts = explode('/publik/', $code);
             $code = trim((string)end($parts), "/ \t\n\r");
+        }
+        if (strpos($code, '?') !== false) {
+            $code = trim((string)explode('?', $code)[0]);
         }
 
         $row = self::db()->find("
@@ -4550,7 +4557,70 @@ class SpmbModel
             WHERE pj.qr_token = ?
             LIMIT 1
         ", [trim($token)]);
+        if ($row) {
+            $row['absen_qr_url'] = self::buildAbsenQrDirectUrl((string)$row['qr_token']);
+        }
         return $row ?: null;
+    }
+
+    /**
+     * Laporan siswa yang tidak / belum absen QR dikelompokkan per Sesi & per Ruangan
+     */
+    public static function getKartuObservasiLaporanTidakHadir(array $filters = []): array
+    {
+        $data = self::getKartuObservasiPeserta($filters);
+        $items = $data['items'] ?? [];
+
+        $groups = [];
+        $totalPesertaAll = 0;
+        $totalHadirAll = 0;
+        $totalTidakHadirAll = 0;
+
+        foreach ($items as $it) {
+            $totalPesertaAll++;
+            $isHadir = (($it['status_absen'] ?? '') === 'Hadir');
+            if ($isHadir) {
+                $totalHadirAll++;
+            } else {
+                $totalTidakHadirAll++;
+            }
+
+            $rId = !empty($it['ruangan_id']) ? (int)$it['ruangan_id'] : 0;
+            $key = $rId > 0 ? ('R_' . $rId) : 'UNASSIGNED';
+
+            if (!isset($groups[$key])) {
+                $groups[$key] = [
+                    'ruangan_id'        => $rId,
+                    'nama_ruangan'      => $rId > 0 ? ($it['nama_ruangan'] ?: 'Ruangan #' . $rId) : 'Belum Masuk Ruangan',
+                    'sesi_nama'         => $rId > 0 ? ($it['sesi_nama'] ?: '-') : 'Belum Ada Sesi',
+                    'tgl_sesi'          => $it['tgl_sesi'] ?? null,
+                    'jam_mulai'         => $it['jam_mulai'] ?? '',
+                    'jam_selesai'       => $it['jam_selesai'] ?? '',
+                    'pengawas'          => $it['pengawas'] ?? '',
+                    'total_peserta'     => 0,
+                    'total_hadir'       => 0,
+                    'total_tidak_hadir' => 0,
+                    'tidak_hadir_items' => [],
+                ];
+            }
+
+            $groups[$key]['total_peserta']++;
+            if ($isHadir) {
+                $groups[$key]['total_hadir']++;
+            } else {
+                $groups[$key]['total_tidak_hadir']++;
+                $groups[$key]['tidak_hadir_items'][] = $it;
+            }
+        }
+
+        return [
+            'groups'  => array_values($groups),
+            'summary' => [
+                'total_peserta'     => $totalPesertaAll,
+                'total_hadir'       => $totalHadirAll,
+                'total_tidak_hadir' => $totalTidakHadirAll,
+            ],
+        ];
     }
 
     public static function getDefaultWaJadwalObservasiTemplate(): string
@@ -4638,6 +4708,17 @@ class SpmbModel
     private static function buildKartuPublicUrl(string $token): string
     {
         $path = 'kelola-spmb/kartu-observasi/publik/' . urlencode($token);
+        if (defined('BASE_URL') && BASE_URL) {
+            return rtrim(BASE_URL, '/') . '/' . $path;
+        }
+        $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+        return $scheme . '://' . $host . '/' . $path;
+    }
+
+    private static function buildAbsenQrDirectUrl(string $token): string
+    {
+        $path = 'kelola-spmb/kartu-observasi/absen-qr/' . urlencode($token);
         if (defined('BASE_URL') && BASE_URL) {
             return rtrim(BASE_URL, '/') . '/' . $path;
         }

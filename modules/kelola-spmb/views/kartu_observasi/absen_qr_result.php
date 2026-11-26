@@ -1,0 +1,52 @@
+<?php
+/**
+ * Halaman Hasil Scan QR Langsung via Kamera Bawaan HP (Panitia/Admin Login)
+ * Portal BIP - SPMB
+ */
+$ok = !empty($result['success']);
+$already = !empty($result['already']);
+$d = $result['data'] ?? null;
+?>
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hasil Absen QR Observasi — Portal BIP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 min-h-screen flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border <?= $ok ? ($already ? 'border-amber-300' : 'border-emerald-300') : 'border-rose-300' ?> text-center space-y-4">
+        <?php if ($ok && $d): ?>
+            <div class="w-16 h-16 rounded-2xl mx-auto flex items-center justify-center text-3xl <?= $already ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700' ?>">
+                <?= $already ? 'ℹ️' : '✅' ?>
+            </div>
+            <div>
+                <span class="px-3 py-1 rounded-full text-xs font-extrabold <?= $already ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800' ?>">
+                    <?= $already ? 'SUDAH ABSEN SEBELUMNYA' : 'ABSEN QR BERHASIL — HADIR' ?>
+                </span>
+                <h1 class="text-xl font-extrabold text-slate-900 mt-2"><?= htmlspecialchars($d['nama_lengkap']) ?></h1>
+                <p class="text-xs font-mono text-slate-500 mt-0.5"><?= htmlspecialchars($d['nomor_peserta']) ?> &bull; Jenjang <?= htmlspecialchars($d['jenjang']) ?></p>
+            </div>
+
+            <div class="bg-slate-50 rounded-2xl p-4 border border-slate-200 text-left text-xs space-y-1.5">
+                <div class="flex justify-between"><span class="text-slate-500">Ruangan:</span><strong class="text-slate-900"><?= htmlspecialchars($d['nama_ruangan'] ?: 'Belum Diatur') ?></strong></div>
+                <div class="flex justify-between"><span class="text-slate-500">Sesi &amp; Jam:</span><strong class="text-indigo-700"><?= !empty($d['sesi_nama']) ? htmlspecialchars($d['sesi_nama'] . ' (' . $d['jam_mulai'] . '-' . $d['jam_selesai'] . ')') : '-' ?></strong></div>
+                <div class="flex justify-between"><span class="text-slate-500">Waktu Absen:</span><strong class="text-emerald-700"><?= !empty($d['waktu_absen']) ? date('d/m/Y H:i:s', strtotime($d['waktu_absen'])) : '-' ?></strong></div>
+                <div class="flex justify-between"><span class="text-slate-500">Petugas:</span><strong class="text-slate-700"><?= htmlspecialchars($d['absen_oleh'] ?: '-') ?></strong></div>
+            </div>
+        <?php else: ?>
+            <div class="w-16 h-16 rounded-2xl bg-rose-100 text-rose-600 mx-auto flex items-center justify-center text-3xl">⚠️</div>
+            <h1 class="text-lg font-extrabold text-slate-900">Absen QR Gagal</h1>
+            <p class="text-sm text-rose-700"><?= htmlspecialchars($result['message'] ?? 'QR Code tidak valid.') ?></p>
+        <?php endif; ?>
+
+        <div class="pt-2 flex flex-col gap-2">
+            <a href="<?= url('kelola-spmb/kartu-observasi') ?>" class="w-full py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold">
+                Lihat Daftar Absen Observasi
+            </a>
+            <p class="text-[11px] text-slate-400">Anda bisa langsung kembali ke kamera HP untuk scan peserta berikutnya.</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -265,7 +265,7 @@ function getKartuThemeByJenjang(string $jenjang): array {
                         </div>
                     </div>
                     <div class="qr-wrap">
-                        <div class="qr-code-box" data-qr="<?= htmlspecialchars($it['qr_token']) ?>"></div>
+                        <div class="qr-code-box" data-qr="<?= htmlspecialchars($it['absen_qr_url'] ?? $it['qr_token']) ?>"></div>
                         <div class="qr-label"><?= htmlspecialchars($it['qr_token']) ?></div>
                     </div>
                 </div>

@@ -75,7 +75,7 @@ if (str_contains($jUpper, 'PAUD') || str_contains($jUpper, 'TK') || str_contains
         </div>
         <script>
             new QRCode(document.getElementById('publikQrBox'), {
-                text: <?= json_encode($item['qr_token']) ?>,
+                text: <?= json_encode($item['absen_qr_url'] ?? $item['qr_token']) ?>,
                 width: 170,
                 height: 170,
                 correctLevel: QRCode.CorrectLevel.M

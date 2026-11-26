@@ -98,6 +98,10 @@ $cetakQuery = http_build_query(array_filter([
            class="px-4 py-2.5 rounded-xl text-sm font-bold transition-all <?= $activeTab === 'ruangan' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100' ?>">
             Atur Ruangan &amp; Jam Sesi (<?= count($ruanganList) ?>)
         </a>
+        <a href="<?= url('kelola-spmb/kartu-observasi?tab=laporan') ?>"
+           class="px-4 py-2.5 rounded-xl text-sm font-bold transition-all <?= $activeTab === 'laporan' ? 'bg-rose-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100' ?>">
+            Laporan Tidak Absen QR (<?= number_format($stats['belum_hadir'] ?? 0) ?>)
+        </a>
     </div>
 
     <?php if ($activeTab === 'peserta'): ?>
@@ -244,8 +248,12 @@ $cetakQuery = http_build_query(array_filter([
                     </button>
                 </div>
 
+                <div class="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-800">
+                    <strong>Info:</strong> QR Code pada kartu juga bisa <strong>langsung di-scan menggunakan kamera bawaan HP apa saja</strong> (Android/iPhone) tanpa perlu membuka halaman scan ini — pastikan panitia sudah login Portal BIP di browser HP.
+                </div>
+
                 <div id="qr-reader" class="w-full rounded-2xl overflow-hidden bg-slate-900 min-h-[260px] flex items-center justify-center text-xs text-slate-400">
-                    Klik "Mulai Kamera" untuk mengaktifkan scanner QR
+                    Klik "Mulai Kamera" untuk scan langsung (seluruh layar kamera aktif tanpa kotak sempit)
                 </div>
 
                 <div class="pt-3 border-t border-slate-100">
@@ -341,7 +349,7 @@ $cetakQuery = http_build_query(array_filter([
             try {
                 await html5QrCode.start(
                     { facingMode: 'environment' },
-                    { fps: 10, qrbox: { width: 230, height: 230 } },
+                    { fps: 12 },
                     (decodedText) => processQrCode(decodedText)
                 );
                 qrScanning = true;
@@ -468,6 +476,124 @@ $cetakQuery = http_build_query(array_filter([
                 </div>
             </div>
         </div>
+
+    <?php elseif ($activeTab === 'laporan'): ?>
+        <!-- TAB 4: LAPORAN SISWA TIDAK ABSEN QR PER SESI & PER RUANGAN -->
+        <?php
+        $lapGroups = $laporanTidakHadir['groups'] ?? [];
+        $lapSum = $laporanTidakHadir['summary'] ?? ['total_peserta' => 0, 'total_hadir' => 0, 'total_tidak_hadir' => 0];
+        $lapQs = http_build_query(array_filter([
+            'jenjang'    => $selJenjang,
+            'ruangan_id' => $selRuangan,
+            'search'     => $search,
+        ]));
+        ?>
+        <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+            <form method="GET" action="<?= url('kelola-spmb/kartu-observasi') ?>" class="flex flex-wrap items-center gap-2.5 flex-1">
+                <input type="hidden" name="tab" value="laporan">
+                <select name="jenjang" class="px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium outline-none">
+                    <option value="">Semua Jenjang</option>
+                    <?php foreach (['PAUD', 'SD', 'SMP', 'SMA'] as $j): ?>
+                        <option value="<?= $j ?>" <?= $selJenjang === $j ? 'selected' : '' ?>><?= $j ?></option>
+                    <?php endforeach; ?>
+                </select>
+                <select name="ruangan_id" class="px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium outline-none">
+                    <option value="">Semua Sesi &amp; Ruangan</option>
+                    <option value="unassigned" <?= $selRuangan === 'unassigned' ? 'selected' : '' ?>>Belum Masuk Ruangan</option>
+                    <?php foreach ($ruanganList as $rg): ?>
+                        <option value="<?= (int)$rg['id'] ?>" <?= (string)$selRuangan === (string)$rg['id'] ? 'selected' : '' ?>>
+                            <?= e($rg['nama_ruangan']) ?> | <?= e($rg['sesi_nama']) ?> (<?= date('d/m', strtotime($rg['tanggal'])) ?>)
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+                <input type="text" name="search" value="<?= e($search) ?>" placeholder="Cari nama / no. peserta..."
+                       class="px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-sm outline-none">
+                <button type="submit" class="px-4 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-sm font-bold cursor-pointer">
+                    Filter Laporan
+                </button>
+            </form>
+            <div class="flex items-center gap-2 shrink-0">
+                <a href="<?= url('kelola-spmb/kartu-observasi/laporan-export' . ($lapQs ? '?' . $lapQs : '')) ?>"
+                   class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold">
+                    Export Excel
+                </a>
+                <a href="<?= url('kelola-spmb/kartu-observasi/laporan-cetak' . ($lapQs ? '?' . $lapQs : '')) ?>" target="_blank"
+                   class="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-sm font-bold">
+                    Cetak Laporan PDF
+                </a>
+            </div>
+        </div>
+
+        <?php if (empty($lapGroups)): ?>
+            <div class="bg-white rounded-2xl border border-slate-200 p-10 text-center text-sm text-slate-400">
+                Tidak ada data peserta untuk filter yang dipilih.
+            </div>
+        <?php else: ?>
+            <div class="space-y-5">
+                <?php foreach ($lapGroups as $grp): ?>
+                    <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+                        <div class="px-5 py-4 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <div>
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <h3 class="text-base font-extrabold text-slate-900"><?= e($grp['nama_ruangan']) ?></h3>
+                                    <span class="px-2.5 py-0.5 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-200 text-xs font-bold">
+                                        <?= e($grp['sesi_nama']) ?><?= !empty($grp['jam_mulai']) ? ' (' . e($grp['jam_mulai']) . ' - ' . e($grp['jam_selesai']) . ')' : '' ?>
+                                    </span>
+                                    <?php if (!empty($grp['tgl_sesi'])): ?>
+                                        <span class="text-xs font-semibold text-slate-500">Tanggal: <?= date('d/m/Y', strtotime($grp['tgl_sesi'])) ?></span>
+                                    <?php endif; ?>
+                                </div>
+                                <?php if (!empty($grp['pengawas'])): ?>
+                                    <p class="text-xs text-slate-500 mt-0.5">Pengawas: <strong><?= e($grp['pengawas']) ?></strong></p>
+                                <?php endif; ?>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-2 text-xs font-bold">
+                                <span class="px-2.5 py-1 rounded-xl bg-slate-100 text-slate-700">Total: <?= (int)$grp['total_peserta'] ?></span>
+                                <span class="px-2.5 py-1 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200">Hadir: <?= (int)$grp['total_hadir'] ?></span>
+                                <span class="px-2.5 py-1 rounded-xl bg-rose-50 text-rose-700 border border-rose-200">Tidak Absen QR: <?= (int)$grp['total_tidak_hadir'] ?></span>
+                            </div>
+                        </div>
+
+                        <?php if (empty($grp['tidak_hadir_items'])): ?>
+                            <div class="px-5 py-6 text-center text-xs font-semibold text-emerald-700 bg-emerald-50/30">
+                                ✓ Semua peserta pada sesi &amp; ruangan ini sudah melakukan absen QR Code.
+                            </div>
+                        <?php else: ?>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left text-sm border-collapse">
+                                    <thead>
+                                        <tr class="bg-rose-50/60 border-b border-slate-200 text-xs font-bold text-slate-600 uppercase">
+                                            <th class="py-2.5 px-4 w-12 text-center">No</th>
+                                            <th class="py-2.5 px-4">No. Peserta</th>
+                                            <th class="py-2.5 px-4">Nama Calon Siswa</th>
+                                            <th class="py-2.5 px-4">Jenjang</th>
+                                            <th class="py-2.5 px-4">No. WA Orang Tua</th>
+                                            <th class="py-2.5 px-4 text-center">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-100">
+                                        <?php foreach ($grp['tidak_hadir_items'] as $nIdx => $th): ?>
+                                            <tr class="hover:bg-slate-50/70">
+                                                <td class="py-2.5 px-4 text-center font-bold text-slate-400"><?= $nIdx + 1 ?></td>
+                                                <td class="py-2.5 px-4 font-mono font-bold text-slate-700"><?= e($th['nomor_peserta']) ?></td>
+                                                <td class="py-2.5 px-4 font-bold text-slate-900"><?= e($th['nama_lengkap']) ?></td>
+                                                <td class="py-2.5 px-4"><span class="px-2 py-0.5 rounded-lg bg-slate-100 text-xs font-bold"><?= e($th['jenjang']) ?></span></td>
+                                                <td class="py-2.5 px-4 font-mono text-xs text-slate-600"><?= e($th['target_phone'] ?: '-') ?></td>
+                                                <td class="py-2.5 px-4 text-center">
+                                                    <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                                                        Belum Absen QR
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
     <?php endif; ?>
 </div>
 

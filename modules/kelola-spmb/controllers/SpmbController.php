@@ -4001,7 +4001,7 @@ SVG;
         $activeGroup = SpmbModel::getActiveGroup();
         $groupId = (int)($activeGroup['id'] ?? 0);
         $activeTab = trim((string)($_GET['tab'] ?? 'peserta'));
-        if (!in_array($activeTab, ['peserta', 'scan', 'ruangan'], true)) {
+        if (!in_array($activeTab, ['peserta', 'scan', 'ruangan', 'laporan'], true)) {
             $activeTab = 'peserta';
         }
 
@@ -4017,6 +4017,9 @@ SVG;
         $data = SpmbModel::getKartuObservasiPeserta($filters);
         $items = $data['items'];
         $stats = $data['stats'];
+        $laporanTidakHadir = ($activeTab === 'laporan')
+            ? SpmbModel::getKartuObservasiLaporanTidakHadir($filters)
+            : ['groups' => [], 'summary' => []];
         $defaultWaTemplate = SpmbModel::getDefaultWaJadwalObservasiTemplate();
 
         $pageTitle = 'Kartu & Absen QR Observasi';
@@ -4177,6 +4180,83 @@ SVG;
     {
         $item = SpmbModel::getKartuObservasiByToken($token);
         include BASE_PATH . '/modules/kelola-spmb/views/kartu_observasi/publik.php';
+    }
+
+    /**
+     * Endpoint universal QR Code:
+     * - Jika dibuka oleh panitia/admin yang login (via kamera HP bawaan / app scanner apa saja) -> langsung catat HADIR
+     * - Jika dibuka oleh orang tua (belum login) -> tampilkan Kartu Observasi Digital
+     */
+    public static function kartuObservasiAbsenQrDirect(string $token): void
+    {
+        $canScan = class_exists('Auth') && Auth::check() && (
+            Auth::isSuperAdmin()
+            || (class_exists('RBAC') && RBAC::hasAnyPermission(['spmb.observasi.update', 'spmb.observasi.view', 'spmb.dashboard']))
+        );
+
+        if (!$canScan) {
+            $item = SpmbModel::getKartuObservasiByToken($token);
+            include BASE_PATH . '/modules/kelola-spmb/views/kartu_observasi/publik.php';
+            return;
+        }
+
+        $petugas = Auth::name() ?: 'Panitia SPMB';
+        $result = SpmbModel::scanAbsenObservasi($token, $petugas);
+        include BASE_PATH . '/modules/kelola-spmb/views/kartu_observasi/absen_qr_result.php';
+    }
+
+    public static function kartuObservasiLaporanCetak(): void
+    {
+        $activeGroup = SpmbModel::getActiveGroup();
+        $groupId = (int)($activeGroup['id'] ?? 0);
+        $filters = [
+            'group_id'   => $groupId,
+            'jenjang'    => trim((string)($_GET['jenjang'] ?? '')),
+            'ruangan_id' => trim((string)($_GET['ruangan_id'] ?? '')),
+            'search'     => trim((string)($_GET['search'] ?? '')),
+        ];
+        $laporan = SpmbModel::getKartuObservasiLaporanTidakHadir($filters);
+        include BASE_PATH . '/modules/kelola-spmb/views/kartu_observasi/laporan_cetak.php';
+    }
+
+    public static function kartuObservasiLaporanExport(): void
+    {
+        $activeGroup = SpmbModel::getActiveGroup();
+        $groupId = (int)($activeGroup['id'] ?? 0);
+        $filters = [
+            'group_id'   => $groupId,
+            'jenjang'    => trim((string)($_GET['jenjang'] ?? '')),
+            'ruangan_id' => trim((string)($_GET['ruangan_id'] ?? '')),
+            'search'     => trim((string)($_GET['search'] ?? '')),
+        ];
+        $laporan = SpmbModel::getKartuObservasiLaporanTidakHadir($filters);
+
+        $headers = [
+            'No', 'Tanggal Sesi', 'Sesi & Jam', 'Ruangan', 'Pengawas',
+            'No. Peserta', 'Nama Calon Siswa', 'Jenjang', 'No. WA Orang Tua', 'Status Absen QR'
+        ];
+        $rows = [];
+        $no = 1;
+        foreach (($laporan['groups'] ?? []) as $grp) {
+            $tgl = !empty($grp['tgl_sesi']) ? date('d/m/Y', strtotime($grp['tgl_sesi'])) : '-';
+            $sesiJam = $grp['sesi_nama'] . (!empty($grp['jam_mulai']) ? ' (' . $grp['jam_mulai'] . '-' . $grp['jam_selesai'] . ')' : '');
+            foreach (($grp['tidak_hadir_items'] ?? []) as $it) {
+                $rows[] = [
+                    $no++,
+                    $tgl,
+                    $sesiJam,
+                    $grp['nama_ruangan'],
+                    $grp['pengawas'] ?: '-',
+                    $it['nomor_peserta'],
+                    $it['nama_lengkap'],
+                    $it['jenjang'],
+                    $it['target_phone'] ?: '-',
+                    'Belum Absen QR',
+                ];
+            }
+        }
+
+        ExcelHelper::exportXLS('Laporan_Tidak_Absen_QR_Observasi_' . date('Ymd_His') . '.xls', $headers, $rows, 'Tidak Absen QR');
     }
 }
 
