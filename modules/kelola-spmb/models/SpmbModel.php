@@ -4372,8 +4372,8 @@ class SpmbModel
         $whereSql = implode(' AND ', $where);
         $items = self::db()->findAll("
             SELECT pj.*,
-                   p.nama_lengkap, p.nomor_pendaftaran, p.jenjang, p.jenis_pendaftaran, p.foto_siswa,
-                   p.no_hp_ayah, p.no_hp_ibu, p.no_hp_wali, p.nama_ayah, p.nama_ibu,
+                   p.nama_lengkap, p.nomor_pendaftaran, p.jenjang, p.jenis_pendaftaran, p.foto,
+                   p.no_wa, p.no_hp, p.no_hp_ayah, p.no_hp_ibu, p.no_hp_wali, p.nama_ayah, p.nama_ibu,
                    r.nama_ruangan, r.sesi_nama, r.tanggal AS tgl_sesi, r.jam_mulai, r.jam_selesai, r.pengawas
             FROM `spmb_observasi_peserta_jadwal` pj
             JOIN `spmb_pendaftar` p ON p.id = pj.pendaftar_id
@@ -4483,7 +4483,7 @@ class SpmbModel
 
         $row = self::db()->find("
             SELECT pj.*,
-                   p.nama_lengkap, p.nomor_pendaftaran, p.jenjang, p.jenis_pendaftaran, p.foto_siswa,
+                   p.nama_lengkap, p.nomor_pendaftaran, p.jenjang, p.jenis_pendaftaran, p.foto,
                    r.nama_ruangan, r.sesi_nama, r.tanggal AS tgl_sesi, r.jam_mulai, r.jam_selesai
             FROM `spmb_observasi_peserta_jadwal` pj
             JOIN `spmb_pendaftar` p ON p.id = pj.pendaftar_id
@@ -4536,12 +4536,12 @@ class SpmbModel
         self::ensureKartuObservasiSchema();
         $row = self::db()->find("
             SELECT pj.*,
-                   p.nama_lengkap, p.nomor_pendaftaran, p.jenjang, p.jenis_pendaftaran, p.foto_siswa,
+                   p.nama_lengkap, p.nomor_pendaftaran, p.jenjang, p.jenis_pendaftaran, p.foto,
                    g.nama_group, g.tahun_ajaran,
                    r.nama_ruangan, r.sesi_nama, r.tanggal AS tgl_sesi, r.jam_mulai, r.jam_selesai, r.pengawas
             FROM `spmb_observasi_peserta_jadwal` pj
             JOIN `spmb_pendaftar` p ON p.id = pj.pendaftar_id
-            LEFT JOIN `spmb_observasi_group` g ON g.id = pj.group_id
+            LEFT JOIN `spmb_group` g ON g.id = pj.group_id
             LEFT JOIN `spmb_observasi_ruangan` r ON r.id = pj.ruangan_id
             WHERE pj.qr_token = ?
             LIMIT 1
@@ -4569,7 +4569,7 @@ class SpmbModel
         self::ensureKartuObservasiSchema();
         $row = self::db()->find("
             SELECT pj.*,
-                   p.nama_lengkap, p.nomor_pendaftaran, p.jenjang, p.no_hp_ayah, p.no_hp_ibu, p.no_hp_wali,
+                   p.nama_lengkap, p.nomor_pendaftaran, p.jenjang, p.no_wa, p.no_hp, p.no_hp_ayah, p.no_hp_ibu, p.no_hp_wali,
                    r.nama_ruangan, r.sesi_nama, r.tanggal AS tgl_sesi, r.jam_mulai, r.jam_selesai, r.pengawas
             FROM `spmb_observasi_peserta_jadwal` pj
             JOIN `spmb_pendaftar` p ON p.id = pj.pendaftar_id
@@ -4622,7 +4622,7 @@ class SpmbModel
 
     private static function resolvePendaftarPhone(array $p): string
     {
-        foreach (['no_hp_ibu', 'no_hp_ayah', 'no_hp_wali'] as $k) {
+        foreach (['no_wa', 'no_hp', 'no_hp_ibu', 'no_hp_ayah', 'no_hp_wali'] as $k) {
             $v = trim((string)($p[$k] ?? ''));
             if ($v !== '') return $v;
         }
