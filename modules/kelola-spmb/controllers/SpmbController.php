@@ -4291,6 +4291,157 @@ SVG;
 
         ExcelHelper::exportXLS('Laporan_Tidak_Absen_QR_Observasi_' . date('Ymd_His') . '.xls', $headers, $rows, 'Tidak Absen QR');
     }
+
+    // ═════════════════════════════════════════════════════════════════════════════
+    // OBSERVASI SISWA LANGSUNG (PER UNIT + RBAC TERPISAH + KESIMPULAN SISTEM)
+    // ═════════════════════════════════════════════════════════════════════════════
+
+    public static function observasiSiswaIndex(): void
+    {
+        SpmbModel::ensureObservasiSiswaSchema();
+        $activeGroup = SpmbModel::getActiveGroup();
+        $groupId = (int)($activeGroup['id'] ?? 0);
+
+        $canSoal  = class_exists('RBAC') ? RBAC::hasPermission('spmb.observasi_siswa.soal') : true;
+        $canNilai = class_exists('RBAC') ? RBAC::hasPermission('spmb.observasi_siswa.nilai') : true;
+        $canCetak = class_exists('RBAC') ? RBAC::hasAnyPermission(['spmb.observasi_siswa.cetak', 'spmb.observasi_siswa.view', 'spmb.observasi_siswa.nilai']) : true;
+        $canHasil = class_exists('RBAC') ? RBAC::hasAnyPermission(['spmb.observasi_siswa.view', 'spmb.observasi_siswa.nilai', 'spmb.observasi_siswa.cetak']) : true;
+
+        $defaultTab = $canHasil ? 'hasil' : 'soal';
+        $activeTab = trim((string)($_GET['tab'] ?? $defaultTab));
+        if ($activeTab === 'soal' && !$canSoal) $activeTab = 'hasil';
+        if ($activeTab === 'hasil' && !$canHasil) $activeTab = 'soal';
+
+        $allowedUnits = SpmbModel::getObservasiSiswaAllowedUnits();
+        $selJenjang = trim((string)($_GET['jenjang'] ?? ($allowedUnits[0] ?? 'SD')));
+        if (!in_array($selJenjang, $allowedUnits, true)) {
+            $selJenjang = $allowedUnits[0] ?? 'SD';
+        }
+
+        $filters = [
+            'group_id'   => $groupId,
+            'jenjang'    => $selJenjang,
+            'status_obs' => trim((string)($_GET['status_obs'] ?? '')),
+            'search'     => trim((string)($_GET['search'] ?? '')),
+        ];
+
+        $soalList = SpmbModel::getObservasiSiswaSoalList($selJenjang, false);
+        $data = SpmbModel::getObservasiSiswaList($filters);
+        $items = $data['items'];
+        $stats = $data['stats'];
+
+        $pageTitle = 'Observasi Siswa — Unit ' . $selJenjang;
+        $customSidebar = BASE_PATH . '/modules/kelola-spmb/views/sidebar.php';
+        ob_start();
+        include BASE_PATH . '/modules/kelola-spmb/views/observasi_siswa/index.php';
+        $content = ob_get_clean();
+        include TEMPLATES_PATH . '/layouts/app.php';
+    }
+
+    public static function observasiSiswaSoalStore(): void
+    {
+        CSRF::validate();
+        $allowedUnits = SpmbModel::getObservasiSiswaAllowedUnits();
+        $jenjang = trim((string)($_POST['jenjang'] ?? ($allowedUnits[0] ?? 'SD')));
+        $redirect = url('kelola-spmb/observasi-siswa?tab=soal&jenjang=' . urlencode($jenjang));
+
+        if (!in_array($jenjang, $allowedUnits, true)) {
+            Response::redirect($redirect, 'Anda tidak memiliki akses pada unit ' . $jenjang . '.', 'error');
+        }
+        try {
+            SpmbModel::saveObservasiSiswaSoal($_POST);
+            Response::redirect($redirect, 'Pertanyaan Observasi Siswa unit ' . $jenjang . ' berhasil disimpan.', 'success');
+        } catch (Throwable $e) {
+            Response::redirect($redirect, 'Gagal menyimpan pertanyaan: ' . $e->getMessage(), 'error');
+        }
+    }
+
+    public static function observasiSiswaSoalDelete(int $id): void
+    {
+        CSRF::validate();
+        $jenjang = trim((string)($_POST['jenjang'] ?? 'SD'));
+        $redirect = url('kelola-spmb/observasi-siswa?tab=soal&jenjang=' . urlencode($jenjang));
+        SpmbModel::deleteObservasiSiswaSoal($id);
+        Response::redirect($redirect, 'Pertanyaan Observasi Siswa berhasil dihapus.', 'success');
+    }
+
+    public static function observasiSiswaFormData(int $pendaftarId): void
+    {
+        $activeGroup = SpmbModel::getActiveGroup();
+        $groupId = (int)($activeGroup['id'] ?? 0);
+        $detail = SpmbModel::getObservasiSiswaDetail($pendaftarId, $groupId);
+        if (!$detail) {
+            Response::json(['success' => false, 'message' => 'Data calon siswa tidak ditemukan.'], 404);
+            return;
+        }
+        Response::json(['success' => true] + $detail);
+    }
+
+    public static function observasiSiswaNilaiSave(): void
+    {
+        CSRF::validate();
+        $activeGroup = SpmbModel::getActiveGroup();
+        $groupId = (int)($activeGroup['id'] ?? 0);
+        $pendaftarId = (int)($_POST['pendaftar_id'] ?? 0);
+        $jenjang = trim((string)($_POST['jenjang'] ?? 'SD'));
+        $redirect = url('kelola-spmb/observasi-siswa?tab=hasil&jenjang=' . urlencode($jenjang));
+
+        try {
+            $petugasId = class_exists('Auth') ? (int)(Auth::id() ?? 0) : 0;
+            $petugasNama = class_exists('Auth') ? (Auth::name() ?: 'Petugas Observer') : 'Petugas Observer';
+            $res = SpmbModel::saveObservasiSiswaHasil($groupId, $pendaftarId, $_POST, $petugasId, $petugasNama);
+            Response::redirect($redirect, 'Hasil observasi tersimpan! Kategori: ' . $res['kategori'] . ' (' . $res['persentase'] . '%).', 'success');
+        } catch (Throwable $e) {
+            Response::redirect($redirect, 'Gagal menyimpan hasil observasi: ' . $e->getMessage(), 'error');
+        }
+    }
+
+    public static function observasiSiswaCetakSingle(int $pendaftarId): void
+    {
+        $activeGroup = SpmbModel::getActiveGroup();
+        $groupId = (int)($activeGroup['id'] ?? 0);
+        $detail = SpmbModel::getObservasiSiswaDetail($pendaftarId, $groupId);
+        if (!$detail) {
+            http_response_code(404);
+            echo 'Data observasi siswa tidak ditemukan.';
+            exit;
+        }
+        $mode = 'single';
+        $jenjang = (string)$detail['pendaftar']['jenjang'];
+        $records = [$detail];
+        include BASE_PATH . '/modules/kelola-spmb/views/observasi_siswa/cetak.php';
+    }
+
+    public static function observasiSiswaCetakAll(): void
+    {
+        $activeGroup = SpmbModel::getActiveGroup();
+        $groupId = (int)($activeGroup['id'] ?? 0);
+        $allowedUnits = SpmbModel::getObservasiSiswaAllowedUnits();
+        $jenjang = trim((string)($_GET['jenjang'] ?? ($allowedUnits[0] ?? 'SD')));
+        if (!in_array($jenjang, $allowedUnits, true)) {
+            $jenjang = $allowedUnits[0] ?? 'SD';
+        }
+        $mode = trim((string)($_GET['mode'] ?? 'rekap'));
+        if (!in_array($mode, ['rekap', 'detail'], true)) {
+            $mode = 'rekap';
+        }
+
+        $listData = SpmbModel::getObservasiSiswaList([
+            'group_id'   => $groupId,
+            'jenjang'    => $jenjang,
+            'status_obs' => 'sudah',
+        ]);
+        $observedItems = $listData['items'] ?? [];
+        $records = [];
+        if ($mode === 'detail') {
+            foreach ($observedItems as $it) {
+                $det = SpmbModel::getObservasiSiswaDetail((int)$it['pendaftar_id'], $groupId);
+                if ($det) $records[] = $det;
+            }
+        }
+
+        include BASE_PATH . '/modules/kelola-spmb/views/observasi_siswa/cetak.php';
+    }
 }
 
 

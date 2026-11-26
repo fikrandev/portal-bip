@@ -4867,6 +4867,461 @@ class SpmbModel
         $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
         return $scheme . '://' . $host . '/' . $path;
     }
+
+    // ═════════════════════════════════════════════════════════════════════════════
+    // OBSERVASI SISWA LANGSUNG (PER UNIT + RBAC TERPISAH + KESIMPULAN SISTEM)
+    // ═════════════════════════════════════════════════════════════════════════════
+
+    private static bool $obsSiswaSchemaInit = false;
+
+    public static function ensureObservasiSiswaSchema(): void
+    {
+        if (self::$obsSiswaSchemaInit) {
+            return;
+        }
+        self::$obsSiswaSchemaInit = true;
+        $pdo = self::db()->getConnection();
+
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `spmb_observasi_siswa_soal` (
+                `id` INT(11) NOT NULL AUTO_INCREMENT,
+                `jenjang` VARCHAR(30) NOT NULL DEFAULT 'SD',
+                `aspek` VARCHAR(120) DEFAULT 'Umum',
+                `pertanyaan` TEXT NOT NULL,
+                `opsi_json` TEXT NOT NULL,
+                `nilai_maksimal` DECIMAL(8,2) NOT NULL DEFAULT 4.00,
+                `pakai_keterangan` TINYINT(1) NOT NULL DEFAULT 1,
+                `urutan` INT(11) NOT NULL DEFAULT 1,
+                `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+                `created_by` INT(11) DEFAULT NULL,
+                `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (`id`),
+                KEY `idx_jenjang_urutan` (`jenjang`, `urutan`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        ");
+
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `spmb_observasi_siswa_hasil` (
+                `id` INT(11) NOT NULL AUTO_INCREMENT,
+                `group_id` INT(11) NOT NULL,
+                `pendaftar_id` INT(11) NOT NULL,
+                `jenjang` VARCHAR(30) NOT NULL DEFAULT 'SD',
+                `total_nilai` DECIMAL(8,2) NOT NULL DEFAULT 0.00,
+                `nilai_maksimal` DECIMAL(8,2) NOT NULL DEFAULT 0.00,
+                `persentase` DECIMAL(5,2) NOT NULL DEFAULT 0.00,
+                `kategori_hasil` VARCHAR(80) DEFAULT NULL,
+                `kesimpulan_sistem` TEXT DEFAULT NULL,
+                `catatan_petugas` TEXT DEFAULT NULL,
+                `petugas_id` INT(11) DEFAULT NULL,
+                `petugas_nama` VARCHAR(150) DEFAULT NULL,
+                `observed_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `uniq_obs_siswa_pendaftar` (`group_id`, `pendaftar_id`),
+                KEY `idx_obs_siswa_jenjang` (`jenjang`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        ");
+
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `spmb_observasi_siswa_jawaban` (
+                `id` INT(11) NOT NULL AUTO_INCREMENT,
+                `hasil_id` INT(11) NOT NULL,
+                `soal_id` INT(11) NOT NULL,
+                `aspek_snapshot` VARCHAR(120) DEFAULT 'Umum',
+                `pertanyaan_snapshot` TEXT NOT NULL,
+                `jawaban_dipilih` VARCHAR(255) NOT NULL,
+                `nilai` DECIMAL(8,2) NOT NULL DEFAULT 0.00,
+                `nilai_maksimal` DECIMAL(8,2) NOT NULL DEFAULT 0.00,
+                `keterangan` TEXT DEFAULT NULL,
+                PRIMARY KEY (`id`),
+                KEY `idx_hasil_id` (`hasil_id`),
+                KEY `idx_soal_id` (`soal_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        ");
+
+        // Daftarkan permission RBAC Observasi Siswa secara otomatis & idempoten
+        try {
+            $mod = self::db()->find("SELECT id FROM `modules` WHERE slug = 'kelola-spmb' LIMIT 1");
+            $modId = $mod ? (int)$mod['id'] : null;
+            $perms = [
+                ['spmb.observasi_siswa.view', 'Lihat Observasi Siswa', 'Melihat daftar dan hasil observasi langsung calon siswa per unit'],
+                ['spmb.observasi_siswa.soal', 'Kelola Pertanyaan Observasi Siswa', 'Membuat, mengubah, dan menghapus pertanyaan, jawaban, serta bobot nilai observasi siswa per unit'],
+                ['spmb.observasi_siswa.nilai', 'Isi Penilaian Observasi Siswa', 'Mengisi jawaban, nilai, dan keterangan observasi langsung untuk calon siswa'],
+                ['spmb.observasi_siswa.cetak', 'Cetak Hasil Observasi Siswa', 'Mencetak lembar hasil observasi per siswa maupun rekap per unit'],
+            ];
+            $superRole = self::db()->find("SELECT id FROM `roles` WHERE LOWER(name) LIKE '%super%' OR slug = 'super_admin' ORDER BY id ASC LIMIT 1");
+            $superRoleId = $superRole ? (int)$superRole['id'] : null;
+
+            foreach ($perms as $pr) {
+                $existingP = self::db()->find("SELECT id FROM `permissions` WHERE slug = ? LIMIT 1", [$pr[0]]);
+                if (!$existingP) {
+                    self::db()->query(
+                        "INSERT INTO `permissions` (`module_id`, `slug`, `name`, `description`) VALUES (?, ?, ?, ?)",
+                        [$modId, $pr[0], $pr[1], $pr[2]]
+                    );
+                    $permId = (int)self::db()->lastInsertId();
+                } else {
+                    $permId = (int)$existingP['id'];
+                }
+                if ($superRoleId && $permId > 0) {
+                    self::db()->query(
+                        "INSERT IGNORE INTO `role_permissions` (`role_id`, `permission_id`) VALUES (?, ?)",
+                        [$superRoleId, $permId]
+                    );
+                }
+            }
+        } catch (Throwable $e) {}
+    }
+
+    public static function getObservasiSiswaAllowedUnits(): array
+    {
+        $all = ['PAUD', 'SD', 'SMP', 'SMA'];
+        if (class_exists('Auth') && Auth::isJenjangRestricted()) {
+            $allowed = array_values(array_filter($all, fn($u) => Auth::canAccessJenjang($u)));
+            if (!empty($allowed)) return $allowed;
+        }
+        return $all;
+    }
+
+    public static function getObservasiSiswaSoalList(string $jenjang, bool $onlyActive = false): array
+    {
+        self::ensureObservasiSiswaSchema();
+        $sql = "SELECT * FROM `spmb_observasi_siswa_soal` WHERE jenjang = ?"
+             . ($onlyActive ? " AND is_active = 1" : "")
+             . " ORDER BY urutan ASC, id ASC";
+        $rows = self::db()->findAll($sql, [$jenjang]);
+        foreach ($rows as &$r) {
+            $opsi = json_decode((string)($r['opsi_json'] ?? '[]'), true);
+            $r['opsi'] = is_array($opsi) ? $opsi : [];
+        }
+        unset($r);
+        return $rows;
+    }
+
+    public static function saveObservasiSiswaSoal(array $data): int
+    {
+        self::ensureObservasiSiswaSchema();
+        $id = !empty($data['id']) ? (int)$data['id'] : null;
+        $jenjang = trim((string)($data['jenjang'] ?? 'SD'));
+        $aspek = trim((string)($data['aspek'] ?? 'Umum')) ?: 'Umum';
+        $pertanyaan = trim((string)($data['pertanyaan'] ?? ''));
+        if ($pertanyaan === '') {
+            throw new Exception('Pertanyaan wajib diisi.');
+        }
+
+        $jawabanArr = $data['opsi_jawaban'] ?? [];
+        $nilaiArr   = $data['opsi_nilai'] ?? [];
+        $opsi = [];
+        $maxVal = 0.0;
+        if (is_array($jawabanArr)) {
+            foreach ($jawabanArr as $i => $jText) {
+                $jt = trim((string)$jText);
+                if ($jt === '') continue;
+                $nv = isset($nilaiArr[$i]) && $nilaiArr[$i] !== '' ? (float)$nilaiArr[$i] : 0.0;
+                $opsi[] = ['jawaban' => $jt, 'nilai' => $nv];
+                if ($nv > $maxVal) $maxVal = $nv;
+            }
+        }
+        if (empty($opsi)) {
+            throw new Exception('Minimal harus ada 1 pilihan jawaban beserta nilainya.');
+        }
+
+        $pakaiKet = !empty($data['pakai_keterangan']) ? 1 : 0;
+        $urutan = max(1, (int)($data['urutan'] ?? 1));
+        $isActive = isset($data['is_active']) ? (int)!empty($data['is_active']) : 1;
+        $opsiJson = json_encode($opsi, JSON_UNESCAPED_UNICODE);
+
+        if ($id && $id > 0) {
+            self::db()->query("
+                UPDATE `spmb_observasi_siswa_soal` SET
+                    jenjang = ?, aspek = ?, pertanyaan = ?, opsi_json = ?,
+                    nilai_maksimal = ?, pakai_keterangan = ?, urutan = ?, is_active = ?
+                WHERE id = ?
+            ", [$jenjang, $aspek, $pertanyaan, $opsiJson, $maxVal, $pakaiKet, $urutan, $isActive, $id]);
+            return $id;
+        }
+
+        self::db()->query("
+            INSERT INTO `spmb_observasi_siswa_soal`
+            (jenjang, aspek, pertanyaan, opsi_json, nilai_maksimal, pakai_keterangan, urutan, is_active, created_by)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ", [
+            $jenjang, $aspek, $pertanyaan, $opsiJson, $maxVal, $pakaiKet, $urutan, $isActive,
+            class_exists('Auth') ? (int)(Auth::id() ?? 0) : null
+        ]);
+        return (int)self::db()->lastInsertId();
+    }
+
+    public static function deleteObservasiSiswaSoal(int $id): bool
+    {
+        self::ensureObservasiSiswaSchema();
+        self::db()->query("DELETE FROM `spmb_observasi_siswa_soal` WHERE id = ?", [$id]);
+        return true;
+    }
+
+    public static function getObservasiSiswaList(array $filters = []): array
+    {
+        self::ensureObservasiSiswaSchema();
+        $groupId = (int)($filters['group_id'] ?? 0);
+        if (!$groupId) {
+            return ['items' => [], 'stats' => ['total' => 0, 'sudah' => 0, 'belum' => 0, 'rata_persen' => 0]];
+        }
+
+        $where = ["p.group_id = ?", "p.status_kelulusan = 'Lulus / Diterima'"];
+        $params = [$groupId];
+
+        if (class_exists('Auth') && Auth::isJenjangRestricted()) {
+            $jCond = Auth::jenjangSqlCondition('p.jenjang', $params);
+            if ($jCond !== '1=1') $where[] = $jCond;
+        }
+        if (!empty($filters['jenjang'])) {
+            $where[] = "p.jenjang = ?";
+            $params[] = trim((string)$filters['jenjang']);
+        }
+        if (!empty($filters['status_obs'])) {
+            if ($filters['status_obs'] === 'sudah') {
+                $where[] = "h.id IS NOT NULL";
+            } elseif ($filters['status_obs'] === 'belum') {
+                $where[] = "h.id IS NULL";
+            }
+        }
+        if (!empty($filters['search'])) {
+            $term = '%' . trim((string)$filters['search']) . '%';
+            $where[] = "(p.nama_lengkap LIKE ? OR p.nomor_pendaftaran LIKE ? OR p.asal_sekolah LIKE ?)";
+            array_push($params, $term, $term, $term);
+        }
+
+        $whereSql = implode(' AND ', $where);
+        $items = self::db()->findAll("
+            SELECT p.id AS pendaftar_id, p.nomor_pendaftaran, p.nama_lengkap, p.jenjang, p.jenis_kelamin,
+                   p.asal_sekolah, p.tanggal_lahir,
+                   h.id AS hasil_id, h.total_nilai, h.nilai_maksimal, h.persentase,
+                   h.kategori_hasil, h.kesimpulan_sistem, h.catatan_petugas,
+                   h.petugas_nama, h.observed_at
+            FROM `spmb_pendaftar` p
+            LEFT JOIN `spmb_observasi_siswa_hasil` h ON h.pendaftar_id = p.id AND h.group_id = p.group_id
+            WHERE {$whereSql}
+            ORDER BY (h.id IS NULL) ASC, p.nama_lengkap ASC
+        ", $params);
+
+        $sudah = 0;
+        $sumPct = 0.0;
+        foreach ($items as $it) {
+            if (!empty($it['hasil_id'])) {
+                $sudah++;
+                $sumPct += (float)($it['persentase'] ?? 0);
+            }
+        }
+
+        return [
+            'items' => $items,
+            'stats' => [
+                'total'       => count($items),
+                'sudah'       => $sudah,
+                'belum'       => count($items) - $sudah,
+                'rata_persen' => $sudah > 0 ? round($sumPct / $sudah, 1) : 0,
+            ],
+        ];
+    }
+
+    public static function getObservasiSiswaDetail(int $pendaftarId, int $groupId): ?array
+    {
+        self::ensureObservasiSiswaSchema();
+        $pendaftar = self::db()->find("
+            SELECT p.*, g.nama_group, g.tahun_ajaran
+            FROM `spmb_pendaftar` p
+            LEFT JOIN `spmb_group` g ON g.id = p.group_id
+            WHERE p.id = ? LIMIT 1
+        ", [$pendaftarId]);
+        if (!$pendaftar) return null;
+
+        $hasil = self::db()->find("
+            SELECT * FROM `spmb_observasi_siswa_hasil`
+            WHERE group_id = ? AND pendaftar_id = ? LIMIT 1
+        ", [$groupId, $pendaftarId]);
+
+        $jawabanList = [];
+        $jawabanMap = [];
+        if ($hasil) {
+            $jawabanList = self::db()->findAll("
+                SELECT * FROM `spmb_observasi_siswa_jawaban`
+                WHERE hasil_id = ? ORDER BY id ASC
+            ", [(int)$hasil['id']]);
+            foreach ($jawabanList as $jw) {
+                $jawabanMap[(int)$jw['soal_id']] = $jw;
+            }
+        }
+
+        $soalList = self::getObservasiSiswaSoalList((string)$pendaftar['jenjang'], true);
+        return [
+            'pendaftar'    => $pendaftar,
+            'hasil'        => $hasil,
+            'jawaban_list' => $jawabanList,
+            'jawaban_map'  => $jawabanMap,
+            'soal_list'    => $soalList,
+        ];
+    }
+
+    public static function generateKesimpulanObservasiSiswa(array $pendaftar, float $totalNilai, float $nilaiMaks, float $persen, array $aspekSummary, array $catatanItems): array
+    {
+        if ($persen >= 85) {
+            $kategori = 'Sangat Siap / Sangat Baik';
+            $rekom = 'secara umum ananda menunjukkan kesiapan yang sangat baik dan direkomendasikan untuk mengikuti pembelajaran reguler pada jenjang ' . $pendaftar['jenjang'] . '.';
+        } elseif ($persen >= 70) {
+            $kategori = 'Siap / Baik';
+            $rekom = 'secara umum ananda telah memenuhi kesiapan dasar dengan baik untuk mengikuti pembelajaran pada jenjang ' . $pendaftar['jenjang'] . '.';
+        } elseif ($persen >= 55) {
+            $kategori = 'Cukup Siap (Perlu Penguatan)';
+            $rekom = 'ananda cukup siap namun disarankan mendapatkan penguatan dan stimulasi bertahap bersama guru kelas dan orang tua.';
+        } else {
+            $kategori = 'Perlu Pendampingan Khusus';
+            $rekom = 'ananda memerlukan pendampingan khusus dan komunikasi intensif dengan orang tua/tim pendamping pada awal masa belajar.';
+        }
+
+        $kuat = [];
+        $perluLatih = [];
+        foreach ($aspekSummary as $asp => $st) {
+            $pAsp = $st['max'] > 0 ? round(($st['val'] / $st['max']) * 100) : 0;
+            if ($pAsp >= 80) {
+                $kuat[] = "{$asp} ({$pAsp}%)";
+            } elseif ($pAsp < 65) {
+                $perluLatih[] = "{$asp} ({$pAsp}%)";
+            }
+        }
+
+        $nama = trim((string)($pendaftar['nama_lengkap'] ?? 'Calon Siswa'));
+        $kalimat = "Berdasarkan hasil observasi langsung terhadap {$nama} (Jenjang {$pendaftar['jenjang']}), diperoleh total nilai "
+            . rtrim(rtrim(number_format($totalNilai, 2, '.', ''), '0'), '.') . " dari "
+            . rtrim(rtrim(number_format($nilaiMaks, 2, '.', ''), '0'), '.') . " (" . number_format($persen, 1) . "%) dengan kategori {$kategori}. ";
+
+        if (!empty($kuat)) {
+            $kalimat .= "Aspek yang menonjol meliputi " . implode(', ', $kuat) . ". ";
+        }
+        if (!empty($perluLatih)) {
+            $kalimat .= "Aspek yang masih perlu penguatan adalah " . implode(', ', $perluLatih) . ". ";
+        }
+        $kalimat .= ucfirst($rekom);
+
+        if (!empty($catatanItems)) {
+            $kalimat .= " Catatan observasi kunci: " . implode('; ', array_slice($catatanItems, 0, 3)) . ".";
+        }
+
+        return [
+            'kategori'   => $kategori,
+            'kesimpulan' => $kalimat,
+        ];
+    }
+
+    public static function saveObservasiSiswaHasil(int $groupId, int $pendaftarId, array $postData, int $petugasId, string $petugasNama): array
+    {
+        self::ensureObservasiSiswaSchema();
+        $pendaftar = self::db()->find("SELECT * FROM `spmb_pendaftar` WHERE id = ? LIMIT 1", [$pendaftarId]);
+        if (!$pendaftar) {
+            throw new Exception('Data calon siswa tidak ditemukan.');
+        }
+
+        $jenjang = (string)$pendaftar['jenjang'];
+        $soalList = self::getObservasiSiswaSoalList($jenjang, true);
+        if (empty($soalList)) {
+            throw new Exception('Belum ada pertanyaan Observasi Siswa untuk unit ' . $jenjang . '.');
+        }
+
+        $jawabanPost = $postData['jawaban'] ?? [];
+        $ketPost     = $postData['keterangan'] ?? [];
+        $catatanPetugas = trim((string)($postData['catatan_petugas'] ?? '')) ?: null;
+
+        $totalNilai = 0.0;
+        $nilaiMaksTotal = 0.0;
+        $aspekSummary = [];
+        $catatanItems = [];
+        $rowsToSave = [];
+
+        foreach ($soalList as $soal) {
+            $sid = (int)$soal['id'];
+            $opsi = $soal['opsi'] ?? [];
+            $selectedIdx = isset($jawabanPost[$sid]) && $jawabanPost[$sid] !== '' ? (int)$jawabanPost[$sid] : -1;
+            if ($selectedIdx < 0 || !isset($opsi[$selectedIdx])) {
+                throw new Exception('Semua pertanyaan wajib dipilih jawabannya ("' . mb_substr($soal['pertanyaan'], 0, 50) . '...").');
+            }
+
+            $chosen = $opsi[$selectedIdx];
+            $val = (float)($chosen['nilai'] ?? 0);
+            $maxV = (float)($soal['nilai_maksimal'] ?? 0);
+            $ket = trim((string)($ketPost[$sid] ?? '')) ?: null;
+            $asp = trim((string)($soal['aspek'] ?? 'Umum')) ?: 'Umum';
+
+            $totalNilai += $val;
+            $nilaiMaksTotal += $maxV;
+            if (!isset($aspekSummary[$asp])) $aspekSummary[$asp] = ['val' => 0.0, 'max' => 0.0];
+            $aspekSummary[$asp]['val'] += $val;
+            $aspekSummary[$asp]['max'] += $maxV;
+            if ($ket) $catatanItems[] = $ket;
+
+            $rowsToSave[] = [
+                'soal_id'             => $sid,
+                'aspek_snapshot'      => $asp,
+                'pertanyaan_snapshot' => $soal['pertanyaan'],
+                'jawaban_dipilih'     => $chosen['jawaban'],
+                'nilai'               => $val,
+                'nilai_maksimal'      => $maxV,
+                'keterangan'          => $ket,
+            ];
+        }
+
+        $persen = $nilaiMaksTotal > 0 ? round(($totalNilai / $nilaiMaksTotal) * 100, 2) : 0.0;
+        $gen = self::generateKesimpulanObservasiSiswa($pendaftar, $totalNilai, $nilaiMaksTotal, $persen, $aspekSummary, $catatanItems);
+
+        $pdo = self::db()->getConnection();
+        $pdo->beginTransaction();
+        try {
+            $existing = self::db()->find("SELECT id FROM `spmb_observasi_siswa_hasil` WHERE group_id = ? AND pendaftar_id = ? LIMIT 1", [$groupId, $pendaftarId]);
+            if ($existing) {
+                $hasilId = (int)$existing['id'];
+                self::db()->query("
+                    UPDATE `spmb_observasi_siswa_hasil` SET
+                        jenjang = ?, total_nilai = ?, nilai_maksimal = ?, persentase = ?,
+                        kategori_hasil = ?, kesimpulan_sistem = ?, catatan_petugas = ?,
+                        petugas_id = ?, petugas_nama = ?, observed_at = NOW()
+                    WHERE id = ?
+                ", [$jenjang, $totalNilai, $nilaiMaksTotal, $persen, $gen['kategori'], $gen['kesimpulan'], $catatanPetugas, $petugasId, $petugasNama, $hasilId]);
+                self::db()->query("DELETE FROM `spmb_observasi_siswa_jawaban` WHERE hasil_id = ?", [$hasilId]);
+            } else {
+                self::db()->query("
+                    INSERT INTO `spmb_observasi_siswa_hasil`
+                    (group_id, pendaftar_id, jenjang, total_nilai, nilai_maksimal, persentase, kategori_hasil, kesimpulan_sistem, catatan_petugas, petugas_id, petugas_nama, observed_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+                ", [$groupId, $pendaftarId, $jenjang, $totalNilai, $nilaiMaksTotal, $persen, $gen['kategori'], $gen['kesimpulan'], $catatanPetugas, $petugasId, $petugasNama]);
+                $hasilId = (int)self::db()->lastInsertId();
+            }
+
+            $insJ = $pdo->prepare("
+                INSERT INTO `spmb_observasi_siswa_jawaban`
+                (hasil_id, soal_id, aspek_snapshot, pertanyaan_snapshot, jawaban_dipilih, nilai, nilai_maksimal, keterangan)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ");
+            foreach ($rowsToSave as $r) {
+                $insJ->execute([
+                    $hasilId, $r['soal_id'], $r['aspek_snapshot'], $r['pertanyaan_snapshot'],
+                    $r['jawaban_dipilih'], $r['nilai'], $r['nilai_maksimal'], $r['keterangan']
+                ]);
+            }
+
+            $pdo->commit();
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) $pdo->rollBack();
+            throw $e;
+        }
+
+        return [
+            'hasil_id'   => $hasilId,
+            'total'      => $totalNilai,
+            'maksimal'   => $nilaiMaksTotal,
+            'persentase' => $persen,
+            'kategori'   => $gen['kategori'],
+            'kesimpulan' => $gen['kesimpulan'],
+        ];
+    }
 }
 
 

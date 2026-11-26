@@ -904,6 +904,15 @@ $router->get('/kelola-spmb/kartu-observasi/laporan-cetak', [SpmbController::clas
 $router->get('/kelola-spmb/kartu-observasi/laporan-export', [SpmbController::class, 'kartuObservasiLaporanExport'], [Middleware::permissionRequired('spmb.observasi.view')]);
 $router->get('/kelola-spmb/kartu-observasi/absen-qr/{token}', [SpmbController::class, 'kartuObservasiAbsenQrDirect']);
 $router->get('/kelola-spmb/kartu-observasi/publik/{token}', [SpmbController::class, 'kartuObservasiPublik']);
+
+// 10. Observasi Siswa (Per Unit + RBAC Terpisah: Pembuat Pertanyaan & Petugas Pengisi)
+$router->get('/kelola-spmb/observasi-siswa', [SpmbController::class, 'observasiSiswaIndex'], [Middleware::permissionRequired(['spmb.observasi_siswa.view', 'spmb.observasi_siswa.soal', 'spmb.observasi_siswa.nilai', 'spmb.observasi_siswa.cetak'])]);
+$router->post('/kelola-spmb/observasi-siswa/soal/store', [SpmbController::class, 'observasiSiswaSoalStore'], [Middleware::permissionRequired('spmb.observasi_siswa.soal')]);
+$router->post('/kelola-spmb/observasi-siswa/soal/delete/{id}', [SpmbController::class, 'observasiSiswaSoalDelete'], [Middleware::permissionRequired('spmb.observasi_siswa.soal')]);
+$router->get('/kelola-spmb/observasi-siswa/form-data/{id}', [SpmbController::class, 'observasiSiswaFormData'], [Middleware::permissionRequired(['spmb.observasi_siswa.view', 'spmb.observasi_siswa.nilai'])]);
+$router->post('/kelola-spmb/observasi-siswa/nilai/save', [SpmbController::class, 'observasiSiswaNilaiSave'], [Middleware::permissionRequired('spmb.observasi_siswa.nilai')]);
+$router->get('/kelola-spmb/observasi-siswa/cetak/{id}', [SpmbController::class, 'observasiSiswaCetakSingle'], [Middleware::permissionRequired(['spmb.observasi_siswa.view', 'spmb.observasi_siswa.cetak', 'spmb.observasi_siswa.nilai'])]);
+$router->get('/kelola-spmb/observasi-siswa/cetak-semua', [SpmbController::class, 'observasiSiswaCetakAll'], [Middleware::permissionRequired(['spmb.observasi_siswa.view', 'spmb.observasi_siswa.cetak', 'spmb.observasi_siswa.nilai'])]);
 $router->get('/kelola-pelanggaran-siswa', [PelanggaranSiswaController::class, 'index'], [Middleware::permissionRequired('pelanggaran_siswa.view')]);
 $router->get('/kelola-izin-guru', [IzinGuruController::class, 'index'], [Middleware::permissionRequired('izin_guru.view')]);
 $router->get('/kelola-buku-angkatan-siswa', [BukuAngkatanSiswaController::class, 'index'], [Middleware::permissionRequired('buku_angkatan.view')]);
