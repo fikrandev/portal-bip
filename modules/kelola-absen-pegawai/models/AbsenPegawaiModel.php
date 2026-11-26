@@ -306,51 +306,24 @@ class AbsenPegawaiModel
             return null;
         }
 
-        // 1. Cek restriction jenjang RBAC
+        // 1. Cek restriction jenjang RBAC (hanya batasi jika user/role memang dibatasi jenjang)
         if (class_exists('Auth') && Auth::isJenjangRestricted()) {
             $active = Auth::getActiveJenjang();
             if (!empty($active)) {
                 return $active;
             }
             $allowed = Auth::getAllowedJenjang();
-            if (!empty($allowed) && !empty($allowed[0])) {
+            if (count($allowed) === 1 && !empty($allowed[0])) {
                 return $allowed[0];
             }
         }
 
-        // 2. Cek pegawai yang tertaut ke akun user
-        if (class_exists('Auth')) {
-            $linked = Auth::findLinkedPegawai();
-            if ($linked) {
-                $u = trim((string)($linked['unit_tugas'] ?? ''));
-                if ($u !== '') {
-                    return $u;
-                }
-                // Fallback: cek riwayat penugasan pegawai
-                try {
-                    $pid = (int)($linked['id'] ?? 0);
-                    if ($pid > 0) {
-                        $assignUnit = self::db()->findColumn("
-                            SELECT mu.nama 
-                            FROM pegawai_penugasan pp 
-                            JOIN master_unit_tugas mu ON mu.id = pp.unit_tugas_id 
-                            WHERE pp.pegawai_id = ? 
-                            ORDER BY pp.id DESC LIMIT 1
-                        ", [$pid]);
-                        if (!empty($assignUnit)) {
-                            return trim($assignUnit);
-                        }
-                    }
-                } catch (Throwable $e) {}
-            }
-        }
-
-        // 3. Cek allowed_jenjang pada user
+        // 2. Cek allowed_jenjang eksplisit pada user jika hanya 1 unit
         if (class_exists('Auth')) {
             $u = Auth::user();
             if (!empty($u['allowed_jenjang'])) {
-                $parts = array_map('trim', explode(',', $u['allowed_jenjang']));
-                if (!empty($parts[0])) {
+                $parts = array_values(array_filter(array_map('trim', explode(',', $u['allowed_jenjang']))));
+                if (count($parts) === 1) {
                     return $parts[0];
                 }
             }
