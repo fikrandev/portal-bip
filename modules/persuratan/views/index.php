@@ -22,9 +22,12 @@
     <!-- Header Banner -->
     <div class="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/80 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-            <div class="flex items-center gap-2 mb-1">
+            <div class="flex flex-wrap items-center gap-2 mb-1">
                 <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold <?= $scope === 'yayasan' ? 'bg-sky-50 text-sky-700 border border-sky-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200' ?>">
                     <?= $scope === 'yayasan' ? 'Tingkat Yayasan' : 'Unit Sekolah (' . implode(', ', $units) . ')' ?>
+                </span>
+                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                    Tahun Aktif: <?= (int)($tahunAktif ?? date('Y')) ?> (Jan – Des <?= (int)($tahunAktif ?? date('Y')) ?>)
                 </span>
             </div>
             <h1 class="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight"><?= e($moduleLabel) ?></h1>
@@ -160,6 +163,17 @@
                         <option value="keluar" <?= $filters['arah'] === 'keluar' ? 'selected' : '' ?>>Surat Keluar</option>
                     </select>
                 <?php endif; ?>
+
+                <select name="tahun" class="px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm bg-slate-50 focus:bg-white font-semibold text-slate-900 outline-none focus:border-primary-500">
+                    <?php
+                    $curThn = (int)($tahunAktif ?? date('Y'));
+                    $selThn = (string)($filters['tahun'] ?? $curThn);
+                    for ($y = $curThn + 1; $y >= $curThn - 3; $y--):
+                    ?>
+                        <option value="<?= $y ?>" <?= $selThn === (string)$y ? 'selected' : '' ?>>Tahun <?= $y ?><?= $y === $curThn ? ' (Aktif)' : '' ?></option>
+                    <?php endfor; ?>
+                    <option value="all" <?= $selThn === 'all' ? 'selected' : '' ?>>Semua Tahun</option>
+                </select>
 
                 <select name="unit_nama" class="px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm bg-slate-50 focus:bg-white font-medium text-slate-900 outline-none focus:border-primary-500">
                     <option value="">Semua Unit</option>
@@ -323,7 +337,26 @@
         </div>
 
     <?php elseif ($activeTab === 'pengaturan'): ?>
-        <!-- ══════════ TAB 5: PENGATURAN SURAT (KOP PER UNIT + JENIS & KODE SURAT) ══════════ -->
+        <!-- ══════════ TAB 5: PENGATURAN SURAT (TAHUN AKTIF + KOP PER UNIT + JENIS & KODE SURAT) ══════════ -->
+        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-5 sm:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+                <h3 class="text-base font-extrabold text-slate-900">Pengaturan Tahun Aktif Persuratan (<?= $scope === 'yayasan' ? 'Yayasan' : 'Sekolah' ?>)</h3>
+                <p class="text-xs text-slate-500 mt-0.5">
+                    Periode berlaku <strong>1 Januari <?= (int)($tahunAktif ?? date('Y')) ?> s/d 31 Desember <?= (int)($tahunAktif ?? date('Y')) ?></strong>. Nomor urut surat keluar otomatis dimulai dari <strong>001</strong> setiap pergantian tahun.
+                </p>
+            </div>
+            <form method="POST" action="<?= url('persuratan/tahun-aktif/save') ?>" class="flex items-center gap-2.5 shrink-0">
+                <?= CSRF::field() ?>
+                <input type="hidden" name="scope" value="<?= e($scope) ?>">
+                <input type="hidden" name="return_tab" value="pengaturan">
+                <input type="number" name="tahun_aktif" min="2020" max="2099" value="<?= (int)($tahunAktif ?? date('Y')) ?>" required
+                       class="w-28 px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-primary-500 text-sm font-extrabold text-center text-slate-900 outline-none">
+                <button type="submit" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold shadow-xs cursor-pointer">
+                    Simpan Tahun Aktif
+                </button>
+            </form>
+        </div>
+
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <!-- KOP Surat Masing-Masing Unit (7 cols) -->
             <div class="lg:col-span-7 bg-white rounded-2xl border border-slate-200/80 shadow-xs p-5 sm:p-6 space-y-5">
@@ -585,7 +618,12 @@
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block text-sm font-semibold text-slate-700 mb-1.5">Tanggal Surat *</label>
-                        <input type="date" name="tanggal_surat" id="surat_tanggal" value="<?= date('Y-m-d') ?>" required onchange="autoGenerateNomorIfKeluar()"
+                        <?php
+                        $defaultTglModal = ((int)($tahunAktif ?? date('Y')) === (int)date('Y'))
+                            ? date('Y-m-d')
+                            : sprintf('%04d-01-01', (int)($tahunAktif ?? date('Y')));
+                        ?>
+                        <input type="date" name="tanggal_surat" id="surat_tanggal" value="<?= $defaultTglModal ?>" required onchange="autoGenerateNomorIfKeluar()"
                                class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-primary-500 text-sm font-bold outline-none">
                     </div>
                     <div id="wrap_tgl_terima">

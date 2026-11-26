@@ -126,6 +126,17 @@ class PersuratanModel
             }
         }
 
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `persuratan_pengaturan` (
+                `id` INT(11) NOT NULL AUTO_INCREMENT,
+                `scope` ENUM('yayasan','sekolah') NOT NULL,
+                `tahun_aktif` INT(4) NOT NULL DEFAULT 2026,
+                `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `uniq_pengaturan_scope` (`scope`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        ");
+
         self::seedDefaults();
         self::ensureModulesAndPermissions();
     }
@@ -148,6 +159,13 @@ class PersuratanModel
         foreach ($kopDefaults as $kd) {
             $stmtKop->execute($kd);
         }
+
+        $curYear = (int)date('Y');
+        $stmtCfg = self::db()->getConnection()->prepare("
+            INSERT IGNORE INTO `persuratan_pengaturan` (`scope`, `tahun_aktif`) VALUES (?, ?)
+        ");
+        $stmtCfg->execute(['yayasan', $curYear]);
+        $stmtCfg->execute(['sekolah', $curYear]);
 
         $jenisDefaults = [
             ['SK', 'Surat Keputusan', '{no}/{kode}/{unit}/{romawi}/{tahun}', 'Keputusan resmi pimpinan / yayasan'],
@@ -261,12 +279,37 @@ class PersuratanModel
         return $all;
     }
 
-    public static function getDashboardStats(string $scope): array
+    public static function getTahunAktif(string $scope): int
     {
         self::ensureSchema();
+        $row = self::db()->find("SELECT tahun_aktif FROM `persuratan_pengaturan` WHERE scope = ? LIMIT 1", [$scope]);
+        $yr = (int)($row['tahun_aktif'] ?? 0);
+        return ($yr >= 2000 && $yr <= 2100) ? $yr : (int)date('Y');
+    }
+
+    public static function saveTahunAktif(string $scope, int $tahun): bool
+    {
+        self::ensureSchema();
+        if ($tahun < 2000 || $tahun > 2100) {
+            throw new Exception('Tahun aktif harus antara 2000 s/d 2100.');
+        }
+        self::db()->query("
+            INSERT INTO `persuratan_pengaturan` (`scope`, `tahun_aktif`)
+            VALUES (?, ?)
+            ON DUPLICATE KEY UPDATE `tahun_aktif` = VALUES(`tahun_aktif`)
+        ", [$scope, $tahun]);
+        return true;
+    }
+
+    public static function getDashboardStats(string $scope, ?int $tahun = null): array
+    {
+        self::ensureSchema();
+        $tahun = $tahun ?: self::getTahunAktif($scope);
+        $tglStart = sprintf('%04d-01-01', $tahun);
+        $tglEnd   = sprintf('%04d-12-31', $tahun);
         $units = self::getUnitsForScope($scope);
         $placeholders = implode(',', array_fill(0, count($units), '?'));
-        $params = array_merge([$scope], $units);
+        $params = array_merge([$scope], $units, [$tglStart, $tglEnd]);
 
         $row = self::db()->find("
             SELECT
@@ -277,6 +320,7 @@ class PersuratanModel
                 SUM(CASE WHEN arah = 'masuk' AND status_surat IN ('Diterima','Diproses') THEN 1 ELSE 0 END) AS masuk_pending
             FROM `persuratan_surat`
             WHERE scope = ? AND unit_nama IN ($placeholders)
+              AND tanggal_surat BETWEEN ? AND ?
         ", $params) ?: [];
 
         $byUnit = self::db()->findAll("
@@ -286,6 +330,7 @@ class PersuratanModel
                    COUNT(*) AS total
             FROM `persuratan_surat`
             WHERE scope = ? AND unit_nama IN ($placeholders)
+              AND tanggal_surat BETWEEN ? AND ?
             GROUP BY unit_nama
             ORDER BY total DESC
         ", $params);
@@ -297,6 +342,7 @@ class PersuratanModel
             FROM `persuratan_surat` s
             LEFT JOIN `persuratan_jenis` j ON j.id = s.jenis_id
             WHERE s.scope = ? AND s.unit_nama IN ($placeholders)
+              AND s.tanggal_surat BETWEEN ? AND ?
             GROUP BY jenis_label, kode
             ORDER BY total DESC
             LIMIT 8
@@ -307,11 +353,13 @@ class PersuratanModel
             FROM `persuratan_surat` s
             LEFT JOIN `persuratan_jenis` j ON j.id = s.jenis_id
             WHERE s.scope = ? AND s.unit_nama IN ($placeholders)
+              AND s.tanggal_surat BETWEEN ? AND ?
             ORDER BY s.tanggal_surat DESC, s.id DESC
             LIMIT 8
         ", $params);
 
         return [
+            'tahun_aktif'   => $tahun,
             'total_surat'   => (int)($row['total_surat'] ?? 0),
             'total_masuk'   => (int)($row['total_masuk'] ?? 0),
             'total_keluar'  => (int)($row['total_keluar'] ?? 0),
@@ -331,6 +379,14 @@ class PersuratanModel
 
         $where = ["s.scope = ?", "s.unit_nama IN ($placeholders)"];
         $params = array_merge([$scope], $units);
+
+        $tahunFilter = trim((string)($filters['tahun'] ?? ''));
+        if ($tahunFilter !== 'all') {
+            $yr = ($tahunFilter !== '' && ctype_digit($tahunFilter)) ? (int)$tahunFilter : self::getTahunAktif($scope);
+            $where[] = "s.tanggal_surat BETWEEN ? AND ?";
+            $params[] = sprintf('%04d-01-01', $yr);
+            $params[] = sprintf('%04d-12-31', $yr);
+        }
 
         if (!empty($filters['arah']) && in_array($filters['arah'], ['masuk', 'keluar'], true)) {
             $where[] = "s.arah = ?";

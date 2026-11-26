@@ -770,6 +770,7 @@ $router->get('/persuratan/api/next-nomor', [PersuratanController::class, 'apiNex
 $router->post('/persuratan/jenis/store', [PersuratanController::class, 'storeJenis'], [[Middleware::class, 'authRequired']]);
 $router->post('/persuratan/jenis/delete', [PersuratanController::class, 'deleteJenis'], [[Middleware::class, 'authRequired']]);
 $router->post('/persuratan/kop/save', [PersuratanController::class, 'saveKop'], [[Middleware::class, 'authRequired']]);
+$router->post('/persuratan/tahun-aktif/save', [PersuratanController::class, 'saveTahunAktif'], [[Middleware::class, 'authRequired']]);
 $router->get('/persuratan/export', [PersuratanController::class, 'exportCsv'], [[Middleware::class, 'authRequired']]);
 $router->post('/persuratan/surat/resend-wa', [PersuratanController::class, 'resendApprovalWa'], [[Middleware::class, 'authRequired']]);
 $router->get('/persuratan/approve/{token}', [PersuratanController::class, 'approvePublicPage']);

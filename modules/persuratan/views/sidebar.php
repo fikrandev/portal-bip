@@ -67,6 +67,7 @@ $totalKeluar = (int)($stats['total_keluar'] ?? 0);
             <div class="flex items-center justify-between text-[11px] text-primary-300 mt-1.5 pt-1.5 border-t border-primary-800/40">
                 <span>Masuk: <strong class="text-amber-300"><?= number_format($totalMasuk) ?></strong></span>
                 <span>Keluar: <strong class="text-emerald-300"><?= number_format($totalKeluar) ?></strong></span>
+                <span>Thn: <strong class="text-sky-300"><?= (int)($tahunAktif ?? date('Y')) ?></strong></span>
             </div>
         </div>
     </div>

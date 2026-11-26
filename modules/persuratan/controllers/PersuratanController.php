@@ -46,8 +46,11 @@ class PersuratanController
         $units = PersuratanModel::getUnitsForScope($scope);
         $baseRoute = self::baseUrlForScope($scope);
         $moduleLabel = $scope === 'yayasan' ? 'Persuratan Yayasan' : 'Persuratan Sekolah';
+        $tahunAktif = PersuratanModel::getTahunAktif($scope);
+        $selectedTahun = trim((string)($_GET['tahun'] ?? (string)$tahunAktif));
 
         $filters = [
+            'tahun'      => $selectedTahun,
             'arah'       => $activeTab === 'masuk' ? 'masuk' : ($activeTab === 'keluar' ? 'keluar' : trim((string)($_GET['arah'] ?? ''))),
             'unit_nama'  => trim((string)($_GET['unit_nama'] ?? '')),
             'jenis_id'   => trim((string)($_GET['jenis_id'] ?? '')),
@@ -56,7 +59,7 @@ class PersuratanController
             'search'     => trim((string)($_GET['search'] ?? '')),
         ];
 
-        $stats = PersuratanModel::getDashboardStats($scope);
+        $stats = PersuratanModel::getDashboardStats($scope, $tahunAktif);
         $suratList = ($activeTab === 'dashboard') ? [] : PersuratanModel::getSuratList($scope, $filters);
         $jenisList = PersuratanModel::getJenisList($scope, false);
         $jenisAktif = PersuratanModel::getJenisList($scope, true);
@@ -202,10 +205,28 @@ class PersuratanController
         }
     }
 
+    public static function saveTahunAktif(): void
+    {
+        CSRF::validate();
+        $scope = self::detectScopeFromRequest();
+        $returnTab = trim((string)($_POST['return_tab'] ?? 'pengaturan'));
+        $redirect = url(self::baseUrlForScope($scope) . '?tab=' . urlencode($returnTab));
+        $tahun = (int)($_POST['tahun_aktif'] ?? date('Y'));
+
+        try {
+            PersuratanModel::saveTahunAktif($scope, $tahun);
+            Response::redirect($redirect, 'Tahun aktif persuratan berhasil diubah ke ' . $tahun . ' (Januari - Desember ' . $tahun . ').', 'success');
+        } catch (Throwable $e) {
+            Response::redirect($redirect, 'Gagal menyimpan tahun aktif: ' . $e->getMessage(), 'error');
+        }
+    }
+
     public static function exportCsv(): void
     {
         $scope = self::detectScopeFromRequest();
+        $tahunAktif = PersuratanModel::getTahunAktif($scope);
         $filters = [
+            'tahun'      => trim((string)($_GET['tahun'] ?? (string)$tahunAktif)),
             'arah'       => trim((string)($_GET['arah'] ?? '')),
             'unit_nama'  => trim((string)($_GET['unit_nama'] ?? '')),
             'jenis_id'   => trim((string)($_GET['jenis_id'] ?? '')),
