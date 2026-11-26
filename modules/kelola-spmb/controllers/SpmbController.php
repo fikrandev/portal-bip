@@ -3706,19 +3706,9 @@ SVG;
         ];
 
         $items = SpmbModel::getDaftarHasilObservasiAwal($filters, 10000, 0);
-        $filename = 'Rekap_Observasi_Awal_' . date('Ymd_His') . '.csv';
+        $format = strtolower(trim($_GET['format'] ?? 'xls'));
 
-        while (ob_get_level()) {
-            ob_end_clean();
-        }
-
-        header('Content-Type: text/csv; charset=UTF-8');
-        header('Content-Disposition: attachment; filename="' . $filename . '"');
-
-        $out = fopen('php://output', 'w');
-        fprintf($out, chr(0xEF).chr(0xBB).chr(0xBF));
-
-        fputcsv($out, [
+        $headers = [
             'No',
             'No. Pendaftaran',
             'Nama Lengkap',
@@ -3735,12 +3725,13 @@ SVG;
             'Harapan Orang Tua',
             'Tanggal Observasi',
             'Tautan Kuesioner Observasi'
-        ]);
+        ];
 
+        $rows = [];
         $no = 1;
         foreach ($items as $it) {
             $isSudah = ($it['status_observasi'] === 'Sudah Mengisi');
-            fputcsv($out, [
+            $rows[] = [
                 $no++,
                 $it['nomor_pendaftaran'],
                 $it['nama_lengkap'],
@@ -3757,11 +3748,14 @@ SVG;
                 $isSudah ? ($it['harapan_orang_tua'] ?: '-') : '-',
                 $it['submitted_at'] ? date('d/m/Y H:i', strtotime($it['submitted_at'])) : '-',
                 $it['public_url']
-            ]);
+            ];
         }
 
-        fclose($out);
-        exit;
+        if ($format === 'csv') {
+            ExcelHelper::exportCSV('Rekap_Observasi_Awal_' . date('Ymd_His') . '.csv', $headers, $rows);
+        } else {
+            ExcelHelper::exportXLS('Rekap_Observasi_Awal_' . date('Ymd_His') . '.xls', $headers, $rows, 'Observasi Awal');
+        }
     }
 
     /**
