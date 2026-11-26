@@ -5107,12 +5107,38 @@ class SpmbModel
 
         $sudah = 0;
         $sumPct = 0.0;
+        $hasilIds = [];
         foreach ($items as $it) {
             if (!empty($it['hasil_id'])) {
                 $sudah++;
                 $sumPct += (float)($it['persentase'] ?? 0);
+                $hasilIds[] = (int)$it['hasil_id'];
             }
         }
+
+        $detailMap = [];
+        if (!empty($hasilIds)) {
+            $ph = implode(',', array_fill(0, count($hasilIds), '?'));
+            $jRows = self::db()->findAll("
+                SELECT hasil_id, aspek_snapshot, nilai, nilai_maksimal
+                FROM `spmb_observasi_siswa_jawaban`
+                WHERE hasil_id IN ($ph)
+                ORDER BY id ASC
+            ", $hasilIds);
+            foreach ($jRows as $jr) {
+                $hid = (int)$jr['hasil_id'];
+                $detailMap[$hid][] = [
+                    'aspek' => $jr['aspek_snapshot'] ?: 'Umum',
+                    'nilai' => (float)$jr['nilai'],
+                    'maks'  => (float)$jr['nilai_maksimal'],
+                ];
+            }
+        }
+        foreach ($items as &$it) {
+            $hid = (int)($it['hasil_id'] ?? 0);
+            $it['detail_nilai'] = $hid > 0 ? ($detailMap[$hid] ?? []) : [];
+        }
+        unset($it);
 
         return [
             'items' => $items,

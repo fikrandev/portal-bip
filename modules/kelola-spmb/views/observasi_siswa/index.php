@@ -249,6 +249,15 @@ $search = $filters['search'] ?? '';
                                             <span class="inline-block mt-0.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
                                                 <?= e($it['kategori_hasil']) ?>
                                             </span>
+                                            <?php if (!empty($it['detail_nilai'])): ?>
+                                                <div class="flex flex-wrap justify-center gap-1 mt-1.5">
+                                                    <?php foreach ($it['detail_nilai'] as $dn): ?>
+                                                        <span class="px-1.5 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-bold">
+                                                            <?= e($dn['aspek']) ?>: <?= rtrim(rtrim(number_format((float)$dn['nilai'], 2, '.', ''), '0'), '.') ?>
+                                                        </span>
+                                                    <?php endforeach; ?>
+                                                </div>
+                                            <?php endif; ?>
                                         <?php else: ?>
                                             <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
                                                 Belum Diobservasi
@@ -307,9 +316,12 @@ $search = $filters['search'] ?? '';
                 <input type="hidden" name="pendaftar_id" id="obs_pendaftar_id" value="">
                 <input type="hidden" name="jenjang" value="<?= e($selJenjang) ?>">
 
-                <div id="obsLiveScoreBar" class="flex items-center justify-between p-3.5 rounded-2xl bg-indigo-50 border border-indigo-200 text-xs font-bold text-indigo-900">
-                    <span>Skor Sementara: <strong id="obsLiveScoreText">0 / 0 (0%)</strong></span>
-                    <span id="obsLiveCatText" class="px-2.5 py-0.5 rounded-full bg-white text-indigo-700 border border-indigo-200">Menunggu Jawaban</span>
+                <div id="obsLiveScoreBar" class="p-3.5 rounded-2xl bg-indigo-50 border border-indigo-200 space-y-2">
+                    <div class="flex items-center justify-between text-xs font-bold text-indigo-900">
+                        <span>Skor Sementara: <strong id="obsLiveScoreText">0 / 0 (0%)</strong></span>
+                        <span id="obsLiveCatText" class="px-2.5 py-0.5 rounded-full bg-white text-indigo-700 border border-indigo-200">Menunggu Jawaban</span>
+                    </div>
+                    <div id="obsLiveAspekBar" class="flex flex-wrap gap-1.5"></div>
                 </div>
 
                 <div id="obsSoalFieldsWrap" class="space-y-3 max-h-[55vh] overflow-y-auto pr-1"></div>
@@ -416,7 +428,7 @@ async function openIsiObservasiModal(pendaftarId) {
             const opsiHtml = (s.opsi || []).map((op, oIdx) => {
                 const checked = prev && prev.jawaban_dipilih === op.jawaban ? 'checked' : '';
                 return `<label class="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-200 bg-white hover:border-emerald-400 cursor-pointer text-xs font-semibold">
-                    <input type="radio" name="jawaban[${s.id}]" value="${oIdx}" data-val="${op.nilai}" ${checked} required onchange="recalcLiveObsScore()" class="obs-radio text-emerald-600">
+                    <input type="radio" name="jawaban[${s.id}]" value="${oIdx}" data-soal-id="${s.id}" data-aspek="${String(s.aspek || 'Umum').replace(/"/g, '&quot;')}" data-val="${op.nilai}" data-max="${s.nilai_maksimal || 0}" ${checked} required onchange="recalcLiveObsScore()" class="obs-radio text-emerald-600">
                     <span>${op.jawaban}</span>
                     <span class="text-indigo-700 font-bold">(${op.nilai})</span>
                 </label>`;
@@ -426,10 +438,16 @@ async function openIsiObservasiModal(pendaftarId) {
                 ? `<input type="text" name="keterangan[${s.id}]" value="${prev && prev.keterangan ? String(prev.keterangan).replace(/"/g, '&quot;') : ''}" placeholder="Keterangan tambahan (opsional)..." class="w-full mt-2 px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs outline-none focus:border-indigo-400">`
                 : '';
 
+            const maxClean = parseFloat(s.nilai_maksimal || 0);
             return `<div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
-                <div class="flex items-center gap-2">
-                    <span class="px-2 py-0.5 rounded-md bg-slate-800 text-white text-[10px] font-bold">${idx + 1}</span>
-                    <span class="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 text-[11px] font-bold">${s.aspek || 'Umum'}</span>
+                <div class="flex items-center justify-between gap-2">
+                    <div class="flex items-center gap-2">
+                        <span class="px-2 py-0.5 rounded-md bg-slate-800 text-white text-[10px] font-bold">${idx + 1}</span>
+                        <span class="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 text-[11px] font-bold">${s.aspek || 'Umum'}</span>
+                    </div>
+                    <span id="obs_q_score_${s.id}" class="px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-slate-200 text-slate-600">
+                        Nilai: - / ${maxClean}
+                    </span>
                 </div>
                 <div class="text-sm font-bold text-slate-900">${s.pertanyaan}</div>
                 <div class="flex flex-wrap gap-2 pt-1">${opsiHtml}</div>
@@ -444,10 +462,37 @@ async function openIsiObservasiModal(pendaftarId) {
 
 function recalcLiveObsScore() {
     let total = 0, maxT = 0;
-    currentObsSoalList.forEach(s => { maxT += parseFloat(s.nilai_maksimal || 0); });
-    document.querySelectorAll('.obs-radio:checked').forEach(r => {
-        total += parseFloat(r.getAttribute('data-val') || 0);
+    const aspekTotals = {};
+    currentObsSoalList.forEach(s => {
+        const m = parseFloat(s.nilai_maksimal || 0);
+        maxT += m;
+        const asp = s.aspek || 'Umum';
+        if (!aspekTotals[asp]) aspekTotals[asp] = { val: 0, max: 0 };
+        aspekTotals[asp].max += m;
+
+        const badge = document.getElementById('obs_q_score_' + s.id);
+        if (badge) {
+            badge.textContent = `Nilai: - / ${m}`;
+            badge.className = 'px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-slate-200 text-slate-600';
+        }
     });
+
+    document.querySelectorAll('.obs-radio:checked').forEach(r => {
+        const sid = r.getAttribute('data-soal-id');
+        const asp = r.getAttribute('data-aspek') || 'Umum';
+        const val = parseFloat(r.getAttribute('data-val') || 0);
+        const max = parseFloat(r.getAttribute('data-max') || 0);
+        total += val;
+        if (!aspekTotals[asp]) aspekTotals[asp] = { val: 0, max: max };
+        aspekTotals[asp].val += val;
+
+        const badge = document.getElementById('obs_q_score_' + sid);
+        if (badge) {
+            badge.textContent = `Nilai: ${val} / ${max}`;
+            badge.className = 'px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300';
+        }
+    });
+
     const pct = maxT > 0 ? ((total / maxT) * 100) : 0;
     document.getElementById('obsLiveScoreText').textContent = `${total} / ${maxT} (${pct.toFixed(1)}%)`;
     let cat = 'Perlu Pendampingan Khusus';
@@ -455,6 +500,13 @@ function recalcLiveObsScore() {
     else if (pct >= 70) cat = 'Siap / Baik';
     else if (pct >= 55) cat = 'Cukup Siap (Perlu Penguatan)';
     document.getElementById('obsLiveCatText').textContent = cat;
+
+    const aspekBar = document.getElementById('obsLiveAspekBar');
+    if (aspekBar) {
+        aspekBar.innerHTML = Object.entries(aspekTotals).map(([asp, st]) =>
+            `<span class="px-2 py-0.5 rounded-lg bg-white border border-indigo-200 text-[11px] font-bold text-indigo-800">${asp}: ${st.val} / ${st.max}</span>`
+        ).join('');
+    }
 }
 
 function closeIsiObservasiModal() {

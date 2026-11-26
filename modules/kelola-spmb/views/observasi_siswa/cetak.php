@@ -93,7 +93,15 @@ if (defined('SYS_APP_LOGO') && !empty(SYS_APP_LOGO)) {
                                     <td class="center"><?= $i + 1 ?></td>
                                     <td><?= htmlspecialchars($it['nomor_pendaftaran']) ?></td>
                                     <td><strong><?= htmlspecialchars($it['nama_lengkap']) ?></strong></td>
-                                    <td class="center"><strong><?= rtrim(rtrim(number_format((float)$it['total_nilai'], 2, '.', ''), '0'), '.') ?>/<?= rtrim(rtrim(number_format((float)$it['nilai_maksimal'], 2, '.', ''), '0'), '.') ?></strong><br>(<?= number_format((float)$it['persentase'], 1) ?>%)</td>
+                                    <td class="center">
+                                        <strong><?= rtrim(rtrim(number_format((float)$it['total_nilai'], 2, '.', ''), '0'), '.') ?>/<?= rtrim(rtrim(number_format((float)$it['nilai_maksimal'], 2, '.', ''), '0'), '.') ?></strong><br>
+                                        (<?= number_format((float)$it['persentase'], 1) ?>%)
+                                        <?php if (!empty($it['detail_nilai'])): ?>
+                                            <div style="font-size:9px;color:#334155;margin-top:3px;">
+                                                <?= htmlspecialchars(implode(', ', array_map(fn($dn) => $dn['aspek'] . ': ' . rtrim(rtrim(number_format((float)$dn['nilai'], 2, '.', ''), '0'), '.'), $it['detail_nilai']))) ?>
+                                            </div>
+                                        <?php endif; ?>
+                                    </td>
                                     <td class="center"><strong><?= htmlspecialchars($it['kategori_hasil']) ?></strong></td>
                                     <td><?= htmlspecialchars($it['kesimpulan_sistem']) ?></td>
                                     <td><?= htmlspecialchars($it['petugas_nama'] ?: '-') ?></td>
