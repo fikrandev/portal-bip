@@ -4192,6 +4192,453 @@ class SpmbModel
 
         return $res;
     }
+
+    // ═════════════════════════════════════════════════════════════════════════════
+    // KARTU OBSERVASI, QR ABSENSI, PEMBAGIAN RUANGAN/SESI & BROADCAST JADWAL
+    // ═════════════════════════════════════════════════════════════════════════════
+
+    private static bool $kartuSchemaInitialized = false;
+
+    public static function ensureKartuObservasiSchema(): void
+    {
+        if (self::$kartuSchemaInitialized) {
+            return;
+        }
+        self::$kartuSchemaInitialized = true;
+        $pdo = self::db()->getConnection();
+
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `spmb_observasi_ruangan` (
+                `id` INT(11) NOT NULL AUTO_INCREMENT,
+                `group_id` INT(11) NOT NULL,
+                `nama_ruangan` VARCHAR(100) NOT NULL,
+                `jenjang` VARCHAR(30) DEFAULT '',
+                `kapasitas` INT(11) NOT NULL DEFAULT 15,
+                `sesi_nama` VARCHAR(80) NOT NULL DEFAULT 'Sesi 1',
+                `tanggal` DATE NOT NULL,
+                `jam_mulai` VARCHAR(10) NOT NULL DEFAULT '08:00',
+                `jam_selesai` VARCHAR(10) NOT NULL DEFAULT '09:30',
+                `pengawas` VARCHAR(120) DEFAULT NULL,
+                `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (`id`),
+                KEY `idx_group_tgl` (`group_id`, `tanggal`, `jam_mulai`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        ");
+
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `spmb_observasi_peserta_jadwal` (
+                `id` INT(11) NOT NULL AUTO_INCREMENT,
+                `group_id` INT(11) NOT NULL,
+                `pendaftar_id` INT(11) NOT NULL,
+                `ruangan_id` INT(11) DEFAULT NULL,
+                `nomor_peserta` VARCHAR(50) NOT NULL,
+                `qr_token` VARCHAR(80) NOT NULL,
+                `status_absen` ENUM('Belum Hadir','Hadir') NOT NULL DEFAULT 'Belum Hadir',
+                `waktu_absen` DATETIME DEFAULT NULL,
+                `absen_oleh` VARCHAR(100) DEFAULT NULL,
+                `wa_jadwal_sent_at` DATETIME DEFAULT NULL,
+                `wa_jadwal_status` VARCHAR(120) DEFAULT NULL,
+                `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `uniq_group_pendaftar` (`group_id`, `pendaftar_id`),
+                UNIQUE KEY `uniq_qr_token` (`qr_token`),
+                KEY `idx_ruangan` (`ruangan_id`),
+                KEY `idx_absen` (`status_absen`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        ");
+    }
+
+    public static function getKartuObservasiRuangan(?int $groupId): array
+    {
+        self::ensureKartuObservasiSchema();
+        if (!$groupId) return [];
+        return self::db()->findAll("
+            SELECT r.*,
+                   (SELECT COUNT(*) FROM `spmb_observasi_peserta_jadwal` pj WHERE pj.ruangan_id = r.id) AS terisi
+            FROM `spmb_observasi_ruangan` r
+            WHERE r.group_id = ?
+            ORDER BY r.tanggal ASC, r.jam_mulai ASC, r.nama_ruangan ASC
+        ", [$groupId]);
+    }
+
+    public static function saveKartuObservasiRuangan(int $groupId, array $data): int
+    {
+        self::ensureKartuObservasiSchema();
+        $id = !empty($data['id']) ? (int)$data['id'] : null;
+        $nama = trim((string)($data['nama_ruangan'] ?? ''));
+        if ($nama === '') throw new Exception('Nama ruangan wajib diisi.');
+        $jenjang = trim((string)($data['jenjang'] ?? ''));
+        $kapasitas = max(1, (int)($data['kapasitas'] ?? 15));
+        $sesi = trim((string)($data['sesi_nama'] ?? 'Sesi 1')) ?: 'Sesi 1';
+        $tanggal = !empty($data['tanggal']) ? $data['tanggal'] : date('Y-m-d');
+        $jamMulai = trim((string)($data['jam_mulai'] ?? '08:00')) ?: '08:00';
+        $jamSelesai = trim((string)($data['jam_selesai'] ?? '09:30')) ?: '09:30';
+        $pengawas = trim((string)($data['pengawas'] ?? '')) ?: null;
+
+        if ($id) {
+            self::db()->query("
+                UPDATE `spmb_observasi_ruangan` SET
+                    nama_ruangan = ?, jenjang = ?, kapasitas = ?, sesi_nama = ?,
+                    tanggal = ?, jam_mulai = ?, jam_selesai = ?, pengawas = ?
+                WHERE id = ? AND group_id = ?
+            ", [$nama, $jenjang, $kapasitas, $sesi, $tanggal, $jamMulai, $jamSelesai, $pengawas, $id, $groupId]);
+            return $id;
+        }
+
+        self::db()->query("
+            INSERT INTO `spmb_observasi_ruangan`
+            (group_id, nama_ruangan, jenjang, kapasitas, sesi_nama, tanggal, jam_mulai, jam_selesai, pengawas)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ", [$groupId, $nama, $jenjang, $kapasitas, $sesi, $tanggal, $jamMulai, $jamSelesai, $pengawas]);
+        return (int)self::db()->lastInsertId();
+    }
+
+    public static function deleteKartuObservasiRuangan(int $id, int $groupId): bool
+    {
+        self::ensureKartuObservasiSchema();
+        self::db()->query("UPDATE `spmb_observasi_peserta_jadwal` SET ruangan_id = NULL WHERE ruangan_id = ?", [$id]);
+        self::db()->query("DELETE FROM `spmb_observasi_ruangan` WHERE id = ? AND group_id = ?", [$id, $groupId]);
+        return true;
+    }
+
+    public static function syncKartuObservasiPeserta(int $groupId): int
+    {
+        self::ensureKartuObservasiSchema();
+        $candidates = self::db()->findAll("
+            SELECT id, nomor_pendaftaran
+            FROM `spmb_pendaftar`
+            WHERE group_id = ? AND status_kelulusan = 'Lulus / Diterima'
+            ORDER BY id ASC
+        ", [$groupId]);
+
+        $inserted = 0;
+        $insStmt = self::db()->getConnection()->prepare("
+            INSERT IGNORE INTO `spmb_observasi_peserta_jadwal`
+            (group_id, pendaftar_id, nomor_peserta, qr_token)
+            VALUES (?, ?, ?, ?)
+        ");
+
+        foreach ($candidates as $c) {
+            $pid = (int)$c['id'];
+            $noPeserta = trim((string)($c['nomor_pendaftaran'] ?? '')) ?: ('OBS-' . str_pad((string)$pid, 4, '0', STR_PAD_LEFT));
+            $token = 'OBS-' . $pid . '-' . strtoupper(substr(hash('sha256', $groupId . '|' . $pid . '|BIP_OBS_QR'), 0, 10));
+            $insStmt->execute([$groupId, $pid, $noPeserta, $token]);
+            if ($insStmt->rowCount() > 0) {
+                $inserted++;
+            }
+        }
+        return $inserted;
+    }
+
+    public static function getKartuObservasiPeserta(array $filters = []): array
+    {
+        self::ensureKartuObservasiSchema();
+        $groupId = (int)($filters['group_id'] ?? 0);
+        if (!$groupId) return ['items' => [], 'stats' => ['total' => 0, 'hadir' => 0, 'belum_hadir' => 0, 'terjadwal' => 0]];
+
+        self::syncKartuObservasiPeserta($groupId);
+
+        $where = ["pj.group_id = ?", "p.status_kelulusan = 'Lulus / Diterima'"];
+        $params = [$groupId];
+
+        if (class_exists('Auth') && Auth::isJenjangRestricted()) {
+            $jCond = Auth::jenjangSqlCondition('p.jenjang', $params);
+            if ($jCond !== '1=1') $where[] = $jCond;
+        }
+        if (!empty($filters['jenjang'])) {
+            $where[] = "p.jenjang = ?";
+            $params[] = trim((string)$filters['jenjang']);
+        }
+        if (!empty($filters['ruangan_id'])) {
+            if ($filters['ruangan_id'] === 'unassigned') {
+                $where[] = "pj.ruangan_id IS NULL";
+            } else {
+                $where[] = "pj.ruangan_id = ?";
+                $params[] = (int)$filters['ruangan_id'];
+            }
+        }
+        if (!empty($filters['status_absen'])) {
+            $where[] = "pj.status_absen = ?";
+            $params[] = trim((string)$filters['status_absen']);
+        }
+        if (!empty($filters['search'])) {
+            $term = '%' . trim((string)$filters['search']) . '%';
+            $where[] = "(p.nama_lengkap LIKE ? OR p.nomor_pendaftaran LIKE ? OR pj.nomor_peserta LIKE ? OR pj.qr_token LIKE ?)";
+            array_push($params, $term, $term, $term, $term);
+        }
+
+        $whereSql = implode(' AND ', $where);
+        $items = self::db()->findAll("
+            SELECT pj.*,
+                   p.nama_lengkap, p.nomor_pendaftaran, p.jenjang, p.jenis_pendaftaran, p.foto_siswa,
+                   p.no_hp_ayah, p.no_hp_ibu, p.no_hp_wali, p.nama_ayah, p.nama_ibu,
+                   r.nama_ruangan, r.sesi_nama, r.tanggal AS tgl_sesi, r.jam_mulai, r.jam_selesai, r.pengawas
+            FROM `spmb_observasi_peserta_jadwal` pj
+            JOIN `spmb_pendaftar` p ON p.id = pj.pendaftar_id
+            LEFT JOIN `spmb_observasi_ruangan` r ON r.id = pj.ruangan_id
+            WHERE {$whereSql}
+            ORDER BY r.tanggal ASC, r.jam_mulai ASC, r.nama_ruangan ASC, p.nama_lengkap ASC
+        ", $params);
+
+        $hadir = 0;
+        $terjadwal = 0;
+        foreach ($items as &$it) {
+            if (($it['status_absen'] ?? '') === 'Hadir') $hadir++;
+            if (!empty($it['ruangan_id'])) $terjadwal++;
+            $it['target_phone'] = self::resolvePendaftarPhone($it);
+            $it['kartu_url'] = self::buildKartuPublicUrl($it['qr_token']);
+        }
+        unset($it);
+
+        return [
+            'items' => $items,
+            'stats' => [
+                'total'       => count($items),
+                'hadir'       => $hadir,
+                'belum_hadir' => count($items) - $hadir,
+                'terjadwal'   => $terjadwal,
+            ],
+        ];
+    }
+
+    public static function bagiRuanganOtomatis(int $groupId, ?string $jenjangFilter = null): int
+    {
+        self::ensureKartuObservasiSchema();
+        self::syncKartuObservasiPeserta($groupId);
+
+        $ruanganList = self::getKartuObservasiRuangan($groupId);
+        if (empty($ruanganList)) {
+            throw new Exception('Belum ada ruangan & sesi yang dibuat. Tambahkan ruangan terlebih dahulu.');
+        }
+
+        $where = ["pj.group_id = ?", "pj.ruangan_id IS NULL", "p.status_kelulusan = 'Lulus / Diterima'"];
+        $params = [$groupId];
+        if (!empty($jenjangFilter)) {
+            $where[] = "p.jenjang = ?";
+            $params[] = $jenjangFilter;
+        }
+
+        $unassigned = self::db()->findAll("
+            SELECT pj.id, p.jenjang
+            FROM `spmb_observasi_peserta_jadwal` pj
+            JOIN `spmb_pendaftar` p ON p.id = pj.pendaftar_id
+            WHERE " . implode(' AND ', $where) . "
+            ORDER BY p.jenjang ASC, p.id ASC
+        ", $params);
+
+        if (empty($unassigned)) {
+            return 0;
+        }
+
+        $upd = self::db()->getConnection()->prepare("UPDATE `spmb_observasi_peserta_jadwal` SET ruangan_id = ? WHERE id = ?");
+        $assignedCount = 0;
+
+        foreach ($unassigned as $peserta) {
+            $pJenjang = trim((string)($peserta['jenjang'] ?? ''));
+            $chosenIdx = null;
+            foreach ($ruanganList as $idx => $r) {
+                $rJenjang = trim((string)($r['jenjang'] ?? ''));
+                $sisa = (int)$r['kapasitas'] - (int)$r['terisi'];
+                if ($sisa <= 0) continue;
+                if ($rJenjang === '' || strcasecmp($rJenjang, $pJenjang) === 0) {
+                    $chosenIdx = $idx;
+                    break;
+                }
+            }
+            if ($chosenIdx !== null) {
+                $upd->execute([(int)$ruanganList[$chosenIdx]['id'], (int)$peserta['id']]);
+                $ruanganList[$chosenIdx]['terisi'] = (int)$ruanganList[$chosenIdx]['terisi'] + 1;
+                $assignedCount++;
+            }
+        }
+
+        return $assignedCount;
+    }
+
+    public static function assignRuanganManual(int $pesertaId, ?int $ruanganId): bool
+    {
+        self::ensureKartuObservasiSchema();
+        self::db()->query(
+            "UPDATE `spmb_observasi_peserta_jadwal` SET ruangan_id = ? WHERE id = ?",
+            [$ruanganId ?: null, $pesertaId]
+        );
+        return true;
+    }
+
+    public static function scanAbsenObservasi(string $qrInput, string $petugas = 'Admin'): array
+    {
+        self::ensureKartuObservasiSchema();
+        $code = trim($qrInput);
+        if ($code === '') {
+            return ['success' => false, 'message' => 'Kode QR tidak boleh kosong.'];
+        }
+
+        // Jika QR berisi URL publik (.../publik/{token}), ambil token terakhirnya
+        if (strpos($code, '/publik/') !== false) {
+            $parts = explode('/publik/', $code);
+            $code = trim((string)end($parts), "/ \t\n\r");
+        }
+
+        $row = self::db()->find("
+            SELECT pj.*,
+                   p.nama_lengkap, p.nomor_pendaftaran, p.jenjang, p.jenis_pendaftaran, p.foto_siswa,
+                   r.nama_ruangan, r.sesi_nama, r.tanggal AS tgl_sesi, r.jam_mulai, r.jam_selesai
+            FROM `spmb_observasi_peserta_jadwal` pj
+            JOIN `spmb_pendaftar` p ON p.id = pj.pendaftar_id
+            LEFT JOIN `spmb_observasi_ruangan` r ON r.id = pj.ruangan_id
+            WHERE pj.qr_token = ? OR pj.nomor_peserta = ? OR p.nomor_pendaftaran = ?
+            LIMIT 1
+        ", [$code, $code, $code]);
+
+        if (!$row) {
+            return ['success' => false, 'message' => 'QR / Nomor Peserta "' . $code . '" tidak terdaftar di Observasi SPMB.'];
+        }
+
+        $already = (($row['status_absen'] ?? '') === 'Hadir');
+        if (!$already) {
+            self::db()->query("
+                UPDATE `spmb_observasi_peserta_jadwal` SET
+                    status_absen = 'Hadir',
+                    waktu_absen = NOW(),
+                    absen_oleh = ?
+                WHERE id = ?
+            ", [$petugas, (int)$row['id']]);
+            $row['status_absen'] = 'Hadir';
+            $row['waktu_absen'] = date('Y-m-d H:i:s');
+            $row['absen_oleh'] = $petugas;
+        }
+
+        return [
+            'success' => true,
+            'already' => $already,
+            'message' => $already
+                ? ($row['nama_lengkap'] . ' sudah tercatat HADIR sebelumnya pada ' . date('H:i', strtotime($row['waktu_absen'])))
+                : ('Absen berhasil! ' . $row['nama_lengkap'] . ' tercatat HADIR.'),
+            'data'    => $row,
+        ];
+    }
+
+    public static function resetAbsenObservasi(int $pesertaId): bool
+    {
+        self::ensureKartuObservasiSchema();
+        self::db()->query("
+            UPDATE `spmb_observasi_peserta_jadwal` SET
+                status_absen = 'Belum Hadir', waktu_absen = NULL, absen_oleh = NULL
+            WHERE id = ?
+        ", [$pesertaId]);
+        return true;
+    }
+
+    public static function getKartuObservasiByToken(string $token): ?array
+    {
+        self::ensureKartuObservasiSchema();
+        $row = self::db()->find("
+            SELECT pj.*,
+                   p.nama_lengkap, p.nomor_pendaftaran, p.jenjang, p.jenis_pendaftaran, p.foto_siswa,
+                   g.nama_group, g.tahun_ajaran,
+                   r.nama_ruangan, r.sesi_nama, r.tanggal AS tgl_sesi, r.jam_mulai, r.jam_selesai, r.pengawas
+            FROM `spmb_observasi_peserta_jadwal` pj
+            JOIN `spmb_pendaftar` p ON p.id = pj.pendaftar_id
+            LEFT JOIN `spmb_observasi_group` g ON g.id = pj.group_id
+            LEFT JOIN `spmb_observasi_ruangan` r ON r.id = pj.ruangan_id
+            WHERE pj.qr_token = ?
+            LIMIT 1
+        ", [trim($token)]);
+        return $row ?: null;
+    }
+
+    public static function getDefaultWaJadwalObservasiTemplate(): string
+    {
+        return "Assalamu'alaikum Warahmatullahi Wabarakatuh.\n\n"
+             . "Yth. Bapak/Ibu Orang Tua/Wali dari *{nama_siswa}* (No. Pendaftaran: *{no_pendaftaran}* - Jenjang *{jenjang}*).\n\n"
+             . "Berikut kami sampaikan jadwal pelaksanaan *Observasi Awal Calon Siswa*:\n"
+             . "📅 Tanggal: *{tanggal_sesi}*\n"
+             . "⏰ Sesi & Jam: *{sesi_jam}*\n"
+             . "🏫 Ruangan: *{ruangan}*\n"
+             . "👩‍🏫 Pengawas: {pengawas}\n\n"
+             . "Silakan buka & tunjukkan *Kartu QR Observasi* berikut saat melakukan absensi kedatangan di lokasi:\n"
+             . "{link_kartu}\n\n"
+             . "Mohon hadir 15 menit sebelum jadwal dimulai. Terima kasih.\n"
+             . "_Panitia SPMB SIT Bina Insan Palu_";
+    }
+
+    public static function sendWaJadwalObservasiSingle(int $pesertaId, ?string $customTemplate = null): array
+    {
+        self::ensureKartuObservasiSchema();
+        $row = self::db()->find("
+            SELECT pj.*,
+                   p.nama_lengkap, p.nomor_pendaftaran, p.jenjang, p.no_hp_ayah, p.no_hp_ibu, p.no_hp_wali,
+                   r.nama_ruangan, r.sesi_nama, r.tanggal AS tgl_sesi, r.jam_mulai, r.jam_selesai, r.pengawas
+            FROM `spmb_observasi_peserta_jadwal` pj
+            JOIN `spmb_pendaftar` p ON p.id = pj.pendaftar_id
+            LEFT JOIN `spmb_observasi_ruangan` r ON r.id = pj.ruangan_id
+            WHERE pj.id = ? LIMIT 1
+        ", [$pesertaId]);
+
+        if (!$row) {
+            return ['success' => false, 'message' => 'Peserta tidak ditemukan.'];
+        }
+        $phone = self::resolvePendaftarPhone($row);
+        if (!$phone) {
+            return ['success' => false, 'message' => 'Nomor WA orang tua/wali belum diisi.', 'nama' => $row['nama_lengkap']];
+        }
+
+        $tglFmt = !empty($row['tgl_sesi']) ? date('d/m/Y', strtotime($row['tgl_sesi'])) : 'Menunggu Jadwal';
+        $sesiJam = !empty($row['sesi_nama']) ? ($row['sesi_nama'] . ' (' . $row['jam_mulai'] . ' - ' . $row['jam_selesai'] . ' WITA)') : 'Belum Ditentukan';
+        $ruangan = $row['nama_ruangan'] ?: 'Belum Ditentukan';
+        $pengawas = $row['pengawas'] ?: '-';
+        $linkKartu = self::buildKartuPublicUrl($row['qr_token']);
+
+        $tpl = $customTemplate ?: self::getDefaultWaJadwalObservasiTemplate();
+        $msg = strtr($tpl, [
+            '{nama_siswa}'     => $row['nama_lengkap'],
+            '{no_pendaftaran}' => $row['nomor_pendaftaran'],
+            '{jenjang}'        => $row['jenjang'],
+            '{tanggal_sesi}'   => $tglFmt,
+            '{sesi_jam}'       => $sesiJam,
+            '{ruangan}'        => $ruangan,
+            '{pengawas}'       => $pengawas,
+            '{link_kartu}'     => $linkKartu,
+        ]);
+
+        require_once BASE_PATH . '/core/WaGateway.php';
+        $res = WaGateway::send($phone, $msg, ['module' => 'spmb_jadwal_observasi']);
+
+        $statusStr = !empty($res['success']) ? 'Terkirim' : ('Gagal: ' . ($res['message'] ?? 'Error'));
+        self::db()->query("
+            UPDATE `spmb_observasi_peserta_jadwal` SET
+                wa_jadwal_sent_at = IF(?, NOW(), wa_jadwal_sent_at),
+                wa_jadwal_status = ?
+            WHERE id = ?
+        ", [!empty($res['success']) ? 1 : 0, mb_substr($statusStr, 0, 115), $pesertaId]);
+
+        $res['nama'] = $row['nama_lengkap'];
+        $res['phone'] = $phone;
+        $res['peserta_id'] = $pesertaId;
+        return $res;
+    }
+
+    private static function resolvePendaftarPhone(array $p): string
+    {
+        foreach (['no_hp_ibu', 'no_hp_ayah', 'no_hp_wali'] as $k) {
+            $v = trim((string)($p[$k] ?? ''));
+            if ($v !== '') return $v;
+        }
+        return '';
+    }
+
+    private static function buildKartuPublicUrl(string $token): string
+    {
+        $path = 'kelola-spmb/kartu-observasi/publik/' . urlencode($token);
+        if (defined('BASE_URL') && BASE_URL) {
+            return rtrim(BASE_URL, '/') . '/' . $path;
+        }
+        $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+        return $scheme . '://' . $host . '/' . $path;
+    }
 }
 
 

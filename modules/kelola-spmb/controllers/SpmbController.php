@@ -3991,6 +3991,188 @@ SVG;
         $res = SpmbModel::toggleJoinedGroup($pendaftarId);
         Response::json($res, $res['success'] ? 200 : 400);
     }
+
+    // ═════════════════════════════════════════════════════════════════════════════
+    // KARTU OBSERVASI, QR ABSENSI, PEMBAGIAN RUANGAN & BROADCAST JADWAL
+    // ═════════════════════════════════════════════════════════════════════════════
+
+    public static function kartuObservasiIndex(): void
+    {
+        $activeGroup = SpmbModel::getActiveGroup();
+        $groupId = (int)($activeGroup['id'] ?? 0);
+        $activeTab = trim((string)($_GET['tab'] ?? 'peserta'));
+        if (!in_array($activeTab, ['peserta', 'scan', 'ruangan'], true)) {
+            $activeTab = 'peserta';
+        }
+
+        $filters = [
+            'group_id'     => $groupId,
+            'jenjang'      => trim((string)($_GET['jenjang'] ?? '')),
+            'ruangan_id'   => trim((string)($_GET['ruangan_id'] ?? '')),
+            'status_absen' => trim((string)($_GET['status_absen'] ?? '')),
+            'search'       => trim((string)($_GET['search'] ?? '')),
+        ];
+
+        $ruanganList = SpmbModel::getKartuObservasiRuangan($groupId);
+        $data = SpmbModel::getKartuObservasiPeserta($filters);
+        $items = $data['items'];
+        $stats = $data['stats'];
+        $defaultWaTemplate = SpmbModel::getDefaultWaJadwalObservasiTemplate();
+
+        $pageTitle = 'Kartu & Absen QR Observasi';
+        $customSidebar = BASE_PATH . '/modules/kelola-spmb/views/sidebar.php';
+        ob_start();
+        include BASE_PATH . '/modules/kelola-spmb/views/kartu_observasi/index.php';
+        $content = ob_get_clean();
+        include TEMPLATES_PATH . '/layouts/app.php';
+    }
+
+    public static function kartuObservasiSync(): void
+    {
+        CSRF::validate();
+        $activeGroup = SpmbModel::getActiveGroup();
+        $groupId = (int)($activeGroup['id'] ?? 0);
+        $redirect = url('kelola-spmb/kartu-observasi');
+        if ($groupId <= 0) {
+            Response::redirect($redirect, 'Group aktif SPMB belum ditemukan.', 'error');
+        }
+        $added = SpmbModel::syncKartuObservasiPeserta($groupId);
+        Response::redirect($redirect, "Sinkronisasi selesai. {$added} peserta baru ditambahkan ke daftar Kartu Observasi.", 'success');
+    }
+
+    public static function kartuObservasiRuanganStore(): void
+    {
+        CSRF::validate();
+        $activeGroup = SpmbModel::getActiveGroup();
+        $groupId = (int)($activeGroup['id'] ?? 0);
+        $redirect = url('kelola-spmb/kartu-observasi?tab=ruangan');
+
+        try {
+            SpmbModel::saveKartuObservasiRuangan($groupId, $_POST);
+            Response::redirect($redirect, 'Data ruangan & sesi observasi berhasil disimpan.', 'success');
+        } catch (Throwable $e) {
+            Response::redirect($redirect, 'Gagal menyimpan ruangan: ' . $e->getMessage(), 'error');
+        }
+    }
+
+    public static function kartuObservasiRuanganDelete(int $id): void
+    {
+        CSRF::validate();
+        $activeGroup = SpmbModel::getActiveGroup();
+        $groupId = (int)($activeGroup['id'] ?? 0);
+        SpmbModel::deleteKartuObservasiRuangan($id, $groupId);
+        Response::redirect(url('kelola-spmb/kartu-observasi?tab=ruangan'), 'Ruangan berhasil dihapus.', 'success');
+    }
+
+    public static function kartuObservasiBagiOtomatis(): void
+    {
+        CSRF::validate();
+        $activeGroup = SpmbModel::getActiveGroup();
+        $groupId = (int)($activeGroup['id'] ?? 0);
+        $jenjang = trim((string)($_POST['jenjang'] ?? ''));
+        $redirect = url('kelola-spmb/kartu-observasi');
+
+        try {
+            $count = SpmbModel::bagiRuanganOtomatis($groupId, $jenjang ?: null);
+            Response::redirect($redirect, "Berhasil membagi {$count} peserta ke ruangan & sesi sesuai kapasitas.", 'success');
+        } catch (Throwable $e) {
+            Response::redirect($redirect, $e->getMessage(), 'error');
+        }
+    }
+
+    public static function kartuObservasiAssignManual(): void
+    {
+        if (!CSRF::validate(false)) {
+            Response::json(['success' => false, 'message' => 'Token CSRF tidak valid.'], 403);
+            return;
+        }
+        $pesertaId = (int)($_POST['peserta_id'] ?? 0);
+        $ruanganId = !empty($_POST['ruangan_id']) ? (int)$_POST['ruangan_id'] : null;
+        if ($pesertaId <= 0) {
+            Response::json(['success' => false, 'message' => 'ID peserta tidak valid.'], 400);
+            return;
+        }
+        SpmbModel::assignRuanganManual($pesertaId, $ruanganId);
+        Response::json(['success' => true, 'message' => 'Ruangan peserta diperbarui.']);
+    }
+
+    public static function kartuObservasiScan(): void
+    {
+        if (!CSRF::validate(false)) {
+            Response::json(['success' => false, 'message' => 'Token CSRF tidak valid.'], 403);
+            return;
+        }
+        $qrCode = trim((string)($_POST['qr_code'] ?? ''));
+        $petugas = class_exists('Auth') ? (Auth::name() ?: 'Admin') : 'Admin';
+        $res = SpmbModel::scanAbsenObservasi($qrCode, $petugas);
+        Response::json($res, !empty($res['success']) ? 200 : 400);
+    }
+
+    public static function kartuObservasiResetAbsen(int $id): void
+    {
+        CSRF::validate();
+        SpmbModel::resetAbsenObservasi($id);
+        Response::redirect(url('kelola-spmb/kartu-observasi'), 'Status absen peserta direset ke Belum Hadir.', 'success');
+    }
+
+    public static function kartuObservasiCetak(): void
+    {
+        $activeGroup = SpmbModel::getActiveGroup();
+        $groupId = (int)($activeGroup['id'] ?? 0);
+        $singleId = !empty($_GET['id']) ? (int)$_GET['id'] : 0;
+
+        $filters = [
+            'group_id'   => $groupId,
+            'jenjang'    => trim((string)($_GET['jenjang'] ?? '')),
+            'ruangan_id' => trim((string)($_GET['ruangan_id'] ?? '')),
+            'search'     => trim((string)($_GET['search'] ?? '')),
+        ];
+        $data = SpmbModel::getKartuObservasiPeserta($filters);
+        $items = $data['items'];
+        if ($singleId > 0) {
+            $items = array_values(array_filter($items, fn($x) => (int)$x['id'] === $singleId));
+        }
+
+        include BASE_PATH . '/modules/kelola-spmb/views/kartu_observasi/cetak.php';
+    }
+
+    public static function kartuObservasiBroadcastData(): void
+    {
+        $activeGroup = SpmbModel::getActiveGroup();
+        $groupId = (int)($activeGroup['id'] ?? 0);
+        $filters = [
+            'group_id'   => $groupId,
+            'jenjang'    => trim((string)($_GET['jenjang'] ?? '')),
+            'ruangan_id' => trim((string)($_GET['ruangan_id'] ?? '')),
+            'search'     => trim((string)($_GET['search'] ?? '')),
+        ];
+        $data = SpmbModel::getKartuObservasiPeserta($filters);
+        $items = array_values(array_filter($data['items'], fn($x) => !empty($x['target_phone'])));
+        Response::json([
+            'success'         => true,
+            'total'           => count($items),
+            'items'           => $items,
+            'defaultTemplate' => SpmbModel::getDefaultWaJadwalObservasiTemplate(),
+        ]);
+    }
+
+    public static function kartuObservasiBroadcastSendSingle(): void
+    {
+        if (!CSRF::validate(false)) {
+            Response::json(['success' => false, 'message' => 'Token CSRF tidak valid.'], 403);
+            return;
+        }
+        $pesertaId = (int)($_POST['peserta_id'] ?? 0);
+        $tpl = trim((string)($_POST['template'] ?? ''));
+        $res = SpmbModel::sendWaJadwalObservasiSingle($pesertaId, $tpl ?: null);
+        Response::json($res, !empty($res['success']) ? 200 : 400);
+    }
+
+    public static function kartuObservasiPublik(string $token): void
+    {
+        $item = SpmbModel::getKartuObservasiByToken($token);
+        include BASE_PATH . '/modules/kelola-spmb/views/kartu_observasi/publik.php';
+    }
 }
 
 

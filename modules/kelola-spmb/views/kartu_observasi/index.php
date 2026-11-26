@@ -1,0 +1,616 @@
+<?php
+/**
+ * View Utama Kartu Observasi, Absen QR, Pembagian Ruangan/Sesi & Broadcast WA
+ * Modul Kelola SPMB - Portal BIP
+ */
+$csrfToken = CSRF::token();
+$selJenjang = $filters['jenjang'] ?? '';
+$selRuangan = $filters['ruangan_id'] ?? '';
+$selStatus  = $filters['status_absen'] ?? '';
+$search     = $filters['search'] ?? '';
+$cetakQuery = http_build_query(array_filter([
+    'jenjang'    => $selJenjang,
+    'ruangan_id' => $selRuangan,
+    'search'     => $search,
+]));
+?>
+<div class="space-y-6">
+    <!-- Header Banner -->
+    <div class="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div>
+            <div class="flex items-center gap-2 mb-1">
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                    Kartu &amp; Absen QR Observasi
+                </span>
+                <span class="text-xs text-slate-400">&bull;</span>
+                <span class="text-xs font-semibold text-slate-500"><?= e($activeGroup['nama_group'] ?? 'SPMB Aktif') ?></span>
+            </div>
+            <h1 class="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">Kartu Observasi, Ruangan Sesi &amp; Scan QR</h1>
+            <p class="text-xs sm:text-sm text-slate-500 mt-0.5">
+                Cetak ID Card observasi ber-QR Code, atur ruangan &amp; jam sesi, scan QR absensi kehadiran, dan broadcast jadwal via WhatsApp.
+            </p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2.5">
+            <form method="POST" action="<?= url('kelola-spmb/kartu-observasi/sync') ?>" class="inline">
+                <?= CSRF::field() ?>
+                <button type="submit" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-sm font-bold cursor-pointer">
+                    Sinkron Peserta
+                </button>
+            </form>
+            <form method="POST" action="<?= url('kelola-spmb/kartu-observasi/bagi-otomatis') ?>" class="inline" onsubmit="return confirm('Bagi peserta yang belum punya ruangan ke ruangan tersedia sesuai kapasitas?')">
+                <?= CSRF::field() ?>
+                <input type="hidden" name="jenjang" value="<?= e($selJenjang) ?>">
+                <button type="submit" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold shadow-xs cursor-pointer">
+                    Bagi Ruangan Otomatis
+                </button>
+            </form>
+            <button type="button" onclick="openBroadcastJadwalModal()"
+                    class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold shadow-xs cursor-pointer">
+                Broadcast Jadwal WA
+            </button>
+            <a href="<?= url('kelola-spmb/kartu-observasi/cetak' . ($cetakQuery ? '?' . $cetakQuery : '')) ?>" target="_blank"
+               class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-sm font-bold shadow-xs">
+                Cetak Semua Kartu
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-xs">
+            <span class="text-xs font-bold text-slate-400 uppercase">Total Peserta</span>
+            <div class="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1"><?= number_format($stats['total'] ?? 0) ?></div>
+            <p class="text-xs text-slate-500 mt-0.5">Terjadwal ruangan: <strong><?= number_format($stats['terjadwal'] ?? 0) ?></strong></p>
+        </div>
+        <div class="bg-white rounded-2xl p-4 sm:p-5 border border-emerald-200 shadow-xs">
+            <span class="text-xs font-bold text-emerald-600 uppercase">Hadir (Sudah Scan)</span>
+            <div id="stat-hadir-count" class="text-2xl sm:text-3xl font-extrabold text-emerald-600 mt-1"><?= number_format($stats['hadir'] ?? 0) ?></div>
+            <p class="text-xs text-slate-500 mt-0.5">Tercatat via QR / manual</p>
+        </div>
+        <div class="bg-white rounded-2xl p-4 sm:p-5 border border-amber-200 shadow-xs">
+            <span class="text-xs font-bold text-amber-600 uppercase">Belum Hadir</span>
+            <div id="stat-belum-count" class="text-2xl sm:text-3xl font-extrabold text-amber-600 mt-1"><?= number_format($stats['belum_hadir'] ?? 0) ?></div>
+            <p class="text-xs text-slate-500 mt-0.5">Menunggu kedatangan</p>
+        </div>
+        <div class="bg-white rounded-2xl p-4 sm:p-5 border border-sky-200 shadow-xs">
+            <span class="text-xs font-bold text-sky-600 uppercase">Ruangan &amp; Sesi</span>
+            <div class="text-2xl sm:text-3xl font-extrabold text-sky-600 mt-1"><?= count($ruanganList) ?></div>
+            <p class="text-xs text-slate-500 mt-0.5">Sesi observasi aktif</p>
+        </div>
+    </div>
+
+    <!-- Navigation Sub-Tabs -->
+    <div class="flex flex-wrap items-center gap-2 bg-white p-2 rounded-2xl border border-slate-200 shadow-xs">
+        <a href="<?= url('kelola-spmb/kartu-observasi?tab=peserta') ?>"
+           class="px-4 py-2.5 rounded-xl text-sm font-bold transition-all <?= $activeTab === 'peserta' ? 'bg-primary-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100' ?>">
+            Daftar Peserta &amp; Kartu QR
+        </a>
+        <a href="<?= url('kelola-spmb/kartu-observasi?tab=scan') ?>"
+           class="px-4 py-2.5 rounded-xl text-sm font-bold transition-all <?= $activeTab === 'scan' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100' ?>">
+            Scan QR Absensi
+        </a>
+        <a href="<?= url('kelola-spmb/kartu-observasi?tab=ruangan') ?>"
+           class="px-4 py-2.5 rounded-xl text-sm font-bold transition-all <?= $activeTab === 'ruangan' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100' ?>">
+            Atur Ruangan &amp; Jam Sesi (<?= count($ruanganList) ?>)
+        </a>
+    </div>
+
+    <?php if ($activeTab === 'peserta'): ?>
+        <!-- Filter Bar -->
+        <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs">
+            <form method="GET" action="<?= url('kelola-spmb/kartu-observasi') ?>" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
+                <input type="hidden" name="tab" value="peserta">
+                <input type="text" name="search" value="<?= e($search) ?>" placeholder="Cari nama, no. pendaftaran, QR..."
+                       class="lg:col-span-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-sm outline-none focus:border-primary-500">
+                <select name="jenjang" class="px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium outline-none">
+                    <option value="">Semua Jenjang</option>
+                    <?php foreach (['PAUD', 'SD', 'SMP', 'SMA'] as $j): ?>
+                        <option value="<?= $j ?>" <?= $selJenjang === $j ? 'selected' : '' ?>><?= $j ?></option>
+                    <?php endforeach; ?>
+                </select>
+                <select name="ruangan_id" class="px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium outline-none">
+                    <option value="">Semua Ruangan</option>
+                    <option value="unassigned" <?= $selRuangan === 'unassigned' ? 'selected' : '' ?>>Belum Dapat Ruangan</option>
+                    <?php foreach ($ruanganList as $rg): ?>
+                        <option value="<?= (int)$rg['id'] ?>" <?= (string)$selRuangan === (string)$rg['id'] ? 'selected' : '' ?>>
+                            <?= e($rg['nama_ruangan']) ?> (<?= e($rg['sesi_nama']) ?>)
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+                <select name="status_absen" class="px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium outline-none">
+                    <option value="">Semua Status Absen</option>
+                    <option value="Hadir" <?= $selStatus === 'Hadir' ? 'selected' : '' ?>>Hadir</option>
+                    <option value="Belum Hadir" <?= $selStatus === 'Belum Hadir' ? 'selected' : '' ?>>Belum Hadir</option>
+                </select>
+                <button type="submit" class="px-4 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-sm font-bold cursor-pointer">
+                    Filter
+                </button>
+            </form>
+        </div>
+
+        <!-- Tabel Peserta -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-sm">
+                    <thead>
+                        <tr class="bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-500 uppercase">
+                            <th class="py-3.5 px-4 w-12 text-center">No</th>
+                            <th class="py-3.5 px-4">Calon Siswa &amp; No. Peserta</th>
+                            <th class="py-3.5 px-4">Jenjang</th>
+                            <th class="py-3.5 px-4 min-w-[230px]">Ruangan &amp; Jam Sesi</th>
+                            <th class="py-3.5 px-4 text-center">Status Absen</th>
+                            <th class="py-3.5 px-4 text-center">Broadcast WA</th>
+                            <th class="py-3.5 px-4 text-right">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        <?php if (empty($items)): ?>
+                            <tr>
+                                <td colspan="7" class="py-12 text-center text-slate-400">
+                                    Belum ada peserta observasi. Klik <strong>Sinkron Peserta</strong> untuk menarik data calon siswa.
+                                </td>
+                            </tr>
+                        <?php else: ?>
+                            <?php foreach ($items as $idx => $it): ?>
+                                <tr class="hover:bg-slate-50/70">
+                                    <td class="py-3.5 px-4 text-center font-bold text-slate-400"><?= $idx + 1 ?></td>
+                                    <td class="py-3.5 px-4">
+                                        <div class="font-bold text-slate-900"><?= e($it['nama_lengkap']) ?></div>
+                                        <div class="text-xs font-mono text-slate-500">
+                                            <?= e($it['nomor_peserta']) ?> &bull; <span class="text-indigo-600"><?= e($it['qr_token']) ?></span>
+                                        </div>
+                                    </td>
+                                    <td class="py-3.5 px-4">
+                                        <span class="px-2.5 py-0.5 rounded-lg bg-slate-100 text-slate-700 font-bold text-xs"><?= e($it['jenjang']) ?></span>
+                                    </td>
+                                    <td class="py-3.5 px-4">
+                                        <select onchange="assignRuanganManual(<?= (int)$it['id'] ?>, this.value)"
+                                                class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-xs font-semibold text-slate-800 outline-none">
+                                            <option value="">-- Belum Diatur --</option>
+                                            <?php foreach ($ruanganList as $rg): ?>
+                                                <option value="<?= (int)$rg['id'] ?>" <?= (int)$it['ruangan_id'] === (int)$rg['id'] ? 'selected' : '' ?>>
+                                                    <?= e($rg['nama_ruangan']) ?> | <?= e($rg['sesi_nama']) ?> (<?= date('d/m', strtotime($rg['tanggal'])) ?> <?= e($rg['jam_mulai']) ?>-<?= e($rg['jam_selesai']) ?>)
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </td>
+                                    <td class="py-3.5 px-4 text-center">
+                                        <?php if ($it['status_absen'] === 'Hadir'): ?>
+                                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                                ✓ Hadir (<?= $it['waktu_absen'] ? date('H:i', strtotime($it['waktu_absen'])) : '' ?>)
+                                            </span>
+                                        <?php else: ?>
+                                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                                                Belum Hadir
+                                            </span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td class="py-3.5 px-4 text-center">
+                                        <?php if (!empty($it['wa_jadwal_sent_at'])): ?>
+                                            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200" title="<?= e($it['wa_jadwal_status'] ?? '') ?>">
+                                                Terkirim
+                                            </span>
+                                        <?php else: ?>
+                                            <span class="text-xs text-slate-400">Belum dikirim</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td class="py-3.5 px-4 text-right whitespace-nowrap space-x-1.5">
+                                        <a href="<?= url('kelola-spmb/kartu-observasi/cetak?id=' . (int)$it['id']) ?>" target="_blank"
+                                           class="inline-flex items-center px-3 py-1.5 rounded-xl bg-sky-50 hover:bg-sky-600 text-sky-700 hover:text-white border border-sky-200 text-xs font-bold transition-colors">
+                                            Kartu
+                                        </a>
+                                        <button type="button" onclick="sendWaJadwalSingle(<?= (int)$it['id'] ?>, this)"
+                                                class="inline-flex items-center px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white border border-emerald-200 text-xs font-bold cursor-pointer transition-colors">
+                                            Kirim WA
+                                        </button>
+                                        <?php if ($it['status_absen'] === 'Hadir'): ?>
+                                            <form method="POST" action="<?= url('kelola-spmb/kartu-observasi/reset-absen/' . (int)$it['id']) ?>" class="inline" onsubmit="return confirm('Reset status absen ke Belum Hadir?')">
+                                                <?= CSRF::field() ?>
+                                                <button type="submit" class="inline-flex items-center px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-200 text-xs font-bold cursor-pointer">
+                                                    Reset
+                                                </button>
+                                            </form>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    <?php elseif ($activeTab === 'scan'): ?>
+        <!-- TAB 2: SCAN QR ABSENSI -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div class="lg:col-span-6 bg-white rounded-2xl border border-slate-200 shadow-xs p-5 sm:p-6 space-y-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-base font-extrabold text-slate-900">Scanner Kamera QR Code</h3>
+                        <p class="text-xs text-slate-500">Arahkan kamera ke QR Code pada Kartu Observasi peserta.</p>
+                    </div>
+                    <button type="button" id="btnToggleCam" onclick="toggleQrScanner()"
+                            class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold cursor-pointer">
+                        Mulai Kamera
+                    </button>
+                </div>
+
+                <div id="qr-reader" class="w-full rounded-2xl overflow-hidden bg-slate-900 min-h-[260px] flex items-center justify-center text-xs text-slate-400">
+                    Klik "Mulai Kamera" untuk mengaktifkan scanner QR
+                </div>
+
+                <div class="pt-3 border-t border-slate-100">
+                    <label class="block text-xs font-bold text-slate-700 mb-1.5">Atau Scan Barcode USB / Ketik Token / No. Pendaftaran:</label>
+                    <form onsubmit="submitManualScan(event)" class="flex gap-2">
+                        <input type="text" id="manualQrInput" autofocus placeholder="Scan atau ketik kode QR / No. Peserta lalu Enter..."
+                               class="flex-1 px-4 py-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white text-sm font-mono font-bold outline-none focus:border-emerald-500">
+                        <button type="submit" class="px-5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-sm font-bold cursor-pointer">
+                            Absen
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="lg:col-span-6 bg-white rounded-2xl border border-slate-200 shadow-xs p-5 sm:p-6 space-y-4">
+                <h3 class="text-base font-extrabold text-slate-900">Hasil Scan Terakhir</h3>
+                <div id="scanResultBox" class="p-6 rounded-2xl border border-dashed border-slate-300 bg-slate-50 text-center text-sm text-slate-400">
+                    Menunggu scan QR Code peserta...
+                </div>
+                <div>
+                    <h4 class="text-xs font-bold text-slate-500 uppercase mb-2">Riwayat Scan Sesi Ini</h4>
+                    <div id="scanHistoryList" class="divide-y divide-slate-100 max-h-64 overflow-y-auto text-sm"></div>
+                </div>
+            </div>
+        </div>
+
+        <script src="https://unpkg.com/html5-qrcode"></script>
+        <script>
+        let html5QrCode = null;
+        let qrScanning = false;
+        let lastScannedToken = '';
+        let lastScanTime = 0;
+
+        async function processQrCode(code) {
+            const now = Date.now();
+            if (code === lastScannedToken && (now - lastScanTime) < 3500) return;
+            lastScannedToken = code;
+            lastScanTime = now;
+
+            const box = document.getElementById('scanResultBox');
+            const hist = document.getElementById('scanHistoryList');
+
+            const fd = new FormData();
+            fd.append('csrf_token', '<?= e($csrfToken) ?>');
+            fd.append('qr_code', code);
+
+            try {
+                const res = await fetch('<?= url('kelola-spmb/kartu-observasi/scan') ?>', { method: 'POST', body: fd });
+                const json = await res.json();
+                if (json.success && json.data) {
+                    const d = json.data;
+                    const badge = json.already
+                        ? '<span class="px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-extrabold">SUDAH ABSEN SEBELUMNYA</span>'
+                        : '<span class="px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-extrabold">✓ BERHASIL ABSEN HADIR</span>';
+                    box.className = 'p-5 rounded-2xl border ' + (json.already ? 'border-amber-300 bg-amber-50' : 'border-emerald-300 bg-emerald-50') + ' text-left space-y-2';
+                    box.innerHTML = `
+                        <div class="flex items-center justify-between">${badge}<span class="text-xs font-mono text-slate-500">${d.waktu_absen || ''}</span></div>
+                        <div class="text-lg font-extrabold text-slate-900">${d.nama_lengkap}</div>
+                        <div class="text-xs text-slate-600">No. Peserta: <strong>${d.nomor_peserta}</strong> &bull; Jenjang: <strong>${d.jenjang}</strong></div>
+                        <div class="text-xs text-indigo-700 font-bold">Ruangan: ${d.nama_ruangan || 'Belum Diatur'} ${d.sesi_nama ? '(' + d.sesi_nama + ' ' + d.jam_mulai + '-' + d.jam_selesai + ')' : ''}</div>
+                    `;
+                    if (hist) {
+                        hist.insertAdjacentHTML('afterbegin', `<div class="py-2 flex items-center justify-between text-xs"><span class="font-bold text-slate-800">${d.nama_lengkap} (${d.jenjang})</span><span class="text-emerald-700 font-bold">${d.nama_ruangan || '-'}</span></div>`);
+                    }
+                } else {
+                    box.className = 'p-5 rounded-2xl border border-rose-300 bg-rose-50 text-center text-sm font-bold text-rose-700';
+                    box.textContent = json.message || 'QR tidak dikenali.';
+                }
+            } catch (e) {
+                box.className = 'p-5 rounded-2xl border border-rose-300 bg-rose-50 text-center text-sm font-bold text-rose-700';
+                box.textContent = 'Gagal memproses scan QR.';
+            }
+        }
+
+        function submitManualScan(e) {
+            e.preventDefault();
+            const inp = document.getElementById('manualQrInput');
+            if (!inp || !inp.value.trim()) return;
+            processQrCode(inp.value.trim());
+            inp.value = '';
+            inp.focus();
+        }
+
+        async function toggleQrScanner() {
+            const btn = document.getElementById('btnToggleCam');
+            if (qrScanning && html5QrCode) {
+                await html5QrCode.stop();
+                qrScanning = false;
+                btn.textContent = 'Mulai Kamera';
+                return;
+            }
+            html5QrCode = new Html5Qrcode('qr-reader');
+            try {
+                await html5QrCode.start(
+                    { facingMode: 'environment' },
+                    { fps: 10, qrbox: { width: 230, height: 230 } },
+                    (decodedText) => processQrCode(decodedText)
+                );
+                qrScanning = true;
+                btn.textContent = 'Stop Kamera';
+            } catch (err) {
+                alert('Tidak dapat mengakses kamera: ' + err);
+            }
+        }
+        </script>
+
+    <?php elseif ($activeTab === 'ruangan'): ?>
+        <!-- TAB 3: ATUR RUANGAN & JAM SESI -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div class="lg:col-span-4 bg-white rounded-2xl border border-slate-200 shadow-xs p-5 sm:p-6 space-y-4">
+                <h3 class="text-base font-extrabold text-slate-900">Tambah / Edit Ruangan &amp; Sesi</h3>
+                <form method="POST" action="<?= url('kelola-spmb/kartu-observasi/ruangan/store') ?>" class="space-y-3.5 text-sm">
+                    <?= CSRF::field() ?>
+                    <input type="hidden" name="id" id="ruangan_id" value="">
+
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Nama Ruangan *</label>
+                        <input type="text" name="nama_ruangan" id="ruangan_nama" required placeholder="Contoh: Ruang Observasi 1 / Kelas 1A"
+                               class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white outline-none">
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Jenjang</label>
+                            <select name="jenjang" id="ruangan_jenjang" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 outline-none">
+                                <option value="">Semua Jenjang</option>
+                                <option value="PAUD">PAUD</option>
+                                <option value="SD">SD</option>
+                                <option value="SMP">SMP</option>
+                                <option value="SMA">SMA</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Kapasitas *</label>
+                            <input type="number" name="kapasitas" id="ruangan_kapasitas" min="1" value="15" required
+                                   class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 outline-none">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Nama Sesi *</label>
+                            <input type="text" name="sesi_nama" id="ruangan_sesi" value="Sesi 1" required
+                                   class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 outline-none">
+                        </div>
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Tanggal *</label>
+                            <input type="date" name="tanggal" id="ruangan_tanggal" value="<?= date('Y-m-d') ?>" required
+                                   class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 outline-none">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Jam Mulai *</label>
+                            <input type="time" name="jam_mulai" id="ruangan_jam_mulai" value="08:00" required
+                                   class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 outline-none">
+                        </div>
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Jam Selesai *</label>
+                            <input type="time" name="jam_selesai" id="ruangan_jam_selesai" value="09:30" required
+                                   class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 outline-none">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Pengawas / Observer (Opsional)</label>
+                        <input type="text" name="pengawas" id="ruangan_pengawas" placeholder="Nama Ustadz/Ustadzah Pengawas"
+                               class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 outline-none">
+                    </div>
+                    <div class="flex justify-end gap-2 pt-2">
+                        <button type="button" onclick="resetRuanganForm()" class="px-4 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold text-slate-700 cursor-pointer">Reset</button>
+                        <button type="submit" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold cursor-pointer">Simpan Ruangan</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="lg:col-span-8 bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+                <div class="px-5 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                    <h3 class="text-base font-extrabold text-slate-900">Daftar Ruangan &amp; Sesi Observasi</h3>
+                    <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700"><?= count($ruanganList) ?> Ruangan</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-slate-50 text-xs font-bold text-slate-500 uppercase border-b border-slate-200">
+                            <tr>
+                                <th class="px-4 py-3">Ruangan &amp; Pengawas</th>
+                                <th class="px-4 py-3">Jenjang</th>
+                                <th class="px-4 py-3">Tanggal &amp; Sesi</th>
+                                <th class="px-4 py-3 text-center">Terisi / Kapasitas</th>
+                                <th class="px-4 py-3 text-right">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            <?php if (empty($ruanganList)): ?>
+                                <tr><td colspan="5" class="py-10 text-center text-slate-400">Belum ada ruangan. Tambahkan ruangan di form sebelah kiri.</td></tr>
+                            <?php else: ?>
+                                <?php foreach ($ruanganList as $rg): ?>
+                                    <tr class="hover:bg-slate-50/70">
+                                        <td class="px-4 py-3.5">
+                                            <div class="font-bold text-slate-900"><?= e($rg['nama_ruangan']) ?></div>
+                                            <div class="text-xs text-slate-400">Pengawas: <?= e($rg['pengawas'] ?: '-') ?></div>
+                                        </td>
+                                        <td class="px-4 py-3.5"><span class="px-2 py-0.5 rounded-lg bg-slate-100 text-xs font-bold"><?= e($rg['jenjang'] ?: 'Semua') ?></span></td>
+                                        <td class="px-4 py-3.5 text-xs">
+                                            <div class="font-bold text-slate-800"><?= date('d/m/Y', strtotime($rg['tanggal'])) ?></div>
+                                            <div class="text-indigo-700 font-semibold"><?= e($rg['sesi_nama']) ?> (<?= e($rg['jam_mulai']) ?> - <?= e($rg['jam_selesai']) ?>)</div>
+                                        </td>
+                                        <td class="px-4 py-3.5 text-center font-extrabold <?= (int)$rg['terisi'] >= (int)$rg['kapasitas'] ? 'text-rose-600' : 'text-emerald-700' ?>">
+                                            <?= (int)$rg['terisi'] ?> / <?= (int)$rg['kapasitas'] ?>
+                                        </td>
+                                        <td class="px-4 py-3.5 text-right whitespace-nowrap space-x-1">
+                                            <button type="button" onclick='editRuangan(<?= json_encode($rg) ?>)' class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-bold cursor-pointer">Edit</button>
+                                            <form method="POST" action="<?= url('kelola-spmb/kartu-observasi/ruangan/delete/' . (int)$rg['id']) ?>" class="inline" onsubmit="return confirm('Hapus ruangan ini?')">
+                                                <?= CSRF::field() ?>
+                                                <button type="submit" class="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white text-xs font-bold cursor-pointer">Hapus</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    <?php endif; ?>
+</div>
+
+<!-- Modal Broadcast Jadwal Sesi & Ruangan via WA -->
+<div id="modalBroadcastJadwal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100 space-y-4">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div>
+                <h3 class="text-base font-extrabold text-slate-900">Broadcast Jadwal Sesi &amp; Ruangan (WhatsApp)</h3>
+                <p class="text-xs text-slate-500">Kirim jadwal sesi, ruangan, dan link Kartu QR Observasi ke seluruh peserta sesuai filter aktif.</p>
+            </div>
+            <button type="button" onclick="closeBroadcastJadwalModal()" class="p-1.5 rounded-full text-slate-400 hover:bg-slate-100 cursor-pointer">✕</button>
+        </div>
+
+        <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Template Pesan WhatsApp</label>
+            <textarea id="bc_jadwal_template" rows="8" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-mono outline-none focus:border-emerald-500"><?= e($defaultWaTemplate) ?></textarea>
+            <p class="text-[11px] text-slate-400 mt-1">Variabel: <code>{nama_siswa}</code>, <code>{no_pendaftaran}</code>, <code>{jenjang}</code>, <code>{tanggal_sesi}</code>, <code>{sesi_jam}</code>, <code>{ruangan}</code>, <code>{pengawas}</code>, <code>{link_kartu}</code></p>
+        </div>
+
+        <div id="bc_jadwal_progress_wrap" class="hidden space-y-2 bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
+            <div class="flex justify-between text-xs font-bold">
+                <span id="bc_jadwal_status_txt">Menyiapkan...</span>
+                <span id="bc_jadwal_count_txt">0 / 0</span>
+            </div>
+            <div class="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden">
+                <div id="bc_jadwal_bar" class="h-full bg-emerald-600 transition-all" style="width:0%"></div>
+            </div>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
+            <button type="button" onclick="closeBroadcastJadwalModal()" class="px-4 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold text-slate-700 cursor-pointer">Tutup</button>
+            <button type="button" id="btnStartBcJadwal" onclick="startBroadcastJadwal()" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold cursor-pointer">
+                Mulai Broadcast WA
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+async function assignRuanganManual(pesertaId, ruanganId) {
+    const fd = new FormData();
+    fd.append('csrf_token', '<?= e($csrfToken) ?>');
+    fd.append('peserta_id', pesertaId);
+    fd.append('ruangan_id', ruanganId);
+    try {
+        const res = await fetch('<?= url('kelola-spmb/kartu-observasi/assign-manual') ?>', { method: 'POST', body: fd });
+        const json = await res.json();
+        if (!json.success) alert(json.message || 'Gagal mengubah ruangan');
+    } catch (e) {
+        alert('Koneksi gagal saat menyimpan ruangan.');
+    }
+}
+
+async function sendWaJadwalSingle(pesertaId, btn) {
+    if (!confirm('Kirim jadwal sesi, ruangan & link Kartu QR ke WA orang tua peserta ini?')) return;
+    const orig = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Mengirim...';
+    const fd = new FormData();
+    fd.append('csrf_token', '<?= e($csrfToken) ?>');
+    fd.append('peserta_id', pesertaId);
+    try {
+        const res = await fetch('<?= url('kelola-spmb/kartu-observasi/broadcast-send') ?>', { method: 'POST', body: fd });
+        const json = await res.json();
+        alert(json.success ? ('WA terkirim ke ' + json.phone) : ('Gagal: ' + (json.message || 'Error')));
+        if (json.success) location.reload();
+    } catch (e) {
+        alert('Gagal mengirim WA.');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = orig;
+    }
+}
+
+function editRuangan(rg) {
+    document.getElementById('ruangan_id').value = rg.id || '';
+    document.getElementById('ruangan_nama').value = rg.nama_ruangan || '';
+    document.getElementById('ruangan_jenjang').value = rg.jenjang || '';
+    document.getElementById('ruangan_kapasitas').value = rg.kapasitas || 15;
+    document.getElementById('ruangan_sesi').value = rg.sesi_nama || 'Sesi 1';
+    document.getElementById('ruangan_tanggal').value = rg.tanggal || '';
+    document.getElementById('ruangan_jam_mulai').value = rg.jam_mulai || '08:00';
+    document.getElementById('ruangan_jam_selesai').value = rg.jam_selesai || '09:30';
+    document.getElementById('ruangan_pengawas').value = rg.pengawas || '';
+}
+
+function resetRuanganForm() {
+    document.getElementById('ruangan_id').value = '';
+    document.getElementById('ruangan_nama').value = '';
+    document.getElementById('ruangan_pengawas').value = '';
+}
+
+function openBroadcastJadwalModal() {
+    const m = document.getElementById('modalBroadcastJadwal');
+    m.classList.remove('hidden');
+    m.classList.add('flex');
+}
+
+function closeBroadcastJadwalModal() {
+    const m = document.getElementById('modalBroadcastJadwal');
+    m.classList.add('hidden');
+    m.classList.remove('flex');
+}
+
+async function startBroadcastJadwal() {
+    const btn = document.getElementById('btnStartBcJadwal');
+    const wrap = document.getElementById('bc_jadwal_progress_wrap');
+    const txt = document.getElementById('bc_jadwal_status_txt');
+    const cnt = document.getElementById('bc_jadwal_count_txt');
+    const bar = document.getElementById('bc_jadwal_bar');
+    const tpl = document.getElementById('bc_jadwal_template').value;
+
+    btn.disabled = true;
+    wrap.classList.remove('hidden');
+    txt.textContent = 'Mengambil daftar peserta...';
+
+    const qs = new URLSearchParams({
+        jenjang: '<?= e($selJenjang) ?>',
+        ruangan_id: '<?= e($selRuangan) ?>',
+        search: '<?= e($search) ?>'
+    });
+    const listRes = await fetch('<?= url('kelola-spmb/kartu-observasi/broadcast-data') ?>?' + qs.toString());
+    const listJson = await listRes.json();
+    const items = listJson.items || [];
+    if (items.length === 0) {
+        txt.textContent = 'Tidak ada peserta dengan nomor WA valid.';
+        btn.disabled = false;
+        return;
+    }
+
+    let ok = 0, fail = 0;
+    for (let i = 0; i < items.length; i++) {
+        const it = items[i];
+        txt.textContent = 'Mengirim ke ' + it.nama_lengkap + '...';
+        cnt.textContent = (i + 1) + ' / ' + items.length;
+        bar.style.width = Math.round(((i + 1) / items.length) * 100) + '%';
+
+        const fd = new FormData();
+        fd.append('csrf_token', '<?= e($csrfToken) ?>');
+        fd.append('peserta_id', it.id);
+        fd.append('template', tpl);
+        try {
+            const r = await fetch('<?= url('kelola-spmb/kartu-observasi/broadcast-send') ?>', { method: 'POST', body: fd });
+            const j = await r.json();
+            if (j.success) ok++; else fail++;
+        } catch (e) {
+            fail++;
+        }
+    }
+    txt.textContent = `Selesai! Terkirim: ${ok}, Gagal: ${fail}`;
+    btn.disabled = false;
+}
+</script>
