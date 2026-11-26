@@ -137,6 +137,20 @@ class PersuratanModel
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         ");
 
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `persuratan_tahun` (
+                `id` INT(11) NOT NULL AUTO_INCREMENT,
+                `scope` ENUM('yayasan','sekolah') NOT NULL,
+                `tahun` INT(4) NOT NULL,
+                `tanggal_mulai` DATE NOT NULL,
+                `tanggal_selesai` DATE NOT NULL,
+                `is_active` TINYINT(1) NOT NULL DEFAULT 0,
+                `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `uniq_scope_tahun` (`scope`, `tahun`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        ");
+
         self::seedDefaults();
         self::ensureModulesAndPermissions();
     }
@@ -166,6 +180,21 @@ class PersuratanModel
         ");
         $stmtCfg->execute(['yayasan', $curYear]);
         $stmtCfg->execute(['sekolah', $curYear]);
+
+        // Seed tahun default jika belum ada tahun pada scope masing-masing
+        $pdo = self::db()->getConnection();
+        foreach (['yayasan', 'sekolah'] as $sc) {
+            $cntRow = self::db()->find("SELECT COUNT(*) as c FROM `persuratan_tahun` WHERE scope = ?", [$sc]);
+            if ((int)($cntRow['c'] ?? 0) === 0) {
+                $cfgRow = self::db()->find("SELECT tahun_aktif FROM `persuratan_pengaturan` WHERE scope = ? LIMIT 1", [$sc]);
+                $initYr = (int)($cfgRow['tahun_aktif'] ?? $curYear);
+                if ($initYr < 2000 || $initYr > 2100) $initYr = $curYear;
+                $pdo->prepare("
+                    INSERT IGNORE INTO `persuratan_tahun` (`scope`, `tahun`, `tanggal_mulai`, `tanggal_selesai`, `is_active`)
+                    VALUES (?, ?, ?, ?, 1)
+                ")->execute([$sc, $initYr, sprintf('%04d-01-01', $initYr), sprintf('%04d-12-31', $initYr)]);
+            }
+        }
 
         $jenisDefaults = [
             ['SK', 'Surat Keputusan', '{no}/{kode}/{unit}/{romawi}/{tahun}', 'Keputusan resmi pimpinan / yayasan'],
@@ -282,9 +311,74 @@ class PersuratanModel
     public static function getTahunAktif(string $scope): int
     {
         self::ensureSchema();
-        $row = self::db()->find("SELECT tahun_aktif FROM `persuratan_pengaturan` WHERE scope = ? LIMIT 1", [$scope]);
-        $yr = (int)($row['tahun_aktif'] ?? 0);
+        $row = self::db()->find("SELECT tahun FROM `persuratan_tahun` WHERE scope = ? AND is_active = 1 LIMIT 1", [$scope]);
+        if ($row && (int)$row['tahun'] >= 2000) {
+            return (int)$row['tahun'];
+        }
+        $cfg = self::db()->find("SELECT tahun_aktif FROM `persuratan_pengaturan` WHERE scope = ? LIMIT 1", [$scope]);
+        $yr = (int)($cfg['tahun_aktif'] ?? 0);
         return ($yr >= 2000 && $yr <= 2100) ? $yr : (int)date('Y');
+    }
+
+    public static function getTahunList(string $scope): array
+    {
+        self::ensureSchema();
+        return self::db()->findAll("
+            SELECT t.*,
+                   (SELECT COUNT(*) FROM `persuratan_surat` s
+                    WHERE s.scope = t.scope AND s.tanggal_surat BETWEEN t.tanggal_mulai AND t.tanggal_selesai) as total_surat
+            FROM `persuratan_tahun` t
+            WHERE t.scope = ?
+            ORDER BY t.tahun DESC
+        ", [$scope]);
+    }
+
+    public static function storeTahun(string $scope, int $tahun): int
+    {
+        self::ensureSchema();
+        if ($tahun < 2000 || $tahun > 2100) {
+            throw new Exception('Tahun harus antara 2000 s/d 2100.');
+        }
+        $exists = self::db()->find("SELECT id FROM `persuratan_tahun` WHERE scope = ? AND tahun = ? LIMIT 1", [$scope, $tahun]);
+        if ($exists) {
+            throw new Exception('Tahun ' . $tahun . ' sudah terdaftar.');
+        }
+        $cnt = self::db()->find("SELECT COUNT(*) as c FROM `persuratan_tahun` WHERE scope = ?", [$scope]);
+        $isActive = ((int)($cnt['c'] ?? 0) === 0) ? 1 : 0;
+
+        self::db()->query("
+            INSERT INTO `persuratan_tahun` (`scope`, `tahun`, `tanggal_mulai`, `tanggal_selesai`, `is_active`)
+            VALUES (?, ?, ?, ?, ?)
+        ", [$scope, $tahun, sprintf('%04d-01-01', $tahun), sprintf('%04d-12-31', $tahun), $isActive]);
+
+        return (int)self::db()->lastInsertId();
+    }
+
+    public static function activateTahun(string $scope, int $id): int
+    {
+        self::ensureSchema();
+        $row = self::db()->find("SELECT * FROM `persuratan_tahun` WHERE id = ? AND scope = ? LIMIT 1", [$id, $scope]);
+        if (!$row) {
+            throw new Exception('Data tahun tidak ditemukan.');
+        }
+        self::db()->query("UPDATE `persuratan_tahun` SET `is_active` = 0 WHERE `scope` = ?", [$scope]);
+        self::db()->query("UPDATE `persuratan_tahun` SET `is_active` = 1 WHERE `id` = ? AND `scope` = ?", [$id, $scope]);
+        self::saveTahunAktif($scope, (int)$row['tahun']);
+        return (int)$row['tahun'];
+    }
+
+    public static function deleteTahun(string $scope, int $id): bool
+    {
+        self::ensureSchema();
+        $row = self::db()->find("SELECT * FROM `persuratan_tahun` WHERE id = ? AND scope = ? LIMIT 1", [$id, $scope]);
+        if (!$row) {
+            throw new Exception('Data tahun tidak ditemukan.');
+        }
+        if ((int)$row['is_active'] === 1) {
+            throw new Exception('Tahun yang sedang aktif tidak dapat dihapus.');
+        }
+        self::db()->query("DELETE FROM `persuratan_tahun` WHERE id = ? AND scope = ?", [$id, $scope]);
+        return true;
     }
 
     public static function saveTahunAktif(string $scope, int $tahun): bool

@@ -64,6 +64,7 @@ class PersuratanController
         $jenisList = PersuratanModel::getJenisList($scope, false);
         $jenisAktif = PersuratanModel::getJenisList($scope, true);
         $kopList = PersuratanModel::getKopList($scope);
+        $tahunList = PersuratanModel::getTahunList($scope);
         $activeKopUnit = trim((string)($_GET['kop_unit'] ?? ($units[0] ?? 'Yayasan')));
         if (!in_array($activeKopUnit, $units, true)) {
             $activeKopUnit = $units[0] ?? 'Yayasan';
@@ -218,6 +219,51 @@ class PersuratanController
             Response::redirect($redirect, 'Tahun aktif persuratan berhasil diubah ke ' . $tahun . ' (Januari - Desember ' . $tahun . ').', 'success');
         } catch (Throwable $e) {
             Response::redirect($redirect, 'Gagal menyimpan tahun aktif: ' . $e->getMessage(), 'error');
+        }
+    }
+
+    public static function storeTahun(): void
+    {
+        CSRF::validate();
+        $scope = self::detectScopeFromRequest();
+        $redirect = url(self::baseUrlForScope($scope) . '?tab=pengaturan');
+        $tahun = (int)($_POST['tahun'] ?? date('Y'));
+
+        try {
+            PersuratanModel::storeTahun($scope, $tahun);
+            Response::redirect($redirect, 'Tahun surat ' . $tahun . ' (1 Jan - 31 Des ' . $tahun . ') berhasil ditambahkan.', 'success');
+        } catch (Throwable $e) {
+            Response::redirect($redirect, $e->getMessage(), 'error');
+        }
+    }
+
+    public static function activateTahun(): void
+    {
+        CSRF::validate();
+        $scope = self::detectScopeFromRequest();
+        $redirect = url(self::baseUrlForScope($scope) . '?tab=pengaturan');
+        $id = (int)($_POST['id'] ?? 0);
+
+        try {
+            $yr = PersuratanModel::activateTahun($scope, $id);
+            Response::redirect($redirect, 'Tahun surat ' . $yr . ' berhasil diaktifkan.', 'success');
+        } catch (Throwable $e) {
+            Response::redirect($redirect, $e->getMessage(), 'error');
+        }
+    }
+
+    public static function deleteTahun(): void
+    {
+        CSRF::validate();
+        $scope = self::detectScopeFromRequest();
+        $redirect = url(self::baseUrlForScope($scope) . '?tab=pengaturan');
+        $id = (int)($_POST['id'] ?? 0);
+
+        try {
+            PersuratanModel::deleteTahun($scope, $id);
+            Response::redirect($redirect, 'Tahun surat berhasil dihapus.', 'success');
+        } catch (Throwable $e) {
+            Response::redirect($redirect, $e->getMessage(), 'error');
         }
     }
 

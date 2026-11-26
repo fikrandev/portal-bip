@@ -168,10 +168,12 @@
                     <?php
                     $curThn = (int)($tahunAktif ?? date('Y'));
                     $selThn = (string)($filters['tahun'] ?? $curThn);
-                    for ($y = $curThn + 1; $y >= $curThn - 3; $y--):
+                    $yrOptions = !empty($tahunList) ? array_map(fn($t) => (int)$t['tahun'], $tahunList) : [$curThn];
+                    if (!in_array($curThn, $yrOptions, true)) array_unshift($yrOptions, $curThn);
+                    foreach ($yrOptions as $y):
                     ?>
                         <option value="<?= $y ?>" <?= $selThn === (string)$y ? 'selected' : '' ?>>Tahun <?= $y ?><?= $y === $curThn ? ' (Aktif)' : '' ?></option>
-                    <?php endfor; ?>
+                    <?php endforeach; ?>
                     <option value="all" <?= $selThn === 'all' ? 'selected' : '' ?>>Semua Tahun</option>
                 </select>
 
@@ -337,24 +339,93 @@
         </div>
 
     <?php elseif ($activeTab === 'pengaturan'): ?>
-        <!-- ══════════ TAB 5: PENGATURAN SURAT (TAHUN AKTIF + KOP PER UNIT + JENIS & KODE SURAT) ══════════ -->
-        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-5 sm:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-                <h3 class="text-base font-extrabold text-slate-900">Pengaturan Tahun Aktif Persuratan (<?= $scope === 'yayasan' ? 'Yayasan' : 'Sekolah' ?>)</h3>
-                <p class="text-xs text-slate-500 mt-0.5">
-                    Periode berlaku <strong>1 Januari <?= (int)($tahunAktif ?? date('Y')) ?> s/d 31 Desember <?= (int)($tahunAktif ?? date('Y')) ?></strong>. Nomor urut surat keluar otomatis dimulai dari <strong>001</strong> setiap pergantian tahun.
-                </p>
+        <!-- ══════════ TAB 5: PENGATURAN SURAT (TAHUN SURAT + KOP PER UNIT + JENIS & KODE SURAT) ══════════ -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <!-- Tambah Tahun Surat (4 cols) -->
+            <div class="lg:col-span-4 bg-white rounded-2xl border border-slate-200/80 shadow-xs p-5 sm:p-6 space-y-4">
+                <div>
+                    <h3 class="text-base font-extrabold text-slate-900">Tambah Tahun Surat</h3>
+                    <p class="text-xs text-slate-500 mt-0.5">Periode otomatis 1 Januari s/d 31 Desember. Nomor surat keluar dimulai dari 001 per tahun.</p>
+                </div>
+                <form method="POST" action="<?= url('persuratan/tahun/store') ?>" class="space-y-3">
+                    <?= CSRF::field() ?>
+                    <input type="hidden" name="scope" value="<?= e($scope) ?>">
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1.5">Tahun (Misal: <?= (int)date('Y') + 1 ?>)</label>
+                        <input type="number" name="tahun" min="2020" max="2099" value="<?= (int)($tahunAktif ?? date('Y')) + 1 ?>" required
+                               class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-primary-500 text-sm font-extrabold text-slate-900 outline-none">
+                    </div>
+                    <button type="submit" class="w-full px-5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-sm font-bold shadow-xs cursor-pointer">
+                        Simpan &amp; Tambahkan
+                    </button>
+                </form>
             </div>
-            <form method="POST" action="<?= url('persuratan/tahun-aktif/save') ?>" class="flex items-center gap-2.5 shrink-0">
-                <?= CSRF::field() ?>
-                <input type="hidden" name="scope" value="<?= e($scope) ?>">
-                <input type="hidden" name="return_tab" value="pengaturan">
-                <input type="number" name="tahun_aktif" min="2020" max="2099" value="<?= (int)($tahunAktif ?? date('Y')) ?>" required
-                       class="w-28 px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-primary-500 text-sm font-extrabold text-center text-slate-900 outline-none">
-                <button type="submit" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold shadow-xs cursor-pointer">
-                    Simpan Tahun Aktif
-                </button>
-            </form>
+
+            <!-- Daftar Tahun Surat & Tombol Aktifkan (8 cols) -->
+            <div class="lg:col-span-8 bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+                <div class="px-5 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                    <h3 class="text-base font-extrabold text-slate-900">Daftar Tahun Persuratan (<?= $scope === 'yayasan' ? 'Yayasan' : 'Sekolah' ?>)</h3>
+                    <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-primary-50 text-primary-700">Total: <?= count($tahunList ?? []) ?></span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm text-slate-600">
+                        <thead class="bg-slate-50 text-xs uppercase font-bold text-slate-500 border-b border-slate-200">
+                            <tr>
+                                <th class="px-5 py-3">Tahun</th>
+                                <th class="px-5 py-3">Periode (Jan – Des)</th>
+                                <th class="px-5 py-3 text-center">Total Surat</th>
+                                <th class="px-5 py-3">Status</th>
+                                <th class="px-5 py-3 text-right">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            <?php foreach (($tahunList ?? []) as $thnRow): ?>
+                                <tr class="hover:bg-slate-50/70">
+                                    <td class="px-5 py-3.5 font-extrabold text-slate-900"><?= (int)$thnRow['tahun'] ?></td>
+                                    <td class="px-5 py-3.5 text-xs">
+                                        <?= date('d/m/Y', strtotime($thnRow['tanggal_mulai'])) ?> – <?= date('d/m/Y', strtotime($thnRow['tanggal_selesai'])) ?>
+                                    </td>
+                                    <td class="px-5 py-3.5 text-center font-bold text-slate-700"><?= (int)($thnRow['total_surat'] ?? 0) ?></td>
+                                    <td class="px-5 py-3.5">
+                                        <?php if ((int)$thnRow['is_active'] === 1): ?>
+                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                                Aktif
+                                            </span>
+                                        <?php else: ?>
+                                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-500 border border-slate-200">
+                                                Tidak Aktif
+                                            </span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td class="px-5 py-3.5 text-right whitespace-nowrap space-x-1.5">
+                                        <?php if ((int)$thnRow['is_active'] === 0): ?>
+                                            <form method="POST" action="<?= url('persuratan/tahun/activate') ?>" class="inline-block">
+                                                <?= CSRF::field() ?>
+                                                <input type="hidden" name="scope" value="<?= e($scope) ?>">
+                                                <input type="hidden" name="id" value="<?= (int)$thnRow['id'] ?>">
+                                                <button type="submit" class="px-3 py-1.5 rounded-xl bg-primary-50 hover:bg-primary-600 text-primary-700 hover:text-white border border-primary-200 text-xs font-bold cursor-pointer transition-colors">
+                                                    Aktifkan
+                                                </button>
+                                            </form>
+                                            <form method="POST" action="<?= url('persuratan/tahun/delete') ?>" class="inline-block" onsubmit="return confirm('Hapus tahun <?= (int)$thnRow['tahun'] ?>?')">
+                                                <?= CSRF::field() ?>
+                                                <input type="hidden" name="scope" value="<?= e($scope) ?>">
+                                                <input type="hidden" name="id" value="<?= (int)$thnRow['id'] ?>">
+                                                <button type="submit" class="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-200 text-xs font-bold cursor-pointer transition-colors">
+                                                    Hapus
+                                                </button>
+                                            </form>
+                                        <?php else: ?>
+                                            <span class="text-xs text-slate-400 italic">Sedang Digunakan</span>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
