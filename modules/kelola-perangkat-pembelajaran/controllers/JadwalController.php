@@ -487,7 +487,20 @@ class JadwalController
         $result = $engine->generate();
 
         if ($result['success']) {
-            Response::withSuccess(url("kelola-perangkat-pembelajaran/jadwal/matriks/{$id}"), "Generator Sukses! {$result['total_scheduled_slots']} slot mata pelajaran berhasil dijadwalkan tanpa ada bentrok (0 konflik).");
+            $msg = "Generator Sukses! {$result['total_scheduled_slots']} slot mata pelajaran berhasil dijadwalkan tanpa bentrok (0 konflik)";
+            $notes = [];
+            if (!empty($result['split_count'])) {
+                $notes[] = "{$result['split_count']} blok terpaksa dipisah karena keterbatasan slot kosong guru/kelas";
+            }
+            if (!empty($result['unplaced_count'])) {
+                $notes[] = "{$result['unplaced_count']} JP belum tertampung karena keterbatasan slot";
+            }
+            if (!empty($notes)) {
+                $msg .= ' (' . implode(', ', $notes) . ').';
+            } else {
+                $msg .= ' dengan seluruh blok jam sesuai aturan!';
+            }
+            Response::withSuccess(url("kelola-perangkat-pembelajaran/jadwal/matriks/{$id}"), $msg);
         } else {
             Response::withError(url("kelola-perangkat-pembelajaran/jadwal/generate/{$id}"), $result['message']);
         }
