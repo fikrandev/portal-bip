@@ -32,7 +32,7 @@ class AbsenPegawaiModel
         }
         self::$initialized = true;
 
-        $stampFile = BASE_PATH . '/storage/logs/.schema_absen_pegawai_v10.stamp';
+        $stampFile = BASE_PATH . '/storage/logs/.schema_absen_pegawai_v11.stamp';
         if (file_exists($stampFile)) {
             return;
         }
