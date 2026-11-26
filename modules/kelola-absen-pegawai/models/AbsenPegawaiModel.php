@@ -2292,7 +2292,7 @@ class AbsenPegawaiModel
             SELECT 
                 p.id, p.niy, p.nama, p.gelar, p.foto,
                 COALESCE(NULLIF(TRIM(p.unit_tugas), ''), (mu.nama COLLATE utf8mb4_unicode_ci), 'Yayasan') as unit_tugas,
-                p.jabatan, p.status_pegawai, p.status_kerja,
+                p.jabatan, p.jenis_pegawai, p.status_pegawai, p.status_kerja,
                 l.mode_lokasi as peg_mode,
                 l.nama_kantor as peg_kantor,
                 l.latitude as peg_lat,

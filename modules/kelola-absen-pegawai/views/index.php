@@ -2919,7 +2919,7 @@ foreach (($allPegawaiDropdown ?? []) as $pg) {
                 <h3 class="text-base font-extrabold text-slate-900">Atur Nomor Urut Custom Per Unit</h3>
                 <p class="text-xs text-slate-500 mt-0.5">Urutkan tampilan pegawai di Rekap Periode, Matriks, dan Cetak PDF sesuai nomor urut masing-masing unit.</p>
             </div>
-            <button type="button" onclick="closeModal('modalUrutanUnit')" class="p-1.5 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer">
+            <button type="button" onclick="closeModalUrutanUnit()" class="p-1.5 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer">
                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/>
                 </svg>
@@ -2962,7 +2962,7 @@ foreach (($allPegawaiDropdown ?? []) as $pg) {
             <div id="urutan_unit_list" class="max-h-96 overflow-y-auto divide-y divide-slate-100 border border-slate-200 rounded-2xl"></div>
 
             <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-                <button type="button" onclick="closeModal('modalUrutanUnit')" class="px-4 py-2 rounded-xl border border-slate-300 text-xs font-semibold text-slate-600 cursor-pointer">Batal</button>
+                <button type="button" onclick="closeModalUrutanUnit()" class="px-4 py-2 rounded-xl border border-slate-300 text-xs font-semibold text-slate-600 cursor-pointer">Batal</button>
                 <button type="submit" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm cursor-pointer">Simpan Urutan Unit</button>
             </div>
         </form>
@@ -2977,7 +2977,19 @@ function openModalUrutanUnit(viewMode) {
     const viewInp = document.getElementById('urutan_rekap_view');
     if (viewInp && viewMode) viewInp.value = viewMode;
     renderUrutanUnitList();
-    openModal('modalUrutanUnit');
+    const modal = document.getElementById('modalUrutanUnit');
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+}
+
+function closeModalUrutanUnit() {
+    const modal = document.getElementById('modalUrutanUnit');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
 }
 
 function renderUrutanUnitList() {
