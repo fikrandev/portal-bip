@@ -6,6 +6,20 @@ $logoUrl = '';
 if (defined('SYS_APP_LOGO') && !empty(SYS_APP_LOGO)) {
     $logoUrl = url(ltrim(SYS_APP_LOGO, '/'));
 }
+$jUpper = strtoupper(trim((string)($item['jenjang'] ?? '')));
+if (str_contains($jUpper, 'PAUD') || str_contains($jUpper, 'TK') || str_contains($jUpper, 'KB')) {
+    $headStyle = 'background: linear-gradient(135deg, #facc15, #eab308); color: #422006;';
+    $subCls = 'text-amber-950/80';
+} elseif (str_contains($jUpper, 'SMA') || str_contains($jUpper, 'MA') || str_contains($jUpper, 'SMK')) {
+    $headStyle = 'background: linear-gradient(135deg, #64748b, #94a3b8); color: #ffffff;';
+    $subCls = 'text-slate-100';
+} elseif (str_contains($jUpper, 'SMP') || str_contains($jUpper, 'MTS')) {
+    $headStyle = 'background: linear-gradient(135deg, #0f172a, #1e3a8a); color: #ffffff;';
+    $subCls = 'text-blue-200';
+} else {
+    $headStyle = 'background: linear-gradient(135deg, #1d4ed8, #3b82f6); color: #ffffff;';
+    $subCls = 'text-blue-100';
+}
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -25,12 +39,12 @@ if (defined('SYS_APP_LOGO') && !empty(SYS_APP_LOGO)) {
         </div>
     <?php else: ?>
         <div class="bg-white rounded-3xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden">
-            <div class="bg-gradient-to-r from-blue-900 to-blue-700 px-6 py-5 text-white flex items-center gap-3">
+            <div class="px-6 py-5 flex items-center gap-3" style="<?= $headStyle ?>">
                 <?php if ($logoUrl): ?>
                     <img src="<?= htmlspecialchars($logoUrl) ?>" alt="Logo" class="w-11 h-11 rounded-2xl bg-white p-1 object-contain">
                 <?php endif; ?>
                 <div>
-                    <div class="text-xs font-bold uppercase tracking-wider text-blue-200">Kartu Peserta Observasi</div>
+                    <div class="text-xs font-bold uppercase tracking-wider <?= $subCls ?>">Kartu Peserta Observasi</div>
                     <h1 class="text-base font-extrabold"><?= htmlspecialchars($item['nama_group'] ?? 'SPMB SIT Bina Insan Palu') ?></h1>
                 </div>
             </div>
