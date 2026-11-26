@@ -4307,10 +4307,11 @@ class SpmbModel
     {
         self::ensureKartuObservasiSchema();
         $candidates = self::db()->findAll("
-            SELECT id, nomor_pendaftaran
-            FROM `spmb_pendaftar`
-            WHERE group_id = ? AND status_kelulusan = 'Lulus / Diterima'
-            ORDER BY id ASC
+            SELECT p.id, p.nomor_pendaftaran
+            FROM `spmb_pendaftar` p
+            INNER JOIN `spmb_observasi_respon` obs ON obs.pendaftar_id = p.id AND obs.status = 'selesai'
+            WHERE p.group_id = ? AND p.status_kelulusan = 'Lulus / Diterima'
+            ORDER BY p.id ASC
         ", [$groupId]);
 
         $inserted = 0;
@@ -4374,9 +4375,11 @@ class SpmbModel
             SELECT pj.*,
                    p.nama_lengkap, p.nomor_pendaftaran, p.jenjang, p.jenis_pendaftaran, p.foto,
                    p.no_wa, p.no_hp, p.no_hp_ayah, p.no_hp_ibu, p.no_hp_wali, p.nama_ayah, p.nama_ibu,
+                   obs.no_wa_pengisi, obs.submitted_at AS observasi_submitted_at,
                    r.nama_ruangan, r.sesi_nama, r.tanggal AS tgl_sesi, r.jam_mulai, r.jam_selesai, r.pengawas
             FROM `spmb_observasi_peserta_jadwal` pj
             JOIN `spmb_pendaftar` p ON p.id = pj.pendaftar_id
+            INNER JOIN `spmb_observasi_respon` obs ON obs.pendaftar_id = p.id AND obs.status = 'selesai'
             LEFT JOIN `spmb_observasi_ruangan` r ON r.id = pj.ruangan_id
             WHERE {$whereSql}
             ORDER BY r.tanggal ASC, r.jam_mulai ASC, r.nama_ruangan ASC, p.nama_lengkap ASC
@@ -4424,6 +4427,7 @@ class SpmbModel
             SELECT pj.id, p.jenjang
             FROM `spmb_observasi_peserta_jadwal` pj
             JOIN `spmb_pendaftar` p ON p.id = pj.pendaftar_id
+            INNER JOIN `spmb_observasi_respon` obs ON obs.pendaftar_id = p.id AND obs.status = 'selesai'
             WHERE " . implode(' AND ', $where) . "
             ORDER BY p.jenjang ASC, p.id ASC
         ", $params);
@@ -4570,9 +4574,11 @@ class SpmbModel
         $row = self::db()->find("
             SELECT pj.*,
                    p.nama_lengkap, p.nomor_pendaftaran, p.jenjang, p.no_wa, p.no_hp, p.no_hp_ayah, p.no_hp_ibu, p.no_hp_wali,
+                   obs.no_wa_pengisi,
                    r.nama_ruangan, r.sesi_nama, r.tanggal AS tgl_sesi, r.jam_mulai, r.jam_selesai, r.pengawas
             FROM `spmb_observasi_peserta_jadwal` pj
             JOIN `spmb_pendaftar` p ON p.id = pj.pendaftar_id
+            LEFT JOIN `spmb_observasi_respon` obs ON obs.pendaftar_id = p.id
             LEFT JOIN `spmb_observasi_ruangan` r ON r.id = pj.ruangan_id
             WHERE pj.id = ? LIMIT 1
         ", [$pesertaId]);
@@ -4622,7 +4628,7 @@ class SpmbModel
 
     private static function resolvePendaftarPhone(array $p): string
     {
-        foreach (['no_wa', 'no_hp', 'no_hp_ibu', 'no_hp_ayah', 'no_hp_wali'] as $k) {
+        foreach (['no_wa_pengisi', 'no_wa', 'no_hp', 'no_hp_ibu', 'no_hp_ayah', 'no_hp_wali'] as $k) {
             $v = trim((string)($p[$k] ?? ''));
             if ($v !== '') return $v;
         }

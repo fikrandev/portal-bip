@@ -27,7 +27,7 @@ $cetakQuery = http_build_query(array_filter([
             </div>
             <h1 class="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">Kartu Observasi, Ruangan Sesi &amp; Scan QR</h1>
             <p class="text-xs sm:text-sm text-slate-500 mt-0.5">
-                Cetak ID Card observasi ber-QR Code, atur ruangan &amp; jam sesi, scan QR absensi kehadiran, dan broadcast jadwal via WhatsApp.
+                Menampilkan peserta yang <strong>sudah mengisi link Observasi Awal</strong>. Cetak/download PDF kartu ukuran KTP, scan QR absen, bagi ruangan, &amp; broadcast link ke orang tua.
             </p>
         </div>
 
@@ -47,11 +47,15 @@ $cetakQuery = http_build_query(array_filter([
             </form>
             <button type="button" onclick="openBroadcastJadwalModal()"
                     class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold shadow-xs cursor-pointer">
-                Broadcast Jadwal WA
+                Broadcast Link &amp; Jadwal WA
             </button>
+            <a href="<?= url('kelola-spmb/kartu-observasi/cetak?' . ($cetakQuery ? $cetakQuery . '&' : '') . 'auto_download=1') ?>" target="_blank"
+               class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-sm font-bold shadow-xs">
+                Download PDF Semua Kartu
+            </a>
             <a href="<?= url('kelola-spmb/kartu-observasi/cetak' . ($cetakQuery ? '?' . $cetakQuery : '')) ?>" target="_blank"
                class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-sm font-bold shadow-xs">
-                Cetak Semua Kartu
+                Cetak Kartu PDF
             </a>
         </div>
     </div>
@@ -200,6 +204,10 @@ $cetakQuery = http_build_query(array_filter([
                                            class="inline-flex items-center px-3 py-1.5 rounded-xl bg-sky-50 hover:bg-sky-600 text-sky-700 hover:text-white border border-sky-200 text-xs font-bold transition-colors">
                                             Kartu
                                         </a>
+                                        <button type="button" onclick="copyKartuLink('<?= e($it['kartu_url']) ?>', this)"
+                                                class="inline-flex items-center px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white border border-indigo-200 text-xs font-bold cursor-pointer transition-colors">
+                                            Salin Link
+                                        </button>
                                         <button type="button" onclick="sendWaJadwalSingle(<?= (int)$it['id'] ?>, this)"
                                                 class="inline-flex items-center px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white border border-emerald-200 text-xs font-bold cursor-pointer transition-colors">
                                             Kirim WA
@@ -474,9 +482,19 @@ $cetakQuery = http_build_query(array_filter([
             <button type="button" onclick="closeBroadcastJadwalModal()" class="p-1.5 rounded-full text-slate-400 hover:bg-slate-100 cursor-pointer">✕</button>
         </div>
 
+        <div class="flex flex-wrap items-center justify-between gap-2 bg-slate-50 p-3 rounded-2xl border border-slate-200">
+            <label class="inline-flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer">
+                <input type="checkbox" id="bc_jadwal_only_unsent" checked class="w-4 h-4 rounded text-emerald-600">
+                <span>Hanya kirim ke orang tua yang belum pernah dikirim</span>
+            </label>
+            <button type="button" onclick="copyAllKartuLinks()" class="px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-bold cursor-pointer">
+                Salin Daftar Link Kartu
+            </button>
+        </div>
+
         <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">Template Pesan WhatsApp</label>
-            <textarea id="bc_jadwal_template" rows="8" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-mono outline-none focus:border-emerald-500"><?= e($defaultWaTemplate) ?></textarea>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Template Pesan WhatsApp (Otomatis menyertakan Link Kartu masing-masing ortu)</label>
+            <textarea id="bc_jadwal_template" rows="7" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-mono outline-none focus:border-emerald-500"><?= e($defaultWaTemplate) ?></textarea>
             <p class="text-[11px] text-slate-400 mt-1">Variabel: <code>{nama_siswa}</code>, <code>{no_pendaftaran}</code>, <code>{jenjang}</code>, <code>{tanggal_sesi}</code>, <code>{sesi_jam}</code>, <code>{ruangan}</code>, <code>{pengawas}</code>, <code>{link_kartu}</code></p>
         </div>
 
@@ -488,6 +506,7 @@ $cetakQuery = http_build_query(array_filter([
             <div class="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden">
                 <div id="bc_jadwal_bar" class="h-full bg-emerald-600 transition-all" style="width:0%"></div>
             </div>
+            <div id="bc_jadwal_log" class="max-h-36 overflow-y-auto divide-y divide-slate-200/70 text-[11px] pt-1"></div>
         </div>
 
         <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
@@ -565,28 +584,59 @@ function closeBroadcastJadwalModal() {
     m.classList.remove('flex');
 }
 
+function copyKartuLink(link, btn) {
+    navigator.clipboard.writeText(link).then(() => {
+        const orig = btn.textContent;
+        btn.textContent = 'Tersalin ✓';
+        setTimeout(() => btn.textContent = orig, 1500);
+    });
+}
+
+async function copyAllKartuLinks() {
+    const onlyUnsent = document.getElementById('bc_jadwal_only_unsent')?.checked ? '1' : '';
+    const qs = new URLSearchParams({
+        jenjang: '<?= e($selJenjang) ?>',
+        ruangan_id: '<?= e($selRuangan) ?>',
+        search: '<?= e($search) ?>',
+        only_unsent: onlyUnsent
+    });
+    const res = await fetch('<?= url('kelola-spmb/kartu-observasi/broadcast-data') ?>?' + qs.toString());
+    const json = await res.json();
+    const items = json.items || [];
+    if (!items.length) { alert('Tidak ada data peserta untuk disalin.'); return; }
+    const text = items.map((it, i) =>
+        `${i + 1}. ${it.nama_lengkap} (${it.jenjang})\nRuang: ${it.nama_ruangan || '-'} | ${it.sesi_nama || '-'}\nKartu QR: ${it.kartu_url}`
+    ).join('\n\n');
+    await navigator.clipboard.writeText(text);
+    alert(`Berhasil menyalin ${items.length} link Kartu QR Observasi!`);
+}
+
 async function startBroadcastJadwal() {
     const btn = document.getElementById('btnStartBcJadwal');
     const wrap = document.getElementById('bc_jadwal_progress_wrap');
     const txt = document.getElementById('bc_jadwal_status_txt');
     const cnt = document.getElementById('bc_jadwal_count_txt');
     const bar = document.getElementById('bc_jadwal_bar');
+    const logEl = document.getElementById('bc_jadwal_log');
     const tpl = document.getElementById('bc_jadwal_template').value;
+    const onlyUnsent = document.getElementById('bc_jadwal_only_unsent')?.checked ? '1' : '';
 
     btn.disabled = true;
     wrap.classList.remove('hidden');
+    if (logEl) logEl.innerHTML = '';
     txt.textContent = 'Mengambil daftar peserta...';
 
     const qs = new URLSearchParams({
         jenjang: '<?= e($selJenjang) ?>',
         ruangan_id: '<?= e($selRuangan) ?>',
-        search: '<?= e($search) ?>'
+        search: '<?= e($search) ?>',
+        only_unsent: onlyUnsent
     });
     const listRes = await fetch('<?= url('kelola-spmb/kartu-observasi/broadcast-data') ?>?' + qs.toString());
     const listJson = await listRes.json();
     const items = listJson.items || [];
     if (items.length === 0) {
-        txt.textContent = 'Tidak ada peserta dengan nomor WA valid.';
+        txt.textContent = 'Tidak ada peserta target dengan nomor WA valid.';
         btn.disabled = false;
         return;
     }
@@ -605,9 +655,16 @@ async function startBroadcastJadwal() {
         try {
             const r = await fetch('<?= url('kelola-spmb/kartu-observasi/broadcast-send') ?>', { method: 'POST', body: fd });
             const j = await r.json();
-            if (j.success) ok++; else fail++;
+            if (j.success) {
+                ok++;
+                if (logEl) logEl.insertAdjacentHTML('afterbegin', `<div class="py-1 text-emerald-700 font-semibold">✓ ${it.nama_lengkap} (${it.target_phone}) — Terkirim</div>`);
+            } else {
+                fail++;
+                if (logEl) logEl.insertAdjacentHTML('afterbegin', `<div class="py-1 text-rose-600 font-semibold">✕ ${it.nama_lengkap} — ${j.message || 'Gagal'}</div>`);
+            }
         } catch (e) {
             fail++;
+            if (logEl) logEl.insertAdjacentHTML('afterbegin', `<div class="py-1 text-rose-600 font-semibold">✕ ${it.nama_lengkap} — Error koneksi</div>`);
         }
     }
     txt.textContent = `Selesai! Terkirim: ${ok}, Gagal: ${fail}`;

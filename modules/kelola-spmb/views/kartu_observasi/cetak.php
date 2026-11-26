@@ -61,6 +61,7 @@ function getKartuThemeByJenjang(string $jenjang): array {
     <meta charset="UTF-8">
     <title>Cetak Kartu Observasi SPMB (Ukuran KTP)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -229,10 +230,13 @@ function getKartuThemeByJenjang(string $jenjang): array {
 <body>
     <div class="toolbar no-print">
         <div style="font-size:13px;font-weight:700;">Pratinjau Cetak Kartu Observasi — Ukuran KTP 85.6 × 54 mm (<?= count($items) ?> Kartu)</div>
-        <button class="btn btn-print" onclick="window.print()">Cetak Kartu / PDF</button>
+        <div style="display:flex;gap:8px;align-items:center;">
+            <button type="button" id="btnDownloadPdfAll" class="btn" style="background:#059669;color:#fff;" onclick="downloadAllCardsPdf()">Download PDF Semua Kartu</button>
+            <button type="button" class="btn btn-print" onclick="window.print()">Cetak / Print PDF</button>
+        </div>
     </div>
 
-    <div class="grid">
+    <div id="kartuPdfContainer" class="grid">
         <?php foreach ($items as $it):
             $theme = getKartuThemeByJenjang((string)($it['jenjang'] ?? ''));
         ?>
@@ -278,6 +282,45 @@ function getKartuThemeByJenjang(string $jenjang): array {
             correctLevel: QRCode.CorrectLevel.M
         });
     });
+
+    function downloadAllCardsPdf() {
+        const btn = document.getElementById('btnDownloadPdfAll');
+        const el = document.getElementById('kartuPdfContainer');
+        if (!el || typeof html2pdf === 'undefined') {
+            window.print();
+            return;
+        }
+        if (btn) {
+            btn.disabled = true;
+            btn.textContent = 'Membuat PDF...';
+        }
+        const opt = {
+            margin:       [7, 10, 7, 10],
+            filename:     'Kartu_Observasi_SPMB_<?= date('Ymd_His') ?>.pdf',
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2, useCORS: true, logging: false },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+            pagebreak:    { mode: ['avoid-all', 'css'] }
+        };
+        html2pdf().set(opt).from(el).save().then(() => {
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = 'Download PDF Semua Kartu';
+            }
+        }).catch(() => {
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = 'Download PDF Semua Kartu';
+            }
+            window.print();
+        });
+    }
+
+    <?php if (!empty($_GET['auto_download'])): ?>
+    window.addEventListener('load', () => {
+        setTimeout(() => downloadAllCardsPdf(), 600);
+    });
+    <?php endif; ?>
     </script>
 </body>
 </html>
