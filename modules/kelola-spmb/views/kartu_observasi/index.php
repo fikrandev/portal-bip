@@ -259,7 +259,19 @@ $cetakQuery = http_build_query(array_filter([
                 </div>
 
                 <div class="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-800">
-                    <strong>Info:</strong> QR Code pada kartu juga bisa <strong>langsung di-scan menggunakan kamera bawaan HP apa saja</strong> (Android/iPhone) tanpa perlu membuka halaman scan ini — pastikan panitia sudah login Portal BIP di browser HP.
+                    <strong>Info:</strong> QR Code kartu bersifat <strong>sekali jadi (permanen)</strong> walaupun sesi/ruangan diubah. Semua kamera HP bawaan bisa langsung scan QR, dan sistem otomatis memberi <strong>peringatan jika peserta scan di luar sesinya</strong>.
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Validasi Sesi / Ruangan Aktif Saat Ini:</label>
+                    <select id="scanExpectedRuangan" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-slate-50 text-xs font-bold text-slate-800 outline-none focus:border-emerald-500">
+                        <option value="">Otomatis Validasi Tanggal &amp; Jam Sesi Peserta</option>
+                        <?php foreach ($ruanganList as $rg): ?>
+                            <option value="<?= (int)$rg['id'] ?>">
+                                Khusus: <?= e($rg['nama_ruangan']) ?> — <?= e($rg['sesi_nama']) ?> (<?= date('d/m', strtotime($rg['tanggal'])) ?> <?= e($rg['jam_mulai']) ?>–<?= e($rg['jam_selesai']) ?>)
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
                 </div>
 
                 <div id="qr-reader" class="w-full rounded-2xl overflow-hidden bg-slate-900 min-h-[260px] flex items-center justify-center text-xs text-slate-400">
@@ -297,23 +309,44 @@ $cetakQuery = http_build_query(array_filter([
         let lastScannedToken = '';
         let lastScanTime = 0;
 
-        async function processQrCode(code) {
+        async function processQrCode(code, force = false) {
             const now = Date.now();
-            if (code === lastScannedToken && (now - lastScanTime) < 3500) return;
+            if (!force && code === lastScannedToken && (now - lastScanTime) < 3500) return;
             lastScannedToken = code;
             lastScanTime = now;
 
             const box = document.getElementById('scanResultBox');
             const hist = document.getElementById('scanHistoryList');
+            const expectedRid = document.getElementById('scanExpectedRuangan')?.value || '';
 
             const fd = new FormData();
             fd.append('csrf_token', '<?= e($csrfToken) ?>');
             fd.append('qr_code', code);
+            if (expectedRid) fd.append('expected_ruangan_id', expectedRid);
+            if (force) fd.append('force', '1');
 
             try {
                 const res = await fetch('<?= url('kelola-spmb/kartu-observasi/scan') ?>', { method: 'POST', body: fd });
                 const json = await res.json();
-                if (json.success && json.data) {
+                if (json.wrong_session && json.data) {
+                    const d = json.data;
+                    const safeToken = String(d.qr_token || code).replace(/'/g, "\\'");
+                    box.className = 'p-5 rounded-2xl border-2 border-amber-400 bg-amber-50 text-left space-y-2.5';
+                    box.innerHTML = `
+                        <div class="flex items-center justify-between">
+                            <span class="px-3 py-1 rounded-full bg-rose-100 text-rose-800 text-xs font-extrabold">⚠️ BUKAN SESINYA!</span>
+                            <span class="text-xs font-bold text-indigo-700">${d.urutan_sesi ? 'No. Urut #' + String(d.urutan_sesi).padStart(2, '0') : ''}</span>
+                        </div>
+                        <div class="text-lg font-extrabold text-slate-900">${d.nama_lengkap} (${d.jenjang})</div>
+                        <div class="text-xs font-semibold text-amber-900 bg-white/80 p-2.5 rounded-xl border border-amber-200">${json.message}</div>
+                        <div class="pt-1 flex justify-end">
+                            <button type="button" onclick="if(confirm('Tetap catat hadir di luar sesinya?')) processQrCode('${safeToken}', true)"
+                                    class="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold cursor-pointer">
+                                Tetap Catat Hadir (Override)
+                            </button>
+                        </div>
+                    `;
+                } else if (json.success && json.data) {
                     const d = json.data;
                     const badge = json.already
                         ? '<span class="px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-extrabold">SUDAH ABSEN SEBELUMNYA</span>'
@@ -322,7 +355,7 @@ $cetakQuery = http_build_query(array_filter([
                     box.innerHTML = `
                         <div class="flex items-center justify-between">${badge}<span class="text-xs font-mono text-slate-500">${d.waktu_absen || ''}</span></div>
                         <div class="text-lg font-extrabold text-slate-900">${d.nama_lengkap}</div>
-                        <div class="text-xs text-slate-600">No. Peserta: <strong>${d.nomor_peserta}</strong> &bull; Jenjang: <strong>${d.jenjang}</strong></div>
+                        <div class="text-xs text-slate-600">No. Peserta: <strong>${d.nomor_peserta}</strong> &bull; Jenjang: <strong>${d.jenjang}</strong> ${d.urutan_sesi ? '&bull; No. Urut Sesi: <strong>#' + String(d.urutan_sesi).padStart(2, '0') + '</strong>' : ''}</div>
                         <div class="text-xs text-indigo-700 font-bold">Ruangan: ${d.nama_ruangan || 'Belum Diatur'} ${d.sesi_nama ? '(' + d.sesi_nama + ' ' + d.jam_mulai + '-' + d.jam_selesai + ')' : ''}</div>
                     `;
                     if (hist) {

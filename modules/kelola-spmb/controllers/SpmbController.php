@@ -4107,9 +4107,12 @@ SVG;
             return;
         }
         $qrCode = trim((string)($_POST['qr_code'] ?? ''));
+        $expectedRuanganId = !empty($_POST['expected_ruangan_id']) ? (int)$_POST['expected_ruangan_id'] : null;
+        $force = !empty($_POST['force']);
         $petugas = class_exists('Auth') ? (Auth::name() ?: 'Admin') : 'Admin';
-        $res = SpmbModel::scanAbsenObservasi($qrCode, $petugas);
-        Response::json($res, !empty($res['success']) ? 200 : 400);
+        $res = SpmbModel::scanAbsenObservasi($qrCode, $petugas, $expectedRuanganId, $force);
+        $httpCode = (!empty($res['success']) || !empty($res['wrong_session'])) ? 200 : 400;
+        Response::json($res, $httpCode);
     }
 
     public static function kartuObservasiResetAbsen(int $id): void
@@ -4230,7 +4233,8 @@ SVG;
         }
 
         $petugas = Auth::name() ?: 'Panitia SPMB';
-        $result = SpmbModel::scanAbsenObservasi($token, $petugas);
+        $force = !empty($_GET['force']);
+        $result = SpmbModel::scanAbsenObservasi($token, $petugas, null, $force);
         include BASE_PATH . '/modules/kelola-spmb/views/kartu_observasi/absen_qr_result.php';
     }
 

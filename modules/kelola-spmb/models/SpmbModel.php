@@ -4562,7 +4562,7 @@ class SpmbModel
         return array_values($groups);
     }
 
-    public static function scanAbsenObservasi(string $qrInput, string $petugas = 'Admin'): array
+    public static function scanAbsenObservasi(string $qrInput, string $petugas = 'Admin', ?int $expectedRuanganId = null, bool $force = false): array
     {
         self::ensureKartuObservasiSchema();
         $code = trim($qrInput);
@@ -4598,6 +4598,56 @@ class SpmbModel
         }
 
         $already = (($row['status_absen'] ?? '') === 'Hadir');
+
+        // Validasi sesi & ruangan (hanya jika belum hadir dan bukan mode force override)
+        if (!$already && !$force) {
+            $rowRid = !empty($row['ruangan_id']) ? (int)$row['ruangan_id'] : 0;
+            $wrongReason = null;
+
+            if ($rowRid <= 0) {
+                $wrongReason = 'Peserta ini belum diatur jadwal sesi & ruangannya.';
+            } elseif ($expectedRuanganId && $expectedRuanganId > 0 && $rowRid !== $expectedRuanganId) {
+                $expR = self::db()->find("SELECT nama_ruangan, sesi_nama, jam_mulai, jam_selesai FROM `spmb_observasi_ruangan` WHERE id = ? LIMIT 1", [$expectedRuanganId]);
+                $expLabel = $expR ? ($expR['nama_ruangan'] . ' — ' . $expR['sesi_nama']) : ('Ruangan #' . $expectedRuanganId);
+                $wrongReason = 'Bukan sesi/ruangan ini! Sesi aktif scanner: ' . $expLabel
+                    . ', sedangkan peserta ini terdaftar di ' . ($row['nama_ruangan'] ?: '-') . ' — ' . ($row['sesi_nama'] ?: '-')
+                    . ' (' . ($row['jam_mulai'] ?? '') . '–' . ($row['jam_selesai'] ?? '') . ').';
+            } elseif (!empty($row['tgl_sesi'])) {
+                $todayYmd = date('Y-m-d');
+                $tglSesi = (string)$row['tgl_sesi'];
+                $jamMulai = trim((string)($row['jam_mulai'] ?? ''));
+                $jamSelesai = trim((string)($row['jam_selesai'] ?? ''));
+
+                if ($todayYmd !== $tglSesi) {
+                    $wrongReason = 'Bukan tanggal sesinya! Jadwal peserta ini pada tanggal ' . date('d/m/Y', strtotime($tglSesi))
+                        . ' (' . ($row['sesi_nama'] ?: '-') . ' ' . $jamMulai . '–' . $jamSelesai . ' di ' . ($row['nama_ruangan'] ?: '-') . ').';
+                } elseif ($jamMulai !== '' && $jamSelesai !== '') {
+                    $nowTs = time();
+                    // Toleransi datang 30 menit lebih awal sebelum jam mulai sesi
+                    $startAllowTs = strtotime($tglSesi . ' ' . $jamMulai) - (30 * 60);
+                    $endAllowTs   = strtotime($tglSesi . ' ' . $jamSelesai);
+                    if ($startAllowTs !== false && $endAllowTs !== false) {
+                        if ($nowTs < $startAllowTs) {
+                            $wrongReason = 'Belum masuk jam sesinya! Jadwal peserta ini: ' . ($row['sesi_nama'] ?: '-')
+                                . ' pukul ' . $jamMulai . '–' . $jamSelesai . ' (check-in dibuka 30 menit sebelum sesi) di ' . ($row['nama_ruangan'] ?: '-') . '.';
+                        } elseif ($nowTs > $endAllowTs) {
+                            $wrongReason = 'Sudah melewati jam sesinya! Jadwal peserta ini: ' . ($row['sesi_nama'] ?: '-')
+                                . ' pukul ' . $jamMulai . '–' . $jamSelesai . ' di ' . ($row['nama_ruangan'] ?: '-') . '.';
+                        }
+                    }
+                }
+            }
+
+            if ($wrongReason !== null) {
+                return [
+                    'success'       => false,
+                    'wrong_session' => true,
+                    'message'       => $wrongReason,
+                    'data'          => $row,
+                ];
+            }
+        }
+
         if (!$already) {
             self::db()->query("
                 UPDATE `spmb_observasi_peserta_jadwal` SET
@@ -4605,19 +4655,20 @@ class SpmbModel
                     waktu_absen = NOW(),
                     absen_oleh = ?
                 WHERE id = ?
-            ", [$petugas, (int)$row['id']]);
+            ", [$petugas . ($force ? ' (Override)' : ''), (int)$row['id']]);
             $row['status_absen'] = 'Hadir';
             $row['waktu_absen'] = date('Y-m-d H:i:s');
-            $row['absen_oleh'] = $petugas;
+            $row['absen_oleh'] = $petugas . ($force ? ' (Override)' : '');
         }
 
         return [
-            'success' => true,
-            'already' => $already,
-            'message' => $already
+            'success'       => true,
+            'already'       => $already,
+            'wrong_session' => false,
+            'message'       => $already
                 ? ($row['nama_lengkap'] . ' sudah tercatat HADIR sebelumnya pada ' . date('H:i', strtotime($row['waktu_absen'])))
                 : ('Absen berhasil! ' . $row['nama_lengkap'] . ' tercatat HADIR.'),
-            'data'    => $row,
+            'data'          => $row,
         ];
     }
 
