@@ -16,6 +16,9 @@ if (defined('SYS_APP_FAVICON') && !empty(SYS_APP_FAVICON)) {
 }
 
 $pendingMasuk = (int)($stats['masuk_pending'] ?? 0);
+$totalSurat = (int)($stats['total_surat'] ?? 0);
+$totalMasuk = (int)($stats['total_masuk'] ?? 0);
+$totalKeluar = (int)($stats['total_keluar'] ?? 0);
 ?>
 <aside id="sidebar"
        class="fixed top-0 left-0 z-50 w-[280px] h-screen transition-transform duration-300 ease-in-out -translate-x-full lg:translate-x-0 bg-primary-900 border-r border-primary-800 flex flex-col"
@@ -44,6 +47,28 @@ $pendingMasuk = (int)($stats['masuk_pending'] ?? 0);
                 <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/>
             </svg>
         </button>
+    </div>
+
+    <!-- Info Ringkas Persuratan Badge -->
+    <div class="px-4 pt-4 pb-2 shrink-0">
+        <div class="bg-primary-950/40 rounded-xl p-3 border border-primary-800/60">
+            <div class="flex items-center justify-between text-xs mb-1">
+                <span class="text-primary-300 font-medium flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    Ruang Lingkup
+                </span>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full <?= $scope === 'yayasan' ? 'bg-sky-500/20 text-sky-300 border border-sky-500/30' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' ?>">
+                    <?= $scope === 'yayasan' ? 'Yayasan' : 'Sekolah' ?>
+                </span>
+            </div>
+            <div class="text-white font-bold text-xs tracking-wide truncate">
+                ✉️ <?= number_format($totalSurat) ?> Total Arsip Surat
+            </div>
+            <div class="flex items-center justify-between text-[11px] text-primary-300 mt-1.5 pt-1.5 border-t border-primary-800/40">
+                <span>Masuk: <strong class="text-amber-300"><?= number_format($totalMasuk) ?></strong></span>
+                <span>Keluar: <strong class="text-emerald-300"><?= number_format($totalKeluar) ?></strong></span>
+            </div>
+        </div>
     </div>
 
     <!-- Menu Persuratan -->
