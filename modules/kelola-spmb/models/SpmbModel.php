@@ -4717,6 +4717,29 @@ class SpmbModel
         return true;
     }
 
+    public static function resetAbsenObservasiBySesi(int $groupId, ?int $ruanganId = null): int
+    {
+        self::ensureKartuObservasiSchema();
+        if ($groupId <= 0) return 0;
+        $pdo = self::db()->getConnection();
+        if ($ruanganId !== null && $ruanganId > 0) {
+            $stmt = $pdo->prepare("
+                UPDATE `spmb_observasi_peserta_jadwal` SET
+                    status_absen = 'Belum Hadir', waktu_absen = NULL, absen_oleh = NULL
+                WHERE group_id = ? AND ruangan_id = ? AND status_absen = 'Hadir'
+            ");
+            $stmt->execute([$groupId, $ruanganId]);
+        } else {
+            $stmt = $pdo->prepare("
+                UPDATE `spmb_observasi_peserta_jadwal` SET
+                    status_absen = 'Belum Hadir', waktu_absen = NULL, absen_oleh = NULL
+                WHERE group_id = ? AND status_absen = 'Hadir'
+            ");
+            $stmt->execute([$groupId]);
+        }
+        return (int)$stmt->rowCount();
+    }
+
     public static function getKartuObservasiByToken(string $token): ?array
     {
         self::ensureKartuObservasiSchema();
@@ -5188,13 +5211,14 @@ class SpmbModel
         $items = self::db()->findAll("
             SELECT p.id AS pendaftar_id, p.nomor_pendaftaran, p.nama_lengkap, p.jenjang, p.jenis_kelamin,
                    p.asal_sekolah, p.tanggal_lahir,
-                   pj.ruangan_id, pj.urutan_sesi,
+                   pj.ruangan_id, pj.urutan_sesi, pj.waktu_absen,
                    r.nama_ruangan, r.sesi_nama, r.tanggal AS tgl_sesi, r.jam_mulai, r.jam_selesai,
                    h.id AS hasil_id, h.total_nilai, h.nilai_maksimal, h.persentase,
                    h.kategori_hasil, h.kesimpulan_sistem, h.catatan_petugas, h.catatan_aspek_json,
                    h.petugas_nama, h.observed_at
             FROM `spmb_pendaftar` p
-            LEFT JOIN `spmb_observasi_peserta_jadwal` pj ON pj.pendaftar_id = p.id AND pj.group_id = p.group_id
+            INNER JOIN `spmb_observasi_peserta_jadwal` pj
+                ON pj.pendaftar_id = p.id AND pj.group_id = p.group_id AND pj.status_absen = 'Hadir'
             LEFT JOIN `spmb_observasi_ruangan` r ON r.id = pj.ruangan_id
             LEFT JOIN `spmb_observasi_siswa_hasil` h ON h.pendaftar_id = p.id AND h.group_id = p.group_id
             WHERE {$whereSql}
@@ -5552,6 +5576,30 @@ class SpmbModel
             'terjawab'    => $answeredActiveCount,
             'total_soal'  => $totalSoalUnit,
         ];
+    }
+
+    public static function resetObservasiSiswaHasil(int $groupId, int $pendaftarId): bool
+    {
+        self::ensureObservasiSiswaSchema();
+        if ($groupId <= 0 || $pendaftarId <= 0) return false;
+        $existing = self::db()->find(
+            "SELECT id FROM `spmb_observasi_siswa_hasil` WHERE group_id = ? AND pendaftar_id = ? LIMIT 1",
+            [$groupId, $pendaftarId]
+        );
+        if (!$existing) return false;
+        $hasilId = (int)$existing['id'];
+
+        $pdo = self::db()->getConnection();
+        $pdo->beginTransaction();
+        try {
+            self::db()->query("DELETE FROM `spmb_observasi_siswa_jawaban` WHERE hasil_id = ?", [$hasilId]);
+            self::db()->query("DELETE FROM `spmb_observasi_siswa_hasil` WHERE id = ?", [$hasilId]);
+            $pdo->commit();
+            return true;
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) $pdo->rollBack();
+            throw $e;
+        }
     }
 }
 

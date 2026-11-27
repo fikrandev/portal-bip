@@ -46,6 +46,22 @@ $cetakQuery = http_build_query(array_filter([
         #qr-reader > div { width: 100% !important; height: 100% !important; }
         #qr-reader video { width: 100% !important; height: 100% !important; object-fit: cover !important; border-radius: 0.75rem; }
         #qr-shaded-region { display: none !important; }
+        @keyframes qrModalPop {
+            0% { opacity: 0; transform: scale(0.82); }
+            65% { opacity: 1; transform: scale(1.03); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        @keyframes qrCircleDraw {
+            0% { stroke-dashoffset: 166; }
+            100% { stroke-dashoffset: 0; }
+        }
+        @keyframes qrCheckDraw {
+            0% { stroke-dashoffset: 48; }
+            100% { stroke-dashoffset: 0; }
+        }
+        .qr-modal-card { animation: qrModalPop 0.28s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+        .qr-check-circle { stroke-dasharray: 166; stroke-dashoffset: 166; animation: qrCircleDraw 0.45s ease-out forwards; }
+        .qr-check-tick { stroke-dasharray: 48; stroke-dashoffset: 48; animation: qrCheckDraw 0.3s 0.25s ease-out forwards; }
     </style>
 
     <div id="fullscreenQrWrap" class="fixed inset-0 z-[9999] bg-slate-950 text-white flex flex-col overflow-hidden">
@@ -119,12 +135,27 @@ $cetakQuery = http_build_query(array_filter([
                         <h3 class="text-sm sm:text-base font-extrabold text-white truncate">List Absen Hadir</h3>
                         <p id="scanListSubtitle" class="text-[11px] text-slate-400 truncate">Semua sesi aktif</p>
                     </div>
-                    <span id="scanListCountBadge" class="shrink-0 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-extrabold">
-                        0 Hadir
-                    </span>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <span id="scanListCountBadge" class="px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-extrabold">
+                            0 Hadir
+                        </span>
+                        <button type="button" id="btnResetSesiAbsen" onclick="resetAbsenSesiIni()" title="Reset kehadiran pada sesi yang dipilih"
+                                class="px-2.5 py-1 rounded-lg bg-rose-500/15 hover:bg-rose-600 border border-rose-500/40 text-rose-300 hover:text-white text-[11px] font-bold cursor-pointer transition-colors">
+                            Reset Sesi
+                        </button>
+                    </div>
                 </div>
                 <div id="scanHistoryList" class="flex-1 min-h-0 overflow-y-auto divide-y divide-slate-800/80 p-2"></div>
             </div>
+        </div>
+    </div>
+
+    <!-- Modal Notifikasi Hasil Scan QR (Animasi Centang + Bunyi Tit) -->
+    <div id="qrScanNotifModal" class="fixed inset-0 z-[10000] hidden items-center justify-center p-4 bg-slate-950/75 backdrop-blur-xs">
+        <div id="qrScanNotifCard" class="qr-modal-card bg-white text-slate-900 rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl border-4 border-emerald-400 text-center space-y-3.5">
+            <div id="qrScanNotifIcon" class="flex justify-center"></div>
+            <div id="qrScanNotifBody" class="space-y-2"></div>
+            <div id="qrScanNotifActions" class="pt-2 flex items-center justify-center gap-2"></div>
         </div>
     </div>
 
@@ -135,7 +166,166 @@ $cetakQuery = http_build_query(array_filter([
     let currentFacingMode = 'environment';
     let lastScannedToken = '';
     let lastScanTime = 0;
+    let scanNotifTimer = null;
+    let scanAudioCtx = null;
     let scanAttendedList = <?= $attendedJson ?: '[]' ?>;
+
+    function unlockScanAudio() {
+        try {
+            const Ctx = window.AudioContext || window.webkitAudioContext;
+            if (!Ctx) return;
+            if (!scanAudioCtx) scanAudioCtx = new Ctx();
+            if (scanAudioCtx.state === 'suspended') scanAudioCtx.resume();
+        } catch (e) {}
+    }
+
+    // Bunyi "TIT" menggunakan Web Audio API (tanpa file mp3 eksternal, bekerja offline)
+    function playScanBeep(type = 'success') {
+        try {
+            unlockScanAudio();
+            if (!scanAudioCtx) return;
+            const now = scanAudioCtx.currentTime;
+
+            const beep = (freq, startOffset, duration, vol = 0.35, wave = 'sine') => {
+                const osc = scanAudioCtx.createOscillator();
+                const gain = scanAudioCtx.createGain();
+                osc.type = wave;
+                osc.frequency.setValueAtTime(freq, now + startOffset);
+                gain.gain.setValueAtTime(0.001, now + startOffset);
+                gain.gain.exponentialRampToValueAtTime(vol, now + startOffset + 0.015);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + startOffset + duration);
+                osc.connect(gain);
+                gain.connect(scanAudioCtx.destination);
+                osc.start(now + startOffset);
+                osc.stop(now + startOffset + duration + 0.02);
+            };
+
+            if (type === 'success') {
+                // Bunyi "TIT!" nyaring & bersih
+                beep(1560, 0, 0.18, 0.45, 'sine');
+                beep(2090, 0.06, 0.14, 0.25, 'triangle');
+            } else if (type === 'already') {
+                // Bunyi "tit-tit" ganda
+                beep(1040, 0, 0.10, 0.35, 'sine');
+                beep(1040, 0.14, 0.10, 0.35, 'sine');
+            } else {
+                // Bunyi peringatan rendah untuk salah sesi / tidak dikenali
+                beep(340, 0, 0.16, 0.4, 'sawtooth');
+                beep(240, 0.18, 0.22, 0.4, 'sawtooth');
+            }
+        } catch (e) {}
+    }
+
+    function closeQrScanModal() {
+        if (scanNotifTimer) {
+            clearTimeout(scanNotifTimer);
+            scanNotifTimer = null;
+        }
+        const m = document.getElementById('qrScanNotifModal');
+        if (m) {
+            m.classList.add('hidden');
+            m.classList.remove('flex');
+        }
+    }
+
+    function showQrScanModal({ type = 'success', badge = '', title = '', meta = '', detail = '', actionsHtml = '', autoCloseMs = 2200 }) {
+        closeQrScanModal();
+        const modal = document.getElementById('qrScanNotifModal');
+        const card = document.getElementById('qrScanNotifCard');
+        const iconEl = document.getElementById('qrScanNotifIcon');
+        const bodyEl = document.getElementById('qrScanNotifBody');
+        const actEl = document.getElementById('qrScanNotifActions');
+        if (!modal || !card || !iconEl || !bodyEl || !actEl) return;
+
+        // Re-trigger pop animation
+        card.classList.remove('qr-modal-card');
+        void card.offsetWidth;
+        card.classList.add('qr-modal-card');
+
+        if (type === 'success') {
+            card.className = 'qr-modal-card bg-white text-slate-900 rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl border-4 border-emerald-400 text-center space-y-3.5';
+            iconEl.innerHTML = `<div class="w-20 h-20 rounded-full bg-emerald-50 flex items-center justify-center">
+                <svg class="w-16 h-16" viewBox="0 0 52 52">
+                    <circle class="qr-check-circle" cx="26" cy="26" r="24" fill="none" stroke="#10b981" stroke-width="4"/>
+                    <path class="qr-check-tick" fill="none" stroke="#10b981" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" d="M14 27l8 8 16-16"/>
+                </svg>
+            </div>`;
+        } else if (type === 'already') {
+            card.className = 'qr-modal-card bg-white text-slate-900 rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl border-4 border-amber-400 text-center space-y-3.5';
+            iconEl.innerHTML = `<div class="w-20 h-20 rounded-full bg-amber-50 flex items-center justify-center">
+                <svg class="w-16 h-16" viewBox="0 0 52 52">
+                    <circle class="qr-check-circle" cx="26" cy="26" r="24" fill="none" stroke="#f59e0b" stroke-width="4"/>
+                    <path class="qr-check-tick" fill="none" stroke="#f59e0b" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" d="M14 27l8 8 16-16"/>
+                </svg>
+            </div>`;
+        } else if (type === 'warning') {
+            card.className = 'qr-modal-card bg-white text-slate-900 rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl border-4 border-amber-500 text-center space-y-3.5';
+            iconEl.innerHTML = `<div class="w-20 h-20 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center text-4xl font-extrabold">⚠️</div>`;
+        } else {
+            card.className = 'qr-modal-card bg-white text-slate-900 rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl border-4 border-rose-400 text-center space-y-3.5';
+            iconEl.innerHTML = `<div class="w-20 h-20 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center text-4xl font-extrabold">✕</div>`;
+        }
+
+        bodyEl.innerHTML = `
+            ${badge ? `<div>${badge}</div>` : ''}
+            ${title ? `<div class="text-xl font-extrabold text-slate-900 leading-tight">${title}</div>` : ''}
+            ${meta ? `<div class="text-xs font-semibold text-slate-500">${meta}</div>` : ''}
+            ${detail ? `<div class="p-3 rounded-2xl bg-slate-50 border border-slate-200 text-xs text-slate-700">${detail}</div>` : ''}
+        `;
+        actEl.innerHTML = actionsHtml || `<button type="button" onclick="closeQrScanModal()" class="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold cursor-pointer">OK, Lanjut Scan</button>`;
+
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+
+        if (autoCloseMs > 0) {
+            scanNotifTimer = setTimeout(closeQrScanModal, autoCloseMs);
+        }
+    }
+
+    async function resetAbsenSesiIni() {
+        const selEl = document.getElementById('scanExpectedRuangan');
+        const selectedRid = selEl ? (selEl.value || '') : '';
+        const sesiLabel = selectedRid && selEl
+            ? selEl.options[selEl.selectedIndex].text
+            : 'SEMUA SESI (seluruh peserta hadir)';
+
+        if (!confirm(`Reset kehadiran untuk:\n${sesiLabel}\n\nSemua status Hadir pada sesi ini akan dikembalikan ke Belum Hadir (untuk reset uji coba). Lanjutkan?`)) {
+            return;
+        }
+
+        const btn = document.getElementById('btnResetSesiAbsen');
+        const origText = btn ? btn.textContent : '';
+        if (btn) { btn.disabled = true; btn.textContent = 'Mereset...'; }
+
+        const fd = new FormData();
+        fd.append('csrf_token', '<?= e($csrfToken) ?>');
+        fd.append('ajax', '1');
+        if (selectedRid) fd.append('ruangan_id', selectedRid);
+
+        try {
+            const res = await fetch('<?= url('kelola-spmb/kartu-observasi/reset-absen-sesi') ?>', { method: 'POST', body: fd });
+            const json = await res.json();
+            if (json.success) {
+                if (selectedRid) {
+                    scanAttendedList = scanAttendedList.filter(it => String(it.ruangan_id || '') !== String(selectedRid));
+                } else {
+                    scanAttendedList = [];
+                }
+                renderScanAbsenList();
+                const box = document.getElementById('scanResultBox');
+                if (box) {
+                    box.className = 'shrink-0 px-4 py-3 rounded-2xl border border-slate-700 bg-slate-900 text-center text-xs sm:text-sm text-emerald-300 font-semibold';
+                    box.textContent = json.message || 'Kehadiran sesi berhasil direset.';
+                }
+            } else {
+                alert(json.message || 'Gagal mereset kehadiran sesi.');
+            }
+        } catch (e) {
+            alert('Koneksi gagal saat mereset kehadiran sesi.');
+        } finally {
+            if (btn) { btn.disabled = false; btn.textContent = origText; }
+        }
+    }
 
     function escHtmlScan(str) {
         return String(str ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
@@ -246,6 +436,7 @@ $cetakQuery = http_build_query(array_filter([
             if (json.wrong_session && json.data) {
                 const d = json.data;
                 const safeToken = String(d.qr_token || code).replace(/'/g, "\\'");
+                playScanBeep('warning');
                 box.className = 'shrink-0 p-3.5 rounded-2xl border-2 border-amber-400 bg-amber-950/80 text-left space-y-2';
                 box.innerHTML = `
                     <div class="flex items-center justify-between gap-2">
@@ -261,8 +452,24 @@ $cetakQuery = http_build_query(array_filter([
                         </button>
                     </div>
                 `;
+                showQrScanModal({
+                    type: 'warning',
+                    badge: '<span class="inline-block px-3 py-1 rounded-full bg-rose-100 text-rose-800 text-xs font-extrabold">⚠️ BUKAN SESINYA!</span>',
+                    title: escHtmlScan(d.nama_lengkap),
+                    meta: `${escHtmlScan(d.nomor_peserta)} • Unit ${escHtmlScan(d.jenjang)}${d.urutan_sesi ? ' • No. Urut #' + String(d.urutan_sesi).padStart(2, '0') : ''}`,
+                    detail: `<div class="text-amber-900 font-semibold">${escHtmlScan(json.message)}</div>`,
+                    actionsHtml: `
+                        <button type="button" onclick="closeQrScanModal()" class="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold cursor-pointer">Tutup</button>
+                        <button type="button" onclick="if(confirm('Tetap catat hadir di luar sesinya?')) { closeQrScanModal(); processQrCode('${safeToken}', true); }"
+                                class="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-extrabold cursor-pointer">
+                            Tetap Catat Hadir (Override)
+                        </button>
+                    `,
+                    autoCloseMs: 0
+                });
             } else if (json.success && json.data) {
                 const d = json.data;
+                playScanBeep(json.already ? 'already' : 'success');
                 const badge = json.already
                     ? '<span class="px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-400/40 text-amber-200 text-xs font-extrabold">SUDAH ABSEN SEBELUMNYA</span>'
                     : '<span class="px-2.5 py-0.5 rounded-full bg-emerald-500/25 border border-emerald-400/50 text-emerald-200 text-xs font-extrabold">✓ BERHASIL ABSEN HADIR</span>';
@@ -273,9 +480,30 @@ $cetakQuery = http_build_query(array_filter([
                     <div class="text-xs text-slate-300">${d.urutan_sesi ? 'No. Urut <strong>#' + String(d.urutan_sesi).padStart(2, '0') + '</strong> &bull; ' : ''}${escHtmlScan(d.nama_ruangan || 'Belum Diatur')} ${d.sesi_nama ? '(' + escHtmlScan(d.sesi_nama) + ' ' + escHtmlScan(d.jam_mulai) + '-' + escHtmlScan(d.jam_selesai) + ')' : ''}</div>
                 `;
                 upsertAttendedItem(d);
+
+                const modalBadge = json.already
+                    ? '<span class="inline-block px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-extrabold">SUDAH ABSEN SEBELUMNYA</span>'
+                    : '<span class="inline-block px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-extrabold">✓ BERHASIL ABSEN HADIR</span>';
+                showQrScanModal({
+                    type: json.already ? 'already' : 'success',
+                    badge: modalBadge,
+                    title: escHtmlScan(d.nama_lengkap),
+                    meta: `${escHtmlScan(d.nomor_peserta)} • Unit ${escHtmlScan(d.jenjang)}${d.urutan_sesi ? ' • No. Urut #' + String(d.urutan_sesi).padStart(2, '0') : ''}`,
+                    detail: `<div class="font-bold text-indigo-700">${escHtmlScan(d.nama_ruangan || 'Belum Diatur')} ${d.sesi_nama ? '— ' + escHtmlScan(d.sesi_nama) + ' (' + escHtmlScan(d.jam_mulai) + '-' + escHtmlScan(d.jam_selesai) + ')' : ''}</div><div class="text-[11px] text-slate-500 mt-1">Waktu Absen: <strong>${escHtmlScan(d.waktu_absen || '-')}</strong></div>`,
+                    autoCloseMs: 2200
+                });
             } else {
+                playScanBeep('error');
                 box.className = 'shrink-0 p-3.5 rounded-2xl border border-rose-500/60 bg-rose-950/70 text-center text-xs sm:text-sm font-bold text-rose-200';
                 box.textContent = json.message || 'QR tidak dikenali.';
+                showQrScanModal({
+                    type: 'error',
+                    badge: '<span class="inline-block px-3 py-1 rounded-full bg-rose-100 text-rose-800 text-xs font-extrabold">QR TIDAK DIKENALI</span>',
+                    title: 'Absen Gagal',
+                    detail: escHtmlScan(json.message || 'QR Code tidak ditemukan pada data peserta.'),
+                    actionsHtml: `<button type="button" onclick="closeQrScanModal()" class="px-6 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-sm font-bold cursor-pointer">Tutup</button>`,
+                    autoCloseMs: 2500
+                });
             }
         } catch (e) {
             box.className = 'shrink-0 p-3.5 rounded-2xl border border-rose-500/60 bg-rose-950/70 text-center text-xs sm:text-sm font-bold text-rose-200';
@@ -372,6 +600,7 @@ $cetakQuery = http_build_query(array_filter([
         startQrCamera();
     }
 
+    document.addEventListener('pointerdown', unlockScanAudio, { once: true });
     window.addEventListener('beforeunload', stopQrScannerBeforeLeave);
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', initFullscreenScanMode);
@@ -742,6 +971,12 @@ $cetakQuery = http_build_query(array_filter([
                                         <td class="px-4 py-3.5 text-right whitespace-nowrap space-x-1">
                                             <a href="<?= url('kelola-spmb/kartu-observasi/cetak-jadwal?ruangan_id=' . (int)$rg['id']) ?>" target="_blank" class="inline-flex px-2.5 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white text-xs font-bold">Jadwal PDF</a>
                                             <a href="<?= url('kelola-spmb/kartu-observasi/cetak?ruangan_id=' . (int)$rg['id']) ?>" target="_blank" class="inline-flex px-2.5 py-1.5 rounded-xl bg-sky-50 hover:bg-sky-600 text-sky-700 hover:text-white text-xs font-bold">Kartu</a>
+                                            <form method="POST" action="<?= url('kelola-spmb/kartu-observasi/reset-absen-sesi') ?>" class="inline" onsubmit="return confirm('Reset semua status kehadiran pada sesi <?= e(addslashes($rg['nama_ruangan'] . ' - ' . $rg['sesi_nama'])) ?> menjadi Belum Hadir?')">
+                                                <?= CSRF::field() ?>
+                                                <input type="hidden" name="ruangan_id" value="<?= (int)$rg['id'] ?>">
+                                                <input type="hidden" name="return_tab" value="ruangan">
+                                                <button type="submit" class="px-2.5 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-500 text-amber-700 hover:text-white text-xs font-bold cursor-pointer">Reset Absen</button>
+                                            </form>
                                             <button type="button" onclick='editRuangan(<?= json_encode($rg) ?>)' class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-bold cursor-pointer">Edit</button>
                                             <form method="POST" action="<?= url('kelola-spmb/kartu-observasi/ruangan/delete/' . (int)$rg['id']) ?>" class="inline" onsubmit="return confirm('Hapus ruangan ini?')">
                                                 <?= CSRF::field() ?>

@@ -4150,6 +4150,41 @@ SVG;
         Response::redirect(url('kelola-spmb/kartu-observasi'), 'Status absen peserta direset ke Belum Hadir.', 'success');
     }
 
+    public static function kartuObservasiResetAbsenSesi(): void
+    {
+        $isAjax = !empty($_POST['ajax']) || (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower((string)$_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest');
+        if ($isAjax) {
+            if (!CSRF::validate(false)) {
+                Response::json(['success' => false, 'message' => 'Token CSRF tidak valid.'], 403);
+                return;
+            }
+        } else {
+            CSRF::validate();
+        }
+
+        $activeGroup = SpmbModel::getActiveGroup();
+        $groupId = (int)($activeGroup['id'] ?? 0);
+        $ruanganId = !empty($_POST['ruangan_id']) ? (int)$_POST['ruangan_id'] : null;
+        $resetCount = SpmbModel::resetAbsenObservasiBySesi($groupId, $ruanganId);
+
+        if ($isAjax) {
+            Response::json([
+                'success'     => true,
+                'reset_count' => $resetCount,
+                'ruangan_id'  => $ruanganId,
+                'message'     => "Berhasil mereset {$resetCount} kehadiran pada sesi tersebut.",
+            ]);
+            return;
+        }
+
+        $returnTab = trim((string)($_POST['return_tab'] ?? 'ruangan'));
+        Response::redirect(
+            url('kelola-spmb/kartu-observasi?tab=' . urlencode($returnTab)),
+            "Berhasil mereset {$resetCount} data kehadiran sesi menjadi Belum Hadir.",
+            'success'
+        );
+    }
+
     public static function kartuObservasiCetak(): void
     {
         $activeGroup = SpmbModel::getActiveGroup();
@@ -4427,6 +4462,26 @@ SVG;
             }
         } catch (Throwable $e) {
             Response::redirect($redirect, 'Gagal menyimpan hasil observasi: ' . $e->getMessage(), 'error');
+        }
+    }
+
+    public static function observasiSiswaNilaiReset(int $pendaftarId): void
+    {
+        CSRF::validate();
+        $activeGroup = SpmbModel::getActiveGroup();
+        $groupId = (int)($activeGroup['id'] ?? 0);
+        $jenjang = trim((string)($_POST['jenjang'] ?? 'SD'));
+        $redirect = url('kelola-spmb/observasi-siswa?tab=hasil&jenjang=' . urlencode($jenjang));
+
+        try {
+            $ok = SpmbModel::resetObservasiSiswaHasil($groupId, $pendaftarId);
+            if ($ok) {
+                Response::redirect($redirect, 'Penilaian observasi siswa berhasil direset ke kondisi awal.', 'success');
+            } else {
+                Response::redirect($redirect, 'Data penilaian siswa belum ada atau sudah kosong.', 'info');
+            }
+        } catch (Throwable $e) {
+            Response::redirect($redirect, 'Gagal mereset penilaian: ' . $e->getMessage(), 'error');
         }
     }
 

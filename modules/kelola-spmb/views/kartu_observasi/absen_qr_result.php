@@ -16,6 +16,12 @@ $borderCls = $ok ? ($already ? 'border-amber-300' : 'border-emerald-300') : ($wr
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hasil Absen QR Observasi — Portal BIP</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes qrCircleDraw { 0% { stroke-dashoffset: 166; } 100% { stroke-dashoffset: 0; } }
+        @keyframes qrCheckDraw { 0% { stroke-dashoffset: 48; } 100% { stroke-dashoffset: 0; } }
+        .qr-check-circle { stroke-dasharray: 166; stroke-dashoffset: 166; animation: qrCircleDraw 0.45s ease-out forwards; }
+        .qr-check-tick { stroke-dasharray: 48; stroke-dashoffset: 48; animation: qrCheckDraw 0.3s 0.25s ease-out forwards; }
+    </style>
 </head>
 <body class="bg-slate-100 min-h-screen flex items-center justify-center p-4">
     <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border-2 <?= $borderCls ?> text-center space-y-4">
@@ -52,8 +58,11 @@ $borderCls = $ok ? ($already ? 'border-amber-300' : 'border-emerald-300') : ($wr
             </div>
 
         <?php elseif ($ok && $d): ?>
-            <div class="w-16 h-16 rounded-2xl mx-auto flex items-center justify-center text-3xl <?= $already ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700' ?>">
-                <?= $already ? 'ℹ️' : '✅' ?>
+            <div class="w-20 h-20 rounded-full mx-auto flex items-center justify-center <?= $already ? 'bg-amber-50' : 'bg-emerald-50' ?>">
+                <svg class="w-16 h-16" viewBox="0 0 52 52">
+                    <circle class="qr-check-circle" cx="26" cy="26" r="24" fill="none" stroke="<?= $already ? '#f59e0b' : '#10b981' ?>" stroke-width="4"/>
+                    <path class="qr-check-tick" fill="none" stroke="<?= $already ? '#f59e0b' : '#10b981' ?>" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" d="M14 27l8 8 16-16"/>
+                </svg>
             </div>
             <div>
                 <span class="px-3 py-1 rounded-full text-xs font-extrabold <?= $already ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800' ?>">
@@ -86,5 +95,31 @@ $borderCls = $ok ? ($already ? 'border-amber-300' : 'border-emerald-300') : ($wr
             </a>
         <?php endif; ?>
     </div>
+    <script>
+    (function () {
+        try {
+            const Ctx = window.AudioContext || window.webkitAudioContext;
+            if (!Ctx) return;
+            const ctx = new Ctx();
+            const playTone = (freq, offset, dur, vol, wave) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = wave;
+                osc.frequency.setValueAtTime(freq, ctx.currentTime + offset);
+                gain.gain.setValueAtTime(0.001, ctx.currentTime + offset);
+                gain.gain.exponentialRampToValueAtTime(vol, ctx.currentTime + offset + 0.015);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + offset + dur);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(ctx.currentTime + offset);
+                osc.stop(ctx.currentTime + offset + dur + 0.02);
+            };
+            const mode = <?= json_encode($wrongSession ? 'warning' : ($ok ? ($already ? 'already' : 'success') : 'error')) ?>;
+            if (mode === 'success') { playTone(1560, 0, 0.18, 0.45, 'sine'); playTone(2090, 0.06, 0.14, 0.25, 'triangle'); }
+            else if (mode === 'already') { playTone(1040, 0, 0.10, 0.35, 'sine'); playTone(1040, 0.14, 0.10, 0.35, 'sine'); }
+            else { playTone(340, 0, 0.16, 0.4, 'sawtooth'); playTone(240, 0.18, 0.22, 0.4, 'sawtooth'); }
+        } catch (e) {}
+    })();
+    </script>
 </body>
 </html>

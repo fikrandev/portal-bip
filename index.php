@@ -896,6 +896,7 @@ $router->post('/kelola-spmb/kartu-observasi/bagi-otomatis', [SpmbController::cla
 $router->post('/kelola-spmb/kartu-observasi/assign-manual', [SpmbController::class, 'kartuObservasiAssignManual'], [Middleware::permissionRequired('spmb.kartu_qr.manage')]);
 $router->post('/kelola-spmb/kartu-observasi/scan', [SpmbController::class, 'kartuObservasiScan'], [Middleware::permissionRequired('spmb.kartu_qr.scan')]);
 $router->post('/kelola-spmb/kartu-observasi/reset-absen/{id}', [SpmbController::class, 'kartuObservasiResetAbsen'], [Middleware::permissionRequired(['spmb.kartu_qr.scan', 'spmb.kartu_qr.manage'])]);
+$router->post('/kelola-spmb/kartu-observasi/reset-absen-sesi', [SpmbController::class, 'kartuObservasiResetAbsenSesi'], [Middleware::permissionRequired(['spmb.kartu_qr.scan', 'spmb.kartu_qr.manage'])]);
 $router->get('/kelola-spmb/kartu-observasi/cetak', [SpmbController::class, 'kartuObservasiCetak'], [Middleware::permissionRequired(['spmb.kartu_qr.cetak', 'spmb.kartu_qr.view', 'spmb.kartu_qr.manage'])]);
 $router->get('/kelola-spmb/kartu-observasi/cetak-jadwal', [SpmbController::class, 'kartuObservasiCetakJadwal'], [Middleware::permissionRequired(['spmb.kartu_qr.cetak', 'spmb.kartu_qr.view', 'spmb.kartu_qr.manage'])]);
 $router->get('/kelola-spmb/kartu-observasi/broadcast-data', [SpmbController::class, 'kartuObservasiBroadcastData'], [Middleware::permissionRequired('spmb.kartu_qr.broadcast')]);
@@ -911,6 +912,7 @@ $router->post('/kelola-spmb/observasi-siswa/soal/store', [SpmbController::class,
 $router->post('/kelola-spmb/observasi-siswa/soal/delete/{id}', [SpmbController::class, 'observasiSiswaSoalDelete'], [Middleware::permissionRequired('spmb.observasi_siswa.soal')]);
 $router->get('/kelola-spmb/observasi-siswa/form-data/{id}', [SpmbController::class, 'observasiSiswaFormData'], [Middleware::permissionRequired(['spmb.observasi_siswa.view', 'spmb.observasi_siswa.nilai'])]);
 $router->post('/kelola-spmb/observasi-siswa/nilai/save', [SpmbController::class, 'observasiSiswaNilaiSave'], [Middleware::permissionRequired('spmb.observasi_siswa.nilai')]);
+$router->post('/kelola-spmb/observasi-siswa/nilai/reset/{id}', [SpmbController::class, 'observasiSiswaNilaiReset'], [Middleware::permissionRequired('spmb.observasi_siswa.nilai')]);
 $router->get('/kelola-spmb/observasi-siswa/cetak/{id}', [SpmbController::class, 'observasiSiswaCetakSingle'], [Middleware::permissionRequired(['spmb.observasi_siswa.view', 'spmb.observasi_siswa.cetak', 'spmb.observasi_siswa.nilai'])]);
 $router->get('/kelola-spmb/observasi-siswa/cetak-semua', [SpmbController::class, 'observasiSiswaCetakAll'], [Middleware::permissionRequired(['spmb.observasi_siswa.view', 'spmb.observasi_siswa.cetak', 'spmb.observasi_siswa.nilai'])]);
 $router->get('/kelola-pelanggaran-siswa', [PelanggaranSiswaController::class, 'index'], [Middleware::permissionRequired('pelanggaran_siswa.view')]);

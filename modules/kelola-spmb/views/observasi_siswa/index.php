@@ -25,7 +25,7 @@ $ruanganList = $ruanganList ?? [];
             </div>
             <h1 class="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">Observasi Langsung Calon Siswa</h1>
             <p class="text-xs sm:text-sm text-slate-500 mt-0.5">
-                Susun instrumen pertanyaan per unit, isi penilaian observasi siswa oleh petugas, kesimpulan otomatis oleh sistem, dan cetak hasil.
+                Menampilkan calon siswa yang <strong>sudah melakukan Scan QR Registrasi (Hadir)</strong>, diurutkan sesuai sesi &amp; nomor urut sesi.
             </p>
         </div>
 
@@ -314,7 +314,7 @@ $ruanganList = $ruanganList ?? [];
                     </thead>
                     <tbody class="divide-y divide-slate-100">
                         <?php if (empty($items)): ?>
-                            <tr><td colspan="6" class="py-12 text-center text-slate-400">Belum ada calon siswa pada unit <?= e($selJenjang) ?>.</td></tr>
+                            <tr><td colspan="6" class="py-12 text-center text-slate-400">Belum ada calon siswa pada unit <?= e($selJenjang) ?> yang selesai scan QR registrasi (Hadir).</td></tr>
                         <?php else: ?>
                             <?php
                             $lastSessionKey = null;
@@ -350,6 +350,9 @@ $ruanganList = $ruanganList ?? [];
                                             <?= e($it['nomor_pendaftaran']) ?> &bull; <?= e($it['jenjang']) ?>
                                             <?php if ($rid > 0): ?>
                                                 &bull; <span class="text-indigo-600 font-sans font-semibold"><?= e($it['sesi_nama']) ?></span>
+                                            <?php endif; ?>
+                                            <?php if (!empty($it['waktu_absen'])): ?>
+                                                &bull; <span class="text-emerald-600 font-sans font-bold">✓ Scan <?= date('H:i', strtotime($it['waktu_absen'])) ?></span>
                                             <?php endif; ?>
                                         </div>
                                     </td>
@@ -413,6 +416,17 @@ $ruanganList = $ruanganList ?? [];
                                                class="inline-flex items-center px-3 py-1.5 rounded-xl bg-sky-50 hover:bg-sky-600 text-sky-700 hover:text-white border border-sky-200 text-xs font-bold transition-colors">
                                                 Cetak
                                             </a>
+                                        <?php endif; ?>
+                                        <?php if ($isDone && $canNilai): ?>
+                                            <form method="POST" action="<?= url('kelola-spmb/observasi-siswa/nilai/reset/' . (int)$it['pendaftar_id']) ?>" class="inline"
+                                                  onsubmit="return confirm('Reset seluruh penilaian observasi untuk <?= e(addslashes($it['nama_lengkap'])) ?>? Nilai dan catatan aspek siswa ini akan dihapus.')">
+                                                <?= CSRF::field() ?>
+                                                <input type="hidden" name="jenjang" value="<?= e($selJenjang) ?>">
+                                                <button type="submit"
+                                                        class="inline-flex items-center px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-200 text-xs font-bold cursor-pointer transition-colors">
+                                                    Reset
+                                                </button>
+                                            </form>
                                         <?php endif; ?>
                                     </td>
                                 </tr>
