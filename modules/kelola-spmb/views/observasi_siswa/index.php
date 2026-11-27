@@ -6,7 +6,9 @@
  */
 $csrfToken = CSRF::token();
 $selStatus = $filters['status_obs'] ?? '';
+$selRuangan = $filters['ruangan_id'] ?? '';
 $search = $filters['search'] ?? '';
+$ruanganList = $ruanganList ?? [];
 ?>
 <div class="space-y-6">
     <!-- Header -->
@@ -264,6 +266,16 @@ $search = $filters['search'] ?? '';
                 <input type="hidden" name="jenjang" value="<?= e($selJenjang) ?>">
                 <input type="text" name="search" value="<?= e($search) ?>" placeholder="Cari nama / no. pendaftaran..."
                        class="min-w-[220px] flex-1 max-w-sm px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-sm outline-none">
+                <select name="ruangan_id" class="px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium outline-none">
+                    <option value="">Semua Sesi &amp; Ruangan</option>
+                    <option value="unassigned" <?= $selRuangan === 'unassigned' ? 'selected' : '' ?>>Belum Masuk Sesi</option>
+                    <?php foreach ($ruanganList as $rg): ?>
+                        <?php if (!empty($rg['jenjang']) && strcasecmp($rg['jenjang'], $selJenjang) !== 0) continue; ?>
+                        <option value="<?= (int)$rg['id'] ?>" <?= (string)$selRuangan === (string)$rg['id'] ? 'selected' : '' ?>>
+                            <?= e($rg['nama_ruangan']) ?> | <?= e($rg['sesi_nama']) ?> (<?= date('d/m', strtotime($rg['tanggal'])) ?> <?= e($rg['jam_mulai']) ?>)
+                        </option>
+                    <?php endforeach; ?>
+                </select>
                 <select name="status_obs" class="px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium outline-none">
                     <option value="">Semua Status</option>
                     <option value="sudah" <?= $selStatus === 'sudah' ? 'selected' : '' ?>>Sudah Diobservasi</option>
@@ -292,9 +304,9 @@ $search = $filters['search'] ?? '';
                 <table class="w-full text-left border-collapse text-sm">
                     <thead>
                         <tr class="bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-500 uppercase">
-                            <th class="py-3.5 px-4 w-12 text-center">No</th>
-                            <th class="py-3.5 px-4">Calon Siswa</th>
-                            <th class="py-3.5 px-4 text-center">Nilai &amp; Kategori</th>
+                            <th class="py-3.5 px-4 w-20 text-center">No. Urut</th>
+                            <th class="py-3.5 px-4">Calon Siswa &amp; Sesi</th>
+                            <th class="py-3.5 px-4 text-center">Nilai &amp; Progress</th>
                             <th class="py-3.5 px-4 max-w-md">Kesimpulan Sistem</th>
                             <th class="py-3.5 px-4">Petugas</th>
                             <th class="py-3.5 px-4 text-right">Aksi</th>
@@ -304,14 +316,42 @@ $search = $filters['search'] ?? '';
                         <?php if (empty($items)): ?>
                             <tr><td colspan="6" class="py-12 text-center text-slate-400">Belum ada calon siswa pada unit <?= e($selJenjang) ?>.</td></tr>
                         <?php else: ?>
-                            <?php foreach ($items as $idx => $it):
+                            <?php
+                            $lastSessionKey = null;
+                            $fallbackNo = 1;
+                            foreach ($items as $idx => $it):
                                 $isDone = !empty($it['hasil_id']);
+                                $terjawab = (int)($it['jumlah_terjawab'] ?? 0);
+                                $totalSoalUnit = (int)($it['total_soal_unit'] ?? 0);
+                                $isFullDone = $isDone && ($totalSoalUnit === 0 || $terjawab >= $totalSoalUnit);
+                                $rid = (int)($it['ruangan_id'] ?? 0);
+                                $sessionKey = $rid > 0 ? ('R_' . $rid) : 'UNASSIGNED';
+                                if ($sessionKey !== $lastSessionKey):
+                                    $lastSessionKey = $sessionKey;
+                                    $fallbackNo = 1;
+                                    $sesiHeader = $rid > 0
+                                        ? ($it['nama_ruangan'] . ' — ' . $it['sesi_nama'] . (!empty($it['tgl_sesi']) ? ' (' . date('d/m/Y', strtotime($it['tgl_sesi'])) . ' ' . $it['jam_mulai'] . '–' . $it['jam_selesai'] . ')' : ''))
+                                        : 'Belum Masuk Sesi / Ruangan';
                             ?>
+                                <tr class="bg-indigo-50/70 border-y border-indigo-100">
+                                    <td colspan="6" class="py-2 px-4 text-xs font-extrabold text-indigo-900">
+                                        🏫 <?= e($sesiHeader) ?>
+                                    </td>
+                                </tr>
+                            <?php endif; ?>
                                 <tr class="hover:bg-slate-50/70">
-                                    <td class="py-3.5 px-4 text-center font-bold text-slate-400"><?= $idx + 1 ?></td>
+                                    <td class="py-3.5 px-4 text-center font-extrabold text-indigo-700">
+                                        <?= !empty($it['urutan_sesi']) ? str_pad((string)(int)$it['urutan_sesi'], 2, '0', STR_PAD_LEFT) : $fallbackNo ?>
+                                        <?php $fallbackNo++; ?>
+                                    </td>
                                     <td class="py-3.5 px-4">
                                         <div class="font-bold text-slate-900"><?= e($it['nama_lengkap']) ?></div>
-                                        <div class="text-xs font-mono text-slate-500"><?= e($it['nomor_pendaftaran']) ?> &bull; <?= e($it['jenjang']) ?></div>
+                                        <div class="text-xs font-mono text-slate-500">
+                                            <?= e($it['nomor_pendaftaran']) ?> &bull; <?= e($it['jenjang']) ?>
+                                            <?php if ($rid > 0): ?>
+                                                &bull; <span class="text-indigo-600 font-sans font-semibold"><?= e($it['sesi_nama']) ?></span>
+                                            <?php endif; ?>
+                                        </div>
                                     </td>
                                     <td class="py-3.5 px-4 text-center whitespace-nowrap">
                                         <?php if ($isDone): ?>
@@ -319,9 +359,14 @@ $search = $filters['search'] ?? '';
                                                 <?= rtrim(rtrim(number_format((float)$it['total_nilai'], 2, '.', ''), '0'), '.') ?> / <?= rtrim(rtrim(number_format((float)$it['nilai_maksimal'], 2, '.', ''), '0'), '.') ?>
                                                 (<?= number_format((float)$it['persentase'], 1) ?>%)
                                             </div>
-                                            <span class="inline-block mt-0.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                                <?= e($it['kategori_hasil']) ?>
-                                            </span>
+                                            <div class="flex flex-wrap justify-center gap-1 mt-0.5">
+                                                <span class="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold <?= $isFullDone ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200' ?>">
+                                                    <?= $isFullDone ? '✓ Lengkap' : '⏳ Sebagian' ?> (<?= $terjawab ?>/<?= $totalSoalUnit ?>)
+                                                </span>
+                                                <span class="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700">
+                                                    <?= e($it['kategori_hasil']) ?>
+                                                </span>
+                                            </div>
                                             <?php if (!empty($it['detail_nilai'])): ?>
                                                 <div class="flex flex-wrap justify-center gap-1 mt-1.5">
                                                     <?php foreach ($it['detail_nilai'] as $dn): ?>
@@ -333,7 +378,7 @@ $search = $filters['search'] ?? '';
                                             <?php endif; ?>
                                         <?php else: ?>
                                             <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                                                Belum Diobservasi
+                                                Belum Diobservasi (0/<?= $totalSoalUnit ?>)
                                             </span>
                                         <?php endif; ?>
                                     </td>
@@ -397,17 +442,15 @@ $search = $filters['search'] ?? '';
                     <div id="obsLiveAspekBar" class="flex flex-wrap gap-1.5"></div>
                 </div>
 
-                <div id="obsSoalFieldsWrap" class="space-y-3 max-h-[55vh] overflow-y-auto pr-1"></div>
-
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Catatan Tambahan Petugas (Opsional)</label>
-                    <textarea name="catatan_petugas" id="obs_catatan_petugas" rows="2" placeholder="Catatan umum hasil pengamatan petugas..."
-                              class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-sm outline-none"></textarea>
+                <div class="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800">
+                    <strong>Info Multi-Petugas:</strong> Anda bisa mengisi sebagian aspek/pertanyaan saja lalu langsung klik <strong>Simpan</strong>. Jawaban &amp; catatan aspek lain yang diisi petugas berbeda akan otomatis digabungkan tanpa saling menimpa.
                 </div>
+
+                <div id="obsSoalFieldsWrap" class="space-y-3 max-h-[58vh] overflow-y-auto pr-1"></div>
 
                 <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
                     <button type="button" onclick="closeIsiObservasiModal()" class="px-4 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold text-slate-700 cursor-pointer">Batal</button>
-                    <button type="submit" class="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold shadow-sm cursor-pointer">Simpan &amp; Generate Kesimpulan</button>
+                    <button type="submit" class="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold shadow-sm cursor-pointer">Simpan Penilaian</button>
                 </div>
             </form>
         </div>
@@ -549,13 +592,12 @@ async function openIsiObservasiModal(pendaftarId) {
             return;
         }
         const p = json.pendaftar;
-        const h = json.hasil || {};
         const jMap = json.jawaban_map || {};
+        const catatanAspekMap = json.catatan_aspek_map || {};
         currentObsSoalList = json.soal_list || [];
 
         document.getElementById('obsModalNama').textContent = p.nama_lengkap;
         document.getElementById('obsModalMeta').textContent = `No. Pendaftaran: ${p.nomor_pendaftaran} • Unit ${p.jenjang}`;
-        document.getElementById('obs_catatan_petugas').value = h.catatan_petugas || '';
 
         if (!currentObsSoalList.length) {
             wrap.innerHTML = '<div class="py-8 text-center text-sm text-amber-700 bg-amber-50 rounded-2xl border border-amber-200">Belum ada pertanyaan observasi siswa untuk unit ' + p.jenjang + '. Minta petugas pembuat soal untuk menambah pertanyaan di Tab 1.</div>';
@@ -575,12 +617,14 @@ async function openIsiObservasiModal(pendaftarId) {
             gIdx++;
             const aspSlug = 'asp_' + gIdx;
             const aspMax = soals.reduce((acc, x) => acc + parseFloat(x.nilai_maksimal || 0), 0);
+            const prevCatatanAspek = catatanAspekMap[aspekNama] || '';
+            const safeAspAttr = String(aspekNama).replace(/"/g, '&quot;');
             const itemsHtml = soals.map((s, qIdx) => {
                 const prev = jMap[s.id] || null;
                 const opsiHtml = (s.opsi || []).map((op, oIdx) => {
                     const checked = prev && prev.jawaban_dipilih === op.jawaban ? 'checked' : '';
                     return `<label class="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-200 bg-white hover:border-emerald-400 cursor-pointer text-xs font-semibold">
-                        <input type="radio" name="jawaban[${s.id}]" value="${oIdx}" data-soal-id="${s.id}" data-aspek="${String(aspekNama).replace(/"/g, '&quot;')}" data-aspek-slug="${aspSlug}" data-val="${op.nilai}" data-max="${s.nilai_maksimal || 0}" ${checked} required onchange="recalcLiveObsScore()" class="obs-radio text-emerald-600">
+                        <input type="radio" name="jawaban[${s.id}]" value="${oIdx}" data-soal-id="${s.id}" data-aspek="${safeAspAttr}" data-aspek-slug="${aspSlug}" data-val="${op.nilai}" data-max="${s.nilai_maksimal || 0}" ${checked} onchange="recalcLiveObsScore()" class="obs-radio text-emerald-600">
                         <span>${op.jawaban}</span>
                         <span class="text-indigo-700 font-bold">(${op.nilai})</span>
                     </label>`;
@@ -616,7 +660,14 @@ async function openIsiObservasiModal(pendaftarId) {
                         Total: 0 / ${aspMax}
                     </span>
                 </div>
-                <div class="p-3 space-y-2.5">${itemsHtml}</div>
+                <div class="p-3 space-y-2.5">
+                    ${itemsHtml}
+                    <div class="pt-1">
+                        <label class="block text-[11px] font-bold text-indigo-900 mb-1">Catatan Petugas — Aspek ${aspekNama} (Opsional)</label>
+                        <textarea name="catatan_aspek[${safeAspAttr}]" rows="2" placeholder="Catatan pengamatan petugas khusus untuk aspek ${safeAspAttr}..."
+                                  class="w-full px-3 py-2 rounded-xl border border-indigo-200 bg-white text-xs outline-none focus:border-indigo-500">${prevCatatanAspek}</textarea>
+                    </div>
+                </div>
             </div>`;
         }).join('');
         recalcLiveObsScore();
@@ -626,12 +677,11 @@ async function openIsiObservasiModal(pendaftarId) {
 }
 
 function recalcLiveObsScore() {
-    let total = 0, maxT = 0;
+    let total = 0, answeredMax = 0, answeredCount = 0;
     const aspekTotals = {};
     const aspekSlugTotals = {};
     currentObsSoalList.forEach(s => {
         const m = parseFloat(s.nilai_maksimal || 0);
-        maxT += m;
         const asp = (s.aspek || 'Umum').trim() || 'Umum';
         if (!aspekTotals[asp]) aspekTotals[asp] = { val: 0, max: 0 };
         aspekTotals[asp].max += m;
@@ -655,6 +705,8 @@ function recalcLiveObsScore() {
         const val = parseFloat(r.getAttribute('data-val') || 0);
         const max = parseFloat(r.getAttribute('data-max') || 0);
         total += val;
+        answeredMax += max;
+        answeredCount++;
         if (!aspekTotals[asp]) aspekTotals[asp] = { val: 0, max: max };
         aspekTotals[asp].val += val;
         if (slug) aspekSlugTotals[slug] = (aspekSlugTotals[slug] || 0) + val;
@@ -674,12 +726,14 @@ function recalcLiveObsScore() {
         }
     });
 
-    const pct = maxT > 0 ? ((total / maxT) * 100) : 0;
-    document.getElementById('obsLiveScoreText').textContent = `${total} / ${maxT} (${pct.toFixed(1)}%)`;
-    let cat = 'Perlu Pendampingan Khusus';
-    if (pct >= 85) cat = 'Sangat Siap / Sangat Baik';
-    else if (pct >= 70) cat = 'Siap / Baik';
-    else if (pct >= 55) cat = 'Cukup Siap (Perlu Penguatan)';
+    const pct = answeredMax > 0 ? ((total / answeredMax) * 100) : 0;
+    document.getElementById('obsLiveScoreText').textContent = `${total} / ${answeredMax} (${pct.toFixed(1)}%) — Terjawab ${answeredCount}/${currentObsSoalList.length} soal`;
+    let cat = answeredCount === 0 ? 'Belum Ada Jawaban' : 'Perlu Pendampingan Khusus';
+    if (answeredCount > 0) {
+        if (pct >= 85) cat = 'Sangat Siap / Sangat Baik';
+        else if (pct >= 70) cat = 'Siap / Baik';
+        else if (pct >= 55) cat = 'Cukup Siap (Perlu Penguatan)';
+    }
     document.getElementById('obsLiveCatText').textContent = cat;
 
     const aspekBar = document.getElementById('obsLiveAspekBar');

@@ -119,6 +119,7 @@ if (defined('SYS_APP_LOGO') && !empty(SYS_APP_LOGO)) {
                     $p = $rec['pendaftar'];
                     $h = $rec['hasil'];
                     $jList = $rec['jawaban_list'] ?? [];
+                    $catatanAspekMap = $rec['catatan_aspek_map'] ?? [];
                 ?>
                     <div class="sheet">
                         <div class="kop">
@@ -176,6 +177,13 @@ if (defined('SYS_APP_LOGO') && !empty(SYS_APP_LOGO)) {
                                             <td><?= htmlspecialchars($jw['keterangan'] ?: '-') ?></td>
                                         </tr>
                                     <?php endforeach; ?>
+                                    <?php if (!empty($catatanAspekMap[$aName])): ?>
+                                        <tr style="background:#f8fafc;">
+                                            <td colspan="5" style="font-size:10px;color:#334155;">
+                                                <strong>Catatan Petugas (Aspek <?= htmlspecialchars($aName) ?>):</strong> <?= htmlspecialchars($catatanAspekMap[$aName]) ?>
+                                            </td>
+                                        </tr>
+                                    <?php endif; ?>
                                 <?php endforeach; ?>
                             </tbody>
                             <tfoot>

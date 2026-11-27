@@ -4321,10 +4321,12 @@ SVG;
         $filters = [
             'group_id'   => $groupId,
             'jenjang'    => $selJenjang,
+            'ruangan_id' => trim((string)($_GET['ruangan_id'] ?? '')),
             'status_obs' => trim((string)($_GET['status_obs'] ?? '')),
             'search'     => trim((string)($_GET['search'] ?? '')),
         ];
 
+        $ruanganList = SpmbModel::getKartuObservasiRuangan($groupId);
         $soalList = SpmbModel::getObservasiSiswaSoalList($selJenjang, false);
         $data = SpmbModel::getObservasiSiswaList($filters);
         $items = $data['items'];

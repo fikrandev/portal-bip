@@ -4913,6 +4913,7 @@ class SpmbModel
                 `kategori_hasil` VARCHAR(80) DEFAULT NULL,
                 `kesimpulan_sistem` TEXT DEFAULT NULL,
                 `catatan_petugas` TEXT DEFAULT NULL,
+                `catatan_aspek_json` TEXT DEFAULT NULL,
                 `petugas_id` INT(11) DEFAULT NULL,
                 `petugas_nama` VARCHAR(150) DEFAULT NULL,
                 `observed_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -4939,6 +4940,14 @@ class SpmbModel
                 KEY `idx_soal_id` (`soal_id`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         ");
+
+        // Pastikan kolom catatan_aspek_json tersedia pada tabel yang sudah dibuat sebelumnya
+        try {
+            $chkCatatanAspek = $pdo->query("SHOW COLUMNS FROM `spmb_observasi_siswa_hasil` LIKE 'catatan_aspek_json'")->fetchAll();
+            if (empty($chkCatatanAspek)) {
+                $pdo->exec("ALTER TABLE `spmb_observasi_siswa_hasil` ADD COLUMN `catatan_aspek_json` TEXT DEFAULT NULL AFTER `catatan_petugas`");
+            }
+        } catch (Throwable $e) {}
 
         // Daftarkan permission RBAC Observasi Siswa secara otomatis & idempoten
         try {
@@ -5103,6 +5112,7 @@ class SpmbModel
     public static function getObservasiSiswaList(array $filters = []): array
     {
         self::ensureObservasiSiswaSchema();
+        self::ensureKartuObservasiSchema();
         $groupId = (int)($filters['group_id'] ?? 0);
         if (!$groupId) {
             return ['items' => [], 'stats' => ['total' => 0, 'sudah' => 0, 'belum' => 0, 'rata_persen' => 0]];
@@ -5118,6 +5128,14 @@ class SpmbModel
         if (!empty($filters['jenjang'])) {
             $where[] = "p.jenjang = ?";
             $params[] = trim((string)$filters['jenjang']);
+        }
+        if (!empty($filters['ruangan_id'])) {
+            if ($filters['ruangan_id'] === 'unassigned') {
+                $where[] = "pj.ruangan_id IS NULL";
+            } else {
+                $where[] = "pj.ruangan_id = ?";
+                $params[] = (int)$filters['ruangan_id'];
+            }
         }
         if (!empty($filters['status_obs'])) {
             if ($filters['status_obs'] === 'sudah') {
@@ -5136,14 +5154,30 @@ class SpmbModel
         $items = self::db()->findAll("
             SELECT p.id AS pendaftar_id, p.nomor_pendaftaran, p.nama_lengkap, p.jenjang, p.jenis_kelamin,
                    p.asal_sekolah, p.tanggal_lahir,
+                   pj.ruangan_id, pj.urutan_sesi,
+                   r.nama_ruangan, r.sesi_nama, r.tanggal AS tgl_sesi, r.jam_mulai, r.jam_selesai,
                    h.id AS hasil_id, h.total_nilai, h.nilai_maksimal, h.persentase,
-                   h.kategori_hasil, h.kesimpulan_sistem, h.catatan_petugas,
+                   h.kategori_hasil, h.kesimpulan_sistem, h.catatan_petugas, h.catatan_aspek_json,
                    h.petugas_nama, h.observed_at
             FROM `spmb_pendaftar` p
+            LEFT JOIN `spmb_observasi_peserta_jadwal` pj ON pj.pendaftar_id = p.id AND pj.group_id = p.group_id
+            LEFT JOIN `spmb_observasi_ruangan` r ON r.id = pj.ruangan_id
             LEFT JOIN `spmb_observasi_siswa_hasil` h ON h.pendaftar_id = p.id AND h.group_id = p.group_id
             WHERE {$whereSql}
-            ORDER BY (h.id IS NULL) ASC, p.nama_lengkap ASC
+            ORDER BY
+                (pj.ruangan_id IS NULL) ASC,
+                r.tanggal ASC,
+                r.jam_mulai ASC,
+                r.nama_ruangan ASC,
+                COALESCE(pj.urutan_sesi, 999999) ASC,
+                p.nama_lengkap ASC
         ", $params);
+
+        $totalSoalMap = [];
+        $soalCounts = self::db()->findAll("SELECT jenjang, COUNT(*) AS c FROM `spmb_observasi_siswa_soal` WHERE is_active = 1 GROUP BY jenjang");
+        foreach ($soalCounts as $sc) {
+            $totalSoalMap[$sc['jenjang']] = (int)$sc['c'];
+        }
 
         $sudah = 0;
         $sumPct = 0.0;
@@ -5157,6 +5191,7 @@ class SpmbModel
         }
 
         $detailMap = [];
+        $answeredCountMap = [];
         if (!empty($hasilIds)) {
             $ph = implode(',', array_fill(0, count($hasilIds), '?'));
             $jRows = self::db()->findAll("
@@ -5167,6 +5202,7 @@ class SpmbModel
             ", $hasilIds);
             foreach ($jRows as $jr) {
                 $hid = (int)$jr['hasil_id'];
+                $answeredCountMap[$hid] = ($answeredCountMap[$hid] ?? 0) + 1;
                 $asp = trim((string)($jr['aspek_snapshot'] ?? 'Umum')) ?: 'Umum';
                 if (!isset($detailMap[$hid][$asp])) {
                     $detailMap[$hid][$asp] = [
@@ -5184,6 +5220,8 @@ class SpmbModel
         foreach ($items as &$it) {
             $hid = (int)($it['hasil_id'] ?? 0);
             $it['detail_nilai'] = $hid > 0 ? array_values($detailMap[$hid] ?? []) : [];
+            $it['jumlah_terjawab'] = $hid > 0 ? ($answeredCountMap[$hid] ?? 0) : 0;
+            $it['total_soal_unit'] = $totalSoalMap[$it['jenjang']] ?? 0;
         }
         unset($it);
 
@@ -5214,6 +5252,12 @@ class SpmbModel
             WHERE group_id = ? AND pendaftar_id = ? LIMIT 1
         ", [$groupId, $pendaftarId]);
 
+        $catatanAspekMap = [];
+        if ($hasil && !empty($hasil['catatan_aspek_json'])) {
+            $decoded = json_decode((string)$hasil['catatan_aspek_json'], true);
+            if (is_array($decoded)) $catatanAspekMap = $decoded;
+        }
+
         $jawabanList = [];
         $jawabanMap = [];
         if ($hasil) {
@@ -5228,11 +5272,12 @@ class SpmbModel
 
         $soalList = self::getObservasiSiswaSoalList((string)$pendaftar['jenjang'], true);
         return [
-            'pendaftar'    => $pendaftar,
-            'hasil'        => $hasil,
-            'jawaban_list' => $jawabanList,
-            'jawaban_map'  => $jawabanMap,
-            'soal_list'    => $soalList,
+            'pendaftar'         => $pendaftar,
+            'hasil'             => $hasil,
+            'catatan_aspek_map' => $catatanAspekMap,
+            'jawaban_list'      => $jawabanList,
+            'jawaban_map'       => $jawabanMap,
+            'soal_list'         => $soalList,
         ];
     }
 
@@ -5302,20 +5347,16 @@ class SpmbModel
 
         $jawabanPost = $postData['jawaban'] ?? [];
         $ketPost     = $postData['keterangan'] ?? [];
-        $catatanPetugas = trim((string)($postData['catatan_petugas'] ?? '')) ?: null;
+        $catatanAspekPost = $postData['catatan_aspek'] ?? [];
 
-        $totalNilai = 0.0;
-        $nilaiMaksTotal = 0.0;
-        $aspekSummary = [];
-        $catatanItems = [];
-        $rowsToSave = [];
-
+        // Kumpulkan hanya jawaban yang dipilih pada submit kali ini (mendukung pengisian parsial & multi-petugas)
+        $submittedRows = [];
         foreach ($soalList as $soal) {
             $sid = (int)$soal['id'];
             $opsi = $soal['opsi'] ?? [];
             $selectedIdx = isset($jawabanPost[$sid]) && $jawabanPost[$sid] !== '' ? (int)$jawabanPost[$sid] : -1;
             if ($selectedIdx < 0 || !isset($opsi[$selectedIdx])) {
-                throw new Exception('Semua pertanyaan wajib dipilih jawabannya ("' . mb_substr($soal['pertanyaan'], 0, 50) . '...").');
+                continue;
             }
 
             $chosen = $opsi[$selectedIdx];
@@ -5324,14 +5365,7 @@ class SpmbModel
             $ket = trim((string)($ketPost[$sid] ?? '')) ?: null;
             $asp = trim((string)($soal['aspek'] ?? 'Umum')) ?: 'Umum';
 
-            $totalNilai += $val;
-            $nilaiMaksTotal += $maxV;
-            if (!isset($aspekSummary[$asp])) $aspekSummary[$asp] = ['val' => 0.0, 'max' => 0.0];
-            $aspekSummary[$asp]['val'] += $val;
-            $aspekSummary[$asp]['max'] += $maxV;
-            if ($ket) $catatanItems[] = $ket;
-
-            $rowsToSave[] = [
+            $submittedRows[$sid] = [
                 'soal_id'             => $sid,
                 'aspek_snapshot'      => $asp,
                 'pertanyaan_snapshot' => $soal['pertanyaan'],
@@ -5342,43 +5376,111 @@ class SpmbModel
             ];
         }
 
-        $persen = $nilaiMaksTotal > 0 ? round(($totalNilai / $nilaiMaksTotal) * 100, 2) : 0.0;
-        $gen = self::generateKesimpulanObservasiSiswa($pendaftar, $totalNilai, $nilaiMaksTotal, $persen, $aspekSummary, $catatanItems);
+        $hasAnyCatatanAspek = false;
+        if (is_array($catatanAspekPost)) {
+            foreach ($catatanAspekPost as $cTxt) {
+                if (trim((string)$cTxt) !== '') {
+                    $hasAnyCatatanAspek = true;
+                    break;
+                }
+            }
+        }
+
+        if (empty($submittedRows) && !$hasAnyCatatanAspek) {
+            throw new Exception('Pilih minimal 1 jawaban atau isi catatan aspek sebelum menyimpan.');
+        }
 
         $pdo = self::db()->getConnection();
         $pdo->beginTransaction();
         try {
-            $existing = self::db()->find("SELECT id FROM `spmb_observasi_siswa_hasil` WHERE group_id = ? AND pendaftar_id = ? LIMIT 1", [$groupId, $pendaftarId]);
+            $existing = self::db()->find("SELECT * FROM `spmb_observasi_siswa_hasil` WHERE group_id = ? AND pendaftar_id = ? LIMIT 1", [$groupId, $pendaftarId]);
+            $mergedCatatanAspek = [];
+            if ($existing && !empty($existing['catatan_aspek_json'])) {
+                $dec = json_decode((string)$existing['catatan_aspek_json'], true);
+                if (is_array($dec)) $mergedCatatanAspek = $dec;
+            }
+            if (is_array($catatanAspekPost)) {
+                foreach ($catatanAspekPost as $aspName => $cVal) {
+                    $aspClean = trim((string)$aspName);
+                    $cClean = trim((string)$cVal);
+                    if ($aspClean === '') continue;
+                    // Hanya timpa jika diisi (agar petugas aspek lain tidak menghapus catatan aspek yang sudah ada)
+                    if ($cClean !== '') {
+                        $mergedCatatanAspek[$aspClean] = $cClean;
+                    }
+                }
+            }
+            $catatanAspekJson = !empty($mergedCatatanAspek) ? json_encode($mergedCatatanAspek, JSON_UNESCAPED_UNICODE) : null;
+
             if ($existing) {
                 $hasilId = (int)$existing['id'];
-                self::db()->query("
-                    UPDATE `spmb_observasi_siswa_hasil` SET
-                        jenjang = ?, total_nilai = ?, nilai_maksimal = ?, persentase = ?,
-                        kategori_hasil = ?, kesimpulan_sistem = ?, catatan_petugas = ?,
-                        petugas_id = ?, petugas_nama = ?, observed_at = NOW()
-                    WHERE id = ?
-                ", [$jenjang, $totalNilai, $nilaiMaksTotal, $persen, $gen['kategori'], $gen['kesimpulan'], $catatanPetugas, $petugasId, $petugasNama, $hasilId]);
-                self::db()->query("DELETE FROM `spmb_observasi_siswa_jawaban` WHERE hasil_id = ?", [$hasilId]);
             } else {
                 self::db()->query("
                     INSERT INTO `spmb_observasi_siswa_hasil`
-                    (group_id, pendaftar_id, jenjang, total_nilai, nilai_maksimal, persentase, kategori_hasil, kesimpulan_sistem, catatan_petugas, petugas_id, petugas_nama, observed_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
-                ", [$groupId, $pendaftarId, $jenjang, $totalNilai, $nilaiMaksTotal, $persen, $gen['kategori'], $gen['kesimpulan'], $catatanPetugas, $petugasId, $petugasNama]);
+                    (group_id, pendaftar_id, jenjang, total_nilai, nilai_maksimal, persentase, kategori_hasil, kesimpulan_sistem, catatan_petugas, catatan_aspek_json, petugas_id, petugas_nama, observed_at)
+                    VALUES (?, ?, ?, 0, 0, 0, NULL, NULL, NULL, ?, ?, ?, NOW())
+                ", [$groupId, $pendaftarId, $jenjang, $catatanAspekJson, $petugasId, $petugasNama]);
                 $hasilId = (int)self::db()->lastInsertId();
             }
 
-            $insJ = $pdo->prepare("
-                INSERT INTO `spmb_observasi_siswa_jawaban`
-                (hasil_id, soal_id, aspek_snapshot, pertanyaan_snapshot, jawaban_dipilih, nilai, nilai_maksimal, keterangan)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            ");
-            foreach ($rowsToSave as $r) {
-                $insJ->execute([
-                    $hasilId, $r['soal_id'], $r['aspek_snapshot'], $r['pertanyaan_snapshot'],
-                    $r['jawaban_dipilih'], $r['nilai'], $r['nilai_maksimal'], $r['keterangan']
-                ]);
+            // Upsert per soal_id agar jawaban dari petugas lain di aspek berbeda tetap aman!
+            foreach ($submittedRows as $sid => $r) {
+                $exJ = self::db()->find("SELECT id FROM `spmb_observasi_siswa_jawaban` WHERE hasil_id = ? AND soal_id = ? LIMIT 1", [$hasilId, $sid]);
+                if ($exJ) {
+                    self::db()->query("
+                        UPDATE `spmb_observasi_siswa_jawaban` SET
+                            aspek_snapshot = ?, pertanyaan_snapshot = ?, jawaban_dipilih = ?,
+                            nilai = ?, nilai_maksimal = ?, keterangan = ?
+                        WHERE id = ?
+                    ", [$r['aspek_snapshot'], $r['pertanyaan_snapshot'], $r['jawaban_dipilih'], $r['nilai'], $r['nilai_maksimal'], $r['keterangan'], (int)$exJ['id']]);
+                } else {
+                    self::db()->query("
+                        INSERT INTO `spmb_observasi_siswa_jawaban`
+                        (hasil_id, soal_id, aspek_snapshot, pertanyaan_snapshot, jawaban_dipilih, nilai, nilai_maksimal, keterangan)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    ", [$hasilId, $r['soal_id'], $r['aspek_snapshot'], $r['pertanyaan_snapshot'], $r['jawaban_dipilih'], $r['nilai'], $r['nilai_maksimal'], $r['keterangan']]);
+                }
             }
+
+            // Hitung ulang total nilai, per-aspek & kesimpulan sistem dari SELURUH jawaban tersimpan
+            $allSaved = self::db()->findAll("SELECT * FROM `spmb_observasi_siswa_jawaban` WHERE hasil_id = ? ORDER BY id ASC", [$hasilId]);
+            $totalNilai = 0.0;
+            $nilaiMaksTotal = 0.0;
+            $aspekSummary = [];
+            $catatanItems = [];
+            foreach ($allSaved as $sr) {
+                $val = (float)$sr['nilai'];
+                $maxV = (float)$sr['nilai_maksimal'];
+                $asp = trim((string)($sr['aspek_snapshot'] ?? 'Umum')) ?: 'Umum';
+                $totalNilai += $val;
+                $nilaiMaksTotal += $maxV;
+                if (!isset($aspekSummary[$asp])) $aspekSummary[$asp] = ['val' => 0.0, 'max' => 0.0];
+                $aspekSummary[$asp]['val'] += $val;
+                $aspekSummary[$asp]['max'] += $maxV;
+                if (!empty($sr['keterangan'])) $catatanItems[] = $sr['keterangan'];
+            }
+            foreach ($mergedCatatanAspek as $aspK => $aspNote) {
+                if (trim((string)$aspNote) !== '') {
+                    $catatanItems[] = "{$aspK}: {$aspNote}";
+                }
+            }
+
+            $persen = $nilaiMaksTotal > 0 ? round(($totalNilai / $nilaiMaksTotal) * 100, 2) : 0.0;
+            $gen = self::generateKesimpulanObservasiSiswa($pendaftar, $totalNilai, $nilaiMaksTotal, $persen, $aspekSummary, $catatanItems);
+
+            // Gabungkan nama petugas jika ada petugas berbeda yang ikut mengisi
+            $petugasFinal = $petugasNama;
+            if ($existing && !empty($existing['petugas_nama']) && stripos($existing['petugas_nama'], $petugasNama) === false) {
+                $petugasFinal = mb_substr(trim($existing['petugas_nama']) . ', ' . $petugasNama, 0, 145);
+            }
+
+            self::db()->query("
+                UPDATE `spmb_observasi_siswa_hasil` SET
+                    jenjang = ?, total_nilai = ?, nilai_maksimal = ?, persentase = ?,
+                    kategori_hasil = ?, kesimpulan_sistem = ?, catatan_aspek_json = ?,
+                    petugas_id = ?, petugas_nama = ?, observed_at = NOW()
+                WHERE id = ?
+            ", [$jenjang, $totalNilai, $nilaiMaksTotal, $persen, $gen['kategori'], $gen['kesimpulan'], $catatanAspekJson, $petugasId, $petugasFinal, $hasilId]);
 
             $pdo->commit();
         } catch (Throwable $e) {
