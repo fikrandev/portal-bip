@@ -4317,13 +4317,22 @@ class SpmbModel
     {
         self::ensureKartuObservasiSchema();
         if (!$groupId) return [];
+        $where = ["r.group_id = ?"];
+        $params = [$groupId];
+        if (class_exists('Auth') && Auth::isJenjangRestricted()) {
+            $jCond = Auth::jenjangSqlCondition('r.jenjang', $params);
+            if ($jCond !== '1=1') {
+                $where[] = $jCond;
+            }
+        }
+        $whereSql = implode(' AND ', $where);
         return self::db()->findAll("
             SELECT r.*,
                    (SELECT COUNT(*) FROM `spmb_observasi_peserta_jadwal` pj WHERE pj.ruangan_id = r.id) AS terisi
             FROM `spmb_observasi_ruangan` r
-            WHERE r.group_id = ?
+            WHERE {$whereSql}
             ORDER BY r.tanggal ASC, r.jam_mulai ASC, r.nama_ruangan ASC
-        ", [$groupId]);
+        ", $params);
     }
 
     public static function saveKartuObservasiRuangan(int $groupId, array $data): int
@@ -4803,11 +4812,13 @@ class SpmbModel
                     'total_peserta'     => 0,
                     'total_hadir'       => 0,
                     'total_tidak_hadir' => 0,
+                    'all_items'         => [],
                     'tidak_hadir_items' => [],
                 ];
             }
 
             $groups[$key]['total_peserta']++;
+            $groups[$key]['all_items'][] = $it;
             if ($isHadir) {
                 $groups[$key]['total_hadir']++;
             } else {
@@ -4815,6 +4826,17 @@ class SpmbModel
                 $groups[$key]['tidak_hadir_items'][] = $it;
             }
         }
+
+        // Urutkan peserta di tiap sesi berdasarkan urutan_sesi lalu nama_lengkap
+        foreach ($groups as &$g) {
+            usort($g['all_items'], function ($a, $b) {
+                $ua = !empty($a['urutan_sesi']) ? (int)$a['urutan_sesi'] : 999999;
+                $ub = !empty($b['urutan_sesi']) ? (int)$b['urutan_sesi'] : 999999;
+                if ($ua !== $ub) return $ua <=> $ub;
+                return strcasecmp((string)($a['nama_lengkap'] ?? ''), (string)($b['nama_lengkap'] ?? ''));
+            });
+        }
+        unset($g);
 
         return [
             'groups'  => array_values($groups),

@@ -696,7 +696,7 @@ $cetakQuery = http_build_query(array_filter([
         <?php if ($canKartuView): ?>
             <a href="<?= url('kelola-spmb/kartu-observasi?tab=laporan') ?>"
                class="px-4 py-2.5 rounded-xl text-sm font-bold transition-all <?= $activeTab === 'laporan' ? 'bg-rose-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100' ?>">
-                Laporan Tidak Absen QR (<?= number_format($stats['belum_hadir'] ?? 0) ?>)
+                Laporan Absen QR (<?= number_format($stats['hadir'] ?? 0) ?>/<?= number_format($stats['total'] ?? 0) ?>)
             </a>
         <?php endif; ?>
     </div>
@@ -977,22 +977,24 @@ $cetakQuery = http_build_query(array_filter([
         </div>
 
     <?php elseif ($activeTab === 'laporan'): ?>
-        <!-- TAB 4: LAPORAN SISWA TIDAK ABSEN QR PER SESI & PER RUANGAN -->
+        <!-- TAB 4: LAPORAN ABSEN QR PER SESI & PER RUANGAN (SEMUA PESERTA: HADIR / TIDAK + JAM) -->
         <?php
         $lapGroups = $laporanTidakHadir['groups'] ?? [];
         $lapSum = $laporanTidakHadir['summary'] ?? ['total_peserta' => 0, 'total_hadir' => 0, 'total_tidak_hadir' => 0];
         $lapQs = http_build_query(array_filter([
-            'jenjang'    => $selJenjang,
-            'ruangan_id' => $selRuangan,
-            'search'     => $search,
+            'jenjang'      => $selJenjang,
+            'ruangan_id'   => $selRuangan,
+            'status_absen' => $selStatus,
+            'search'       => $search,
         ]));
+        $allowedJenjangOpts = SpmbModel::getObservasiSiswaAllowedUnits();
         ?>
         <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-3">
             <form method="GET" action="<?= url('kelola-spmb/kartu-observasi') ?>" class="flex flex-wrap items-center gap-2.5 flex-1">
                 <input type="hidden" name="tab" value="laporan">
                 <select name="jenjang" class="px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium outline-none">
                     <option value="">Semua Jenjang</option>
-                    <?php foreach (['PAUD', 'SD', 'SMP', 'SMA'] as $j): ?>
+                    <?php foreach ($allowedJenjangOpts as $j): ?>
                         <option value="<?= $j ?>" <?= $selJenjang === $j ? 'selected' : '' ?>><?= $j ?></option>
                     <?php endforeach; ?>
                 </select>
@@ -1004,6 +1006,11 @@ $cetakQuery = http_build_query(array_filter([
                             <?= e($rg['nama_ruangan']) ?> | <?= e($rg['sesi_nama']) ?> (<?= date('d/m', strtotime($rg['tanggal'])) ?>)
                         </option>
                     <?php endforeach; ?>
+                </select>
+                <select name="status_absen" class="px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium outline-none">
+                    <option value="">Semua Status</option>
+                    <option value="Hadir" <?= $selStatus === 'Hadir' ? 'selected' : '' ?>>Hadir (Ya)</option>
+                    <option value="Belum Hadir" <?= $selStatus === 'Belum Hadir' ? 'selected' : '' ?>>Tidak Hadir</option>
                 </select>
                 <input type="text" name="search" value="<?= e($search) ?>" placeholder="Cari nama / no. peserta..."
                        class="px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-sm outline-none">
@@ -1051,39 +1058,55 @@ $cetakQuery = http_build_query(array_filter([
                             <div class="flex flex-wrap items-center gap-2 text-xs font-bold">
                                 <span class="px-2.5 py-1 rounded-xl bg-slate-100 text-slate-700">Total: <?= (int)$grp['total_peserta'] ?></span>
                                 <span class="px-2.5 py-1 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200">Hadir: <?= (int)$grp['total_hadir'] ?></span>
-                                <span class="px-2.5 py-1 rounded-xl bg-rose-50 text-rose-700 border border-rose-200">Tidak Absen QR: <?= (int)$grp['total_tidak_hadir'] ?></span>
+                                <span class="px-2.5 py-1 rounded-xl bg-rose-50 text-rose-700 border border-rose-200">Tidak Hadir: <?= (int)$grp['total_tidak_hadir'] ?></span>
                             </div>
                         </div>
 
-                        <?php if (empty($grp['tidak_hadir_items'])): ?>
-                            <div class="px-5 py-6 text-center text-xs font-semibold text-emerald-700 bg-emerald-50/30">
-                                ✓ Semua peserta pada sesi &amp; ruangan ini sudah melakukan absen QR Code.
+                        <?php $grpRows = $grp['all_items'] ?? []; ?>
+                        <?php if (empty($grpRows)): ?>
+                            <div class="px-5 py-6 text-center text-xs font-semibold text-slate-400">
+                                Belum ada peserta pada sesi &amp; ruangan ini.
                             </div>
                         <?php else: ?>
                             <div class="overflow-x-auto">
                                 <table class="w-full text-left text-sm border-collapse">
                                     <thead>
-                                        <tr class="bg-rose-50/60 border-b border-slate-200 text-xs font-bold text-slate-600 uppercase">
-                                            <th class="py-2.5 px-4 w-12 text-center">No</th>
+                                        <tr class="bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-600 uppercase">
+                                            <th class="py-2.5 px-4 w-16 text-center">Urut</th>
                                             <th class="py-2.5 px-4">No. Peserta</th>
                                             <th class="py-2.5 px-4">Nama Calon Siswa</th>
                                             <th class="py-2.5 px-4">Jenjang</th>
                                             <th class="py-2.5 px-4">No. WA Orang Tua</th>
-                                            <th class="py-2.5 px-4 text-center">Status</th>
+                                            <th class="py-2.5 px-4 text-center">Status Hadir</th>
+                                            <th class="py-2.5 px-4 text-center">Jam Absen</th>
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-slate-100">
-                                        <?php foreach ($grp['tidak_hadir_items'] as $nIdx => $th): ?>
+                                        <?php foreach ($grpRows as $nIdx => $rowIt):
+                                            $isHadirRow = (($rowIt['status_absen'] ?? '') === 'Hadir');
+                                            $jamRow = ($isHadirRow && !empty($rowIt['waktu_absen'])) ? date('H:i:s', strtotime($rowIt['waktu_absen'])) : '-';
+                                        ?>
                                             <tr class="hover:bg-slate-50/70">
-                                                <td class="py-2.5 px-4 text-center font-bold text-slate-400"><?= $nIdx + 1 ?></td>
-                                                <td class="py-2.5 px-4 font-mono font-bold text-slate-700"><?= e($th['nomor_peserta']) ?></td>
-                                                <td class="py-2.5 px-4 font-bold text-slate-900"><?= e($th['nama_lengkap']) ?></td>
-                                                <td class="py-2.5 px-4"><span class="px-2 py-0.5 rounded-lg bg-slate-100 text-xs font-bold"><?= e($th['jenjang']) ?></span></td>
-                                                <td class="py-2.5 px-4 font-mono text-xs text-slate-600"><?= e($th['target_phone'] ?: '-') ?></td>
+                                                <td class="py-2.5 px-4 text-center font-extrabold text-indigo-700">
+                                                    <?= !empty($rowIt['urutan_sesi']) ? str_pad((string)(int)$rowIt['urutan_sesi'], 2, '0', STR_PAD_LEFT) : ($nIdx + 1) ?>
+                                                </td>
+                                                <td class="py-2.5 px-4 font-mono font-bold text-slate-700"><?= e($rowIt['nomor_peserta']) ?></td>
+                                                <td class="py-2.5 px-4 font-bold text-slate-900"><?= e($rowIt['nama_lengkap']) ?></td>
+                                                <td class="py-2.5 px-4"><span class="px-2 py-0.5 rounded-lg bg-slate-100 text-xs font-bold"><?= e($rowIt['jenjang']) ?></span></td>
+                                                <td class="py-2.5 px-4 font-mono text-xs text-slate-600"><?= e($rowIt['target_phone'] ?: '-') ?></td>
                                                 <td class="py-2.5 px-4 text-center">
-                                                    <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200">
-                                                        Belum Absen QR
-                                                    </span>
+                                                    <?php if ($isHadirRow): ?>
+                                                        <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                                            ✓ Ya (Hadir)
+                                                        </span>
+                                                    <?php else: ?>
+                                                        <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                                                            ✕ Tidak
+                                                        </span>
+                                                    <?php endif; ?>
+                                                </td>
+                                                <td class="py-2.5 px-4 text-center font-mono text-xs <?= $isHadirRow ? 'font-bold text-emerald-700' : 'text-slate-400' ?>">
+                                                    <?= e($jamRow) ?>
                                                 </td>
                                             </tr>
                                         <?php endforeach; ?>

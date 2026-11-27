@@ -4306,10 +4306,11 @@ SVG;
         $activeGroup = SpmbModel::getActiveGroup();
         $groupId = (int)($activeGroup['id'] ?? 0);
         $filters = [
-            'group_id'   => $groupId,
-            'jenjang'    => trim((string)($_GET['jenjang'] ?? '')),
-            'ruangan_id' => trim((string)($_GET['ruangan_id'] ?? '')),
-            'search'     => trim((string)($_GET['search'] ?? '')),
+            'group_id'     => $groupId,
+            'jenjang'      => trim((string)($_GET['jenjang'] ?? '')),
+            'ruangan_id'   => trim((string)($_GET['ruangan_id'] ?? '')),
+            'status_absen' => trim((string)($_GET['status_absen'] ?? '')),
+            'search'       => trim((string)($_GET['search'] ?? '')),
         ];
         $laporan = SpmbModel::getKartuObservasiLaporanTidakHadir($filters);
         include BASE_PATH . '/modules/kelola-spmb/views/kartu_observasi/laporan_cetak.php';
@@ -4320,25 +4321,29 @@ SVG;
         $activeGroup = SpmbModel::getActiveGroup();
         $groupId = (int)($activeGroup['id'] ?? 0);
         $filters = [
-            'group_id'   => $groupId,
-            'jenjang'    => trim((string)($_GET['jenjang'] ?? '')),
-            'ruangan_id' => trim((string)($_GET['ruangan_id'] ?? '')),
-            'search'     => trim((string)($_GET['search'] ?? '')),
+            'group_id'     => $groupId,
+            'jenjang'      => trim((string)($_GET['jenjang'] ?? '')),
+            'ruangan_id'   => trim((string)($_GET['ruangan_id'] ?? '')),
+            'status_absen' => trim((string)($_GET['status_absen'] ?? '')),
+            'search'       => trim((string)($_GET['search'] ?? '')),
         ];
         $laporan = SpmbModel::getKartuObservasiLaporanTidakHadir($filters);
 
         $headers = [
-            'No', 'Tanggal Sesi', 'Sesi & Jam', 'Ruangan', 'Pengawas',
-            'No. Peserta', 'Nama Calon Siswa', 'Jenjang', 'No. WA Orang Tua', 'Status Absen QR'
+            'No', 'No. Urut Sesi', 'Tanggal Sesi', 'Sesi & Jam', 'Ruangan', 'Pengawas',
+            'No. Peserta', 'Nama Calon Siswa', 'Jenjang', 'No. WA Orang Tua', 'Status Hadir', 'Jam Absen', 'Petugas Scan'
         ];
         $rows = [];
         $no = 1;
         foreach (($laporan['groups'] ?? []) as $grp) {
             $tgl = !empty($grp['tgl_sesi']) ? date('d/m/Y', strtotime($grp['tgl_sesi'])) : '-';
             $sesiJam = $grp['sesi_nama'] . (!empty($grp['jam_mulai']) ? ' (' . $grp['jam_mulai'] . '-' . $grp['jam_selesai'] . ')' : '');
-            foreach (($grp['tidak_hadir_items'] ?? []) as $it) {
+            foreach (($grp['all_items'] ?? []) as $it) {
+                $isHadir = (($it['status_absen'] ?? '') === 'Hadir');
+                $jamAbsen = ($isHadir && !empty($it['waktu_absen'])) ? date('H:i:s', strtotime($it['waktu_absen'])) : '-';
                 $rows[] = [
                     $no++,
+                    !empty($it['urutan_sesi']) ? str_pad((string)(int)$it['urutan_sesi'], 2, '0', STR_PAD_LEFT) : '-',
                     $tgl,
                     $sesiJam,
                     $grp['nama_ruangan'],
@@ -4347,12 +4352,14 @@ SVG;
                     $it['nama_lengkap'],
                     $it['jenjang'],
                     $it['target_phone'] ?: '-',
-                    'Belum Absen QR',
+                    $isHadir ? 'Ya (Hadir)' : 'Tidak',
+                    $jamAbsen,
+                    $isHadir ? ($it['absen_oleh'] ?: '-') : '-',
                 ];
             }
         }
 
-        ExcelHelper::exportXLS('Laporan_Tidak_Absen_QR_Observasi_' . date('Ymd_His') . '.xls', $headers, $rows, 'Tidak Absen QR');
+        ExcelHelper::exportXLS('Laporan_Absen_QR_Observasi_' . date('Ymd_His') . '.xls', $headers, $rows, 'Laporan Absen QR');
     }
 
     // ═════════════════════════════════════════════════════════════════════════════
