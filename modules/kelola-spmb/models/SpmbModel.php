@@ -5466,7 +5466,26 @@ class SpmbModel
             }
 
             $persen = $nilaiMaksTotal > 0 ? round(($totalNilai / $nilaiMaksTotal) * 100, 2) : 0.0;
-            $gen = self::generateKesimpulanObservasiSiswa($pendaftar, $totalNilai, $nilaiMaksTotal, $persen, $aspekSummary, $catatanItems);
+
+            // Cek apakah seluruh pertanyaan aktif untuk unit ini sudah dijawab
+            $activeSoalIds = array_map(fn($s) => (int)$s['id'], $soalList);
+            $answeredActiveCount = 0;
+            foreach ($allSaved as $sr) {
+                if (in_array((int)$sr['soal_id'], $activeSoalIds, true)) {
+                    $answeredActiveCount++;
+                }
+            }
+            $totalSoalUnit = count($activeSoalIds);
+            $isComplete = ($totalSoalUnit > 0 && $answeredActiveCount >= $totalSoalUnit);
+
+            if ($isComplete) {
+                $gen = self::generateKesimpulanObservasiSiswa($pendaftar, $totalNilai, $nilaiMaksTotal, $persen, $aspekSummary, $catatanItems);
+                $kategoriFinal = $gen['kategori'];
+                $kesimpulanFinal = $gen['kesimpulan'];
+            } else {
+                $kategoriFinal = 'Belum Lengkap';
+                $kesimpulanFinal = null;
+            }
 
             // Gabungkan nama petugas jika ada petugas berbeda yang ikut mengisi
             $petugasFinal = $petugasNama;
@@ -5480,7 +5499,7 @@ class SpmbModel
                     kategori_hasil = ?, kesimpulan_sistem = ?, catatan_aspek_json = ?,
                     petugas_id = ?, petugas_nama = ?, observed_at = NOW()
                 WHERE id = ?
-            ", [$jenjang, $totalNilai, $nilaiMaksTotal, $persen, $gen['kategori'], $gen['kesimpulan'], $catatanAspekJson, $petugasId, $petugasFinal, $hasilId]);
+            ", [$jenjang, $totalNilai, $nilaiMaksTotal, $persen, $kategoriFinal, $kesimpulanFinal, $catatanAspekJson, $petugasId, $petugasFinal, $hasilId]);
 
             $pdo->commit();
         } catch (Throwable $e) {
@@ -5489,12 +5508,15 @@ class SpmbModel
         }
 
         return [
-            'hasil_id'   => $hasilId,
-            'total'      => $totalNilai,
-            'maksimal'   => $nilaiMaksTotal,
-            'persentase' => $persen,
-            'kategori'   => $gen['kategori'],
-            'kesimpulan' => $gen['kesimpulan'],
+            'hasil_id'    => $hasilId,
+            'total'       => $totalNilai,
+            'maksimal'    => $nilaiMaksTotal,
+            'persentase'  => $persen,
+            'kategori'    => $kategoriFinal,
+            'kesimpulan'  => $kesimpulanFinal,
+            'is_complete' => $isComplete,
+            'terjawab'    => $answeredActiveCount,
+            'total_soal'  => $totalSoalUnit,
         ];
     }
 }

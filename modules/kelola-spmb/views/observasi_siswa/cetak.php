@@ -88,7 +88,11 @@ if (defined('SYS_APP_LOGO') && !empty(SYS_APP_LOGO)) {
                         <?php if (empty($observedItems)): ?>
                             <tr><td colspan="7" class="center" style="padding:20px;color:#64748b;">Belum ada siswa yang selesai diobservasi pada unit ini.</td></tr>
                         <?php else: ?>
-                            <?php foreach ($observedItems as $i => $it): ?>
+                            <?php foreach ($observedItems as $i => $it):
+                                $terjawabIt = (int)($it['jumlah_terjawab'] ?? 0);
+                                $totalSoalIt = (int)($it['total_soal_unit'] ?? 0);
+                                $isFullIt = ($totalSoalIt === 0 || $terjawabIt >= $totalSoalIt);
+                            ?>
                                 <tr>
                                     <td class="center"><?= $i + 1 ?></td>
                                     <td><?= htmlspecialchars($it['nomor_pendaftaran']) ?></td>
@@ -102,8 +106,16 @@ if (defined('SYS_APP_LOGO') && !empty(SYS_APP_LOGO)) {
                                             </div>
                                         <?php endif; ?>
                                     </td>
-                                    <td class="center"><strong><?= htmlspecialchars($it['kategori_hasil']) ?></strong></td>
-                                    <td><?= htmlspecialchars($it['kesimpulan_sistem']) ?></td>
+                                    <td class="center">
+                                        <strong><?= $isFullIt ? htmlspecialchars($it['kategori_hasil'] ?: '-') : ('Belum Lengkap (' . $terjawabIt . '/' . $totalSoalIt . ')') ?></strong>
+                                    </td>
+                                    <td>
+                                        <?php if ($isFullIt && !empty($it['kesimpulan_sistem'])): ?>
+                                            <?= htmlspecialchars($it['kesimpulan_sistem']) ?>
+                                        <?php else: ?>
+                                            <span style="color:#94a3b8;font-style:italic;">Penilaian belum selesai (<?= $terjawabIt ?>/<?= $totalSoalIt ?> soal).</span>
+                                        <?php endif; ?>
+                                    </td>
                                     <td><?= htmlspecialchars($it['petugas_nama'] ?: '-') ?></td>
                                 </tr>
                             <?php endforeach; ?>
@@ -187,23 +199,44 @@ if (defined('SYS_APP_LOGO') && !empty(SYS_APP_LOGO)) {
                                 <?php endforeach; ?>
                             </tbody>
                             <tfoot>
+                                <?php
+                                $totalSoalRec = count($rec['soal_list'] ?? []);
+                                $activeSoalRecIds = array_map(fn($s) => (int)$s['id'], $rec['soal_list'] ?? []);
+                                $answeredRecCount = 0;
+                                foreach ($jList as $jItemCheck) {
+                                    if (empty($activeSoalRecIds) || in_array((int)$jItemCheck['soal_id'], $activeSoalRecIds, true)) {
+                                        $answeredRecCount++;
+                                    }
+                                }
+                                $isRecComplete = ($totalSoalRec === 0 || $answeredRecCount >= $totalSoalRec);
+                                ?>
                                 <tr style="background:#f1f5f9;font-weight:700;">
                                     <td colspan="3" style="text-align:right;">TOTAL NILAI / PERSENTASE</td>
                                     <td class="center"><?= rtrim(rtrim(number_format((float)($h['total_nilai'] ?? 0), 2, '.', ''), '0'), '.') ?> / <?= rtrim(rtrim(number_format((float)($h['nilai_maksimal'] ?? 0), 2, '.', ''), '0'), '.') ?></td>
-                                    <td class="center"><?= number_format((float)($h['persentase'] ?? 0), 1) ?>% (<?= htmlspecialchars($h['kategori_hasil'] ?? '-') ?>)</td>
+                                    <td class="center">
+                                        <?= number_format((float)($h['persentase'] ?? 0), 1) ?>%
+                                        (<?= $isRecComplete ? htmlspecialchars($h['kategori_hasil'] ?? '-') : ('Belum Lengkap: ' . $answeredRecCount . '/' . $totalSoalRec) ?>)
+                                    </td>
                                 </tr>
                             </tfoot>
                         </table>
 
-                        <div class="kesimpulan-box">
-                            <div class="kesimpulan-title">Kesimpulan Sistem (Otomatis)</div>
-                            <div><?= htmlspecialchars($h['kesimpulan_sistem'] ?? '-') ?></div>
-                            <?php if (!empty($h['catatan_petugas'])): ?>
-                                <div style="margin-top:6px;padding-top:6px;border-top:1px dashed #93c5fd;">
-                                    <strong>Catatan Petugas:</strong> <?= htmlspecialchars($h['catatan_petugas']) ?>
-                                </div>
-                            <?php endif; ?>
-                        </div>
+                        <?php if ($isRecComplete && !empty($h['kesimpulan_sistem'])): ?>
+                            <div class="kesimpulan-box">
+                                <div class="kesimpulan-title">Kesimpulan Sistem (Otomatis)</div>
+                                <div><?= htmlspecialchars($h['kesimpulan_sistem']) ?></div>
+                                <?php if (!empty($h['catatan_petugas'])): ?>
+                                    <div style="margin-top:6px;padding-top:6px;border-top:1px dashed #93c5fd;">
+                                        <strong>Catatan Petugas:</strong> <?= htmlspecialchars($h['catatan_petugas']) ?>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        <?php elseif (!empty($h['catatan_petugas'])): ?>
+                            <div class="kesimpulan-box">
+                                <div class="kesimpulan-title">Catatan Petugas</div>
+                                <div><?= htmlspecialchars($h['catatan_petugas']) ?></div>
+                            </div>
+                        <?php endif; ?>
 
                         <div class="ttd-row">
                             <div class="ttd-box">

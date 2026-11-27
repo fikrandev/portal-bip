@@ -363,9 +363,11 @@ $ruanganList = $ruanganList ?? [];
                                                 <span class="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold <?= $isFullDone ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200' ?>">
                                                     <?= $isFullDone ? '✓ Lengkap' : '⏳ Sebagian' ?> (<?= $terjawab ?>/<?= $totalSoalUnit ?>)
                                                 </span>
-                                                <span class="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700">
-                                                    <?= e($it['kategori_hasil']) ?>
-                                                </span>
+                                                <?php if ($isFullDone && !empty($it['kategori_hasil'])): ?>
+                                                    <span class="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700">
+                                                        <?= e($it['kategori_hasil']) ?>
+                                                    </span>
+                                                <?php endif; ?>
                                             </div>
                                             <?php if (!empty($it['detail_nilai'])): ?>
                                                 <div class="flex flex-wrap justify-center gap-1 mt-1.5">
@@ -383,7 +385,13 @@ $ruanganList = $ruanganList ?? [];
                                         <?php endif; ?>
                                     </td>
                                     <td class="py-3.5 px-4 max-w-md text-xs text-slate-600 leading-relaxed">
-                                        <?= $isDone ? e($it['kesimpulan_sistem']) : '<span class="text-slate-400 italic">Kesimpulan otomatis muncul setelah petugas mengisi observasi.</span>' ?>
+                                        <?php if ($isFullDone && !empty($it['kesimpulan_sistem'])): ?>
+                                            <?= e($it['kesimpulan_sistem']) ?>
+                                        <?php elseif ($isDone): ?>
+                                            <span class="text-amber-600 italic">Menunggu penilaian keseluruhan selesai (<?= $terjawab ?>/<?= $totalSoalUnit ?> soal).</span>
+                                        <?php else: ?>
+                                            <span class="text-slate-400 italic">Kesimpulan otomatis muncul setelah seluruh pertanyaan selesai diisi.</span>
+                                        <?php endif; ?>
                                     </td>
                                     <td class="py-3.5 px-4 text-xs text-slate-600 whitespace-nowrap">
                                         <?php if ($isDone): ?>
@@ -396,8 +404,8 @@ $ruanganList = $ruanganList ?? [];
                                     <td class="py-3.5 px-4 text-right whitespace-nowrap space-x-1.5">
                                         <?php if ($canNilai): ?>
                                             <button type="button" onclick="openIsiObservasiModal(<?= (int)$it['pendaftar_id'] ?>)"
-                                                    class="inline-flex items-center px-3.5 py-1.5 rounded-xl <?= $isDone ? 'bg-slate-100 hover:bg-slate-200 text-slate-800' : 'bg-emerald-600 hover:bg-emerald-700 text-white' ?> text-xs font-bold cursor-pointer">
-                                                <?= $isDone ? 'Ubah Nilai' : 'Isi Observasi' ?>
+                                                    class="inline-flex items-center px-3.5 py-1.5 rounded-xl <?= $isFullDone ? 'bg-slate-100 hover:bg-slate-200 text-slate-800' : 'bg-emerald-600 hover:bg-emerald-700 text-white' ?> text-xs font-bold cursor-pointer">
+                                                <?= $isFullDone ? 'Ubah Nilai' : 'Isi Observasi' ?>
                                             </button>
                                         <?php endif; ?>
                                         <?php if ($isDone && $canCetak): ?>
@@ -727,12 +735,16 @@ function recalcLiveObsScore() {
     });
 
     const pct = answeredMax > 0 ? ((total / answeredMax) * 100) : 0;
-    document.getElementById('obsLiveScoreText').textContent = `${total} / ${answeredMax} (${pct.toFixed(1)}%) — Terjawab ${answeredCount}/${currentObsSoalList.length} soal`;
-    let cat = answeredCount === 0 ? 'Belum Ada Jawaban' : 'Perlu Pendampingan Khusus';
-    if (answeredCount > 0) {
+    const totalQuestions = currentObsSoalList.length;
+    document.getElementById('obsLiveScoreText').textContent = `${total} / ${answeredMax} (${pct.toFixed(1)}%) — Terjawab ${answeredCount}/${totalQuestions} soal`;
+    let cat = 'Belum Ada Jawaban';
+    if (answeredCount > 0 && answeredCount < totalQuestions) {
+        cat = `Belum Lengkap (${answeredCount}/${totalQuestions})`;
+    } else if (answeredCount > 0 && answeredCount >= totalQuestions) {
         if (pct >= 85) cat = 'Sangat Siap / Sangat Baik';
         else if (pct >= 70) cat = 'Siap / Baik';
         else if (pct >= 55) cat = 'Cukup Siap (Perlu Penguatan)';
+        else cat = 'Perlu Pendampingan Khusus';
     }
     document.getElementById('obsLiveCatText').textContent = cat;
 

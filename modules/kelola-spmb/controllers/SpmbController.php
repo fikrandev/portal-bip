@@ -4392,7 +4392,11 @@ SVG;
             $petugasId = class_exists('Auth') ? (int)(Auth::id() ?? 0) : 0;
             $petugasNama = class_exists('Auth') ? (Auth::name() ?: 'Petugas Observer') : 'Petugas Observer';
             $res = SpmbModel::saveObservasiSiswaHasil($groupId, $pendaftarId, $_POST, $petugasId, $petugasNama);
-            Response::redirect($redirect, 'Hasil observasi tersimpan! Kategori: ' . $res['kategori'] . ' (' . $res['persentase'] . '%).', 'success');
+            if (!empty($res['is_complete'])) {
+                Response::redirect($redirect, 'Hasil observasi lengkap tersimpan! Kategori: ' . $res['kategori'] . ' (' . $res['persentase'] . '%).', 'success');
+            } else {
+                Response::redirect($redirect, 'Penilaian sebagian tersimpan (' . ($res['terjawab'] ?? 0) . '/' . ($res['total_soal'] ?? 0) . ' soal). Kesimpulan sistem akan muncul setelah seluruh pertanyaan selesai diisi.', 'success');
+            }
         } catch (Throwable $e) {
             Response::redirect($redirect, 'Gagal menyimpan hasil observasi: ' . $e->getMessage(), 'error');
         }
