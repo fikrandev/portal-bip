@@ -435,34 +435,18 @@ $cetakQuery = http_build_query(array_filter([
             const json = await res.json();
             if (json.wrong_session && json.data) {
                 const d = json.data;
-                const safeToken = String(d.qr_token || code).replace(/'/g, "\\'");
                 playScanBeep('warning');
-                box.className = 'shrink-0 p-3.5 rounded-2xl border-2 border-amber-400 bg-amber-950/80 text-left space-y-2';
-                box.innerHTML = `
-                    <div class="flex items-center justify-between gap-2">
-                        <span class="px-2.5 py-0.5 rounded-full bg-rose-500/20 border border-rose-400/40 text-rose-200 text-xs font-extrabold">⚠️ BUKAN SESINYA!</span>
-                        <span class="text-xs font-bold text-indigo-300">${d.urutan_sesi ? 'No. Urut #' + String(d.urutan_sesi).padStart(2, '0') : ''}</span>
-                    </div>
-                    <div class="text-sm sm:text-base font-extrabold text-white">${escHtmlScan(d.nama_lengkap)} (${escHtmlScan(d.jenjang)})</div>
-                    <div class="text-xs text-amber-200">${escHtmlScan(json.message)}</div>
-                    <div class="flex justify-end">
-                        <button type="button" onclick="if(confirm('Tetap catat hadir di luar sesinya?')) processQrCode('${safeToken}', true)"
-                                class="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold cursor-pointer">
-                            Tetap Catat Hadir (Override)
-                        </button>
-                    </div>
-                `;
+                box.className = 'shrink-0 p-3.5 rounded-2xl border border-amber-500/60 bg-amber-950/70 text-center text-xs sm:text-sm font-bold text-amber-200';
+                box.textContent = `⚠️ ${d.nama_lengkap} bukan pada sesi yang dipilih (tidak dimasukkan ke list absen).`;
                 showQrScanModal({
                     type: 'warning',
                     badge: '<span class="inline-block px-3 py-1 rounded-full bg-rose-100 text-rose-800 text-xs font-extrabold">⚠️ BUKAN SESINYA!</span>',
                     title: escHtmlScan(d.nama_lengkap),
                     meta: `${escHtmlScan(d.nomor_peserta)} • Unit ${escHtmlScan(d.jenjang)}${d.urutan_sesi ? ' • No. Urut #' + String(d.urutan_sesi).padStart(2, '0') : ''}`,
-                    detail: `<div class="text-amber-900 font-semibold">${escHtmlScan(json.message)}</div>`,
+                    detail: `<div class="text-amber-900 font-semibold">${escHtmlScan(json.message)}</div><div class="text-[11px] text-slate-500 mt-1.5">Peserta <strong>tidak dimasukkan ke List Absen</strong>. Jika ingin mengabsenkan peserta ini, pilih sesinya terlebih dahulu pada Dropdown Sesi.</div>`,
                     actionsHtml: `
-                        <button type="button" onclick="closeQrScanModal()" class="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold cursor-pointer">Tutup</button>
-                        <button type="button" onclick="if(confirm('Tetap catat hadir di luar sesinya?')) { closeQrScanModal(); processQrCode('${safeToken}', true); }"
-                                class="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-extrabold cursor-pointer">
-                            Tetap Catat Hadir (Override)
+                        <button type="button" onclick="closeQrScanModal()" class="px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold cursor-pointer">
+                            Tutup &amp; Lanjut Scan
                         </button>
                     `,
                     autoCloseMs: 0

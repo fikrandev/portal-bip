@@ -4640,12 +4640,17 @@ class SpmbModel
 
             if ($rowRid <= 0) {
                 $wrongReason = 'Peserta ini belum diatur jadwal sesi & ruangannya.';
-            } elseif ($expectedRuanganId && $expectedRuanganId > 0 && $rowRid !== $expectedRuanganId) {
-                $expR = self::db()->find("SELECT nama_ruangan, sesi_nama, jam_mulai, jam_selesai FROM `spmb_observasi_ruangan` WHERE id = ? LIMIT 1", [$expectedRuanganId]);
-                $expLabel = $expR ? ($expR['nama_ruangan'] . ' — ' . $expR['sesi_nama']) : ('Ruangan #' . $expectedRuanganId);
-                $wrongReason = 'Bukan sesi/ruangan ini! Sesi aktif scanner: ' . $expLabel
-                    . ', sedangkan peserta ini terdaftar di ' . ($row['nama_ruangan'] ?: '-') . ' — ' . ($row['sesi_nama'] ?: '-')
-                    . ' (' . ($row['jam_mulai'] ?? '') . '–' . ($row['jam_selesai'] ?? '') . ').';
+            } elseif ($expectedRuanganId && $expectedRuanganId > 0) {
+                // Jika petugas memilih sesi spesifik di dropdown:
+                // - Cocok dengan sesi peserta -> LANGSUNG BISA ABSEN (meski datang lebih awal / di luar jam mulai)
+                // - Tidak cocok -> tolak sebagai bukan sesinya
+                if ($rowRid !== $expectedRuanganId) {
+                    $expR = self::db()->find("SELECT nama_ruangan, sesi_nama, jam_mulai, jam_selesai FROM `spmb_observasi_ruangan` WHERE id = ? LIMIT 1", [$expectedRuanganId]);
+                    $expLabel = $expR ? ($expR['nama_ruangan'] . ' — ' . $expR['sesi_nama']) : ('Ruangan #' . $expectedRuanganId);
+                    $wrongReason = 'Bukan sesi/ruangan ini! Scanner sedang aktif di ' . $expLabel
+                        . ', sedangkan peserta ini terdaftar di ' . ($row['nama_ruangan'] ?: '-') . ' — ' . ($row['sesi_nama'] ?: '-')
+                        . ' (' . ($row['jam_mulai'] ?? '') . '–' . ($row['jam_selesai'] ?? '') . ').';
+                }
             } elseif (!empty($row['tgl_sesi'])) {
                 $todayYmd = date('Y-m-d');
                 $tglSesi = (string)$row['tgl_sesi'];
