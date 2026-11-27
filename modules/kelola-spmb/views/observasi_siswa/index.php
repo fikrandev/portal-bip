@@ -109,21 +109,46 @@ $search = $filters['search'] ?? '';
                         </div>
                     <?php endif; ?>
 
-                    <div>
-                        <label class="block text-sm font-semibold text-slate-700 mb-1">Pertanyaan *</label>
-                        <textarea name="pertanyaan" id="soal_pertanyaan" rows="3" required placeholder="Tuliskan pertanyaan / indikator observasi untuk calon siswa..."
-                                  class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white outline-none"></textarea>
-                    </div>
-
-                    <!-- Opsi Jawaban & Nilai -->
-                    <div class="space-y-2">
+                    <div class="space-y-3">
                         <div class="flex items-center justify-between">
-                            <label class="text-sm font-semibold text-slate-700">Pilihan Jawaban &amp; Nilai *</label>
-                            <button type="button" onclick="addOpsiRow('', '')" class="px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold cursor-pointer">
-                                + Tambah Jawaban
+                            <label class="text-sm font-bold text-slate-800">Daftar Pertanyaan &amp; 4 Pilihan Jawaban *</label>
+                            <button type="button" id="btnAddQuestionBlock" onclick="addQuestionBlock()"
+                                    class="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-bold cursor-pointer">
+                                + Tambah Pertanyaan
                             </button>
                         </div>
-                        <div id="opsiContainer" class="space-y-2"></div>
+
+                        <div id="pertanyaanBlocksContainer" class="space-y-3">
+                            <!-- Pertanyaan #1 langsung ter-render dari PHP (aman PJAX, otomatis 4 jawaban) -->
+                            <div class="q-block p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2.5" data-qidx="0">
+                                <div class="flex items-center justify-between">
+                                    <span class="q-block-title text-xs font-extrabold text-indigo-700 uppercase">Pertanyaan #1</span>
+                                    <button type="button" onclick="removeQuestionBlock(this)" class="q-remove-btn hidden px-2 py-0.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 text-[11px] font-bold cursor-pointer">Hapus</button>
+                                </div>
+                                <textarea name="items[0][pertanyaan]" rows="2" required placeholder="Tuliskan pertanyaan / indikator observasi untuk calon siswa..."
+                                          class="q-pertanyaan-input w-full px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-sm outline-none focus:border-indigo-500"></textarea>
+
+                                <div class="space-y-1.5">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-xs font-bold text-slate-600">Pilihan Jawaban &amp; Nilai (Otomatis 4):</span>
+                                        <button type="button" onclick="addOpsiRowToBlock(this.closest('.q-block'))" class="px-2 py-0.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[11px] font-bold cursor-pointer">
+                                            + Jawaban
+                                        </button>
+                                    </div>
+                                    <div class="q-opsi-list space-y-1.5">
+                                        <?php foreach ([['Sangat Baik', 4], ['Baik', 3], ['Cukup', 2], ['Perlu Bimbingan', 1]] as $defOp): ?>
+                                            <div class="flex items-center gap-1.5">
+                                                <input type="text" name="items[0][opsi_jawaban][]" value="<?= e($defOp[0]) ?>" required placeholder="Jawaban"
+                                                       class="flex-1 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-medium outline-none focus:border-indigo-500">
+                                                <input type="number" step="any" name="items[0][opsi_nilai][]" value="<?= $defOp[1] ?>" required placeholder="Nilai"
+                                                       class="w-20 px-2.5 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-center outline-none focus:border-indigo-500">
+                                                <button type="button" onclick="this.parentElement.remove()" class="px-2 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold cursor-pointer">✕</button>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <label class="flex items-center gap-2.5 p-3 rounded-xl bg-slate-50 border border-slate-200 cursor-pointer">
@@ -133,7 +158,7 @@ $search = $filters['search'] ?? '';
 
                     <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
                         <button type="button" onclick="resetSoalForm()" class="px-4 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold text-slate-700 cursor-pointer">Reset</button>
-                        <button type="submit" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold shadow-xs cursor-pointer">Simpan Pertanyaan</button>
+                        <button type="submit" id="btnSubmitSoal" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold shadow-xs cursor-pointer">Simpan Pertanyaan</button>
                     </div>
                 </form>
             </div>
@@ -390,69 +415,120 @@ $search = $filters['search'] ?? '';
 </div>
 
 <script>
-// ── TAB 1: DYNAMIC OPSI JAWABAN & NILAI ──
-function addOpsiRow(jawaban = '', nilai = '') {
-    const wrap = document.getElementById('opsiContainer');
-    if (!wrap) return;
-    const row = document.createElement('div');
-    row.className = 'flex items-center gap-2';
-    row.innerHTML = `
-        <input type="text" name="opsi_jawaban[]" value="${String(jawaban).replace(/"/g, '&quot;')}" required placeholder="Jawaban (misal: Sangat Baik)"
-               class="flex-1 px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-sm outline-none">
-        <input type="number" step="any" name="opsi_nilai[]" value="${nilai}" required placeholder="Nilai"
-               class="w-24 px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-sm font-bold text-center outline-none">
-        <button type="button" onclick="this.parentElement.remove()" class="px-2.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold cursor-pointer">✕</button>
-    `;
-    wrap.appendChild(row);
+// ── TAB 1: MULTI-PERTANYAAN PER ASPEK (OTOMATIS 4 JAWABAN & NILAI) ──
+let qBlockCounter = 1;
+const defaultFourOptions = [
+    ['Sangat Baik', 4],
+    ['Baik', 3],
+    ['Cukup', 2],
+    ['Perlu Bimbingan', 1]
+];
+
+function buildOpsiRowHtml(qIdx, jawaban = '', nilai = '') {
+    const safeJ = String(jawaban).replace(/"/g, '&quot;');
+    return `<div class="flex items-center gap-1.5">
+        <input type="text" name="items[${qIdx}][opsi_jawaban][]" value="${safeJ}" required placeholder="Jawaban"
+               class="flex-1 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-medium outline-none focus:border-indigo-500">
+        <input type="number" step="any" name="items[${qIdx}][opsi_nilai][]" value="${nilai}" required placeholder="Nilai"
+               class="w-20 px-2.5 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-center outline-none focus:border-indigo-500">
+        <button type="button" onclick="this.parentElement.remove()" class="px-2 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold cursor-pointer">✕</button>
+    </div>`;
 }
 
-function initDefaultOpsi() {
-    const wrap = document.getElementById('opsiContainer');
-    if (!wrap) return;
-    wrap.innerHTML = '';
-    addOpsiRow('Sangat Baik', 4);
-    addOpsiRow('Baik', 3);
-    addOpsiRow('Cukup', 2);
-    addOpsiRow('Perlu Bimbingan', 1);
+function addOpsiRowToBlock(blockEl, jawaban = '', nilai = '') {
+    if (!blockEl) return;
+    const qIdx = blockEl.getAttribute('data-qidx') || '0';
+    const list = blockEl.querySelector('.q-opsi-list');
+    if (list) list.insertAdjacentHTML('beforeend', buildOpsiRowHtml(qIdx, jawaban, nilai));
 }
-initDefaultOpsi();
+
+function refreshQuestionBlockHeaders() {
+    const blocks = document.querySelectorAll('#pertanyaanBlocksContainer .q-block');
+    blocks.forEach((b, i) => {
+        const title = b.querySelector('.q-block-title');
+        if (title) title.textContent = 'Pertanyaan #' + (i + 1);
+        const rm = b.querySelector('.q-remove-btn');
+        if (rm) rm.classList.toggle('hidden', blocks.length <= 1);
+    });
+}
+
+function addQuestionBlock(pertanyaanText = '', opsiList = null) {
+    const container = document.getElementById('pertanyaanBlocksContainer');
+    if (!container) return;
+    const idx = qBlockCounter++;
+    const ops = (opsiList && opsiList.length) ? opsiList : defaultFourOptions.map(x => ({ jawaban: x[0], nilai: x[1] }));
+    const opsiHtml = ops.map(op => buildOpsiRowHtml(idx, op.jawaban ?? op[0] ?? '', op.nilai ?? op[1] ?? '')).join('');
+
+    const block = document.createElement('div');
+    block.className = 'q-block p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2.5';
+    block.setAttribute('data-qidx', String(idx));
+    block.innerHTML = `
+        <div class="flex items-center justify-between">
+            <span class="q-block-title text-xs font-extrabold text-indigo-700 uppercase">Pertanyaan</span>
+            <button type="button" onclick="removeQuestionBlock(this)" class="q-remove-btn px-2 py-0.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 text-[11px] font-bold cursor-pointer">Hapus</button>
+        </div>
+        <textarea name="items[${idx}][pertanyaan]" rows="2" required placeholder="Tuliskan pertanyaan / indikator observasi untuk calon siswa..."
+                  class="q-pertanyaan-input w-full px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-sm outline-none focus:border-indigo-500">${pertanyaanText}</textarea>
+        <div class="space-y-1.5">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-600">Pilihan Jawaban &amp; Nilai (Otomatis 4):</span>
+                <button type="button" onclick="addOpsiRowToBlock(this.closest('.q-block'))" class="px-2 py-0.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[11px] font-bold cursor-pointer">
+                    + Jawaban
+                </button>
+            </div>
+            <div class="q-opsi-list space-y-1.5">${opsiHtml}</div>
+        </div>
+    `;
+    container.appendChild(block);
+    refreshQuestionBlockHeaders();
+    const ta = block.querySelector('.q-pertanyaan-input');
+    if (ta && !pertanyaanText) ta.focus();
+}
+
+function removeQuestionBlock(btn) {
+    const block = btn.closest('.q-block');
+    if (block) block.remove();
+    refreshQuestionBlockHeaders();
+}
 
 function editSoal(s) {
     document.getElementById('soalFormTitle').textContent = 'Edit Pertanyaan #' + s.urutan;
     document.getElementById('soal_id').value = s.id || '';
     document.getElementById('soal_aspek').value = s.aspek || 'Umum';
     document.getElementById('soal_urutan').value = s.urutan || 1;
-    document.getElementById('soal_pertanyaan').value = s.pertanyaan || '';
     document.getElementById('soal_pakai_ket').checked = Number(s.pakai_keterangan) === 1;
-    const wrap = document.getElementById('opsiContainer');
-    wrap.innerHTML = '';
-    (s.opsi || []).forEach(op => addOpsiRow(op.jawaban, op.nilai));
-    if (!(s.opsi || []).length) initDefaultOpsi();
+    const btnAdd = document.getElementById('btnAddQuestionBlock');
+    if (btnAdd) btnAdd.classList.add('hidden');
+
+    const container = document.getElementById('pertanyaanBlocksContainer');
+    container.innerHTML = '';
+    addQuestionBlock(s.pertanyaan || '', (s.opsi && s.opsi.length) ? s.opsi : null);
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function pilihAspekCepat(namaAspek, focusInput = false) {
-    document.getElementById('soal_id').value = '';
+    resetSoalForm(namaAspek);
     document.getElementById('soalFormTitle').textContent = 'Tambah Pertanyaan di Aspek ' + namaAspek;
-    const aspInp = document.getElementById('soal_aspek');
-    if (aspInp) aspInp.value = namaAspek;
-    const qInp = document.getElementById('soal_pertanyaan');
-    if (qInp) {
-        qInp.value = '';
-        if (focusInput) {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            qInp.focus();
-        }
+    if (focusInput) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        const ta = document.querySelector('#pertanyaanBlocksContainer .q-pertanyaan-input');
+        if (ta) ta.focus();
     }
 }
 
-function resetSoalForm() {
+function resetSoalForm(defaultAspek = 'Kognitif') {
     document.getElementById('soalFormTitle').textContent = 'Tambah Pertanyaan — Unit <?= e($selJenjang) ?>';
     document.getElementById('soal_id').value = '';
-    document.getElementById('soal_aspek').value = 'Kognitif';
-    document.getElementById('soal_pertanyaan').value = '';
+    document.getElementById('soal_aspek').value = defaultAspek;
     document.getElementById('soal_pakai_ket').checked = true;
-    initDefaultOpsi();
+    const btnAdd = document.getElementById('btnAddQuestionBlock');
+    if (btnAdd) btnAdd.classList.remove('hidden');
+
+    const container = document.getElementById('pertanyaanBlocksContainer');
+    if (container) {
+        container.innerHTML = '';
+        addQuestionBlock('', null);
+    }
 }
 
 // ── TAB 2: MODAL PENGISIAN OBSERVASI SISWA ──

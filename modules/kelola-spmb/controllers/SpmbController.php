@@ -4349,8 +4349,8 @@ SVG;
             Response::redirect($redirect, 'Anda tidak memiliki akses pada unit ' . $jenjang . '.', 'error');
         }
         try {
-            SpmbModel::saveObservasiSiswaSoal($_POST);
-            Response::redirect($redirect, 'Pertanyaan Observasi Siswa unit ' . $jenjang . ' berhasil disimpan.', 'success');
+            $savedCount = SpmbModel::saveObservasiSiswaSoalBulk($_POST);
+            Response::redirect($redirect, $savedCount . ' pertanyaan Observasi Siswa unit ' . $jenjang . ' berhasil disimpan.', 'success');
         } catch (Throwable $e) {
             Response::redirect($redirect, 'Gagal menyimpan pertanyaan: ' . $e->getMessage(), 'error');
         }

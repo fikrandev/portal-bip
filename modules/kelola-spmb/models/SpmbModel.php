@@ -4999,6 +4999,46 @@ class SpmbModel
         return $rows;
     }
 
+    public static function saveObservasiSiswaSoalBulk(array $data): int
+    {
+        self::ensureObservasiSiswaSchema();
+        $id = !empty($data['id']) ? (int)$data['id'] : null;
+        $jenjang = trim((string)($data['jenjang'] ?? 'SD'));
+        $aspek = trim((string)($data['aspek'] ?? 'Umum')) ?: 'Umum';
+        $pakaiKet = !empty($data['pakai_keterangan']) ? 1 : 0;
+        $startUrutan = max(1, (int)($data['urutan'] ?? 1));
+
+        // Jika mode multi-pertanyaan (items[idx][pertanyaan], items[idx][opsi_jawaban][], items[idx][opsi_nilai][])
+        if (!empty($data['items']) && is_array($data['items'])) {
+            $saved = 0;
+            $curUrut = $startUrutan;
+            foreach ($data['items'] as $idx => $item) {
+                $qText = trim((string)($item['pertanyaan'] ?? ''));
+                if ($qText === '') continue;
+                self::saveObservasiSiswaSoal([
+                    'id'               => ($saved === 0 && $id) ? $id : null,
+                    'jenjang'          => $jenjang,
+                    'aspek'            => $aspek,
+                    'pertanyaan'       => $qText,
+                    'opsi_jawaban'     => $item['opsi_jawaban'] ?? [],
+                    'opsi_nilai'       => $item['opsi_nilai'] ?? [],
+                    'pakai_keterangan' => $pakaiKet,
+                    'urutan'           => $curUrut++,
+                    'is_active'        => 1,
+                ]);
+                $saved++;
+            }
+            if ($saved === 0) {
+                throw new Exception('Minimal 1 pertanyaan wajib diisi.');
+            }
+            return $saved;
+        }
+
+        // Fallback single-item format
+        self::saveObservasiSiswaSoal($data);
+        return 1;
+    }
+
     public static function saveObservasiSiswaSoal(array $data): int
     {
         self::ensureObservasiSiswaSchema();
