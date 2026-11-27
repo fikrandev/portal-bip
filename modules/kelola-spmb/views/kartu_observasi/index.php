@@ -637,10 +637,6 @@ $cetakQuery = http_build_query(array_filter([
                    class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold shadow-xs">
                     Cetak PDF Jadwal Sesi
                 </a>
-                <a href="<?= url('kelola-spmb/kartu-observasi/cetak?' . ($cetakQuery ? $cetakQuery . '&' : '') . 'auto_download=1') ?>" target="_blank"
-                   class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-sm font-bold shadow-xs">
-                    Download PDF Semua Kartu
-                </a>
                 <a href="<?= url('kelola-spmb/kartu-observasi/cetak' . ($cetakQuery ? '?' . $cetakQuery : '')) ?>" target="_blank"
                    class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-sm font-bold shadow-xs">
                     Cetak Kartu PDF
