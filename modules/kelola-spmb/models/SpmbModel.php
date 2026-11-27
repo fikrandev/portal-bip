@@ -4277,6 +4277,40 @@ class SpmbModel
                 }
             }
         } catch (Throwable $e) {}
+
+        // Daftarkan permission RBAC Kartu & Absen QR secara otomatis & idempoten
+        try {
+            $mod = self::db()->find("SELECT id FROM `modules` WHERE slug = 'kelola-spmb' LIMIT 1");
+            $modId = $mod ? (int)$mod['id'] : null;
+            $perms = [
+                ['spmb.kartu_qr.view', 'Lihat Kartu & Absen QR', 'Melihat daftar peserta, kartu QR, dan laporan tidak absen observasi'],
+                ['spmb.kartu_qr.scan', 'Scan QR Absensi Observasi', 'Membuka layar penuh scanner QR, mencatat kehadiran via kamera/barcode, dan reset absen'],
+                ['spmb.kartu_qr.manage', 'Kelola Ruangan, Sesi & Peserta QR', 'Sinkron peserta, atur ruangan & jam sesi, dan bagi ruangan otomatis/manual'],
+                ['spmb.kartu_qr.broadcast', 'Broadcast WA Kartu & Jadwal Sesi', 'Mengirim link kartu QR dan jadwal sesi observasi via WhatsApp'],
+                ['spmb.kartu_qr.cetak', 'Cetak Kartu, Jadwal & Laporan QR', 'Mencetak/download PDF kartu peserta, jadwal sesi, serta cetak/ekspor laporan tidak absen QR'],
+            ];
+            $superRole = self::db()->find("SELECT id FROM `roles` WHERE LOWER(name) LIKE '%super%' OR slug = 'super_admin' ORDER BY id ASC LIMIT 1");
+            $superRoleId = $superRole ? (int)$superRole['id'] : null;
+
+            foreach ($perms as $pr) {
+                $existingP = self::db()->find("SELECT id FROM `permissions` WHERE slug = ? LIMIT 1", [$pr[0]]);
+                if (!$existingP) {
+                    self::db()->query(
+                        "INSERT INTO `permissions` (`module_id`, `slug`, `name`, `description`) VALUES (?, ?, ?, ?)",
+                        [$modId, $pr[0], $pr[1], $pr[2]]
+                    );
+                    $permId = (int)self::db()->lastInsertId();
+                } else {
+                    $permId = (int)$existingP['id'];
+                }
+                if ($superRoleId && $permId > 0) {
+                    self::db()->query(
+                        "INSERT IGNORE INTO `role_permissions` (`role_id`, `permission_id`) VALUES (?, ?)",
+                        [$superRoleId, $permId]
+                    );
+                }
+            }
+        } catch (Throwable $e) {}
     }
 
     public static function getKartuObservasiRuangan(?int $groupId): array

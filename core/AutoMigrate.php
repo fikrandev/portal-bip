@@ -108,6 +108,7 @@ class AutoMigrate
             '2026_11_23_000070_add_multi_tugas_to_jurnal_staff'            => 'migration070AddMultiTugasToJurnalStaff',
             '2026_11_23_000071_add_jenis_otorisasi_to_users'               => 'migration071AddJenisOtorisasiToUsers',
             '2026_11_25_000072_widen_spmb_observasi_respon_columns'        => 'migration072WidenSpmbObservasiResponColumns',
+            '2026_11_27_000073_add_spmb_kartu_qr_rbac_permissions'         => 'migration073AddSpmbKartuQrRbacPermissions',
         ];
     }
     /**
@@ -4004,6 +4005,11 @@ class AutoMigrate
                 ['spmb.observasi.update', 'Ubah & Broadcast Observasi/Grup WA', 'Mengelola status gabung grup dan broadcast undangan WA'],
                 ['spmb.observasi.delete', 'Hapus Pertanyaan/Grup Observasi', 'Menghapus instrumen pertanyaan atau grup observasi'],
                 ['spmb.observasi.export', 'Ekspor Observasi Awal', 'Mengekspor rekap hasil observasi awal orang tua'],
+                ['spmb.kartu_qr.view', 'Lihat Kartu & Absen QR', 'Melihat daftar peserta, kartu QR, dan laporan tidak absen observasi'],
+                ['spmb.kartu_qr.scan', 'Scan QR Absensi Observasi', 'Membuka layar penuh scanner QR, mencatat kehadiran via kamera/barcode, dan reset absen'],
+                ['spmb.kartu_qr.manage', 'Kelola Ruangan, Sesi & Peserta QR', 'Sinkron peserta, atur ruangan & jam sesi, dan bagi ruangan otomatis/manual'],
+                ['spmb.kartu_qr.broadcast', 'Broadcast WA Kartu & Jadwal Sesi', 'Mengirim link kartu QR dan jadwal sesi observasi via WhatsApp'],
+                ['spmb.kartu_qr.cetak', 'Cetak Kartu, Jadwal & Laporan QR', 'Mencetak/download PDF kartu peserta, jadwal sesi, serta cetak/ekspor laporan tidak absen QR'],
                 ['spmb.observasi_siswa.view', 'Lihat Observasi Siswa', 'Melihat daftar dan hasil observasi langsung calon siswa per unit'],
                 ['spmb.observasi_siswa.soal', 'Kelola Pertanyaan Observasi Siswa', 'Membuat, mengubah, dan menghapus pertanyaan, jawaban, serta bobot nilai observasi siswa per unit'],
                 ['spmb.observasi_siswa.nilai', 'Isi Penilaian Observasi Siswa', 'Mengisi jawaban, nilai, dan keterangan observasi langsung untuk calon siswa'],
@@ -5125,6 +5131,55 @@ class AutoMigrate
             ");
         } catch (Throwable $e) {
             error_log('migration072WidenSpmbObservasiResponColumns warning: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * 073. Tambahkan permission RBAC khusus untuk fitur Kartu & Absen QR Observasi (SPMB)
+     */
+    protected static function migration073AddSpmbKartuQrRbacPermissions(PDO $pdo): void
+    {
+        if (!self::hasTable($pdo, 'permissions') || !self::hasTable($pdo, 'modules')) {
+            return;
+        }
+
+        try {
+            $stmtMod = $pdo->prepare("SELECT id FROM `modules` WHERE slug = 'kelola-spmb' LIMIT 1");
+            $stmtMod->execute();
+            $modId = $stmtMod->fetchColumn();
+            $modId = $modId !== false ? (int)$modId : null;
+
+            $stmtSuper = $pdo->query("SELECT id FROM `roles` WHERE LOWER(name) LIKE '%super%' OR slug = 'super_admin' ORDER BY id ASC LIMIT 1");
+            $superRoleId = $stmtSuper ? $stmtSuper->fetchColumn() : false;
+            $superRoleId = $superRoleId !== false ? (int)$superRoleId : null;
+
+            $perms = [
+                ['spmb.kartu_qr.view', 'Lihat Kartu & Absen QR', 'Melihat daftar peserta, kartu QR, dan laporan tidak absen observasi'],
+                ['spmb.kartu_qr.scan', 'Scan QR Absensi Observasi', 'Membuka layar penuh scanner QR, mencatat kehadiran via kamera/barcode, dan reset absen'],
+                ['spmb.kartu_qr.manage', 'Kelola Ruangan, Sesi & Peserta QR', 'Sinkron peserta, atur ruangan & jam sesi, dan bagi ruangan otomatis/manual'],
+                ['spmb.kartu_qr.broadcast', 'Broadcast WA Kartu & Jadwal Sesi', 'Mengirim link kartu QR dan jadwal sesi observasi via WhatsApp'],
+                ['spmb.kartu_qr.cetak', 'Cetak Kartu, Jadwal & Laporan QR', 'Mencetak/download PDF kartu peserta, jadwal sesi, serta cetak/ekspor laporan tidak absen QR'],
+            ];
+
+            $stmtCheck = $pdo->prepare("SELECT id FROM `permissions` WHERE slug = ? LIMIT 1");
+            $stmtInsert = $pdo->prepare("INSERT INTO `permissions` (`module_id`, `slug`, `name`, `description`) VALUES (?, ?, ?, ?)");
+            $stmtGrant = $pdo->prepare("INSERT IGNORE INTO `role_permissions` (`role_id`, `permission_id`) VALUES (?, ?)");
+
+            foreach ($perms as $pr) {
+                $stmtCheck->execute([$pr[0]]);
+                $permId = $stmtCheck->fetchColumn();
+                if ($permId === false) {
+                    $stmtInsert->execute([$modId, $pr[0], $pr[1], $pr[2]]);
+                    $permId = (int)$pdo->lastInsertId();
+                } else {
+                    $permId = (int)$permId;
+                }
+                if ($superRoleId && $permId > 0) {
+                    $stmtGrant->execute([$superRoleId, $permId]);
+                }
+            }
+        } catch (Throwable $e) {
+            error_log('migration073AddSpmbKartuQrRbacPermissions warning: ' . $e->getMessage());
         }
     }
 }

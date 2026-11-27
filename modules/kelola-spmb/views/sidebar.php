@@ -101,6 +101,7 @@ try {
                 $canSuratPernyataan = class_exists('RBAC') ? RBAC::hasPermission('spmb.surat_pernyataan.view') : true;
                 $canScreeningPsikolog = class_exists('RBAC') ? RBAC::hasPermission('spmb.psikolog.view') : true;
                 $canObservasiAwal = class_exists('RBAC') ? RBAC::hasPermission('spmb.observasi.view') : true;
+                $canKartuQr = class_exists('RBAC') ? RBAC::hasAnyPermission(['spmb.kartu_qr.view', 'spmb.kartu_qr.scan', 'spmb.kartu_qr.manage', 'spmb.kartu_qr.broadcast', 'spmb.kartu_qr.cetak']) : true;
                 $canObservasiSiswa = class_exists('RBAC') ? RBAC::hasAnyPermission(['spmb.observasi_siswa.view', 'spmb.observasi_siswa.soal', 'spmb.observasi_siswa.nilai', 'spmb.observasi_siswa.cetak']) : true;
                 $canPengaturan = class_exists('RBAC') ? RBAC::hasPermission('spmb.pengaturan.view') : true;
                 
@@ -205,7 +206,10 @@ try {
                         </svg>',
                         $isObservasiAwalActive
                     );
+                }
 
+                // 7a. KARTU & ABSEN QR (RBAC KHUSUS)
+                if ($canKartuQr) {
                     renderSpmbNav(
                         'Kartu & Absen QR',
                         url('kelola-spmb/kartu-observasi'),

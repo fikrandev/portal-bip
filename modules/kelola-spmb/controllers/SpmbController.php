@@ -3998,11 +3998,25 @@ SVG;
 
     public static function kartuObservasiIndex(): void
     {
+        SpmbModel::ensureKartuObservasiSchema();
         $activeGroup = SpmbModel::getActiveGroup();
         $groupId = (int)($activeGroup['id'] ?? 0);
-        $activeTab = trim((string)($_GET['tab'] ?? 'peserta'));
+
+        $canKartuView      = class_exists('RBAC') ? RBAC::hasAnyPermission(['spmb.kartu_qr.view', 'spmb.kartu_qr.manage', 'spmb.kartu_qr.broadcast', 'spmb.kartu_qr.cetak']) : true;
+        $canKartuScan      = class_exists('RBAC') ? RBAC::hasPermission('spmb.kartu_qr.scan') : true;
+        $canKartuManage    = class_exists('RBAC') ? RBAC::hasPermission('spmb.kartu_qr.manage') : true;
+        $canKartuBroadcast = class_exists('RBAC') ? RBAC::hasPermission('spmb.kartu_qr.broadcast') : true;
+        $canKartuCetak     = class_exists('RBAC') ? RBAC::hasAnyPermission(['spmb.kartu_qr.cetak', 'spmb.kartu_qr.view', 'spmb.kartu_qr.manage']) : true;
+
+        $defaultTab = $canKartuView ? 'peserta' : ($canKartuScan ? 'scan' : 'peserta');
+        $activeTab = trim((string)($_GET['tab'] ?? $defaultTab));
         if (!in_array($activeTab, ['peserta', 'scan', 'ruangan', 'laporan'], true)) {
-            $activeTab = 'peserta';
+            $activeTab = $defaultTab;
+        }
+        if ($activeTab === 'scan' && !$canKartuScan) $activeTab = $defaultTab;
+        if ($activeTab === 'ruangan' && !$canKartuManage) $activeTab = $defaultTab;
+        if (in_array($activeTab, ['peserta', 'laporan'], true) && !$canKartuView && $canKartuScan) {
+            $activeTab = 'scan';
         }
 
         $filters = [
@@ -4020,6 +4034,20 @@ SVG;
         $laporanTidakHadir = ($activeTab === 'laporan')
             ? SpmbModel::getKartuObservasiLaporanTidakHadir($filters)
             : ['groups' => [], 'summary' => []];
+
+        // Daftar siswa yang sudah absen hadir (diurutkan terbaru) untuk panel List Absen pada mode Scan Fullscreen
+        $scanAttendedItems = [];
+        if ($activeTab === 'scan') {
+            $allHadirData = SpmbModel::getKartuObservasiPeserta([
+                'group_id'     => $groupId,
+                'status_absen' => 'Hadir',
+            ]);
+            $scanAttendedItems = $allHadirData['items'] ?? [];
+            usort($scanAttendedItems, function ($a, $b) {
+                return strcmp((string)($b['waktu_absen'] ?? ''), (string)($a['waktu_absen'] ?? ''));
+            });
+        }
+
         $defaultWaTemplate = SpmbModel::getDefaultWaJadwalObservasiTemplate();
 
         $pageTitle = 'Kartu & Absen QR Observasi';
@@ -4223,7 +4251,7 @@ SVG;
     {
         $canScan = class_exists('Auth') && Auth::check() && (
             Auth::isSuperAdmin()
-            || (class_exists('RBAC') && RBAC::hasAnyPermission(['spmb.observasi.update', 'spmb.observasi.view', 'spmb.dashboard']))
+            || (class_exists('RBAC') && RBAC::hasAnyPermission(['spmb.kartu_qr.scan', 'spmb.kartu_qr.manage']))
         );
 
         if (!$canScan) {

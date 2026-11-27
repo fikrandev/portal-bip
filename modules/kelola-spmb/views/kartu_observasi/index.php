@@ -8,12 +8,378 @@ $selJenjang = $filters['jenjang'] ?? '';
 $selRuangan = $filters['ruangan_id'] ?? '';
 $selStatus  = $filters['status_absen'] ?? '';
 $search     = $filters['search'] ?? '';
+$canKartuView      = $canKartuView ?? true;
+$canKartuScan      = $canKartuScan ?? true;
+$canKartuManage    = $canKartuManage ?? true;
+$canKartuBroadcast = $canKartuBroadcast ?? true;
+$canKartuCetak     = $canKartuCetak ?? true;
+$scanAttendedItems = $scanAttendedItems ?? [];
 $cetakQuery = http_build_query(array_filter([
     'jenjang'    => $selJenjang,
     'ruangan_id' => $selRuangan,
     'search'     => $search,
 ]));
 ?>
+<?php if ($activeTab === 'scan' && $canKartuScan): ?>
+    <!-- ══════════ MODE FULLSCREEN: SCAN QR ABSENSI (HANYA DROPDOWN SESI, KAMERA & LIST ABSEN) ══════════ -->
+    <?php
+    $backUrl = $canKartuView ? url('kelola-spmb/kartu-observasi?tab=peserta') : url('kelola-spmb');
+    $attendedJson = json_encode(array_map(function ($it) {
+        return [
+            'id'            => (int)($it['id'] ?? 0),
+            'nama_lengkap'  => (string)($it['nama_lengkap'] ?? ''),
+            'nomor_peserta' => (string)($it['nomor_peserta'] ?? ''),
+            'jenjang'       => (string)($it['jenjang'] ?? ''),
+            'ruangan_id'    => !empty($it['ruangan_id']) ? (int)$it['ruangan_id'] : 0,
+            'urutan_sesi'   => !empty($it['urutan_sesi']) ? (int)$it['urutan_sesi'] : null,
+            'nama_ruangan'  => (string)($it['nama_ruangan'] ?? ''),
+            'sesi_nama'     => (string)($it['sesi_nama'] ?? ''),
+            'jam_mulai'     => (string)($it['jam_mulai'] ?? ''),
+            'jam_selesai'   => (string)($it['jam_selesai'] ?? ''),
+            'waktu_absen'   => (string)($it['waktu_absen'] ?? ''),
+        ];
+    }, $scanAttendedItems), JSON_UNESCAPED_UNICODE);
+    ?>
+    <style>
+        html, body { overflow: hidden !important; height: 100% !important; }
+        #qr-reader { width: 100% !important; height: 100% !important; border: none !important; }
+        #qr-reader > div { width: 100% !important; height: 100% !important; }
+        #qr-reader video { width: 100% !important; height: 100% !important; object-fit: cover !important; border-radius: 0.75rem; }
+        #qr-shaded-region { display: none !important; }
+    </style>
+
+    <div id="fullscreenQrWrap" class="fixed inset-0 z-[9999] bg-slate-950 text-white flex flex-col overflow-hidden">
+        <!-- Top Bar: Dropdown Sesi + Kontrol Kamera & Kembali -->
+        <div class="shrink-0 px-3 sm:px-5 py-3 bg-slate-900 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2.5">
+            <div class="flex items-center gap-2.5 flex-1 min-w-[240px]">
+                <span class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-extrabold shrink-0">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    SCAN QR
+                </span>
+                <select id="scanExpectedRuangan" onchange="onScanSesiChange()"
+                        class="flex-1 max-w-xl px-3.5 py-2.5 rounded-xl border border-slate-700 bg-slate-800 text-white text-xs sm:text-sm font-bold outline-none focus:border-emerald-500">
+                    <option value="">Semua Sesi (Otomatis Validasi Jadwal Peserta)</option>
+                    <?php foreach ($ruanganList as $rg): ?>
+                        <option value="<?= (int)$rg['id'] ?>" <?= (string)$selRuangan === (string)$rg['id'] ? 'selected' : '' ?>>
+                            <?= e($rg['nama_ruangan']) ?> — <?= e($rg['sesi_nama']) ?> (<?= date('d/m', strtotime($rg['tanggal'])) ?> <?= e($rg['jam_mulai']) ?>–<?= e($rg['jam_selesai']) ?>)<?= !empty($rg['jenjang']) ? ' [' . e($rg['jenjang']) . ']' : '' ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+
+            <div class="flex items-center gap-2 shrink-0">
+                <button type="button" id="btnToggleCam" onclick="toggleQrScanner()"
+                        class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold cursor-pointer transition-colors">
+                    Mulai Kamera
+                </button>
+                <button type="button" id="btnSwitchCam" onclick="switchQrCamera()" title="Ganti Kamera Depan/Belakang"
+                        class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-bold cursor-pointer transition-colors">
+                    🔄 Kamera
+                </button>
+                <button type="button" onclick="toggleBrowserFullscreen()" title="Layar Penuh Browser"
+                        class="hidden sm:inline-flex px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-bold cursor-pointer transition-colors">
+                    ⛶ Full
+                </button>
+                <a href="<?= $backUrl ?>" data-no-pjax onclick="stopQrScannerBeforeLeave()"
+                   class="px-3.5 py-2 rounded-xl bg-rose-600/90 hover:bg-rose-600 text-white text-xs font-bold transition-colors">
+                    ✕ Tutup
+                </a>
+            </div>
+        </div>
+
+        <!-- Main Fullscreen Area: Kamera (Kiri/Atas) & List Absen (Kanan/Bawah) -->
+        <div class="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-3 p-3 sm:p-4 overflow-hidden">
+            <!-- Panel Kamera -->
+            <div class="lg:col-span-7 flex flex-col gap-3 min-h-0 h-full">
+                <div class="relative flex-1 min-h-[260px] rounded-2xl overflow-hidden bg-black border border-slate-800 flex items-center justify-center">
+                    <div id="qr-reader" class="w-full h-full flex items-center justify-center text-xs text-slate-400">
+                        Menyiapkan kamera scanner QR...
+                    </div>
+                </div>
+
+                <!-- Notifikasi Hasil Scan Terakhir -->
+                <div id="scanResultBox" class="shrink-0 px-4 py-3 rounded-2xl border border-slate-800 bg-slate-900 text-center text-xs sm:text-sm text-slate-400">
+                    Arahkan kamera ke QR Code pada Kartu Observasi peserta...
+                </div>
+
+                <!-- Input Barcode USB / Manual (Ringkas) -->
+                <form onsubmit="submitManualScan(event)" class="shrink-0 flex gap-2">
+                    <input type="text" id="manualQrInput" placeholder="Atau scan barcode USB / ketik No. Peserta lalu Enter..."
+                           class="flex-1 px-3.5 py-2 rounded-xl border border-slate-700 bg-slate-900 focus:bg-slate-800 text-white text-xs sm:text-sm font-mono outline-none focus:border-emerald-500">
+                    <button type="submit" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-bold cursor-pointer">
+                        Absen
+                    </button>
+                </form>
+            </div>
+
+            <!-- Panel List Absen -->
+            <div class="lg:col-span-5 flex flex-col min-h-0 h-full bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden">
+                <div class="shrink-0 px-4 py-3 border-b border-slate-800 flex items-center justify-between gap-2 bg-slate-900/90">
+                    <div class="min-w-0">
+                        <h3 class="text-sm sm:text-base font-extrabold text-white truncate">List Absen Hadir</h3>
+                        <p id="scanListSubtitle" class="text-[11px] text-slate-400 truncate">Semua sesi aktif</p>
+                    </div>
+                    <span id="scanListCountBadge" class="shrink-0 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-extrabold">
+                        0 Hadir
+                    </span>
+                </div>
+                <div id="scanHistoryList" class="flex-1 min-h-0 overflow-y-auto divide-y divide-slate-800/80 p-2"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <script>
+    let html5QrCode = null;
+    let qrScanning = false;
+    let currentFacingMode = 'environment';
+    let lastScannedToken = '';
+    let lastScanTime = 0;
+    let scanAttendedList = <?= $attendedJson ?: '[]' ?>;
+
+    function escHtmlScan(str) {
+        return String(str ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    }
+
+    function formatJamScan(dt) {
+        if (!dt) return '-';
+        const parts = String(dt).split(' ');
+        if (parts.length > 1) return parts[1].substring(0, 5);
+        return String(dt).substring(0, 5);
+    }
+
+    function renderScanAbsenList(highlightId = 0) {
+        const listEl = document.getElementById('scanHistoryList');
+        const badgeEl = document.getElementById('scanListCountBadge');
+        const subEl = document.getElementById('scanListSubtitle');
+        const selEl = document.getElementById('scanExpectedRuangan');
+        const selectedRid = selEl ? (selEl.value || '') : '';
+
+        if (subEl && selEl) {
+            subEl.textContent = selectedRid
+                ? selEl.options[selEl.selectedIndex].text
+                : 'Semua sesi & ruangan';
+        }
+
+        const filtered = selectedRid
+            ? scanAttendedList.filter(it => String(it.ruangan_id || '') === String(selectedRid))
+            : scanAttendedList;
+
+        if (badgeEl) badgeEl.textContent = `${filtered.length} Hadir`;
+        if (!listEl) return;
+
+        if (!filtered.length) {
+            listEl.innerHTML = '<div class="py-12 text-center text-xs text-slate-500">Belum ada peserta yang scan absen pada sesi ini.</div>';
+            return;
+        }
+
+        listEl.innerHTML = filtered.map((d, idx) => {
+            const isNew = highlightId && Number(d.id) === Number(highlightId);
+            const urutBadge = d.urutan_sesi
+                ? `<span class="px-2 py-0.5 rounded-md bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 text-[11px] font-extrabold">#${String(d.urutan_sesi).padStart(2, '0')}</span>`
+                : `<span class="text-slate-500 text-xs font-bold">${idx + 1}</span>`;
+            return `<div class="px-3 py-2.5 rounded-xl transition-colors flex items-center justify-between gap-3 ${isNew ? 'bg-emerald-500/20 border border-emerald-400/40' : 'hover:bg-slate-800/60'}">
+                <div class="flex items-center gap-2.5 min-w-0">
+                    <div class="shrink-0 w-9 text-center">${urutBadge}</div>
+                    <div class="min-w-0">
+                        <div class="text-xs sm:text-sm font-bold text-white truncate">${escHtmlScan(d.nama_lengkap)}</div>
+                        <div class="text-[11px] text-slate-400 truncate">
+                            <span class="font-semibold text-emerald-300">${escHtmlScan(d.jenjang)}</span>
+                            &bull; ${escHtmlScan(d.nama_ruangan || 'Belum Diatur')}
+                            ${d.sesi_nama ? '(' + escHtmlScan(d.sesi_nama) + ')' : ''}
+                        </div>
+                    </div>
+                </div>
+                <div class="shrink-0 text-right">
+                    <span class="inline-block px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[11px] font-extrabold">
+                        ✓ ${escHtmlScan(formatJamScan(d.waktu_absen))}
+                    </span>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    function onScanSesiChange() {
+        renderScanAbsenList();
+    }
+
+    function upsertAttendedItem(d) {
+        const idx = scanAttendedList.findIndex(x => Number(x.id) === Number(d.id));
+        const item = {
+            id: Number(d.id || 0),
+            nama_lengkap: d.nama_lengkap || '',
+            nomor_peserta: d.nomor_peserta || '',
+            jenjang: d.jenjang || '',
+            ruangan_id: Number(d.ruangan_id || 0),
+            urutan_sesi: d.urutan_sesi ? Number(d.urutan_sesi) : null,
+            nama_ruangan: d.nama_ruangan || '',
+            sesi_nama: d.sesi_nama || '',
+            jam_mulai: d.jam_mulai || '',
+            jam_selesai: d.jam_selesai || '',
+            waktu_absen: d.waktu_absen || ''
+        };
+        if (idx >= 0) {
+            scanAttendedList.splice(idx, 1);
+        }
+        scanAttendedList.unshift(item);
+        renderScanAbsenList(item.id);
+    }
+
+    async function processQrCode(code, force = false) {
+        const now = Date.now();
+        if (!force && code === lastScannedToken && (now - lastScanTime) < 3500) return;
+        lastScannedToken = code;
+        lastScanTime = now;
+
+        const box = document.getElementById('scanResultBox');
+        const expectedRid = document.getElementById('scanExpectedRuangan')?.value || '';
+
+        const fd = new FormData();
+        fd.append('csrf_token', '<?= e($csrfToken) ?>');
+        fd.append('qr_code', code);
+        if (expectedRid) fd.append('expected_ruangan_id', expectedRid);
+        if (force) fd.append('force', '1');
+
+        try {
+            const res = await fetch('<?= url('kelola-spmb/kartu-observasi/scan') ?>', { method: 'POST', body: fd });
+            const json = await res.json();
+            if (json.wrong_session && json.data) {
+                const d = json.data;
+                const safeToken = String(d.qr_token || code).replace(/'/g, "\\'");
+                box.className = 'shrink-0 p-3.5 rounded-2xl border-2 border-amber-400 bg-amber-950/80 text-left space-y-2';
+                box.innerHTML = `
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="px-2.5 py-0.5 rounded-full bg-rose-500/20 border border-rose-400/40 text-rose-200 text-xs font-extrabold">⚠️ BUKAN SESINYA!</span>
+                        <span class="text-xs font-bold text-indigo-300">${d.urutan_sesi ? 'No. Urut #' + String(d.urutan_sesi).padStart(2, '0') : ''}</span>
+                    </div>
+                    <div class="text-sm sm:text-base font-extrabold text-white">${escHtmlScan(d.nama_lengkap)} (${escHtmlScan(d.jenjang)})</div>
+                    <div class="text-xs text-amber-200">${escHtmlScan(json.message)}</div>
+                    <div class="flex justify-end">
+                        <button type="button" onclick="if(confirm('Tetap catat hadir di luar sesinya?')) processQrCode('${safeToken}', true)"
+                                class="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold cursor-pointer">
+                            Tetap Catat Hadir (Override)
+                        </button>
+                    </div>
+                `;
+            } else if (json.success && json.data) {
+                const d = json.data;
+                const badge = json.already
+                    ? '<span class="px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-400/40 text-amber-200 text-xs font-extrabold">SUDAH ABSEN SEBELUMNYA</span>'
+                    : '<span class="px-2.5 py-0.5 rounded-full bg-emerald-500/25 border border-emerald-400/50 text-emerald-200 text-xs font-extrabold">✓ BERHASIL ABSEN HADIR</span>';
+                box.className = 'shrink-0 p-3.5 rounded-2xl border ' + (json.already ? 'border-amber-500/50 bg-amber-950/60' : 'border-emerald-500/60 bg-emerald-950/70') + ' text-left space-y-1';
+                box.innerHTML = `
+                    <div class="flex items-center justify-between gap-2">${badge}<span class="text-xs font-mono text-slate-300">${escHtmlScan(d.waktu_absen || '')}</span></div>
+                    <div class="text-sm sm:text-base font-extrabold text-white">${escHtmlScan(d.nama_lengkap)} <span class="text-xs font-semibold text-emerald-300">(${escHtmlScan(d.jenjang)})</span></div>
+                    <div class="text-xs text-slate-300">${d.urutan_sesi ? 'No. Urut <strong>#' + String(d.urutan_sesi).padStart(2, '0') + '</strong> &bull; ' : ''}${escHtmlScan(d.nama_ruangan || 'Belum Diatur')} ${d.sesi_nama ? '(' + escHtmlScan(d.sesi_nama) + ' ' + escHtmlScan(d.jam_mulai) + '-' + escHtmlScan(d.jam_selesai) + ')' : ''}</div>
+                `;
+                upsertAttendedItem(d);
+            } else {
+                box.className = 'shrink-0 p-3.5 rounded-2xl border border-rose-500/60 bg-rose-950/70 text-center text-xs sm:text-sm font-bold text-rose-200';
+                box.textContent = json.message || 'QR tidak dikenali.';
+            }
+        } catch (e) {
+            box.className = 'shrink-0 p-3.5 rounded-2xl border border-rose-500/60 bg-rose-950/70 text-center text-xs sm:text-sm font-bold text-rose-200';
+            box.textContent = 'Gagal memproses scan QR.';
+        }
+    }
+
+    function submitManualScan(e) {
+        e.preventDefault();
+        const inp = document.getElementById('manualQrInput');
+        if (!inp || !inp.value.trim()) return;
+        processQrCode(inp.value.trim());
+        inp.value = '';
+        inp.focus();
+    }
+
+    async function startQrCamera() {
+        const btn = document.getElementById('btnToggleCam');
+        const reader = document.getElementById('qr-reader');
+        if (typeof Html5Qrcode === 'undefined') {
+            if (reader) reader.innerHTML = '<div class="p-4 text-center text-rose-300 text-xs">Library kamera QR belum termuat. Periksa koneksi internet.</div>';
+            return;
+        }
+        try {
+            if (!html5QrCode) {
+                html5QrCode = new Html5Qrcode('qr-reader');
+            }
+            if (qrScanning) {
+                await html5QrCode.stop();
+                qrScanning = false;
+            }
+            await html5QrCode.start(
+                { facingMode: currentFacingMode },
+                { fps: 12 },
+                (decodedText) => processQrCode(decodedText)
+            );
+            qrScanning = true;
+            if (btn) {
+                btn.textContent = 'Stop Kamera';
+                btn.className = 'px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold cursor-pointer transition-colors';
+            }
+        } catch (err) {
+            qrScanning = false;
+            if (btn) {
+                btn.textContent = 'Mulai Kamera';
+                btn.className = 'px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold cursor-pointer transition-colors';
+            }
+            if (reader) {
+                reader.innerHTML = '<div class="p-6 text-center space-y-2"><div class="text-xs text-slate-300">Klik tombol <strong>Mulai Kamera</strong> untuk mengaktifkan scanner QR.</div></div>';
+            }
+        }
+    }
+
+    async function toggleQrScanner() {
+        const btn = document.getElementById('btnToggleCam');
+        if (qrScanning && html5QrCode) {
+            try { await html5QrCode.stop(); } catch (e) {}
+            qrScanning = false;
+            if (btn) {
+                btn.textContent = 'Mulai Kamera';
+                btn.className = 'px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold cursor-pointer transition-colors';
+            }
+            return;
+        }
+        await startQrCamera();
+    }
+
+    async function switchQrCamera() {
+        currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
+        if (qrScanning) {
+            await startQrCamera();
+        }
+    }
+
+    function toggleBrowserFullscreen() {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen?.().catch(() => {});
+        } else {
+            document.exitFullscreen?.().catch(() => {});
+        }
+    }
+
+    function stopQrScannerBeforeLeave() {
+        if (qrScanning && html5QrCode) {
+            try { html5QrCode.stop(); } catch (e) {}
+        }
+        if (document.fullscreenElement) {
+            document.exitFullscreen?.().catch(() => {});
+        }
+    }
+
+    function initFullscreenScanMode() {
+        renderScanAbsenList();
+        startQrCamera();
+    }
+
+    window.addEventListener('beforeunload', stopQrScannerBeforeLeave);
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initFullscreenScanMode);
+    } else {
+        setTimeout(initFullscreenScanMode, 120);
+    }
+    </script>
+<?php else: ?>
 <div class="space-y-6">
     <!-- Header Banner -->
     <div class="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -32,35 +398,41 @@ $cetakQuery = http_build_query(array_filter([
         </div>
 
         <div class="flex flex-wrap items-center gap-2.5">
-            <form method="POST" action="<?= url('kelola-spmb/kartu-observasi/sync') ?>" class="inline">
-                <?= CSRF::field() ?>
-                <button type="submit" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-sm font-bold cursor-pointer">
-                    Sinkron Peserta
+            <?php if ($canKartuManage): ?>
+                <form method="POST" action="<?= url('kelola-spmb/kartu-observasi/sync') ?>" class="inline">
+                    <?= CSRF::field() ?>
+                    <button type="submit" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-sm font-bold cursor-pointer">
+                        Sinkron Peserta
+                    </button>
+                </form>
+                <form method="POST" action="<?= url('kelola-spmb/kartu-observasi/bagi-otomatis') ?>" class="inline" onsubmit="return confirm('Bagi peserta yang belum punya ruangan ke ruangan tersedia sesuai kapasitas?')">
+                    <?= CSRF::field() ?>
+                    <input type="hidden" name="jenjang" value="<?= e($selJenjang) ?>">
+                    <button type="submit" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold shadow-xs cursor-pointer">
+                        Bagi Ruangan Otomatis
+                    </button>
+                </form>
+            <?php endif; ?>
+            <?php if ($canKartuBroadcast): ?>
+                <button type="button" onclick="openBroadcastJadwalModal()"
+                        class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold shadow-xs cursor-pointer">
+                    Broadcast Link &amp; Jadwal WA
                 </button>
-            </form>
-            <form method="POST" action="<?= url('kelola-spmb/kartu-observasi/bagi-otomatis') ?>" class="inline" onsubmit="return confirm('Bagi peserta yang belum punya ruangan ke ruangan tersedia sesuai kapasitas?')">
-                <?= CSRF::field() ?>
-                <input type="hidden" name="jenjang" value="<?= e($selJenjang) ?>">
-                <button type="submit" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold shadow-xs cursor-pointer">
-                    Bagi Ruangan Otomatis
-                </button>
-            </form>
-            <button type="button" onclick="openBroadcastJadwalModal()"
-                    class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold shadow-xs cursor-pointer">
-                Broadcast Link &amp; Jadwal WA
-            </button>
-            <a href="<?= url('kelola-spmb/kartu-observasi/cetak-jadwal' . ($cetakQuery ? '?' . $cetakQuery : '')) ?>" target="_blank"
-               class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold shadow-xs">
-                Cetak PDF Jadwal Sesi
-            </a>
-            <a href="<?= url('kelola-spmb/kartu-observasi/cetak?' . ($cetakQuery ? $cetakQuery . '&' : '') . 'auto_download=1') ?>" target="_blank"
-               class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-sm font-bold shadow-xs">
-                Download PDF Semua Kartu
-            </a>
-            <a href="<?= url('kelola-spmb/kartu-observasi/cetak' . ($cetakQuery ? '?' . $cetakQuery : '')) ?>" target="_blank"
-               class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-sm font-bold shadow-xs">
-                Cetak Kartu PDF
-            </a>
+            <?php endif; ?>
+            <?php if ($canKartuCetak): ?>
+                <a href="<?= url('kelola-spmb/kartu-observasi/cetak-jadwal' . ($cetakQuery ? '?' . $cetakQuery : '')) ?>" target="_blank"
+                   class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold shadow-xs">
+                    Cetak PDF Jadwal Sesi
+                </a>
+                <a href="<?= url('kelola-spmb/kartu-observasi/cetak?' . ($cetakQuery ? $cetakQuery . '&' : '') . 'auto_download=1') ?>" target="_blank"
+                   class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-sm font-bold shadow-xs">
+                    Download PDF Semua Kartu
+                </a>
+                <a href="<?= url('kelola-spmb/kartu-observasi/cetak' . ($cetakQuery ? '?' . $cetakQuery : '')) ?>" target="_blank"
+                   class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-sm font-bold shadow-xs">
+                    Cetak Kartu PDF
+                </a>
+            <?php endif; ?>
         </div>
     </div>
 
@@ -90,22 +462,30 @@ $cetakQuery = http_build_query(array_filter([
 
     <!-- Navigation Sub-Tabs -->
     <div class="flex flex-wrap items-center gap-2 bg-white p-2 rounded-2xl border border-slate-200 shadow-xs">
-        <a href="<?= url('kelola-spmb/kartu-observasi?tab=peserta') ?>"
-           class="px-4 py-2.5 rounded-xl text-sm font-bold transition-all <?= $activeTab === 'peserta' ? 'bg-primary-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100' ?>">
-            Daftar Peserta &amp; Kartu QR
-        </a>
-        <a href="<?= url('kelola-spmb/kartu-observasi?tab=scan') ?>"
-           class="px-4 py-2.5 rounded-xl text-sm font-bold transition-all <?= $activeTab === 'scan' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100' ?>">
-            Scan QR Absensi
-        </a>
-        <a href="<?= url('kelola-spmb/kartu-observasi?tab=ruangan') ?>"
-           class="px-4 py-2.5 rounded-xl text-sm font-bold transition-all <?= $activeTab === 'ruangan' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100' ?>">
-            Atur Ruangan &amp; Jam Sesi (<?= count($ruanganList) ?>)
-        </a>
-        <a href="<?= url('kelola-spmb/kartu-observasi?tab=laporan') ?>"
-           class="px-4 py-2.5 rounded-xl text-sm font-bold transition-all <?= $activeTab === 'laporan' ? 'bg-rose-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100' ?>">
-            Laporan Tidak Absen QR (<?= number_format($stats['belum_hadir'] ?? 0) ?>)
-        </a>
+        <?php if ($canKartuView): ?>
+            <a href="<?= url('kelola-spmb/kartu-observasi?tab=peserta') ?>"
+               class="px-4 py-2.5 rounded-xl text-sm font-bold transition-all <?= $activeTab === 'peserta' ? 'bg-primary-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100' ?>">
+                Daftar Peserta &amp; Kartu QR
+            </a>
+        <?php endif; ?>
+        <?php if ($canKartuScan): ?>
+            <a href="<?= url('kelola-spmb/kartu-observasi?tab=scan') ?>" data-no-pjax
+               class="px-4 py-2.5 rounded-xl text-sm font-bold transition-all text-emerald-700 bg-emerald-50 hover:bg-emerald-600 hover:text-white border border-emerald-200">
+                ⛶ Scan QR Absensi (Full Layar)
+            </a>
+        <?php endif; ?>
+        <?php if ($canKartuManage): ?>
+            <a href="<?= url('kelola-spmb/kartu-observasi?tab=ruangan') ?>"
+               class="px-4 py-2.5 rounded-xl text-sm font-bold transition-all <?= $activeTab === 'ruangan' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100' ?>">
+                Atur Ruangan &amp; Jam Sesi (<?= count($ruanganList) ?>)
+            </a>
+        <?php endif; ?>
+        <?php if ($canKartuView): ?>
+            <a href="<?= url('kelola-spmb/kartu-observasi?tab=laporan') ?>"
+               class="px-4 py-2.5 rounded-xl text-sm font-bold transition-all <?= $activeTab === 'laporan' ? 'bg-rose-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100' ?>">
+                Laporan Tidak Absen QR (<?= number_format($stats['belum_hadir'] ?? 0) ?>)
+            </a>
+        <?php endif; ?>
     </div>
 
     <?php if ($activeTab === 'peserta'): ?>
@@ -177,21 +557,32 @@ $cetakQuery = http_build_query(array_filter([
                                         <span class="px-2.5 py-0.5 rounded-lg bg-slate-100 text-slate-700 font-bold text-xs"><?= e($it['jenjang']) ?></span>
                                     </td>
                                     <td class="py-3.5 px-4">
-                                        <div class="flex items-center gap-1.5">
-                                            <input type="number" min="1" id="urut_sesi_<?= (int)$it['id'] ?>" value="<?= !empty($it['urutan_sesi']) ? (int)$it['urutan_sesi'] : '' ?>"
-                                                   onchange="assignRuanganManual(<?= (int)$it['id'] ?>, document.getElementById('ruang_sel_<?= (int)$it['id'] ?>').value, this.value)"
-                                                   placeholder="#" title="Nomor Urut Sesi"
-                                                   class="w-14 px-2 py-2 rounded-xl border border-slate-200 bg-white text-xs font-extrabold text-center text-indigo-700 outline-none focus:border-indigo-500">
-                                            <select id="ruang_sel_<?= (int)$it['id'] ?>" onchange="assignRuanganManual(<?= (int)$it['id'] ?>, this.value, '')"
-                                                    class="flex-1 px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-xs font-semibold text-slate-800 outline-none">
-                                                <option value="">-- Belum Diatur --</option>
-                                                <?php foreach ($ruanganList as $rg): ?>
-                                                    <option value="<?= (int)$rg['id'] ?>" <?= (int)$it['ruangan_id'] === (int)$rg['id'] ? 'selected' : '' ?>>
-                                                        <?= e($rg['nama_ruangan']) ?> | <?= e($rg['sesi_nama']) ?> (<?= date('d/m', strtotime($rg['tanggal'])) ?> <?= e($rg['jam_mulai']) ?>-<?= e($rg['jam_selesai']) ?>)
-                                                    </option>
-                                                <?php endforeach; ?>
-                                            </select>
-                                        </div>
+                                        <?php if ($canKartuManage): ?>
+                                            <div class="flex items-center gap-1.5">
+                                                <input type="number" min="1" id="urut_sesi_<?= (int)$it['id'] ?>" value="<?= !empty($it['urutan_sesi']) ? (int)$it['urutan_sesi'] : '' ?>"
+                                                       onchange="assignRuanganManual(<?= (int)$it['id'] ?>, document.getElementById('ruang_sel_<?= (int)$it['id'] ?>').value, this.value)"
+                                                       placeholder="#" title="Nomor Urut Sesi"
+                                                       class="w-14 px-2 py-2 rounded-xl border border-slate-200 bg-white text-xs font-extrabold text-center text-indigo-700 outline-none focus:border-indigo-500">
+                                                <select id="ruang_sel_<?= (int)$it['id'] ?>" onchange="assignRuanganManual(<?= (int)$it['id'] ?>, this.value, '')"
+                                                        class="flex-1 px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-xs font-semibold text-slate-800 outline-none">
+                                                    <option value="">-- Belum Diatur --</option>
+                                                    <?php foreach ($ruanganList as $rg): ?>
+                                                        <option value="<?= (int)$rg['id'] ?>" <?= (int)$it['ruangan_id'] === (int)$rg['id'] ? 'selected' : '' ?>>
+                                                            <?= e($rg['nama_ruangan']) ?> | <?= e($rg['sesi_nama']) ?> (<?= date('d/m', strtotime($rg['tanggal'])) ?> <?= e($rg['jam_mulai']) ?>-<?= e($rg['jam_selesai']) ?>)
+                                                        </option>
+                                                    <?php endforeach; ?>
+                                                </select>
+                                            </div>
+                                        <?php else: ?>
+                                            <div class="text-xs font-semibold text-slate-700">
+                                                <?php if (!empty($it['nama_ruangan'])): ?>
+                                                    <?= !empty($it['urutan_sesi']) ? '<span class="text-indigo-700 font-extrabold">#' . str_pad((string)(int)$it['urutan_sesi'], 2, '0', STR_PAD_LEFT) . '</span> ' : '' ?>
+                                                    <?= e($it['nama_ruangan']) ?> | <?= e($it['sesi_nama'] ?? '') ?>
+                                                <?php else: ?>
+                                                    <span class="text-slate-400">Belum Diatur</span>
+                                                <?php endif; ?>
+                                            </div>
+                                        <?php endif; ?>
                                     </td>
                                     <td class="py-3.5 px-4 text-center">
                                         <?php if ($it['status_absen'] === 'Hadir'): ?>
@@ -214,19 +605,23 @@ $cetakQuery = http_build_query(array_filter([
                                         <?php endif; ?>
                                     </td>
                                     <td class="py-3.5 px-4 text-right whitespace-nowrap space-x-1.5">
-                                        <a href="<?= url('kelola-spmb/kartu-observasi/cetak?id=' . (int)$it['id']) ?>" target="_blank"
-                                           class="inline-flex items-center px-3 py-1.5 rounded-xl bg-sky-50 hover:bg-sky-600 text-sky-700 hover:text-white border border-sky-200 text-xs font-bold transition-colors">
-                                            Kartu
-                                        </a>
+                                        <?php if ($canKartuCetak): ?>
+                                            <a href="<?= url('kelola-spmb/kartu-observasi/cetak?id=' . (int)$it['id']) ?>" target="_blank"
+                                               class="inline-flex items-center px-3 py-1.5 rounded-xl bg-sky-50 hover:bg-sky-600 text-sky-700 hover:text-white border border-sky-200 text-xs font-bold transition-colors">
+                                                Kartu
+                                            </a>
+                                        <?php endif; ?>
                                         <button type="button" onclick="copyKartuLink('<?= e($it['kartu_url']) ?>', this)"
                                                 class="inline-flex items-center px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white border border-indigo-200 text-xs font-bold cursor-pointer transition-colors">
                                             Salin Link
                                         </button>
-                                        <button type="button" onclick="sendWaJadwalSingle(<?= (int)$it['id'] ?>, this)"
-                                                class="inline-flex items-center px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white border border-emerald-200 text-xs font-bold cursor-pointer transition-colors">
-                                            Kirim WA
-                                        </button>
-                                        <?php if ($it['status_absen'] === 'Hadir'): ?>
+                                        <?php if ($canKartuBroadcast): ?>
+                                            <button type="button" onclick="sendWaJadwalSingle(<?= (int)$it['id'] ?>, this)"
+                                                    class="inline-flex items-center px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white border border-emerald-200 text-xs font-bold cursor-pointer transition-colors">
+                                                Kirim WA
+                                            </button>
+                                        <?php endif; ?>
+                                        <?php if ($it['status_absen'] === 'Hadir' && ($canKartuScan || $canKartuManage)): ?>
                                             <form method="POST" action="<?= url('kelola-spmb/kartu-observasi/reset-absen/' . (int)$it['id']) ?>" class="inline" onsubmit="return confirm('Reset status absen ke Belum Hadir?')">
                                                 <?= CSRF::field() ?>
                                                 <button type="submit" class="inline-flex items-center px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-200 text-xs font-bold cursor-pointer">
@@ -243,167 +638,7 @@ $cetakQuery = http_build_query(array_filter([
             </div>
         </div>
 
-    <?php elseif ($activeTab === 'scan'): ?>
-        <!-- TAB 2: SCAN QR ABSENSI -->
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <div class="lg:col-span-6 bg-white rounded-2xl border border-slate-200 shadow-xs p-5 sm:p-6 space-y-4">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h3 class="text-base font-extrabold text-slate-900">Scanner Kamera QR Code</h3>
-                        <p class="text-xs text-slate-500">Arahkan kamera ke QR Code pada Kartu Observasi peserta.</p>
-                    </div>
-                    <button type="button" id="btnToggleCam" onclick="toggleQrScanner()"
-                            class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold cursor-pointer">
-                        Mulai Kamera
-                    </button>
-                </div>
-
-                <div class="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-800">
-                    <strong>Info:</strong> QR Code kartu bersifat <strong>sekali jadi (permanen)</strong> walaupun sesi/ruangan diubah. Semua kamera HP bawaan bisa langsung scan QR, dan sistem otomatis memberi <strong>peringatan jika peserta scan di luar sesinya</strong>.
-                </div>
-
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Validasi Sesi / Ruangan Aktif Saat Ini:</label>
-                    <select id="scanExpectedRuangan" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-slate-50 text-xs font-bold text-slate-800 outline-none focus:border-emerald-500">
-                        <option value="">Otomatis Validasi Tanggal &amp; Jam Sesi Peserta</option>
-                        <?php foreach ($ruanganList as $rg): ?>
-                            <option value="<?= (int)$rg['id'] ?>">
-                                Khusus: <?= e($rg['nama_ruangan']) ?> — <?= e($rg['sesi_nama']) ?> (<?= date('d/m', strtotime($rg['tanggal'])) ?> <?= e($rg['jam_mulai']) ?>–<?= e($rg['jam_selesai']) ?>)
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-
-                <div id="qr-reader" class="w-full rounded-2xl overflow-hidden bg-slate-900 min-h-[260px] flex items-center justify-center text-xs text-slate-400">
-                    Klik "Mulai Kamera" untuk scan langsung (seluruh layar kamera aktif tanpa kotak sempit)
-                </div>
-
-                <div class="pt-3 border-t border-slate-100">
-                    <label class="block text-xs font-bold text-slate-700 mb-1.5">Atau Scan Barcode USB / Ketik Token / No. Pendaftaran:</label>
-                    <form onsubmit="submitManualScan(event)" class="flex gap-2">
-                        <input type="text" id="manualQrInput" autofocus placeholder="Scan atau ketik kode QR / No. Peserta lalu Enter..."
-                               class="flex-1 px-4 py-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white text-sm font-mono font-bold outline-none focus:border-emerald-500">
-                        <button type="submit" class="px-5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-sm font-bold cursor-pointer">
-                            Absen
-                        </button>
-                    </form>
-                </div>
-            </div>
-
-            <div class="lg:col-span-6 bg-white rounded-2xl border border-slate-200 shadow-xs p-5 sm:p-6 space-y-4">
-                <h3 class="text-base font-extrabold text-slate-900">Hasil Scan Terakhir</h3>
-                <div id="scanResultBox" class="p-6 rounded-2xl border border-dashed border-slate-300 bg-slate-50 text-center text-sm text-slate-400">
-                    Menunggu scan QR Code peserta...
-                </div>
-                <div>
-                    <h4 class="text-xs font-bold text-slate-500 uppercase mb-2">Riwayat Scan Sesi Ini</h4>
-                    <div id="scanHistoryList" class="divide-y divide-slate-100 max-h-64 overflow-y-auto text-sm"></div>
-                </div>
-            </div>
-        </div>
-
-        <script src="https://unpkg.com/html5-qrcode"></script>
-        <script>
-        let html5QrCode = null;
-        let qrScanning = false;
-        let lastScannedToken = '';
-        let lastScanTime = 0;
-
-        async function processQrCode(code, force = false) {
-            const now = Date.now();
-            if (!force && code === lastScannedToken && (now - lastScanTime) < 3500) return;
-            lastScannedToken = code;
-            lastScanTime = now;
-
-            const box = document.getElementById('scanResultBox');
-            const hist = document.getElementById('scanHistoryList');
-            const expectedRid = document.getElementById('scanExpectedRuangan')?.value || '';
-
-            const fd = new FormData();
-            fd.append('csrf_token', '<?= e($csrfToken) ?>');
-            fd.append('qr_code', code);
-            if (expectedRid) fd.append('expected_ruangan_id', expectedRid);
-            if (force) fd.append('force', '1');
-
-            try {
-                const res = await fetch('<?= url('kelola-spmb/kartu-observasi/scan') ?>', { method: 'POST', body: fd });
-                const json = await res.json();
-                if (json.wrong_session && json.data) {
-                    const d = json.data;
-                    const safeToken = String(d.qr_token || code).replace(/'/g, "\\'");
-                    box.className = 'p-5 rounded-2xl border-2 border-amber-400 bg-amber-50 text-left space-y-2.5';
-                    box.innerHTML = `
-                        <div class="flex items-center justify-between">
-                            <span class="px-3 py-1 rounded-full bg-rose-100 text-rose-800 text-xs font-extrabold">⚠️ BUKAN SESINYA!</span>
-                            <span class="text-xs font-bold text-indigo-700">${d.urutan_sesi ? 'No. Urut #' + String(d.urutan_sesi).padStart(2, '0') : ''}</span>
-                        </div>
-                        <div class="text-lg font-extrabold text-slate-900">${d.nama_lengkap} (${d.jenjang})</div>
-                        <div class="text-xs font-semibold text-amber-900 bg-white/80 p-2.5 rounded-xl border border-amber-200">${json.message}</div>
-                        <div class="pt-1 flex justify-end">
-                            <button type="button" onclick="if(confirm('Tetap catat hadir di luar sesinya?')) processQrCode('${safeToken}', true)"
-                                    class="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold cursor-pointer">
-                                Tetap Catat Hadir (Override)
-                            </button>
-                        </div>
-                    `;
-                } else if (json.success && json.data) {
-                    const d = json.data;
-                    const badge = json.already
-                        ? '<span class="px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-extrabold">SUDAH ABSEN SEBELUMNYA</span>'
-                        : '<span class="px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-extrabold">✓ BERHASIL ABSEN HADIR</span>';
-                    box.className = 'p-5 rounded-2xl border ' + (json.already ? 'border-amber-300 bg-amber-50' : 'border-emerald-300 bg-emerald-50') + ' text-left space-y-2';
-                    box.innerHTML = `
-                        <div class="flex items-center justify-between">${badge}<span class="text-xs font-mono text-slate-500">${d.waktu_absen || ''}</span></div>
-                        <div class="text-lg font-extrabold text-slate-900">${d.nama_lengkap}</div>
-                        <div class="text-xs text-slate-600">No. Peserta: <strong>${d.nomor_peserta}</strong> &bull; Jenjang: <strong>${d.jenjang}</strong> ${d.urutan_sesi ? '&bull; No. Urut Sesi: <strong>#' + String(d.urutan_sesi).padStart(2, '0') + '</strong>' : ''}</div>
-                        <div class="text-xs text-indigo-700 font-bold">Ruangan: ${d.nama_ruangan || 'Belum Diatur'} ${d.sesi_nama ? '(' + d.sesi_nama + ' ' + d.jam_mulai + '-' + d.jam_selesai + ')' : ''}</div>
-                    `;
-                    if (hist) {
-                        hist.insertAdjacentHTML('afterbegin', `<div class="py-2 flex items-center justify-between text-xs"><span class="font-bold text-slate-800">${d.nama_lengkap} (${d.jenjang})</span><span class="text-emerald-700 font-bold">${d.nama_ruangan || '-'}</span></div>`);
-                    }
-                } else {
-                    box.className = 'p-5 rounded-2xl border border-rose-300 bg-rose-50 text-center text-sm font-bold text-rose-700';
-                    box.textContent = json.message || 'QR tidak dikenali.';
-                }
-            } catch (e) {
-                box.className = 'p-5 rounded-2xl border border-rose-300 bg-rose-50 text-center text-sm font-bold text-rose-700';
-                box.textContent = 'Gagal memproses scan QR.';
-            }
-        }
-
-        function submitManualScan(e) {
-            e.preventDefault();
-            const inp = document.getElementById('manualQrInput');
-            if (!inp || !inp.value.trim()) return;
-            processQrCode(inp.value.trim());
-            inp.value = '';
-            inp.focus();
-        }
-
-        async function toggleQrScanner() {
-            const btn = document.getElementById('btnToggleCam');
-            if (qrScanning && html5QrCode) {
-                await html5QrCode.stop();
-                qrScanning = false;
-                btn.textContent = 'Mulai Kamera';
-                return;
-            }
-            html5QrCode = new Html5Qrcode('qr-reader');
-            try {
-                await html5QrCode.start(
-                    { facingMode: 'environment' },
-                    { fps: 12 },
-                    (decodedText) => processQrCode(decodedText)
-                );
-                qrScanning = true;
-                btn.textContent = 'Stop Kamera';
-            } catch (err) {
-                alert('Tidak dapat mengakses kamera: ' + err);
-            }
-        }
-        </script>
-
-    <?php elseif ($activeTab === 'ruangan'): ?>
+    <?php elseif ($activeTab === 'ruangan' && $canKartuManage): ?>
         <!-- TAB 3: ATUR RUANGAN & JAM SESI -->
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <div class="lg:col-span-4 bg-white rounded-2xl border border-slate-200 shadow-xs p-5 sm:p-6 space-y-4">
@@ -557,16 +792,18 @@ $cetakQuery = http_build_query(array_filter([
                     Filter Laporan
                 </button>
             </form>
-            <div class="flex items-center gap-2 shrink-0">
-                <a href="<?= url('kelola-spmb/kartu-observasi/laporan-export' . ($lapQs ? '?' . $lapQs : '')) ?>"
-                   class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold">
-                    Export Excel
-                </a>
-                <a href="<?= url('kelola-spmb/kartu-observasi/laporan-cetak' . ($lapQs ? '?' . $lapQs : '')) ?>" target="_blank"
-                   class="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-sm font-bold">
-                    Cetak Laporan PDF
-                </a>
-            </div>
+            <?php if ($canKartuCetak): ?>
+                <div class="flex items-center gap-2 shrink-0">
+                    <a href="<?= url('kelola-spmb/kartu-observasi/laporan-export' . ($lapQs ? '?' . $lapQs : '')) ?>"
+                       class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold">
+                        Export Excel
+                    </a>
+                    <a href="<?= url('kelola-spmb/kartu-observasi/laporan-cetak' . ($lapQs ? '?' . $lapQs : '')) ?>" target="_blank"
+                       class="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-sm font-bold">
+                        Cetak Laporan PDF
+                    </a>
+                </div>
+            <?php endif; ?>
         </div>
 
         <?php if (empty($lapGroups)): ?>
@@ -1003,3 +1240,4 @@ async function startBroadcastJadwal() {
     btn.disabled = false;
 }
 </script>
+<?php endif; ?>
