@@ -767,17 +767,27 @@ $cetakQuery = http_build_query(array_filter([
                                     </td>
                                     <td class="py-3.5 px-4">
                                         <?php if ($canKartuManage): ?>
+                                            <?php $itUnit = SpmbModel::normalizeSpmbUnit($it['jenjang'] ?? ''); ?>
                                             <div class="flex items-center gap-1.5">
-                                                <input type="number" min="1" id="urut_sesi_<?= (int)$it['id'] ?>" value="<?= !empty($it['urutan_sesi']) ? (int)$it['urutan_sesi'] : '' ?>"
+                                                <input type="number" min="1" id="urut_sesi_<?= (int)$it['id'] ?>"
+                                                       value="<?= !empty($it['urutan_sesi']) ? (int)$it['urutan_sesi'] : '' ?>"
+                                                       data-prev-urut="<?= !empty($it['urutan_sesi']) ? (int)$it['urutan_sesi'] : '' ?>"
                                                        onchange="assignRuanganManual(<?= (int)$it['id'] ?>, document.getElementById('ruang_sel_<?= (int)$it['id'] ?>').value, this.value)"
                                                        placeholder="#" title="Nomor Urut Sesi"
-                                                       class="w-14 px-2 py-2 rounded-xl border border-slate-200 bg-white text-xs font-extrabold text-center text-indigo-700 outline-none focus:border-indigo-500">
-                                                <select id="ruang_sel_<?= (int)$it['id'] ?>" onchange="assignRuanganManual(<?= (int)$it['id'] ?>, this.value, '')"
-                                                        class="flex-1 px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-xs font-semibold text-slate-800 outline-none">
+                                                       class="w-14 px-2 py-2 rounded-xl border border-slate-200 bg-white text-xs font-extrabold text-center text-indigo-700 outline-none focus:border-indigo-500 transition-colors">
+                                                <select id="ruang_sel_<?= (int)$it['id'] ?>"
+                                                        data-prev-ruangan="<?= !empty($it['ruangan_id']) ? (int)$it['ruangan_id'] : '' ?>"
+                                                        onchange="assignRuanganManual(<?= (int)$it['id'] ?>, this.value, '')"
+                                                        class="flex-1 px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-xs font-semibold text-slate-800 outline-none transition-colors">
                                                     <option value="">-- Belum Diatur --</option>
-                                                    <?php foreach ($ruanganList as $rg): ?>
+                                                    <?php foreach ($ruanganList as $rg):
+                                                        $rgUnit = SpmbModel::normalizeSpmbUnit($rg['jenjang'] ?? '');
+                                                        $isSameUnit = ($rgUnit === '' || $itUnit === '' || $rgUnit === $itUnit || (int)$it['ruangan_id'] === (int)$rg['id']);
+                                                        if (!$isSameUnit) continue;
+                                                        $unitPrefix = $rgUnit !== '' ? '[' . $rgUnit . '] ' : '';
+                                                    ?>
                                                         <option value="<?= (int)$rg['id'] ?>" <?= (int)$it['ruangan_id'] === (int)$rg['id'] ? 'selected' : '' ?>>
-                                                            <?= e($rg['nama_ruangan']) ?> | <?= e($rg['sesi_nama']) ?> (<?= date('d/m', strtotime($rg['tanggal'])) ?> <?= e($rg['jam_mulai']) ?>-<?= e($rg['jam_selesai']) ?>)
+                                                            <?= e($unitPrefix . $rg['nama_ruangan']) ?> | <?= e($rg['sesi_nama']) ?> (<?= date('d/m', strtotime($rg['tanggal'])) ?> <?= e($rg['jam_mulai']) ?>-<?= e($rg['jam_selesai']) ?>)
                                                         </option>
                                                     <?php endforeach; ?>
                                                 </select>
@@ -1254,7 +1264,42 @@ $cetakQuery = http_build_query(array_filter([
 </div>
 
 <script>
+function showSesiAssignToast(msg, type = 'info') {
+    let wrap = document.getElementById('sesiAssignToastWrap');
+    if (!wrap) {
+        wrap = document.createElement('div');
+        wrap.id = 'sesiAssignToastWrap';
+        wrap.className = 'fixed bottom-5 right-5 z-[9999] flex flex-col gap-2 max-w-sm pointer-events-none';
+        document.body.appendChild(wrap);
+    }
+    const colors = {
+        success: 'bg-emerald-600 text-white border-emerald-500',
+        warning: 'bg-amber-500 text-white border-amber-400',
+        error: 'bg-rose-600 text-white border-rose-500',
+        info: 'bg-slate-800 text-white border-slate-700'
+    };
+    const toast = document.createElement('div');
+    toast.className = 'pointer-events-auto px-4 py-3 rounded-xl border shadow-lg text-xs font-bold leading-relaxed transition-all duration-300 ' + (colors[type] || colors.info);
+    toast.textContent = msg;
+    wrap.appendChild(toast);
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(6px)';
+        setTimeout(() => toast.remove(), 300);
+    }, 4000);
+}
+
+function flashSesiFieldBorder(el, borderClass) {
+    if (!el) return;
+    el.classList.add(borderClass, 'ring-2', borderClass.replace('border-', 'ring-'));
+    setTimeout(() => {
+        el.classList.remove(borderClass, 'ring-2', borderClass.replace('border-', 'ring-'));
+    }, 2200);
+}
+
 async function assignRuanganManual(pesertaId, ruanganId, urutanSesi = '') {
+    const urutInp = document.getElementById('urut_sesi_' + pesertaId);
+    const ruangSel = document.getElementById('ruang_sel_' + pesertaId);
     const fd = new FormData();
     fd.append('csrf_token', '<?= e($csrfToken) ?>');
     fd.append('peserta_id', pesertaId);
@@ -1266,13 +1311,35 @@ async function assignRuanganManual(pesertaId, ruanganId, urutanSesi = '') {
         const res = await fetch('<?= url('kelola-spmb/kartu-observasi/assign-manual') ?>', { method: 'POST', body: fd });
         const json = await res.json();
         if (json.success) {
-            const urutInp = document.getElementById('urut_sesi_' + pesertaId);
-            if (urutInp) urutInp.value = json.urutan_sesi ? json.urutan_sesi : '';
+            const newUrut = json.urutan_sesi ? String(json.urutan_sesi) : '';
+            const newRuangan = json.ruangan_id ? String(json.ruangan_id) : '';
+            if (urutInp) {
+                urutInp.value = newUrut;
+                urutInp.dataset.prevUrut = newUrut;
+            }
+            if (ruangSel) {
+                ruangSel.value = newRuangan;
+                ruangSel.dataset.prevRuangan = newRuangan;
+            }
+            if (json.adjusted || json.moved_room) {
+                showSesiAssignToast(json.message || 'Nomor urut dialihkan ke slot kosong.', 'warning');
+                flashSesiFieldBorder(urutInp, 'border-amber-500');
+                if (json.moved_room) {
+                    flashSesiFieldBorder(ruangSel, 'border-amber-500');
+                }
+            } else {
+                showSesiAssignToast(json.message || 'Ruangan & nomor urut sesi diperbarui.', 'success');
+                flashSesiFieldBorder(urutInp, 'border-emerald-500');
+            }
         } else {
-            alert(json.message || 'Gagal mengubah ruangan');
+            if (urutInp) urutInp.value = urutInp.dataset.prevUrut || '';
+            if (ruangSel) ruangSel.value = ruangSel.dataset.prevRuangan || '';
+            showSesiAssignToast(json.message || 'Gagal mengubah ruangan', 'error');
         }
     } catch (e) {
-        alert('Koneksi gagal saat menyimpan ruangan.');
+        if (urutInp) urutInp.value = urutInp.dataset.prevUrut || '';
+        if (ruangSel) ruangSel.value = ruangSel.dataset.prevRuangan || '';
+        showSesiAssignToast('Koneksi gagal saat menyimpan ruangan.', 'error');
     }
 }
 

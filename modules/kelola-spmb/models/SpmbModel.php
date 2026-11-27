@@ -4256,25 +4256,12 @@ class SpmbModel
             if (empty($chkCol)) {
                 $pdo->exec("ALTER TABLE `spmb_observasi_peserta_jadwal` ADD COLUMN `urutan_sesi` INT(11) DEFAULT NULL AFTER `ruangan_id`");
             }
-            // Backfill urutan_sesi untuk peserta yang sudah masuk ruangan namun urutan_sesi masih NULL
-            $nullRows = self::db()->findAll("
-                SELECT id, ruangan_id
-                FROM `spmb_observasi_peserta_jadwal`
-                WHERE ruangan_id IS NOT NULL AND urutan_sesi IS NULL
-                ORDER BY ruangan_id ASC, updated_at ASC, id ASC
-            ");
-            if (!empty($nullRows)) {
-                $maxMap = [];
-                $updUrut = $pdo->prepare("UPDATE `spmb_observasi_peserta_jadwal` SET urutan_sesi = ? WHERE id = ?");
-                foreach ($nullRows as $nr) {
-                    $rid = (int)$nr['ruangan_id'];
-                    if (!isset($maxMap[$rid])) {
-                        $mRow = self::db()->find("SELECT COALESCE(MAX(urutan_sesi), 0) AS mx FROM `spmb_observasi_peserta_jadwal` WHERE ruangan_id = ?", [$rid]);
-                        $maxMap[$rid] = (int)($mRow['mx'] ?? 0);
-                    }
-                    $maxMap[$rid]++;
-                    $updUrut->execute([$maxMap[$rid], (int)$nr['id']]);
-                }
+            // Perbaiki urutan_sesi yang NULL / <= 0 / double & pastikan index unik
+            self::repairDuplicateUrutanSesi(null);
+
+            $chkIdx = $pdo->query("SHOW INDEX FROM `spmb_observasi_peserta_jadwal` WHERE Key_name = 'uniq_ruangan_urutan'")->fetchAll();
+            if (empty($chkIdx)) {
+                $pdo->exec("ALTER TABLE `spmb_observasi_peserta_jadwal` ADD UNIQUE KEY `uniq_ruangan_urutan` (`ruangan_id`, `urutan_sesi`)");
             }
         } catch (Throwable $e) {}
 
@@ -4313,6 +4300,230 @@ class SpmbModel
         } catch (Throwable $e) {}
     }
 
+    /**
+     * Normalisasi nama unit/jenjang SPMB (TK/KB/PAUD disamakan ke PAUD)
+     */
+    public static function normalizeSpmbUnit(?string $jenjang): string
+    {
+        $u = strtoupper(trim((string)$jenjang));
+        if (in_array($u, ['TK', 'KB', 'PAUD/TK', 'TK/PAUD'], true)) {
+            return 'PAUD';
+        }
+        return $u;
+    }
+
+    /**
+     * Cari nomor urut sesi kosong terkecil (1, 2, 3, ...) berdasarkan slot yang sudah dipakai
+     */
+    private static function findSmallestEmptyUrutanSesi(array $usedMap, int $start = 1): int
+    {
+        $slot = max(1, $start);
+        while (isset($usedMap[$slot])) {
+            $slot++;
+        }
+        return $slot;
+    }
+
+    /**
+     * Auto-repair nomor urut sesi yang double, NULL, atau invalid dengan mengisi slot kosong sesuai unit masing-masing
+     */
+    public static function repairDuplicateUrutanSesi(?int $groupId = null): int
+    {
+        self::ensureKartuObservasiSchema();
+        $pdo = self::db()->getConnection();
+
+        $gFilterPj = $groupId !== null ? " AND pj.group_id = ?" : "";
+        $gParams = $groupId !== null ? [$groupId] : [];
+
+        // Fast-path pre-check agar ringan dipanggil pada load halaman
+        $hasOrphan = self::db()->find("
+            SELECT 1
+            FROM `spmb_observasi_peserta_jadwal` pj
+            LEFT JOIN `spmb_pendaftar` p ON p.id = pj.pendaftar_id
+            WHERE pj.ruangan_id IS NOT NULL
+              AND (p.id IS NULL OR p.status_kelulusan <> 'Lulus / Diterima')
+              {$gFilterPj}
+            LIMIT 1
+        ", $gParams);
+
+        $hasInvalidUrut = self::db()->find("
+            SELECT 1
+            FROM `spmb_observasi_peserta_jadwal` pj
+            WHERE pj.ruangan_id IS NOT NULL
+              AND (pj.urutan_sesi IS NULL OR pj.urutan_sesi <= 0)
+              {$gFilterPj}
+            LIMIT 1
+        ", $gParams);
+
+        $hasDuplicate = self::db()->find("
+            SELECT 1
+            FROM `spmb_observasi_peserta_jadwal` pj
+            WHERE pj.ruangan_id IS NOT NULL
+              AND pj.urutan_sesi IS NOT NULL
+              {$gFilterPj}
+            GROUP BY pj.ruangan_id, pj.urutan_sesi
+            HAVING COUNT(*) > 1
+            LIMIT 1
+        ", $gParams);
+
+        if (!$hasOrphan && !$hasInvalidUrut && !$hasDuplicate) {
+            return 0;
+        }
+
+        $fixedCount = 0;
+        $startedTx = false;
+        if (!$pdo->inTransaction()) {
+            $pdo->beginTransaction();
+            $startedTx = true;
+        }
+
+        try {
+            // 1. Bersihkan baris orphan / tidak lagi berstatus Lulus / Diterima
+            $clearOrphanStmt = $pdo->prepare("
+                UPDATE `spmb_observasi_peserta_jadwal` pj
+                LEFT JOIN `spmb_pendaftar` p ON p.id = pj.pendaftar_id
+                SET pj.ruangan_id = NULL, pj.urutan_sesi = NULL
+                WHERE pj.ruangan_id IS NOT NULL
+                  AND (p.id IS NULL OR p.status_kelulusan <> 'Lulus / Diterima')
+                  {$gFilterPj}
+            ");
+            $clearOrphanStmt->execute($gParams);
+            $fixedCount += $clearOrphanStmt->rowCount();
+
+            // 2. Muat semua ruangan & inisialisasi peta slot terpakai
+            $roomSql = "SELECT id, group_id, nama_ruangan, jenjang, kapasitas, sesi_nama, tanggal, jam_mulai FROM `spmb_observasi_ruangan`"
+                     . ($groupId !== null ? " WHERE group_id = ?" : "")
+                     . " ORDER BY group_id ASC, tanggal ASC, jam_mulai ASC, nama_ruangan ASC, id ASC";
+            $roomRows = self::db()->findAll($roomSql, $gParams);
+            $roomsById = [];
+            $roomsByGroup = [];
+            $roomUsed = [];
+            foreach ($roomRows as $r) {
+                $rid = (int)$r['id'];
+                $gid = (int)$r['group_id'];
+                $r['kapasitas'] = max(1, (int)($r['kapasitas'] ?? 15));
+                $r['unit'] = self::normalizeSpmbUnit($r['jenjang'] ?? '');
+                $roomsById[$rid] = $r;
+                $roomsByGroup[$gid][] = $rid;
+                $roomUsed[$rid] = [];
+            }
+
+            // 3. Muat peserta yang punya ruangan_id dengan urutan deterministik agar keeper ter-prioritas
+            $pesertaRows = self::db()->findAll("
+                SELECT pj.id, pj.group_id, pj.ruangan_id, pj.urutan_sesi, pj.status_absen, pj.wa_jadwal_sent_at,
+                       p.jenjang
+                FROM `spmb_observasi_peserta_jadwal` pj
+                JOIN `spmb_pendaftar` p ON p.id = pj.pendaftar_id
+                WHERE pj.ruangan_id IS NOT NULL
+                  {$gFilterPj}
+                ORDER BY pj.group_id ASC, pj.ruangan_id ASC,
+                         CASE WHEN pj.urutan_sesi IS NOT NULL AND pj.urutan_sesi > 0 THEN 0 ELSE 1 END ASC,
+                         COALESCE(pj.urutan_sesi, 999999) ASC,
+                         CASE WHEN pj.status_absen = 'Hadir' THEN 0 ELSE 1 END ASC,
+                         CASE WHEN pj.wa_jadwal_sent_at IS NOT NULL THEN 0 ELSE 1 END ASC,
+                         pj.updated_at ASC, pj.id ASC
+            ", $gParams);
+
+            // 4. Pisahkan keeper vs orphan room vs perlu reassign (NULL / <=0 / double)
+            $orphanRoomIds = [];
+            $needsReassign = [];
+            foreach ($pesertaRows as $row) {
+                $rid = (int)$row['ruangan_id'];
+                if (!isset($roomsById[$rid])) {
+                    $orphanRoomIds[] = (int)$row['id'];
+                    continue;
+                }
+                $urut = $row['urutan_sesi'] !== null ? (int)$row['urutan_sesi'] : 0;
+                if ($urut > 0 && !isset($roomUsed[$rid][$urut])) {
+                    $roomUsed[$rid][$urut] = true;
+                } else {
+                    $needsReassign[] = $row;
+                }
+            }
+
+            if (!empty($orphanRoomIds)) {
+                $placeholders = implode(',', array_fill(0, count($orphanRoomIds), '?'));
+                $clrRoom = $pdo->prepare("UPDATE `spmb_observasi_peserta_jadwal` SET ruangan_id = NULL, urutan_sesi = NULL WHERE id IN ({$placeholders})");
+                $clrRoom->execute($orphanRoomIds);
+                $fixedCount += count($orphanRoomIds);
+            }
+
+            // 5. Reassign peserta NULL/double ke tempat kosong sesuai unit masing-masing
+            if (!empty($needsReassign)) {
+                $updStmt = $pdo->prepare("UPDATE `spmb_observasi_peserta_jadwal` SET ruangan_id = ?, urutan_sesi = ? WHERE id = ?");
+                foreach ($needsReassign as $dup) {
+                    $origRid = (int)$dup['ruangan_id'];
+                    $grpId = (int)$dup['group_id'];
+                    $pUnit = self::normalizeSpmbUnit($dup['jenjang'] ?? '');
+                    $origRoom = $roomsById[$origRid];
+                    $origCap = (int)$origRoom['kapasitas'];
+                    $origRoomUnit = (string)$origRoom['unit'];
+                    $isLockedToRoom = (($dup['status_absen'] ?? '') === 'Hadir' || !empty($dup['wa_jadwal_sent_at']));
+
+                    $slotInOrig = self::findSmallestEmptyUrutanSesi($roomUsed[$origRid]);
+                    $targetRid = null;
+                    $targetSlot = null;
+
+                    // Prioritas 1: tempat kosong di sesi/ruangan asal jika unit cocok (atau terkunci Hadir/WA) & masih muat kapasitas
+                    if (($origRoomUnit === '' || $pUnit === '' || $origRoomUnit === $pUnit || $isLockedToRoom) && $slotInOrig <= $origCap) {
+                        $targetRid = $origRid;
+                        $targetSlot = $slotInOrig;
+                    }
+
+                    // Prioritas 2: cari ruangan lain pada grup & unit yang sama yang masih punya slot kosong (jika belum terkunci)
+                    if ($targetRid === null && !$isLockedToRoom && !empty($roomsByGroup[$grpId])) {
+                        // Pass 2a: exact unit match
+                        if ($pUnit !== '') {
+                            foreach ($roomsByGroup[$grpId] as $candRid) {
+                                $candRoom = $roomsById[$candRid];
+                                if ($candRoom['unit'] !== $pUnit) continue;
+                                $candSlot = self::findSmallestEmptyUrutanSesi($roomUsed[$candRid]);
+                                if ($candSlot <= (int)$candRoom['kapasitas']) {
+                                    $targetRid = $candRid;
+                                    $targetSlot = $candSlot;
+                                    break;
+                                }
+                            }
+                        }
+                        // Pass 2b: fallback wildcard unit ('')
+                        if ($targetRid === null) {
+                            foreach ($roomsByGroup[$grpId] as $candRid) {
+                                $candRoom = $roomsById[$candRid];
+                                if ($candRoom['unit'] !== '') continue;
+                                $candSlot = self::findSmallestEmptyUrutanSesi($roomUsed[$candRid]);
+                                if ($candSlot <= (int)$candRoom['kapasitas']) {
+                                    $targetRid = $candRid;
+                                    $targetSlot = $candSlot;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    // Prioritas 3: fallback tetap di ruangan asal pada slot kosong terkecil agar tidak double
+                    if ($targetRid === null) {
+                        $targetRid = $origRid;
+                        $targetSlot = $slotInOrig;
+                    }
+
+                    $updStmt->execute([$targetRid, $targetSlot, (int)$dup['id']]);
+                    $roomUsed[$targetRid][$targetSlot] = true;
+                    $fixedCount++;
+                }
+            }
+
+            if ($startedTx) {
+                $pdo->commit();
+            }
+            return $fixedCount;
+        } catch (Throwable $e) {
+            if ($startedTx && $pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            throw $e;
+        }
+    }
+
     public static function getKartuObservasiRuangan(?int $groupId): array
     {
         self::ensureKartuObservasiSchema();
@@ -4328,7 +4539,13 @@ class SpmbModel
         $whereSql = implode(' AND ', $where);
         return self::db()->findAll("
             SELECT r.*,
-                   (SELECT COUNT(*) FROM `spmb_observasi_peserta_jadwal` pj WHERE pj.ruangan_id = r.id) AS terisi
+                   (
+                       SELECT COUNT(*)
+                       FROM `spmb_observasi_peserta_jadwal` pj
+                       INNER JOIN `spmb_pendaftar` p ON p.id = pj.pendaftar_id AND p.status_kelulusan = 'Lulus / Diterima'
+                       WHERE pj.ruangan_id = r.id
+                         AND EXISTS (SELECT 1 FROM `spmb_observasi_respon` obs WHERE obs.pendaftar_id = p.id AND obs.status = 'selesai')
+                   ) AS terisi
             FROM `spmb_observasi_ruangan` r
             WHERE {$whereSql}
             ORDER BY r.tanggal ASC, r.jam_mulai ASC, r.nama_ruangan ASC
@@ -4412,6 +4629,7 @@ class SpmbModel
         if (!$groupId) return ['items' => [], 'stats' => ['total' => 0, 'hadir' => 0, 'belum_hadir' => 0, 'terjadwal' => 0]];
 
         self::syncKartuObservasiPeserta($groupId);
+        self::repairDuplicateUrutanSesi($groupId);
 
         $where = ["pj.group_id = ?", "p.status_kelulusan = 'Lulus / Diterima'"];
         $params = [$groupId];
@@ -4485,6 +4703,7 @@ class SpmbModel
     {
         self::ensureKartuObservasiSchema();
         self::syncKartuObservasiPeserta($groupId);
+        self::repairDuplicateUrutanSesi($groupId);
 
         $ruanganList = self::getKartuObservasiRuangan($groupId);
         if (empty($ruanganList)) {
@@ -4494,8 +4713,13 @@ class SpmbModel
         $where = ["pj.group_id = ?", "pj.ruangan_id IS NULL", "p.status_kelulusan = 'Lulus / Diterima'"];
         $params = [$groupId];
         if (!empty($jenjangFilter)) {
-            $where[] = "p.jenjang = ?";
-            $params[] = $jenjangFilter;
+            $filterUnit = self::normalizeSpmbUnit($jenjangFilter);
+            if ($filterUnit === 'PAUD') {
+                $where[] = "UPPER(TRIM(p.jenjang)) IN ('PAUD', 'TK', 'KB', 'PAUD/TK', 'TK/PAUD')";
+            } else {
+                $where[] = "UPPER(TRIM(p.jenjang)) = ?";
+                $params[] = $filterUnit;
+            }
         }
 
         $unassigned = self::db()->findAll("
@@ -4511,40 +4735,95 @@ class SpmbModel
             return 0;
         }
 
-        $upd = self::db()->getConnection()->prepare("UPDATE `spmb_observasi_peserta_jadwal` SET ruangan_id = ?, urutan_sesi = ? WHERE id = ?");
-        $maxUrutMap = [];
-        foreach ($ruanganList as $r) {
-            $rid = (int)$r['id'];
-            $mRow = self::db()->find("SELECT COALESCE(MAX(urutan_sesi), 0) AS mx FROM `spmb_observasi_peserta_jadwal` WHERE ruangan_id = ?", [$rid]);
-            $maxUrutMap[$rid] = (int)($mRow['mx'] ?? 0);
+        $pdo = self::db()->getConnection();
+        $startedTx = false;
+        if (!$pdo->inTransaction()) {
+            $pdo->beginTransaction();
+            $startedTx = true;
         }
-        $assignedCount = 0;
 
-        foreach ($unassigned as $peserta) {
-            $pJenjang = trim((string)($peserta['jenjang'] ?? ''));
-            $chosenIdx = null;
+        try {
+            $usedSlotsMap = [];
             foreach ($ruanganList as $idx => $r) {
-                $rJenjang = trim((string)($r['jenjang'] ?? ''));
-                $sisa = (int)$r['kapasitas'] - (int)$r['terisi'];
-                if ($sisa <= 0) continue;
-                if ($rJenjang === '' || strcasecmp($rJenjang, $pJenjang) === 0) {
-                    $chosenIdx = $idx;
-                    break;
+                $rid = (int)$r['id'];
+                $usedSlotsMap[$rid] = [];
+                $usedRows = self::db()->findAll(
+                    "SELECT urutan_sesi FROM `spmb_observasi_peserta_jadwal` WHERE ruangan_id = ? AND urutan_sesi IS NOT NULL AND urutan_sesi > 0 FOR UPDATE",
+                    [$rid]
+                );
+                foreach ($usedRows as $ur) {
+                    $usedSlotsMap[$rid][(int)$ur['urutan_sesi']] = true;
+                }
+                $ruanganList[$idx]['unit'] = self::normalizeSpmbUnit($r['jenjang'] ?? '');
+                $ruanganList[$idx]['terisi'] = count($usedSlotsMap[$rid]);
+            }
+
+            $upd = $pdo->prepare("UPDATE `spmb_observasi_peserta_jadwal` SET ruangan_id = ?, urutan_sesi = ? WHERE id = ?");
+            $assignedCount = 0;
+
+            foreach ($unassigned as $peserta) {
+                $pUnit = self::normalizeSpmbUnit($peserta['jenjang'] ?? '');
+                $chosenIdx = null;
+
+                // Pass 1: Prioritaskan ruangan dengan unit persis sama
+                if ($pUnit !== '') {
+                    foreach ($ruanganList as $idx => $r) {
+                        $sisa = (int)$r['kapasitas'] - (int)$r['terisi'];
+                        if ($sisa <= 0) continue;
+                        if ($r['unit'] === $pUnit) {
+                            $chosenIdx = $idx;
+                            break;
+                        }
+                    }
+                }
+
+                // Pass 2: Fallback ke ruangan semua unit (wildcard '')
+                if ($chosenIdx === null) {
+                    foreach ($ruanganList as $idx => $r) {
+                        $sisa = (int)$r['kapasitas'] - (int)$r['terisi'];
+                        if ($sisa <= 0) continue;
+                        if ($r['unit'] === '') {
+                            $chosenIdx = $idx;
+                            break;
+                        }
+                    }
+                }
+
+                if ($chosenIdx !== null) {
+                    $targetRid = (int)$ruanganList[$chosenIdx]['id'];
+                    $slot = self::findSmallestEmptyUrutanSesi($usedSlotsMap[$targetRid]);
+                    for ($attempt = 0; $attempt < 5; $attempt++) {
+                        try {
+                            $upd->execute([$targetRid, $slot, (int)$peserta['id']]);
+                            break;
+                        } catch (PDOException $ex) {
+                            if ((string)$ex->getCode() === '23000') {
+                                $usedSlotsMap[$targetRid][$slot] = true;
+                                $slot = self::findSmallestEmptyUrutanSesi($usedSlotsMap[$targetRid], $slot + 1);
+                                continue;
+                            }
+                            throw $ex;
+                        }
+                    }
+                    $usedSlotsMap[$targetRid][$slot] = true;
+                    $ruanganList[$chosenIdx]['terisi'] = count($usedSlotsMap[$targetRid]);
+                    $assignedCount++;
                 }
             }
-            if ($chosenIdx !== null) {
-                $targetRid = (int)$ruanganList[$chosenIdx]['id'];
-                $maxUrutMap[$targetRid] = ($maxUrutMap[$targetRid] ?? 0) + 1;
-                $upd->execute([$targetRid, $maxUrutMap[$targetRid], (int)$peserta['id']]);
-                $ruanganList[$chosenIdx]['terisi'] = (int)$ruanganList[$chosenIdx]['terisi'] + 1;
-                $assignedCount++;
-            }
-        }
 
-        return $assignedCount;
+            if ($startedTx) {
+                $pdo->commit();
+            }
+            return $assignedCount;
+        } catch (Throwable $e) {
+            if ($startedTx && $pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            throw $e;
+        }
     }
 
-    public static function assignRuanganManual(int $pesertaId, ?int $ruanganId, ?int $urutanSesi = null): ?int
+    public static function assignRuanganManual(int $pesertaId, ?int $ruanganId, ?int $urutanSesi = null): array
     {
         self::ensureKartuObservasiSchema();
         if (!$ruanganId) {
@@ -4552,26 +4831,177 @@ class SpmbModel
                 "UPDATE `spmb_observasi_peserta_jadwal` SET ruangan_id = NULL, urutan_sesi = NULL WHERE id = ?",
                 [$pesertaId]
             );
-            return null;
+            return [
+                'success'     => true,
+                'ruangan_id'  => null,
+                'urutan_sesi' => null,
+                'adjusted'    => false,
+                'moved_room'  => false,
+                'message'     => 'Peserta dikeluarkan dari ruangan & sesi.',
+            ];
         }
 
-        $current = self::db()->find("SELECT ruangan_id, urutan_sesi FROM `spmb_observasi_peserta_jadwal` WHERE id = ? LIMIT 1", [$pesertaId]);
-        $finalUrut = $urutanSesi;
+        $current = self::db()->find("
+            SELECT pj.*, p.jenjang
+            FROM `spmb_observasi_peserta_jadwal` pj
+            JOIN `spmb_pendaftar` p ON p.id = pj.pendaftar_id
+            WHERE pj.id = ?
+            LIMIT 1
+        ", [$pesertaId]);
+        if (!$current) {
+            return ['success' => false, 'message' => 'Data peserta tidak ditemukan.'];
+        }
 
-        if ($finalUrut === null || $finalUrut <= 0) {
-            if ($current && (int)($current['ruangan_id'] ?? 0) === $ruanganId && !empty($current['urutan_sesi'])) {
-                $finalUrut = (int)$current['urutan_sesi'];
-            } else {
-                $mRow = self::db()->find("SELECT COALESCE(MAX(urutan_sesi), 0) AS mx FROM `spmb_observasi_peserta_jadwal` WHERE ruangan_id = ?", [$ruanganId]);
-                $finalUrut = ((int)($mRow['mx'] ?? 0)) + 1;
+        $targetRoom = self::db()->find("SELECT * FROM `spmb_observasi_ruangan` WHERE id = ? LIMIT 1", [$ruanganId]);
+        if (!$targetRoom) {
+            return ['success' => false, 'message' => 'Data ruangan & sesi tidak ditemukan.'];
+        }
+
+        $pUnit = self::normalizeSpmbUnit($current['jenjang'] ?? '');
+        $targetRoomUnit = self::normalizeSpmbUnit($targetRoom['jenjang'] ?? '');
+        if ($targetRoomUnit !== '' && $pUnit !== '' && $targetRoomUnit !== $pUnit) {
+            return [
+                'success' => false,
+                'message' => "Ruangan {$targetRoom['nama_ruangan']} khusus unit {$targetRoomUnit}, tidak sesuai dengan unit peserta ({$pUnit}).",
+            ];
+        }
+
+        $pdo = self::db()->getConnection();
+        $startedTx = false;
+        if (!$pdo->inTransaction()) {
+            $pdo->beginTransaction();
+            $startedTx = true;
+        }
+
+        try {
+            $otherRows = self::db()->findAll(
+                "SELECT urutan_sesi FROM `spmb_observasi_peserta_jadwal` WHERE ruangan_id = ? AND id <> ? AND urutan_sesi IS NOT NULL AND urutan_sesi > 0 FOR UPDATE",
+                [$ruanganId, $pesertaId]
+            );
+            $usedMap = [];
+            foreach ($otherRows as $or) {
+                $usedMap[(int)$or['urutan_sesi']] = true;
             }
-        }
 
-        self::db()->query(
-            "UPDATE `spmb_observasi_peserta_jadwal` SET ruangan_id = ?, urutan_sesi = ? WHERE id = ?",
-            [$ruanganId, $finalUrut, $pesertaId]
-        );
-        return $finalUrut;
+            $targetCap = max(1, (int)($targetRoom['kapasitas'] ?? 15));
+            $requestedUrut = ($urutanSesi !== null && $urutanSesi > 0) ? $urutanSesi : null;
+            $isLockedToRoom = (($current['status_absen'] ?? '') === 'Hadir' || !empty($current['wa_jadwal_sent_at']));
+
+            $finalRid = $ruanganId;
+            $finalUrut = null;
+            $adjusted = false;
+            $movedRoom = false;
+            $movedRoomLabel = '';
+
+            if ($requestedUrut !== null) {
+                if (!isset($usedMap[$requestedUrut])) {
+                    $finalUrut = $requestedUrut;
+                } else {
+                    // Nomor urut yang diminta sudah dipakai (double) -> cari slot kosong terkecil di sesi ini
+                    $adjusted = true;
+                    $emptySlot = self::findSmallestEmptyUrutanSesi($usedMap);
+                    if ($emptySlot <= $targetCap || $isLockedToRoom) {
+                        $finalUrut = $emptySlot;
+                    } else {
+                        // Sesi target penuh -> cari ruangan lain pada grup & unit yang sama yang masih punya tempat kosong
+                        $otherRooms = self::db()->findAll(
+                            "SELECT * FROM `spmb_observasi_ruangan` WHERE group_id = ? AND id <> ? ORDER BY tanggal ASC, jam_mulai ASC, nama_ruangan ASC, id ASC",
+                            [(int)$targetRoom['group_id'], $ruanganId]
+                        );
+
+                        $candMatches = [];
+                        $candWildcards = [];
+                        foreach ($otherRooms as $orRoom) {
+                            $orUnit = self::normalizeSpmbUnit($orRoom['jenjang'] ?? '');
+                            if ($pUnit !== '' && $orUnit === $pUnit) {
+                                $candMatches[] = $orRoom;
+                            } elseif ($orUnit === '') {
+                                $candWildcards[] = $orRoom;
+                            }
+                        }
+
+                        foreach (array_merge($candMatches, $candWildcards) as $cand) {
+                            $candRid = (int)$cand['id'];
+                            $candCap = max(1, (int)($cand['kapasitas'] ?? 15));
+                            $candUsedRows = self::db()->findAll(
+                                "SELECT urutan_sesi FROM `spmb_observasi_peserta_jadwal` WHERE ruangan_id = ? AND id <> ? AND urutan_sesi IS NOT NULL AND urutan_sesi > 0 FOR UPDATE",
+                                [$candRid, $pesertaId]
+                            );
+                            $candUsedMap = [];
+                            foreach ($candUsedRows as $cu) {
+                                $candUsedMap[(int)$cu['urutan_sesi']] = true;
+                            }
+                            $candSlot = self::findSmallestEmptyUrutanSesi($candUsedMap);
+                            if ($candSlot <= $candCap) {
+                                $finalRid = $candRid;
+                                $finalUrut = $candSlot;
+                                $usedMap = $candUsedMap;
+                                $movedRoom = true;
+                                $movedRoomLabel = trim(($cand['nama_ruangan'] ?? '') . ' - ' . ($cand['sesi_nama'] ?? ''), ' -');
+                                break;
+                            }
+                        }
+
+                        if ($finalUrut === null) {
+                            $finalUrut = $emptySlot;
+                        }
+                    }
+                }
+            } else {
+                // Admin mengganti dropdown ruangan atau mengosongkan input nomor urut
+                $curUrut = !empty($current['urutan_sesi']) ? (int)$current['urutan_sesi'] : 0;
+                if ((int)($current['ruangan_id'] ?? 0) === $ruanganId && $curUrut > 0 && !isset($usedMap[$curUrut])) {
+                    $finalUrut = $curUrut;
+                } else {
+                    $finalUrut = self::findSmallestEmptyUrutanSesi($usedMap);
+                }
+            }
+
+            $updStmt = $pdo->prepare("UPDATE `spmb_observasi_peserta_jadwal` SET ruangan_id = ?, urutan_sesi = ? WHERE id = ?");
+            for ($attempt = 0; $attempt < 5; $attempt++) {
+                try {
+                    $updStmt->execute([$finalRid, $finalUrut, $pesertaId]);
+                    break;
+                } catch (PDOException $ex) {
+                    if ((string)$ex->getCode() === '23000') {
+                        $adjusted = true;
+                        $usedMap[$finalUrut] = true;
+                        $finalUrut = self::findSmallestEmptyUrutanSesi($usedMap, $finalUrut + 1);
+                        continue;
+                    }
+                    throw $ex;
+                }
+            }
+
+            if ($startedTx) {
+                $pdo->commit();
+            }
+
+            $urutPad = str_pad((string)$finalUrut, 2, '0', STR_PAD_LEFT);
+            if ($movedRoom && $requestedUrut !== null) {
+                $reqPad = str_pad((string)$requestedUrut, 2, '0', STR_PAD_LEFT);
+                $msg = "Nomor urut #{$reqPad} sudah dipakai & sesi penuh. Peserta otomatis dipindahkan ke {$movedRoomLabel} nomor kosong #{$urutPad}" . ($pUnit !== '' ? " (unit {$pUnit})" : '') . '.';
+            } elseif ($adjusted && $requestedUrut !== null) {
+                $reqPad = str_pad((string)$requestedUrut, 2, '0', STR_PAD_LEFT);
+                $msg = "Nomor urut #{$reqPad} sudah dipakai di sesi ini. Otomatis ditempatkan di nomor kosong #{$urutPad}.";
+            } else {
+                $msg = "Ruangan & nomor urut sesi diperbarui (#{$urutPad}).";
+            }
+
+            return [
+                'success'     => true,
+                'ruangan_id'  => $finalRid,
+                'urutan_sesi' => $finalUrut,
+                'adjusted'    => $adjusted,
+                'moved_room'  => $movedRoom,
+                'message'     => $msg,
+            ];
+        } catch (Throwable $e) {
+            if ($startedTx && $pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            throw $e;
+        }
     }
 
     /**

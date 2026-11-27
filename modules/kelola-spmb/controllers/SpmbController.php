@@ -4124,8 +4124,12 @@ SVG;
             Response::json(['success' => false, 'message' => 'ID peserta tidak valid.'], 400);
             return;
         }
-        $assignedUrut = SpmbModel::assignRuanganManual($pesertaId, $ruanganId, $urutanSesi);
-        Response::json(['success' => true, 'urutan_sesi' => $assignedUrut, 'message' => 'Ruangan & nomor urut sesi diperbarui.']);
+        $res = SpmbModel::assignRuanganManual($pesertaId, $ruanganId, $urutanSesi);
+        if (empty($res['success'])) {
+            Response::json($res, 400);
+            return;
+        }
+        Response::json($res);
     }
 
     public static function kartuObservasiScan(): void
