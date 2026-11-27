@@ -39,6 +39,7 @@ if (defined('SYS_APP_LOGO') && !empty(SYS_APP_LOGO)) {
         th, td { border: 1px solid #94a3b8; padding: 5px 7px; text-align: left; }
         th { background: #f1f5f9; font-size: 10px; text-transform: uppercase; }
         .center { text-align: center; }
+        .kartu-link { color: #1d4ed8; font-weight: 700; text-decoration: underline; }
         .empty { text-align: center; padding: 36px; color: #64748b; font-size: 13px; }
         @media print {
             body { background: #fff; padding: 0; }
@@ -54,7 +55,7 @@ if (defined('SYS_APP_LOGO') && !empty(SYS_APP_LOGO)) {
             <span style="font-size:12px;font-weight:700;">Jadwal Sesi:</span>
             <select name="jenjang" onchange="this.form.submit()" class="toolbar-select">
                 <option value="">Semua Jenjang</option>
-                <?php foreach (['PAUD', 'SD', 'SMP', 'SMA'] as $jOpt): ?>
+                <?php foreach (SpmbModel::getObservasiSiswaAllowedUnits() as $jOpt): ?>
                     <option value="<?= $jOpt ?>" <?= ($selJenjang ?? '') === $jOpt ? 'selected' : '' ?>><?= $jOpt ?></option>
                 <?php endforeach; ?>
             </select>
@@ -104,13 +105,17 @@ if (defined('SYS_APP_LOGO') && !empty(SYS_APP_LOGO)) {
                                 <th>Nama Calon Siswa</th>
                                 <th class="center" style="width:52px;">Jenjang</th>
                                 <th style="width:105px;">No. WA Ortu</th>
-                                <th class="center" style="width:80px;">Absen QR</th>
-                                <th class="center" style="width:72px;">Paraf</th>
+                                <th class="center" style="width:92px;">Link Kartu</th>
+                                <th class="center" style="width:92px;">Status Kehadiran QR</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php foreach ($grp['items'] as $idx => $it):
                                 $urut = !empty($it['urutan_sesi']) ? (int)$it['urutan_sesi'] : ($idx + 1);
+                                $kartuUrl = !empty($it['kartu_url'])
+                                    ? $it['kartu_url']
+                                    : url('kelola-spmb/kartu-observasi/publik/' . urlencode((string)($it['qr_token'] ?? '')));
+                                $isHadir = (($it['status_absen'] ?? '') === 'Hadir');
                             ?>
                                 <tr>
                                     <td class="center"><strong><?= str_pad((string)$urut, 2, '0', STR_PAD_LEFT) ?></strong></td>
@@ -118,10 +123,12 @@ if (defined('SYS_APP_LOGO') && !empty(SYS_APP_LOGO)) {
                                     <td><strong><?= htmlspecialchars($it['nama_lengkap']) ?></strong></td>
                                     <td class="center"><?= htmlspecialchars($it['jenjang']) ?></td>
                                     <td><?= htmlspecialchars($it['target_phone'] ?: '-') ?></td>
-                                    <td class="center" style="color:<?= ($it['status_absen'] === 'Hadir') ? '#15803d' : '#64748b' ?>;font-weight:700;">
-                                        <?= htmlspecialchars($it['status_absen']) ?>
+                                    <td class="center">
+                                        <a href="<?= htmlspecialchars($kartuUrl) ?>" target="_blank" class="kartu-link">Buka Kartu</a>
                                     </td>
-                                    <td></td>
+                                    <td class="center" style="color:<?= $isHadir ? '#15803d' : '#64748b' ?>;font-weight:700;">
+                                        <?= $isHadir ? ('Hadir' . (!empty($it['waktu_absen']) ? ' (' . date('H:i', strtotime($it['waktu_absen'])) . ')' : '')) : 'Belum Hadir' ?>
+                                    </td>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>
@@ -140,6 +147,7 @@ if (defined('SYS_APP_LOGO') && !empty(SYS_APP_LOGO)) {
         html2pdf().set({
             margin: [8, 8, 8, 8],
             filename: 'Jadwal_Sesi_Observasi_SPMB_<?= date('Ymd_His') ?>.pdf',
+            enableLinks: true,
             image: { type: 'jpeg', quality: 0.98 },
             html2canvas: { scale: 2, useCORS: true, logging: false },
             jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
