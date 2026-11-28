@@ -356,6 +356,7 @@ class PusatNotifikasiController
                 'can_manage'       => $canManage,
                 'manage_url'       => function_exists('url') ? url('pusat-notifikasi') : '/pusat-notifikasi',
                 'icon_path'        => PusatNotifikasiModel::getSystemLogoPath(),
+                'badge_path'       => PusatNotifikasiModel::getSystemBadgePath(),
             ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
             exit;
         } catch (Throwable $e) {

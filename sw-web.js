@@ -12,6 +12,7 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('push', (event) => {
   const defaultIcon = new URL('/public/images/pwa/icon-192.png', self.location.origin).href;
+  const defaultBadge = new URL('/public/images/pwa/badge-96.png', self.location.origin).href;
   let payload = {
     title: 'Portal BIP',
     body: 'Anda memiliki notifikasi baru.',
@@ -19,7 +20,7 @@ self.addEventListener('push', (event) => {
     tag: 'pusat-notif-web',
     pakai_suara: true,
     icon: defaultIcon,
-    badge: defaultIcon
+    badge: defaultBadge
   };
 
   if (event.data) {
@@ -37,7 +38,7 @@ self.addEventListener('push', (event) => {
   const options = {
     body: payload.body,
     icon: payload.icon || defaultIcon,
-    badge: payload.badge || defaultIcon,
+    badge: payload.badge || defaultBadge,
     tag: payload.tag || 'pusat-notif-web',
     renotify: true,
     silent: payload.pakai_suara === false,

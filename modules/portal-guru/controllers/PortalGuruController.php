@@ -3958,6 +3958,7 @@ class PortalGuruController
             $pegawaiId = !empty($teacher['pegawai_id']) ? (int)$teacher['pegawai_id'] : null;
             $nama = trim((string)($teacher['name'] ?? 'Rekan'));
             $logoUrl = PusatNotifikasiModel::getSystemLogoUrl();
+            $badgeUrl = PusatNotifikasiModel::getSystemBadgeUrl();
 
             $res = WebPushService::sendToUser($userId, $pegawaiId, [
                 'title' => '🔔 Tes Push Notification Portal BIP',
@@ -3965,7 +3966,7 @@ class PortalGuruController
                 'url'   => url('mobile/jurnal'),
                 'tag'   => 'portal-bip-test-' . time(),
                 'icon'  => $logoUrl,
-                'badge' => $logoUrl,
+                'badge' => $badgeUrl,
             ], [
                 'topic'      => 'test_push',
                 'tanggal'    => date('Y-m-d'),

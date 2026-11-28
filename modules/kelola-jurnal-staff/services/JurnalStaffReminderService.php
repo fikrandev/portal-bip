@@ -1528,7 +1528,21 @@ class JurnalStaffReminderService
         $missingCount = count($missing);
         $baseUrl = rtrim((string)($settings['effective_base_url'] ?? ''), '/');
         $jurnalUrl = $baseUrl !== '' ? ($baseUrl . '/mobile/jurnal') : '/mobile/jurnal';
-        $iconUrl = $baseUrl !== '' ? ($baseUrl . '/public/images/pwa/icon-192.png') : '/public/images/pwa/icon-192.png';
+
+        $logoRel = '/public/images/pwa/icon-192.png';
+        $badgeRel = '/public/images/pwa/badge-96.png';
+        if (!class_exists('PusatNotifikasiModel')) {
+            $notifModelPath = (defined('MODULES_PATH') ? MODULES_PATH : BASE_PATH . '/modules') . '/pusat-notifikasi/models/PusatNotifikasiModel.php';
+            if (is_file($notifModelPath)) {
+                require_once $notifModelPath;
+            }
+        }
+        if (class_exists('PusatNotifikasiModel')) {
+            $logoRel = PusatNotifikasiModel::getSystemLogoPath();
+            $badgeRel = PusatNotifikasiModel::getSystemBadgePath();
+        }
+        $iconUrl = $baseUrl !== '' ? ($baseUrl . $logoRel) : $logoRel;
+        $badgeUrl = $baseUrl !== '' ? ($baseUrl . $badgeRel) : $badgeRel;
 
         if (($item['category'] ?? '') === 'belum_isi') {
             $body = "Halo {$nama}, Anda belum mengisi jurnal kerja hari ini ({$missingCount} sesi). Tap untuk mengisi sekarang.";
@@ -1544,7 +1558,7 @@ class JurnalStaffReminderService
             'url'   => $jurnalUrl,
             'tag'   => "jurnal-staff-{$date}-{$slotTime}",
             'icon'  => $iconUrl,
-            'badge' => $iconUrl,
+            'badge' => $badgeUrl,
         ];
     }
 

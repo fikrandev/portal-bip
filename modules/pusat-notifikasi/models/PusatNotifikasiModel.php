@@ -732,9 +732,9 @@ class PusatNotifikasiModel
     }
 
     /**
-     * Ambil path relatif logo Pengaturan Sistem (settings.app_logo) beserta cache-buster
+     * Resolusi file logo Pengaturan Sistem (app_logo, fallback app_favicon) yang tersedia di disk
      */
-    public static function getSystemLogoPath(): string
+    private static function resolveSystemLogoFile(): ?array
     {
         $candidates = [];
 
@@ -773,8 +773,21 @@ class PusatNotifikasiModel
             $relNoQuery = explode('?', $rel, 2)[0];
             $full = BASE_PATH . '/' . $relNoQuery;
             if ($relNoQuery !== '' && is_file($full)) {
-                return '/' . $relNoQuery . '?v=' . filemtime($full);
+                return ['rel' => $relNoQuery, 'full' => $full];
             }
+        }
+
+        return null;
+    }
+
+    /**
+     * Ambil path relatif logo Pengaturan Sistem (settings.app_logo) beserta cache-buster
+     */
+    public static function getSystemLogoPath(): string
+    {
+        $file = self::resolveSystemLogoFile();
+        if ($file !== null) {
+            return '/' . $file['rel'] . '?v=' . filemtime($file['full']);
         }
 
         return '/public/images/pwa/icon-192.png';
@@ -786,6 +799,216 @@ class PusatNotifikasiModel
     public static function getSystemLogoUrl(): string
     {
         $path = self::getSystemLogoPath();
+        return function_exists('url') ? url(ltrim($path, '/')) : $path;
+    }
+
+    /**
+     * Bangun PNG badge siluet monokrom 96x96 (putih di atas transparan) untuk status bar Android
+     */
+    private static function generateMonochromeBadgePng(string $srcFull, string $destFull): bool
+    {
+        if (!function_exists('imagecreatetruecolor') || !is_file($srcFull)) {
+            return false;
+        }
+
+        $raw = @file_get_contents($srcFull);
+        if ($raw === false || $raw === '') {
+            return false;
+        }
+
+        $src = @imagecreatefromstring($raw);
+        if (!$src) {
+            return false;
+        }
+
+        $srcW = imagesx($src);
+        $srcH = imagesy($src);
+        if ($srcW <= 0 || $srcH <= 0) {
+            imagedestroy($src);
+            return false;
+        }
+
+        $maxDim = 256;
+        $scale = min(1.0, $maxDim / max($srcW, $srcH));
+        $workW = max(1, (int)round($srcW * $scale));
+        $workH = max(1, (int)round($srcH * $scale));
+
+        $work = imagecreatetruecolor($workW, $workH);
+        imagealphablending($work, false);
+        imagesavealpha($work, true);
+        $trans = imagecolorallocatealpha($work, 255, 255, 255, 127);
+        imagefilledrectangle($work, 0, 0, $workW - 1, $workH - 1, $trans);
+        imagecopyresampled($work, $src, 0, 0, 0, 0, $workW, $workH, $srcW, $srcH);
+        imagedestroy($src);
+
+        // Deteksi apakah logo memiliki background putih solid/terang di sekitar simbol berwarna
+        $colorCount = 0;
+        $whiteCount = 0;
+        for ($y = 0; $y < $workH; $y++) {
+            for ($x = 0; $x < $workW; $x++) {
+                $rgba = imagecolorat($work, $x, $y);
+                $a = ($rgba >> 24) & 0x7F;
+                if ($a >= 90) {
+                    continue;
+                }
+                $r = ($rgba >> 16) & 0xFF;
+                $g = ($rgba >> 8) & 0xFF;
+                $b = $rgba & 0xFF;
+                $ink = 255 - min($r, $g, $b);
+                if ($ink > 35) {
+                    $colorCount++;
+                } else {
+                    $whiteCount++;
+                }
+            }
+        }
+
+        $removeWhiteBg = ($colorCount > 0 && $whiteCount > 0);
+
+        $maskImg = imagecreatetruecolor($workW, $workH);
+        imagealphablending($maskImg, false);
+        imagesavealpha($maskImg, true);
+        $maskTrans = imagecolorallocatealpha($maskImg, 255, 255, 255, 127);
+        imagefilledrectangle($maskImg, 0, 0, $workW - 1, $workH - 1, $maskTrans);
+
+        $minX = $workW;
+        $minY = $workH;
+        $maxX = -1;
+        $maxY = -1;
+
+        for ($y = 0; $y < $workH; $y++) {
+            for ($x = 0; $x < $workW; $x++) {
+                $rgba = imagecolorat($work, $x, $y);
+                $a = ($rgba >> 24) & 0x7F;
+                $origOp = max(0.0, min(1.0, (127 - $a) / 127.0));
+                if ($origOp <= 0.05) {
+                    continue;
+                }
+
+                if ($removeWhiteBg) {
+                    $r = ($rgba >> 16) & 0xFF;
+                    $g = ($rgba >> 8) & 0xFF;
+                    $b = $rgba & 0xFF;
+                    $ink = 255 - min($r, $g, $b);
+                    if ($ink <= 28) {
+                        $maskOp = 0.0;
+                    } elseif ($ink >= 70) {
+                        $maskOp = 1.0;
+                    } else {
+                        $maskOp = ($ink - 28) / 42.0;
+                    }
+                    $finalOp = $origOp * $maskOp;
+                    $outAlpha = (int)round(127 * (1.0 - $finalOp));
+                } else {
+                    $outAlpha = $a;
+                }
+
+                if ($outAlpha >= 125) {
+                    continue;
+                }
+
+                $col = imagecolorallocatealpha($maskImg, 255, 255, 255, $outAlpha);
+                imagesetpixel($maskImg, $x, $y, $col);
+
+                if ($outAlpha < 100) {
+                    if ($x < $minX) $minX = $x;
+                    if ($y < $minY) $minY = $y;
+                    if ($x > $maxX) $maxX = $x;
+                    if ($y > $maxY) $maxY = $y;
+                }
+            }
+        }
+        imagedestroy($work);
+
+        if ($maxX < $minX || $maxY < $minY) {
+            imagedestroy($maskImg);
+            return false;
+        }
+
+        $cropW = ($maxX - $minX) + 1;
+        $cropH = ($maxY - $minY) + 1;
+
+        $dstSize = 96;
+        $innerMax = 84; // Sisakan padding 6px agar siluet tetap tajam di Android status bar
+        $fitScale = $innerMax / max($cropW, $cropH);
+        $drawW = max(1, (int)round($cropW * $fitScale));
+        $drawH = max(1, (int)round($cropH * $fitScale));
+        $dstX = (int)floor(($dstSize - $drawW) / 2);
+        $dstY = (int)floor(($dstSize - $drawH) / 2);
+
+        $dst = imagecreatetruecolor($dstSize, $dstSize);
+        imagealphablending($dst, false);
+        imagesavealpha($dst, true);
+        $dstTrans = imagecolorallocatealpha($dst, 255, 255, 255, 127);
+        imagefilledrectangle($dst, 0, 0, $dstSize - 1, $dstSize - 1, $dstTrans);
+        imagecopyresampled($dst, $maskImg, $dstX, $dstY, $minX, $minY, $drawW, $drawH, $cropW, $cropH);
+        imagedestroy($maskImg);
+
+        $dir = dirname($destFull);
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0775, true);
+        }
+
+        $tmpFile = $destFull . '.tmp.' . getmypid();
+        $ok = @imagepng($dst, $tmpFile, 6);
+        imagedestroy($dst);
+
+        if (!$ok || !is_file($tmpFile)) {
+            @unlink($tmpFile);
+            return false;
+        }
+
+        if (!@rename($tmpFile, $destFull)) {
+            @unlink($destFull);
+            if (!@rename($tmpFile, $destFull)) {
+                @unlink($tmpFile);
+                return false;
+            }
+        }
+
+        // Bersihkan file badge hash lama agar direktori tetap rapi
+        $keepBase = basename($destFull);
+        foreach (@glob($dir . '/notif_badge_*.png') ?: [] as $oldFile) {
+            if (basename($oldFile) !== $keepBase) {
+                @unlink($oldFile);
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Ambil path relatif badge siluet monokrom 96x96 untuk status bar atas perangkat
+     */
+    public static function getSystemBadgePath(): string
+    {
+        $file = self::resolveSystemLogoFile();
+        if ($file !== null && function_exists('imagecreatetruecolor')) {
+            $srcHash = substr(md5($file['rel'] . '|' . @filemtime($file['full']) . '|' . @filesize($file['full']) . '|mono-v1'), 0, 12);
+            $badgeRel = 'public/uploads/settings/notif_badge_' . $srcHash . '.png';
+            $badgeFull = BASE_PATH . '/' . $badgeRel;
+
+            if (is_file($badgeFull) && filesize($badgeFull) > 0) {
+                return '/' . $badgeRel;
+            }
+            if (self::generateMonochromeBadgePng($file['full'], $badgeFull)) {
+                return '/' . $badgeRel;
+            }
+        }
+
+        if (is_file(BASE_PATH . '/public/images/pwa/badge-96.png')) {
+            return '/public/images/pwa/badge-96.png';
+        }
+
+        return self::getSystemLogoPath();
+    }
+
+    /**
+     * Ambil URL lengkap badge siluet monokrom 96x96 untuk payload Web Push
+     */
+    public static function getSystemBadgeUrl(): string
+    {
+        $path = self::getSystemBadgePath();
         return function_exists('url') ? url(ltrim($path, '/')) : $path;
     }
 
@@ -829,6 +1052,7 @@ class PusatNotifikasiModel
         }
 
         $iconUrl = self::getSystemLogoUrl();
+        $badgeUrl = self::getSystemBadgeUrl();
         $payload = [
             'title'       => (string)$notif['judul'],
             'body'        => (string)$notif['pesan'],
@@ -838,7 +1062,7 @@ class PusatNotifikasiModel
             'tipe'        => (string)$notif['tipe'],
             'pakai_suara' => !empty($notif['pakai_suara']),
             'icon'        => $iconUrl,
-            'badge'       => $iconUrl,
+            'badge'       => $badgeUrl,
         ];
 
         $pushSent = 0;

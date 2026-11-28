@@ -3,7 +3,7 @@
  * Enables PWA offline capabilities, pre-caching, WebAPK installation compliance, and background sync.
  */
 
-const CACHE_NAME = 'portal-bip-pwa-v13';
+const CACHE_NAME = 'portal-bip-pwa-v14';
 const STATIC_ASSETS = [
   './mobile/manifest.json',
   './manifest.json',
@@ -121,6 +121,7 @@ self.addEventListener('message', (event) => {
 // Push Event - Real-time notification dengan suara default perangkat (silent: false)
 self.addEventListener('push', (event) => {
   const defaultIcon = new URL('/public/images/pwa/icon-192.png', self.location.origin).href;
+  const defaultBadge = new URL('/public/images/pwa/badge-96.png', self.location.origin).href;
   let payload = {
     title: 'Portal BIP',
     body: 'Anda memiliki pemberitahuan baru.',
@@ -128,7 +129,7 @@ self.addEventListener('push', (event) => {
     tag: 'portal-bip-push',
     pakai_suara: true,
     icon: defaultIcon,
-    badge: defaultIcon
+    badge: defaultBadge
   };
 
   if (event.data) {
@@ -146,7 +147,7 @@ self.addEventListener('push', (event) => {
   const options = {
     body: payload.body,
     icon: payload.icon || defaultIcon,
-    badge: payload.badge || defaultIcon,
+    badge: payload.badge || defaultBadge,
     tag: payload.tag || 'portal-bip-push',
     renotify: true,
     silent: payload.pakai_suara === false,

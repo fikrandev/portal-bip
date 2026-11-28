@@ -99,6 +99,7 @@
         canManage: false,
         manageUrl: apiUrl('pusat-notifikasi'),
         iconUrl: apiUrl('public/images/pwa/icon-192.png'),
+        badgeUrl: apiUrl('public/images/pwa/badge-96.png'),
         inboxItems: [],
         popupItems: [],
         unreadCount: 0,
@@ -252,7 +253,7 @@
                         readyReg.showNotification('Push Notifikasi Aktif!', {
                             body: 'Perangkat ini siap menerima notifikasi background (seperti WhatsApp) meski aplikasi ditutup.',
                             icon: state.iconUrl,
-                            badge: state.iconUrl,
+                            badge: state.badgeUrl,
                             tag: 'bip-push-activated',
                             silent: false,
                             vibrate: [200, 100, 200],
@@ -309,6 +310,7 @@
         if ('Notification' in window && Notification.permission === 'granted') {
             const notifUrl = item.link_url || (PLATFORM === 'mobile' ? apiUrl('mobile/notifikasi') : apiUrl('dashboard'));
             const notifIcon = state.iconUrl;
+            const notifBadge = state.badgeUrl;
             const notifTag = 'pusat-notif-' + item.id;
             try {
                 if ('serviceWorker' in navigator) {
@@ -322,17 +324,17 @@
                                 renotify: true,
                                 silent: false,
                                 icon: notifIcon,
-                                badge: notifIcon,
+                                badge: notifBadge,
                                 data: { url: notifUrl },
                             }).catch(function () {});
                         } else {
-                            new Notification(item.judul, { body: item.pesan, icon: notifIcon, tag: notifTag });
+                            new Notification(item.judul, { body: item.pesan, icon: notifIcon, badge: notifBadge, tag: notifTag });
                         }
                     }).catch(function () {
-                        try { new Notification(item.judul, { body: item.pesan, icon: notifIcon, tag: notifTag }); } catch (e2) {}
+                        try { new Notification(item.judul, { body: item.pesan, icon: notifIcon, badge: notifBadge, tag: notifTag }); } catch (e2) {}
                     });
                 } else {
-                    new Notification(item.judul, { body: item.pesan, icon: notifIcon, tag: notifTag });
+                    new Notification(item.judul, { body: item.pesan, icon: notifIcon, badge: notifBadge, tag: notifTag });
                 }
             } catch (e) {}
         }
@@ -725,6 +727,7 @@
             state.canManage = Boolean(data.can_manage);
             if (data.manage_url) state.manageUrl = data.manage_url;
             if (data.icon_path) state.iconUrl = apiUrl(data.icon_path);
+            if (data.badge_path) state.badgeUrl = apiUrl(data.badge_path);
 
             state.inboxItems = Array.isArray(data.inbox_items) ? data.inbox_items : [];
             state.popupItems = Array.isArray(data.popup_items) ? data.popup_items : [];
