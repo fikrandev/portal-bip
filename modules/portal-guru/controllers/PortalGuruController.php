@@ -1386,8 +1386,15 @@ class PortalGuruController
             ? implode(', ', $assignedJabatanNames)
             : ($staff['jabatan'] ?? ($teacher['role'] ?? 'Staff Support System'));
 
-        // Ambil daftar slot jam kerja (jurnal_staff_jam)
-        $jamList = JurnalStaffModel::getJamList(true);
+        // Tanggal terpilih (default hari ini)
+        $selectedDate = trim($_GET['tanggal'] ?? date('Y-m-d'));
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $selectedDate)) {
+            $selectedDate = date('Y-m-d');
+        }
+        $isSaturday = JurnalStaffModel::isSaturday($selectedDate);
+
+        // Ambil daftar slot jam kerja sesuai hari (pada hari Sabtu hanya s/d jam 12:00)
+        $jamList = JurnalStaffModel::getJamListForDate($selectedDate, true);
 
         // Ambil tugas-tugas aktif HANYA berdasarkan jabatan yang ditugaskan kepada pegawai ini
         $tugasJabatan = [];
@@ -1403,12 +1410,6 @@ class PortalGuruController
             } catch (Throwable $e) {}
         }
         $allTugas = [];
-
-        // Tanggal terpilih (default hari ini)
-        $selectedDate = trim($_GET['tanggal'] ?? date('Y-m-d'));
-        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $selectedDate)) {
-            $selectedDate = date('Y-m-d');
-        }
 
         // Ambil jurnal staff pada tanggal terpilih
         $journalsOnDate = [];
@@ -1447,11 +1448,19 @@ class PortalGuruController
         } catch (Throwable $e) {}
 
         $totalSesi = count($jamList);
-        $totalTerisi = count($journalsOnDate);
+        $filledSlotsToday = 0;
+        foreach ($jamList as $jmSlot) {
+            $jmSlotId = (int)$jmSlot['id'];
+            $jmSlotRentang = substr((string)$jmSlot['jam_mulai'], 0, 5) . ' - ' . substr((string)$jmSlot['jam_selesai'], 0, 5);
+            if (isset($journalByJamId[$jmSlotId]) || isset($journalByJamId[$jmSlotRentang])) {
+                $filledSlotsToday++;
+            }
+        }
+        $totalTerisi = $filledSlotsToday > 0 ? min($totalSesi, $filledSlotsToday) : min($totalSesi, count($journalsOnDate));
         $totalBelum = max(0, $totalSesi - $totalTerisi);
-        $persenTerisi = $totalSesi > 0 ? round(($totalTerisi / $totalSesi) * 100) : 0;
+        $persenTerisi = $totalSesi > 0 ? min(100, round(($totalTerisi / $totalSesi) * 100)) : 0;
 
-        // ── 1. Hitung Progres Ketuntasan Jurnal Staff Berdasarkan Periode (sinkron Hari Libur Absen Pegawai) ──
+        // ── 1. Hitung Progres Ketuntasan Jurnal Staff Berdasarkan Periode (sinkron Hari Libur + Sabtu s/d 12:00) ──
         require_once MODULES_PATH . '/kelola-absen-pegawai/models/AbsenPegawaiModel.php';
         $absenGlobal = AbsenPegawaiModel::getPengaturanGlobal();
         $staffPeriodeCfg = JurnalStaffModel::getPengaturanPeriode();
@@ -1468,35 +1477,50 @@ class PortalGuruController
         $evalStart = $periodeAwal;
         if (strtotime($evalStart) > strtotime($evalEnd)) {
             $workInfo = ['jumlah_hari_kerja' => 0, 'jumlah_minggu' => 0, 'jumlah_libur_khusus' => 0, 'libur_dates' => [], 'working_dates' => []];
+            $rekapRowStaff = null;
         } else {
             $workInfo = AbsenPegawaiModel::hitungHariKerjaRange($evalStart, $evalEnd);
+            $rekapPeriodData = JurnalStaffModel::getRekapAndMatrixData([
+                'start_date' => $evalStart,
+                'end_date'   => $evalEnd,
+                'pegawai_id' => $pegawaiId,
+            ]);
+            $rekapRowStaff = $rekapPeriodData['rekap_staff_list'][0] ?? null;
         }
 
-        $totalHariKerjaPeriode = (int)$workInfo['jumlah_hari_kerja'];
         $totalLiburPeriode = (int)$workInfo['jumlah_libur_khusus'];
 
-        $totalSesiPerHari = count($jamList);
-        if ($totalSesiPerHari <= 0) {
-            $totalSesiPerHari = 8;
+        if ($rekapRowStaff !== null) {
+            $totalHariKerjaPeriode = (int)($rekapRowStaff['hari_kerja_efektif'] ?? 0);
+            $sesiTerisiPeriode = (int)($rekapRowStaff['terisi_sesi'] ?? 0);
+            $targetSesiPeriode = (int)($rekapRowStaff['target_sesi'] ?? 0);
+            $hariTerisiPeriode = (int)($rekapRowStaff['hari_terisi'] ?? 0);
+            $persenJurnalPeriode = (float)($rekapRowStaff['persentase'] ?? 0);
+        } else {
+            $totalHariKerjaPeriode = (int)$workInfo['jumlah_hari_kerja'];
+            $rangeTarget = (strtotime($evalStart) <= strtotime($evalEnd))
+                ? JurnalStaffModel::hitungTargetSesiRange($evalStart, $evalEnd)
+                : ['total_sesi' => 0];
+            $targetSesiPeriode = (int)($rangeTarget['total_sesi'] ?? 0);
+
+            $jurnalPeriodeStats = $db->find("
+                SELECT
+                    COUNT(*) as total_sesi_terisi,
+                    COUNT(DISTINCT tanggal) as total_hari_terisi
+                FROM jurnal_staff
+                WHERE pegawai_id = ? AND tanggal BETWEEN ? AND ?
+            ", [$pegawaiId, $evalStart, $evalEnd]);
+
+            $sesiTerisiPeriode = (int) ($jurnalPeriodeStats['total_sesi_terisi'] ?? 0);
+            if ($targetSesiPeriode > 0) {
+                $sesiTerisiPeriode = min($targetSesiPeriode, $sesiTerisiPeriode);
+            }
+            $hariTerisiPeriode = (int) ($jurnalPeriodeStats['total_hari_terisi'] ?? 0);
+
+            $persenJurnalPeriode = $targetSesiPeriode > 0
+                ? min(100, round(($sesiTerisiPeriode / $targetSesiPeriode) * 100, 1))
+                : 0;
         }
-
-        $targetSesiPeriode = $totalHariKerjaPeriode * $totalSesiPerHari;
-
-        $jurnalPeriodeStats = $db->find("
-            SELECT 
-                COUNT(*) as total_sesi_terisi,
-                COUNT(DISTINCT tanggal) as total_hari_terisi
-            FROM jurnal_staff
-            WHERE pegawai_id = ? AND tanggal BETWEEN ? AND ?
-        ", [$pegawaiId, $evalStart, $evalEnd]);
-
-        $sesiTerisiPeriode = (int) ($jurnalPeriodeStats['total_sesi_terisi'] ?? 0);
-        $hariTerisiPeriode = (int) ($jurnalPeriodeStats['total_hari_terisi'] ?? 0);
-
-        // Persentase progres jurnal periode (cap maks 100%, aman saat 0 hari kerja)
-        $persenJurnalPeriode = $targetSesiPeriode > 0 
-            ? min(100, round(($sesiTerisiPeriode / $targetSesiPeriode) * 100, 1)) 
-            : 0;
 
         self::render('jurnal_staff', [
             'pageTitle' => 'Jurnal Kerja Staff',
@@ -1510,6 +1534,7 @@ class PortalGuruController
             'tugasJabatan' => $tugasJabatan,
             'allTugas' => $allTugas,
             'selectedDate' => $selectedDate,
+            'isSaturday' => $isSaturday,
             'journalByJamId' => $journalByJamId,
             'journalsOnDate' => $journalsOnDate,
             'recentStaffJournals' => $recentStaffJournals,

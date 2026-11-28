@@ -639,12 +639,14 @@ class JurnalStaffReminderService
     }
 
     /**
-     * Ambil daftar slot jam wajib diisi hingga cutoff waktu pengingat tertentu
+     * Ambil daftar slot jam wajib diisi hingga cutoff waktu pengingat tertentu (pada Sabtu max 12:00)
      */
-    public static function getRequiredJamSlotsForCutoff(string $cutoffTime, bool $excludeIstirahat = false): array
+    public static function getRequiredJamSlotsForCutoff(string $cutoffTime, bool $excludeIstirahat = false, ?string $date = null): array
     {
-        $activeJams = JurnalStaffModel::getJamList(true);
-        if ($excludeIstirahat) {
+        $activeJams = $date !== null
+            ? JurnalStaffModel::getJamListForDate($date, true, $excludeIstirahat)
+            : JurnalStaffModel::getJamList(true);
+        if ($date === null && $excludeIstirahat) {
             $activeJams = array_values(array_filter(
                 $activeJams,
                 static fn($j) => strtolower((string)($j['tipe'] ?? '')) !== 'istirahat'
@@ -741,15 +743,9 @@ class JurnalStaffReminderService
         $excludeIstirahat = ($settings['jurnal_staff_wa_exclude_istirahat'] === '1');
         $skipCutiIzin = ($settings['jurnal_staff_wa_skip_cuti_izin'] === '1');
 
-        $allActiveJams = JurnalStaffModel::getJamList(true);
-        if ($excludeIstirahat) {
-            $allActiveJams = array_values(array_filter(
-                $allActiveJams,
-                static fn($j) => strtolower((string)($j['tipe'] ?? '')) !== 'istirahat'
-            ));
-        }
+        $allActiveJams = JurnalStaffModel::getJamListForDate($date, true, $excludeIstirahat);
 
-        $requiredJams = self::getRequiredJamSlotsForCutoff($slotTime, $excludeIstirahat);
+        $requiredJams = self::getRequiredJamSlotsForCutoff($slotTime, $excludeIstirahat, $date);
         $staffList = self::getTargetSupportStaff();
 
         // Ambil seluruh catatan jurnal staff pada tanggal target

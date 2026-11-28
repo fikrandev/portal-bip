@@ -768,7 +768,7 @@ if (!function_exists('resolveStaffMediaUrl')) {
                     <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Staff Terdata</p>
                     <h4 class="text-2xl font-black text-slate-800 mt-1"><?= (int)($rmSummary['total_staff'] ?? 0) ?> <span class="text-xs font-semibold text-slate-400">Orang</span></h4>
                     <p class="text-[11px] text-slate-500 mt-1">
-                        <?= (int)($rmSummary['hari_kerja_elapsed'] ?? 0) ?> hari kerja berjalan (<?= (int)($rmSummary['sesi_per_hari'] ?? 8) ?> sesi/hari)
+                        <?= (int)($rmSummary['hari_kerja_elapsed'] ?? 0) ?> hari kerja berjalan (Sen-Jum: <?= (int)($rmSummary['sesi_per_hari'] ?? 8) ?> sesi &bull; Sabtu: <?= (int)($rmSummary['sesi_per_hari_sabtu'] ?? 5) ?> sesi s/d 12.00)
                     </p>
                 </div>
                 <div class="bg-white rounded-2xl p-4 border border-emerald-100 shadow-sm">
@@ -961,7 +961,7 @@ if (!function_exists('resolveStaffMediaUrl')) {
                     <div class="flex flex-wrap items-center gap-2 text-xs font-bold">
                         <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200">
                             <span class="w-4 h-4 rounded-md bg-emerald-500 text-white flex items-center justify-center text-[10px]">✓</span>
-                            Lengkap (<?= (int)($rmSummary['sesi_per_hari'] ?? 8) ?> Sesi)
+                            Lengkap (<?= (int)($rmSummary['sesi_per_hari'] ?? 8) ?> Sesi / Sab <?= (int)($rmSummary['sesi_per_hari_sabtu'] ?? 5) ?>)
                         </span>
                         <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-amber-50 text-amber-700 border border-amber-200">
                             <span class="w-4 h-4 rounded-md bg-amber-500 text-white flex items-center justify-center text-[10px]">✓</span>
@@ -2295,7 +2295,7 @@ if (!function_exists('resolveStaffMediaUrl')) {
                 <!-- Tanggal -->
                 <div>
                     <label class="block text-xs font-semibold text-slate-700 mb-1">Tanggal Kegiatan <span class="text-rose-500">*</span></label>
-                    <input type="date" name="tanggal" id="jurnal-tanggal" value="<?= date('Y-m-d') ?>" required class="w-full px-3.5 py-2.5 text-xs font-medium text-slate-800 bg-slate-50/70 hover:bg-white focus:bg-white rounded-xl border border-slate-200 hover:border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none focus:outline-none transition-all placeholder:text-slate-400">
+                    <input type="date" name="tanggal" id="jurnal-tanggal" value="<?= date('Y-m-d') ?>" required onchange="filterAdminJamOptionsByDate()" class="w-full px-3.5 py-2.5 text-xs font-medium text-slate-800 bg-slate-50/70 hover:bg-white focus:bg-white rounded-xl border border-slate-200 hover:border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none focus:outline-none transition-all placeholder:text-slate-400">
                 </div>
 
                 <!-- Jam Sesi (dari Pengaturan Jam) -->
@@ -2305,12 +2305,14 @@ if (!function_exists('resolveStaffMediaUrl')) {
                         <option value="">-- Pilih Sesi Jam Kerja --</option>
                         <?php foreach ($activeJamOptions as $aj): 
                             $rentang = date('H.i', strtotime($aj['jam_mulai'])) . ' - ' . date('H.i', strtotime($aj['jam_selesai']));
+                            $jamSelesaiHi = substr((string)$aj['jam_selesai'], 0, 5);
                         ?>
-                            <option value="<?= (int)$aj['id'] ?>" data-rentang="<?= $rentang ?>">
+                            <option value="<?= (int)$aj['id'] ?>" data-rentang="<?= $rentang ?>" data-jam-selesai="<?= e($jamSelesaiHi) ?>">
                                 <?= $rentang ?> (<?= htmlspecialchars($aj['nama_sesi']) ?>)
                             </option>
                         <?php endforeach; ?>
                     </select>
+                    <p id="jurnal-sabtu-hint" class="hidden text-[10.5px] text-amber-600 font-semibold mt-1">Hari Sabtu: jam kerja hanya sampai pukul 12.00 WITA.</p>
                     <input type="hidden" name="jam_rentang" id="jurnal-jam-rentang" value="08:00 - 09:00">
                 </div>
 
@@ -2753,6 +2755,7 @@ function openQuickFillStaffMatrix(pegawaiId, tanggal) {
         pegSelect.value = String(pegawaiId);
         handlePegawaiChange(pegSelect);
     }
+    filterAdminJamOptionsByDate();
 }
 
 function applyAdminTugasPreselection(tugasSelect, rawTugasIds, rawAktivitas) {
@@ -2864,6 +2867,39 @@ function handlePegawaiChange(selectEl, preselectTugasIds = null, preselectAktivi
     }
 }
 
+function filterAdminJamOptionsByDate() {
+    const tglVal = (document.getElementById('jurnal-tanggal')?.value || '').trim();
+    const jamSel = document.getElementById('jurnal-jam-id');
+    const hintEl = document.getElementById('jurnal-sabtu-hint');
+    if (!jamSel) return;
+
+    let isSat = false;
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(tglVal);
+    if (m) {
+        const dt = new Date(parseInt(m[1], 10), parseInt(m[2], 10) - 1, parseInt(m[3], 10));
+        isSat = (dt.getDay() === 6);
+    }
+
+    Array.from(jamSel.options).forEach(opt => {
+        const endHi = opt.getAttribute('data-jam-selesai') || '';
+        if (!endHi) return;
+        const hiddenOnSat = isSat && (endHi > '12:00');
+        opt.hidden = hiddenOnSat;
+        opt.disabled = hiddenOnSat;
+    });
+
+    const curOpt = jamSel.options[jamSel.selectedIndex];
+    if (curOpt && curOpt.disabled) {
+        jamSel.value = '';
+        const rInp = document.getElementById('jurnal-jam-rentang');
+        if (rInp) rInp.value = '';
+    }
+
+    if (hintEl) {
+        hintEl.classList.toggle('hidden', !isSat);
+    }
+}
+
 function handleJamChange(selectEl) {
     const opt = selectEl.options[selectEl.selectedIndex];
     if (!opt) return;
@@ -2906,6 +2942,7 @@ function openModalInputJurnal() {
             window.SearchableSelect.refresh(tugasSelect);
         }
     }
+    filterAdminJamOptionsByDate();
     document.getElementById('modal-input-jurnal').classList.remove('hidden');
 }
 
@@ -2932,6 +2969,7 @@ function editJurnal(data) {
 
     const rawTugasIds = data.tugas_ids || data.tugas_id || '';
     handlePegawaiChange(pegawaiSelect, rawTugasIds, data.aktivitas || '');
+    filterAdminJamOptionsByDate();
 
     document.getElementById('modal-input-jurnal').classList.remove('hidden');
 }

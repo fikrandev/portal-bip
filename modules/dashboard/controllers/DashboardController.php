@@ -432,6 +432,7 @@ class DashboardController
                         $jsStats = ['total_bulan' => 0, 'today_cnt' => 0, 'hari_isi' => 0];
                         $targetJamSesi = 1;
                         try {
+                            require_once MODULES_PATH . '/kelola-jurnal-staff/models/JurnalStaffModel.php';
                             $jsStats = $db->find("
                                 SELECT
                                     COUNT(*) AS total_bulan,
@@ -440,7 +441,7 @@ class DashboardController
                                 FROM jurnal_staff
                                 WHERE pegawai_id = ? AND (tanggal BETWEEN ? AND ?)
                             ", [$today, $pegawaiId, $monthStart, $monthEnd]) ?: $jsStats;
-                            $targetJamSesi = max(1, (int)($db->find("SELECT COUNT(*) AS c FROM jurnal_staff_jam WHERE is_active = 1 AND tipe != 'istirahat'")['c'] ?? 1));
+                            $targetJamSesi = max(1, count(JurnalStaffModel::getJamListForDate($today, true, true)));
                         } catch (Throwable $e) {}
 
                         $todayCnt   = (int)($jsStats['today_cnt'] ?? 0);

@@ -315,7 +315,7 @@
         <div class="meta-box">
             <div>
                 <strong>Jabatan / Divisi:</strong> <?= htmlspecialchars($jabatan ?: 'Semua Divisi / Unit') ?><br>
-                <strong>Hari Kerja Efektif Periode:</strong> <?= (int)($rmSummary['hari_kerja_elapsed'] ?? 0) ?> Hari Kerja (<?= (int)($rmSummary['sesi_per_hari'] ?? 8) ?> Sesi/Hari)
+                <strong>Hari Kerja Efektif Periode:</strong> <?= (int)($rmSummary['hari_kerja_elapsed'] ?? 0) ?> Hari Kerja (Sen-Jum: <?= (int)($rmSummary['sesi_per_hari'] ?? 8) ?> Sesi &bull; Sabtu: <?= (int)($rmSummary['sesi_per_hari_sabtu'] ?? 5) ?> Sesi s/d 12.00)
             </div>
             <div style="text-align: right;">
                 <strong>Total Staff:</strong> <?= (int)($rmSummary['total_staff'] ?? count($rekapStaffList)) ?> Orang &bull;

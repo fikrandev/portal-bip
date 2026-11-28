@@ -138,6 +138,9 @@ $totalLiburPeriode = (int)($totalLiburPeriode ?? 0);
                     <?php else: ?>
                         <span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-slate-100 text-slate-600 border border-slate-200 shrink-0">⏳ Mendatang (Terkunci)</span>
                     <?php endif; ?>
+                    <?php if (!$isHoliday && !empty($isSaturday)): ?>
+                        <span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-200 shrink-0">🌤️ Sabtu s/d 12.00 WITA</span>
+                    <?php endif; ?>
                 </div>
             </div>
 

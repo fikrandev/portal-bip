@@ -12,6 +12,144 @@
 class JurnalStaffModel
 {
     public const AKTIVITAS_SEPARATOR = ' • ';
+    public const SATURDAY_END_TIME   = '12:00:00';
+
+    /**
+     * Cek apakah tanggal jatuh pada hari Sabtu
+     */
+    public static function isSaturday(string $date): bool
+    {
+        $ts = strtotime(trim($date));
+        return $ts !== false && (int)date('N', $ts) === 6;
+    }
+
+    /**
+     * Filter daftar slot jam kerja sesuai tanggal:
+     * Pada hari Sabtu hanya sampai jam 12:00 siang.
+     */
+    public static function filterJamsForDate(array $jams, string $date): array
+    {
+        if (!self::isSaturday($date)) {
+            return array_values($jams);
+        }
+
+        $filtered = array_filter($jams, static function ($j) {
+            $mulaiTs = strtotime((string)($j['jam_mulai'] ?? ''));
+            $selesaiTs = strtotime((string)($j['jam_selesai'] ?? ''));
+            if ($mulaiTs === false || $selesaiTs === false) {
+                return true;
+            }
+            $mulaiNorm = date('H:i:s', $mulaiTs);
+            $selesaiNorm = date('H:i:s', $selesaiTs);
+            return ($mulaiNorm < self::SATURDAY_END_TIME && $selesaiNorm <= self::SATURDAY_END_TIME);
+        });
+
+        return array_values($filtered);
+    }
+
+    /**
+     * Ambil daftar slot jam kerja yang berlaku untuk tanggal tertentu
+     */
+    public static function getJamListForDate(string $date, bool $onlyActive = true, bool $excludeIstirahat = false): array
+    {
+        $jams = self::getJamList($onlyActive);
+        if ($excludeIstirahat) {
+            $jams = array_values(array_filter(
+                $jams,
+                static fn($j) => strtolower((string)($j['tipe'] ?? '')) !== 'istirahat'
+            ));
+        }
+        return self::filterJamsForDate($jams, $date);
+    }
+
+    /**
+     * Validasi apakah jam / rentang yang dipilih diizinkan pada tanggal tersebut (Sabtu max 12:00)
+     */
+    public static function isJamAllowedForDate(?array $jamRow, string $jamRentang, string $date): bool
+    {
+        if (!self::isSaturday($date)) {
+            return true;
+        }
+
+        $startNorm = '';
+        $endNorm = '';
+
+        if ($jamRow && !empty($jamRow['jam_mulai']) && !empty($jamRow['jam_selesai'])) {
+            $mTs = strtotime((string)$jamRow['jam_mulai']);
+            $sTs = strtotime((string)$jamRow['jam_selesai']);
+            if ($mTs !== false && $sTs !== false) {
+                $startNorm = date('H:i:s', $mTs);
+                $endNorm = date('H:i:s', $sTs);
+            }
+        }
+
+        if ($endNorm === '' && trim($jamRentang) !== '') {
+            if (preg_match('/(\d{1,2})[:.](\d{2})(?::\d{2})?\s*-\s*(\d{1,2})[:.](\d{2})(?::\d{2})?/', $jamRentang, $m)) {
+                $startNorm = sprintf('%02d:%02d:00', (int)$m[1], (int)$m[2]);
+                $endNorm = sprintf('%02d:%02d:00', (int)$m[3], (int)$m[4]);
+            }
+        }
+
+        if ($endNorm === '') {
+            return true;
+        }
+
+        return ($startNorm < self::SATURDAY_END_TIME && $endNorm <= self::SATURDAY_END_TIME);
+    }
+
+    /**
+     * Hitung total target sesi dalam rentang tanggal (memperhitungkan Sabtu hanya s/d jam 12:00 & hari libur)
+     */
+    public static function hitungTargetSesiRange(string $startDate, string $endDate, bool $excludeIstirahat = false): array
+    {
+        require_once MODULES_PATH . '/kelola-absen-pegawai/models/AbsenPegawaiModel.php';
+        $liburMap = AbsenPegawaiModel::getLiburMap($startDate, $endDate);
+
+        $allActive = self::getJamList(true);
+        if ($excludeIstirahat) {
+            $allActive = array_values(array_filter(
+                $allActive,
+                static fn($j) => strtolower((string)($j['tipe'] ?? '')) !== 'istirahat'
+            ));
+        }
+
+        $sesiWeekday = count($allActive) > 0 ? count($allActive) : 8;
+        $sesiSabtu = count($allActive) > 0
+            ? count(self::filterJamsForDate($allActive, '2026-11-28'))
+            : 5;
+
+        $totalSesi = 0;
+        $hariKerja = 0;
+        $hariWeekday = 0;
+        $hariSabtu = 0;
+
+        $curTs = strtotime($startDate);
+        $endTs = strtotime($endDate);
+        while ($curTs !== false && $endTs !== false && $curTs <= $endTs) {
+            $dStr = date('Y-m-d', $curTs);
+            $w = (int)date('w', $curTs);
+            if ($w !== 0 && !isset($liburMap[$dStr])) {
+                $hariKerja++;
+                if ($w === 6) {
+                    $hariSabtu++;
+                    $totalSesi += $sesiSabtu;
+                } else {
+                    $hariWeekday++;
+                    $totalSesi += $sesiWeekday;
+                }
+            }
+            $curTs = strtotime('+1 day', $curTs);
+        }
+
+        return [
+            'total_sesi'   => $totalSesi,
+            'hari_kerja'   => $hariKerja,
+            'hari_weekday' => $hariWeekday,
+            'hari_sabtu'   => $hariSabtu,
+            'sesi_weekday' => $sesiWeekday,
+            'sesi_sabtu'   => $sesiSabtu,
+        ];
+    }
 
     /**
      * Memastikan semua tabel yang dibutuhkan modul ini sudah ada.
@@ -218,11 +356,19 @@ class JurnalStaffModel
         $hariKerjaPeriode = (int)$workInfo['jumlah_hari_kerja'];
         $liburPeriode = (int)$workInfo['jumlah_libur_khusus'];
 
-        $activeJamCount = (int)$pdo->query("SELECT COUNT(*) FROM jurnal_staff_jam WHERE is_active = 1")->fetchColumn();
-        if ($activeJamCount <= 0) {
-            $activeJamCount = 8;
-        }
-        $targetSesiPeriode = $totalSupportStaff * $hariKerjaPeriode * $activeJamCount;
+        $excludeIstirahatDash = false;
+        try {
+            if (file_exists(MODULES_PATH . '/kelola-jurnal-staff/services/JurnalStaffReminderService.php')) {
+                require_once MODULES_PATH . '/kelola-jurnal-staff/services/JurnalStaffReminderService.php';
+                $remSetDash = JurnalStaffReminderService::getSettings();
+                $excludeIstirahatDash = (($remSetDash['jurnal_staff_wa_exclude_istirahat'] ?? '0') === '1');
+            }
+        } catch (Throwable $eDash) {}
+
+        $rangeTarget = (strtotime($sDate) <= strtotime($evalEndPeriode))
+            ? self::hitungTargetSesiRange($sDate, $evalEndPeriode, $excludeIstirahatDash)
+            : ['total_sesi' => 0];
+        $targetSesiPeriode = $totalSupportStaff * (int)$rangeTarget['total_sesi'];
         $persenPeriode = $targetSesiPeriode > 0
             ? min(100, round(($totalJurnalPeriode / $targetSesiPeriode) * 100, 1))
             : 0;
@@ -608,14 +754,15 @@ class JurnalStaffModel
         $jamRentang = trim($data['jam_rentang'] ?? '');
 
         // Jika jam rentang belum terisi, coba ambil dari jurnal_staff_jam
-        if ($jamRentang === '' && $jamId) {
-            $jamRow = self::getJamById($jamId);
-            if ($jamRow) {
-                $jamRentang = date('H:i', strtotime($jamRow['jam_mulai'])) . ' - ' . date('H:i', strtotime($jamRow['jam_selesai']));
-            }
+        $jamRowCheck = $jamId ? self::getJamById($jamId) : null;
+        if ($jamRentang === '' && $jamRowCheck) {
+            $jamRentang = date('H:i', strtotime($jamRowCheck['jam_mulai'])) . ' - ' . date('H:i', strtotime($jamRowCheck['jam_selesai']));
         }
         if ($jamRentang === '') {
             $jamRentang = '08:00 - 09:00';
+        }
+        if (!self::isJamAllowedForDate($jamRowCheck, $jamRentang, $tanggal)) {
+            throw new Exception('Pada hari Sabtu, jam kerja Jurnal Staff hanya sampai pukul 12.00 WITA.');
         }
 
         $resolvedTugas = self::resolveTugasPayload($data);
@@ -692,6 +839,11 @@ class JurnalStaffModel
         $tanggal = !empty($data['tanggal']) ? trim($data['tanggal']) : $existing['tanggal'];
         $jamId = !empty($data['jam_id']) ? (int)$data['jam_id'] : $existing['jam_id'];
         $jamRentang = !empty($data['jam_rentang']) ? trim($data['jam_rentang']) : $existing['jam_rentang'];
+
+        $jamRowCheck = $jamId ? self::getJamById($jamId) : null;
+        if (!self::isJamAllowedForDate($jamRowCheck, $jamRentang, $tanggal)) {
+            throw new Exception('Pada hari Sabtu, jam kerja Jurnal Staff hanya sampai pukul 12.00 WITA.');
+        }
 
         $hasTugasPayload = array_key_exists('tugas_ids', $data) || array_key_exists('tugas_id', $data) || array_key_exists('aktivitas', $data);
         if ($hasTugasPayload) {
@@ -1359,7 +1511,7 @@ class JurnalStaffModel
         $filterSearch    = trim((string)($filters['search'] ?? ''));
         $filterStatus    = trim((string)($filters['status'] ?? ''));
 
-        // 1. Ambil daftar slot jam kerja aktif
+        // 1. Ambil daftar slot jam kerja aktif (Senin-Jumat penuh, Sabtu hanya s/d jam 12:00)
         $remSettings = JurnalStaffReminderService::getSettings();
         $excludeIstirahat = (($remSettings['jurnal_staff_wa_exclude_istirahat'] ?? '0') === '1');
         $activeJams = self::getJamList(true);
@@ -1369,29 +1521,38 @@ class JurnalStaffModel
                 static fn($j) => strtolower((string)($j['tipe'] ?? '')) !== 'istirahat'
             ));
         }
+        $saturdayJams = self::filterJamsForDate($activeJams, '2026-11-28');
 
-        $requiredJamMapById = [];
-        $requiredJamMapByRentang = [];
-        $requiredJamLabels = [];
-        foreach ($activeJams as $jm) {
-            $jid = (int)$jm['id'];
-            $lbl = date('H.i', strtotime($jm['jam_mulai'])) . ' - ' . date('H.i', strtotime($jm['jam_selesai']));
-            $norm = self::normalizeRentangJam($jm['jam_mulai'] . ' - ' . $jm['jam_selesai']);
-            $requiredJamMapById[$jid] = [
-                'id'        => $jid,
-                'label'     => $lbl,
-                'nama_sesi' => $jm['nama_sesi'] ?? '',
-                'norm'      => $norm,
-            ];
-            if ($norm !== '') {
-                $requiredJamMapByRentang[$norm] = $jid;
+        $buildJamMaps = static function (array $jamListInput): array {
+            $byId = [];
+            $byRentang = [];
+            $labels = [];
+            foreach ($jamListInput as $jm) {
+                $jid = (int)$jm['id'];
+                $lbl = date('H.i', strtotime($jm['jam_mulai'])) . ' - ' . date('H.i', strtotime($jm['jam_selesai']));
+                $norm = self::normalizeRentangJam($jm['jam_mulai'] . ' - ' . $jm['jam_selesai']);
+                $byId[$jid] = [
+                    'id'        => $jid,
+                    'label'     => $lbl,
+                    'nama_sesi' => $jm['nama_sesi'] ?? '',
+                    'norm'      => $norm,
+                ];
+                if ($norm !== '') {
+                    $byRentang[$norm] = $jid;
+                }
+                $labels[$jid] = $lbl . (!empty($jm['nama_sesi']) ? ' (' . $jm['nama_sesi'] . ')' : '');
             }
-            $requiredJamLabels[$jid] = $lbl . (!empty($jm['nama_sesi']) ? ' (' . $jm['nama_sesi'] . ')' : '');
-        }
-        $sesiPerHari = count($requiredJamMapById);
+            return [$byId, $byRentang, $labels];
+        };
+
+        [$weekdayJamMapById, $weekdayJamMapByRentang, $weekdayJamLabels] = $buildJamMaps($activeJams);
+        [$saturdayJamMapById, $saturdayJamMapByRentang, $saturdayJamLabels] = $buildJamMaps($saturdayJams);
+
+        $sesiPerHari = count($weekdayJamMapById);
         if ($sesiPerHari <= 0) {
             $sesiPerHari = 8;
         }
+        $sesiPerHariSabtu = !empty($activeJams) ? count($saturdayJamMapById) : min($sesiPerHari, 5);
 
         // 2. Ambil daftar staff support system (lengkap dengan jabatan efektif & no_wa)
         $allSupportStaff = JurnalStaffReminderService::getTargetSupportStaff();
@@ -1455,18 +1616,22 @@ class JurnalStaffModel
             }
 
             $engDay = date('l', $curTs);
+            $isSaturday = ($w === 6);
+            $expectedSesiHari = ($isSunday || $isHoliday) ? 0 : ($isSaturday ? $sesiPerHariSabtu : $sesiPerHari);
             $dateMeta = [
-                'date'         => $dStr,
-                'day_num'      => date('d', $curTs),
-                'month_short'  => self::getBulanShortIndo((int)date('n', $curTs)),
-                'hari_indo'    => self::getNamaHariIndo($engDay),
-                'hari_short'   => self::getNamaHariShortIndo($engDay),
-                'is_sunday'    => $isSunday,
-                'is_holiday'   => $isHoliday,
-                'holiday_name' => $liburInfo['nama_libur'] ?? null,
-                'is_future'    => $isFuture,
-                'is_today'     => $isToday,
-                'is_workday'   => (!$isSunday && !$isHoliday),
+                'date'          => $dStr,
+                'day_num'       => date('d', $curTs),
+                'month_short'   => self::getBulanShortIndo((int)date('n', $curTs)),
+                'hari_indo'     => self::getNamaHariIndo($engDay),
+                'hari_short'    => self::getNamaHariShortIndo($engDay),
+                'is_sunday'     => $isSunday,
+                'is_saturday'   => $isSaturday,
+                'is_holiday'    => $isHoliday,
+                'holiday_name'  => $liburInfo['nama_libur'] ?? null,
+                'is_future'     => $isFuture,
+                'is_today'      => $isToday,
+                'is_workday'    => (!$isSunday && !$isHoliday),
+                'expected_sesi' => $expectedSesiHari,
             ];
             $allDates[$dStr] = $dateMeta;
             $matrixDates[] = $dateMeta;
@@ -1540,12 +1705,19 @@ class JurnalStaffModel
             $hariSebagianStaff = 0;
             $hariKosongStaff = 0;
             $terisiSesiStaff = 0;
+            $targetSesiStaff = 0;
             $totalCatatanStaff = 0;
             $totalTugasStaff = 0;
 
             $staffDatesMatrix = [];
 
             foreach ($allDates as $dStr => $dMeta) {
+                $isSatDay = !empty($dMeta['is_saturday']);
+                $dayReqMapById      = $isSatDay ? $saturdayJamMapById : $weekdayJamMapById;
+                $dayReqMapByRentang = $isSatDay ? $saturdayJamMapByRentang : $weekdayJamMapByRentang;
+                $dayReqLabels       = $isSatDay ? $saturdayJamLabels : $weekdayJamLabels;
+                $dayExpectedSesi    = $isSatDay ? $sesiPerHariSabtu : $sesiPerHari;
+
                 $dayRows = $journalsByStaffDate[$pid][$dStr] ?? [];
                 $filledReqIds = [];
                 $extraSlots = 0;
@@ -1563,21 +1735,24 @@ class JurnalStaffModel
                     }
 
                     $jid = !empty($dr['jam_id']) ? (int)$dr['jam_id'] : 0;
-                    if ($jid > 0 && isset($requiredJamMapById[$jid])) {
+                    if ($jid > 0 && isset($dayReqMapById[$jid])) {
                         $filledReqIds[$jid] = true;
                     } else {
                         $normR = self::normalizeRentangJam((string)($dr['jam_rentang'] ?? ''));
-                        if ($normR !== '' && isset($requiredJamMapByRentang[$normR])) {
-                            $filledReqIds[$requiredJamMapByRentang[$normR]] = true;
+                        if ($normR !== '' && isset($dayReqMapByRentang[$normR])) {
+                            $filledReqIds[$dayReqMapByRentang[$normR]] = true;
                         } else {
-                            $extraSlots++;
+                            // Hanya hitung slot ekstra bila rentang diizinkan di tanggal tsb (misal bukan >12:00 di hari Sabtu)
+                            if (!$isSatDay || self::isJamAllowedForDate(null, (string)($dr['jam_rentang'] ?? ''), $dStr)) {
+                                $extraSlots++;
+                            }
                         }
                     }
                 }
 
-                $filledCount = min($sesiPerHari, count($filledReqIds) + $extraSlots);
+                $filledCount = min($dayExpectedSesi, count($filledReqIds) + $extraSlots);
                 $missingLabels = [];
-                foreach ($requiredJamLabels as $rJid => $rLbl) {
+                foreach ($dayReqLabels as $rJid => $rLbl) {
                     if (!isset($filledReqIds[$rJid])) {
                         $missingLabels[] = $rLbl;
                     }
@@ -1601,12 +1776,12 @@ class JurnalStaffModel
 
                 if ($dMeta['is_future']) {
                     // Hari kerja yang belum berlangsung
-                    $cellStatus = $filledCount > 0 ? ($filledCount >= $sesiPerHari ? 'filled' : 'partial') : 'future';
+                    $cellStatus = $filledCount > 0 ? ($filledCount >= $dayExpectedSesi ? 'filled' : 'partial') : 'future';
                     $terisiSesiStaff += $filledCount;
                     $staffDatesMatrix[$dStr] = [
                         'status'         => $cellStatus,
                         'filled_count'   => $filledCount,
-                        'expected_count' => $sesiPerHari,
+                        'expected_count' => $dayExpectedSesi,
                         'missing_count'  => 0,
                         'details'        => !empty($dayActivities) ? implode(' • ', array_slice($dayActivities, 0, 4)) : 'Belum berlangsung',
                         'missing_jams'   => [],
@@ -1630,12 +1805,13 @@ class JurnalStaffModel
                     continue;
                 }
 
-                // Hari kerja aktif yang wajib diisi
+                // Hari kerja aktif yang wajib diisi (Sabtu hanya sampai jam 12:00)
                 $hariKerjaStaff++;
+                $targetSesiStaff += $dayExpectedSesi;
                 $terisiSesiStaff += $filledCount;
-                $missingCount = max(0, $sesiPerHari - $filledCount);
+                $missingCount = max(0, $dayExpectedSesi - $filledCount);
 
-                if ($filledCount >= $sesiPerHari) {
+                if ($filledCount >= $dayExpectedSesi) {
                     $cellStatus = 'filled';
                     $hariLengkapStaff++;
                 } elseif ($filledCount > 0) {
@@ -1652,7 +1828,7 @@ class JurnalStaffModel
                         'hari'           => $dMeta['hari_indo'],
                         'status_hari'    => 'sebagian',
                         'filled_count'   => $filledCount,
-                        'expected_count' => $sesiPerHari,
+                        'expected_count' => $dayExpectedSesi,
                         'missing_count'  => $missingCount,
                         'missing_jams'   => $missingLabels,
                     ];
@@ -1670,8 +1846,8 @@ class JurnalStaffModel
                         'hari'           => $dMeta['hari_indo'],
                         'status_hari'    => 'kosong',
                         'filled_count'   => 0,
-                        'expected_count' => $sesiPerHari,
-                        'missing_count'  => $sesiPerHari,
+                        'expected_count' => $dayExpectedSesi,
+                        'missing_count'  => $dayExpectedSesi,
                         'missing_jams'   => $missingLabels,
                     ];
                 }
@@ -1679,14 +1855,13 @@ class JurnalStaffModel
                 $staffDatesMatrix[$dStr] = [
                     'status'         => $cellStatus,
                     'filled_count'   => $filledCount,
-                    'expected_count' => $sesiPerHari,
+                    'expected_count' => $dayExpectedSesi,
                     'missing_count'  => $missingCount,
                     'details'        => !empty($dayActivities) ? implode(' • ', array_slice($dayActivities, 0, 4)) : 'Belum mengisi jurnal',
                     'missing_jams'   => $missingLabels,
                 ];
             }
 
-            $targetSesiStaff = $hariKerjaStaff * $sesiPerHari;
             $cappedTerisiSesi = $targetSesiStaff > 0 ? min($targetSesiStaff, $terisiSesiStaff) : $terisiSesiStaff;
             $kosongSesiStaff = max(0, $targetSesiStaff - $cappedTerisiSesi);
             $hariTerisiStaff = $hariLengkapStaff + $hariSebagianStaff;
@@ -1722,8 +1897,9 @@ class JurnalStaffModel
                 'hari_kerja_periode' => $hariKerjaElapsedCount,
                 'hari_cuti_izin'     => $hariCutiIzinStaff,
                 'hari_kerja_efektif' => $hariKerjaStaff,
-                'sesi_per_hari'      => $sesiPerHari,
-                'target_sesi'        => $targetSesiStaff,
+                'sesi_per_hari'       => $sesiPerHari,
+                'sesi_per_hari_sabtu' => $sesiPerHariSabtu,
+                'target_sesi'         => $targetSesiStaff,
                 'terisi_sesi'        => $cappedTerisiSesi,
                 'kosong_sesi'        => $kosongSesiStaff,
                 'total_catatan'      => $totalCatatanStaff,
@@ -1765,21 +1941,23 @@ class JurnalStaffModel
             : 0.0;
 
         return [
-            'start_date'        => $startDate,
-            'end_date'          => $endDate,
-            'sesi_per_hari'     => $sesiPerHari,
-            'active_jams'       => $activeJams,
-            'rekap_staff_list'  => $rekapStaffList,
-            'matrix_dates'      => $matrixDates,
-            'matrix_rows'       => $matrixRows,
-            'unfilled_days'     => $unfilledDaysList,
-            'summary'           => [
+            'start_date'          => $startDate,
+            'end_date'            => $endDate,
+            'sesi_per_hari'       => $sesiPerHari,
+            'sesi_per_hari_sabtu' => $sesiPerHariSabtu,
+            'active_jams'         => $activeJams,
+            'rekap_staff_list'    => $rekapStaffList,
+            'matrix_dates'        => $matrixDates,
+            'matrix_rows'         => $matrixRows,
+            'unfilled_days'       => $unfilledDaysList,
+            'summary'             => [
                 'total_staff'          => count($rekapStaffList),
                 'hari_kerja_total'     => $hariKerjaTotalCount,
                 'hari_kerja_elapsed'   => $hariKerjaElapsedCount,
                 'hari_libur_khusus'    => $hariLiburKhususCount,
                 'hari_minggu'          => $hariMingguCount,
                 'sesi_per_hari'        => $sesiPerHari,
+                'sesi_per_hari_sabtu'  => $sesiPerHariSabtu,
                 'total_target_sesi'    => $summaryTotalTargetSesi,
                 'total_terisi_sesi'    => $summaryTotalTerisiSesi,
                 'total_kosong_sesi'    => $summaryTotalKosongSesi,
