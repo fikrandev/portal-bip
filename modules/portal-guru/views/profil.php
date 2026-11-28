@@ -60,6 +60,40 @@
         </div>
     </div>
 
+    <!-- 1B. Push Notification Real-Time Toggle -->
+    <div class="bg-white rounded-3xl p-4 shadow-sm border border-slate-100 space-y-3">
+        <div class="flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3 min-w-0">
+                <div class="w-11 h-11 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center shrink-0">
+                    <i data-lucide="bell-ring" class="w-5 h-5"></i>
+                </div>
+                <div class="min-w-0">
+                    <h4 class="font-extrabold text-sm text-slate-900 leading-tight">Push Notification Real-Time</h4>
+                    <p id="push-status-text" class="text-[11px] text-slate-500 mt-0.5 leading-snug">
+                        Memeriksa status notifikasi perangkat...
+                    </p>
+                </div>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                <input type="checkbox" id="toggle-push-notif" class="sr-only peer" onchange="handlePushToggleChange(this)">
+                <div class="w-12 h-7 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-5 after:content-[''] after:absolute after:top-[3px] after:left-[3px] after:bg-white after:rounded-full after:h-[22px] after:w-[22px] after:shadow-sm after:transition-all peer-checked:bg-emerald-500"></div>
+            </label>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100">
+            <div id="push-schedule-pills" class="flex flex-wrap items-center gap-1.5 text-[10.5px] font-bold text-slate-600">
+                <span class="px-2 py-0.5 rounded-lg bg-slate-100 text-slate-600">⏰ Jadwal Pengingat Jurnal</span>
+            </div>
+            <button type="button" id="btn-test-push" onclick="sendTestPushNotif(this)"
+                    class="hidden px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold shadow-xs press-bounce">
+                🔔 Tes Bunyi &amp; Notifikasi
+            </button>
+        </div>
+        <p class="text-[10.5px] text-slate-400 leading-relaxed">
+            Notifikasi otomatis mengikuti jadwal pengingat WA jurnal kerja dan menggunakan <strong>suara notifikasi default perangkat</strong> Anda.
+        </p>
+    </div>
+
     <!-- 2. PWA Installation & Device Controls -->
     <div class="bg-gradient-to-br from-primary-700 via-indigo-700 to-primary-800 rounded-3xl p-5 text-white shadow-xl shadow-primary-600/20 space-y-4">
         <div class="flex items-center justify-between">
@@ -291,5 +325,234 @@
                 cacheElem.innerHTML = `<span>💾</span> ${diag.cacheSize}`;
             }
         }
+
+        initPushNotificationToggle();
     });
+
+    window._pushVapidPublicKey = null;
+
+    function urlBase64ToUint8Array(base64String) {
+        const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+        const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+        const rawData = window.atob(base64);
+        const outputArray = new Uint8Array(rawData.length);
+        for (let i = 0; i < rawData.length; ++i) {
+            outputArray[i] = rawData.charCodeAt(i);
+        }
+        return outputArray;
+    }
+
+    function getMobileCsrfToken() {
+        const meta = document.querySelector('meta[name="csrf-token"]');
+        return meta ? (meta.getAttribute('content') || '') : '';
+    }
+
+    async function ensureMobileSwRegistration() {
+        if (!('serviceWorker' in navigator)) {
+            throw new Error('Browser perangkat ini belum mendukung Service Worker.');
+        }
+        const baseUrl = window.APP_BASE_URL || '';
+        const swPath = baseUrl ? `${baseUrl}/sw.js` : '/sw.js';
+        const scopePath = baseUrl ? `${baseUrl}/mobile/` : '/mobile/';
+
+        let reg = await navigator.serviceWorker.getRegistration(scopePath);
+        if (!reg) {
+            reg = await navigator.serviceWorker.register(swPath, { scope: scopePath });
+        }
+        if (reg.waiting) {
+            reg.waiting.postMessage({ action: 'SKIP_WAITING' });
+        }
+        await navigator.serviceWorker.ready;
+        return reg;
+    }
+
+    function setPushUiState(isOn, statusMsg, isError) {
+        const toggle = document.getElementById('toggle-push-notif');
+        const statusEl = document.getElementById('push-status-text');
+        const testBtn = document.getElementById('btn-test-push');
+
+        if (toggle) toggle.checked = Boolean(isOn);
+        if (statusEl) {
+            statusEl.textContent = statusMsg;
+            statusEl.className = 'text-[11px] mt-0.5 leading-snug ' + (isError ? 'text-rose-600 font-semibold' : (isOn ? 'text-emerald-600 font-semibold' : 'text-slate-500'));
+        }
+        if (testBtn) {
+            testBtn.classList.toggle('hidden', !isOn);
+        }
+    }
+
+    async function initPushNotificationToggle() {
+        const toggle = document.getElementById('toggle-push-notif');
+        const pillsEl = document.getElementById('push-schedule-pills');
+
+        // Ambil konfigurasi VAPID & jadwal pengingat jurnal
+        try {
+            const cfgRes = await fetch('<?= url("mobile/api/push/config") ?>', { credentials: 'same-origin' });
+            const cfg = await cfgRes.json();
+            if (cfg && cfg.success) {
+                window._pushVapidPublicKey = cfg.public_key || null;
+                if (pillsEl && Array.isArray(cfg.schedules) && cfg.schedules.length) {
+                    pillsEl.innerHTML = '<span class="text-slate-400 font-semibold">Jadwal:</span> ' +
+                        cfg.schedules.map(s => `<span class="px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 font-mono">${s} WITA</span>`).join(' ');
+                }
+            }
+        } catch (e) {}
+
+        const isIOS = window.isIOSDevice && window.isIOSDevice();
+        const isStandalone = window.isInStandaloneMode && window.isInStandaloneMode();
+
+        if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
+            if (toggle) toggle.disabled = true;
+            if (isIOS && !isStandalone) {
+                setPushUiState(false, 'Di iPhone, pasang dulu ke Layar Utama (Add to Home Screen) agar Push Notification aktif.', true);
+            } else {
+                setPushUiState(false, 'Browser perangkat ini belum mendukung Push Notification.', true);
+            }
+            return;
+        }
+
+        if (Notification.permission === 'denied') {
+            setPushUiState(false, 'Izin notifikasi diblokir browser. Aktifkan di pengaturan situs browser Anda.', true);
+            return;
+        }
+
+        try {
+            const reg = await ensureMobileSwRegistration();
+            const sub = await reg.pushManager.getSubscription();
+            if (sub && Notification.permission === 'granted') {
+                setPushUiState(true, 'Aktif di perangkat ini (suara bawaan perangkat).', false);
+            } else {
+                setPushUiState(false, 'Nonaktif — nyalakan tombol untuk menerima pengingat real-time.', false);
+            }
+        } catch (err) {
+            setPushUiState(false, 'Nonaktif — ketuk tombol untuk mengaktifkan notifikasi.', false);
+        }
+    }
+
+    async function handlePushToggleChange(toggleEl) {
+        if (!toggleEl) return;
+        const wantEnable = Boolean(toggleEl.checked);
+        toggleEl.disabled = true;
+
+        try {
+            if (wantEnable) {
+                setPushUiState(true, 'Mengaktifkan Push Notification...', false);
+
+                if (Notification.permission !== 'granted') {
+                    const perm = await Notification.requestPermission();
+                    if (perm !== 'granted') {
+                        throw new Error('Izin notifikasi ditolak. Silakan izinkan notifikasi pada browser/HP Anda.');
+                    }
+                }
+
+                if (!window._pushVapidPublicKey) {
+                    const cfgRes = await fetch('<?= url("mobile/api/push/config") ?>', { credentials: 'same-origin' });
+                    const cfg = await cfgRes.json();
+                    if (!cfg || !cfg.success || !cfg.public_key) {
+                        throw new Error((cfg && cfg.message) ? cfg.message : 'Kunci VAPID server tidak tersedia.');
+                    }
+                    window._pushVapidPublicKey = cfg.public_key;
+                }
+
+                const reg = await ensureMobileSwRegistration();
+                let sub = await reg.pushManager.getSubscription();
+                if (!sub) {
+                    sub = await reg.pushManager.subscribe({
+                        userVisibleOnly: true,
+                        applicationServerKey: urlBase64ToUint8Array(window._pushVapidPublicKey)
+                    });
+                }
+
+                const subJson = sub.toJSON();
+                const saveRes = await fetch('<?= url("mobile/api/push/subscribe") ?>', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': getMobileCsrfToken()
+                    },
+                    body: JSON.stringify(subJson)
+                });
+                const saveData = await saveRes.json();
+                if (!saveRes.ok || !saveData || !saveData.success) {
+                    throw new Error((saveData && saveData.message) ? saveData.message : 'Gagal menyimpan langganan push di server.');
+                }
+
+                setPushUiState(true, 'Aktif di perangkat ini (suara bawaan perangkat).', false);
+                if (window.AndroidUI && AndroidUI.toast) {
+                    AndroidUI.toast('Push Notification real-time aktif!', 'success');
+                }
+            } else {
+                setPushUiState(false, 'Menonaktifkan Push Notification...', false);
+                let endpoint = '';
+                try {
+                    const reg = await ensureMobileSwRegistration();
+                    const sub = await reg.pushManager.getSubscription();
+                    if (sub) {
+                        endpoint = sub.endpoint || '';
+                        await sub.unsubscribe();
+                    }
+                } catch (e) {}
+
+                await fetch('<?= url("mobile/api/push/unsubscribe") ?>', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': getMobileCsrfToken()
+                    },
+                    body: JSON.stringify({ endpoint: endpoint })
+                });
+
+                setPushUiState(false, 'Nonaktif — nyalakan tombol untuk menerima pengingat real-time.', false);
+                if (window.AndroidUI && AndroidUI.toast) {
+                    AndroidUI.toast('Push Notification dinonaktifkan.', 'info');
+                }
+            }
+        } catch (err) {
+            setPushUiState(!wantEnable, err.message || 'Gagal mengubah pengaturan notifikasi.', true);
+            if (window.AndroidUI && AndroidUI.toast) {
+                AndroidUI.toast(err.message || 'Gagal mengubah Push Notification', 'error');
+            }
+        } finally {
+            toggleEl.disabled = false;
+        }
+    }
+
+    async function sendTestPushNotif(btnEl) {
+        const orig = btnEl ? btnEl.innerHTML : '';
+        if (btnEl) {
+            btnEl.disabled = true;
+            btnEl.innerHTML = '⏳ Mengirim...';
+        }
+        try {
+            const res = await fetch('<?= url("mobile/api/push/test") ?>', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': getMobileCsrfToken()
+                },
+                body: JSON.stringify({})
+            });
+            const data = await res.json();
+            if (window.AndroidUI && AndroidUI.toast) {
+                AndroidUI.toast(data.message || (data.success ? 'Tes notifikasi terkirim!' : 'Gagal mengirim tes notifikasi.'), data.success ? 'success' : 'error');
+            } else {
+                alert(data.message || (data.success ? 'Tes notifikasi terkirim!' : 'Gagal mengirim tes notifikasi.'));
+            }
+        } catch (err) {
+            if (window.AndroidUI && AndroidUI.toast) {
+                AndroidUI.toast('Gagal mengirim tes push: ' + err.message, 'error');
+            }
+        } finally {
+            if (btnEl) {
+                btnEl.disabled = false;
+                btnEl.innerHTML = orig;
+            }
+        }
+    }
 </script>

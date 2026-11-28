@@ -3,7 +3,7 @@
  * Enables PWA offline capabilities, pre-caching, WebAPK installation compliance, and background sync.
  */
 
-const CACHE_NAME = 'portal-bip-pwa-v11';
+const CACHE_NAME = 'portal-bip-pwa-v12';
 const STATIC_ASSETS = [
   './mobile/manifest.json',
   './manifest.json',
@@ -53,7 +53,7 @@ self.addEventListener('activate', (event) => {
 // Fetch Event - Stale-While-Revalidate for UI / Network-First for dynamic views
 self.addEventListener('fetch', (event) => {
   const request = event.request;
-  
+
   // Skip non-GET requests and cross-origin schemes (e.g. chrome-extension:)
   if (request.method !== 'GET' || !request.url.startsWith('http')) {
     return;
@@ -64,10 +64,10 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  const isStatic = request.destination === 'image' || 
-                   request.destination === 'style' || 
-                   request.destination === 'script' || 
-                   request.destination === 'font';
+  const isStatic = request.destination === 'image' ||
+    request.destination === 'style' ||
+    request.destination === 'script' ||
+    request.destination === 'font';
 
   if (isStatic) {
     // Cache First with Network Fallback & update
@@ -79,7 +79,7 @@ self.addEventListener('fetch', (event) => {
             if (networkResponse && networkResponse.status === 200) {
               caches.open(CACHE_NAME).then((cache) => cache.put(request, networkResponse));
             }
-          }).catch(() => {});
+          }).catch(() => { });
           return cachedResponse;
         }
 
@@ -116,5 +116,76 @@ self.addEventListener('message', (event) => {
       }
     });
   }
+});
+
+// Push Event - Real-time notification dengan suara default perangkat (silent: false)
+self.addEventListener('push', (event) => {
+  let payload = {
+    title: 'Portal BIP',
+    body: 'Anda memiliki pemberitahuan baru.',
+    url: '/mobile/jurnal',
+    tag: 'portal-bip-push',
+    icon: './public/images/pwa/icon-192.png',
+    badge: './public/images/pwa/icon-192.png'
+  };
+
+  if (event.data) {
+    try {
+      const parsed = event.data.json();
+      if (parsed && typeof parsed === 'object') {
+        payload = Object.assign(payload, parsed);
+      }
+    } catch (e) {
+      const txt = event.data.text();
+      if (txt) payload.body = txt;
+    }
+  }
+
+  const options = {
+    body: payload.body,
+    icon: payload.icon || './public/images/pwa/icon-192.png',
+    badge: payload.badge || './public/images/pwa/icon-192.png',
+    tag: payload.tag || 'portal-bip-push',
+    renotify: true,
+    silent: false,
+    vibrate: [200, 100, 200],
+    requireInteraction: false,
+    data: {
+      url: payload.url || '/mobile/jurnal'
+    }
+  };
+
+  event.waitUntil(
+    self.registration.showNotification(payload.title || 'Portal BIP', options)
+  );
+});
+
+// Notification Click Event - Fokuskan atau buka halaman tujuan (misal /mobile/jurnal)
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const rawUrl = (event.notification && event.notification.data && event.notification.data.url)
+    ? event.notification.data.url
+    : '/mobile/jurnal';
+
+  const targetUrl = new URL(rawUrl, self.location.origin).href;
+
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if (client.url && client.url.startsWith(self.location.origin) && 'focus' in client) {
+          return client.focus().then((focused) => {
+            if (focused && 'navigate' in focused && focused.url !== targetUrl) {
+              return focused.navigate(targetUrl).catch(() => focused);
+            }
+            return focused;
+          });
+        }
+      }
+      if (self.clients.openWindow) {
+        return self.clients.openWindow(targetUrl);
+      }
+      return null;
+    })
+  );
 });
 

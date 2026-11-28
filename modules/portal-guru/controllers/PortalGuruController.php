@@ -3842,4 +3842,139 @@ class PortalGuruController
             exit;
         }
     }
+
+    /**
+     * API Push Notification: Ambil konfigurasi VAPID public key, jadwal pengingat jurnal, & status aktif
+     */
+    public static function apiPushConfig(): void
+    {
+        self::releaseSessionLock();
+        header('Content-Type: application/json; charset=utf-8');
+        header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+
+        try {
+            require_once BASE_PATH . '/core/WebPushService.php';
+            require_once MODULES_PATH . '/kelola-jurnal-staff/services/JurnalStaffReminderService.php';
+
+            $teacher = self::getLoggedInTeacher();
+            $userId = (int)($teacher['user_id'] ?? Auth::id() ?? 0);
+            $pegawaiId = !empty($teacher['pegawai_id']) ? (int)$teacher['pegawai_id'] : null;
+
+            $publicKey = WebPushService::getPublicKey();
+            $subscribed = WebPushService::hasActiveSubscription($userId, $pegawaiId);
+            $remCfg = JurnalStaffReminderService::getSettings();
+
+            echo json_encode([
+                'success'    => true,
+                'public_key' => $publicKey,
+                'subscribed' => $subscribed,
+                'schedules'  => $remCfg['schedules_array'] ?? ['09:00', '13:00', '17:00'],
+                'wa_enabled' => ($remCfg['jurnal_staff_wa_enabled'] ?? '1') === '1',
+            ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        } catch (Throwable $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Gagal memuat konfigurasi push: ' . $e->getMessage()]);
+            exit;
+        }
+    }
+
+    /**
+     * API Push Notification: Simpan langganan push browser/PWA perangkat user
+     */
+    public static function apiPushSubscribe(): void
+    {
+        header('Content-Type: application/json; charset=utf-8');
+        try {
+            require_once BASE_PATH . '/core/WebPushService.php';
+
+            $input = json_decode((string)file_get_contents('php://input'), true);
+            if (!is_array($input)) {
+                $input = $_POST;
+            }
+
+            $endpoint = trim((string)($input['endpoint'] ?? ''));
+            $p256dh = trim((string)($input['keys']['p256dh'] ?? $input['p256dh'] ?? ''));
+            $authToken = trim((string)($input['keys']['auth'] ?? $input['auth'] ?? ''));
+
+            $teacher = self::getLoggedInTeacher();
+            $userId = (int)($teacher['user_id'] ?? Auth::id() ?? 0);
+            $pegawaiId = !empty($teacher['pegawai_id']) ? (int)$teacher['pegawai_id'] : null;
+            $ua = (string)($_SERVER['HTTP_USER_AGENT'] ?? '');
+
+            $res = WebPushService::subscribe($userId ?: null, $pegawaiId, $endpoint, $p256dh, $authToken, $ua);
+            echo json_encode($res, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        } catch (Throwable $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Gagal mengaktifkan push: ' . $e->getMessage()]);
+            exit;
+        }
+    }
+
+    /**
+     * API Push Notification: Nonaktifkan langganan push perangkat
+     */
+    public static function apiPushUnsubscribe(): void
+    {
+        header('Content-Type: application/json; charset=utf-8');
+        try {
+            require_once BASE_PATH . '/core/WebPushService.php';
+
+            $input = json_decode((string)file_get_contents('php://input'), true);
+            if (!is_array($input)) {
+                $input = $_POST;
+            }
+
+            $endpoint = trim((string)($input['endpoint'] ?? ''));
+            $userId = (int)(Auth::id() ?? 0);
+            WebPushService::unsubscribe($endpoint, $userId ?: null);
+
+            echo json_encode([
+                'success' => true,
+                'message' => 'Push Notification berhasil dinonaktifkan pada perangkat ini.',
+            ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        } catch (Throwable $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Gagal menonaktifkan push: ' . $e->getMessage()]);
+            exit;
+        }
+    }
+
+    /**
+     * API Push Notification: Kirim notifikasi tes realtime ke perangkat user yang sedang login
+     */
+    public static function apiPushTest(): void
+    {
+        header('Content-Type: application/json; charset=utf-8');
+        try {
+            require_once BASE_PATH . '/core/WebPushService.php';
+
+            $teacher = self::getLoggedInTeacher();
+            $userId = (int)($teacher['user_id'] ?? Auth::id() ?? 0);
+            $pegawaiId = !empty($teacher['pegawai_id']) ? (int)$teacher['pegawai_id'] : null;
+            $nama = trim((string)($teacher['name'] ?? 'Rekan'));
+
+            $res = WebPushService::sendToUser($userId, $pegawaiId, [
+                'title' => '🔔 Tes Push Notification Portal BIP',
+                'body'  => "Halo {$nama}! Push Notification real-time aktif dengan suara bawaan perangkat Anda. Pengingat jurnal akan muncul otomatis sesuai jadwal.",
+                'url'   => url('mobile/jurnal'),
+                'tag'   => 'portal-bip-test-' . time(),
+                'icon'  => url('public/images/pwa/icon-192.png'),
+                'badge' => url('public/images/pwa/icon-192.png'),
+            ], [
+                'topic'      => 'test_push',
+                'tanggal'    => date('Y-m-d'),
+                'slot_waktu' => date('H:i'),
+            ]);
+
+            echo json_encode($res, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        } catch (Throwable $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Gagal mengirim tes push: ' . $e->getMessage()]);
+            exit;
+        }
+    }
 }

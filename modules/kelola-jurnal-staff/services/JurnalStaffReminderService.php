@@ -14,6 +14,9 @@
  */
 
 require_once MODULES_PATH . '/kelola-jurnal-staff/models/JurnalStaffModel.php';
+if (defined('BASE_PATH') && is_file(BASE_PATH . '/core/WebPushService.php')) {
+    require_once BASE_PATH . '/core/WebPushService.php';
+}
 
 class JurnalStaffReminderService
 {
@@ -1342,18 +1345,14 @@ class JurnalStaffReminderService
             }
         }
 
-        // Cek koneksi WA Gateway terlebih dahulu sebelum loop pengiriman
+        // Cek koneksi WA Gateway (jika offline, Web Push tetap dikirim ke perangkat staff yang aktif)
+        $waOnline = true;
+        $waOfflineMsg = '';
         if (!$dryRun) {
             $conn = WaGateway::checkConnection();
             if (empty($conn['connected'])) {
-                return [
-                    'success' => false,
-                    'skipped' => false,
-                    'message' => 'WA Gateway belum terhubung: ' . ($conn['message'] ?? 'Server WA offline.'),
-                    'date'    => $date,
-                    'slot'    => $resolvedSlot,
-                    'sent'    => 0,
-                ];
+                $waOnline = false;
+                $waOfflineMsg = (string)($conn['message'] ?? 'Server WA offline.');
             }
         }
 
@@ -1362,12 +1361,37 @@ class JurnalStaffReminderService
 
         $sentCount = 0;
         $failedCount = 0;
+        $pushSentCount = 0;
         $skippedAlreadySent = 0;
         $skippedNoWa = 0;
         $details = [];
 
         foreach ($eval['items'] as $item) {
             if (!$item['needs_reminder']) {
+                continue;
+            }
+
+            // 1. Kirim Real-Time Web Push Notification (mengikuti jadwal WA, suara default perangkat)
+            if (!$dryRun && class_exists('WebPushService')) {
+                try {
+                    $pidItem = (int)$item['pegawai_id'];
+                    if ($force || !WebPushService::wasAlreadySent('jurnal_staff_reminder', $pidItem, $date, $resolvedSlot)) {
+                        $pushPayload = self::buildPushPayloadForItem($item, $date, $resolvedSlot, $settings);
+                        $pushRes = WebPushService::sendToPegawai($pidItem, $pushPayload, [
+                            'topic'      => 'jurnal_staff_reminder',
+                            'tanggal'    => $date,
+                            'slot_waktu' => $resolvedSlot,
+                        ]);
+                        if (!empty($pushRes['success'])) {
+                            $pushSentCount++;
+                        }
+                    }
+                } catch (\Throwable $pushEx) {
+                    error_log('WebPush dispatch error (pegawai ' . $item['pegawai_id'] . '): ' . $pushEx->getMessage());
+                }
+            }
+
+            if (!$waOnline) {
                 continue;
             }
 
@@ -1455,8 +1479,23 @@ class JurnalStaffReminderService
             usleep(800000);
         }
 
+        if (!$waOnline && !$dryRun) {
+            return [
+                'success'        => ($pushSentCount > 0),
+                'skipped'        => false,
+                'date'           => $date,
+                'slot'           => $resolvedSlot,
+                'sent'           => 0,
+                'push_sent'      => $pushSentCount,
+                'failed'         => 0,
+                'message'        => $pushSentCount > 0
+                    ? "WA Gateway offline ({$waOfflineMsg}), namun Push Notification terkirim ke {$pushSentCount} staff pada slot {$resolvedSlot}."
+                    : ('WA Gateway belum terhubung: ' . $waOfflineMsg),
+            ];
+        }
+
         return [
-            'success'              => ($failedCount === 0 || $sentCount > 0),
+            'success'              => ($failedCount === 0 || $sentCount > 0 || $pushSentCount > 0),
             'skipped'              => false,
             'dry_run'              => $dryRun,
             'date'                 => $date,
@@ -1465,6 +1504,7 @@ class JurnalStaffReminderService
             'total_staff'          => $eval['summary']['total_staff'],
             'needs_reminder'       => $eval['summary']['needs_reminder'],
             'sent'                 => $sentCount,
+            'push_sent'            => $pushSentCount,
             'failed'               => $failedCount,
             'skipped_lengkap'      => $eval['summary']['lengkap'],
             'skipped_cuti_izin'    => $eval['summary']['cuti_izin'],
@@ -1473,8 +1513,38 @@ class JurnalStaffReminderService
             'skipped_no_wa'        => $skippedNoWa,
             'message'              => $dryRun
                 ? "Dry-run selesai: {$sentCount} pesan siap dikirim pada slot {$resolvedSlot}."
-                : "Pengingat slot {$resolvedSlot} selesai: {$sentCount} terkirim, {$failedCount} gagal, {$skippedAlreadySent} sudah pernah dikirim, {$skippedNoWa} tanpa no WA.",
+                : "Pengingat slot {$resolvedSlot} selesai: {$sentCount} WA terkirim, {$pushSentCount} Push terkirim, {$failedCount} gagal, {$skippedAlreadySent} sudah pernah dikirim, {$skippedNoWa} tanpa no WA.",
             'details'              => $details,
+        ];
+    }
+
+    /**
+     * Format payload Push Notification untuk 1 item evaluasi jurnal staff
+     */
+    private static function buildPushPayloadForItem(array $item, string $date, string $slotTime, array $settings): array
+    {
+        $nama = trim((string)($item['nama'] ?? 'Rekan Staff'));
+        $missing = is_array($item['missing_jams'] ?? null) ? $item['missing_jams'] : [];
+        $missingCount = count($missing);
+        $baseUrl = rtrim((string)($settings['effective_base_url'] ?? ''), '/');
+        $jurnalUrl = $baseUrl !== '' ? ($baseUrl . '/mobile/jurnal') : '/mobile/jurnal';
+        $iconUrl = $baseUrl !== '' ? ($baseUrl . '/public/images/pwa/icon-192.png') : '/public/images/pwa/icon-192.png';
+
+        if (($item['category'] ?? '') === 'belum_isi') {
+            $body = "Halo {$nama}, Anda belum mengisi jurnal kerja hari ini ({$missingCount} sesi). Tap untuk mengisi sekarang.";
+        } else {
+            $sampleSlots = array_slice(array_map(static fn($m) => (string)($m['rentang'] ?? ''), $missing), 0, 2);
+            $slotHint = !empty($sampleSlots) ? (' (' . implode(', ', $sampleSlots) . ($missingCount > 2 ? ', dll' : '') . ')') : '';
+            $body = "Halo {$nama}, masih ada {$missingCount} sesi jurnal belum diisi{$slotHint}. Tap untuk melengkapi.";
+        }
+
+        return [
+            'title' => "📋 Pengingat Jurnal Kerja ({$slotTime} WITA)",
+            'body'  => $body,
+            'url'   => $jurnalUrl,
+            'tag'   => "jurnal-staff-{$date}-{$slotTime}",
+            'icon'  => $iconUrl,
+            'badge' => $iconUrl,
         ];
     }
 
@@ -1535,6 +1605,20 @@ class JurnalStaffReminderService
             'include_footer' => false,
             'user_id'        => class_exists('Auth') ? Auth::id() : null,
         ]);
+
+        // Kirim juga Push Notification real-time ke perangkat staff jika diaktifkan di Profil
+        if (class_exists('WebPushService')) {
+            try {
+                $pushPayload = self::buildPushPayloadForItem($target, $date, $effectiveSlot, $settings);
+                WebPushService::sendToPegawai((int)$target['pegawai_id'], $pushPayload, [
+                    'topic'      => 'jurnal_staff_reminder_single',
+                    'tanggal'    => $date,
+                    'slot_waktu' => $effectiveSlot,
+                ]);
+            } catch (\Throwable $pushEx) {
+                error_log('WebPush single error: ' . $pushEx->getMessage());
+            }
+        }
 
         $isOk = !empty($res['success']);
         $missingLabels = array_map(static fn($mj) => $mj['label'], $target['missing_jams']);
@@ -1763,16 +1847,28 @@ class JurnalStaffReminderService
                 return null;
             }
 
-            // Evaluasi apakah ada staff pada dueSlot yang belum pernah dicoba kirim sama sekali di slot ini
+            // Evaluasi apakah ada staff pada dueSlot yang belum pernah dicoba kirim WA atau belum menerima Web Push di slot ini
             $eval = self::evaluateAllStaffForDate($today, $dueSlot, $settings);
             $hasUnattemptedDue = false;
             foreach ($eval['items'] as $it) {
-                if (!$it['needs_reminder'] || !$it['has_valid_wa'] || $it['already_sent_for_slot']) {
+                if (!$it['needs_reminder']) {
                     continue;
                 }
-                if (!$onlyUnattempted || empty($it['was_attempted_for_slot'])) {
-                    $hasUnattemptedDue = true;
-                    break;
+                if ($it['has_valid_wa'] && !$it['already_sent_for_slot']) {
+                    if (!$onlyUnattempted || empty($it['was_attempted_for_slot'])) {
+                        $hasUnattemptedDue = true;
+                        break;
+                    }
+                }
+                if (class_exists('WebPushService')) {
+                    $pidCheck = (int)$it['pegawai_id'];
+                    if (
+                        WebPushService::hasActiveSubscription(null, $pidCheck) &&
+                        !WebPushService::wasAlreadySent('jurnal_staff_reminder', $pidCheck, $today, $dueSlot)
+                    ) {
+                        $hasUnattemptedDue = true;
+                        break;
+                    }
                 }
             }
 

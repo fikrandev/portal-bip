@@ -230,6 +230,7 @@ spl_autoload_register(static function (string $class): void {
         'MobileSarprasController'   => '/modules/mobile-sarpras/controllers/MobileSarprasController.php',
         'MobileSarprasAuthController' => '/modules/mobile-sarpras/controllers/MobileSarprasAuthController.php',
         'PersuratanController'      => '/modules/persuratan/controllers/PersuratanController.php',
+        'WebPushService'            => '/core/WebPushService.php',
     ];
     if (isset($controllerMap[$class])) {
         require_once BASE_PATH . $controllerMap[$class];
@@ -1086,6 +1087,10 @@ $router->get('/mobile/absensi-kelas', [PortalGuruController::class, 'absensiKela
 $router->post('/mobile/absensi-kelas/simpan', [PortalGuruController::class, 'simpanAbsensiKelas'], [[PortalGuruAuthController::class, 'authRequired']]);
 $router->get('/mobile/murid', [PortalGuruController::class, 'murid'], [[PortalGuruAuthController::class, 'authRequired']]);
 $router->get('/mobile/profil', [PortalGuruController::class, 'profil'], [[PortalGuruAuthController::class, 'authRequired']]);
+$router->get('/mobile/api/push/config', [PortalGuruController::class, 'apiPushConfig'], [[PortalGuruAuthController::class, 'authRequired']]);
+$router->post('/mobile/api/push/subscribe', [PortalGuruController::class, 'apiPushSubscribe'], [[PortalGuruAuthController::class, 'authRequired']]);
+$router->post('/mobile/api/push/unsubscribe', [PortalGuruController::class, 'apiPushUnsubscribe'], [[PortalGuruAuthController::class, 'authRequired']]);
+$router->post('/mobile/api/push/test', [PortalGuruController::class, 'apiPushTest'], [[PortalGuruAuthController::class, 'authRequired']]);
 $router->get('/mobile/notifikasi', [PortalGuruController::class, 'notifikasi'], [[PortalGuruAuthController::class, 'authRequired']]);
 $router->get('/mobile/materi', [PortalGuruController::class, 'materi'], [[PortalGuruAuthController::class, 'authRequired']]);
 $router->get('/mobile/buat-tugas', [PortalGuruController::class, 'buatTugas'], [[PortalGuruAuthController::class, 'authRequired']]);
