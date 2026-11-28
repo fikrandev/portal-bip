@@ -616,6 +616,7 @@ async function openIsiObservasiModal(pendaftarId) {
         const p = json.pendaftar;
         const jMap = json.jawaban_map || {};
         const catatanAspekMap = json.catatan_aspek_map || {};
+        const observerAspekMap = json.observer_aspek_map || {};
         currentObsSoalList = json.soal_list || [];
 
         document.getElementById('obsModalNama').textContent = p.nama_lengkap;
@@ -641,6 +642,10 @@ async function openIsiObservasiModal(pendaftarId) {
             const aspMax = soals.reduce((acc, x) => acc + parseFloat(x.nilai_maksimal || 0), 0);
             const prevCatatanAspek = catatanAspekMap[aspekNama] || '';
             const safeAspAttr = String(aspekNama).replace(/"/g, '&quot;');
+            const aspObservers = Array.isArray(observerAspekMap[aspekNama]) ? observerAspekMap[aspekNama] : [];
+            const aspObsBadge = aspObservers.length
+                ? `<span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 text-[10px] font-bold">Observer: ${aspObservers.map(x => String(x).replace(/</g, '&lt;')).join(', ')}</span>`
+                : '';
             const itemsHtml = soals.map((s, qIdx) => {
                 const prev = jMap[s.id] || null;
                 const opsiHtml = (s.opsi || []).map((op, oIdx) => {
@@ -674,9 +679,10 @@ async function openIsiObservasiModal(pendaftarId) {
 
             return `<div class="rounded-2xl border border-indigo-200 bg-indigo-50/40 overflow-hidden">
                 <div class="px-4 py-2.5 bg-indigo-100/70 border-b border-indigo-200 flex items-center justify-between gap-2">
-                    <div class="flex items-center gap-2">
+                    <div class="flex flex-wrap items-center gap-2">
                         <span class="w-6 h-6 rounded-lg bg-indigo-600 text-white text-xs font-extrabold flex items-center justify-center">${String.fromCharCode(64 + gIdx)}</span>
                         <span class="text-xs sm:text-sm font-extrabold text-indigo-950">Aspek ${aspekNama} (${soals.length} Pertanyaan)</span>
+                        ${aspObsBadge}
                     </div>
                     <span id="obs_aspek_total_${aspSlug}" data-aspek-max="${aspMax}" class="px-2.5 py-0.5 rounded-full bg-white text-indigo-800 border border-indigo-200 text-xs font-extrabold">
                         Total: 0 / ${aspMax}

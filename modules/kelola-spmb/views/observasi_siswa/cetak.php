@@ -41,7 +41,7 @@ if (defined('SYS_APP_LOGO') && !empty(SYS_APP_LOGO)) {
         .kesimpulan-box { background: #eff6ff; border: 1px solid #93c5fd; border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; }
         .kesimpulan-title { font-weight: 800; color: #1e3a8a; font-size: 11.5px; margin-bottom: 4px; text-transform: uppercase; }
         .ttd-row { display: flex; justify-content: space-between; margin-top: 24px; }
-        .ttd-box { width: 200px; text-align: center; }
+        .ttd-box { width: 250px; text-align: center; }
         .ttd-space { height: 52px; }
         @media print {
             body { background: #fff; padding: 0; }
@@ -116,12 +116,43 @@ if (defined('SYS_APP_LOGO') && !empty(SYS_APP_LOGO)) {
                                             <span style="color:#94a3b8;font-style:italic;">Penilaian belum selesai (<?= $terjawabIt ?>/<?= $totalSoalIt ?> soal).</span>
                                         <?php endif; ?>
                                     </td>
-                                    <td><?= htmlspecialchars($it['petugas_nama'] ?: '-') ?></td>
+                                    <td>
+                                        <?php
+                                        $obsNamesIt = SpmbModel::splitLegacyObserverNames((string)($it['petugas_nama'] ?? ''));
+                                        if (count($obsNamesIt) > 1):
+                                        ?>
+                                            <strong>Tim Observer</strong>
+                                            <div style="font-size:9px;color:#475569;margin-top:2px;">(<?= htmlspecialchars(implode(', ', $obsNamesIt)) ?>)</div>
+                                        <?php else: ?>
+                                            <?= htmlspecialchars($obsNamesIt[0] ?? '-') ?>
+                                        <?php endif; ?>
+                                    </td>
                                 </tr>
                             <?php endforeach; ?>
                         <?php endif; ?>
                     </tbody>
                 </table>
+
+                <?php $kepsekRekap = SpmbModel::getKepalaSekolahByJenjang($jenjang); ?>
+                <div class="ttd-row">
+                    <div class="ttd-box">
+                        <div>Mengetahui,<br>Kepala Sekolah<br><span style="font-size:10px;"><?= htmlspecialchars($kepsekRekap['nama_sekolah']) ?></span></div>
+                        <div class="ttd-space"></div>
+                        <?php if (!empty($kepsekRekap['nama'])): ?>
+                            <div style="font-weight:700;text-decoration:underline;"><?= htmlspecialchars($kepsekRekap['nama']) ?></div>
+                            <?php if (!empty($kepsekRekap['nip'])): ?>
+                                <div style="font-size:10px;color:#334155;">NIP/NIY. <?= htmlspecialchars($kepsekRekap['nip']) ?></div>
+                            <?php endif; ?>
+                        <?php else: ?>
+                            <div style="font-weight:700;">( ........................................ )</div>
+                        <?php endif; ?>
+                    </div>
+                    <div class="ttd-box">
+                        <div>Palu, <?= date('d/m/Y') ?><br>Tim Observer</div>
+                        <div class="ttd-space"></div>
+                        <div style="font-weight:700;text-decoration:underline;">Tim Observer</div>
+                    </div>
+                </div>
             </div>
         <?php else: ?>
             <?php if (empty($records)): ?>
@@ -132,6 +163,11 @@ if (defined('SYS_APP_LOGO') && !empty(SYS_APP_LOGO)) {
                     $h = $rec['hasil'];
                     $jList = $rec['jawaban_list'] ?? [];
                     $catatanAspekMap = $rec['catatan_aspek_map'] ?? [];
+                    $observerAspekMap = $rec['observer_aspek_map'] ?? [];
+                    $observerList = $rec['observer_list'] ?? SpmbModel::splitLegacyObserverNames((string)($h['petugas_nama'] ?? ''));
+                    $isMultiObserver = count($observerList) > 1;
+                    $singleObserverName = count($observerList) === 1 ? $observerList[0] : '';
+                    $kepsekInfo = $rec['kepala_sekolah'] ?? SpmbModel::getKepalaSekolahByJenjang((string)($p['jenjang'] ?? $jenjang));
                 ?>
                     <div class="sheet">
                         <div class="kop">
@@ -147,7 +183,14 @@ if (defined('SYS_APP_LOGO') && !empty(SYS_APP_LOGO)) {
                             <div><strong>No. Pendaftaran:</strong> <?= htmlspecialchars($p['nomor_pendaftaran']) ?></div>
                             <div><strong>Unit / Jenjang:</strong> <?= htmlspecialchars($p['jenjang']) ?></div>
                             <div><strong>Asal Sekolah:</strong> <?= htmlspecialchars($p['asal_sekolah'] ?: '-') ?></div>
-                            <div><strong>Petugas Observer:</strong> <?= htmlspecialchars($h['petugas_nama'] ?? '-') ?></div>
+                            <div>
+                                <strong>Petugas Observer:</strong>
+                                <?php if ($isMultiObserver): ?>
+                                    Tim Observer (<?= htmlspecialchars(implode(', ', $observerList)) ?>)
+                                <?php else: ?>
+                                    <?= htmlspecialchars($singleObserverName !== '' ? $singleObserverName : '-') ?>
+                                <?php endif; ?>
+                            </div>
                             <div><strong>Tanggal Observasi:</strong> <?= !empty($h['observed_at']) ? date('d/m/Y H:i', strtotime($h['observed_at'])) : '-' ?></div>
                         </div>
 
@@ -173,10 +216,18 @@ if (defined('SYS_APP_LOGO') && !empty(SYS_APP_LOGO)) {
                                     $aNum++;
                                     $aVal = array_sum(array_map(fn($x) => (float)$x['nilai'], $aRows));
                                     $aMax = array_sum(array_map(fn($x) => (float)$x['nilai_maksimal'], $aRows));
+                                    $aspObsNames = $observerAspekMap[$aName] ?? [];
                                 ?>
                                     <tr style="background:#eff6ff;font-weight:700;color:#1e3a8a;">
                                         <td class="center"><?= chr(64 + $aNum) ?></td>
-                                        <td colspan="2">ASPEK: <?= htmlspecialchars(strtoupper($aName)) ?> (<?= count($aRows) ?> Pertanyaan)</td>
+                                        <td colspan="2">
+                                            <div>ASPEK: <?= htmlspecialchars(strtoupper($aName)) ?> (<?= count($aRows) ?> Pertanyaan)</div>
+                                            <?php if (!empty($aspObsNames)): ?>
+                                                <div style="font-size:9.5px;font-weight:600;color:#334155;margin-top:2px;">
+                                                    Observer: <?= htmlspecialchars(implode(', ', $aspObsNames)) ?>
+                                                </div>
+                                            <?php endif; ?>
+                                        </td>
                                         <td class="center"><?= rtrim(rtrim(number_format($aVal, 2, '.', ''), '0'), '.') ?>/<?= rtrim(rtrim(number_format($aMax, 2, '.', ''), '0'), '.') ?></td>
                                         <td class="center"><?= $aMax > 0 ? number_format(($aVal / $aMax) * 100, 0) . '%' : '-' ?></td>
                                     </tr>
@@ -240,14 +291,27 @@ if (defined('SYS_APP_LOGO') && !empty(SYS_APP_LOGO)) {
 
                         <div class="ttd-row">
                             <div class="ttd-box">
-                                <div>Mengetahui,<br>Panitia SPMB Unit <?= htmlspecialchars($p['jenjang']) ?></div>
+                                <div>Mengetahui,<br>Kepala Sekolah<br><span style="font-size:10px;"><?= htmlspecialchars($kepsekInfo['nama_sekolah']) ?></span></div>
                                 <div class="ttd-space"></div>
-                                <div style="font-weight:700;">( ........................................ )</div>
+                                <?php if (!empty($kepsekInfo['nama'])): ?>
+                                    <div style="font-weight:700;text-decoration:underline;"><?= htmlspecialchars($kepsekInfo['nama']) ?></div>
+                                    <?php if (!empty($kepsekInfo['nip'])): ?>
+                                        <div style="font-size:10px;color:#334155;">NIP/NIY. <?= htmlspecialchars($kepsekInfo['nip']) ?></div>
+                                    <?php endif; ?>
+                                <?php else: ?>
+                                    <div style="font-weight:700;">( ........................................ )</div>
+                                <?php endif; ?>
                             </div>
                             <div class="ttd-box">
-                                <div>Palu, <?= !empty($h['observed_at']) ? date('d/m/Y', strtotime($h['observed_at'])) : date('d/m/Y') ?><br>Petugas Observer</div>
+                                <div>Palu, <?= !empty($h['observed_at']) ? date('d/m/Y', strtotime($h['observed_at'])) : date('d/m/Y') ?><br><?= $isMultiObserver ? 'Tim Observer' : 'Petugas Observer' ?></div>
                                 <div class="ttd-space"></div>
-                                <div style="font-weight:700;text-decoration:underline;"><?= htmlspecialchars($h['petugas_nama'] ?? '........................................') ?></div>
+                                <?php if ($isMultiObserver): ?>
+                                    <div style="font-weight:700;text-decoration:underline;">Tim Observer</div>
+                                <?php elseif ($singleObserverName !== ''): ?>
+                                    <div style="font-weight:700;text-decoration:underline;"><?= htmlspecialchars($singleObserverName) ?></div>
+                                <?php else: ?>
+                                    <div style="font-weight:700;">( ........................................ )</div>
+                                <?php endif; ?>
                             </div>
                         </div>
                     </div>
