@@ -19,6 +19,12 @@ class JurnalStaffAdminController
      */
     public static function index(): void
     {
+        if (!headers_sent()) {
+            header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+            header('Pragma: no-cache');
+            header('Expires: 0');
+        }
+
         JurnalStaffModel::ensureTablesExist();
         JurnalStaffReminderService::ensureTablesExist();
         JurnalStaffReminderService::syncWaServerConfig();
@@ -666,6 +672,11 @@ class JurnalStaffAdminController
     {
         $isAjax = !empty($_POST['ajax']) || (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest');
 
+        if ($isAjax && !headers_sent()) {
+            header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+            header('Pragma: no-cache');
+        }
+
         if (!CSRF::check()) {
             if ($isAjax) {
                 header('Content-Type: application/json; charset=utf-8');
@@ -677,13 +688,50 @@ class JurnalStaffAdminController
             return;
         }
 
-        $rawEnabled = $_POST['enabled_ids'] ?? [];
-        if (!is_array($rawEnabled)) {
-            $rawEnabled = [$rawEnabled];
-        }
+        $mode = trim((string)($_POST['mode'] ?? ''));
 
         try {
-            $res = JurnalStaffReminderService::saveRecipientPreferences($rawEnabled);
+            if ($mode === 'toggle') {
+                $pegawaiId = (int)($_POST['pegawai_id'] ?? 0);
+                $enabledRaw = trim((string)($_POST['enabled'] ?? ''));
+                $enabled = ($enabledRaw === '1' || strtolower($enabledRaw) === 'true');
+                $res = JurnalStaffReminderService::setSingleRecipientPreference($pegawaiId, $enabled);
+
+                if (!empty($res['success'])) {
+                    $reminderSettings = JurnalStaffReminderService::getSettings();
+                    $evalSlot = trim((string)($_POST['preview_slot'] ?? ''));
+                    if ($evalSlot === '') {
+                        $dueSlotNow = JurnalStaffReminderService::getCurrentDueSlot($reminderSettings);
+                        $schedules = $reminderSettings['schedules_array'];
+                        $evalSlot = $dueSlotNow ?? ($schedules[0] ?? '09:00');
+                    }
+                    $eval = JurnalStaffReminderService::evaluateAllStaffForDate(date('Y-m-d'), $evalSlot, $reminderSettings);
+                    $matchedItem = null;
+                    foreach ($eval['items'] as $it) {
+                        if ((int)($it['pegawai_id'] ?? 0) === $pegawaiId) {
+                            $effectiveRowSlot = ($evalSlot === 'all')
+                                ? ($eval['summary']['current_due_slot'] ?? ($reminderSettings['schedules_array'][0] ?? '09:00'))
+                                : $evalSlot;
+                            $it['effective_slot'] = $effectiveRowSlot;
+                            $matchedItem = $it;
+                            break;
+                        }
+                    }
+                    $res['item'] = $matchedItem;
+                    $res['summary'] = $eval['summary'] ?? [];
+                }
+            } else {
+                if (isset($_POST['enabled_ids_csv'])) {
+                    $rawEnabled = JurnalStaffReminderService::parseIdListString((string)$_POST['enabled_ids_csv']);
+                } else {
+                    $rawEnabled = $_POST['enabled_ids'] ?? [];
+                    if (!is_array($rawEnabled)) {
+                        $rawEnabled = [$rawEnabled];
+                    }
+                }
+                $res = JurnalStaffReminderService::saveRecipientPreferences($rawEnabled);
+            }
+
             if ($isAjax) {
                 header('Content-Type: application/json; charset=utf-8');
                 echo json_encode($res, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
@@ -692,7 +740,7 @@ class JurnalStaffAdminController
             Response::redirect(
                 url('kelola-jurnal-staff?tab=pengingat'),
                 $res['message'] ?? 'Daftar penerima notifikasi WA berhasil disimpan.',
-                'success'
+                !empty($res['success']) ? 'success' : 'error'
             );
         } catch (Throwable $e) {
             if ($isAjax) {

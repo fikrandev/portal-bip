@@ -1648,9 +1648,9 @@ if (!function_exists('resolveStaffMediaUrl')) {
             <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
                 <p class="text-[11px] font-bold text-slate-400 uppercase">Penerima WA</p>
                 <h4 class="text-2xl font-black text-slate-800 mt-1">
-                    <?= (int)($remSummary['enabled_wa'] ?? 0) ?><span class="text-sm font-bold text-slate-400"> / <?= (int)($remSummary['total_staff'] ?? 0) ?></span>
+                    <span id="wa-summary-enabled-count"><?= (int)($remSummary['enabled_wa'] ?? 0) ?></span><span class="text-sm font-bold text-slate-400"> / <span id="wa-summary-total-count"><?= (int)($remSummary['total_staff'] ?? 0) ?></span></span>
                 </h4>
-                <p class="text-[10px] text-slate-400 mt-0.5"><?= (int)($remSummary['nonaktif_wa'] ?? 0) ?> staff dinonaktifkan</p>
+                <p class="text-[10px] text-slate-400 mt-0.5"><span id="wa-summary-nonaktif-count"><?= (int)($remSummary['nonaktif_wa'] ?? 0) ?></span> staff dinonaktifkan</p>
             </div>
             <div class="bg-white rounded-2xl p-4 border border-rose-100 shadow-sm">
                 <p class="text-[11px] font-bold text-rose-500 uppercase">Belum Isi Total</p>
@@ -1709,11 +1709,13 @@ if (!function_exists('resolveStaffMediaUrl')) {
                 <div class="flex flex-wrap items-center gap-1.5">
                     <?php foreach ($activeSchedules as $sc): ?>
                         <a href="<?= url('kelola-jurnal-staff?tab=pengingat&preview_slot=' . urlencode($sc)) ?>"
+                           data-no-pjax
                            class="px-3 py-1.5 rounded-xl text-xs font-bold border transition-all <?= $currentPreviewSlot === $sc ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100' ?>">
                             Slot <?= e($sc) ?>
                         </a>
                     <?php endforeach; ?>
                     <a href="<?= url('kelola-jurnal-staff?tab=pengingat&preview_slot=all') ?>"
+                       data-no-pjax
                        class="px-3 py-1.5 rounded-xl text-xs font-bold border transition-all <?= $currentPreviewSlot === 'all' ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100' ?>">
                         Semua Sesi
                     </a>
@@ -1738,6 +1740,7 @@ if (!function_exists('resolveStaffMediaUrl')) {
                     <span id="wa-recipient-counter" class="px-2.5 py-1 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-bold">
                         Aktif WA: <?= (int)($remSummary['enabled_wa'] ?? 0) ?> / <?= (int)($remSummary['total_staff'] ?? 0) ?> Staff
                     </span>
+                    <span id="wa-recipient-save-status" class="hidden px-2.5 py-0.5 rounded-lg bg-slate-100 text-slate-700 border border-slate-200 text-[10px] font-bold"></span>
                     <span id="wa-recipient-dirty" class="hidden px-2.5 py-0.5 rounded-lg bg-amber-100 text-amber-800 border border-amber-300 text-[10px] font-bold">
                         Belum disimpan &mdash; klik Simpan Daftar Penerima
                     </span>
@@ -1767,7 +1770,7 @@ if (!function_exists('resolveStaffMediaUrl')) {
                         <tr class="bg-slate-50/80 border-b border-slate-100 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                             <th class="py-3 px-3 w-14 text-center">
                                 <label class="inline-flex items-center justify-center gap-1 cursor-pointer select-none" title="Centang / Batal semua yang tampil">
-                                    <input type="checkbox" id="chk-wa-all"
+                                    <input type="checkbox" id="chk-wa-all" autocomplete="off"
                                            <?= $canManageReminder ? 'onchange="toggleVisibleWaRecipients(this.checked)"' : 'disabled' ?>
                                            class="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
                                     <span>WA</span>
@@ -1827,15 +1830,18 @@ if (!function_exists('resolveStaffMediaUrl')) {
                                     ];
                                 ?>
                                 <tr data-wa-row="1"
+                                    data-pegawai-id="<?= (int)$it['pegawai_id'] ?>"
+                                    data-slot="<?= e($effectiveRowSlot) ?>"
                                     data-nama="<?= e(strtolower($it['nama'])) ?>"
                                     data-jabatan="<?= e($it['jabatan']) ?>"
                                     class="hover:bg-slate-50/70 transition-colors align-top <?= $waEnabledRow ? '' : 'bg-slate-50/80 opacity-75' ?>">
                                     <td class="py-3.5 px-3 text-center">
                                         <input type="checkbox"
+                                               autocomplete="off"
                                                class="chk-wa-recipient w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
                                                value="<?= (int)$it['pegawai_id'] ?>"
                                                <?= $waEnabledRow ? 'checked' : '' ?>
-                                               <?= $canManageReminder ? 'onchange="onWaRecipientCheckChange()"' : 'disabled' ?>>
+                                               <?= $canManageReminder ? 'onchange="toggleSingleWaRecipient(this)"' : 'disabled' ?>>
                                     </td>
                                     <td class="py-3.5 px-4">
                                         <div class="font-bold text-slate-800"><?= e($it['nama']) ?></div>
@@ -1869,12 +1875,12 @@ if (!function_exists('resolveStaffMediaUrl')) {
                                             </div>
                                         <?php endif; ?>
                                     </td>
-                                    <td class="py-3.5 px-4 text-center whitespace-nowrap">
+                                    <td data-wa-status-cell="1" class="py-3.5 px-4 text-center whitespace-nowrap">
                                         <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold border <?= $catBadge ?>">
                                             <?= e($catLabel) ?>
                                         </span>
                                     </td>
-                                    <td class="py-3.5 px-4 whitespace-nowrap">
+                                    <td data-wa-delivery-cell="1" class="py-3.5 px-4 whitespace-nowrap">
                                         <div class="space-y-1">
                                             <?php if (!empty($it['sent_slots_today'])): ?>
                                                 <div class="flex flex-wrap gap-1">
@@ -1908,7 +1914,7 @@ if (!function_exists('resolveStaffMediaUrl')) {
                                             <?php endif; ?>
                                         </div>
                                     </td>
-                                    <td class="py-3.5 px-4 text-right whitespace-nowrap">
+                                    <td data-wa-action-cell="1" class="py-3.5 px-4 text-right whitespace-nowrap">
                                         <?php if ($it['needs_reminder']): ?>
                                             <div class="inline-flex items-center gap-1.5">
                                                 <button type="button"
@@ -3183,7 +3189,11 @@ function closeImagePreview() {
 window.JURNAL_STAFF_CSRF_TOKEN = <?= json_encode(CSRF::token()) ?>;
 window.DEFAULT_WA_TPL_EMPTY = <?= json_encode(JurnalStaffReminderService::DEFAULT_TPL_EMPTY) ?>;
 window.DEFAULT_WA_TPL_PARTIAL = <?= json_encode(JurnalStaffReminderService::DEFAULT_TPL_PARTIAL) ?>;
+window.JURNAL_STAFF_PREVIEW_SLOT = <?= json_encode($currentPreviewSlot ?? '17:00') ?>;
+window.JURNAL_STAFF_EFFECTIVE_SLOT = <?= json_encode($effectiveSlotHero ?? '09:00') ?>;
 window._previewWaState = null;
+window._waSaveQueue = Promise.resolve();
+window._waStatusHideTimer = null;
 
 function getJurnalStaffCsrfToken() {
     const meta = document.querySelector('meta[name="csrf-token"]');
@@ -3397,6 +3407,150 @@ function getCheckedWaRecipientKey() {
 
 window.INITIAL_WA_RECIPIENT_KEY = getCheckedWaRecipientKey();
 
+function showWaSaveStatus(text, tone) {
+    const el = document.getElementById('wa-recipient-save-status');
+    if (!el) return;
+    if (window._waStatusHideTimer) {
+        clearTimeout(window._waStatusHideTimer);
+        window._waStatusHideTimer = null;
+    }
+    el.classList.remove('hidden');
+    el.className = 'px-2.5 py-0.5 rounded-lg text-[10px] font-bold border';
+    if (tone === 'saving') {
+        el.classList.add('bg-sky-50', 'text-sky-700', 'border-sky-200');
+    } else if (tone === 'success') {
+        el.classList.add('bg-emerald-100', 'text-emerald-800', 'border-emerald-300');
+        window._waStatusHideTimer = setTimeout(() => {
+            el.classList.add('hidden');
+        }, 3000);
+    } else if (tone === 'error') {
+        el.classList.add('bg-rose-100', 'text-rose-800', 'border-rose-300');
+    } else {
+        el.classList.add('bg-slate-100', 'text-slate-700', 'border-slate-200');
+    }
+    el.textContent = text;
+}
+
+function updateWaSummaryAndCounter(enabledCount, totalCount, excludedCount) {
+    const counterEl = document.getElementById('wa-recipient-counter');
+    if (counterEl) {
+        counterEl.textContent = 'Aktif WA: ' + enabledCount + ' / ' + totalCount + ' Staff';
+    }
+    const cardEnabled = document.getElementById('wa-summary-enabled-count');
+    if (cardEnabled) cardEnabled.textContent = String(enabledCount);
+    const cardTotal = document.getElementById('wa-summary-total-count');
+    if (cardTotal) cardTotal.textContent = String(totalCount);
+    const cardNonaktif = document.getElementById('wa-summary-nonaktif-count');
+    if (cardNonaktif && typeof excludedCount === 'number') {
+        cardNonaktif.textContent = String(excludedCount);
+    }
+}
+
+function invalidatePortalPjaxCacheSafe() {
+    if (window.PortalRouter && typeof window.PortalRouter.invalidateCache === 'function') {
+        window.PortalRouter.invalidateCache();
+    }
+}
+
+function updateWaRowLiveFromServer(row, item) {
+    if (!row || !item) return;
+
+    const statusCell = row.querySelector('[data-wa-status-cell="1"]');
+    if (statusCell) {
+        const cat = item.category || 'lengkap';
+        const badgeClasses = {
+            belum_isi: 'bg-rose-50 text-rose-700 border-rose-200',
+            sebagian: 'bg-amber-50 text-amber-800 border-amber-200',
+            cuti_izin: 'bg-sky-50 text-sky-700 border-sky-200',
+            libur: 'bg-sky-50 text-sky-700 border-sky-200',
+            nonaktif_wa: 'bg-slate-100 text-slate-600 border-slate-200',
+            lengkap: 'bg-emerald-50 text-emerald-700 border-emerald-200'
+        };
+        const labelText = cat === 'belum_isi'
+            ? '✕ Belum Isi'
+            : (cat === 'sebagian'
+                ? '⚠ Sebagian'
+                : (cat === 'cuti_izin'
+                    ? '🏖 ' + (item.excused_reason || 'Cuti/Izin')
+                    : (cat === 'libur'
+                        ? '🏖️ Hari Libur'
+                        : (cat === 'nonaktif_wa' ? '🔕 Nonaktif WA' : '✓ Lengkap'))));
+
+        statusCell.innerHTML = '';
+        const badge = document.createElement('span');
+        badge.className = 'inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold border ' + (badgeClasses[cat] || badgeClasses.lengkap);
+        badge.textContent = labelText;
+        statusCell.appendChild(badge);
+    }
+
+    const actionCell = row.querySelector('[data-wa-action-cell="1"]');
+    if (actionCell) {
+        actionCell.innerHTML = '';
+        if (item.needs_reminder) {
+            const wrap = document.createElement('div');
+            wrap.className = 'inline-flex items-center gap-1.5';
+
+            const effectiveSlot = item.effective_slot || row.getAttribute('data-slot') || window.JURNAL_STAFF_EFFECTIVE_SLOT || '09:00';
+            const delivState = item.delivery_state || 'not_needed';
+            const payload = {
+                pegawai_id: item.pegawai_id,
+                nama: item.nama,
+                no_wa: item.no_wa_formatted || '',
+                kategori: item.category,
+                slot: effectiveSlot,
+                pesan: item.preview_message || '',
+                delivery_state: delivState,
+                can_manual_retry: Boolean(item.can_manual_retry)
+            };
+
+            const previewBtn = document.createElement('button');
+            previewBtn.type = 'button';
+            previewBtn.className = 'px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold transition-colors';
+            previewBtn.textContent = '👁️ Preview';
+            previewBtn.addEventListener('click', () => openWaPreviewModal(payload));
+            wrap.appendChild(previewBtn);
+
+            if (item.has_valid_wa) {
+                const sendBtn = document.createElement('button');
+                sendBtn.type = 'button';
+                sendBtn.id = 'btn-send-single-' + item.pegawai_id;
+                if (item.can_manual_retry) {
+                    sendBtn.className = 'px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-bold shadow-xs transition-colors cursor-pointer';
+                    sendBtn.textContent = '🔄 Kirim WA';
+                    sendBtn.title = 'Pesan belum/tidak terkirim pada jadwal otomatis. Klik untuk kirim.';
+                    sendBtn.addEventListener('click', function() {
+                        sendSingleWaReminder(item.pegawai_id, effectiveSlot, this);
+                    });
+                } else if (delivState === 'sent') {
+                    sendBtn.className = 'px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-emerald-600 text-slate-700 hover:text-white border border-slate-200 text-[11px] font-bold transition-colors cursor-pointer';
+                    sendBtn.textContent = '🔁 Kirim Ulang';
+                    sendBtn.title = 'Sudah terkirim di slot ini. Klik jika ingin kirim ulang manual.';
+                    sendBtn.addEventListener('click', function() {
+                        if (confirm('Staff ini sudah menerima pengingat pada slot ' + effectiveSlot + '. Kirim ulang pesan WA sekarang?')) {
+                            sendSingleWaReminder(item.pegawai_id, effectiveSlot, this);
+                        }
+                    });
+                } else {
+                    sendBtn.className = 'px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold shadow-xs transition-colors cursor-pointer';
+                    sendBtn.textContent = '📤 Kirim WA';
+                    sendBtn.title = 'Kirim pengingat WA manual sekarang tanpa menunggu jadwal otomatis.';
+                    sendBtn.addEventListener('click', function() {
+                        sendSingleWaReminder(item.pegawai_id, effectiveSlot, this);
+                    });
+                }
+                wrap.appendChild(sendBtn);
+            }
+
+            actionCell.appendChild(wrap);
+        } else {
+            const span = document.createElement('span');
+            span.className = 'text-[11px] text-slate-400 font-medium';
+            span.textContent = item.category === 'nonaktif_wa' ? 'Dikecualikan' : 'Tidak perlu';
+            actionCell.appendChild(span);
+        }
+    }
+}
+
 function syncWaSelectAllCheckbox() {
     const master = document.getElementById('chk-wa-all');
     if (!master) return;
@@ -3430,10 +3584,7 @@ function onWaRecipientCheckChange() {
         }
     });
 
-    const counterEl = document.getElementById('wa-recipient-counter');
-    if (counterEl) {
-        counterEl.textContent = 'Aktif WA: ' + checkedCount + ' / ' + totalCount + ' Staff';
-    }
+    updateWaSummaryAndCounter(checkedCount, totalCount, totalCount - checkedCount);
 
     const isDirty = (getCheckedWaRecipientKey() !== window.INITIAL_WA_RECIPIENT_KEY);
     const dirtyEl = document.getElementById('wa-recipient-dirty');
@@ -3448,6 +3599,74 @@ function onWaRecipientCheckChange() {
     }
 
     syncWaSelectAllCheckbox();
+}
+
+function toggleSingleWaRecipient(cb) {
+    if (!cb) return;
+    const pegawaiId = parseInt(cb.value, 10);
+    if (!pegawaiId) return;
+
+    const targetChecked = Boolean(cb.checked);
+    const row = cb.closest('tr[data-wa-row="1"]');
+    onWaRecipientCheckChange();
+
+    window._waSaveQueue = (window._waSaveQueue || Promise.resolve()).then(() => {
+        cb.disabled = true;
+        showWaSaveStatus('⏳ Menyimpan...', 'saving');
+
+        const body = new URLSearchParams();
+        body.set('<?= CSRF_TOKEN_NAME ?>', getJurnalStaffCsrfToken());
+        body.set('ajax', '1');
+        body.set('mode', 'toggle');
+        body.set('pegawai_id', String(pegawaiId));
+        body.set('enabled', targetChecked ? '1' : '0');
+        body.set('preview_slot', window.JURNAL_STAFF_PREVIEW_SLOT || '');
+
+        return fetch('<?= url("kelola-jurnal-staff/pengingat/recipients") ?>', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: body.toString()
+        })
+        .then(async res => {
+            const txt = await res.text();
+            let data = null;
+            try { data = JSON.parse(txt); } catch (e) {}
+            if (!res.ok) {
+                throw new Error((data && data.message) ? data.message : ('HTTP ' + res.status));
+            }
+            return data || { success: false, message: 'Respon server tidak valid.' };
+        })
+        .then(data => {
+            cb.disabled = false;
+            if (!data.success) {
+                throw new Error(data.message || 'Gagal menyimpan perubahan penerima WA.');
+            }
+
+            invalidatePortalPjaxCacheSafe();
+            cb.checked = Boolean(data.enabled);
+            window.INITIAL_WA_RECIPIENT_KEY = getCheckedWaRecipientKey();
+            onWaRecipientCheckChange();
+
+            if (typeof data.enabled_count === 'number' && typeof data.total_staff === 'number') {
+                updateWaSummaryAndCounter(data.enabled_count, data.total_staff, data.excluded_count);
+            }
+            if (row && data.item) {
+                updateWaRowLiveFromServer(row, data.item);
+            }
+            showWaSaveStatus('✓ Tersimpan otomatis', 'success');
+        })
+        .catch(err => {
+            cb.disabled = false;
+            cb.checked = !targetChecked;
+            onWaRecipientCheckChange();
+            showWaSaveStatus('✕ Gagal menyimpan', 'error');
+            alert('Gagal menyimpan perubahan penerima WA: ' + err.message);
+        });
+    });
 }
 
 function filterWaStaffTable() {
@@ -3466,6 +3685,11 @@ function filterWaStaffTable() {
 }
 
 function toggleVisibleWaRecipients(checked) {
+    const snapshot = Array.from(document.querySelectorAll('.chk-wa-recipient')).map(cb => ({
+        cb: cb,
+        wasChecked: cb.checked
+    }));
+
     document.querySelectorAll('tr[data-wa-row="1"]').forEach(row => {
         if (row.style.display !== 'none') {
             const cb = row.querySelector('.chk-wa-recipient');
@@ -3475,14 +3699,20 @@ function toggleVisibleWaRecipients(checked) {
         }
     });
     onWaRecipientCheckChange();
+
+    saveWaRecipients(true, () => {
+        snapshot.forEach(item => { item.cb.checked = item.wasChecked; });
+        onWaRecipientCheckChange();
+    });
 }
 
-function saveWaRecipients() {
+function saveWaRecipients(isAutoBulk, onCancelledOrError) {
     const allCbs = Array.from(document.querySelectorAll('.chk-wa-recipient'));
     const enabledIds = allCbs.filter(cb => cb.checked).map(cb => cb.value);
 
     if (enabledIds.length === 0) {
         if (!confirm('Tidak ada staff yang dicentang untuk menerima notifikasi WA. Yakin ingin menonaktifkan seluruh penerima?')) {
+            if (typeof onCancelledOrError === 'function') onCancelledOrError();
             return;
         }
     }
@@ -3494,14 +3724,18 @@ function saveWaRecipients() {
         btn.classList.remove('ring-2', 'ring-amber-400', 'animate-pulse');
         btn.innerHTML = '⏳ Menyimpan...';
     }
+    showWaSaveStatus('⏳ Menyimpan...', 'saving');
 
     const body = new URLSearchParams();
     body.set('<?= CSRF_TOKEN_NAME ?>', getJurnalStaffCsrfToken());
     body.set('ajax', '1');
+    body.set('mode', 'bulk');
+    body.set('enabled_ids_csv', enabledIds.join(','));
     enabledIds.forEach(id => body.append('enabled_ids[]', id));
 
-    fetch('<?= url("kelola-jurnal-staff/pengingat/recipients") ?>', {
+    window._waSaveQueue = (window._waSaveQueue || Promise.resolve()).then(() => fetch('<?= url("kelola-jurnal-staff/pengingat/recipients") ?>', {
         method: 'POST',
+        credentials: 'same-origin',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
             'X-Requested-With': 'XMLHttpRequest'
@@ -3522,18 +3756,29 @@ function saveWaRecipients() {
             btn.disabled = false;
             btn.innerHTML = origHtml;
         }
-        alert(data.message || (data.success ? 'Daftar penerima WA berhasil disimpan.' : 'Gagal menyimpan daftar penerima.'));
-        if (data.success) {
-            window.location.reload();
+        if (!data.success) {
+            throw new Error(data.message || 'Gagal menyimpan daftar penerima.');
         }
+
+        invalidatePortalPjaxCacheSafe();
+        window.INITIAL_WA_RECIPIENT_KEY = getCheckedWaRecipientKey();
+        onWaRecipientCheckChange();
+        showWaSaveStatus('✓ Tersimpan otomatis', 'success');
+
+        if (!isAutoBulk) {
+            alert(data.message || 'Daftar penerima WA berhasil disimpan.');
+        }
+        window.location.reload();
     })
     .catch(err => {
         if (btn) {
             btn.disabled = false;
             btn.innerHTML = origHtml;
         }
+        if (typeof onCancelledOrError === 'function') onCancelledOrError();
+        showWaSaveStatus('✕ Gagal menyimpan', 'error');
         alert('Gagal menyimpan daftar penerima: ' + err.message);
-    });
+    }));
 }
 
 function initJurnalStaffWaSection() {

@@ -269,6 +269,88 @@ class JurnalStaffReminderService
     }
 
     /**
+     * Baca daftar ID staff yang dikecualikan langsung dari tabel settings
+     */
+    private static function readSavedExcludedIds(Database $db): array
+    {
+        $row = $db->find(
+            "SELECT setting_value FROM settings WHERE setting_key = ? ORDER BY id ASC LIMIT 1",
+            ['jurnal_staff_wa_excluded_ids']
+        );
+        return self::parseIdListString((string)($row['setting_value'] ?? ''));
+    }
+
+    /**
+     * Hapus file lock auto-scheduler agar staff yang baru diubah langsung dievaluasi ulang
+     */
+    private static function clearAutoCheckLock(): void
+    {
+        $lockFile = rtrim(sys_get_temp_dir(), '/\\') . DIRECTORY_SEPARATOR . 'portal_bip_jurnal_wa_autocheck.json';
+        if (is_file($lockFile)) {
+            @unlink($lockFile);
+        }
+    }
+
+    /**
+     * Aktifkan atau nonaktifkan 1 staff penerima notifikasi WA secara atomik
+     */
+    public static function setSingleRecipientPreference(int $pegawaiId, bool $enabled): array
+    {
+        self::ensureTablesExist();
+        if ($pegawaiId <= 0) {
+            return [
+                'success' => false,
+                'message' => 'ID pegawai tidak valid.',
+            ];
+        }
+
+        $db = Database::getInstance();
+        $currentExcluded = self::readSavedExcludedIds($db);
+        $excludedMap = [];
+        foreach ($currentExcluded as $id) {
+            $idInt = (int)$id;
+            if ($idInt > 0) {
+                $excludedMap[$idInt] = true;
+            }
+        }
+
+        if ($enabled) {
+            unset($excludedMap[$pegawaiId]);
+        } else {
+            $excludedMap[$pegawaiId] = true;
+        }
+
+        $excludedIds = array_keys($excludedMap);
+        sort($excludedIds);
+
+        self::upsertSetting($db, 'jurnal_staff_wa_excluded_ids', implode(',', $excludedIds));
+        self::clearAutoCheckLock();
+
+        $verifiedExcluded = self::readSavedExcludedIds($db);
+        $staffList = self::getTargetSupportStaff();
+        $staffIds = array_map(static fn($s) => (int)$s['id'], $staffList);
+        $activeExcludedInStaff = array_values(array_intersect($staffIds, $verifiedExcluded));
+
+        $totalStaff = count($staffList);
+        $excludedCount = count($activeExcludedInStaff);
+        $enabledCount = max(0, $totalStaff - $excludedCount);
+
+        return [
+            'success'        => true,
+            'mode'           => 'toggle',
+            'pegawai_id'     => $pegawaiId,
+            'enabled'        => !in_array($pegawaiId, $verifiedExcluded, true),
+            'total_staff'    => $totalStaff,
+            'enabled_count'  => $enabledCount,
+            'excluded_count' => $excludedCount,
+            'excluded_ids'   => $verifiedExcluded,
+            'message'        => $enabled
+                ? 'Penerima WA berhasil diaktifkan kembali.'
+                : 'Penerima WA berhasil dinonaktifkan.',
+        ];
+    }
+
+    /**
      * Simpan daftar penerima notifikasi WA (menyimpan selisih staff yang tidak dicentang ke settings)
      */
     public static function saveRecipientPreferences(array $enabledPegawaiIds): array
@@ -297,15 +379,14 @@ class JurnalStaffReminderService
         sort($excludedIds);
 
         self::upsertSetting($db, 'jurnal_staff_wa_excluded_ids', implode(',', $excludedIds));
+        self::clearAutoCheckLock();
 
-        // Reset cache lock auto-scheduler agar staff yang baru dicentang ulang langsung diproses
-        $lockFile = rtrim(sys_get_temp_dir(), '/\\') . DIRECTORY_SEPARATOR . 'portal_bip_jurnal_wa_autocheck.json';
-        if (is_file($lockFile)) {
-            @unlink($lockFile);
-        }
+        $verifiedExcluded = self::readSavedExcludedIds($db);
+        $staffIds = array_map(static fn($s) => (int)$s['id'], $staffList);
+        $activeExcludedInStaff = array_values(array_intersect($staffIds, $verifiedExcluded));
 
         $totalStaff = count($staffList);
-        $excludedCount = count($excludedIds);
+        $excludedCount = count($activeExcludedInStaff);
         $enabledCount = max(0, $totalStaff - $excludedCount);
 
         return [
@@ -313,7 +394,7 @@ class JurnalStaffReminderService
             'total_staff'    => $totalStaff,
             'enabled_count'  => $enabledCount,
             'excluded_count' => $excludedCount,
-            'excluded_ids'   => $excludedIds,
+            'excluded_ids'   => $verifiedExcluded,
             'message'        => "Daftar penerima berhasil disimpan: {$enabledCount} dari {$totalStaff} staff aktif menerima notifikasi WA.",
         ];
     }
@@ -420,9 +501,13 @@ class JurnalStaffReminderService
 
     private static function upsertSetting(Database $db, string $key, string $val): void
     {
-        $exists = $db->find("SELECT 1 FROM settings WHERE setting_key = ? LIMIT 1", [$key]);
-        if ($exists) {
-            $db->query("UPDATE settings SET setting_value = ? WHERE setting_key = ?", [$val, $key]);
+        $rows = $db->findAll("SELECT id FROM settings WHERE setting_key = ? ORDER BY id ASC", [$key]);
+        if (!empty($rows)) {
+            $primaryId = (int)$rows[0]['id'];
+            if (count($rows) > 1) {
+                $db->query("DELETE FROM settings WHERE setting_key = ? AND id != ?", [$key, $primaryId]);
+            }
+            $db->query("UPDATE settings SET setting_value = ? WHERE id = ?", [$val, $primaryId]);
         } else {
             $db->query("INSERT INTO settings (setting_key, setting_value) VALUES (?, ?)", [$key, $val]);
         }
