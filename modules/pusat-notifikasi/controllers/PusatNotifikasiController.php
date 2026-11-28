@@ -313,6 +313,7 @@ class PusatNotifikasiController
     public static function apiFeed(): void
     {
         $userId = (int)(Auth::id() ?? 0);
+        $canManage = $userId > 0 && class_exists('RBAC') && RBAC::hasPermission('notifikasi.view');
         // Lepaskan session lock segera agar polling tidak memblokir navigasi tab lain
         if (session_status() === PHP_SESSION_ACTIVE) {
             session_write_close();
@@ -352,7 +353,7 @@ class PusatNotifikasiController
                 'unread_count'     => $feed['unread_count'],
                 'vapid_public_key' => $vapidPub,
                 'push_subscribed'  => $subscribed,
-                'can_manage'       => class_exists('RBAC') && RBAC::hasPermission('notifikasi.view'),
+                'can_manage'       => $canManage,
                 'manage_url'       => function_exists('url') ? url('pusat-notifikasi') : '/pusat-notifikasi',
             ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
             exit;

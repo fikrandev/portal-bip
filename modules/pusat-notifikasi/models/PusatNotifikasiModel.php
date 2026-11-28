@@ -94,16 +94,22 @@ class PusatNotifikasiModel
         if ($u === '') {
             return '';
         }
-        if (in_array($u, ['TK', 'KB', 'PAUD/TK', 'TK/PAUD', 'PAUD IT', 'TK IT'], true)) {
+        $u = preg_replace('/\s+/', ' ', $u);
+
+        if (
+            in_array($u, ['TK', 'KB', 'PAUD/TK', 'TK/PAUD', 'PAUD IT', 'TK IT', 'PAUDIT', 'TKIT'], true) ||
+            preg_match('/^(PAUD|TK|KB)\b/', $u)
+        ) {
             return 'PAUD';
         }
-        if (preg_match('/^(SD|SMP|SMA)\s*IT$/', $u, $m) || preg_match('/^(SDIT|SMPIT|SMAIT)$/', $u, $m2)) {
-            if (!empty($m[1])) {
-                return $m[1];
-            }
-            if (!empty($m2[1])) {
-                return substr($m2[1], 0, -2);
-            }
+        if (preg_match('/^(SD|SMP|SMA)(?:\s*IT)?\b/', $u, $m)) {
+            return $m[1];
+        }
+        if (str_contains($u, 'YAYASAN')) {
+            return 'YAYASAN';
+        }
+        if (str_contains($u, 'STAFF') || str_contains($u, 'STAF') || str_contains($u, 'SUPPORT')) {
+            return 'STAFF';
         }
         return $u;
     }
@@ -737,12 +743,21 @@ class PusatNotifikasiModel
         }
 
         $now = date('Y-m-d H:i:s');
+        $mulaiAt = $now;
+        if (!empty($notif['mulai_at'])) {
+            $existingMulaiTs = strtotime((string)$notif['mulai_at']);
+            if ($existingMulaiTs !== false && $existingMulaiTs <= time()) {
+                $mulaiAt = (string)$notif['mulai_at'];
+            }
+        }
         $updInit = [
             'status'   => 'aktif',
-            'mulai_at' => !empty($notif['mulai_at']) ? $notif['mulai_at'] : $now,
+            'mulai_at' => $mulaiAt,
             'sent_at'  => $now,
         ];
         self::db()->update('pusat_notifikasi', $updInit, 'id = ?', [$id]);
+        // Reset status baca ketika dikirim/dikirim ulang agar notifikasi muncul kembali ke target
+        self::db()->query("UPDATE `pusat_notifikasi_reads` SET is_read = 0 WHERE notifikasi_id = ?", [$id]);
         $notif = array_merge($notif, $updInit);
 
         $targets = self::getMatchedTargetUsers($notif);
@@ -824,6 +839,7 @@ class PusatNotifikasiModel
             ];
         }
 
+        $now = date('Y-m-d H:i:s');
         $rows = self::db()->findAll("
             SELECT n.*,
                    COALESCE(r.is_read, 0) AS is_read,
@@ -833,12 +849,12 @@ class PusatNotifikasiModel
             LEFT JOIN `pusat_notifikasi_reads` r
                    ON r.notifikasi_id = n.id AND r.user_id = ?
             WHERE n.status = 'aktif'
-              AND (n.mulai_at IS NULL OR n.mulai_at <= NOW())
-              AND (n.berakhir_at IS NULL OR n.berakhir_at >= NOW())
+              AND (n.mulai_at IS NULL OR n.mulai_at <= ?)
+              AND (n.berakhir_at IS NULL OR n.berakhir_at >= ?)
               AND n.target_platform IN ('both', ?)
             ORDER BY COALESCE(n.sent_at, n.created_at) DESC, n.id DESC
             LIMIT 80
-        ", [$userId, $platform]);
+        ", [$userId, $now, $now, $platform]);
 
         $pushItems = [];
         $popupItems = [];
@@ -908,22 +924,25 @@ class PusatNotifikasiModel
     {
         self::ensureSchema();
         $platform = ($platform === 'mobile') ? 'mobile' : 'web';
+        $now = date('Y-m-d H:i:s');
 
         if ($notifikasiId !== null && $notifikasiId > 0) {
             self::db()->query("
                 INSERT INTO `pusat_notifikasi_reads` (notifikasi_id, user_id, platform, is_read, read_at, clicked_at)
-                VALUES (?, ?, ?, 1, NOW(), ?)
+                VALUES (?, ?, ?, 1, ?, ?)
                 ON DUPLICATE KEY UPDATE
                     platform = VALUES(platform),
                     is_read = 1,
-                    read_at = COALESCE(read_at, NOW()),
-                    clicked_at = IF(? = 1, NOW(), clicked_at)
+                    read_at = COALESCE(read_at, VALUES(read_at)),
+                    clicked_at = IF(? = 1, ?, clicked_at)
             ", [
                 $notifikasiId,
                 $userId,
                 $platform,
-                $isClick ? date('Y-m-d H:i:s') : null,
+                $now,
+                $isClick ? $now : null,
                 $isClick ? 1 : 0,
+                $now,
             ]);
             return true;
         }
@@ -931,15 +950,15 @@ class PusatNotifikasiModel
         $feed = self::getFeedForUser($userId, $platform);
         $stmt = self::db()->getConnection()->prepare("
             INSERT INTO `pusat_notifikasi_reads` (notifikasi_id, user_id, platform, is_read, read_at)
-            VALUES (?, ?, ?, 1, NOW())
+            VALUES (?, ?, ?, 1, ?)
             ON DUPLICATE KEY UPDATE
                 platform = VALUES(platform),
                 is_read = 1,
-                read_at = COALESCE(read_at, NOW())
+                read_at = COALESCE(read_at, VALUES(read_at))
         ");
         foreach ($feed['inbox_items'] as $item) {
             if (empty($item['is_read'])) {
-                $stmt->execute([(int)$item['id'], $userId, $platform]);
+                $stmt->execute([(int)$item['id'], $userId, $platform, $now]);
             }
         }
         return true;

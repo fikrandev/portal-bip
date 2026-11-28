@@ -11,13 +11,24 @@
 
     const currentScript = document.currentScript || document.querySelector('script[data-notif-platform]');
     const PLATFORM = (currentScript && currentScript.getAttribute('data-notif-platform') === 'mobile') ? 'mobile' : 'web';
-    const BASE_URL = (currentScript && currentScript.getAttribute('data-base-url'))
-        ? currentScript.getAttribute('data-base-url').replace(/\/+$/, '')
-        : (window.APP_BASE_URL || '').replace(/\/+$/, '');
+    const RAW_BASE = (currentScript && currentScript.getAttribute('data-base-url'))
+        ? currentScript.getAttribute('data-base-url')
+        : (window.APP_BASE_URL || '');
+
+    let PATH_PREFIX = '';
+    try {
+        if (RAW_BASE) {
+            const p = new URL(RAW_BASE, window.location.origin).pathname.replace(/\/+$/, '');
+            PATH_PREFIX = (p === '/') ? '' : p;
+        }
+    } catch (e) {
+        PATH_PREFIX = '';
+    }
 
     function apiUrl(path) {
         const clean = String(path || '').replace(/^\/+/, '');
-        return BASE_URL ? `${BASE_URL}/${clean}` : `/${clean}`;
+        const rel = PATH_PREFIX ? `${PATH_PREFIX}/${clean}` : `/${clean}`;
+        return window.location.origin + rel;
     }
 
     function escapeHtml(str) {
@@ -143,6 +154,37 @@
         return res.json();
     }
 
+    function waitForSwActive(reg) {
+        return new Promise(function (resolve, reject) {
+            if (reg.active) {
+                resolve(reg);
+                return;
+            }
+            const worker = reg.installing || reg.waiting;
+            if (!worker) {
+                reject(new Error('Worker Service Worker tidak tersedia.'));
+                return;
+            }
+            const timer = setTimeout(function () {
+                if (reg.active) {
+                    resolve(reg);
+                } else {
+                    reject(new Error('Aktivasi Service Worker melebihi batas waktu.'));
+                }
+            }, 8000);
+
+            worker.addEventListener('statechange', function () {
+                if (reg.active || worker.state === 'activated') {
+                    clearTimeout(timer);
+                    resolve(reg);
+                } else if (worker.state === 'redundant') {
+                    clearTimeout(timer);
+                    reject(new Error('Service Worker menjadi redundant.'));
+                }
+            });
+        });
+    }
+
     // ── Browser Web Push Subscribe ──────────────────────────────────────
     async function enableBrowserPush(showFeedback) {
         try {
@@ -173,7 +215,9 @@
             }
 
             const swFile = PLATFORM === 'mobile' ? apiUrl('sw.js') : apiUrl('sw-web.js');
-            const swScope = PLATFORM === 'mobile' ? (BASE_URL ? `${BASE_URL}/mobile/` : '/mobile/') : (BASE_URL ? `${BASE_URL}/web-push/` : '/web-push/');
+            const swScope = PLATFORM === 'mobile'
+                ? (PATH_PREFIX ? `${PATH_PREFIX}/mobile/` : '/mobile/')
+                : (PATH_PREFIX ? `${PATH_PREFIX}/web-push/` : '/web-push/');
 
             let reg = await navigator.serviceWorker.getRegistration(swScope);
             if (!reg) {
@@ -183,8 +227,7 @@
                 reg.waiting.postMessage({ action: 'SKIP_WAITING' });
             }
 
-            // Tunggu aktif
-            const readyReg = reg.active ? reg : await navigator.serviceWorker.ready;
+            const readyReg = await waitForSwActive(reg);
             let sub = await readyReg.pushManager.getSubscription();
             if (!sub) {
                 sub = await readyReg.pushManager.subscribe({
@@ -197,6 +240,8 @@
             const res = await postJson('api/notifikasi/push/subscribe', subJson);
             if (res && res.success) {
                 state.pushSubscribed = true;
+                const optBanner = document.getElementById('bip-push-optin-banner');
+                if (optBanner) optBanner.remove();
                 renderTopbarDropdown();
                 if (showFeedback) {
                     playNotifSound();
@@ -246,8 +291,11 @@
             playNotifSound();
         }
 
-        // Tampilkan juga OS Notification (dengan tag sama agar tidak dobel dg background web-push)
-        if ('Notification' in window && Notification.permission === 'granted' && document.visibilityState === 'visible') {
+        // Tampilkan juga OS Notification baik tab aktif maupun background (tag sama untuk deduplikasi)
+        if ('Notification' in window && Notification.permission === 'granted') {
+            const notifUrl = item.link_url || (PLATFORM === 'mobile' ? apiUrl('mobile/notifikasi') : apiUrl('dashboard'));
+            const notifIcon = apiUrl('public/images/pwa/icon-192.png');
+            const notifTag = 'pusat-notif-' + item.id;
             try {
                 if ('serviceWorker' in navigator) {
                     navigator.serviceWorker.getRegistrations().then(function (regs) {
@@ -256,14 +304,20 @@
                         if (reg && reg.showNotification) {
                             reg.showNotification(item.judul, {
                                 body: item.pesan,
-                                tag: 'pusat-notif-' + item.id,
-                                renotify: false,
+                                tag: notifTag,
+                                renotify: true,
                                 silent: false,
-                                icon: apiUrl('public/images/pwa/icon-192.png'),
-                                data: { url: item.link_url || (PLATFORM === 'mobile' ? apiUrl('mobile/notifikasi') : apiUrl('dashboard')) },
+                                icon: notifIcon,
+                                data: { url: notifUrl },
                             }).catch(function () {});
+                        } else {
+                            new Notification(item.judul, { body: item.pesan, icon: notifIcon, tag: notifTag });
                         }
-                    }).catch(function () {});
+                    }).catch(function () {
+                        try { new Notification(item.judul, { body: item.pesan, icon: notifIcon, tag: notifTag }); } catch (e2) {}
+                    });
+                } else {
+                    new Notification(item.judul, { body: item.pesan, icon: notifIcon, tag: notifTag });
                 }
             } catch (e) {}
         }
@@ -583,6 +637,56 @@
         }
     }
 
+    function maybeShowPushOptInBanner() {
+        if (!state.userId || state.pushSubscribed) return;
+        if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) return;
+        if (Notification.permission !== 'default') return;
+        if (document.getElementById('bip-push-optin-banner')) return;
+
+        const dismissKey = `bip_push_optin_dismiss_${state.userId}`;
+        try {
+            const lastDismiss = Number(localStorage.getItem(dismissKey) || 0);
+            if (lastDismiss && (Date.now() - lastDismiss) < 86400000) {
+                return;
+            }
+        } catch (e) {}
+
+        const banner = document.createElement('div');
+        banner.id = 'bip-push-optin-banner';
+        banner.className = PLATFORM === 'mobile'
+            ? 'fixed bottom-20 left-3 right-3 z-[9990] max-w-md mx-auto bg-slate-900 text-white rounded-2xl shadow-2xl border border-slate-700 p-3.5 flex items-center justify-between gap-3'
+            : 'fixed bottom-5 right-5 z-[9990] max-w-sm bg-slate-900 text-white rounded-2xl shadow-2xl border border-slate-700 p-4 flex items-center justify-between gap-3';
+        banner.innerHTML = `
+            <div class="min-w-0 flex-1">
+                <div class="text-xs font-extrabold text-white">Aktifkan Push Notifikasi?</div>
+                <p class="text-[11px] text-slate-300 mt-0.5 leading-snug">Agar pengumuman &amp; pesan penting berbunyi otomatis di perangkat ini.</p>
+            </div>
+            <div class="flex items-center gap-1.5 shrink-0">
+                <button type="button" id="bip-optin-dismiss" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-[11px] font-bold text-slate-300 cursor-pointer">
+                    Nanti
+                </button>
+                <button type="button" id="bip-optin-allow" class="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-[11px] font-extrabold text-white cursor-pointer">
+                    🔔 Aktifkan
+                </button>
+            </div>
+        `;
+        document.body.appendChild(banner);
+
+        const dismissBtn = banner.querySelector('#bip-optin-dismiss');
+        if (dismissBtn) {
+            dismissBtn.addEventListener('click', function () {
+                try { localStorage.setItem(dismissKey, String(Date.now())); } catch (e) {}
+                banner.remove();
+            });
+        }
+        const allowBtn = banner.querySelector('#bip-optin-allow');
+        if (allowBtn) {
+            allowBtn.addEventListener('click', function () {
+                enableBrowserPush(true);
+            });
+        }
+    }
+
     // ── Polling Feed Engine ─────────────────────────────────────────────
     let firstFetchDone = false;
     async function fetchFeed() {
@@ -608,12 +712,13 @@
             updateUnreadBadges();
             renderTopbarDropdown();
 
-            // Tampilkan push baru yang belum pernah dimunculkan di perangkat ini & belum dibaca
+            // Tampilkan push baru yang belum pernah dimunculkan (per id + sent_at agar Kirim Ulang tetap tampil)
             const seenMap = getSeenPushMap();
             const pushItems = Array.isArray(data.push_items) ? data.push_items : [];
             pushItems.forEach(function (it) {
-                if (!it.is_read && !seenMap[String(it.id)]) {
-                    markPushSeenLocal(it.id);
+                const seenKey = String(it.id) + '_' + String(it.sent_at || '');
+                if (!it.is_read && !seenMap[seenKey]) {
+                    markPushSeenLocal(seenKey);
                     showFloatingPushCard(it);
                 }
             });
@@ -626,6 +731,8 @@
             if (!state.autoSubTried && !state.pushSubscribed && 'Notification' in window && Notification.permission === 'granted') {
                 state.autoSubTried = true;
                 enableBrowserPush(false);
+            } else if (!state.pushSubscribed) {
+                maybeShowPushOptInBanner();
             }
         } catch (e) {}
     }
