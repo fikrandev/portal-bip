@@ -603,6 +603,102 @@ class WebPushService
         ], $meta));
     }
 
+    /**
+     * Kirim broadcast push notification ke banyak target user_id / pegawai_id sekaligus (dideduplikasi per perangkat)
+     */
+    public static function sendBroadcastToTargets(array $userIds, array $pegawaiIds, array $payload, array $meta = []): array
+    {
+        self::ensureTablesExist();
+
+        $uIds = array_values(array_unique(array_filter(array_map('intval', $userIds), fn($v) => $v > 0)));
+        $pIds = array_values(array_unique(array_filter(array_map('intval', $pegawaiIds), fn($v) => $v > 0)));
+
+        if (empty($uIds) && empty($pIds)) {
+            return ['success' => false, 'sent' => 0, 'failed' => 0, 'total_devices' => 0, 'message' => 'Tidak ada target akun penerima.'];
+        }
+
+        $db = Database::getInstance();
+        $conds = [];
+        $params = [];
+
+        if (!empty($uIds)) {
+            $ph = implode(',', array_fill(0, count($uIds), '?'));
+            $conds[] = "user_id IN ({$ph})";
+            $params = array_merge($params, $uIds);
+        }
+        if (!empty($pIds)) {
+            $ph = implode(',', array_fill(0, count($pIds), '?'));
+            $conds[] = "pegawai_id IN ({$ph})";
+            $params = array_merge($params, $pIds);
+        }
+
+        $rows = $db->findAll(
+            "SELECT * FROM web_push_subscriptions WHERE is_active = 1 AND (" . implode(' OR ', $conds) . ") ORDER BY id DESC",
+            $params
+        );
+
+        // Deduplikasi berdasarkan endpoint_hash agar 1 perangkat tidak menerima double push
+        $uniqueSubs = [];
+        foreach ($rows as $row) {
+            $hash = (string)($row['endpoint_hash'] ?? '');
+            if ($hash === '' && !empty($row['endpoint'])) {
+                $hash = hash('sha256', (string)$row['endpoint']);
+            }
+            if ($hash !== '' && !isset($uniqueSubs[$hash])) {
+                $uniqueSubs[$hash] = $row;
+            }
+        }
+
+        if (empty($uniqueSubs)) {
+            return ['success' => false, 'sent' => 0, 'failed' => 0, 'total_devices' => 0, 'no_subscription' => true, 'message' => 'Belum ada perangkat target yang menyalakan Web Push.'];
+        }
+
+        $sent = 0;
+        $failed = 0;
+        $lastCode = 0;
+        $lastErr = '';
+
+        foreach ($uniqueSubs as $sub) {
+            $res = self::sendRawPush($sub, $payload);
+            $lastCode = (int)($res['http_code'] ?? 0);
+            if (!empty($res['success'])) {
+                $sent++;
+            } else {
+                $failed++;
+                $lastErr = (string)($res['message'] ?? 'Gagal kirim push');
+            }
+        }
+
+        $ok = ($sent > 0);
+        try {
+            $db->insert('web_push_logs', [
+                'pegawai_id'    => null,
+                'user_id'       => !empty($meta['created_by']) ? (int)$meta['created_by'] : null,
+                'topic'         => substr((string)($meta['topic'] ?? 'pusat_notifikasi'), 0, 60),
+                'tanggal'       => (string)($meta['tanggal'] ?? date('Y-m-d')),
+                'slot_waktu'    => substr((string)($meta['slot_waktu'] ?? date('H:i')), 0, 15),
+                'title'         => substr((string)($payload['title'] ?? 'Portal BIP'), 0, 180),
+                'body'          => (string)($payload['body'] ?? ''),
+                'url'           => substr((string)($payload['url'] ?? '/mobile/notifikasi'), 0, 255),
+                'status'        => $ok ? 'success' : 'failed',
+                'http_code'     => $lastCode ?: null,
+                'error_message' => $ok ? null : ($lastErr !== '' ? $lastErr : null),
+            ]);
+        } catch (\Throwable $e) {
+            error_log('WebPushService broadcast log error: ' . $e->getMessage());
+        }
+
+        return [
+            'success'       => $ok,
+            'sent'          => $sent,
+            'failed'        => $failed,
+            'total_devices' => count($uniqueSubs),
+            'message'       => $ok
+                ? "Push Notification terkirim ke {$sent} perangkat."
+                : ('Gagal mengirim Push Notification: ' . ($lastErr ?: 'tidak ada perangkat merespon')),
+        ];
+    }
+
     private static function dispatchToSubscriptions(array $subs, array $payload, array $meta): array
     {
         if (empty($subs)) {

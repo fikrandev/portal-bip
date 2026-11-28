@@ -230,6 +230,8 @@ spl_autoload_register(static function (string $class): void {
         'MobileSarprasController'   => '/modules/mobile-sarpras/controllers/MobileSarprasController.php',
         'MobileSarprasAuthController' => '/modules/mobile-sarpras/controllers/MobileSarprasAuthController.php',
         'PersuratanController'      => '/modules/persuratan/controllers/PersuratanController.php',
+        'PusatNotifikasiController' => '/modules/pusat-notifikasi/controllers/PusatNotifikasiController.php',
+        'PusatNotifikasiModel'      => '/modules/pusat-notifikasi/models/PusatNotifikasiModel.php',
         'WebPushService'            => '/core/WebPushService.php',
     ];
     if (isset($controllerMap[$class])) {
@@ -1056,6 +1058,21 @@ $router->get('/pengaturan-sistem/log-aktivitas', [SettingsController::class, 'lo
 $router->get('/pengaturan-sistem/log-aktivitas/export', [SettingsController::class, 'exportLogAktivitas'], [Middleware::permissionRequired('settings.logs.view')]);
 $router->post('/pengaturan-sistem/log-aktivitas/clear', [SettingsController::class, 'clearLogAktivitas'], [Middleware::permissionRequired('settings.reset')]);
 
+// -- Modul Pusat Notifikasi (Pengaturan & RBAC Unit) --
+$router->get('/pusat-notifikasi', [PusatNotifikasiController::class, 'index'], [Middleware::permissionRequired('notifikasi.view')]);
+$router->post('/pusat-notifikasi/store', [PusatNotifikasiController::class, 'store'], [Middleware::permissionRequired('notifikasi.create')]);
+$router->post('/pusat-notifikasi/update/{id}', [PusatNotifikasiController::class, 'update'], [Middleware::permissionRequired('notifikasi.update')]);
+$router->post('/pusat-notifikasi/send/{id}', [PusatNotifikasiController::class, 'send'], [Middleware::permissionRequired('notifikasi.send')]);
+$router->post('/pusat-notifikasi/toggle/{id}', [PusatNotifikasiController::class, 'toggleStatus'], [Middleware::permissionRequired('notifikasi.update')]);
+$router->post('/pusat-notifikasi/delete/{id}', [PusatNotifikasiController::class, 'delete'], [Middleware::permissionRequired('notifikasi.delete')]);
+$router->get('/pusat-notifikasi/readers/{id}', [PusatNotifikasiController::class, 'readers'], [Middleware::permissionRequired('notifikasi.view')]);
+
+// -- API Notifikasi Realtime (Web & Mobile) --
+$router->get('/api/notifikasi/feed', [PusatNotifikasiController::class, 'apiFeed'], [[PortalGuruAuthController::class, 'authRequired']]);
+$router->post('/api/notifikasi/read', [PusatNotifikasiController::class, 'apiMarkRead'], [[PortalGuruAuthController::class, 'authRequired']]);
+$router->post('/api/notifikasi/click', [PusatNotifikasiController::class, 'apiMarkClick'], [[PortalGuruAuthController::class, 'authRequired']]);
+$router->post('/api/notifikasi/push/subscribe', [PusatNotifikasiController::class, 'apiWebPushSubscribe'], [[PortalGuruAuthController::class, 'authRequired']]);
+
 // -- Portal Guru Mobile (PWA) Auth & Routes --
 $router->get('/mobile/login', [PortalGuruAuthController::class, 'showLogin']);
 $router->post('/mobile/login', [PortalGuruAuthController::class, 'login']);
@@ -1513,6 +1530,15 @@ $router->get('/sw.js', function() {
     header('Service-Worker-Allowed: /');
     header('Cache-Control: no-cache, no-store, must-revalidate');
     readfile(PUBLIC_PATH . '/sw.js');
+    exit;
+});
+$router->get('/sw-web.js', function() {
+    header('Content-Type: application/javascript; charset=utf-8');
+    header('Service-Worker-Allowed: /');
+    header('Cache-Control: no-cache, no-store, must-revalidate');
+    if (file_exists(PUBLIC_PATH . '/sw-web.js')) {
+        readfile(PUBLIC_PATH . '/sw-web.js');
+    }
     exit;
 });
 $router->get('/sw-sarpras.js', function() {

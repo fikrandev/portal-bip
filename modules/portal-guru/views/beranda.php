@@ -60,7 +60,7 @@ if ($hourNow < 11) {
         <a href="<?= url('mobile/notifikasi') ?>" class="relative w-11 h-11 bg-white rounded-2xl shadow-sm border border-slate-100 flex items-center justify-center text-slate-500 hover:text-slate-700 press-bounce">
             <i data-lucide="bell" class="w-5 h-5 stroke-[2]"></i>
             <!-- Unread Badge Dot -->
-            <span class="absolute top-2.5 right-2.5 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-white"></span>
+            <span id="mobile-bell-badge" class="hidden absolute top-2.5 right-2.5 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-white"></span>
         </a>
     </div>
 </div>

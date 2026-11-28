@@ -20,7 +20,7 @@
             navigator.serviceWorker.getRegistrations().then(function(regs) {
                 regs.forEach(function(reg) {
                     var scope = reg.scope || '';
-                    if (!scope.includes('/mobile/') && !scope.includes('/mobile-sarpras/')) {
+                    if (!scope.includes('/mobile/') && !scope.includes('/mobile-sarpras/') && !scope.includes('/web-push/')) {
                         reg.unregister().then(function() {
                             console.log('[PWA Cleanup] Unregistered rogue root SW:', scope);
                         });
@@ -385,6 +385,7 @@
     <script src="<?= asset('js/pwa.js') ?>?v=3"></script>
     <script src="<?= asset('js/searchable-select.js') ?>?v=<?= file_exists(BASE_PATH . '/public/js/searchable-select.js') ? filemtime(BASE_PATH . '/public/js/searchable-select.js') : 1 ?>"></script>
     <script src="<?= asset('js/mobile/mobile-app.js') ?>?v=<?= file_exists(BASE_PATH . '/public/js/mobile/mobile-app.js') ? filemtime(BASE_PATH . '/public/js/mobile/mobile-app.js') : 3 ?>"></script>
+    <script src="<?= asset('js/notification-center.js') ?>?v=<?= file_exists(BASE_PATH . '/public/js/notification-center.js') ? filemtime(BASE_PATH . '/public/js/notification-center.js') : 1 ?>" data-notif-platform="mobile" data-base-url="<?= e(rtrim(BASE_URL, '/')) ?>"></script>
 
     <script>
         // Open Android-style Bottom Sheet for '+' FAB

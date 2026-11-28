@@ -2264,35 +2264,36 @@ class PortalGuruController
      */
     public static function notifikasi(): void
     {
+        $teacher = self::getLoggedInTeacher();
+        self::releaseSessionLock();
+
+        $userId = (int)($teacher['user_id'] ?? Auth::id() ?? 0);
+        require_once MODULES_PATH . '/pusat-notifikasi/models/PusatNotifikasiModel.php';
+        $feed = $userId > 0
+            ? PusatNotifikasiModel::getFeedForUser($userId, 'mobile')
+            : ['inbox_items' => [], 'unread_count' => 0];
+
+        $notifications = [];
+        foreach ($feed['inbox_items'] as $it) {
+            $notifications[] = [
+                'id'                   => (int)$it['id'],
+                'title'                => (string)$it['judul'],
+                'message'              => (string)$it['pesan'],
+                'time'                 => (string)$it['time_ago'],
+                'tipe'                 => (string)$it['tipe'],
+                'prioritas'            => (string)$it['prioritas'],
+                'popup_interval_menit' => (int)($it['popup_interval_menit'] ?? 5),
+                'link_url'             => (string)($it['link_url'] ?? ''),
+                'link_label'           => (string)($it['link_label'] ?? 'Buka Tautan'),
+                'created_by_name'      => (string)($it['created_by_name'] ?? 'Admin'),
+                'unread'               => empty($it['is_read']),
+            ];
+        }
+
         self::render('notifikasi', [
-            'pageTitle' => 'Pusat Notifikasi',
-            'activeTab' => 'notifikasi',
-            'notifications' => [
-                [
-                    'id' => 1,
-                    'title' => 'Pengingat Presensi Pagi',
-                    'message' => 'Jangan lupa melakukan check-in geolokasi sebelum pukul 07.30 WITA.',
-                    'time' => '10 menit yang lalu',
-                    'type' => 'absen',
-                    'unread' => true
-                ],
-                [
-                    'id' => 2,
-                    'title' => 'Jadwal Mengajar Berikutnya',
-                    'message' => 'Kelas 7A Matematika di Ruang 102 akan dimulai pada 08.00 WITA.',
-                    'time' => '25 menit yang lalu',
-                    'type' => 'jadwal',
-                    'unread' => true
-                ],
-                [
-                    'id' => 3,
-                    'title' => 'Pengumuman Rapat Dewan Guru',
-                    'message' => 'Rapat koordinasi semester genap akan diadakan Jumat, 14.00 di Aula.',
-                    'time' => 'Kemarin',
-                    'type' => 'pengumuman',
-                    'unread' => false
-                ]
-            ]
+            'pageTitle'     => 'Pusat Notifikasi',
+            'activeTab'     => 'notifikasi',
+            'notifications' => $notifications,
         ]);
     }
 

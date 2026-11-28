@@ -10,6 +10,9 @@
     <script src="<?= asset('js/notif.js') ?>?v=<?= file_exists(PUBLIC_PATH . '/js/notif.js') ? filemtime(PUBLIC_PATH . '/js/notif.js') : '1.1' ?>"></script>
     <script src="<?= asset('js/searchable-select.js') ?>?v=<?= file_exists(PUBLIC_PATH . '/js/searchable-select.js') ? filemtime(PUBLIC_PATH . '/js/searchable-select.js') : '1.1' ?>"></script>
     <script src="<?= asset('js/portal-pjax.js') ?>?v=<?= file_exists(PUBLIC_PATH . '/js/portal-pjax.js') ? filemtime(PUBLIC_PATH . '/js/portal-pjax.js') : '1.0' ?>"></script>
+    <?php if (class_exists('Auth') && Auth::check()): ?>
+    <script src="<?= asset('js/notification-center.js') ?>?v=<?= file_exists(PUBLIC_PATH . '/js/notification-center.js') ? filemtime(PUBLIC_PATH . '/js/notification-center.js') : '1.0' ?>" data-notif-platform="web" data-base-url="<?= e(rtrim(BASE_URL, '/')) ?>"></script>
+    <?php endif; ?>
     <div id="portal-extra-js" style="display:none;">
     <?php if (isset($extraJs)): ?>
         <?= $extraJs ?>

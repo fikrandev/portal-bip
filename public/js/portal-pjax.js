@@ -33,7 +33,8 @@
         '/public/js/modal-helper.js',
         '/public/js/notif.js',
         '/public/js/searchable-select.js',
-        '/public/js/portal-pjax.js'
+        '/public/js/portal-pjax.js',
+        '/public/js/notification-center.js'
     ];
 
     var CACHE_ONCE_LIBS = [

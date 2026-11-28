@@ -95,16 +95,40 @@
                 </svg>
             </div>
 
-            <!-- Notification Bell -->
-            <button id="btn-notifications" 
-                    class="relative p-2.5 rounded-full text-primary-500 hover:bg-primary-50 hover:text-primary-700 transition-colors"
-                    aria-label="Notifikasi">
-                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0"/>
-                </svg>
-                <!-- Notification dot -->
-                <span class="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-2xl ring-2 ring-white"></span>
-            </button>
+            <!-- Notification Bell & Dropdown -->
+            <div class="relative" id="notif-dropdown-container">
+                <button id="btn-notifications" 
+                        class="relative p-2.5 rounded-full text-primary-500 hover:bg-primary-50 hover:text-primary-700 transition-colors cursor-pointer"
+                        aria-label="Notifikasi">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0"/>
+                    </svg>
+                    <span id="topbar-notif-badge" class="hidden [&:not(.hidden)]:flex absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-rose-500 text-white text-[10px] font-extrabold rounded-full ring-2 ring-white items-center justify-center leading-none">0</span>
+                </button>
+
+                <div id="notif-dropdown-menu"
+                     class="hidden absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-2xl shadow-xl shadow-primary-900/10 border border-slate-200 overflow-hidden z-50">
+                    <div class="px-4 py-3 bg-slate-50 border-b border-slate-100 flex items-center justify-between gap-2">
+                        <span class="text-xs font-extrabold text-slate-900 uppercase tracking-wide">Pusat Notifikasi</span>
+                        <button type="button" id="notif-dropdown-mark-all" class="text-[11px] font-bold text-primary-600 hover:underline cursor-pointer">
+                            Tandai Semua Dibaca
+                        </button>
+                    </div>
+                    <div id="notif-dropdown-push-cta" class="hidden [&:not(.hidden)]:flex px-4 py-2.5 bg-sky-50 border-b border-sky-100 items-center justify-between gap-2">
+                        <span class="text-[11px] font-semibold text-sky-900">Aktifkan Push + Suara di browser ini?</span>
+                        <button type="button" id="notif-dropdown-enable-push" class="px-2.5 py-1 rounded-lg bg-sky-600 hover:bg-sky-700 text-white text-[10px] font-bold cursor-pointer shrink-0">
+                            Aktifkan
+                        </button>
+                    </div>
+                    <div id="notif-dropdown-list" class="max-h-80 overflow-y-auto">
+                        <div class="p-6 text-center text-xs text-slate-400">Memuat notifikasi...</div>
+                    </div>
+                    <a id="notif-dropdown-manage-link" href="<?= url('pusat-notifikasi') ?>"
+                       class="hidden block px-4 py-2.5 bg-slate-50 border-t border-slate-100 text-center text-xs font-bold text-primary-700 hover:bg-primary-50 transition-colors">
+                        Kelola Pusat Notifikasi →
+                    </a>
+                </div>
+            </div>
 
             <!-- User Dropdown -->
             <div class="relative" id="user-dropdown-container">

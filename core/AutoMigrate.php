@@ -109,6 +109,7 @@ class AutoMigrate
             '2026_11_23_000071_add_jenis_otorisasi_to_users'               => 'migration071AddJenisOtorisasiToUsers',
             '2026_11_25_000072_widen_spmb_observasi_respon_columns'        => 'migration072WidenSpmbObservasiResponColumns',
             '2026_11_27_000073_add_spmb_kartu_qr_rbac_permissions'         => 'migration073AddSpmbKartuQrRbacPermissions',
+            '2026_11_28_000074_create_pusat_notifikasi_module'             => 'migration074CreatePusatNotifikasiModule',
         ];
     }
     /**
@@ -5180,6 +5181,141 @@ class AutoMigrate
             }
         } catch (Throwable $e) {
             error_log('migration073AddSpmbKartuQrRbacPermissions warning: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * 074. Buat modul Pusat Notifikasi (Push Notifikasi & Popup Berkala) beserta permission RBAC
+     */
+    protected static function migration074CreatePusatNotifikasiModule(PDO $pdo): void
+    {
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `pusat_notifikasi` (
+                `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+                `judul` VARCHAR(180) NOT NULL,
+                `pesan` TEXT NOT NULL,
+                `link_url` VARCHAR(500) DEFAULT NULL,
+                `link_label` VARCHAR(80) DEFAULT 'Buka Tautan',
+                `tipe` ENUM('push', 'popup') NOT NULL DEFAULT 'push',
+                `prioritas` ENUM('info', 'success', 'warning', 'urgent') NOT NULL DEFAULT 'info',
+                `target_platform` ENUM('both', 'web', 'mobile') NOT NULL DEFAULT 'both',
+                `target_jenis_akun` VARCHAR(60) NOT NULL DEFAULT 'all',
+                `target_role_ids` VARCHAR(255) DEFAULT NULL,
+                `target_units` VARCHAR(255) NOT NULL DEFAULT 'ALL',
+                `popup_interval_menit` INT(11) NOT NULL DEFAULT 5,
+                `pakai_suara` TINYINT(1) NOT NULL DEFAULT 1,
+                `status` ENUM('draft', 'aktif', 'nonaktif') NOT NULL DEFAULT 'draft',
+                `mulai_at` DATETIME DEFAULT NULL,
+                `berakhir_at` DATETIME DEFAULT NULL,
+                `sent_at` DATETIME DEFAULT NULL,
+                `sent_count` INT(11) NOT NULL DEFAULT 0,
+                `push_device_sent` INT(11) NOT NULL DEFAULT 0,
+                `created_by` BIGINT UNSIGNED DEFAULT NULL,
+                `created_by_name` VARCHAR(120) DEFAULT NULL,
+                `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (`id`),
+                KEY `idx_pn_status_tipe` (`status`, `tipe`),
+                KEY `idx_pn_sent` (`sent_at`),
+                KEY `idx_pn_created` (`created_by`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        ");
+
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `pusat_notifikasi_reads` (
+                `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+                `notifikasi_id` BIGINT UNSIGNED NOT NULL,
+                `user_id` BIGINT UNSIGNED NOT NULL,
+                `platform` ENUM('web', 'mobile') NOT NULL DEFAULT 'web',
+                `is_read` TINYINT(1) NOT NULL DEFAULT 0,
+                `read_at` DATETIME DEFAULT NULL,
+                `clicked_at` DATETIME DEFAULT NULL,
+                `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `uk_pnr_notif_user` (`notifikasi_id`, `user_id`),
+                KEY `idx_pnr_user_read` (`user_id`, `is_read`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        ");
+
+        if (!self::hasTable($pdo, 'modules') || !self::hasTable($pdo, 'permissions')) {
+            return;
+        }
+
+        try {
+            $iconSvg = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0M3.124 7.5A8.969 8.969 0 0 1 5.292 3m13.416 0a8.969 8.969 0 0 1 2.168 4.5" /></svg>';
+            $stmtMod = $pdo->prepare("SELECT id FROM `modules` WHERE slug = 'pusat-notifikasi' LIMIT 1");
+            $stmtMod->execute();
+            $modId = $stmtMod->fetchColumn();
+
+            if ($modId === false) {
+                $stmtInsMod = $pdo->prepare("
+                    INSERT INTO `modules` (`name`, `slug`, `description`, `module_group`, `icon_svg`, `color`, `route`, `sort_order`, `is_active`, `created_at`, `updated_at`)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, NOW(), NOW())
+                ");
+                $stmtInsMod->execute([
+                    'Pusat Notifikasi',
+                    'pusat-notifikasi',
+                    'Buat & kirim Push Notifikasi dan Popup berkala ke Portal Web & Mobile berdasarkan jenis akun dan unit',
+                    'Pengaturan',
+                    $iconSvg,
+                    '#E11D48',
+                    '/pusat-notifikasi',
+                    108,
+                ]);
+                $modId = (int)$pdo->lastInsertId();
+            } else {
+                $modId = (int)$modId;
+                $pdo->prepare("UPDATE `modules` SET `module_group` = 'Pengaturan', `route` = '/pusat-notifikasi', `is_active` = 1, `updated_at` = NOW() WHERE id = ?")
+                    ->execute([$modId]);
+            }
+
+            $perms = [
+                ['notifikasi.view', 'Lihat Pusat Notifikasi', 'Melihat riwayat notifikasi, statistik penerima, dan status baca sesuai hak unit'],
+                ['notifikasi.create', 'Buat Notifikasi', 'Membuat draft notifikasi push atau popup berkala'],
+                ['notifikasi.update', 'Edit & Kelola Status Notifikasi', 'Mengubah isi notifikasi serta mengaktifkan atau menghentikan popup berkala'],
+                ['notifikasi.send', 'Kirim / Broadcast Notifikasi', 'Mengirim dan menyebarkan push notifikasi atau popup ke target pengguna'],
+                ['notifikasi.delete', 'Hapus Notifikasi', 'Menghapus data notifikasi dari riwayat pusat notifikasi'],
+                ['notifikasi.unit_all', 'Akses Semua Unit (Lintas Unit)', 'Mengirim dan mengelola notifikasi untuk seluruh unit tanpa batasan jenjang'],
+            ];
+
+            $stmtCheckPerm = $pdo->prepare("SELECT id FROM `permissions` WHERE `slug` = ? LIMIT 1");
+            $stmtInsPerm = $pdo->prepare("INSERT INTO `permissions` (`module_id`, `slug`, `name`, `description`) VALUES (?, ?, ?, ?)");
+            $hasMp = self::hasTable($pdo, 'module_permissions');
+            $stmtInsMp = $hasMp ? $pdo->prepare("INSERT IGNORE INTO `module_permissions` (`module_id`, `permission_id`) VALUES (?, ?)") : null;
+            $hasRp = self::hasTable($pdo, 'role_permissions');
+            $stmtInsRp = $hasRp ? $pdo->prepare("INSERT IGNORE INTO `role_permissions` (`role_id`, `permission_id`) VALUES (?, ?)") : null;
+
+            $adminRoleIds = [];
+            if ($hasRp && self::hasTable($pdo, 'roles')) {
+                $adminRoleIds = $pdo->query("SELECT id FROM `roles` WHERE `slug` IN ('super_admin', 'admin', 'super-admin')")->fetchAll(PDO::FETCH_COLUMN);
+            }
+
+            foreach ($perms as $pr) {
+                $stmtCheckPerm->execute([$pr[0]]);
+                $permId = $stmtCheckPerm->fetchColumn();
+                if ($permId === false) {
+                    $stmtInsPerm->execute([$modId, $pr[0], $pr[1], $pr[2]]);
+                    $permId = (int)$pdo->lastInsertId();
+                } else {
+                    $permId = (int)$permId;
+                }
+
+                if ($stmtInsMp && $modId > 0 && $permId > 0) {
+                    $stmtInsMp->execute([$modId, $permId]);
+                }
+
+                if ($stmtInsRp && $permId > 0) {
+                    foreach ($adminRoleIds as $rId) {
+                        $stmtInsRp->execute([(int)$rId, $permId]);
+                    }
+                }
+            }
+
+            if (class_exists('RBAC')) {
+                RBAC::clearCache();
+            }
+        } catch (Throwable $e) {
+            error_log('migration074CreatePusatNotifikasiModule warning: ' . $e->getMessage());
         }
     }
 }
