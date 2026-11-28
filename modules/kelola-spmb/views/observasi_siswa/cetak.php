@@ -184,11 +184,10 @@ if (defined('SYS_APP_LOGO') && !empty(SYS_APP_LOGO)) {
                             <div><strong>Unit / Jenjang:</strong> <?= htmlspecialchars($p['jenjang']) ?></div>
                             <div><strong>Asal Sekolah:</strong> <?= htmlspecialchars($p['asal_sekolah'] ?: '-') ?></div>
                             <div>
-                                <strong>Petugas Observer:</strong>
                                 <?php if ($isMultiObserver): ?>
-                                    Tim Observer (<?= htmlspecialchars(implode(', ', $observerList)) ?>)
+                                    <strong>Tim Observer:</strong> <?= htmlspecialchars(implode(', ', $observerList)) ?>
                                 <?php else: ?>
-                                    <?= htmlspecialchars($singleObserverName !== '' ? $singleObserverName : '-') ?>
+                                    <strong>Petugas Observer:</strong> <?= htmlspecialchars($singleObserverName !== '' ? $singleObserverName : '-') ?>
                                 <?php endif; ?>
                             </div>
                             <div><strong>Tanggal Observasi:</strong> <?= !empty($h['observed_at']) ? date('d/m/Y H:i', strtotime($h['observed_at'])) : '-' ?></div>
@@ -216,18 +215,10 @@ if (defined('SYS_APP_LOGO') && !empty(SYS_APP_LOGO)) {
                                     $aNum++;
                                     $aVal = array_sum(array_map(fn($x) => (float)$x['nilai'], $aRows));
                                     $aMax = array_sum(array_map(fn($x) => (float)$x['nilai_maksimal'], $aRows));
-                                    $aspObsNames = $observerAspekMap[$aName] ?? [];
                                 ?>
                                     <tr style="background:#eff6ff;font-weight:700;color:#1e3a8a;">
                                         <td class="center"><?= chr(64 + $aNum) ?></td>
-                                        <td colspan="2">
-                                            <div>ASPEK: <?= htmlspecialchars(strtoupper($aName)) ?> (<?= count($aRows) ?> Pertanyaan)</div>
-                                            <?php if (!empty($aspObsNames)): ?>
-                                                <div style="font-size:9.5px;font-weight:600;color:#334155;margin-top:2px;">
-                                                    Observer: <?= htmlspecialchars(implode(', ', $aspObsNames)) ?>
-                                                </div>
-                                            <?php endif; ?>
-                                        </td>
+                                        <td colspan="2">ASPEK: <?= htmlspecialchars(strtoupper($aName)) ?> (<?= count($aRows) ?> Pertanyaan)</td>
                                         <td class="center"><?= rtrim(rtrim(number_format($aVal, 2, '.', ''), '0'), '.') ?>/<?= rtrim(rtrim(number_format($aMax, 2, '.', ''), '0'), '.') ?></td>
                                         <td class="center"><?= $aMax > 0 ? number_format(($aVal / $aMax) * 100, 0) . '%' : '-' ?></td>
                                     </tr>
