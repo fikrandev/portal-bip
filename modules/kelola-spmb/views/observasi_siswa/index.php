@@ -29,16 +29,46 @@ $ruanganList = $ruanganList ?? [];
             </p>
         </div>
 
-        <!-- Selector Unit -->
-        <div class="flex flex-wrap items-center gap-1.5 bg-slate-100 p-1.5 rounded-2xl">
-            <?php foreach ($allowedUnits as $uOpt): ?>
-                <a href="<?= url('kelola-spmb/observasi-siswa?tab=' . urlencode($activeTab) . '&jenjang=' . urlencode($uOpt)) ?>"
-                   class="px-4 py-2 rounded-xl text-sm font-bold transition-all <?= $selJenjang === $uOpt ? 'bg-primary-600 text-white shadow-xs' : 'text-slate-600 hover:bg-white' ?>">
-                    <?= e($uOpt) ?>
-                </a>
+        <!-- Selector Unit & Download Infografis -->
+        <div class="flex flex-col sm:flex-row sm:items-center lg:items-end gap-2.5">
+            <div class="flex flex-wrap items-center gap-1.5 bg-slate-100 p-1.5 rounded-2xl">
+                <?php foreach ($allowedUnits as $uOpt): ?>
+                    <a href="<?= url('kelola-spmb/observasi-siswa?tab=' . urlencode($activeTab) . '&jenjang=' . urlencode($uOpt)) ?>"
+                       class="px-4 py-2 rounded-xl text-sm font-bold transition-all <?= $selJenjang === $uOpt ? 'bg-primary-600 text-white shadow-xs' : 'text-slate-600 hover:bg-white' ?>">
+                        <?= e($uOpt) ?>
+                    </a>
+                <?php endforeach; ?>
+            </div>
+        </div>
+    </div>
+
+    <?php if ($canCetak || $canHasil): ?>
+    <div class="bg-white rounded-2xl px-4 py-3 border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-2 text-xs sm:text-sm font-bold text-slate-700">
+            <span class="px-2 py-1 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs">📊</span>
+            <span>Download Infografis Observasi (Sudah &amp; Belum Observasi):</span>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+            <?php
+                $infBtnStyles = [
+                    'PAUD' => 'bg-amber-50 hover:bg-amber-600 text-amber-800 hover:text-white border-amber-200',
+                    'SD'   => 'bg-emerald-50 hover:bg-emerald-600 text-emerald-800 hover:text-white border-emerald-200',
+                    'SMP'  => 'bg-blue-50 hover:bg-blue-600 text-blue-800 hover:text-white border-blue-200',
+                    'SMA'  => 'bg-violet-50 hover:bg-violet-600 text-violet-800 hover:text-white border-violet-200',
+                ];
+                foreach ($allowedUnits as $uInf):
+                    $btnCls = $infBtnStyles[$uInf] ?? 'bg-slate-50 hover:bg-slate-700 text-slate-700 hover:text-white border-slate-200';
+            ?>
+                <button type="button"
+                        onclick="downloadObservasiInfografis('<?= url('kelola-spmb/observasi-siswa/infografis-data?jenjang=' . urlencode($uInf)) ?>', '<?= e($uInf) ?>', this)"
+                        class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-xs font-extrabold transition-all shadow-2xs cursor-pointer <?= $btnCls ?>">
+                    <span>⬇</span>
+                    <span>Infografis <?= e($uInf) ?></span>
+                </button>
             <?php endforeach; ?>
         </div>
     </div>
+    <?php endif; ?>
 
     <!-- Main Sub-Tabs (Sesuai RBAC Petugas) -->
     <div class="flex flex-wrap items-center gap-2 bg-white p-2 rounded-2xl border border-slate-200 shadow-xs">
@@ -780,3 +810,4 @@ function closeIsiObservasiModal() {
     document.getElementById('modalIsiObservasiSiswa').classList.add('hidden');
 }
 </script>
+<script src="<?= url('public/js/spmb-observasi-infografis.js') ?>?v=<?= @filemtime(BASE_PATH . '/public/js/spmb-observasi-infografis.js') ?: time() ?>"></script>

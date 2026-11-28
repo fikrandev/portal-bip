@@ -6288,6 +6288,254 @@ class SpmbModel
             throw $e;
         }
     }
+
+    /**
+     * Agregasi data infografis Observasi Siswa per unit (PAUD / SD / SMP / SMA)
+     */
+    public static function getObservasiSiswaInfografisData(int $groupId, string $jenjang): array
+    {
+        self::ensureObservasiSiswaSchema();
+        self::ensureKartuObservasiSchema();
+
+        $jenjangNorm = strtoupper(trim($jenjang));
+        if ($jenjangNorm === '') {
+            $jenjangNorm = 'SD';
+        }
+
+        $group = $groupId > 0
+            ? self::db()->find("SELECT id, nama_group, tahun_ajaran FROM `spmb_group` WHERE id = ? LIMIT 1", [$groupId])
+            : self::getActiveGroup();
+        $effGroupId = (int)($group['id'] ?? $groupId);
+
+        $kepsekInfo = self::getKepalaSekolahByJenjang($jenjangNorm);
+        $unitKey = $kepsekInfo['unit'] ?: $jenjangNorm;
+        $logoUnitPath = trim((string)self::getSetting("logo_unit_{$unitKey}", ''));
+
+        $soalList = self::getObservasiSiswaSoalList($jenjangNorm, true);
+        $activeSoalIds = array_map(static fn($s) => (int)$s['id'], $soalList);
+        $totalSoalUnit = count($activeSoalIds);
+
+        $aspectOrder = [];
+        foreach ($soalList as $sl) {
+            $aspName = trim((string)($sl['aspek'] ?? 'Umum')) ?: 'Umum';
+            if (!isset($aspectOrder[$aspName])) {
+                $aspectOrder[$aspName] = count($aspectOrder);
+            }
+        }
+
+        $rows = [];
+        if ($effGroupId > 0) {
+            $rows = self::db()->findAll("
+                SELECT p.id AS pendaftar_id, p.nama_lengkap, p.jenjang,
+                       pj.id AS jadwal_id, pj.ruangan_id, pj.status_absen,
+                       r.nama_ruangan, r.sesi_nama, r.tanggal AS tgl_sesi, r.jam_mulai, r.jam_selesai,
+                       h.id AS hasil_id, h.total_nilai, h.nilai_maksimal, h.persentase, h.kategori_hasil
+                FROM `spmb_pendaftar` p
+                LEFT JOIN `spmb_observasi_peserta_jadwal` pj
+                    ON pj.pendaftar_id = p.id AND pj.group_id = p.group_id
+                LEFT JOIN `spmb_observasi_ruangan` r ON r.id = pj.ruangan_id
+                LEFT JOIN `spmb_observasi_siswa_hasil` h
+                    ON h.pendaftar_id = p.id AND h.group_id = p.group_id
+                WHERE p.group_id = ?
+                  AND p.status_kelulusan = 'Lulus / Diterima'
+                  AND p.jenjang = ?
+                ORDER BY
+                    (pj.ruangan_id IS NULL) ASC,
+                    r.tanggal ASC,
+                    r.jam_mulai ASC,
+                    r.nama_ruangan ASC,
+                    p.nama_lengkap ASC
+            ", [$effGroupId, $jenjangNorm]);
+        }
+
+        $hasilIds = [];
+        foreach ($rows as $rw) {
+            if (!empty($rw['hasil_id'])) {
+                $hasilIds[] = (int)$rw['hasil_id'];
+            }
+        }
+        $hasilIds = array_values(array_unique($hasilIds));
+
+        $answeredCountMap = [];
+        $aspekAgg = [];
+        if (!empty($hasilIds)) {
+            $ph = implode(',', array_fill(0, count($hasilIds), '?'));
+            $jRows = self::db()->findAll("
+                SELECT hasil_id, soal_id, aspek_snapshot, nilai, nilai_maksimal
+                FROM `spmb_observasi_siswa_jawaban`
+                WHERE hasil_id IN ($ph)
+            ", $hasilIds);
+
+            $activeSoalLookup = array_flip($activeSoalIds);
+            foreach ($jRows as $jr) {
+                $hid = (int)$jr['hasil_id'];
+                $sid = (int)$jr['soal_id'];
+                if ($totalSoalUnit === 0 || isset($activeSoalLookup[$sid])) {
+                    $answeredCountMap[$hid] = ($answeredCountMap[$hid] ?? 0) + 1;
+                }
+                $asp = trim((string)($jr['aspek_snapshot'] ?? 'Umum')) ?: 'Umum';
+                if (!isset($aspekAgg[$asp])) {
+                    $aspekAgg[$asp] = ['val' => 0.0, 'max' => 0.0, 'respon_count' => 0];
+                }
+                $aspekAgg[$asp]['val'] += (float)$jr['nilai'];
+                $aspekAgg[$asp]['max'] += (float)$jr['nilai_maksimal'];
+                $aspekAgg[$asp]['respon_count']++;
+            }
+        }
+
+        $totalSiswa = count($rows);
+        $hadirQr = 0;
+        $belumHadirQr = 0;
+        $sudahSelesai = 0;
+        $sedangSebagian = 0;
+        $belumObsHadir = 0;
+        $sumPersenSelesai = 0.0;
+
+        $kategoriBuckets = [
+            'Sangat Siap / Sangat Baik'    => 0,
+            'Siap / Baik'                  => 0,
+            'Cukup Siap (Perlu Penguatan)' => 0,
+            'Perlu Pendampingan Khusus'    => 0,
+        ];
+
+        $sesiMap = [];
+        foreach ($rows as $rw) {
+            $isHadir = (($rw['status_absen'] ?? '') === 'Hadir');
+            if ($isHadir) {
+                $hadirQr++;
+            } else {
+                $belumHadirQr++;
+            }
+
+            $hid = (int)($rw['hasil_id'] ?? 0);
+            $answeredCnt = $hid > 0 ? ($answeredCountMap[$hid] ?? 0) : 0;
+            $hasResult = ($hid > 0 && $answeredCnt > 0);
+            $isComplete = $hasResult && ($totalSoalUnit === 0 || $answeredCnt >= $totalSoalUnit);
+
+            if ($isComplete) {
+                $sudahSelesai++;
+                $pct = (float)($rw['persentase'] ?? 0);
+                $sumPersenSelesai += $pct;
+                if ($pct >= 85) {
+                    $kategoriBuckets['Sangat Siap / Sangat Baik']++;
+                } elseif ($pct >= 70) {
+                    $kategoriBuckets['Siap / Baik']++;
+                } elseif ($pct >= 55) {
+                    $kategoriBuckets['Cukup Siap (Perlu Penguatan)']++;
+                } else {
+                    $kategoriBuckets['Perlu Pendampingan Khusus']++;
+                }
+            } elseif ($hasResult) {
+                $sedangSebagian++;
+            } elseif ($isHadir) {
+                $belumObsHadir++;
+            }
+
+            $rid = !empty($rw['ruangan_id']) ? (int)$rw['ruangan_id'] : 0;
+            $sesiKey = $rid > 0 ? ('R_' . $rid) : 'UNASSIGNED';
+            if (!isset($sesiMap[$sesiKey])) {
+                if ($rid > 0) {
+                    $namaRuang = trim((string)($rw['nama_ruangan'] ?? ''));
+                    $namaSesi = trim((string)($rw['sesi_nama'] ?? ''));
+                    $label = $namaSesi !== '' && $namaRuang !== ''
+                        ? ($namaRuang . ' • ' . $namaSesi)
+                        : ($namaRuang ?: ($namaSesi ?: ('Ruangan #' . $rid)));
+                    $tglTxt = !empty($rw['tgl_sesi']) ? date('d/m', strtotime((string)$rw['tgl_sesi'])) : '';
+                    $jamTxt = trim((string)($rw['jam_mulai'] ?? '')) !== ''
+                        ? (substr((string)$rw['jam_mulai'], 0, 5) . '-' . substr((string)($rw['jam_selesai'] ?? ''), 0, 5))
+                        : '';
+                    $sublabel = trim($tglTxt . ($tglTxt !== '' && $jamTxt !== '' ? ' ' : '') . $jamTxt);
+                } else {
+                    $label = 'Belum Masuk Sesi';
+                    $sublabel = 'Belum terjadwal ruangan';
+                }
+                $sesiMap[$sesiKey] = [
+                    'label'           => $label,
+                    'sublabel'        => $sublabel,
+                    'total'           => 0,
+                    'selesai'         => 0,
+                    'sebagian'        => 0,
+                    'belum_obs_hadir' => 0,
+                    'belum_hadir_qr'  => 0,
+                ];
+            }
+
+            $sesiMap[$sesiKey]['total']++;
+            if ($isComplete) {
+                $sesiMap[$sesiKey]['selesai']++;
+            } elseif ($hasResult) {
+                $sesiMap[$sesiKey]['sebagian']++;
+            } elseif ($isHadir) {
+                $sesiMap[$sesiKey]['belum_obs_hadir']++;
+            } else {
+                $sesiMap[$sesiKey]['belum_hadir_qr']++;
+            }
+        }
+
+        $sesiList = [];
+        foreach ($sesiMap as $sEntry) {
+            $t = $sEntry['total'];
+            $sEntry['persen_selesai'] = $t > 0 ? round(($sEntry['selesai'] / $t) * 100, 1) : 0.0;
+            $sesiList[] = $sEntry;
+        }
+
+        $aspekList = [];
+        foreach ($aspekAgg as $aspName => $st) {
+            $pctAsp = $st['max'] > 0 ? round(($st['val'] / $st['max']) * 100, 1) : 0.0;
+            $aspekList[] = [
+                'aspek'        => $aspName,
+                'persen'       => $pctAsp,
+                'respon_count' => $st['respon_count'],
+                'order'        => $aspectOrder[$aspName] ?? 999,
+            ];
+        }
+        usort($aspekList, static fn($a, $b) => ($a['order'] <=> $b['order']) ?: ($b['persen'] <=> $a['persen']));
+
+        $kategoriList = [];
+        $kategoriColors = [
+            'Sangat Siap / Sangat Baik'    => '#10b981',
+            'Siap / Baik'                  => '#3b82f6',
+            'Cukup Siap (Perlu Penguatan)' => '#f59e0b',
+            'Perlu Pendampingan Khusus'    => '#ef4444',
+        ];
+        foreach ($kategoriBuckets as $kLabel => $kCount) {
+            $kategoriList[] = [
+                'label'  => $kLabel,
+                'count'  => $kCount,
+                'persen' => $sudahSelesai > 0 ? round(($kCount / $sudahSelesai) * 100, 1) : 0.0,
+                'color'  => $kategoriColors[$kLabel] ?? '#64748b',
+            ];
+        }
+
+        $belumObservasiTotal = max(0, $totalSiswa - $sudahSelesai);
+
+        return [
+            'jenjang'        => $jenjangNorm,
+            'nama_sekolah'   => $kepsekInfo['nama_sekolah'],
+            'kepala_sekolah' => $kepsekInfo['nama'],
+            'nama_group'     => $group['nama_group'] ?? 'SPMB SIT Bina Insan Palu',
+            'tahun_ajaran'   => $group['tahun_ajaran'] ?? '',
+            'logo_unit_path' => $logoUnitPath,
+            'generated_at'   => date('d M Y, H:i') . ' WITA',
+            'generated_ymd'  => date('Ymd_His'),
+            'total_soal_unit'=> $totalSoalUnit,
+            'kpi'            => [
+                'total_siswa'           => $totalSiswa,
+                'hadir_qr'              => $hadirQr,
+                'belum_hadir_qr'        => $belumHadirQr,
+                'sudah_selesai'         => $sudahSelesai,
+                'sedang_sebagian'       => $sedangSebagian,
+                'belum_obs_hadir'       => $belumObsHadir,
+                'belum_observasi_total' => $belumObservasiTotal,
+                'persen_selesai_total'  => $totalSiswa > 0 ? round(($sudahSelesai / $totalSiswa) * 100, 1) : 0.0,
+                'persen_selesai_hadir'  => $hadirQr > 0 ? round(($sudahSelesai / $hadirQr) * 100, 1) : 0.0,
+                'rata_persen'           => $sudahSelesai > 0 ? round($sumPersenSelesai / $sudahSelesai, 1) : 0.0,
+            ],
+            'kategori_list'  => $kategoriList,
+            'sesi_list'      => $sesiList,
+            'aspek_list'     => $aspekList,
+        ];
+    }
 }
 
 

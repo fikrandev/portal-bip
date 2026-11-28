@@ -915,6 +915,7 @@ $router->post('/kelola-spmb/observasi-siswa/nilai/save', [SpmbController::class,
 $router->post('/kelola-spmb/observasi-siswa/nilai/reset/{id}', [SpmbController::class, 'observasiSiswaNilaiReset'], [Middleware::permissionRequired('spmb.observasi_siswa.nilai')]);
 $router->get('/kelola-spmb/observasi-siswa/cetak/{id}', [SpmbController::class, 'observasiSiswaCetakSingle'], [Middleware::permissionRequired(['spmb.observasi_siswa.view', 'spmb.observasi_siswa.cetak', 'spmb.observasi_siswa.nilai'])]);
 $router->get('/kelola-spmb/observasi-siswa/cetak-semua', [SpmbController::class, 'observasiSiswaCetakAll'], [Middleware::permissionRequired(['spmb.observasi_siswa.view', 'spmb.observasi_siswa.cetak', 'spmb.observasi_siswa.nilai'])]);
+$router->get('/kelola-spmb/observasi-siswa/infografis-data', [SpmbController::class, 'observasiSiswaInfografisData'], [Middleware::permissionRequired(['spmb.observasi_siswa.view', 'spmb.observasi_siswa.cetak', 'spmb.observasi_siswa.nilai'])]);
 $router->get('/kelola-pelanggaran-siswa', [PelanggaranSiswaController::class, 'index'], [Middleware::permissionRequired('pelanggaran_siswa.view')]);
 $router->get('/kelola-izin-guru', [IzinGuruController::class, 'index'], [Middleware::permissionRequired('izin_guru.view')]);
 $router->get('/kelola-buku-angkatan-siswa', [BukuAngkatanSiswaController::class, 'index'], [Middleware::permissionRequired('buku_angkatan.view')]);

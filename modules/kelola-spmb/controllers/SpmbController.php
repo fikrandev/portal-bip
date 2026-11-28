@@ -4542,6 +4542,32 @@ SVG;
 
         include BASE_PATH . '/modules/kelola-spmb/views/observasi_siswa/cetak.php';
     }
+
+    public static function observasiSiswaInfografisData(): void
+    {
+        $allowedUnits = SpmbModel::getObservasiSiswaAllowedUnits();
+        $jenjang = strtoupper(trim((string)($_GET['jenjang'] ?? ($allowedUnits[0] ?? 'SD'))));
+        if (!in_array($jenjang, $allowedUnits, true)) {
+            Response::json(['success' => false, 'message' => 'Anda tidak memiliki akses pada unit ' . $jenjang . '.'], 403);
+            return;
+        }
+
+        $activeGroup = SpmbModel::getActiveGroup();
+        $groupId = (int)($activeGroup['id'] ?? 0);
+        $data = SpmbModel::getObservasiSiswaInfografisData($groupId, $jenjang);
+
+        $logoUrl = '';
+        if (!empty($data['logo_unit_path'])) {
+            $logoUrl = url(ltrim((string)$data['logo_unit_path'], '/'));
+        } elseif (defined('SYS_APP_LOGO') && !empty(SYS_APP_LOGO)) {
+            $logoUrl = url(ltrim(SYS_APP_LOGO, '/'));
+        } elseif (defined('SYS_APP_FAVICON') && !empty(SYS_APP_FAVICON)) {
+            $logoUrl = url(ltrim(SYS_APP_FAVICON, '/'));
+        }
+        $data['logo_url'] = $logoUrl;
+
+        Response::json(['success' => true, 'data' => $data]);
+    }
 }
 
 
