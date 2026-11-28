@@ -98,6 +98,7 @@
         pushSubscribed: false,
         canManage: false,
         manageUrl: apiUrl('pusat-notifikasi'),
+        iconUrl: apiUrl('public/images/pwa/icon-192.png'),
         inboxItems: [],
         popupItems: [],
         unreadCount: 0,
@@ -250,8 +251,8 @@
                     if (readyReg && readyReg.showNotification) {
                         readyReg.showNotification('Push Notifikasi Aktif!', {
                             body: 'Perangkat ini siap menerima notifikasi background (seperti WhatsApp) meski aplikasi ditutup.',
-                            icon: apiUrl('public/images/pwa/icon-192.png'),
-                            badge: apiUrl('public/images/pwa/icon-192.png'),
+                            icon: state.iconUrl,
+                            badge: state.iconUrl,
                             tag: 'bip-push-activated',
                             silent: false,
                             vibrate: [200, 100, 200],
@@ -307,7 +308,7 @@
         // Tampilkan juga OS Notification baik tab aktif maupun background (tag sama untuk deduplikasi)
         if ('Notification' in window && Notification.permission === 'granted') {
             const notifUrl = item.link_url || (PLATFORM === 'mobile' ? apiUrl('mobile/notifikasi') : apiUrl('dashboard'));
-            const notifIcon = apiUrl('public/images/pwa/icon-192.png');
+            const notifIcon = state.iconUrl;
             const notifTag = 'pusat-notif-' + item.id;
             try {
                 if ('serviceWorker' in navigator) {
@@ -321,6 +322,7 @@
                                 renotify: true,
                                 silent: false,
                                 icon: notifIcon,
+                                badge: notifIcon,
                                 data: { url: notifUrl },
                             }).catch(function () {});
                         } else {
@@ -341,8 +343,8 @@
         card.className = `pointer-events-auto rounded-2xl border-2 shadow-2xl p-4 transition-all duration-300 ${themeCls}`;
         card.innerHTML = `
             <div class="flex items-start gap-3">
-                <div class="w-9 h-9 rounded-xl bg-primary-600 text-white flex items-center justify-center shrink-0 text-base shadow-sm">
-                    🔔
+                <div class="w-10 h-10 rounded-xl bg-white border border-slate-200 p-1 flex items-center justify-center shrink-0 shadow-sm overflow-hidden">
+                    <img src="${escapeHtml(state.iconUrl)}" alt="Logo" class="w-full h-full object-contain">
                 </div>
                 <div class="flex-1 min-w-0">
                     <div class="flex items-start justify-between gap-2">
@@ -464,11 +466,16 @@
         modal.innerHTML = `
             <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-md overflow-hidden animate-[fadeIn_.2s_ease-out]">
                 <div class="bg-gradient-to-r ${grad} px-6 py-4 text-white flex items-start justify-between gap-3">
-                    <div>
-                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/20 text-[10px] font-bold uppercase tracking-wide mb-1.5">
-                            🪟 Pemberitahuan Penting &bull; Tiap ${Number(item.popup_interval_menit || 5)} Menit
-                        </span>
-                        <h3 class="text-base sm:text-lg font-extrabold leading-snug">${escapeHtml(item.judul)}</h3>
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-10 h-10 rounded-xl bg-white p-1 flex items-center justify-center shrink-0 shadow-sm overflow-hidden">
+                            <img src="${escapeHtml(state.iconUrl)}" alt="Logo" class="w-full h-full object-contain">
+                        </div>
+                        <div class="min-w-0">
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/20 text-[10px] font-bold uppercase tracking-wide mb-1">
+                                Pemberitahuan Penting &bull; Tiap ${Number(item.popup_interval_menit || 5)} Menit
+                            </span>
+                            <h3 class="text-base sm:text-lg font-extrabold leading-snug">${escapeHtml(item.judul)}</h3>
+                        </div>
                     </div>
                 </div>
                 <div class="p-6 space-y-4">
@@ -717,6 +724,7 @@
             state.pushSubscribed = Boolean(data.push_subscribed);
             state.canManage = Boolean(data.can_manage);
             if (data.manage_url) state.manageUrl = data.manage_url;
+            if (data.icon_path) state.iconUrl = apiUrl(data.icon_path);
 
             state.inboxItems = Array.isArray(data.inbox_items) ? data.inbox_items : [];
             state.popupItems = Array.isArray(data.popup_items) ? data.popup_items : [];

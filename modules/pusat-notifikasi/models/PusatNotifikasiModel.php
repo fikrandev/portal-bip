@@ -732,6 +732,64 @@ class PusatNotifikasiModel
     }
 
     /**
+     * Ambil path relatif logo Pengaturan Sistem (settings.app_logo) beserta cache-buster
+     */
+    public static function getSystemLogoPath(): string
+    {
+        $candidates = [];
+
+        if (defined('SYS_APP_LOGO') && trim((string)SYS_APP_LOGO) !== '') {
+            $candidates[] = trim((string)SYS_APP_LOGO);
+        } else {
+            try {
+                $row = self::db()->find("SELECT setting_value FROM `settings` WHERE setting_key = 'app_logo' LIMIT 1");
+                if ($row && trim((string)($row['setting_value'] ?? '')) !== '') {
+                    $candidates[] = trim((string)$row['setting_value']);
+                }
+            } catch (Throwable $e) {}
+        }
+
+        if (defined('SYS_APP_FAVICON') && trim((string)SYS_APP_FAVICON) !== '') {
+            $fav = trim((string)SYS_APP_FAVICON);
+            $ext = strtolower(pathinfo($fav, PATHINFO_EXTENSION));
+            if (in_array($ext, ['png', 'jpg', 'jpeg', 'webp'], true)) {
+                $candidates[] = $fav;
+            }
+        } else {
+            try {
+                $rowFav = self::db()->find("SELECT setting_value FROM `settings` WHERE setting_key = 'app_favicon' LIMIT 1");
+                if ($rowFav && trim((string)($rowFav['setting_value'] ?? '')) !== '') {
+                    $fav = trim((string)$rowFav['setting_value']);
+                    $ext = strtolower(pathinfo($fav, PATHINFO_EXTENSION));
+                    if (in_array($ext, ['png', 'jpg', 'jpeg', 'webp'], true)) {
+                        $candidates[] = $fav;
+                    }
+                }
+            } catch (Throwable $e) {}
+        }
+
+        foreach ($candidates as $cand) {
+            $rel = ltrim(str_replace('\\', '/', $cand), '/');
+            $relNoQuery = explode('?', $rel, 2)[0];
+            $full = BASE_PATH . '/' . $relNoQuery;
+            if ($relNoQuery !== '' && is_file($full)) {
+                return '/' . $relNoQuery . '?v=' . filemtime($full);
+            }
+        }
+
+        return '/public/images/pwa/icon-192.png';
+    }
+
+    /**
+     * Ambil URL lengkap logo Pengaturan Sistem untuk payload Web Push
+     */
+    public static function getSystemLogoUrl(): string
+    {
+        $path = self::getSystemLogoPath();
+        return function_exists('url') ? url(ltrim($path, '/')) : $path;
+    }
+
+    /**
      * Aktifkan & kirim notifikasi ke target akun + perangkat Web Push (dengan bunyi default)
      */
     public static function sendNotification(int $id): array
@@ -770,7 +828,7 @@ class PusatNotifikasiModel
             $targetLink = url(ltrim($targetLink, '/'));
         }
 
-        $iconUrl = function_exists('url') ? url('public/images/pwa/icon-192.png') : '/public/images/pwa/icon-192.png';
+        $iconUrl = self::getSystemLogoUrl();
         $payload = [
             'title'       => (string)$notif['judul'],
             'body'        => (string)$notif['pesan'],

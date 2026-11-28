@@ -3951,19 +3951,21 @@ class PortalGuruController
         header('Content-Type: application/json; charset=utf-8');
         try {
             require_once BASE_PATH . '/core/WebPushService.php';
+            require_once MODULES_PATH . '/pusat-notifikasi/models/PusatNotifikasiModel.php';
 
             $teacher = self::getLoggedInTeacher();
             $userId = (int)($teacher['user_id'] ?? Auth::id() ?? 0);
             $pegawaiId = !empty($teacher['pegawai_id']) ? (int)$teacher['pegawai_id'] : null;
             $nama = trim((string)($teacher['name'] ?? 'Rekan'));
+            $logoUrl = PusatNotifikasiModel::getSystemLogoUrl();
 
             $res = WebPushService::sendToUser($userId, $pegawaiId, [
                 'title' => '🔔 Tes Push Notification Portal BIP',
                 'body'  => "Halo {$nama}! Push Notification real-time aktif dengan suara bawaan perangkat Anda. Pengingat jurnal akan muncul otomatis sesuai jadwal.",
                 'url'   => url('mobile/jurnal'),
                 'tag'   => 'portal-bip-test-' . time(),
-                'icon'  => url('public/images/pwa/icon-192.png'),
-                'badge' => url('public/images/pwa/icon-192.png'),
+                'icon'  => $logoUrl,
+                'badge' => $logoUrl,
             ], [
                 'topic'      => 'test_push',
                 'tanggal'    => date('Y-m-d'),
