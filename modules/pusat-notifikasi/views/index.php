@@ -273,7 +273,7 @@ $prioritasColors = [
                                     <?php if ($canEditRow): ?>
                                         <div class="flex flex-wrap justify-end gap-1.5">
                                             <?php if ($canSend): ?>
-                                                <form method="POST" action="<?= url('pusat-notifikasi/send/' . (int)$it['id']) ?>" class="inline"
+                                                <form method="POST" action="<?= url('pusat-notifikasi/send/' . (int)$it['id']) ?>" class="inline" data-no-pjax
                                                       onsubmit="return confirm('Kirim notifikasi ini sekarang ke seluruh target?')">
                                                     <?= CSRF::field() ?>
                                                     <button type="submit" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold cursor-pointer">
@@ -282,7 +282,7 @@ $prioritasColors = [
                                                 </form>
                                             <?php endif; ?>
                                             <?php if ($canUpdate && ($it['status'] ?? '') !== 'draft'): ?>
-                                                <form method="POST" action="<?= url('pusat-notifikasi/toggle/' . (int)$it['id']) ?>" class="inline">
+                                                <form method="POST" action="<?= url('pusat-notifikasi/toggle/' . (int)$it['id']) ?>" class="inline" data-no-pjax>
                                                     <?= CSRF::field() ?>
                                                     <button type="submit" class="px-3 py-1.5 rounded-xl <?= ($it['status'] ?? '') === 'aktif' ? 'bg-amber-50 hover:bg-amber-500 text-amber-700 hover:text-white border border-amber-200' : 'bg-sky-50 hover:bg-sky-600 text-sky-700 hover:text-white border border-sky-200' ?> text-xs font-bold cursor-pointer">
                                                         <?= ($it['status'] ?? '') === 'aktif' ? 'Hentikan' : 'Aktifkan' ?>
@@ -298,7 +298,7 @@ $prioritasColors = [
                                                 </button>
                                             <?php endif; ?>
                                             <?php if ($canDelete): ?>
-                                                <form method="POST" action="<?= url('pusat-notifikasi/delete/' . (int)$it['id']) ?>" class="inline"
+                                                <form method="POST" action="<?= url('pusat-notifikasi/delete/' . (int)$it['id']) ?>" class="inline" data-no-pjax
                                                       onsubmit="return confirm('Hapus notifikasi ini secara permanen?')">
                                                     <?= CSRF::field() ?>
                                                     <button type="submit" class="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-200 text-xs font-bold cursor-pointer">
@@ -333,7 +333,7 @@ $prioritasColors = [
             </button>
         </div>
 
-        <form id="notifFormEl" method="POST" action="<?= url('pusat-notifikasi/store') ?>" class="p-6 space-y-4 max-h-[78vh] overflow-y-auto text-sm">
+        <form id="notifFormEl" method="POST" action="<?= url('pusat-notifikasi/store') ?>" data-no-pjax class="p-6 space-y-4 max-h-[78vh] overflow-y-auto text-sm">
             <?= CSRF::field() ?>
             <input type="hidden" name="action_mode" id="pn_action_mode" value="draft">
 

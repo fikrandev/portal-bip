@@ -221,7 +221,9 @@
 
             let reg = await navigator.serviceWorker.getRegistration(swScope);
             if (!reg) {
-                reg = await navigator.serviceWorker.register(swFile, { scope: swScope });
+                reg = await navigator.serviceWorker.register(swFile, { scope: swScope, updateViaCache: 'none' });
+            } else {
+                reg.update().catch(function () {});
             }
             if (reg.waiting) {
                 reg.waiting.postMessage({ action: 'SKIP_WAITING' });
@@ -245,7 +247,18 @@
                 renderTopbarDropdown();
                 if (showFeedback) {
                     playNotifSound();
-                    alert('Push Notification aktif pada perangkat ini!');
+                    if (readyReg && readyReg.showNotification) {
+                        readyReg.showNotification('Push Notifikasi Aktif!', {
+                            body: 'Perangkat ini siap menerima notifikasi background (seperti WhatsApp) meski aplikasi ditutup.',
+                            icon: apiUrl('public/images/pwa/icon-192.png'),
+                            badge: apiUrl('public/images/pwa/icon-192.png'),
+                            tag: 'bip-push-activated',
+                            silent: false,
+                            vibrate: [200, 100, 200],
+                            data: { url: PLATFORM === 'mobile' ? apiUrl('mobile/notifikasi') : apiUrl('dashboard') },
+                        }).catch(function () {});
+                    }
+                    alert('Push Notification latar belakang aktif pada perangkat ini!');
                 }
                 return true;
             }
