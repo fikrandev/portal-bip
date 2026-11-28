@@ -298,6 +298,12 @@ class JurnalStaffReminderService
 
         self::upsertSetting($db, 'jurnal_staff_wa_excluded_ids', implode(',', $excludedIds));
 
+        // Reset cache lock auto-scheduler agar staff yang baru dicentang ulang langsung diproses
+        $lockFile = rtrim(sys_get_temp_dir(), '/\\') . DIRECTORY_SEPARATOR . 'portal_bip_jurnal_wa_autocheck.json';
+        if (is_file($lockFile)) {
+            @unlink($lockFile);
+        }
+
         $totalStaff = count($staffList);
         $excludedCount = count($excludedIds);
         $enabledCount = max(0, $totalStaff - $excludedCount);

@@ -1564,6 +1564,7 @@ if (!function_exists('resolveStaffMediaUrl')) {
                         <span class="text-[11px] font-mono text-slate-300"><?= date('d M Y H:i') ?> WITA</span>
                     </div>
 
+                    <input type="hidden" id="bulk-run-slot" value="<?= e($effectiveSlotHero) ?>">
                     <?php if ($unsentDueHero > 0 && $canManageReminder): ?>
                         <div class="p-3 rounded-xl bg-rose-500/20 border border-rose-400/40 text-xs space-y-2">
                             <div class="font-bold text-rose-100 flex items-center gap-1.5">
@@ -1573,14 +1574,13 @@ if (!function_exists('resolveStaffMediaUrl')) {
                             <p class="text-[11px] text-rose-200/90 leading-relaxed">
                                 Jadwal jam <?= e($effectiveSlotHero) ?> WITA sudah tiba namun terdapat <?= $unsentDueHero ?> staff yang pesannya belum terkirim<?= $failedHero > 0 ? " ({$failedHero} gagal kirim)" : '' ?>.
                             </p>
-                            <input type="hidden" id="bulk-run-slot" value="<?= e($effectiveSlotHero) ?>">
                             <button type="button" id="btn-run-bulk-wa" onclick="runBulkWaReminder()"
-                                    class="w-full px-4 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-xs shadow-lg shadow-amber-500/25 transition-all flex items-center justify-center gap-1.5">
+                                    class="w-full px-4 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-xs shadow-lg shadow-amber-500/25 transition-all flex items-center justify-center gap-1.5 cursor-pointer">
                                 <span>🔄 Kirim <?= $unsentDueHero ?> Pesan yang Tidak Terkirim</span>
                             </button>
                         </div>
                     <?php elseif ($isSlotDueHero): ?>
-                        <div class="p-3 rounded-xl bg-emerald-500/20 border border-emerald-400/30 text-xs space-y-1">
+                        <div class="p-3 rounded-xl bg-emerald-500/20 border border-emerald-400/30 text-xs space-y-2">
                             <div class="font-bold text-emerald-100 flex items-center gap-1.5">
                                 <span>✅</span>
                                 <span>Auto-Send Slot <?= e($effectiveSlotHero) ?> WITA Aktif &amp; Terkirim</span>
@@ -1588,16 +1588,28 @@ if (!function_exists('resolveStaffMediaUrl')) {
                             <p class="text-[11px] text-emerald-200/90 leading-relaxed">
                                 Pesan pengingat terkirim otomatis pada jam terjadwal tanpa perlu klik tombol kirim (<strong><?= $alreadySentHero ?> terkirim</strong> di slot ini).
                             </p>
+                            <?php if ($canManageReminder && (int)($remSummary['needs_reminder'] ?? 0) > 0): ?>
+                                <button type="button" id="btn-run-bulk-wa" onclick="runBulkWaReminder()"
+                                        class="w-full px-3.5 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-white font-bold text-xs border border-white/20 transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+                                    <span>📤 Kirim Manual Sekarang (Slot <?= e($effectiveSlotHero) ?>)</span>
+                                </button>
+                            <?php endif; ?>
                         </div>
                     <?php else: ?>
-                        <div class="p-3 rounded-xl bg-sky-500/20 border border-sky-400/30 text-xs space-y-1">
+                        <div class="p-3 rounded-xl bg-sky-500/20 border border-sky-400/30 text-xs space-y-2">
                             <div class="font-bold text-sky-100 flex items-center gap-1.5">
                                 <span>⏳</span>
                                 <span>Menunggu Jadwal Otomatis (<?= e($effectiveSlotHero) ?> WITA)</span>
                             </div>
                             <p class="text-[11px] text-sky-200/90 leading-relaxed">
-                                Sistem akan mengirim pesan WA secara otomatis tepat pada jam <strong><?= e($effectiveSlotHero) ?> WITA</strong>. Tombol kirim hanya muncul jika ada pesan yang gagal terkirim.
+                                Sistem akan mengirim pesan WA secara otomatis tepat pada jam <strong><?= e($effectiveSlotHero) ?> WITA</strong>.
                             </p>
+                            <?php if ($canManageReminder && (int)($remSummary['needs_reminder'] ?? 0) > 0): ?>
+                                <button type="button" id="btn-run-bulk-wa" onclick="runBulkWaReminder()"
+                                        class="w-full px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-bold text-xs shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+                                    <span>📤 Kirim Manual Sekarang (Slot <?= e($effectiveSlotHero) ?>)</span>
+                                </button>
+                            <?php endif; ?>
                         </div>
                     <?php endif; ?>
 
@@ -1726,8 +1738,8 @@ if (!function_exists('resolveStaffMediaUrl')) {
                     <span id="wa-recipient-counter" class="px-2.5 py-1 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-bold">
                         Aktif WA: <?= (int)($remSummary['enabled_wa'] ?? 0) ?> / <?= (int)($remSummary['total_staff'] ?? 0) ?> Staff
                     </span>
-                    <span id="wa-recipient-dirty" class="hidden px-2 py-0.5 rounded-lg bg-amber-100 text-amber-800 border border-amber-300 text-[10px] font-bold">
-                        Belum disimpan
+                    <span id="wa-recipient-dirty" class="hidden px-2.5 py-0.5 rounded-lg bg-amber-100 text-amber-800 border border-amber-300 text-[10px] font-bold">
+                        Belum disimpan &mdash; klik Simpan Daftar Penerima
                     </span>
                 </div>
 
@@ -1810,6 +1822,7 @@ if (!function_exists('resolveStaffMediaUrl')) {
                                         'kategori'         => $cat,
                                         'slot'             => $effectiveRowSlot,
                                         'pesan'            => $it['preview_message'],
+                                        'delivery_state'   => $delivState,
                                         'can_manual_retry' => $canRetryRow,
                                     ];
                                 ?>
@@ -1903,14 +1916,32 @@ if (!function_exists('resolveStaffMediaUrl')) {
                                                         class="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold transition-colors">
                                                     👁️ Preview
                                                 </button>
-                                                <?php if ($canManageReminder && $it['has_valid_wa'] && $canRetryRow): ?>
-                                                    <button type="button"
-                                                            id="btn-send-single-<?= (int)$it['pegawai_id'] ?>"
-                                                            onclick="sendSingleWaReminder(<?= (int)$it['pegawai_id'] ?>, '<?= e($effectiveRowSlot) ?>', this)"
-                                                            class="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-bold shadow-xs transition-colors"
-                                                            title="Pesan belum/tidak terkirim pada jadwal otomatis. Klik untuk kirim ulang.">
-                                                        🔄 Kirim WA
-                                                    </button>
+                                                <?php if ($canManageReminder && $it['has_valid_wa']): ?>
+                                                    <?php if ($canRetryRow): ?>
+                                                        <button type="button"
+                                                                id="btn-send-single-<?= (int)$it['pegawai_id'] ?>"
+                                                                onclick="sendSingleWaReminder(<?= (int)$it['pegawai_id'] ?>, '<?= e($effectiveRowSlot) ?>', this)"
+                                                                class="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-bold shadow-xs transition-colors cursor-pointer"
+                                                                title="Pesan belum/tidak terkirim pada jadwal otomatis. Klik untuk kirim.">
+                                                            🔄 Kirim WA
+                                                        </button>
+                                                    <?php elseif ($delivState === 'sent'): ?>
+                                                        <button type="button"
+                                                                id="btn-send-single-<?= (int)$it['pegawai_id'] ?>"
+                                                                onclick="if(confirm('Staff ini sudah menerima pengingat pada slot <?= e($effectiveRowSlot) ?>. Kirim ulang pesan WA sekarang?')) sendSingleWaReminder(<?= (int)$it['pegawai_id'] ?>, '<?= e($effectiveRowSlot) ?>', this)"
+                                                                class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-emerald-600 text-slate-700 hover:text-white border border-slate-200 text-[11px] font-bold transition-colors cursor-pointer"
+                                                                title="Sudah terkirim di slot ini. Klik jika ingin kirim ulang manual.">
+                                                            🔁 Kirim Ulang
+                                                        </button>
+                                                    <?php else: ?>
+                                                        <button type="button"
+                                                                id="btn-send-single-<?= (int)$it['pegawai_id'] ?>"
+                                                                onclick="sendSingleWaReminder(<?= (int)$it['pegawai_id'] ?>, '<?= e($effectiveRowSlot) ?>', this)"
+                                                                class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold shadow-xs transition-colors cursor-pointer"
+                                                                title="Kirim pengingat WA manual sekarang tanpa menunggu jadwal otomatis.">
+                                                            📤 Kirim WA
+                                                        </button>
+                                                    <?php endif; ?>
                                                 <?php endif; ?>
                                             </div>
                                         <?php else: ?>
@@ -3149,10 +3180,16 @@ function closeImagePreview() {
 </div>
 
 <script>
-const JURNAL_STAFF_CSRF_TOKEN = <?= json_encode(CSRF::token()) ?>;
-const DEFAULT_WA_TPL_EMPTY = <?= json_encode(JurnalStaffReminderService::DEFAULT_TPL_EMPTY) ?>;
-const DEFAULT_WA_TPL_PARTIAL = <?= json_encode(JurnalStaffReminderService::DEFAULT_TPL_PARTIAL) ?>;
+window.JURNAL_STAFF_CSRF_TOKEN = <?= json_encode(CSRF::token()) ?>;
+window.DEFAULT_WA_TPL_EMPTY = <?= json_encode(JurnalStaffReminderService::DEFAULT_TPL_EMPTY) ?>;
+window.DEFAULT_WA_TPL_PARTIAL = <?= json_encode(JurnalStaffReminderService::DEFAULT_TPL_PARTIAL) ?>;
 window._previewWaState = null;
+
+function getJurnalStaffCsrfToken() {
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    const metaVal = meta ? (meta.getAttribute('content') || '') : '';
+    return metaVal || window.JURNAL_STAFF_CSRF_TOKEN || '';
+}
 
 function openWaPreviewModal(item) {
     window._previewWaState = item;
@@ -3160,12 +3197,12 @@ function openWaPreviewModal(item) {
     document.getElementById('preview-wa-bubble').textContent = item.pesan || '';
     const sendBtn = document.getElementById('btn-preview-send-wa');
     if (sendBtn) {
-        if (!item.no_wa || !item.can_manual_retry) {
+        if (!item.no_wa) {
             sendBtn.classList.add('hidden');
         } else {
             sendBtn.classList.remove('hidden');
             sendBtn.disabled = false;
-            sendBtn.textContent = '🔄 Kirim WA (Tidak Terkirim)';
+            sendBtn.textContent = item.delivery_state === 'sent' ? '🔁 Kirim Ulang Sekarang' : '📤 Kirim WA Sekarang';
         }
     }
     document.getElementById('modal-preview-wa-jurnal').classList.remove('hidden');
@@ -3193,7 +3230,7 @@ function sendSingleWaReminder(pegawaiId, slot, btnEl, callback) {
     }
 
     const body = new URLSearchParams();
-    body.set('<?= CSRF_TOKEN_NAME ?>', JURNAL_STAFF_CSRF_TOKEN);
+    body.set('<?= CSRF_TOKEN_NAME ?>', getJurnalStaffCsrfToken());
     body.set('pegawai_id', String(pegawaiId));
     body.set('slot', slot || '17:00');
 
@@ -3253,7 +3290,7 @@ function runBulkWaReminder() {
     }
 
     const body = new URLSearchParams();
-    body.set('<?= CSRF_TOKEN_NAME ?>', JURNAL_STAFF_CSRF_TOKEN);
+    body.set('<?= CSRF_TOKEN_NAME ?>', getJurnalStaffCsrfToken());
     body.set('ajax', '1');
     body.set('slot', slot);
     if (force) body.set('force', '1');
@@ -3310,7 +3347,7 @@ function handleTestWaJurnal(event) {
     }
 
     const body = new URLSearchParams();
-    body.set('<?= CSRF_TOKEN_NAME ?>', JURNAL_STAFF_CSRF_TOKEN);
+    body.set('<?= CSRF_TOKEN_NAME ?>', getJurnalStaffCsrfToken());
     body.set('target_phone', phone);
     body.set('kategori', kategori);
     body.set('sample_name', sampleName);
@@ -3358,7 +3395,7 @@ function getCheckedWaRecipientKey() {
         .join(',');
 }
 
-const INITIAL_WA_RECIPIENT_KEY = getCheckedWaRecipientKey();
+window.INITIAL_WA_RECIPIENT_KEY = getCheckedWaRecipientKey();
 
 function syncWaSelectAllCheckbox() {
     const master = document.getElementById('chk-wa-all');
@@ -3398,10 +3435,16 @@ function onWaRecipientCheckChange() {
         counterEl.textContent = 'Aktif WA: ' + checkedCount + ' / ' + totalCount + ' Staff';
     }
 
+    const isDirty = (getCheckedWaRecipientKey() !== window.INITIAL_WA_RECIPIENT_KEY);
     const dirtyEl = document.getElementById('wa-recipient-dirty');
     if (dirtyEl) {
-        const isDirty = (getCheckedWaRecipientKey() !== INITIAL_WA_RECIPIENT_KEY);
         dirtyEl.classList.toggle('hidden', !isDirty);
+    }
+    const saveBtn = document.getElementById('btn-save-wa-recipients');
+    if (saveBtn) {
+        saveBtn.classList.toggle('ring-2', isDirty);
+        saveBtn.classList.toggle('ring-amber-400', isDirty);
+        saveBtn.classList.toggle('animate-pulse', isDirty);
     }
 
     syncWaSelectAllCheckbox();
@@ -3448,11 +3491,12 @@ function saveWaRecipients() {
     const origHtml = btn ? btn.innerHTML : '';
     if (btn) {
         btn.disabled = true;
+        btn.classList.remove('ring-2', 'ring-amber-400', 'animate-pulse');
         btn.innerHTML = '⏳ Menyimpan...';
     }
 
     const body = new URLSearchParams();
-    body.set('<?= CSRF_TOKEN_NAME ?>', JURNAL_STAFF_CSRF_TOKEN);
+    body.set('<?= CSRF_TOKEN_NAME ?>', getJurnalStaffCsrfToken());
     body.set('ajax', '1');
     enabledIds.forEach(id => body.append('enabled_ids[]', id));
 
@@ -3464,7 +3508,15 @@ function saveWaRecipients() {
         },
         body: body.toString()
     })
-    .then(res => res.json())
+    .then(async res => {
+        const txt = await res.text();
+        let data = null;
+        try { data = JSON.parse(txt); } catch (e) {}
+        if (!res.ok) {
+            throw new Error((data && data.message) ? data.message : ('HTTP ' + res.status));
+        }
+        return data || { success: false, message: 'Respon server tidak valid.' };
+    })
     .then(data => {
         if (btn) {
             btn.disabled = false;
@@ -3472,7 +3524,7 @@ function saveWaRecipients() {
         }
         alert(data.message || (data.success ? 'Daftar penerima WA berhasil disimpan.' : 'Gagal menyimpan daftar penerima.'));
         if (data.success) {
-            location.reload();
+            window.location.reload();
         }
     })
     .catch(err => {
@@ -3480,26 +3532,35 @@ function saveWaRecipients() {
             btn.disabled = false;
             btn.innerHTML = origHtml;
         }
-        alert('Terjadi kesalahan jaringan: ' + err.message);
+        alert('Gagal menyimpan daftar penerima: ' + err.message);
     });
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+function initJurnalStaffWaSection() {
     syncWaSelectAllCheckbox();
-    // Heartbeat Auto-Scheduler: cek setiap 40 detik agar tepat pada jam 09:00, 13:00, 17:00 WITA otomatis terkirim
-    setInterval(() => {
+    if (window._jurnalWaHeartbeatInterval) {
+        clearInterval(window._jurnalWaHeartbeatInterval);
+    }
+    // Heartbeat Auto-Scheduler: cek setiap 40 detik agar tepat pada jam terjadwal otomatis terkirim
+    window._jurnalWaHeartbeatInterval = setInterval(() => {
         fetch('<?= url("kelola-jurnal-staff/pengingat/auto-check") ?>', {
             headers: { 'X-Requested-With': 'XMLHttpRequest' }
         })
         .then(res => res.json())
         .then(data => {
             if (data && data.triggered && data.result && (data.result.sent > 0 || data.result.failed > 0)) {
-                location.reload();
+                window.location.reload();
             }
         })
         .catch(() => {});
     }, 40000);
-});
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initJurnalStaffWaSection);
+} else {
+    initJurnalStaffWaSection();
+}
 
 function insertTplVar(token) {
     const targetId = window._activeTplId || 'tpl-partial';
@@ -3517,8 +3578,8 @@ function resetDefaultTemplates() {
     if (!confirm('Kembalikan kedua template pesan ke format default Portal BIP?')) return;
     const tEmpty = document.getElementById('tpl-empty');
     const tPartial = document.getElementById('tpl-partial');
-    if (tEmpty) tEmpty.value = DEFAULT_WA_TPL_EMPTY;
-    if (tPartial) tPartial.value = DEFAULT_WA_TPL_PARTIAL;
+    if (tEmpty) tEmpty.value = window.DEFAULT_WA_TPL_EMPTY;
+    if (tPartial) tPartial.value = window.DEFAULT_WA_TPL_PARTIAL;
 }
 
 function copyTextToClipboard(text, btn) {
