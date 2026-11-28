@@ -172,7 +172,9 @@ $prioritasColors = [
                                     }
                                 }
                                 if (!empty($rNames)) {
-                                    $jenisTxt = 'Role: ' . implode(', ', $rNames);
+                                    $jenisTxt = 'Peran: ' . implode(', ', $rNames);
+                                } else {
+                                    $jenisTxt = 'Peran Tertentu';
                                 }
                             }
                             $unitsArr = PusatNotifikasiModel::parseUnitsList((string)($it['target_units'] ?? 'ALL'));
@@ -427,24 +429,36 @@ $prioritasColors = [
                     </select>
                 </div>
                 <div>
-                    <label class="block font-bold text-slate-700 mb-1">Target Jenis Akun *</label>
+                    <label class="block font-bold text-slate-700 mb-1">Target Jenis Akun / Peran *</label>
                     <select name="target_jenis_akun" id="pn_jenis_akun" onchange="toggleRoleChecklist()"
                             class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 outline-none">
-                        <option value="all">Semua Akun</option>
-                        <option value="guru">Seluruh Guru</option>
-                        <option value="support_system">Seluruh Staff / Support System</option>
-                        <option value="otorisasi_admin">Akun Otorisasi Admin</option>
-                        <option value="otorisasi_personal">Akun Otorisasi Personal</option>
-                        <option value="role">Berdasarkan Peran (Role) Tertentu</option>
+                        <option value="all">Semua Akun (Seluruh Peran)</option>
+                        <optgroup label="Pilih Peran (Role)">
+                            <?php foreach (($manageRoles ?? $roles ?? []) as $rlOpt):
+                                $jenjBadge = !empty($rlOpt['allowed_jenjang']) ? ' (' . $rlOpt['allowed_jenjang'] . ')' : '';
+                                $uCnt = isset($rlOpt['user_count']) ? (int)$rlOpt['user_count'] : 0;
+                            ?>
+                                <option value="role:<?= (int)$rlOpt['id'] ?>">
+                                    <?= e($rlOpt['name'] . $jenjBadge) ?> — <?= $uCnt ?> akun
+                                </option>
+                            <?php endforeach; ?>
+                        </optgroup>
+                        <optgroup label="Multi-Peran / Kategori Pegawai">
+                            <option value="role">Pilih Beberapa Peran Sekaligus...</option>
+                            <option value="guru">Kategori Pegawai: Seluruh Guru</option>
+                            <option value="support_system">Kategori Pegawai: Staff / Support System</option>
+                            <option value="otorisasi_admin">Otorisasi: Admin</option>
+                            <option value="otorisasi_personal">Otorisasi: Personal</option>
+                        </optgroup>
                     </select>
                 </div>
             </div>
 
-            <!-- Checklist Role (muncul saat jenis_akun = role) -->
+            <!-- Checklist Role (muncul saat jenis_akun = role / multi-peran) -->
             <div id="pn_role_wrap" class="hidden p-3.5 rounded-2xl border border-indigo-200 bg-indigo-50/50">
-                <label class="block text-xs font-bold text-indigo-900 mb-2">Pilih Role Penerima *</label>
+                <label class="block text-xs font-bold text-indigo-900 mb-2">Pilih Beberapa Role Penerima *</label>
                 <div class="flex flex-wrap gap-2">
-                    <?php foreach (($roles ?? []) as $rl): ?>
+                    <?php foreach (($manageRoles ?? $roles ?? []) as $rl): ?>
                         <label class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-indigo-200 text-xs font-semibold cursor-pointer">
                             <input type="checkbox" name="target_role_ids[]" value="<?= (int)$rl['id'] ?>" class="pn-role-cb rounded text-indigo-600">
                             <span><?= e($rl['name']) ?></span>
@@ -565,17 +579,29 @@ function openNotifFormModal(data = null) {
         document.getElementById('pn_link_label').value = data.link_label || 'Buka Tautan';
         document.getElementById('pn_prioritas').value = data.prioritas || 'info';
         document.getElementById('pn_platform').value = data.target_platform || 'both';
-        document.getElementById('pn_jenis_akun').value = data.target_jenis_akun || 'all';
+        const jenisSel = document.getElementById('pn_jenis_akun');
+        const rArr = data.target_role_ids
+            ? String(data.target_role_ids).split(',').map(s => s.trim()).filter(Boolean)
+            : [];
+        if ((data.target_jenis_akun || 'all') === 'role' && rArr.length === 1) {
+            const singleOptVal = 'role:' + rArr[0];
+            if (jenisSel.querySelector(`option[value="${singleOptVal}"]`)) {
+                jenisSel.value = singleOptVal;
+            } else {
+                jenisSel.value = 'role';
+                document.querySelectorAll('.pn-role-cb').forEach(cb => { cb.checked = rArr.includes(cb.value); });
+            }
+        } else {
+            jenisSel.value = data.target_jenis_akun || 'all';
+            if ((data.target_jenis_akun || '') === 'role' && rArr.length) {
+                document.querySelectorAll('.pn-role-cb').forEach(cb => { cb.checked = rArr.includes(cb.value); });
+            }
+        }
         document.getElementById('pn_interval').value = data.popup_interval_menit || 5;
         document.getElementById('pn_pakai_suara').checked = Number(data.pakai_suara) === 1;
         document.getElementById('pn_tipe_push').checked = (data.tipe !== 'popup');
         document.getElementById('pn_tipe_popup').checked = (data.tipe === 'popup');
         document.getElementById('pn_berakhir_at').value = data.berakhir_at ? String(data.berakhir_at).replace(' ', 'T').slice(0, 16) : '';
-
-        if (data.target_role_ids) {
-            const rArr = String(data.target_role_ids).split(',').map(s => s.trim());
-            document.querySelectorAll('.pn-role-cb').forEach(cb => { cb.checked = rArr.includes(cb.value); });
-        }
 
         const rawU = String(data.target_units || 'ALL').toUpperCase();
         const allCb = document.getElementById('pn_unit_all');

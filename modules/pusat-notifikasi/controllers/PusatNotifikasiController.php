@@ -21,7 +21,8 @@ class PusatNotifikasiController
 
         $items = PusatNotifikasiModel::getList($filters);
         $stats = PusatNotifikasiModel::getStats();
-        $roles = PusatNotifikasiModel::getRolesList();
+        $roles = PusatNotifikasiModel::getRolesList(false);
+        $manageRoles = PusatNotifikasiModel::getRolesList(true);
         $unitScope = PusatNotifikasiModel::getUserAllowedUnitsForManage();
 
         $canCreate = RBAC::hasPermission('notifikasi.create');
@@ -57,28 +58,52 @@ class PusatNotifikasiController
         }
 
         $tipe = ($post['tipe'] ?? 'push') === 'popup' ? 'popup' : 'push';
-        $prioritas = in_array(($post['prioritas'] ?? 'info'), ['info', 'success', 'warning', 'urgent'], true)
-            ? $post['prioritas']
+        $rawPrioritas = trim((string)($post['prioritas'] ?? 'info'));
+        $prioritas = in_array($rawPrioritas, ['info', 'success', 'warning', 'urgent'], true)
+            ? $rawPrioritas
             : 'info';
-        $platform = in_array(($post['target_platform'] ?? 'both'), ['both', 'web', 'mobile'], true)
-            ? $post['target_platform']
+        $rawPlatform = trim((string)($post['target_platform'] ?? 'both'));
+        $platform = in_array($rawPlatform, ['both', 'web', 'mobile'], true)
+            ? $rawPlatform
             : 'both';
 
         $allowedJenis = ['all', 'guru', 'support_system', 'otorisasi_admin', 'otorisasi_personal', 'role'];
-        $jenisAkun = in_array(($post['target_jenis_akun'] ?? 'all'), $allowedJenis, true)
-            ? $post['target_jenis_akun']
-            : 'all';
-
+        $rawJenisAkun = trim((string)($post['target_jenis_akun'] ?? 'all'));
         $roleIdsStr = null;
-        if ($jenisAkun === 'role') {
-            $rawRoles = isset($post['target_role_ids']) && is_array($post['target_role_ids'])
-                ? $post['target_role_ids']
-                : [];
-            $cleanRoles = array_values(array_unique(array_filter(array_map('intval', $rawRoles), fn($v) => $v > 0)));
-            if (empty($cleanRoles)) {
-                return ['error' => 'Pilih minimal satu peran (role) tujuan untuk notifikasi.'];
+
+        if (preg_match('/^role:(\d+)$/', $rawJenisAkun, $m)) {
+            $singleRoleId = (int)$m[1];
+            $allRoles = PusatNotifikasiModel::getRolesList(false);
+            $matchedRole = null;
+            foreach ($allRoles as $ar) {
+                if ((int)$ar['id'] === $singleRoleId) {
+                    $matchedRole = $ar;
+                    break;
+                }
             }
-            $roleIdsStr = implode(',', $cleanRoles);
+            if (!$matchedRole) {
+                return ['error' => 'Peran (role) yang dipilih tidak ditemukan di database.'];
+            }
+            if (empty($unitScope['can_all'])) {
+                $rUnits = PusatNotifikasiModel::parseUnitsList($matchedRole['allowed_jenjang'] ?? '');
+                if (!empty($rUnits) && empty(array_intersect($rUnits, $unitScope['units'] ?? []))) {
+                    return ['error' => 'Anda tidak memiliki hak akses unit untuk memilih peran ' . $matchedRole['name'] . '.'];
+                }
+            }
+            $jenisAkun = 'role';
+            $roleIdsStr = (string)$singleRoleId;
+        } else {
+            $jenisAkun = in_array($rawJenisAkun, $allowedJenis, true) ? $rawJenisAkun : 'all';
+            if ($jenisAkun === 'role') {
+                $rawRoles = isset($post['target_role_ids']) && is_array($post['target_role_ids'])
+                    ? $post['target_role_ids']
+                    : [];
+                $cleanRoles = array_values(array_unique(array_filter(array_map('intval', $rawRoles), fn($v) => $v > 0)));
+                if (empty($cleanRoles)) {
+                    return ['error' => 'Pilih minimal satu peran (role) tujuan untuk notifikasi.'];
+                }
+                $roleIdsStr = implode(',', $cleanRoles);
+            }
         }
 
         // Validasi link opsional agar aman (hanya http/https atau path internal diawali /)

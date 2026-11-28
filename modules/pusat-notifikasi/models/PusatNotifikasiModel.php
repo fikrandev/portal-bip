@@ -215,12 +215,39 @@ class PusatNotifikasiModel
     }
 
     /**
-     * Daftar seluruh peran/role untuk target spesifik role
+     * Daftar seluruh peran/role beserta jumlah akun aktif (opsional difilter sesuai scope unit RBAC pengelola)
      */
-    public static function getRolesList(): array
+    public static function getRolesList(bool $respectUnitScope = false): array
     {
         try {
-            return self::db()->findAll("SELECT id, name, slug, allowed_jenjang FROM `roles` ORDER BY id ASC");
+            $rows = self::db()->findAll("
+                SELECT r.id, r.name, r.slug, r.allowed_jenjang,
+                       COUNT(DISTINCT CASE WHEN u.is_active = 1 THEN ur.user_id END) AS user_count
+                FROM `roles` r
+                LEFT JOIN `user_roles` ur ON ur.role_id = r.id
+                LEFT JOIN `users` u ON u.id = ur.user_id
+                GROUP BY r.id, r.name, r.slug, r.allowed_jenjang
+                ORDER BY r.name ASC, r.id ASC
+            ");
+
+            if (!$respectUnitScope) {
+                return $rows;
+            }
+
+            $scope = self::getUserAllowedUnitsForManage();
+            if (!empty($scope['can_all'])) {
+                return $rows;
+            }
+
+            $allowedUnits = $scope['units'] ?? [];
+            return array_values(array_filter($rows, function ($r) use ($allowedUnits) {
+                $rUnits = self::parseUnitsList($r['allowed_jenjang'] ?? '');
+                if (empty($rUnits)) {
+                    // Peran tanpa pembatasan jenjang tetap dapat dipilih karena target unit akan dikunci ke unit pengelola
+                    return true;
+                }
+                return count(array_intersect($rUnits, $allowedUnits)) > 0;
+            }));
         } catch (Throwable $e) {
             return [];
         }
